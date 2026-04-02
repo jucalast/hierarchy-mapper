@@ -2,8 +2,9 @@ import httpx
 import re
 from typing import Dict, Optional
 from bs4 import BeautifulSoup
+from services.role_engine import role_engine
 
-def get_url_preview(url: str, role_hint: str = "", company_hint: str = "") -> Dict:
+async def get_url_preview(url: str, role_hint: str = "", company_hint: str = "") -> Dict:
     """
     Simula um crawler de rede social para extrair metadados Open Graph do LinkedIn.
     Usa dicas do sistema (hints) como fallback de alta precisão.
@@ -19,8 +20,8 @@ def get_url_preview(url: str, role_hint: str = "", company_hint: str = "") -> Di
     }
 
     try:
-        with httpx.Client(timeout=15.0, follow_redirects=True) as client:
-            resp = client.get(url, headers=headers)
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            resp = await client.get(url, headers=headers)
             
             if resp.status_code == 200:
                 soup = BeautifulSoup(resp.text, 'html.parser')
@@ -34,64 +35,65 @@ def get_url_preview(url: str, role_hint: str = "", company_hint: str = "") -> Di
                 og_desc = get_tag('property', 'og:description') or get_tag('name', 'description') or ""
                 
                 # Fatiamento inteligente do Título
+                # 1. Desgruda CamelCase (ex: CompradoraWesley -> Compradora Wesley)
+                og_title = re.sub(r'([a-z])([A-Z])', r'\1 \2', og_title or "")
+                
                 title_clean = og_title.replace(" | LinkedIn", "").replace(" | LinkedIn Profile", "").strip()
                 parts = [p.strip() for p in re.split(r'[-–|:·•]', title_clean) if p.strip()]
                 
-                # Filtra ruído (incluindo variações com espaços)
+                # Filtra ruído e remove duplicidade (caso o nome se repita no título)
                 noise = ["linkedin", "linked in", "linked", "perfil", "profile", "overview", "followers", "conexões", "see more"]
                 parts = [p.strip() for p in parts if p.strip().lower() not in noise]
+                
+                # 🧼 REMOVE DUPLICATAS: Ex: "Renilton S. Carvalho - Renilton S. Carvalho" -> "Renilton S. Carvalho"
+                unique_parts = []
+                for p in parts:
+                    if p not in unique_parts:
+                        unique_parts.append(p)
+                parts = unique_parts
 
-                # Lógica de Distribuição "Efeito Foto" (Pega o que tá na página e ponto final)
+                name = parts[0] if len(parts) > 0 else "Colaborador"
+                role = "Professional"
                 # 1. Títulos de Cargo Comuns (Dicionário de Identificação)
                 job_keywords = [
                     "comprador", "buyer", "procurement", "supply chain", "gerente", "manager", "diretor", "director",
                     "coordenador", "coordinator", "analista", "analyst", "supervisor", "especialista", "specialist",
                     "logística", "logistics", "compras", "sourcing", "planner", "planejamento", "mestre", "lead", 
-                    "head", "vp", "chief", "administrador", "engineer", "engenheiro", "clerk", "auxiliar", "assistente"
+                    "head", "vp", "chief", "administrador", "engineer", "engenheiro", "clerk", "auxiliar", "assistente",
+                    "strategic sourcing"
                 ]
 
                 name = parts[0] if len(parts) > 0 else "Colaborador"
                 role = "Professional"
                 company = company_hint or "N/A"
+                # NOVO: Coletor de Candidatos (para escolher o melhor depois)
+                role_candidates = []
 
-                # Tentativa 1: Fatiar o título e procurar o cargo real
-                found_role = None
-                for p in parts[1:]: # Ignora o nome e busca o cargo
-                    pl = p.lower()
-                    if any(key in pl for key in job_keywords):
-                        # Limpeza profunda: Remove "na [Empresa]", "at [Empresa]" que vem no título do LinkedIn
-                        p_clean = re.sub(rf"(?i)\s+(at|na|no|em|da|do|atualmente na|trabalha na)\s+.*$", "", p).strip()
-                        # Também limpa se o nome da empresa/marca estiver colado no cargo
-                        brand_p = company_hint or "LinkedIn"
-                        p_clean = re.sub(rf"(?i)\s+{re.escape(brand_p)}.*$", "", p_clean).strip()
-                        found_role = p_clean
-                        break
+                # --- [ COLETA DE FONTES BRUTAS ] ---
+                raw_sources = [og_title, og_desc, resp.text]
                 
-                # Tentativa 2: Se não achou por palavra-chave, mas tem 3 partes, a do meio é o cargo
-                if not found_role and len(parts) >= 3:
-                        found_role = parts[1]
-                        company = parts[2]
-                
-                # Tentativa 3: Buscar no início da descrição (Bio)
-                if not found_role and og_desc:
-                    bio_match = re.search(rf"(?:{name}|{name.split()[0]})\s+(?:is a|é a|é|atualmente)\s+([^,.-]+)", og_desc, re.IGNORECASE)
-                    if bio_match:
-                        found_role = bio_match.group(1).strip()
+                # --- [ RESGATE VIA BUSCA (duckduckgo) para alimentar a IA ] ---
+                try:
+                    search_query = f'{name} {company_hint or ""} linkedin cargo'
+                    async with httpx.AsyncClient(timeout=10.0) as s_client:
+                        s_url = f"https://duckduckgo.com/html/?q={search_query}"
+                        s_resp = await s_client.get(s_url, headers={"User-Agent": "Mozilla/5.0"})
+                        if s_resp.status_code == 200:
+                            raw_sources.append(s_resp.text[:5000])
+                except: pass
 
-                # Aplica o resultado Real (ignora hints se o cargo foi encontrado na página)
-                role = found_role if found_role else (role_hint if role_hint.lower() not in ["management / strategy", "linked in", "operational / support"] else "Colaborador")
-                
-                # Final touch: Capitalize and limit size
+                # --- [ O MOTOR CENTRAL DE CARGO (A Mágica acontece aqui) ] ---
+                role = await role_engine.distill_role(name, company_hint or "Empresa", raw_sources)
+
+                # Final touch
                 if role:
-                    role = role.strip().strip("-").strip("·").strip()
-                    # Se o role ainda tiver a empresa (ex: Analista na Bosch), corta de novo
-                    role = re.sub(rf"(?i)\s+(at|na|no|em|da|do)\s+.*$", "", role).strip()
+                    role = role.strip().strip("-").strip("·").strip("|").strip(":").strip()
+                
                 if len(parts) >= 3: company = parts[2]
-                elif len(parts) == 2 and not found_role: company = parts[1]
+                elif len(parts) == 2: company = parts[1]
 
-                # Se empresa ainda é N/A, tenta achar na descrição, mas ignora o LinkedIn
+                # Se empresa ainda é N/A, tenta achar na descrição
                 if (company == "N/A" or company.lower() in noise) and og_desc:
-                    # Busca "na [Empresa]" ou "em [Empresa]" mas ignora se a empresa for LinkedIn
                     matches = re.findall(r'(?:na|at|em|no)\s+([A-Z][a-z\d]+(?:\s+[A-Z][a-z\d]+)?)', og_desc)
                     for m in matches:
                         if m.lower() not in noise:
@@ -103,7 +105,7 @@ def get_url_preview(url: str, role_hint: str = "", company_hint: str = "") -> Di
                     "role": role,
                     "company": company,
                     "image": get_tag('property', 'og:image'),
-                    "description": og_desc,
+                    "description": og_desc if len(og_desc) < 200 else og_desc[:200] + "...",
                     "url": url
                 }
             else:

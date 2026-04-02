@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from fastapi.responses import StreamingResponse
 import json
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Dict, Any, Optional
 import httpx
 import re
 import os
@@ -14,6 +14,15 @@ from services.filters import get_seniority_level, get_department_tag
 from services.groq_service import refine_hierarchy_ai
 from services.brand_discovery import discover_company_brand
 from services.preview_service import get_url_preview
+from services.database import get_db, Employee, Organization
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+def clean_cnpj(val: str) -> str:
+    """Extrai apenas dígitos do CNPJ para APIs e Banco."""
+    if not val: return ""
+    import re
+    return re.sub(r'\D', '', val)
 
 router = APIRouter()
 
@@ -24,7 +33,7 @@ async def fetch_url_preview(
     company_hint: Optional[str] = Query(None)
 ):
     """Retorna metadados Open Graph de uma URL para preview com fallbacks inteligentes."""
-    return get_url_preview(url, role_hint, company_hint)
+    return await get_url_preview(url, role_hint, company_hint)
 
 @router.get("/proxy/image")
 async def proxy_linkedin_image(url: str):
@@ -96,7 +105,7 @@ async def discover_brand(
     Busca sugestões de nomes de marca (LinkedIn-ready) antes de iniciar o scan.
     """
     try:
-        return discover_company_brand(cnpj, domain, raw_name)
+        return await discover_company_brand(cnpj, domain, raw_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -330,12 +339,12 @@ async def get_company_hierarchy(
     )
 
 @router.get("/hierarchy/stream")
-@limiter.limit("10/minute") 
 async def stream_company_hierarchy(
     request: Request,
-    cnpj: str = Query(..., description="O CNPJ da empresa"),
-    domain: Optional[str] = Query(None, description="Opcional. O domínio da empresa"),
-    confirmed_brand: Optional[str] = Query(None, description="Marca confirmada pelo usuário")
+    cnpj: str = Query(..., description="CNPJ da empresa"),
+    domain: Optional[str] = Query(None, description="Domínio da empresa"),
+    confirmed_brand: Optional[str] = Query(None, description="Marca confirmada"),
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Endpoint SSE que envia dados progressivamente para a interface.
@@ -348,14 +357,14 @@ async def stream_company_hierarchy(
     if len(cnpj_clean) != 14:
         raise HTTPException(status_code=400, detail="CNPJ Inválido")
 
-    # Usamos generator síncrono para o StreamingResponse lidar com requests blocking do DDG
-    def generator():
+    # Usamos generator assíncrono para o StreamingResponse lidar com requests do motor de IA
+    async def generator():
         # 🏺 BUSCA EM CASCATA RESILIENTE (Streaming Initial Data)
         data = None
-        with httpx.Client(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             # Tenta BrasilAPI
             try:
-                res = client.get(f"https://brasilapi.com.br/api/cnpj/v1/{cnpj_clean}")
+                res = await client.get(f"https://brasilapi.com.br/api/cnpj/v1/{cnpj_clean}")
                 if res.status_code == 200:
                     data = res.json()
             except: pass
@@ -363,7 +372,7 @@ async def stream_company_hierarchy(
             # Tenta Fallback 1: Minha Receita
             if not data:
                 try:
-                    res = client.get(f"https://minhareceita.org/{cnpj_clean}")
+                    res = await client.get(f"https://minhareceita.org/{cnpj_clean}")
                     if res.status_code == 200:
                         data = res.json()
                 except: pass
@@ -371,7 +380,7 @@ async def stream_company_hierarchy(
             # Tenta Fallback 2: ReceitaWS
             if not data:
                 try:
-                    res = client.get(f"https://receitaws.com.br/v1/cnpj/{cnpj_clean}")
+                    res = await client.get(f"https://receitaws.com.br/v1/cnpj/{cnpj_clean}")
                     if res.status_code == 200:
                         raw = res.json()
                         data = {
@@ -445,7 +454,7 @@ async def stream_company_hierarchy(
         initial_nodes.sort(key=lambda x: x.get('level', 1), reverse=True) # Ordem decrescente (6 primeiro)
         yield f"data: {json.dumps({'type': 'initial', 'company_name': razao_social, 'nodes': initial_nodes})}\n\n"
         
-        for batch in discover_employees_stream(search_name, domain_guess, confirmed_brand=confirmed_brand, location=location_focus, email_api_key=EMAIL_API_KEY, max_results=100):
+        async for batch in discover_employees_stream(search_name, domain_guess, confirmed_brand=confirmed_brand, location=location_focus, email_api_key=EMAIL_API_KEY, max_results=100):
             new_nodes = []
             
             for lead in batch:
@@ -541,5 +550,75 @@ async def stream_company_hierarchy(
                 yield f"data: {json.dumps({'type': 'batch', 'nodes': new_nodes}, ensure_ascii=False)}\n\n"
 
         yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
-        
+
     return StreamingResponse(generator(), media_type="text/event-stream")
+
+@router.get("/hierarchy/{org_id}")
+async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
+    """Busca a hierarquia já salva no banco de dados."""
+    stmt = select(Employee).where(Employee.company_id == org_id).order_by(Employee.seniority.asc())
+    result = await db.execute(stmt)
+    employees = result.scalars().all()
+    
+    nodes = []
+    for emp in employees:
+        nodes.append({
+            "id": f"emp_{emp.id}",
+            "name": emp.name,
+            "role": emp.role,
+            "level": 6 - emp.seniority if emp.seniority < 6 else 1,
+            "seniority": emp.seniority,
+            "linkedin": emp.linkedin_url,
+            "profile_pic": emp.profile_pic,
+            "email": emp.email
+        })
+    
+    return {"nodes": nodes}
+
+# --- PIPEDRIVE SYNC (REFACTORED) ---
+@router.post("/pipedrive_sync")
+async def pipedrive_sync_endpoint():
+    """Endpoint para mover tarefas atrasadas para hoje."""
+    try:
+        from services.pipedrive_service import pipedrive_service
+        return await pipedrive_service.sync_overdue_activities()
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/pipedrive/organizations")
+async def get_pipedrive_organizations():
+    """Retorna lista de todas as empresas do Pipedrive."""
+    try:
+        from services.pipedrive_service import pipedrive_service
+        return await pipedrive_service.list_organizations()
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/intelligence/enrich")
+async def enrich_company_data(
+    name: str = Query(..., description="Nome da empresa"),
+    address: Optional[str] = Query(None, description="Pista de endereço para filtrar filiais")
+):
+    """Endpoint para descobrir CNPJ, Domínio e Selecionar Filiais via OSINT + IA."""
+    try:
+        from services.intelligence_service import intelligence_service
+        return await intelligence_service.enrich_company(name, hint_address=address)
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/pipedrive/organizations/{org_id}")
+async def update_pipedrive_org(org_id: int, payload: Dict[str, Any]):
+    """Atualiza dados reais no Pipedrive (CNPJ, Domínio, Endereço etc)."""
+    try:
+        from services.pipedrive_service import pipedrive_service
+        success = await pipedrive_service.update_organization(org_id, payload)
+        if success:
+            return {"status": "success", "message": f"Organização {org_id} atualizada no Pipedrive."}
+        else:
+            raise Exception("Erro ao atualizar no Pipedrive.")
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))

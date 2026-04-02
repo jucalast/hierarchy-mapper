@@ -25,6 +25,15 @@ app.add_middleware(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+@app.on_event("startup")
+async def startup_event():
+    print("[Server] 🚀 Inicializando Componentes de Inteligência...")
+    try:
+        from services.database import init_db
+        await init_db()
+    except Exception as e:
+        print(f"[Database] 🚨 Erro ao conectar no Neon DB: {e}")
+
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
 

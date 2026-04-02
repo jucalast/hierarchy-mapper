@@ -18,7 +18,7 @@ export const useHierarchy = () => {
         if (!rawCnpj) return null;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/brand/discover?cnpj=${rawCnpj}${explicitDomain ? `&domain=${explicitDomain}` : ''}`);
+            const response = await fetch(`http://127.0.0.1:8000/api/v1/brand/discover?cnpj=${rawCnpj}${explicitDomain ? `&domain=${explicitDomain}` : ''}`);
             const data = await response.json();
             
             if (!response.ok) {
@@ -49,7 +49,7 @@ export const useHierarchy = () => {
         setError("");
         console.log("[useHierarchy] Iniciando refinamento automático com Groq IA...");
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/hierarchy/refine`, {
+            const response = await fetch(`http://127.0.0.1:8000/api/v1/hierarchy/refine`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(employees)
@@ -87,13 +87,13 @@ export const useHierarchy = () => {
         setRawEmployees([]);
         setRawBackendEdges([]);
         
-        const rawCnpj = searchCnpj.replace(/\D/g, "");
+        const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
         const queryParams = new URLSearchParams();
         queryParams.append("cnpj", rawCnpj);
         if (explicitDomain) queryParams.append("domain", explicitDomain);
         if (confirmedBrand) queryParams.append("confirmed_brand", confirmedBrand);
 
-        const apiUrl = `http://localhost:8000/api/v1/hierarchy/stream?${queryParams.toString()}`;
+        const apiUrl = `http://127.0.0.1:8000/api/v1/hierarchy/stream?${queryParams.toString()}`;
         const sse = new EventSource(apiUrl);
 
         let currentEmployees: HierarchyEmployee[] = [];
@@ -162,6 +162,28 @@ export const useHierarchy = () => {
         };
     }, [refineHierarchy]);
 
+    const loadStoredHierarchy = useCallback(async (orgId: number) => {
+        setLoading(true);
+        setError("");
+        setRawEmployees([]);
+        setRawBackendEdges([]);
+        try {
+            const resp = await fetch(`http://127.0.0.1:8000/api/v1/hierarchy/${orgId}`);
+            const data = await resp.json();
+            if (data.nodes) {
+                setRawEmployees(data.nodes);
+                // Montar edges básicos por senioridade descendente se não houver manager_id real salvo
+                // (Aqui você pode expandir se tiver manager_id no banco)
+                console.log(`[Database] Carregados ${data.nodes.length} nós do banco.`);
+            }
+        } catch (e) {
+            console.error("Load hierarchy error", e);
+            setError("Erro ao carregar dados do banco.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     const updateEmployee = useCallback((id: string, updates: Partial<HierarchyEmployee>) => {
         setRawEmployees(prev => {
             const index = prev.findIndex(e => e.id === id);
@@ -182,6 +204,7 @@ export const useHierarchy = () => {
         setError,
         discoverBrand,
         fetchHierarchy,
+        loadStoredHierarchy,
         refineHierarchy,
         updateEmployee
     };

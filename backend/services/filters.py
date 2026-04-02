@@ -44,7 +44,7 @@ def get_department_tag(role: str) -> str:
             return dept
     return "Operations"
 
-def apply_strict_filters(name: str, title: str, body: str, core_company_name: str, brand_name: str, location_focus: str = None):
+def apply_strict_filters(name: str, title: str, body: str, core_company_name: str, brand_name: str, location_focus: str = None, query: str = ""):
     """
     Motor de filtros de ALTA ROBUSTEZ: 
     Agnóstico a empresas, trata variações de marca e amontoados de nomes do LinkedIn.
@@ -110,7 +110,7 @@ def apply_strict_filters(name: str, title: str, body: str, core_company_name: st
     context_norm = normalize_str(context_to_check)
     
     # 🎯 Match de Proximidade e Explicitude
-    supply_keywords_simple = ["procurement", "supply", "compras", "suprimentos", "logistica", "buyer", "sourcing", "purchas", "cadeia", "warehouse", "comex", "trade", "mro", "s&op"]
+    supply_keywords_simple = ["procurement", "supply", "compras", "suprimentos", "logistica", "buyer", "comprador", "compradora", "sourcing", "purchas", "cadeia", "warehouse", "comex", "trade", "mro", "s&op"]
     
     words = context_norm.split()
     name_search = name.split()[0].lower()
@@ -175,7 +175,7 @@ def apply_strict_filters(name: str, title: str, body: str, core_company_name: st
 
     # 🔍 2. Busca conectores de vinculação explícita no fragmento: "at Samsung", "na GM"
     # Adicionado suporte a "Trabalha na", "Gerente na"
-    employment_link = re.search(rf"(at|atualmente na|trabalha na|gerente na|na|no|da|do|em|from)\s+([A-Z][a-z\d]+(?:\s+[A-Z][a-z\d]+)?)", context_to_check)
+    employment_link = re.search(rf"(at|atualmente na|trabalha na|gerente na|diretora na|na|no|da|do|em|from)\s+([A-Z][a-z\d]+(?:\s+[A-Z][a-z\d]+)?)", context_to_check)
     if employment_link and not other_brand_detected:
         detected_comp = employment_link.group(2)
         is_our_brand = any(normalize_str(detected_comp) in normalize_str(bv) for bv in brand_variants)
@@ -190,13 +190,13 @@ def apply_strict_filters(name: str, title: str, body: str, core_company_name: st
                 after_brand = context_norm[context_norm.find(bv):context_norm.find(bv)+100]
                 if re.search(r'(\d{4}|\w{3}\.?\s+de\s+\d{4})\s*[-–]\s*(\d{4}|\w{3}\.?\s+de\s+\d{4})', after_brand):
                     # Nossa marca está associada a uma data fechada
-                    if not is_current_worker:
+                    if not is_current_at_our_brand:
                         return None
 
     # 🧩 8. DEPARTAMENTO (Supply Core + Executives)
     # Lista de exclusão setorial (Noise Filter)
     negative_keywords = [
-        "customer service", "vendedor", "rh", "hr", "juridicio", "pessoal", "enfermagem", 
+        "customer service", "vendedor", "vendedora", "rh", "hr", "juridicio", "pessoal", "enfermagem", 
         "fiscal", "comunicação", "communication", "it ", "software", "desenvolvedor",
         "sistemas", "totvs", "datasul", "production", "produção", "marketing", "vendas", 
         "comercial", "assistencia", "técnica", "ti ", "engenheiro de produto", "qualidade",
@@ -205,7 +205,7 @@ def apply_strict_filters(name: str, title: str, body: str, core_company_name: st
     ]
     
     # Detecção de Supply Robusta (Adicionado typoss como 'suplly', 'suppl', 'suplimento')
-    supply_pattern = r"(procurement|supply\s*chain|suppl[iy]|suplly|compras|purchas|suprimentos|logistica|logística|comprador|buyer|sourcing|planner|planejamento|pdm|pcp|logistics|suplimento|cadeia\s+de\s+suprimentos|warehouse|armazém|almoxarifado|distribuição|distribution|comex|importação|exportação|trade|mro|s&op|planning|strategic|suprimento)"
+    supply_pattern = r"(procurement|supply\s*chain|suppl[iy]|suplly|compras|purchas|suprimentos|logistica|logística|comprador|compradora|buyer|sourcing|planner|planejamento|pdm|pcp|logistics|suplimento|cadeia\s+de\s+suprimentos|warehouse|armazém|almoxarifado|distribuição|distribution|comex|importação|exportação|trade|mro|s&op|planning|strategic|suprimento)"
     
     # Valida se o termo negativo está no TÍTULO (Mais fatal) ou no contexto
     is_neg = any(kw in clean_title for kw in negative_keywords) or \
@@ -217,6 +217,12 @@ def apply_strict_filters(name: str, title: str, body: str, core_company_name: st
     # 🚨 REGRA DE OURO (REFINILADÍSSIMA): 
     is_brand_in_full = bool(re.search(brand_regex, full_context_norm, re.IGNORECASE))
     
+    # Se detectamos que a query do usuário é de alto nível (Head/Procurement/Manager) e a marca está presente,
+    # permitimos a passagem mesmo sem o termo explícito no snippet.
+    is_query_strong = any(kw in query.lower() for kw in ["head", "procurement", "manager", "diretor", "gerente", "sourcing"])
+    if is_query_strong and is_brand_in_full:
+        is_procurement = True
+
     # Se não detectamos NENHUMA outra marca, e é um cargo de Supply Chain, 
     # confiamos na busca (que já era filtrada por site:linkedin "empresa")
     if is_procurement and not other_brand_detected:
@@ -230,7 +236,7 @@ def apply_strict_filters(name: str, title: str, body: str, core_company_name: st
 
     # 🎯 MATCH DE CONFIANÇA (Estratégia de Descoberta)
     # Se encontramos a marca e o nome, e não há marca invasora, confiamos na query original do buscador
-    is_management = any(kw in context_norm for kw in ["gerente", "manager", "diretor", "director", "head", "coordenador", "coordinator", "supervisor", "lead", "lider"])
+    is_management = any(kw in context_norm for kw in ["gerente", "manager", "diretor", "director", "diretora", "head", "coordenador", "coordenadora", "coordinator", "supervisor", "lead", "lider"])
     
     # Se a marca é EXATA no título e não há outra marca, permitimos cargos de gestão ou de suprimentos
     is_trusted_match = (is_explicit and not other_brand_detected)

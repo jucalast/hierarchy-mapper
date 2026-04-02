@@ -966,3 +966,258 @@
 .error span {
     font-family: 'Google Symbols' !important;
 }
+
+/* --- PIPEDRIVE DRAWER --- */
+.drawer {
+    position: absolute;
+    top: 0;
+    left: 80px;
+    width: 340px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    animation: slideInDrawer 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 15px 0 40px rgba(0,0,0,0.04);
+}
+
+[data-theme="dark"] .drawer {
+    background: rgba(24, 24, 27, 0.95);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@keyframes slideInDrawer {
+    from { transform: translateX(-40px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.drawerHeader {
+    padding: 24px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+[data-theme="dark"] .drawerHeader {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.drawerHeader h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-color);
+}
+
+.drawerSearch {
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0,0,0,0.02);
+}
+
+[data-theme="dark"] .drawerSearch {
+    background: rgba(255,255,255,0.02);
+}
+
+.drawerInput {
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 0.9rem;
+    width: 100%;
+    color: var(--text-color);
+}
+
+.drawerList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+
+.orgItem {
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 4px solid transparent;
+}
+
+.orgItem:hover {
+    background: rgba(99, 102, 241, 0.08);
+    border-left-color: #6366f1;
+    transform: translateX(4px);
+}
+
+.orgInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.orgName {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.orgAddress {
+    font-size: 0.75rem;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    opacity: 0.8;
+}
+
+[data-theme="dark"] .orgAddress {
+    color: #94a3b8;
+}
+
+.orgAddress span {
+    color: #3b82f6; /* Pin de localização azul */
+}
+
+.orgDetail {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 1px;
+    font-weight: 400;
+}
+
+.orgExtra {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 6px 0;
+}
+
+.orgTag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.04);
+    color: #6366f1;
+    border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="dark"] .orgTag {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.enrichBtn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+}
+
+.enrichBtn:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 6px 15px rgba(139, 92, 246, 0.3);
+}
+
+.enriching {
+    background: #94a3b8 !important;
+    cursor: wait !important;
+}
+
+.enriching span {
+    animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.drawerLoading {
+    padding: 60px;
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* --- FILIAL SELECTION PANEL --- */
+.selectionPanel {
+    padding: 0 0 20px 0;
+    animation: slideInDrawer 0.3s ease-out;
+}
+
+.selectionHeader {
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-color);
+    background: rgba(99, 102, 241, 0.05);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.backBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6366f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+}
+
+.backBtn:hover {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.optionItem {
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(0,0,0,0.03);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+[data-theme="dark"] .optionItem {
+    border-bottom-color: rgba(255,255,255,0.03);
+}
+
+.optionItem:hover {
+    background: rgba(99, 102, 241, 0.05);
+    transform: translateX(5px);
+}
+
+.optAddress {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    margin-bottom: 10px;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.optTags {
+    display: flex;
+    gap: 8px;
+}

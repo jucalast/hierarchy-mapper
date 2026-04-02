@@ -57,8 +57,12 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
         "Content-Type": "application/json"
     }
     
+    # 🏎️ MODELO LEVE (8b) - Evita Rate Limit 429 e é instantâneo para hierarquias
+    target_model = "llama-3.1-8b-instant"
+    print(f"[Groq AI] 🧠 Refinando Hierarquia com {target_model}...")
+    
     payload = {
-        "model": "llama-3.3-70b-versatile",
+        "model": target_model,
         "messages": [
             {"role": "system", "content": "Você é um assistente de RH que gera organogramas e responde apenas em formato JSON."},
             {"role": "user", "content": prompt}

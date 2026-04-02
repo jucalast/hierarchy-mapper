@@ -63,66 +63,61 @@ def fetch_linkedin_logo(url: str) -> Optional[str]:
         pass
     return None
 
-def get_corporate_name(cnpj: str) -> str:
+async def get_corporate_name(cnpj: str) -> str:
     """
-    Busca a Razão Social da empresa usando o CNPJ em APIs públicas (OSINT).
-    Retorna o nome ou levanta uma exceção com o motivo do erro.
+    Busca o Nome Oficial/Razão Social por CNPJ em múltiplas camadas OSINT.
+    Totalmente ASSÍNCRONO para não travar o backend.
     """
-    clean_cnpj = re.sub(r"\D", "", cnpj)
-    if len(clean_cnpj) != 14:
-        raise ValueError("CNPJ Inválido. Deve conter 14 dígitos.")
-
+    clean_cnpj = cnpj.replace(".", "").replace("/", "").replace("-", "")
+    
     try:
-        # --- CAMADA 1: BrasilAPI (Prioridade) ---
-        try:
-            resp = httpx.get(f"https://brasilapi.com.br/api/cnpj/v1/{clean_cnpj}", timeout=10.0)
-            if resp.status_code == 200:
-                data = resp.json()
-                name = data.get("razao_social") or data.get("nome_fantasia")
-                if name: return name
-        except Exception: pass
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # --- CAMADA 1: BrasilAPI (Rápida e Grátis) ---
+            try:
+                print(f"[BrandDiscovery] Tentando Camada 1: BrasilAPI...")
+                resp = await client.get(f"https://brasilapi.com.br/api/cnpj/v1/{clean_cnpj}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    name = data.get("razao_social") or data.get("nome_fantasia")
+                    if name: return name
+            except Exception: pass
 
-        # --- CAMADA 2: Minha Receita (Open Source - Estável) ---
-        try:
-            print(f"[BrandDiscovery] Tentando Fallback 1: Minha Receita...")
-            resp = httpx.get(f"https://minhareceita.org/{clean_cnpj}", timeout=10.0)
-            if resp.status_code == 200:
-                data = resp.json()
-                name = data.get("razao_social") or data.get("nome_fantasia")
-                if name: return name
-        except Exception: pass
+            # --- CAMADA 2: Minha Receita (Open Source - Estável) ---
+            try:
+                print(f"[BrandDiscovery] Tentando Fallback 1: Minha Receita...")
+                resp = await client.get(f"https://minhareceita.org/{clean_cnpj}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    name = data.get("razao_social") or data.get("nome_fantasia")
+                    if name: return name
+            except Exception: pass
 
-        # --- CAMADA 3: ReceitaWS (Fallback Oficial) ---
-        try:
-            print(f"[BrandDiscovery] Tentando Fallback 2: ReceitaWS...")
-            resp = httpx.get(f"https://receitaws.com.br/v1/cnpj/{clean_cnpj}", timeout=10.0)
-            if resp.status_code == 200:
-                data = resp.json()
-                name = data.get("nome") or data.get("fantasia")
-                if name: return name
-        except Exception: pass
-        
+            # --- CAMADA 3: ReceitaWS (Fallback Oficial) ---
+            try:
+                print(f"[BrandDiscovery] Tentando Fallback 2: ReceitaWS...")
+                resp = await client.get(f"https://receitaws.com.br/v1/cnpj/{clean_cnpj}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    name = data.get("nome") or data.get("fantasia")
+                    if name: return name
+            except Exception: pass
+            
         # --- CAMADA 4: Stealth Search (Último recurso) ---
         print(f"[BrandDiscovery] Tentando Fallback Final: Stealth Search...")
         from .search_engine import get_duck_results
         query = f'CNPJ "{cnpj}" "empresa" "razão social"'
-        results = get_duck_results(query, max_results=3)
+        results = await get_duck_results(query, max_results=3)
         
         for res in results:
-            # Tenta extrair nomes que pareçam Razão Social (Caps Lock e Ltda/SA)
             match = re.search(r'([A-Z][A-Z0-9\s\.\-]{5,}(?:LTDA|S\.A\.|EIRELI|S/A|LIMITADA))', res.get("title"))
             if match: return match.group(1).title()
                 
-        # Se tudo falhar, retorna o CNPJ como nome provisório para não travar
         return f"Empresa (CNPJ: {cnpj})"
 
-    except httpx.RequestError:
-        raise ValueError("Falha na conexão com o serviço de busca de CNPJ.")
     except Exception as e:
-        if isinstance(e, ValueError): raise e
-        raise ValueError(f"Erro inesperado: {str(e)}")
+        raise ValueError(f"Erro ao identificar empresa por CNPJ: {str(e)}")
 
-def discover_company_brand(cnpj: str, domain: str = "", raw_name: str = "") -> Dict:
+async def discover_company_brand(cnpj: str, domain: str = "", raw_name: str = "") -> Dict:
     """
     Orquestra a descoberta da marca oficial via CNPJ, Domínio e Nome.
     """
@@ -130,18 +125,16 @@ def discover_company_brand(cnpj: str, domain: str = "", raw_name: str = "") -> D
     
     # 🕵️ PASSO 1: Descobrir o NOME REAL pelo CNPJ (OSINT Nível 1)
     try:
-        db_name = get_corporate_name(processed_cnpj)
+        db_name = await get_corporate_name(processed_cnpj)
         print(f"[BrandDiscovery] CNPJ Identificado: {db_name}")
         search_name = db_name
-    except ValueError as e:
-        # Se for erro de validação (CNPJ Incorreto etc), repassa a mensagem
-        raise e
     except Exception:
         search_name = raw_name or (domain.split(".")[0] if domain else "")
         if not search_name:
-            raise ValueError("Não foi possível identificar a empresa por CNPJ, Nome ou Domínio.")
+            raise ValueError("Não foi possível identificar a empresa.")
 
     # 🔍 PASSO 2: Buscas Multi-Ângulo (Agora com Nome Real)
+    from .search_engine import get_duck_results
     search_queries = [
         f'"{processed_cnpj}" site:br.linkedin.com',
         f'linkedin "{search_name}"',
@@ -151,7 +144,7 @@ def discover_company_brand(cnpj: str, domain: str = "", raw_name: str = "") -> D
     
     candidates_raw = []
     for query in filter(None, search_queries):
-        res = get_duck_results(query, max_results=10)
+        res = await get_duck_results(query, max_results=10)
         for r in res:
             title = r.get("title", "")
             snippet = (r.get("body") or r.get("snippet") or "").lower()
