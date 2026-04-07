@@ -10,6 +10,14 @@ export const useHierarchy = () => {
     const [brandOptions, setBrandOptions] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
 
+    const cleanName = (name: string) => {
+        if (!name) return "";
+        return name
+            .replace(/\|?\s*Linked\s*In/gi, '') // Remove "| LinkedIn", "LinkedIn", "Linked In"
+            .replace(/\(\s*LinkedIn\s*\)/gi, '') // Remove "(LinkedIn)"
+            .trim();
+    };
+
     const discoverBrand = async (searchCnpj: string, explicitDomain: string = "") => {
         setDiscovering(true);
         setError(null); 
@@ -18,11 +26,10 @@ export const useHierarchy = () => {
         if (!rawCnpj) return null;
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/brand/discover?cnpj=${rawCnpj}${explicitDomain ? `&domain=${explicitDomain}` : ''}`);
+            const response = await fetch(`http://localhost:8000/api/v1/brand/discover?cnpj=${rawCnpj}${explicitDomain ? `&domain=${explicitDomain}` : ''}`);
             const data = await response.json();
             
             if (!response.ok) {
-                // Silencia erro 429 se o backend retornou 400 mas temos um fallback (ou se queremos apenas ignorar)
                 if (data.detail && data.detail.includes("429")) {
                     console.warn("BrasilAPI Rate Limit - Operando em modo de resiliência.");
                     return null;
@@ -31,8 +38,12 @@ export const useHierarchy = () => {
                 return null;
             }
 
-            setBrandOptions(data.alternatives || []);
-            return data.brand; // Retorna apenas o nome da marca para o handleDiscover
+            const cleaned = (data.alternatives || []).map((opt: any) => ({
+                ...opt,
+                name: cleanName(opt.name)
+            }));
+            setBrandOptions(cleaned);
+            return cleanName(data.brand); 
         } catch (err: any) {
             console.error(err);
             setError("Falha na conexão com o servidor.");
@@ -49,7 +60,7 @@ export const useHierarchy = () => {
         setError("");
         console.log("[useHierarchy] Iniciando refinamento automático com Groq IA...");
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/hierarchy/refine`, {
+            const response = await fetch(`http://localhost:8000/api/v1/hierarchy/refine`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(employees)
@@ -81,7 +92,7 @@ export const useHierarchy = () => {
         }
     }, []);
 
-    const fetchHierarchy = useCallback((searchCnpj: string, explicitDomain: string = "", confirmedBrand: string = "") => {
+    const fetchHierarchy = useCallback((searchCnpj: string, explicitDomain: string = "", confirmedBrand: string = "", productFocus: string = "") => {
         setLoading(true);
         setError("");
         setRawEmployees([]);
@@ -92,8 +103,9 @@ export const useHierarchy = () => {
         queryParams.append("cnpj", rawCnpj);
         if (explicitDomain) queryParams.append("domain", explicitDomain);
         if (confirmedBrand) queryParams.append("confirmed_brand", confirmedBrand);
+        if (productFocus) queryParams.append("product_focus", productFocus);
 
-        const apiUrl = `http://127.0.0.1:8000/api/v1/hierarchy/stream?${queryParams.toString()}`;
+        const apiUrl = `http://localhost:8000/api/v1/hierarchy/stream?${queryParams.toString()}`;
         const sse = new EventSource(apiUrl);
 
         let currentEmployees: HierarchyEmployee[] = [];
@@ -168,7 +180,7 @@ export const useHierarchy = () => {
         setRawEmployees([]);
         setRawBackendEdges([]);
         try {
-            const resp = await fetch(`http://127.0.0.1:8000/api/v1/hierarchy/${orgId}`);
+            const resp = await fetch(`http://localhost:8000/api/v1/hierarchy/${orgId}`);
             const data = await resp.json();
             if (data.nodes) {
                 setRawEmployees(data.nodes);
@@ -194,6 +206,40 @@ export const useHierarchy = () => {
         });
     }, []);
 
+    const smartSyncPipedrive = useCallback(async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const resp = await fetch(`http://localhost:8000/api/v1/pipedrive_smart_sync`, { method: 'POST' });
+            const data = await resp.json();
+            if (data.status === "success") {
+                console.log("[Pipedrive] Smart Sync concluído:", data.message);
+                return data;
+            } else {
+                setError(data.message || "Erro no Smart Sync.");
+            }
+        } catch (e) {
+            console.error("Smart Sync error", e);
+            setError("Erro ao conectar com Pipedrive.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const confirmIntelligence = useCallback(async (payload: { name: string, cnpj?: string, domain?: string, address?: string, pipedrive_id?: number }) => {
+        try {
+            const resp = await fetch(`http://localhost:8000/api/v1/intelligence/confirm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            return await resp.json();
+        } catch (e) {
+            console.error("Confirm intelligence error", e);
+            return { status: "error" };
+        }
+    }, []);
+
     return { 
         rawEmployees, 
         rawBackendEdges, 
@@ -206,6 +252,8 @@ export const useHierarchy = () => {
         fetchHierarchy,
         loadStoredHierarchy,
         refineHierarchy,
-        updateEmployee
+        updateEmployee,
+        smartSyncPipedrive,
+        confirmIntelligence
     };
 };

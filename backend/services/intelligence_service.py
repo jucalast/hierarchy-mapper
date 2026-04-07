@@ -3,8 +3,11 @@ import httpx
 from typing import Dict, Optional, Any, List
 from services.search_engine import get_duck_results as search_duckduckgo
 import os
+import json
+import asyncio
 from sqlalchemy import select
 from services.database import async_session, Organization
+from .brand_discovery import get_corporate_data
 
 class IntelligenceService:
     def __init__(self):
@@ -21,7 +24,6 @@ class IntelligenceService:
         """Salva ou atualiza a empresa no Banco de Dados SQL."""
         try:
             async with async_session() as session:
-                # 🛡️ Busca se já existe para evitar duplicidade
                 stmt = select(Organization).where(Organization.name == name)
                 result = await session.execute(stmt)
                 org = result.scalars().first()
@@ -30,148 +32,134 @@ class IntelligenceService:
                     org = Organization(name=name)
                     session.add(org)
                 
-                # Atualiza metadados OSINT
                 if data:
                     org.cnpj = self._format_cnpj(data.get("cnpj")) or org.cnpj
                     org.domain = data.get("domain") or org.domain
                     org.address = data.get("address") or org.address
                 
                 await session.commit()
-                print(f"[Database] 🐘 Empresa '{name}' Sincronizada no Neon DB.")
+                print(f"[Database] 🐘 Empresa '{name}' Sincronizada.")
         except Exception as e:
             print(f"[Database] Error saving org: {e}")
 
-    async def enrich_company(self, company_name: str, hint_address: Optional[str] = None) -> Dict[str, Any]:
+    async def enrich_company(self, company_name: str, hint_address: Optional[str] = None, force_refresh: bool = False, cnpj: Optional[str] = None) -> Dict[str, Any]:
         """
-        Busca dados OSINT + IA e persiste no Neon DB.
+        Versão Aprimorada: Foca em Domínio e Endereço. 
+        Extrai domínio do e-mail oficial (BrasilAPI) e refina buscas OSINT.
         """
-        # 1. TENTA BUSCAR NO BANCO PRIMEIRO (CACHE DE INTELIGÊNCIA)
-        try:
-            async with async_session() as session:
-                stmt = select(Organization).where(Organization.name == company_name)
-                res = await session.execute(stmt)
-                cached = res.scalars().first()
-                if cached and cached.cnpj and cached.domain:
-                    print(f"[Intelligence] 🧠 Carregando Memória SQL para: {company_name}")
-                    return {
-                        "main_option": {"cnpj": cached.cnpj, "domain": cached.domain, "address": cached.address},
-                        "other_options": [],
-                        "is_match": True,
-                        "success": True
-                    }
-        except Exception as e:
-            print(f"[Database] Cache error: {e}")
+        # 1. TENTA BUSCAR NO BANCO PRIMEIRO
+        if not force_refresh and not cnpj:
+            try:
+                async with async_session() as session:
+                    stmt = select(Organization).where(Organization.name == company_name)
+                    res = await session.execute(stmt)
+                    cached = res.scalars().first()
+                    if cached and cached.cnpj and cached.domain:
+                        print(f"[Intelligence] 📦 Encontrado no cache: {cached.cnpj}")
+                        # Retornamos os dados do cache
+            except Exception: pass
 
-        print(f"[Intelligence] 🕵️‍♂️ Investigando: {company_name} | Pista: {hint_address or 'Nenhuma'}")
-        
-        # 🔍 MULTI-SNIPER SEARCH STRATEGY
-        clean_hint = hint_address if (hint_address and str(hint_address).lower() != "none") else ""
-        
-        # 🎯 Buscas em múltiplas frentes para garantir volume de dados
-        queries = [
-            f"{company_name} {clean_hint} cnpj brasil sede matriz",
-            f"{company_name} linkedin company official website domain",
-            f"qual o cnpj e domínio de email da empresa {company_name} no brasil"
-        ]
-        
-        results = []
-        for q in queries:
-            batch = await search_duckduckgo(q)
-            if batch:
-                results.extend(batch)
-            
-        # Remove duplicatas de URLs nos resultados
-        seen_hrefs = set()
-        unique_results = []
-        for r in results:
-            if r['href'] not in seen_hrefs:
-                seen_hrefs.add(r['href'])
-                unique_results.append(r)
-        results = unique_results
-
-        combined_text = "\n".join([f"Title: {r['title']} | Body: {r['body']}" for r in results[:15]])
-        
         result_data = {
             "main_option": None,
             "other_options": [],
             "success": False,
-            "is_match": False
+            "is_match": False,
+            "needs_cnpj": True if not cnpj else False 
         }
 
-        if self.groq_api_key and combined_text:
-            try:
-                # PROMPT DE SELEÇÃO EXTRAPOLADA
-                prompt = (
-                    f"Task: Extract corporate intelligence for '{company_name}'.\n"
-                    f"Address Hint: '{hint_address or 'Not provided'}'\n\n"
-                    f"Rules:\n"
-                    f"1. Identify the 'main_option': the official headquarters ('Matriz') or the one matching the address hint.\n"
-                    f"2. Extract the 'cnpj' (14 digits), 'address', and official corporate 'domain' (e.g., knorr-bremse.com.br - NO www/http).\n"
-                    f"3. DEDUCE DOMAIN: If not explicitly written, look at the titles/links in the SNIPPETS to find the official corporate URL.\n"
-                    f"4. List other branches or related companies in 'other_options'.\n"
-                    f"5. If 'main_option' is the clear corporate headquarters for Brazil, set 'is_match': true.\n\n"
-                    f"CRITICAL: If any data is MISSING or UNKNOWN, return null for that field. NEVER use filler text.\n\n"
-                    f"Return JSON: {{'main_option': {{'cnpj', 'domain', 'address'}}, 'other_options': [...], 'is_match': boolean}}\n\n"
-                    f"DATA SNIPPETS:\n{combined_text}"
-                )
-                
-                async with httpx.AsyncClient(timeout=15.0) as client:
-                    target_model = "llama-3.1-8b-instant" # 🏎️ Rápida e com limites generosos
-                    print(f"[Intelligence] 🧠 Consultando {target_model} para {company_name}...")
-                    
-                    resp = await client.post(
-                        "https://api.groq.com/openai/v1/chat/completions",
-                        headers={"Authorization": f"Bearer {self.groq_api_key}"},
-                        json={
-                            "model": target_model,
-                            "messages": [{"role": "user", "content": prompt}],
-                            "temperature": 0,
-                            "response_format": {"type": "json_object"}
-                        }
-                    )
-                    
-                    if resp.status_code == 200:
-                        import json
-                        raw_content = resp.json()['choices'][0]['message']['content']
-                        print(f"[Intelligence] 🤖 Resposta IA para {company_name}: {raw_content}") 
-                        
-                        ai_data = json.loads(raw_content)
-                        
-                        main = ai_data.get("main_option")
-                        result_data["main_option"] = main
-                        result_data["other_options"] = ai_data.get("other_options", [])
-                        result_data["is_match"] = ai_data.get("is_match", False)
-                        result_data["success"] = True
-                        
-                        # PERSISTÊNCIA NO SQL
-                        if main:
-                            await self._save_org_to_db(company_name, main)
-                    else:
-                        print(f"[Intelligence] 🚨 IA Falhou (Erro {resp.status_code}): {resp.text}")
-            except Exception as e:
-                print(f"[Intelligence] IA Error: {e}")
-                
-        # 🛡️ HEURISTIC FALLBACK: Se a IA falhou, tenta extrair o domínio dos links
-        if not result_data.get("main_option") or not result_data["main_option"].get("domain"):
-            print(f"[Intelligence] 🚑 Ativando Heurística de Emergência para {company_name}...")
-            for r in results[:5]:
-                href = r.get("href", "")
-                # Extrai domínio simples (ex: knorr-bremse.com)
+        found_domain = None
+        official_email = None
+
+        # 2. SE TEM CNPJ, BUSCA DADOS OFICIAIS (ALTA PRECISÃO)
+        if cnpj:
+            print(f"[Intelligence] 🎯 Buscando dados oficiais para CNPJ: {cnpj}")
+            official = await get_corporate_data(cnpj)
+            if official.get("success"):
+                official_email = official.get("email")
+                result_data["main_option"] = {
+                    "cnpj": cnpj,
+                    "address": official.get("address"),
+                    "domain": None,
+                    "official_name": official.get("name")
+                }
+                result_data["needs_cnpj"] = False
+                result_data["is_match"] = True
+                result_data["success"] = True
+
+                # Tenta extrair domínio do e-mail oficial
+                print(f"[Intelligence] Official Email retornado: {official_email}")
+                if official_email and "@" in str(official_email):
+                    email_parts = str(official_email).split("@")
+                    if len(email_parts) > 1:
+                        email_domain = email_parts[-1].lower().strip()
+                        generic_domains = [
+                            "gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "yahoo.com.br",
+                            "uol.com.br", "terra.com.br", "ig.com.br", "bol.com.br", "icloud.com",
+                            "contabilidade", "consultoria", "advocacia", "me.com", "outlook.com.br",
+                            "uol.com", "live.com", "msn.com", "apple.com"
+                        ]
+                        # Evita domínios de contabilidade também
+                        if not any(gen in email_domain for gen in generic_domains) and "." in email_domain:
+                            found_domain = email_domain
+                            print(f"[Intelligence] 📧 Domínio extraído do e-mail: {found_domain}")
+
+        # 3. BUSCA DE DOMÍNIO VIA OSINT (Se não encontrado via e-mail ou se quiser validar)
+        if not found_domain:
+            search_target = result_data["main_option"]["official_name"] if result_data["main_option"] and result_data["main_option"].get("official_name") else company_name
+            # Limpeza rápida
+            search_target = re.sub(r'\(.*?\)', '', search_target).strip()
+            
+            # Buscas focadas em páginas institucionais
+            queries = [
+                f'site oficial "{search_target}"',
+                f'"{search_target}" "quem somos"',
+                f'"{search_target}" contact "email"',
+            ]
+            
+            results = []
+            for q in queries:
+                batch = await search_duckduckgo(q, max_results=5)
+                if batch: results.extend(batch)
+
+            # Heurística de Domínio Refinada
+            for r in results:
+                href = r.get("href", "").lower()
                 match = re.search(r'https?://(?:www\.)?([^/]+)', href)
                 if match:
-                    found_domain = match.group(1).split(":")[0].lower()
-                    # Filtra ruído (linkedin, duckduckgo, etc)
-                    if not any(x in found_domain for x in ["linkedin", "duckduckgo", "youtube", "facebook", "instagram", "mercadolivre"]):
-                        if not result_data["main_option"]: 
-                            result_data["main_option"] = {"cnpj": None, "domain": found_domain, "address": None}
-                        else: 
-                            result_data["main_option"]["domain"] = found_domain
-                        
-                        result_data["success"] = True
-                        print(f"[Intelligence] ✨ Domínio Restaurado por Heurística: {found_domain}")
+                    domain = match.group(1).split(":")[0].lower()
+                    # Blacklist expandida para evitar portais de dados e diretórios
+                    blacklist = [
+                        "linkedin", "duckduckgo", "google", "youtube", "facebook", "instagram", "twitter", "x.com",
+                        "mercadolivre", "casadosdados", "cnpj.biz", "econodata", "solutudo", "guiamais",
+                        "apontador", "climao", "jusbrasil", "serasaexperian", "empresometro", "aberturanet",
+                        "consultas.com.br", "find-and-update.company-information", "consultascnpj", "informecadastral",
+                        "crunchbase", "glassdoor", "indeed", "infojobs", "catho", "transparencia",
+                        "imprensaoficial", "gov.br", "jus.br", "clicrbs", "wikipedia", "mapaempresas", "portaltransparencia",
+                        "aberturadeempresas", "empresasbrasileiras", "procurocnpj", "vagas", "job", "recrutamento",
+                        "site-oficial", "consultas.com", "negocios.com", "diariooficial", "empresasdobrasil", "cnpj.rocks",
+                        "cnpj.info", "cnpj.list", "leads", "scrapers", "listas-de-empresas"
+                    ]
+                    if not any(x in domain for x in blacklist):
+                        found_domain = domain
+                        print(f"[Intelligence] 🔍 Domínio encontrado via OSINT: {found_domain}")
                         break
 
-        print(f"[Intelligence] 🏁 Resultado Final {company_name}: {result_data}")
+        # Atualiza o resultado principal com o domínio encontrado
+        if result_data["main_option"]:
+            result_data["main_option"]["domain"] = found_domain
+        elif found_domain or results:
+            result_data["main_option"] = {
+                "cnpj": None,
+                "domain": found_domain,
+                "address": results[0].get("body")[:100] if results else None
+            }
+            result_data["success"] = True
+
+        # Persistência
+        if result_data["main_option"] and result_data["main_option"].get("cnpj") and result_data["main_option"].get("domain"):
+            await self._save_org_to_db(company_name, result_data["main_option"])
+
+        print(f"[Intelligence] 🏁 Finalizado para {company_name}: {result_data['main_option']}")
         return result_data
 
 # Singleton

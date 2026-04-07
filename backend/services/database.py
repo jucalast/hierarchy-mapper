@@ -35,11 +35,14 @@ class Employee(Base):
     company_id = Column(Integer, ForeignKey("organizations.id"))
     last_scanned = Column(DateTime(timezone=True), server_default=func.now())
 
-# Configuração Async (neon)
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
-# Motor Assíncrono para o Neon DB PostgreSQL
-engine = create_async_engine(DATABASE_URL, echo=False)
+# Motor Assíncrono para SQLite Local (Desenvolvimento Instantâneo)
+engine = create_async_engine(
+    DATABASE_URL, 
+    echo=False,
+    connect_args={"check_same_thread": False} # Requisito do SQLite para multiprocessamento
+)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 async def get_db():
@@ -53,13 +56,19 @@ async def init_db():
         # 1. Cria tabelas se não existirem
         await conn.run_sync(Base.metadata.create_all)
     
-    # 2. Migração Manual com conexão fresca para garantir commit no Neon
+    # 2. Migração Manual Resiliente (Trata SQLite e Postgres)
     async with engine.connect() as conn:
         try:
-            await conn.execute(text("ALTER TABLE employees ADD COLUMN IF NOT EXISTS email VARCHAR"))
+            # Nota: SQLite não suporta 'IF NOT EXISTS' no ALTER TABLE.
+            # Tentamos adicionar e capturamos erro se já existir.
+            await conn.execute(text("ALTER TABLE employees ADD COLUMN email VARCHAR"))
             await conn.commit()
-            print("[Database] 🛡️ Coluna 'email' verificada/adicionada com sucesso.")
+            print("[Database] 🛡️ Coluna 'email' adicionada com sucesso.")
         except Exception as e:
-            print(f"[Database] ⚠️ Aviso de Migração: {e}")
+            # Silenciamos o erro se for apenas "coluna já existe" (comum no SQLite/Postgres)
+            if "already exists" in str(e).lower() or "duplicate column" in str(e).lower():
+                pass 
+            else:
+                print(f"[Database] ⚙️ Informação de Migração: {e}")
         
-    print("[Database] 🐘 Tabelas de Inteligência Prontas no Neon DB.")
+    print(f"[Database] ✅ Sistema de Dados Pronto ({engine.url.drivername})")

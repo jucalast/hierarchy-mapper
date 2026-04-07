@@ -5,6 +5,7 @@ from slowapi.errors import RateLimitExceeded
 
 from api.router import router as api_router
 from core.rate_limiter import limiter
+# Backend Reload - Neon Official Key Fix (ssl=true).
 
 app = FastAPI(
     title="Hierarchy API",
@@ -32,7 +33,9 @@ async def startup_event():
         from services.database import init_db
         await init_db()
     except Exception as e:
-        print(f"[Database] 🚨 Erro ao conectar no Neon DB: {e}")
+        import traceback
+        print(f"[Database] 🚨 Erro Crítico de Conexão no Neon DB: {str(e)}")
+        traceback.print_exc()
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")

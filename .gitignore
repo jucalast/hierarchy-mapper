@@ -5,6 +5,7 @@
 .env.*
 
 # Backend
+backend/google-cloud-key.json
 backend/venv/
 backend/__pycache__/
 backend/logs/

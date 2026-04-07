@@ -77,7 +77,7 @@
   height: 40px;
   padding: 0 16px;
   border-radius: 128px;
-  border: 1px solid transparent;
+  border: var(--sw-border-width, 1.5px) solid transparent;
   transition: 0.2s;
   cursor: pointer;
   width: fit-content;

@@ -87,18 +87,33 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'T
     return b - a; // 6, 5, 4...
   });
 
-  // 3. Criar o mapa de Ranks dinâmicos (Eliminando gaps se um nível faltar)
+  // 3. Criar o mapa de Ranks (Mapeia Level -> Sequência Vertical)
   const levelToRank: { [key: number]: number } = {};
   uniqueLevels.forEach((lvl, idx) => {
     levelToRank[lvl] = idx;
   });
 
+  // 4. Calcular a Altura Máxima por Nível e Posicionamento Acumulado
+  const rankHeights: { [key: number]: number } = {};
+  const verticalMargin = 160; 
+
+  const defaultCardHeight = 220; 
+  
+  uniqueLevels.forEach((lvl, idx) => {
+    rankHeights[idx] = lvl === 0 ? 100 : defaultCardHeight;
+  });
+
+  // 5. Calcular o Y acumulado
+  const rankToY: { [key: number]: number } = {};
+  let currentY = 0;
+  uniqueLevels.forEach((lvl, idx) => {
+    rankToY[idx] = currentY;
+    currentY += rankHeights[idx] + verticalMargin;
+  });
+
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
     const nodeLevel = node.data.level || 0;
-    const verticalGap = 320; // Espaçamento vertical equilibrado para respiro das conexões
-
-    // Usa o Rank dinâmico pego do mapa
     const rank = levelToRank[nodeLevel] !== undefined ? levelToRank[nodeLevel] : 0;
 
     const newNode = {
@@ -107,7 +122,7 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'T
       sourcePosition: Position.Bottom,
       position: {
         x: nodeWithPosition.x - nodeWidth / 2,
-        y: rank * verticalGap,
+        y: rankToY[rank],
       },
     };
 

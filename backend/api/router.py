@@ -344,12 +344,13 @@ async def stream_company_hierarchy(
     cnpj: str = Query(..., description="CNPJ da empresa"),
     domain: Optional[str] = Query(None, description="Domínio da empresa"),
     confirmed_brand: Optional[str] = Query(None, description="Marca confirmada"),
+    product_focus: Optional[str] = Query(None, description="Foco de categoria/produto (ex: Embalagens)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Endpoint SSE que envia dados progressivamente para a interface.
     """
-    print(f"[Backend Streaming] Iniciando para CNPJ: {cnpj}, Domain: {domain}")
+    print(f"[Backend Streaming] Iniciando para CNPJ: {cnpj}, Domain: {domain}, Foco: {product_focus}")
     
     load_dotenv(override=True)
     EMAIL_API_KEY = os.getenv("EMAIL_API_KEY")
@@ -454,7 +455,7 @@ async def stream_company_hierarchy(
         initial_nodes.sort(key=lambda x: x.get('level', 1), reverse=True) # Ordem decrescente (6 primeiro)
         yield f"data: {json.dumps({'type': 'initial', 'company_name': razao_social, 'nodes': initial_nodes})}\n\n"
         
-        async for batch in discover_employees_stream(search_name, domain_guess, confirmed_brand=confirmed_brand, location=location_focus, email_api_key=EMAIL_API_KEY, max_results=100):
+        async for batch in discover_employees_stream(search_name, domain_guess, confirmed_brand=confirmed_brand, location=location_focus, product_focus=product_focus, email_api_key=EMAIL_API_KEY, max_results=100):
             new_nodes = []
             
             for lead in batch:
@@ -586,6 +587,16 @@ async def pipedrive_sync_endpoint():
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/pipedrive_smart_sync")
+async def pipedrive_smart_sync_endpoint():
+    """Endpoint para remanejar tarefas de forma inteligente (10/dia + prioridade)."""
+    try:
+        from services.pipedrive_service import pipedrive_service
+        return await pipedrive_service.smart_reschedule_activities()
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/pipedrive/organizations")
 async def get_pipedrive_organizations():
     """Retorna lista de todas as empresas do Pipedrive."""
@@ -599,12 +610,48 @@ async def get_pipedrive_organizations():
 @router.get("/intelligence/enrich")
 async def enrich_company_data(
     name: str = Query(..., description="Nome da empresa"),
-    address: Optional[str] = Query(None, description="Pista de endereço para filtrar filiais")
+    address: Optional[str] = Query(None, description="Pista de endereço para filtrar filiais"),
+    cnpj: Optional[str] = Query(None, description="CNPJ fornecido manualmente"),
+    force: bool = Query(False, description="Forçar nova busca ignorando cache")
 ):
     """Endpoint para descobrir CNPJ, Domínio e Selecionar Filiais via OSINT + IA."""
     try:
         from services.intelligence_service import intelligence_service
-        return await intelligence_service.enrich_company(name, hint_address=address)
+        return await intelligence_service.enrich_company(name, hint_address=address, force_refresh=force, cnpj=cnpj)
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
+class ConfirmEnrichRequest(BaseModel):
+    name: str
+    cnpj: Optional[str] = None
+    domain: Optional[str] = None
+    address: Optional[str] = None
+    pipedrive_id: Optional[int] = None
+
+@router.post("/intelligence/confirm")
+async def confirm_enrich_data(payload: ConfirmEnrichRequest):
+    """Persiste a escolha manual do usuário no banco local (Neon DB)."""
+    try:
+        from services.database import async_session, Organization
+        from sqlalchemy import select
+        
+        async with async_session() as session:
+            # 🏺 UPSERT: Atualiza se já existir pelo nome ou pipedrive_id
+            stmt = select(Organization).where((Organization.name == payload.name) | (Organization.pipedrive_id == payload.pipedrive_id))
+            res = await session.execute(stmt)
+            org = res.scalars().first()
+            
+            if not org:
+                org = Organization(name=payload.name, pipedrive_id=payload.pipedrive_id)
+                session.add(org)
+            
+            org.cnpj = payload.cnpj
+            org.domain = payload.domain
+            org.address = payload.address
+            
+            await session.commit()
+            return {"status": "success", "message": f"Inteligência de '{payload.name}' gravada com sucesso."}
     except Exception as e:
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=str(e))

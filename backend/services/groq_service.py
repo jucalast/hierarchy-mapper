@@ -72,17 +72,26 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
     }
 
     try:
+        import asyncio
         async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(url, headers=headers, json=payload)
-            
-            if response.status_code != 200:
-                print(f"[Groq AI] Erro {response.status_code}: {response.text}")
-                return []
+            for attempt in range(2):
+                response = await client.post(url, headers=headers, json=payload)
+                
+                if response.status_code == 429:
+                    print(f"[Groq AI] Rate limit atingido. Aguardando 15s para re-tentativa (Tentativa {attempt+1}/2)...")
+                    await asyncio.sleep(15)
+                    continue
 
-            result = response.json()
-            content = result['choices'][0]['message']['content']
-            
-            # Limpa possíveis markdown wrappers
+                if response.status_code != 200:
+                    print(f"[Groq AI] Erro {response.status_code}: {response.text}")
+                    return []
+
+                result = response.json()
+                content = result['choices'][0]['message']['content']
+                break
+            else:
+                # Se após as tentativas ainda falhar, retorna vazio
+                return []
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
@@ -103,3 +112,53 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
         print(f"[Groq AI] Erro na síntese: {str(e)}")
         return []
 
+async def expand_product_to_b2b_terms(product_focus: str) -> List[str]:
+    """
+    Usa IA para traduzir um produto genérico em termos técnicos de compras B2B.
+    Ex: "Caixas" -> ["Packaging", "Embalagens", "Indirects", "Suprimentos"]
+    """
+    if not product_focus or len(product_focus) < 2:
+        return []
+
+    prompt = f"""
+    Traduza o foco de busca "{product_focus}" em 4 termos técnicos em inglês e português que um comprador (Procurement) usaria no LinkedIn para se descrever ou descrever sua categoria.
+    
+    Exemplo: "Papelão" -> ["Packaging", "Embalagens", "Indirects", "Supply Chain"]
+    Exemplo: "Segurança" -> ["Loss Prevention", "Prevenção de Perdas", "Facilities", "Indiretos"]
+    Exemplo: "Sistemas" -> ["IT Procurement", "SaaS", "Indirects", "Hardware"]
+
+    RETORNE APENAS UM ARRAY JSON SIMPLE DE STRINGS: ["Termo1", "Termo2", "Termo3", "Termo4"]
+    """
+
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "model": "llama-3.1-8b-instant",
+        "messages": [
+            {"role": "system", "content": "Você é um especialista em Compras e Procurement B2B. Responda apenas com um array JSON de strings."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.3,
+        "response_format": {"type": "json_object"}
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                content = data['choices'][0]['message']['content']
+                # Tenta extrair a lista do JSON (a IA pode mandar {"terms": [...]})
+                parsed = json.loads(content)
+                if isinstance(parsed, list): return parsed
+                if isinstance(parsed, dict):
+                    for k in parsed:
+                        if isinstance(parsed[k], list): return parsed[k]
+    except Exception as e:
+        print(f"[Groq B2B] Erro na tradução: {e}")
+    
+    return [product_focus] # fallback

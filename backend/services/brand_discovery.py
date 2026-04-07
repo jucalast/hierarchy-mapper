@@ -10,8 +10,8 @@ def clean_brand_name(raw_name: str) -> str:
     """
     Limpa o nome extraído do LinkedIn, preservando espaços e separando CamelCase.
     """
-    # 1. Divide em separadores comuns e pega o primeiro pedaço (Antes de qualquer limpeza)
-    clean = re.split(r"[|–\-•·:]", raw_name)[0].strip()
+    # 1. Divide em separadores comuns e pega o primeiro pedaço (Mantendo hífens internos)
+    clean = re.split(r"[|–•·:]", raw_name)[0].strip()
     
     # 2. CamelCase inteligente (KaeferRip -> Kaefer Rip)
     # Só funciona se não dermos .lower() antes
@@ -21,6 +21,7 @@ def clean_brand_name(raw_name: str) -> str:
     # 3. Remove termos comuns e ruído (Case Insensitive)
     noise = [
         r"on linkedin", r"\| linkedin", r": overview", r"- linkedin", 
+        r"linkedin brasil", r"linkedin brazil", r"brazil", r"brasil", 
         r"\d+\s+followers", r"\d+\s+seguidores", r"connections", r"see\s+more",
         r"followers$", r"seguidores$", r"vagas", r"jobs", r"trabalhe conosco",
         r"www\.[^\s]+", r"\.com(\.br)?", r"\.ind\.br", r"\.net",
@@ -63,59 +64,50 @@ def fetch_linkedin_logo(url: str) -> Optional[str]:
         pass
     return None
 
-async def get_corporate_name(cnpj: str) -> str:
+async def get_corporate_data(cnpj: str) -> Dict:
     """
-    Busca o Nome Oficial/Razão Social por CNPJ em múltiplas camadas OSINT.
-    Totalmente ASSÍNCRONO para não travar o backend.
+    Busca Nome Oficial, Endereço, Status e Email por CNPJ em múltiplas camadas OSINT.
+    Tenta todas as camadas para garantir que pegamos o e-mail se disponível.
     """
     clean_cnpj = cnpj.replace(".", "").replace("/", "").replace("-", "")
+    final_result = {
+        "name": f"Empresa (CNPJ: {cnpj})", 
+        "address": "Brasil", 
+        "status": "ATIVO", 
+        "email": None,
+        "success": False
+    }
     
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            # --- CAMADA 1: BrasilAPI (Rápida e Grátis) ---
-            try:
-                print(f"[BrandDiscovery] Tentando Camada 1: BrasilAPI...")
-                resp = await client.get(f"https://brasilapi.com.br/api/cnpj/v1/{clean_cnpj}")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    name = data.get("razao_social") or data.get("nome_fantasia")
-                    if name: return name
-            except Exception: pass
+    layers = [
+        f"https://brasilapi.com.br/api/cnpj/v1/{clean_cnpj}",
+        f"https://minhareceita.org/{clean_cnpj}",
+        f"https://receitaws.com.br/v1/cnpj/{clean_cnpj}"
+    ]
 
-            # --- CAMADA 2: Minha Receita (Open Source - Estável) ---
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for url in layers:
             try:
-                print(f"[BrandDiscovery] Tentando Fallback 1: Minha Receita...")
-                resp = await client.get(f"https://minhareceita.org/{clean_cnpj}")
+                resp = await client.get(url)
                 if resp.status_code == 200:
                     data = resp.json()
-                    name = data.get("razao_social") or data.get("nome_fantasia")
-                    if name: return name
-            except Exception: pass
-
-            # --- CAMADA 3: ReceitaWS (Fallback Oficial) ---
-            try:
-                print(f"[BrandDiscovery] Tentando Fallback 2: ReceitaWS...")
-                resp = await client.get(f"https://receitaws.com.br/v1/cnpj/{clean_cnpj}")
-                if resp.status_code == 200:
-                    data = resp.json()
-                    name = data.get("nome") or data.get("fantasia")
-                    if name: return name
-            except Exception: pass
-            
-        # --- CAMADA 4: Stealth Search (Último recurso) ---
-        print(f"[BrandDiscovery] Tentando Fallback Final: Stealth Search...")
-        from .search_engine import get_duck_results
-        query = f'CNPJ "{cnpj}" "empresa" "razão social"'
-        results = await get_duck_results(query, max_results=3)
-        
-        for res in results:
-            match = re.search(r'([A-Z][A-Z0-9\s\.\-]{5,}(?:LTDA|S\.A\.|EIRELI|S/A|LIMITADA))', res.get("title"))
-            if match: return match.group(1).title()
+                    # Normalização básica (ReceitaWS usa nomes de campos diferentes as vezes)
+                    name = data.get("razao_social") or data.get("nome") or data.get("fantasia")
+                    email = data.get("email")
+                    
+                    if name:
+                        final_result["name"] = name
+                        final_result["address"] = f"{data.get('logradouro')}, {data.get('numero')} - {data.get('bairro')}, {data.get('municipio')} - {data.get('uf')}"
+                        final_result["status"] = data.get("descricao_situacao_cadastral") or data.get("situacao") or "ATIVO"
+                        final_result["email"] = email
+                        final_result["success"] = True
+                        
+                        # Se achamos e-mail, podemos parar (é o dado mais precioso aqui)
+                        if email:
+                            return final_result
+            except:
+                continue
                 
-        return f"Empresa (CNPJ: {cnpj})"
-
-    except Exception as e:
-        raise ValueError(f"Erro ao identificar empresa por CNPJ: {str(e)}")
+    return final_result
 
 async def discover_company_brand(cnpj: str, domain: str = "", raw_name: str = "") -> Dict:
     """

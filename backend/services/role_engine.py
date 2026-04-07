@@ -1,76 +1,93 @@
+import httpx
+import json
 import os
 import re
-import httpx
-from typing import List, Optional
+import unicodedata
+from typing import List, Dict, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
 
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
 class RoleEngine:
     def __init__(self):
-        # Unificando o nome da chave para evitar conflitos
-        self.api_key = os.getenv("GROQ_API_KEY")
-        self.model = "llama-3.1-8b-instant" # 🏎️ Rápido e evita 429 Rate Limit
-        self.job_keywords = [
-            "comprador", "buyer", "procurement", "supply chain", "gerente", "manager", "diretor", "director",
-            "coordenador", "coordinator", "analista", "analyst", "supervisor", "specialist", "especialista",
-            "logística", "logistics", "compras", "sourcing", "planner", "planejamento", "head", "vp", "chief",
-            "engineer", "engenheiro", "assistant", "assistente", "auxiliar", "strategic sourcing"
-        ]
+        self.api_key = GROQ_API_KEY
+        self.model = "llama-3.1-8b-instant"
+        self.cache = {}
 
     def _is_junk_slogan(self, text: str) -> bool:
-        """Verifica se o texto extraído parece ser um slogan ou frase de marketing em vez de um cargo."""
-        if not text: return False
-        
-        # Slogans comuns ou frases de marketing identificadas
+        """Detecta frases de efeito que não são cargos reais."""
         junk_patterns = [
-            r"move o futuro", r"better way", r"discover more", r"new episode", r"parceria que",
-            r"história de", r"conheça a", r"saiba mais", r"welcome to", r"prazer em",
+            r"apaixonado por", r"proud to be", r"building the future", r"focado em resultados",
             r"transforming the", r"shaping the", r"building a", r"pioneering",
             r"creative solutions", r"innovation for", r"driving excellence"
         ]
-        
         text_norm = text.lower()
         if any(re.search(p, text_norm) for p in junk_patterns):
             return True
-            
-        # Se contiver verbos de ação na primeira pessoa ou imperativo (comum em slogans)
         if re.search(r"\b(venha|conheça|descubra|veja|assista|leia|participe|junte-se)\b", text_norm):
             return True
-            
         return False
 
-    async def distill_role(self, name: str, company: str, texts: List[str], query: str = "") -> str:
-        """Usa a Groq AI (Llama-3.3-70b) para purificar o cargo de forma inteligente."""
+    def _clean_raw_name(self, name: str) -> str:
+        n = str(name).split(" - ")[0].split(" | ")[0].split(" : ")[0].split(" · ")[0]
+        n = re.sub(r'([a-z])([A-Z])', r'\1 \2', n)
+        parts = n.split()
+        if len(parts) >= 2:
+            return f"{parts[0]} {parts[1]}".title()
+        return n.title()
+
+    def _clean_raw_title(self, name: str, company: str, title_bruto: str) -> str:
+        t = str(title_bruto).lower()
+        t = t.replace(name.lower(), "").strip()
+        t = t.replace(company.lower(), "").strip()
+        t = t.replace("| linkedin", "").strip()
         
-        # 1. Limpeza e Consolidação de Textos (Remove lixo HTML e espaços extras)
+        # 🛡️ DICIONÁRIO DE CARGOS B2B (REFORÇADO)
+        kws = [
+            "comprador", "buyer", "procurement", "supply", "logistica", "manager", "gerente", 
+            "diretor", "analista", "almoxarifado", "almoxarife", "compras", "pcp", "sourcing",
+            "suprimentos", "demand planner", "estoquista", "operador logistico", "coordenador"
+        ]
+        
+        for kw in kws:
+            if kw in t:
+                # Tenta extrair a frase ao redor da keyword
+                match = re.search(fr"([^|,-]*{kw}[^|,-]*)", t)
+                if match:
+                    return match.group(1).strip().title()
+                return t.split("|")[0].split("-")[0].strip().title()
+                
+        return "Profissional B2B" # Fallback mais elegante que "Não Identificado"
+
+    async def distill_role(self, name: str, company: str, texts: List[str], product_focus: Optional[str] = None) -> dict:
+        """Usa a Groq AI para extrair e validar o cargo de forma estruturada."""
+        if not texts: texts = ["No context available"]
+        
+        cache_key = f"{name}_{company}_{product_focus}"
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+
         clean_sources = [re.sub(r'<[^>]*>', ' ', t).strip() for t in texts if t]
         combined_text = " | ".join(clean_sources)
-        combined_text = re.sub(r'\s+', ' ', combined_text)[:5000] # Janela de 5000 caracteres
+        combined_text = re.sub(r'\s+', ' ', combined_text)[:4000]
         
-        if not combined_text or len(combined_text) < 10:
-            # Se não há texto nenhum, tentamos deduzir apenas pela query
-            if query:
-                print(f"      [RoleEngine] Snippet vazio, deduzindo pela query: {query}")
-                # Pega a última parte da query (geralmente o cargo buscado)
-                q_clean = re.sub(r"(?i)(site:br\.linkedin\.com/in/|site:br\.linkedin\.com)","", query).strip()
-                return q_clean.split()[-1].title()
-            return "Professional"
-
-        # TENTATIVA 1: GROQ AI (Llama-3.3-70b) - O Caminho de Ouro
         if self.api_key:
             try:
-                async with httpx.AsyncClient(timeout=12.0) as client:
+                async with httpx.AsyncClient(timeout=10.0) as client:
                     prompt = (
-                        f"Identify the professional job title for {name} who is affiliated with {company}.\n"
-                        f"Search Query Context: '{query}'\n\n"
-                        f"Rules:\n"
-                        f"1. EXTRACT ONLY the CURRENT professional job title.\n"
-                        f"2. CRITICAL: DO NOT use marketing slogans, company missions, or generic sentences (e.g., 'A Parceria Que Move o Futuro', 'The better way', 'Discover more', or 'Our new episode').\n"
-                        f"3. DO NOT return generic words like 'Professional' or 'Employee'.\n"
-                        f"4. If the data is noisy, use the Search Query keywords to deduce the role (e.g., if query has 'Comprador', the role is likely 'Comprador' or 'Buyer').\n"
-                        f"5. Return ONLY the title (1-4 words). No introductions. No slogans.\n\n"
-                        f"SNIPPET DATA: {combined_text}"
+                        f"Analyze the LinkedIn evidence for {name} at {company}.\n"
+                        f"CONTEXT SOURCES:\n"
+                        f"1. {clean_sources[0] if clean_sources else 'N/A'}\n"
+                        f"2. {clean_sources[1] if len(clean_sources) > 1 else 'N/A'}\n\n"
+                        f"CRITICAL RULES (PARSER MODE):\n"
+                        f"1. WHITELIST (Approve only if evidence matches): Purchasing, Compras, Sourcing, Supply Chain, Logistics, Warehouse, PCP, PPCP, Comex, Procurement, Suprimentos, Almoxarifado.\n"
+                        f"2. MANDATORY REJECTION (is_valid: False): Product Manager, Engenheiro (unless PCP), Produção, Qualidade, Quality, Sales, Vendas, Comercial, Marketing, HR, RH, Finance, IT, Operador, Moldes, Injeção, Técnico.\n"
+                        f"3. EVIDENCE TRAP: You MUST return a field 'evidence' with a literal quote. If the quote does NOT contain at least one word from the WHITELIST, you MUST set is_valid: False.\n"
+                        f"4. ZERO ASSUMPTION: If the text only shows 'Experience at {company}', return is_valid: False. Do not guess.\n\n"
+                        f"RETURN ONLY JSON:\n"
+                        f"{{ \"clean_name\": \"...\", \"role\": \"...\", \"department\": \"...\", \"is_valid\": bool, \"evidence\": \"literal quote\", \"reason\": \"...\", \"matching_score\": 0-100 }}\n"
                     )
                     
                     resp = await client.post(
@@ -78,59 +95,41 @@ class RoleEngine:
                         headers={"Authorization": f"Bearer {self.api_key}"},
                         json={
                             "model": self.model,
-                            "messages": [{"role": "user", "content": prompt}],
-                            "temperature": 0,
-                            "max_tokens": 40
+                            "messages": [
+                                {"role": "system", "content": "Você é um especialista em recrutamento técnico para Supply Chain. Seja extremamente rigoroso e responda apenas com JSON."},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "response_format": {"type": "json_object"},
+                            "temperature": 0.0
                         }
                     )
                     
                     if resp.status_code == 200:
-                        result = resp.json()
-                        extracted = result['choices'][0]['message']['content'].strip().strip('"').strip("'")
+                        distilled_raw = resp.json()['choices'][0]['message']['content']
+                        distilled = json.loads(distilled_raw)
                         
-                        # 🛡️ FILTRO DE SANIDADE ANTI-SLOGAN: Se parecer uma frase, não é um cargo!
-                        is_slogan = self._is_junk_slogan(extracted) or any(x.lower() in extracted.lower() for x in ["episode", "partnership", "parceria", "missão", "mission", "future", "futuro", "conheça", "welcome", "prazer"])
-                        is_sentence = len(extracted.split()) > 6 or "," in extracted or "." in extracted
-                        
-                        if len(extracted) > 3 and not is_slogan and not is_sentence:
-                            # Limpeza final (Remove localidade ou empresa que a IA possa ter grudado)
-                            extracted = re.sub(rf"(?i)\s+(at|na|no|em|da|do|atualmente)\s+.*$", "", extracted).strip()
-                            print(f"   [IA] ✨ Cargo Purificado: {extracted}")
-                            return extracted
-                        else:
-                            print(f"      [RoleEngine] IA retornou ruído ('{extracted}'), usando fallback de query.")
+                        if distilled and isinstance(distilled, dict):
+                            if "clean_name" not in distilled or len(distilled["clean_name"]) < 3:
+                                distilled["clean_name"] = self._clean_raw_name(name)
+                            
+                            self.cache[cache_key] = distilled
+                            return distilled
+
             except Exception as e:
-                print(f"[RoleEngine] Groq AI Error: {e}")
+                print(f"      [RoleEngine] Erro IA: {e}")
 
-        # --- [ TENTATIVA 2: FALLBACK HEURÍSTICO (Algoritmo de Seleção) ] ---
-        # Se a IA estiver fora de combate, usamos nossa lógica estatística
-        candidates = []
-        noise_tags = ["<", ">", "class=", "div", "header", "span"]
-        
-        for source in clean_sources: 
-            parts = re.split(r'[|·•\-\n:]', source)
-            for p in parts:
-                p = p.strip()
-                if any(nt in p.lower() for nt in noise_tags): continue
-                
-                # Busca de cargo baseada em palavras-chave
-                found_kw = False
-                for kw in self.job_keywords:
-                    if re.search(rf"\b{re.escape(kw)}\b", p.lower()):
-                        found_kw = True
-                        break
-                
-                if found_kw:
-                    # Limpeza final (Remove nome da empresa e do colaborador se vazarem pro cargo)
-                    p = re.sub(rf"(?i)\s+(at|na|no|em|da|do|trabalha na|atualmente na)(\s+.*|$)", "", p).strip()
-                    if len(p) > 3 and len(p) < 60:
-                        candidates.append(p)
+        # Fallback
+        clean_name = self._clean_raw_name(name)
+        role = self._clean_raw_title(name, company, texts[0] if texts else "")
+        res = {
+            "clean_name": clean_name,
+            "role": role, 
+            "department": "Operations", 
+            "seniority": 1, 
+            "is_valid": True,
+            "reason": "Fallback (IA indisponível)"
+        }
+        self.cache[cache_key] = res
+        return res
 
-        if candidates:
-            # Retorna o candidato mais provável (maior e com bônus de senioridade)
-            return max(candidates, key=lambda x: len(x) + (10 if any(k in x.lower() for k in ["pleno", "senior", "gerente"]) else 0))
-
-        return "Professional"
-
-# Instância Singleton
 role_engine = RoleEngine()
