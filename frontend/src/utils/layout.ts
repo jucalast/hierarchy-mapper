@@ -7,8 +7,9 @@ export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
       id: `e-${e.source}-${e.target}-${index}`,
       source: e.source,
       target: e.target,
-      animated: true,
+      animated: false,
       style: { stroke: '#6e7681', strokeWidth: 1.5 },
+
     }));
   }
 
@@ -21,8 +22,9 @@ export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
 
     // Tenta encontrar o melhor pai (nível maior que o dele, ex: 1 busca 2,3,4,5,6)
     // Exceto o root (level 0) que é sempre uma opção de fallback
+    // NOTA: Ignoramos Nível 6 (Sócios e QSA) nas ligações implícitas para não poluir
     const potentialParents = nodes
-      .filter(p => (p.data.level || 0) > childLevel)
+      .filter(p => (p.data.level || 0) > childLevel && (p.data.level || 0) < 6)
       .sort((a, b) => (a.data.level || 0) - (b.data.level || 0));
 
     let bestParent = null;
@@ -45,8 +47,9 @@ export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
         id: `e-${bestParent.id}-${child.id}`,
         source: bestParent.id,
         target: child.id,
-        animated: true,
+        animated: false,
         style: { stroke: '#8b949e', strokeWidth: 1.5 },
+
         markerEnd: { type: MarkerType.ArrowClosed, color: '#8b949e' },
       });
     }
@@ -59,11 +62,12 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'T
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-  const nodeWidth = 320; // Aumentado para garantir zona de exclusão
-  const nodeHeight = 220; 
+  const nodeWidth = 440; // Synchronized with CSS width
+  const nodeHeight = 450; // Increased to accommodate Bio + Metadata
 
-  // nodesep: 150 garante que os cards tenham respiro lateral mesmo com muitos itens no mesmo nível
-  dagreGraph.setGraph({ rankdir: direction, ranksep: 200, nodesep: 150 });
+  // ranksep 250: Increased separation between levels
+  // nodesep 180: Clearer horizontal distance between departments
+  dagreGraph.setGraph({ rankdir: direction, ranksep: 250, nodesep: 180 });
 
   nodes.forEach((node) => {
     dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
@@ -95,12 +99,14 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'T
 
   // 4. Calcular a Altura Máxima por Nível e Posicionamento Acumulado
   const rankHeights: { [key: number]: number } = {};
-  const verticalMargin = 160; 
+  const verticalMargin = 180; // Gap between card tiers
 
-  const defaultCardHeight = 220; 
+  const defaultCardHeight = 450; 
   
   uniqueLevels.forEach((lvl, idx) => {
-    rankHeights[idx] = lvl === 0 ? 100 : defaultCardHeight;
+    // Ensuring the root level (company) also has enough space for its title/logo
+    // and matches the visual rhythm of the hierarchy
+    rankHeights[idx] = defaultCardHeight;
   });
 
   // 5. Calcular o Y acumulado

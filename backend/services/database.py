@@ -16,9 +16,10 @@ class Organization(Base):
     id = Column(Integer, primary_key=True, index=True) # Pipedrive ID ou Sequencial
     pipedrive_id = Column(Integer, unique=True, index=True)
     name = Column(String, index=True)
-    cnpj = Column(String, unique=True, index=True, nullable=True)
+    cnpj = Column(String, index=True, nullable=True) # Removido unique=True para suportar filiais/duplicatas
     domain = Column(String, index=True, nullable=True)
     address = Column(Text, nullable=True)
+    description = Column(Text, nullable=True) # 📝 Novo: Descrição ou Source
     owner_id = Column(Integer, index=True)
     last_enrichment = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -32,6 +33,8 @@ class Employee(Base):
     linkedin_url = Column(String, unique=True, index=True)
     profile_pic = Column(Text, nullable=True)
     email = Column(String, nullable=True) # 📧 Novo campo restaurado!
+    description = Column(Text, nullable=True) # 📝 Snippet ou Bio
+    location = Column(String, nullable=True) # 📍 Cidade/Estado
     company_id = Column(Integer, ForeignKey("organizations.id"))
     last_scanned = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -59,16 +62,33 @@ async def init_db():
     # 2. Migração Manual Resiliente (Trata SQLite e Postgres)
     async with engine.connect() as conn:
         try:
-            # Nota: SQLite não suporta 'IF NOT EXISTS' no ALTER TABLE.
-            # Tentamos adicionar e capturamos erro se já existir.
+            # 1. Adiciona coluna 'email' se não existir
             await conn.execute(text("ALTER TABLE employees ADD COLUMN email VARCHAR"))
             await conn.commit()
             print("[Database] 🛡️ Coluna 'email' adicionada com sucesso.")
-        except Exception as e:
-            # Silenciamos o erro se for apenas "coluna já existe" (comum no SQLite/Postgres)
-            if "already exists" in str(e).lower() or "duplicate column" in str(e).lower():
-                pass 
-            else:
-                print(f"[Database] ⚙️ Informação de Migração: {e}")
-        
+        except Exception:
+            pass # Coluna já existe
+            
+        try:
+            # 2. Adiciona coluna 'description' se não existir
+            await conn.execute(text("ALTER TABLE organizations ADD COLUMN description TEXT"))
+            await conn.commit()
+        except Exception: pass
+
+        try:
+            # 3. Adiciona colunas extras em employees se não existirem
+            await conn.execute(text("ALTER TABLE employees ADD COLUMN description TEXT"))
+            await conn.execute(text("ALTER TABLE employees ADD COLUMN location VARCHAR"))
+            await conn.commit()
+            print("[Database] 🛡️ Colunas extras (metadata) adicionadas a employees.")
+        except Exception: pass
+
+        try:
+            # 3. Remove o índice UNIQUE do CNPJ se ele existir
+            await conn.execute(text("DROP INDEX IF EXISTS ix_organizations_cnpj"))
+            await conn.commit()
+            print("[Database] 🛡️ Índice UNIQUE do CNPJ removido para suporte a filiais.")
+        except Exception:
+            pass
+
     print(f"[Database] ✅ Sistema de Dados Pronto ({engine.url.drivername})")

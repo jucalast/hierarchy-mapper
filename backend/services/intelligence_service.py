@@ -7,7 +7,7 @@ import json
 import asyncio
 from sqlalchemy import select
 from services.database import async_session, Organization
-from .brand_discovery import get_corporate_data
+from .brand_discovery import get_corporate_data, extract_domain_from_email, discover_domain_via_clearbit
 
 class IntelligenceService:
     def __init__(self):
@@ -47,17 +47,36 @@ class IntelligenceService:
         Versão Aprimorada: Foca em Domínio e Endereço. 
         Extrai domínio do e-mail oficial (BrasilAPI) e refina buscas OSINT.
         """
-        # 1. TENTA BUSCAR NO BANCO PRIMEIRO
-        if not force_refresh and not cnpj:
+        # 1. TENTA BUSCAR NO BANCO PRIMEIRO (Cache de Alta Performance)
+        if not force_refresh:
             try:
                 async with async_session() as session:
-                    stmt = select(Organization).where(Organization.name == company_name)
+                    # Se temos CNPJ, buscamos por ele (mais preciso). Senão, pelo nome.
+                    if cnpj:
+                        fmt_cnpj = self._format_cnpj(cnpj)
+                        stmt = select(Organization).where(Organization.cnpj == fmt_cnpj)
+                    else:
+                        stmt = select(Organization).where(Organization.name == company_name)
+                    
                     res = await session.execute(stmt)
                     cached = res.scalars().first()
+                    
+                    # Se temos o dado completo (CNPJ + Domínio), retornamos imediatamente
                     if cached and cached.cnpj and cached.domain:
-                        print(f"[Intelligence] 📦 Encontrado no cache: {cached.cnpj}")
-                        # Retornamos os dados do cache
-            except Exception: pass
+                        print(f"[Intelligence] 📦 Cache Hit: {cached.cnpj} -> {cached.domain}")
+                        return {
+                            "main_option": {
+                                "cnpj": cached.cnpj,
+                                "domain": cached.domain,
+                                "address": cached.address,
+                                "official_name": cached.name
+                            },
+                            "success": True,
+                            "is_match": True,
+                            "cached": True
+                        }
+            except Exception as e:
+                print(f"[Intelligence] Cache Check skipped: {e}")
 
         result_data = {
             "main_option": None,
@@ -88,22 +107,19 @@ class IntelligenceService:
 
                 # Tenta extrair domínio do e-mail oficial
                 print(f"[Intelligence] Official Email retornado: {official_email}")
-                if official_email and "@" in str(official_email):
-                    email_parts = str(official_email).split("@")
-                    if len(email_parts) > 1:
-                        email_domain = email_parts[-1].lower().strip()
-                        generic_domains = [
-                            "gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "yahoo.com.br",
-                            "uol.com.br", "terra.com.br", "ig.com.br", "bol.com.br", "icloud.com",
-                            "contabilidade", "consultoria", "advocacia", "me.com", "outlook.com.br",
-                            "uol.com", "live.com", "msn.com", "apple.com"
-                        ]
-                        # Evita domínios de contabilidade também
-                        if not any(gen in email_domain for gen in generic_domains) and "." in email_domain:
-                            found_domain = email_domain
-                            print(f"[Intelligence] 📧 Domínio extraído do e-mail: {found_domain}")
+                found_domain = await extract_domain_from_email(official_email)
+                if found_domain:
+                    print(f"[Intelligence] 📧 Domínio extraído do e-mail: {found_domain}")
 
-        # 3. BUSCA DE DOMÍNIO VIA OSINT (Se não encontrado via e-mail ou se quiser validar)
+        # 3. CAMADA 2: Clearbit (API Global de Domínios)
+        if not found_domain:
+            search_name = result_data["main_option"]["official_name"] if result_data["main_option"] and result_data["main_option"].get("official_name") else company_name
+            print(f"[Intelligence] 🚀 Tentando Clearbit para '{search_name}'...")
+            found_domain = await discover_domain_via_clearbit(search_name)
+            if found_domain:
+                print(f"[Intelligence] 🌐 Domínio encontrado via Clearbit: {found_domain}")
+
+        # 4. CAMADA 3: BUSCA DE DOMÍNIO VIA OSINT (Fallback final)
         if not found_domain:
             search_target = result_data["main_option"]["official_name"] if result_data["main_option"] and result_data["main_option"].get("official_name") else company_name
             # Limpeza rápida
@@ -133,7 +149,7 @@ class IntelligenceService:
                         "mercadolivre", "casadosdados", "cnpj.biz", "econodata", "solutudo", "guiamais",
                         "apontador", "climao", "jusbrasil", "serasaexperian", "empresometro", "aberturanet",
                         "consultas.com.br", "find-and-update.company-information", "consultascnpj", "informecadastral",
-                        "crunchbase", "glassdoor", "indeed", "infojobs", "catho", "transparencia",
+                        "crunchbase", "glassdoor", "indeed", "infojobs", "catho", "transparencia", "cnpja.com", "site-cnpj.com",
                         "imprensaoficial", "gov.br", "jus.br", "clicrbs", "wikipedia", "mapaempresas", "portaltransparencia",
                         "aberturadeempresas", "empresasbrasileiras", "procurocnpj", "vagas", "job", "recrutamento",
                         "site-oficial", "consultas.com", "negocios.com", "diariooficial", "empresasdobrasil", "cnpj.rocks",

@@ -23,7 +23,8 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
             "id": emp["id"],
             "name": emp["name"],
             "role": emp["role"],
-            "level": emp.get("level", 5)
+            "level": emp.get("level", 5),
+            "bio": emp.get("education", "") # LinkedIn snippet to evaluate seniority
         })
 
     prompt = f"""
@@ -31,13 +32,22 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
     Analise os funcionários abaixo e determine os níveis (1-6) e quem reporta a quem (manager_id).
 
     DIRETRIZES (Tiers):
-    6: CEO/Presidente. 5: Diretores. 4: Gerentes. 3: Coordenadores/Supervisores. 2: Analistas Sr/Espec. 1: Operacional/Jr.
+    6: CEO/Presidente. 5: Diretores. 4: Gerentes. 3: Coordenadores/Supervisores (ou Especialistas com "Leading"/"Gestão"). 2: Analistas Sr/Espec. 1: Operacional/Jr.
     
-    REGRAS DE REPORT:
-    - Nível 6/5 reportam para "root_company".
-    - Nível 4 reporta para 5 ou 6.
-    - Nível 3 reporta para 4.
-    - Nível 2/1 reportam para 3 ou 4.
+    ATENÇÃO - INFERÊNCIA DE SENIORIDADE: 
+    - Se a chave "role" contiver cargos claros de gestão ("Manager", "Gerente", "Head", "Diretor", "Coordinator", "Coordenador", "Supervisor"), HONRE O CARGO e atribua imediatamente os Níveis 3, 4 ou 5.
+    - O texto em "bio" NUNCA DEVE rebaixar o nível de um "Manager" (ex: manter gerente em Nível 4).
+    - Para roles genéricas (ex: "Supply Chain", "Purchasing Agent"), use a "bio" para promover. Se não houver prova EXPLICITA ("managing", "leading", "coordenando equipe") na bio, limite a Nível 2. Não inflacione Analistas experientes isolados sem liderança relatada.
+    
+    REGRAS DE REPORT (OBRIGATÓRIO):
+    - Todo funcionário deve ter um 'manager_id'. 
+    - Nível 6 e 5 reportam OBRIGATORIAMENTE para "root_company". (Não invente outro node)
+    - Nível 4 reporta para 5 ou 6. Se não houver, reporta para "root_company".
+    - Nível 3 reporta para 4 ou 5. Se não houver, reporta para "root_company".
+    - Nível 2 e 1 reportam para 3 ou 4. Se a empresa não tiver NENHUM líder rastreado (nenhum nível 3, 4 ou 5 na lista), faça os níveis 2 e 1 reportarem DIRETAMENTE para "root_company". NUNCA os vincule a sócios/conselheiros Nível 6.
+    - NUNCA retorne manager_id: null ou vazio se o ID for diferente de "root_company".
+    - EXTREMAMENTE IMPORTANTE: NÃO crie, não invente e não adicione novos IDs ou novos funcionários. Você deve APENAS utilizar e retornar a exata lista de funcionários que eu enviei, apenas adicionando o manager_id correspondente.
+
 
     FUNCIONÁRIOS:
     {json.dumps(employee_data, ensure_ascii=False)}
@@ -51,47 +61,70 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
     }}
     """
 
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    # 🏎️ MODELO LEVE (8b) - Evita Rate Limit 429 e é instantâneo para hierarquias
-    target_model = "llama-3.1-8b-instant"
-    print(f"[Groq AI] 🧠 Refinando Hierarquia com {target_model}...")
-    
-    payload = {
-        "model": target_model,
-        "messages": [
-            {"role": "system", "content": "Você é um assistente de RH que gera organogramas e responde apenas em formato JSON."},
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.1,
-        "response_format": {"type": "json_object"}
-    }
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    content = None
 
     try:
         import asyncio
         async with httpx.AsyncClient(timeout=60.0) as client:
-            for attempt in range(2):
-                response = await client.post(url, headers=headers, json=payload)
-                
-                if response.status_code == 429:
-                    print(f"[Groq AI] Rate limit atingido. Aguardando 15s para re-tentativa (Tentativa {attempt+1}/2)...")
-                    await asyncio.sleep(15)
-                    continue
+            
+            # 1. TENTA GEMINI (Primário)
+            if gemini_key:
+                try:
+                    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
+                    gemini_payload = {
+                        "system_instruction": {"parts": [{"text": "Você é um assistente de RH que gera organogramas e responde apenas em formato JSON estrito."}]},
+                        "contents": [{"parts": [{"text": prompt}]}],
+                        "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}
+                    }
+                    print(f"[Gemini AI] 🧠 Refinando Hierarquia com gemini-2.0-flash...")
+                    resp = await client.post(gemini_url, json=gemini_payload)
+                    
+                    if resp.status_code == 200:
+                        content = resp.json()['candidates'][0]['content']['parts'][0]['text']
+                    elif resp.status_code == 429:
+                        err_msg = resp.json().get("error", {}).get("message", "Quota Exceeded")
+                        print(f"[Gemini AI] Rate limit atingido ({err_msg}). Indo para Groq Fallback...")
+                    else:
+                        print(f"[Gemini AI] Erro {resp.status_code}: {resp.text[:200]}. Indo para Groq Fallback...")
+                except Exception as e:
+                    print(f"[Gemini AI] Exceção: {e}. Indo para Groq Fallback...")
 
-                if response.status_code != 200:
-                    print(f"[Groq AI] Erro {response.status_code}: {response.text}")
+            # 2. TENTA GROQ (Fallback) se Gemini falhar
+            if not content:
+                url = "https://api.groq.com/openai/v1/chat/completions"
+                headers = {
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json"
+                }
+                target_model = "llama-3.1-8b-instant"
+                payload = {
+                    "model": target_model,
+                    "messages": [
+                        {"role": "system", "content": "Você é um assistente de RH que gera organogramas e responde apenas em formato JSON."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.1,
+                    "response_format": {"type": "json_object"}
+                }
+                print(f"[Groq AI] 🧠 Refinando Hierarquia com {target_model}...")
+                for attempt in range(2):
+                    response = await client.post(url, headers=headers, json=payload)
+                    
+                    if response.status_code == 429:
+                        print(f"[Groq AI] Rate limit atingido. Aguardando 15s para re-tentativa (Tentativa {attempt+1}/2)...")
+                        await asyncio.sleep(15)
+                        continue
+
+                    if response.status_code != 200:
+                        print(f"[Groq AI] Erro {response.status_code}: {response.text}")
+                        return []
+
+                    result = response.json()
+                    content = result['choices'][0]['message']['content']
+                    break
+                else:
                     return []
-
-                result = response.json()
-                content = result['choices'][0]['message']['content']
-                break
-            else:
-                # Se após as tentativas ainda falhar, retorna vazio
-                return []
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:

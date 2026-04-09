@@ -87,10 +87,11 @@ async def get_corporate_data(cnpj: str) -> Dict:
     async with httpx.AsyncClient(timeout=10.0) as client:
         for url in layers:
             try:
+                print(f"[BrandDiscovery] 📡 Consultando: {url.split('/')[2]}...")
                 resp = await client.get(url)
                 if resp.status_code == 200:
+                    print(f"[BrandDiscovery] 🟢 Sucesso via {url.split('/')[2]}")
                     data = resp.json()
-                    # Normalização básica (ReceitaWS usa nomes de campos diferentes as vezes)
                     name = data.get("razao_social") or data.get("nome") or data.get("fantasia")
                     email = data.get("email")
                     
@@ -101,13 +102,78 @@ async def get_corporate_data(cnpj: str) -> Dict:
                         final_result["email"] = email
                         final_result["success"] = True
                         
-                        # Se achamos e-mail, podemos parar (é o dado mais precioso aqui)
                         if email:
+                            print(f"[BrandDiscovery] 📧 E-mail oficial encontrado: {email}")
                             return final_result
-            except:
+                else:
+                    print(f"[BrandDiscovery] 🔴 Erro {resp.status_code} via {url.split('/')[2]}")
+            except Exception as e:
+                print(f"[BrandDiscovery] ⚠️ Falha na conexão com {url.split('/')[2]}: {str(e)}")
                 continue
                 
     return final_result
+
+async def extract_domain_from_email(email: Optional[str]) -> Optional[str]:
+    """Extrai domínio corporativo de um e-mail, ignorando provedores genéricos."""
+    if not email or "@" not in str(email): return None
+    
+    parts = str(email).split("@")
+    if len(parts) <= 1: return None
+    
+    domain_part = parts[-1].lower().strip()
+    generic = [
+        "gmail.com", "hotmail.com", "outlook.com", "yahoo.com", "yahoo.com.br",
+        "uol.com.br", "terra.com.br", "ig.com.br", "bol.com.br", "icloud.com",
+        "contabilidade", "consultoria", "advocacia", "me.com", "outlook.com.br",
+        "uol.com", "live.com", "msn.com", "apple.com"
+    ]
+    if not any(gen in domain_part for gen in generic) and "." in domain_part:
+        return domain_part
+    return None
+
+async def discover_domain_via_clearbit(name: str) -> Optional[str]:
+    """Tenta descobrir o domínio via API do Clearbit Autocomplete."""
+    try:
+        # Pega apenas os 2 primeiros termos para busca mais precisa
+        search_term = " ".join(name.split()[:2])
+        url = f"https://autocomplete.clearbit.com/v1/companies/suggest?query={search_term}"
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data and len(data) > 0:
+                    domain = data[0].get("domain")
+                    if domain:
+                        return domain
+    except Exception as e:
+        print(f"[BrandDiscovery] Erro Clearbit: {e}")
+    return None
+
+async def discover_domain_osint(name: str) -> Optional[str]:
+    """Tenta descobrir o domínio oficial da empresa via busca OSINT se as APIs falharem."""
+    from .search_engine import get_duck_results
+    queries = [f'"{name}" official website', f'site oficial "{name}"']
+    
+    for query in queries:
+        try:
+            results = await get_duck_results(query, max_results=3)
+            for r in results:
+                url = r.get("url") or r.get("link")
+                if not url: continue
+                
+                # Ignorar redes sociais na busca por site oficial
+                if any(x in url for x in ["linkedin.com", "facebook.com", "instagram.com", "youtube.com", "twitter.com", "cnpj.biz", "econodata.com.br"]):
+                    continue
+                
+                # Extrair domínio da URL
+                match = re.search(r'https?://([^/]+)', url)
+                if match:
+                    domain = match.group(1).replace("www.", "").lower()
+                    if "." in domain:
+                        return domain
+        except:
+            continue
+    return None
 
 async def discover_company_brand(cnpj: str, domain: str = "", raw_name: str = "") -> Dict:
     """
@@ -115,12 +181,79 @@ async def discover_company_brand(cnpj: str, domain: str = "", raw_name: str = ""
     """
     processed_cnpj = cnpj.replace(".", "").replace("/", "").replace("-", "")
     
-    # 🕵️ PASSO 1: Descobrir o NOME REAL pelo CNPJ (OSINT Nível 1)
+    # 🕵️ PASSO 0: Check Cache (Banco Local)
+    from .database import async_session, Organization
+    from sqlalchemy import select
+    
+    detected_domain = None
+    search_name = raw_name
+    cached = None
+    
     try:
-        db_name = await get_corporate_name(processed_cnpj)
-        print(f"[BrandDiscovery] CNPJ Identificado: {db_name}")
-        search_name = db_name
-    except Exception:
+        async with async_session() as session:
+            stmt = select(Organization).where(Organization.cnpj.like(f"%{processed_cnpj}%"))
+            res = await session.execute(stmt)
+            cached = res.scalars().first()
+            
+            if cached:
+                print(f"[BrandDiscovery] 📦 Cache Hit (DB): {cached.name}")
+                search_name = cached.name
+                domain = cached.domain or domain
+                official_data = {"success": True, "name": cached.name, "email": None}
+            else:
+                # PASSO 1: Descobrir via API se não estiver no banco
+                official_data = await get_corporate_data(processed_cnpj)
+                
+                # 💾 SALVAR NO CACHE (Persistência)
+                if official_data.get("success"):
+                    search_name = official_data.get("name")
+                    print(f"[BrandDiscovery] 💾 Salvando novo cache para: {search_name}")
+                    
+                    # Tenta pegar domínio antes de salvar
+                    temp_domain = domain
+                    if not temp_domain:
+                        temp_domain = await extract_domain_from_email(official_data.get("email"))
+                    
+                    new_org = Organization(
+                        cnpj=processed_cnpj,
+                        name=search_name,
+                        domain=temp_domain or "",
+                        address=official_data.get("address"),
+                        description="Auto-discovered via BrandDiscovery"
+                    )
+                    session.add(new_org)
+                    await session.commit()
+                    cached = new_org # Marca como "em cache" para o restante da função
+        
+        if official_data.get("success"):
+            search_name = official_data.get("name")
+            
+            # Tenta pegar domínio do email se não foi passado um domínio
+            if not domain:
+                detected_domain = await extract_domain_from_email(official_data.get("email"))
+                if detected_domain:
+                    domain = detected_domain
+                else:
+                    # 🚀 CAMADA 2: Clearbit
+                    detected_domain = await discover_domain_via_clearbit(search_name)
+                    if not detected_domain:
+                        detected_domain = await discover_domain_osint(search_name)
+                    
+                    if detected_domain:
+                        domain = detected_domain
+                        # Opcional: Atualizar o banco com o novo domínio descoberto
+                        async with async_session() as session:
+                            stmt = select(Organization).where(Organization.cnpj == processed_cnpj)
+                            res = await session.execute(stmt)
+                            db_org = res.scalars().first()
+                            if db_org and not db_org.domain:
+                                db_org.domain = detected_domain
+                                await session.commit()
+        else:
+            search_name = raw_name or (domain.split(".")[0] if domain else "")
+
+    except Exception as e:
+        print(f"[BrandDiscovery] Erro na camada de descoberta oficial: {e}")
         search_name = raw_name or (domain.split(".")[0] if domain else "")
         if not search_name:
             raise ValueError("Não foi possível identificar a empresa.")
@@ -216,5 +349,6 @@ async def discover_company_brand(cnpj: str, domain: str = "", raw_name: str = ""
 
     return {
         "brand": valid_names[0] if valid_names else raw_name.title(),
+        "detected_domain": detected_domain,
         "alternatives": top_alternatives
     }

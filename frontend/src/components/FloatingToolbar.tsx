@@ -8,8 +8,12 @@ import {
     Loader2, 
     Play, 
     Building,
-    ArrowLeft
+    ArrowLeft,
+    Search,
+    RotateCcw
 } from 'lucide-react';
+
+
 import styles from './NetworkGraph.module.css';
 
 interface FloatingToolbarProps {
@@ -27,6 +31,8 @@ interface FloatingToolbarProps {
     setDomainTarget: (val: string) => void;
     productFocus: string;
     setProductFocus: (val: string) => void;
+    areaFocus: "compras" | "logistica";
+    setAreaFocus: (val: "compras" | "logistica") => void;
     handleAutoEnrich: () => void;
     enrichingIds: Set<number>;
     discovering: boolean;
@@ -51,6 +57,8 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     setDomainTarget,
     productFocus,
     setProductFocus,
+    areaFocus,
+    setAreaFocus,
     handleAutoEnrich,
     enrichingIds,
     discovering,
@@ -59,8 +67,10 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     brandOptions,
     onBrandSelect
 }) => {
+    const [isFocused, setIsFocused] = React.useState(false);
     const [localSelected, setLocalSelected] = React.useState<string | null>(null);
-    const needsAttention = !!confirmedBrand && (!cnpj || !domainTarget);
+    const isSearching = discovering || loading || enrichingIds.has(999);
+    const needsAttention = !!confirmedBrand && !cnpj && !isFocused && !isSearching;
 
     const handleLocalSelect = (opt: any) => {
         const key = opt.name || opt.url;
@@ -70,21 +80,49 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     };
 
     return (
-        <div className={styles.searchContainer}>
+        <div className={styles.toolbarUnifiedWrapper}>
+            {/* 1. Header com Erro ou Brand Select Options (Progressivo) */}
             {error && <div className={styles.error}><AlertCircle size={18} /> {error}</div>}
 
+            {step === "input" && !discovering && brandOptions.length > 0 && (
+                <div className={styles.optionsContainer}>
+                    {brandOptions.map((opt: any, idx: number) => (
+                        <button
+                            key={`brand-opt-${idx}-${opt.url || opt.name}`}
+                            type="button"
+                            className={`${styles.brandCard} ${(confirmedBrand === (opt.name || opt.url) || localSelected === (opt.name || opt.url)) ? styles.brandCardActive : ''}`}
+                            onClick={() => handleLocalSelect(opt)}
+                        >
+                            <div className={styles.brandAvatarWrapper}>
+                                {opt.logo ? (
+                                    <img 
+                                        src={`http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(opt.logo)}`} 
+                                        alt={opt.name} 
+                                        className={styles.brandAvatar} 
+                                    />
+                                ) : (
+                                    <div className={styles.brandAvatarPlaceholder}>
+                                        <Building size={16} />
+                                    </div>
+                                )}
+                            </div>
+                            <div className={styles.brandInfo}>
+                                <div className={styles.brandNameLine}>{opt.name}</div>
+                                {opt.followers && (
+                                    <div className={styles.brandFollowers}>{opt.followers} seguidores</div>
+                                )}
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* 2. Main Search Bar (Refine Tab) */}
             <div 
-                className={`${styles.refineTab} ${enrichingIds.has(999) ? styles.refineTabEnriching : ''}`}
+                className={`${styles.refineTab} ${isSearching ? styles.searching : ''} ${enrichingIds.has(999) ? styles.refineTabEnriching : ''}`}
                 title="Intelligence Controller"
             >
-                <div 
-                    className={styles.refineIconWrapper} 
-                    onClick={handleAutoEnrich}
-                    title="Enriquecer Inteligência"
-                >
-                    {enrichingIds.has(999) ? <Loader2 size={18} className={styles.loadingAnim} /> : <Sparkles size={18} />}
-                </div>
-
+                {/* Search Box area (Left) */}
                 <div className={styles.searchBox}>
                     <form onSubmit={handleSearch} className={styles.inputGroup}>
                         {step === "input" ? (
@@ -96,6 +134,8 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                         className={styles.input}
                                         value={cnpj}
                                         onChange={(e) => setCnpj(e.target.value)}
+                                        onFocus={() => setIsFocused(true)}
+                                        onBlur={() => setIsFocused(false)}
                                     />
                                 </div>
 
@@ -145,10 +185,31 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                 </div>
 
                                 <div className={styles.toolbarDivider} />
+                                
+                                {/* Area Selector (Compras / Logística) */}
+                                <div className={styles.areaSelectorContainer}>
+                                    <button 
+                                        type="button" 
+                                        className={`${styles.areaBtn} ${areaFocus === 'compras' ? styles.areaBtnActive : ''}`}
+                                        onClick={() => setAreaFocus('compras')}
+                                    >
+                                        Compras
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        className={`${styles.areaBtn} ${areaFocus === 'logistica' ? styles.areaBtnActive : ''}`}
+                                        onClick={() => setAreaFocus('logistica')}
+                                    >
+                                        Logística
+                                    </button>
+                                </div>
+
+                                <div className={styles.toolbarDivider} />
+
                                 <div className={styles.toolbarSegment}>
                                     <Target size={14} className={styles.inputIcon} />
                                     <input 
-                                        placeholder="Categoria" 
+                                        placeholder="Categoria (ex: Embalagens)" 
                                         className={styles.input}
                                         value={productFocus}
                                         onChange={(e) => setProductFocus(e.target.value)}
@@ -159,57 +220,43 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                     </form>
 
                     <div className={styles.toolbarActions}>
-                        {/* Detectar Action - Visible only after official Domain is enriched */}
                         {domainTarget && (
                             <button 
                                 onClick={handleSearch} 
-                                className={styles.detectBtn}
+                                className={`${styles.detectBtn} ${discovering ? styles.detectBtnLoading : ''}`}
                                 disabled={discovering || loading}
                             >
                                 {discovering || loading ? (
-                                    <Loader2 size={14} className={styles.loadingAnim} />
+                                    <Loader2 size={18} className={styles.loadingAnim} />
                                 ) : (
-                                    step === "confirm" ? <Target size={14} /> : <Play size={14} fill="currentColor" />
+                                    <>
+                                        {step === "confirm" ? <Target size={14} /> : <Play size={14} fill="currentColor" />}
+                                        {step === "confirm" ? "Mapear Hierarquia" : "Detectar"}
+                                    </>
                                 )}
-                                {step === "confirm" ? "Mapear Hierarquia" : "Detectar"}
                             </button>
                         )}
                     </div>
                 </div>
-            </div>
 
-            {step === "input" && !discovering && brandOptions.length > 0 && (
-                <div className={styles.optionsContainer}>
-                    {brandOptions.map((opt: any, idx: number) => (
-                        <button
-                            key={`brand-opt-${idx}-${opt.url || opt.name}`}
-                            type="button"
-                            className={`${styles.brandCard} ${(confirmedBrand === (opt.name || opt.url) || localSelected === (opt.name || opt.url)) ? styles.brandCardActive : ''}`}
-                            onClick={() => handleLocalSelect(opt)}
-                        >
-                            <div className={styles.brandAvatarWrapper}>
-                                {opt.logo ? (
-                                    <img 
-                                        src={`http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(opt.logo)}`} 
-                                        alt={opt.name} 
-                                        className={styles.brandAvatar} 
-                                    />
-                                ) : (
-                                    <div className={styles.brandAvatarPlaceholder}>
-                                        <Building size={16} />
-                                    </div>
-                                )}
-                            </div>
-                            <div className={styles.brandInfo}>
-                                <div className={styles.brandNameLine}>{opt.name}</div>
-                                {opt.followers && (
-                                    <div className={styles.brandFollowers}>{opt.followers} seguidores</div>
-                                )}
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            )}
+                {/* Intelligence Trigger Button (Right) - Only show during SEARCH phase and if NOT detecting */}
+                {step === "input" && !discovering && (
+                    <div 
+                        className={`${styles.refineIconWrapper} ${enrichingIds.has(999) ? styles.refineIconLoading : ''}`} 
+                        onClick={handleAutoEnrich}
+                        title={ (domainTarget && cnpj) ? "Refinar Enriquecimento" : "Enriquecer Inteligência" }
+                    >
+                        {enrichingIds.has(999) ? (
+                            <Loader2 size={18} className={styles.loadingAnim} />
+                        ) : (
+                            (domainTarget && cnpj) ? <RotateCcw size={18} /> : <Search size={18} />
+                        )}
+                    </div>
+                )}
+
+            </div>
         </div>
     );
 };
+
+

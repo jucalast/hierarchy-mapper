@@ -27,9 +27,18 @@ async def get_url_preview(url: str, role_hint: str = "", company_hint: str = "",
                     tag = soup.find('meta', attrs={attr: val})
                     return tag.get('content') if tag else None
 
+                og_image = get_tag('property', 'og:image') or get_tag('name', 'twitter:image')
+                
+                if not og_image:
+                    # Segundo Round: Tenta com User-Agent de Twitter (muitos perfis só liberam pra ele)
+                    headers["User-Agent"] = "Twitterbot/1.0"
+                    resp = await client.get(url, headers=headers)
+                    if resp.status_code == 200:
+                        soup = BeautifulSoup(resp.text, 'html.parser')
+                        og_image = get_tag('property', 'og:image') or get_tag('name', 'twitter:image')
+
                 og_title = get_tag('property', 'og:title') or get_tag('name', 'title') or ""
                 og_desc = get_tag('property', 'og:description') or get_tag('name', 'description') or ""
-                og_image = get_tag('property', 'og:image')
                 
                 # --- PARSER PURO DE METADADOS ---
                 # Ex: "Israel Fernandes - Empresa Hellermann Tyton"
@@ -52,6 +61,9 @@ async def get_url_preview(url: str, role_hint: str = "", company_hint: str = "",
                                 raw_sources.append(s_resp.text[:5000])
                     except: pass
 
+                if not og_image:
+                    print(f"      [Crawler] ⚠️ Nenhuma imagem para {name}")
+
                 return {
                     "name": name,
                     "role": role, # Agora vem do Texto Real do Título, não da IA
@@ -59,7 +71,7 @@ async def get_url_preview(url: str, role_hint: str = "", company_hint: str = "",
                     "image": og_image,
                     "description": og_desc if len(og_desc) < 400 else og_desc[:400] + "...",
                     "url": url,
-                    "raw_sources": raw_sources # Passamos as fontes puras para o scanner decidir
+                    "raw_sources": raw_sources 
                 }
             else:
                 return {"error": f"Blocked {resp.status_code}", "is_valid": False}

@@ -10,7 +10,9 @@ negative_keywords = [
     "manutenção", "mecanico", "mecânico", "usinagem", "operator", "operador",
     "professor", "acadêmico", "estudante", "student", "freelancer", "autônomo",
     "jurídico", "advogado", "legal", "compliance", "psicologia", "médico",
-    "financial", "financeiro", "contas", "contabilidade", "accounting", "payables", "receivables"
+    "financial", "financeiro", "contas", "contabilidade", "accounting", "payables", "receivables",
+    "fpa", "fp&a", "planning and analysis", "auditoria", "audit", "tributário", "tax", "facilities",
+    "manutenção Predial", "facilities management", "recepção", "portaria"
 ]
 
 def normalize_str(s: str) -> str:
@@ -21,21 +23,27 @@ def normalize_str(s: str) -> str:
 
 def get_seniority_level(role: str) -> int:
     role = role.lower()
-    if any(x in role for x in ["ceo", "president", "presidente", "founder", "socio", "sócio", "owner"]): return 6
-    if any(x in role for x in ["diretor", "director", "cpo", "vp", "vice president"]): return 5
-    if any(x in role for x in ["gerente", "manager", "head", "lead"]): return 4
-    if any(x in role for x in ["coordenador", "coordinator", "supervisor", "lider", "líder"]): return 3
-    if any(x in role for x in ["senior", "sênior", "especialista", "specialist", "pleno"]): return 2
-    return 1
+    # Nível 6: C-Level / Heads Globais / Sócios / Fundadores
+    if any(x in role for x in ["cpo", "csco", "coo", "chief operation", "chief procurement", "chief", "ceo", "president", "socio", "sócio", "owner", "fundador", "founder", "board"]): return 6
+    # Nível 5: Diretoria / VP / Superintendência
+    if any(x in role for x in ["diretor", "director", "vp", "vice president", "superintendente"]): return 5
+    # Nível 4: Gerência / Head / Lead / Chefia Geral
+    if any(x in role for x in ["gerente", "manager", "head", "lead", "gerenta", "chefe", "gestor"]): return 4
+    # Nível 3: Coordenação / Supervisão / Encarregados / Especialistas Sêniores
+    if any(x in role for x in ["coordenador", "coordinator", "supervisor", "lider", "líder", "encarregado", "specialist", "especialista", "sr.", "senior", "sênior", "supervisão"]): return 3
+    # Nível 1: Entrada / Apoio / Estágio / Operacional de base
+    if any(x in role for x in ["estagio", "estagiario", "estagiário", "intern", "aprendiz", "auxiliar", "assistente", "assistant", "conferente", "estoquista", "almoxarife", "operador", "jovem"]): return 1
+    # Nível 2: Analistas, Compradores, Engenheiros, Consultores e Planejadores (Jr/Pl/Default)
+    return 2 
 
 def get_department_tag(role: str) -> str:
     role = role.lower()
-    if any(x in role for x in ["compras", "procurement", "buyer", "comprador", "sourcing", "purchas"]): return "Procurement"
+    if any(x in role for x in ["compras", "procurement", "buyer", "comprador", "sourcing", "purchas", "category manager", "strategic buyer", "technical buyer"]): return "Procurement"
     if any(x in role for x in ["supply", "suprimentos", "cadeia"]): return "Supply Chain"
-    if any(x in role for x in ["logistica", "logística", "logistics", "transporte", "distribuição", "warehouse", "armazém", "almoxarifado"]): return "Logistics"
+    if any(x in role for x in ["logistica", "logística", "logistics", "transporte", "distribuição", "warehouse", "armazém", "almoxarifado", "freight", "last mile", "expedição", "estoque", "frota", "wms", "tms"]): return "Logistics"
     if any(x in role for x in ["comex", "import", "export", "comércio exterior"]): return "Comex"
-    if any(x in role for x in ["planejamento", "planning", "pdm", "pcp"]): return "Planning"
-    if any(x in role for x in ["ceo", "diretor", "director", "manager", "gerente", "head", "president"]): return "Executive Management"
+    if any(x in role for x in ["planejamento", "planning", "pdm", "pcp", "ppcp", "inventário"]): return "Planning"
+    if any(x in role for x in ["ceo", "coo", "diretor", "director", "manager", "gerente", "head", "president"]): return "Executive Management"
     return "Operations"
 
 def apply_strict_filters(name: str, title: str, snippet: str, core_company: str, target_brand: str, target_location: str = None) -> bool:
@@ -75,7 +83,16 @@ def apply_strict_filters(name: str, title: str, snippet: str, core_company: str,
     if any(p in title_clean for p in junk_patterns):
         return False
 
-    # 🕵️ 4. BLOQUEIO DE DEPARTAMENTOS IRRELEVANTES (Não-Supply Chain)
+    # 🕵️ 4. FILTRAGEM POR RELEVÂNCIA (Whitelist vs Blacklist)
+    # Se houver uma palavra de ALTO VALOR (Compras, Suprimentos, Sourcing), ignoramos as negativas e passamos para IA.
+    positive_keywords = ["buyer", "comprador", "compras", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic", "logistic", "logistica", "pcp", "expedição", "estoque", "warehouse", "comércio", "trade", "negociação"]
+    has_positive = any(pk in context_clean for pk in positive_keywords)
+    
+    if has_positive:
+        # Se tem algo positivo, deixamos a IA decidir (mesmo que tenha lixo junto)
+        return True
+
+    # Só aplicamos o bloqueio de negativas se NÃO houver nenhuma palavra positiva forte
     if any(nk in context_clean for nk in negative_keywords):
         return False
 

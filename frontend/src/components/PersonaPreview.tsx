@@ -1,13 +1,15 @@
 import React from 'react';
 import styles from './NetworkGraph.module.css';
-import { User, MapPin, Building2, Briefcase, ExternalLink } from 'lucide-react';
+import { User, MapPin, Building2, Briefcase } from 'lucide-react';
+import { LinkedInIcon } from './icons/LinkedInIcon';
 
 interface PersonaPreviewProps {
     data: any;
     position: { x: number; y: number };
+    companyLogo?: string;
 }
 
-export function PersonaPreview({ data, position }: PersonaPreviewProps) {
+export function PersonaPreview({ data, position, companyLogo }: PersonaPreviewProps) {
     if (!data) return null;
 
     // Offset the preview slightly from the cursor to prevent flickering
@@ -19,16 +21,27 @@ export function PersonaPreview({ data, position }: PersonaPreviewProps) {
     return (
         <div className={styles.personaPreview} style={style}>
             <div className={styles.previewHeader}>
-                <div className={styles.previewAvatar}>
-                    {data.profile_pic ? (
-                        <img 
-                            src={`http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(data.profile_pic)}`} 
-                            className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as any).style.display = 'none'; }}
-                            alt=""
-                        />
-                    ) : (
-                        <User className="w-6 h-6" />
+                <div className={styles.previewAvatarGroup}>
+                    <div className={styles.previewAvatar}>
+                        {data.profile_pic ? (
+                            <img 
+                                src={`http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(data.profile_pic)}`} 
+                                className="w-full h-full object-cover"
+                                onError={(e) => { (e.target as any).style.display = 'none'; }}
+                                alt=""
+                            />
+                        ) : (
+                            <User className="w-6 h-6" />
+                        )}
+                    </div>
+                    {companyLogo && (
+                        <div className={styles.previewCompanyLogo}>
+                            <img 
+                                src={companyLogo.startsWith('http') ? `http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(companyLogo)}` : companyLogo}
+                                className="w-full h-full object-contain"
+                                alt=""
+                            />
+                        </div>
                     )}
                 </div>
                 <div>
@@ -55,7 +68,7 @@ export function PersonaPreview({ data, position }: PersonaPreviewProps) {
                     <span>{data.location || 'Brasil'}</span>
                 </div>
                 <div className={styles.previewMetaItem}>
-                    <ExternalLink className={styles.previewMetaIcon} size={12} />
+                    <LinkedInIcon className={styles.previewMetaIcon} size={12} />
                     <span>Linkedin Profile Verified</span>
                 </div>
             </div>

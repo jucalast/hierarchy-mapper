@@ -3,7 +3,8 @@ import {
     Info as LucideInfo, 
     Search, 
     X, 
-    Building 
+    Building,
+    Loader2
 } from 'lucide-react';
 import styles from './NetworkGraph.module.css';
 
@@ -14,6 +15,7 @@ interface DrawerProps {
     setSearchTerm: (term: string) => void;
     filteredOrgs: any[];
     onOrgClick: (org: any) => void;
+    isLoading?: boolean;
 }
 
 export const Drawer: React.FC<DrawerProps> = ({
@@ -22,7 +24,8 @@ export const Drawer: React.FC<DrawerProps> = ({
     searchTerm,
     setSearchTerm,
     filteredOrgs,
-    onOrgClick
+    onOrgClick,
+    isLoading = false
 }) => {
     if (!showDrawer) return null;
 
@@ -45,21 +48,27 @@ export const Drawer: React.FC<DrawerProps> = ({
             </div>
             
             <div className={styles.drawerList}>
-                {filteredOrgs.map(org => (
-                    <div 
-                        key={org.id} 
-                        className={styles.orgItem} 
-                        onClick={() => onOrgClick(org)}
-                    >
-                        <div className={styles.orgMainInfo}>
-                            <Building size={14} className={styles.orgIcon} />
-                            <span className={styles.orgName}>{org.name}</span>
-                        </div>
-                        <span className={styles.orgAddress}>
-                            {org.address || 'Localização não definida'}
-                        </span>
+                {isLoading ? (
+                    <div className={styles.drawerLoading}>
+                      <Loader2 size={32} className={styles.loadingAnim} />
                     </div>
-                ))}
+                ) : (
+                    filteredOrgs.map(org => (
+                        <div 
+                            key={org.id} 
+                            className={styles.orgItem} 
+                            onClick={() => onOrgClick(org)}
+                        >
+                            <div className={styles.orgMainInfo}>
+                                <Building size={14} className={styles.orgIcon} />
+                                <span className={styles.orgName}>{org.name}</span>
+                            </div>
+                            <span className={styles.orgAddress}>
+                                {org.address || 'Localização não definida'}
+                            </span>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );

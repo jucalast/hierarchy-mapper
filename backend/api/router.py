@@ -44,18 +44,28 @@ async def proxy_linkedin_image(url: str):
         "Referer": "https://www.linkedin.com/",
         "Connection": "keep-alive"
     }
-    async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
-        try:
-            resp = await client.get(url, headers=headers)
-            if resp.status_code == 200:
-                return StreamingResponse(
-                    resp.aiter_bytes(), 
-                    media_type=resp.headers.get("content-type", "image/jpeg")
-                )
-            else:
-                return StreamingResponse(iter([]), status_code=resp.status_code)
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+    import asyncio
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        # Tenta até 4 vezes com jitter incremental para burlar o Rate Limit de Bursts
+        for attempt in range(4):
+            try:
+                resp = await client.get(url, headers=headers)
+                if resp.status_code == 200:
+                    return StreamingResponse(
+                        resp.aiter_bytes(), 
+                        media_type=resp.headers.get("content-type", "image/jpeg")
+                    )
+                elif resp.status_code == 429:
+                    # Se bateu o limite do unavatar, dorme e tenta de novo (Trickle Down)
+                    await asyncio.sleep(1.5 + (attempt * 1.5))
+                    continue
+                else:
+                    return StreamingResponse(iter([]), status_code=resp.status_code)
+            except Exception as e:
+                # Falha silenciosa para não quebrar a UI
+                return StreamingResponse(iter([]), status_code=404)
+                
+        return StreamingResponse(iter([]), status_code=429)
 
 @router.post("/hierarchy/refine")
 async def refine_hierarchy(
@@ -344,20 +354,22 @@ async def stream_company_hierarchy(
     cnpj: str = Query(..., description="CNPJ da empresa"),
     domain: Optional[str] = Query(None, description="Domínio da empresa"),
     confirmed_brand: Optional[str] = Query(None, description="Marca confirmada"),
+    confirmed_logo: Optional[str] = Query(None, description="Logo confirmado do LinkedIn"),
     product_focus: Optional[str] = Query(None, description="Foco de categoria/produto (ex: Embalagens)"),
+    area_focus: Optional[str] = Query("compras", description="Área de foco (compras ou logistica)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Endpoint SSE que envia dados progressivamente para a interface.
     """
-    print(f"[Backend Streaming] Iniciando para CNPJ: {cnpj}, Domain: {domain}, Foco: {product_focus}")
+    print(f"[Backend Streaming] Iniciando para CNPJ: {cnpj}, Domain: {domain}, Foco: {product_focus}, Área: {area_focus}")
     
     load_dotenv(override=True)
     EMAIL_API_KEY = os.getenv("EMAIL_API_KEY")
     cnpj_clean = clean_cnpj(cnpj)
     if len(cnpj_clean) != 14:
         raise HTTPException(status_code=400, detail="CNPJ Inválido")
-
+    
     # Usamos generator assíncrono para o StreamingResponse lidar com requests do motor de IA
     async def generator():
         # 🏺 BUSCA EM CASCATA RESILIENTE (Streaming Initial Data)
@@ -408,11 +420,13 @@ async def stream_company_hierarchy(
         # Nó Raiz
         root_node = {
             "id": "root_company",
-            "name": razao_social[:30] + "..." if len(razao_social) > 30 else razao_social,
+            "name": confirmed_brand or (razao_social[:30] + "..." if len(razao_social) > 30 else razao_social),
             "role": "Entidade Principal",
             "department": "Supply Chain (Matriz)",
             "manager_id": None,
-            "level": 0
+            "level": 0,
+            "company_logo": confirmed_logo,
+            "domain": domain
         }
         initial_nodes.append(root_node)
         hierarchy_pool.append(EmployeeNode(**root_node))
@@ -455,7 +469,7 @@ async def stream_company_hierarchy(
         initial_nodes.sort(key=lambda x: x.get('level', 1), reverse=True) # Ordem decrescente (6 primeiro)
         yield f"data: {json.dumps({'type': 'initial', 'company_name': razao_social, 'nodes': initial_nodes})}\n\n"
         
-        async for batch in discover_employees_stream(search_name, domain_guess, confirmed_brand=confirmed_brand, location=location_focus, product_focus=product_focus, email_api_key=EMAIL_API_KEY, max_results=100):
+        async for batch in discover_employees_stream(search_name, domain_guess, confirmed_brand=confirmed_brand, location=location_focus, product_focus=product_focus, area_focus=area_focus, email_api_key=EMAIL_API_KEY, max_results=100):
             new_nodes = []
             
             for lead in batch:
@@ -482,8 +496,9 @@ async def stream_company_hierarchy(
                     department=dept,
                     company=lead.get("company"),
                     manager_id=None,
-                    level=lead.get("level", 1),
+                    level=lead.get("level", 2),
                     email=lead.get("email"),
+
                     linkedin=linkedin_url,
                     url=linkedin_url,
                     education=lead.get("education"),
@@ -554,27 +569,69 @@ async def stream_company_hierarchy(
 
     return StreamingResponse(generator(), media_type="text/event-stream")
 
+@router.get("/hierarchy/pipedrive/{pipedrive_id}")
+async def get_stored_hierarchy_by_pipedrive(pipedrive_id: int, db: AsyncSession = Depends(get_db)):
+    """Busca a hierarquia salva usando o ID do Pipedrive."""
+    stmt = select(Organization).where(Organization.pipedrive_id == pipedrive_id)
+    res = await db.execute(stmt)
+    org = res.scalars().first()
+    if not org:
+        return {"nodes": [], "company_name": "Não encontrada", "status": "new"}
+    
+    return await get_stored_hierarchy(org.id, db)
+
 @router.get("/hierarchy/{org_id}")
 async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
-    """Busca a hierarquia já salva no banco de dados."""
-    stmt = select(Employee).where(Employee.company_id == org_id).order_by(Employee.seniority.asc())
-    result = await db.execute(stmt)
-    employees = result.scalars().all()
+    """Busca a hierarquia completa (Raiz + Funcionários) já salva no banco de dados."""
+    # 1. Busca a Organização
+    stmt_org = select(Organization).where(Organization.id == org_id)
+    res_org = await db.execute(stmt_org)
+    org = res_org.scalars().first()
+    
+    if not org:
+        raise HTTPException(status_code=404, detail="Organização não encontrada no banco local.")
+
+    # 2. Busca Funcionários
+    stmt_emp = select(Employee).where(Employee.company_id == org_id).order_by(Employee.seniority.desc())
+    result_emp = await db.execute(stmt_emp)
+    employees = result_emp.scalars().all()
     
     nodes = []
+    
+    # Adiciona Nó Raiz (Sempre presente se a org existe)
+    nodes.append({
+        "id": "root_company",
+        "name": org.name,
+        "role": "Entidade Principal",
+        "department": "Supply Chain (Matriz)",
+        "manager_id": None,
+        "level": 0,
+        "company_logo": None, # Pode ser expandido futuramente
+        "domain": org.domain,
+        "cnpj": org.cnpj
+    })
+
     for emp in employees:
         nodes.append({
-            "id": f"emp_{emp.id}",
+            "id": f"node_{emp.id}",
             "name": emp.name,
             "role": emp.role,
-            "level": 6 - emp.seniority if emp.seniority < 6 else 1,
-            "seniority": emp.seniority,
+            "level": emp.seniority,
+            "department": get_department_tag(emp.role),
+            "manager_id": "root_company", # Fallback, a IA pode refinar depois se necessário
             "linkedin": emp.linkedin_url,
+            "url": emp.linkedin_url,
             "profile_pic": emp.profile_pic,
-            "email": emp.email
+            "email": emp.email,
+            "education": emp.description, # Mapeamos description para education no front
+            "location": emp.location
         })
     
-    return {"nodes": nodes}
+    return {
+        "company_name": org.name,
+        "nodes": nodes,
+        "status": "cached" if employees else "empty"
+    }
 
 # --- PIPEDRIVE SYNC (REFACTORED) ---
 @router.post("/pipedrive_sync")

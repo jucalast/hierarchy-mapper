@@ -23,7 +23,7 @@ class PipedriveService:
         except: return False
 
     async def list_organizations(self):
-        """Lista empresas filtradas para João Luccas."""
+        """Lista empresas filtradas para João Luccas e sincroniza com o banco local."""
         url = f"{self.base_url}/organizations?user_id={self.user_id}&start=0&limit=500&api_token={self.api_token}"
         try:
             async with httpx.AsyncClient() as client:
@@ -31,8 +31,36 @@ class PipedriveService:
                 data = resp.json()
                 if not data.get("success"): return []
                 all_orgs = data.get("data") or []
-                return [org for org in all_orgs if int(org.get("owner_id", {}).get("id", 0)) == self.user_id]
-        except: return []
+                my_orgs = [org for org in all_orgs if int(org.get("owner_id", {}).get("id", 0)) == self.user_id]
+                
+                # 💾 SINCRONIZAÇÃO ASSÍNCRONA COM O BANCO LOCAL
+                from services.database import async_session, Organization
+                from sqlalchemy import select
+                
+                async with async_session() as session:
+                    for org in my_orgs:
+                        pid = org.get("id")
+                        name = org.get("name")
+                        
+                        stmt = select(Organization).where(Organization.pipedrive_id == pid)
+                        res = await session.execute(stmt)
+                        db_org = res.scalars().first()
+                        
+                        if not db_org:
+                            db_org = Organization(pipedrive_id=pid, name=name)
+                            session.add(db_org)
+                        else:
+                            db_org.name = name # Mantém nome atualizado
+                        
+                        db_org.domain = org.get("c04f98a7a9762df2f8a42e5d7a641a0292723326") or db_org.domain # Exemplo de campo customizado no Pipedrive
+                        db_org.address = org.get("address") or db_org.address
+                
+                    await session.commit()
+                
+                return my_orgs
+        except Exception as e:
+            print(f"[Pipedrive] Erro ao sincronizar/listar: {e}")
+            return []
 
     async def sync_overdue_activities(self):
         """Move todas as atrasadas para hoje (Perdoar Atrasos)."""

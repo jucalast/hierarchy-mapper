@@ -2,12 +2,15 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import ReactFlow, {
-    Background,
     Controls,
     useNodesState,
     useEdgesState,
     Node,
+    Background,
+    BackgroundVariant,
+    useStore
 } from 'reactflow';
+
 import 'reactflow/dist/style.css';
 import styles from './NetworkGraph.module.css';
 
@@ -20,10 +23,35 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Drawer } from './Drawer';
 import { FloatingToolbar } from './FloatingToolbar';
-import { Legend } from './Legend';
-import { PersonaPreview } from './PersonaPreview';
+
+
+// --- SMART BACKGROUND COMPONENT ---
+// This component adjusts the grid gap based on zoom to prevent it from becoming too dense when zooming out.
+const SmartBackground = () => {
+    // Get the current zoom from the ReactFlow store
+    const transform = useStore((s) => s.transform);
+    const zoom = transform[2];
+    
+    // Calculate a gap that stops shrinking after zoom 0.5
+    // Visual gap = gap * zoom. If we want visual gap >= 20px, then gap = 20 / zoom.
+    // We'll base it on 40px standard.
+    const baseGap = 44;
+    const minZoomForScale = 0.5;
+    const effectiveGap = zoom < minZoomForScale ? (baseGap * minZoomForScale) / zoom : baseGap;
+
+    return (
+        <Background 
+            variant={BackgroundVariant.Lines} 
+            gap={effectiveGap} 
+            size={1} 
+            color="rgba(255, 255, 255, 0.05)" 
+        />
+    );
+};
+
 
 export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: string }) {
+
 
     const nodeTypes = useMemo(() => ({
         supplyChain: SupplyChainNode
@@ -32,9 +60,9 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [theme, setTheme] = useState("dark");
-    const [hoveredNode, setHoveredNode] = useState<any>(null);
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [step, setStep] = useState("input");
+
+
     const [cnpj, setCnpj] = useState(defaultCnpj);
     const [domainTarget, setDomainTarget] = useState("");
     const [productFocus, setProductFocus] = useState("");
@@ -42,6 +70,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const [confirmedBrand, setConfirmedBrand] = useState("");
     const [confirmedLogo, setConfirmedLogo] = useState("");
     const [confirmedFollowers, setConfirmedFollowers] = useState("");
+    const [areaFocus, setAreaFocus] = useState<"compras" | "logistica">("compras");
 
     // 🎨 THEME PERSISTENCE
     useEffect(() => {
@@ -94,7 +123,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
     const handleUpdatePipedrive = async (orgId: number, data: any) => {
         try {
-            await fetch(`http://localhost:8000/api/v1/pipedrive/organizations/${orgId}`, {
+            await fetch(`http://127.0.0.1:8000/api/v1/pipedrive/organizations/${orgId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -105,24 +134,44 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         } catch (e) { console.error("Sync error", e); }
     };
 
+    useEffect(() => {
+        // 🚀 Cache Speed: Tenta carregar do localStorage primeiro
+        const cached = localStorage.getItem("pipedrive-orgs-cache");
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setPipedriveOrgs(parsed);
+                    setLoadingOrgs(false);
+                }
+            } catch (e) { console.error("Cache parsing error", e); }
+        }
+        fetchPipedriveOrgs();
+    }, []);
+
     const fetchPipedriveOrgs = async () => {
-        setLoadingOrgs(true);
+        // Se já temos cache, não limpamos para não dar flicker na UI
+        if (pipedriveOrgs.length === 0) setLoadingOrgs(true);
         try {
-            await fetch('http://localhost:8000/api/v1/pipedrive_sync', { method: 'POST' });
-            const orgsResp = await fetch(`http://localhost:8000/api/v1/pipedrive/organizations?_=${Date.now()}`);
+            // Sincronização em background (Pipedrive -> DB Local)
+            fetch('http://127.0.0.1:8000/api/v1/pipedrive_sync', { method: 'POST' }).catch(() => {});
+            
+            const orgsResp = await fetch(`http://127.0.0.1:8000/api/v1/pipedrive/organizations?_=${Date.now()}`);
             const data = await orgsResp.json();
-            setPipedriveOrgs(Array.isArray(data) ? data : []);
+            const list = Array.isArray(data) ? data : [];
+            setPipedriveOrgs(list);
+            
+            // Salva no Cache para a próxima vez
+            if (list.length > 0) {
+                localStorage.setItem("pipedrive-orgs-cache", JSON.stringify(list));
+            }
         } catch (e) {
             console.error("Erro ao carregar empresas do Pipedrive", e);
-            setPipedriveOrgs([]);
+            if (pipedriveOrgs.length === 0) setPipedriveOrgs([]);
         } finally {
             setLoadingOrgs(false);
         }
     };
-
-    useEffect(() => {
-        fetchPipedriveOrgs();
-    }, []);
 
     const handleBrandSelect = (brandObj: any) => {
         console.log("[Graph] handleBrandSelect called with:", brandObj);
@@ -145,13 +194,14 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         setStep("confirm");
     };
 
-    const handleOrgClick = (org: any) => {
+    const handleOrgClick = async (org: any) => {
         console.log('--- HANDLE ORG CLICK START ---', org.name);
         setShowDrawer(false); 
         setStep("input");
 
         try {
-            setConfirmedBrand(cleanName(org.name || "")); 
+            const cleanOrgName = cleanName(org.name || "");
+            setConfirmedBrand(cleanOrgName); 
             setConfirmedLogo(org.logo || ""); 
             setConfirmedFollowers("");
             
@@ -162,16 +212,16 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             }
 
             setCnpj(formatCnpj(targetCnpj));
-            
             setDomainTarget(org.domain || ""); 
             setProductFocus(""); 
             setCurrentOrgId(Number(org.id));
 
             if (org.id) {
-                console.log('Attempting to load hierarchy for:', org.id);
-                loadStoredHierarchy(Number(org.id)).catch(err => {
-                   console.error("Hierarchy load failed:", err);
-                });
+                console.log('Attempting to load hierarchy for pipedrive_id:', org.id);
+                const data = await loadStoredHierarchy(Number(org.id), true);
+                if (data && data.status === "cached") {
+                    setStep("confirm"); // Mostra o header mas já com os dados no grafo
+                }
             }
         } catch (e) {
             console.error("Critical error in handleOrgClick:", e);
@@ -183,7 +233,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         setError(null);
         setEnrichingIds(prev => new Set(prev).add(999));
         try {
-            const query = `name=${encodeURIComponent(confirmedBrand || "Empresa")}&cnpj=${encodeURIComponent(cnpj)}&force=true`;
+            const query = `name=${encodeURIComponent(confirmedBrand || "Empresa")}&cnpj=${encodeURIComponent(cnpj)}`;
             const resp = await fetch(`http://localhost:8000/api/v1/intelligence/enrich?${query}`);
             const data = await resp.json();
 
@@ -236,8 +286,12 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 return;
             }
             try {
-                const brand = await discoverBrand(cnpj, domainTarget);
-                if (brand) {
+                const result = await discoverBrand(cnpj, domainTarget);
+                if (result && result.brand) {
+                    if (result.domain && !domainTarget) {
+                        console.log("[Graph] Detectando domínio via BrasilAPI:", result.domain);
+                        setDomainTarget(result.domain);
+                    }
                 } else {
                     setError("Empresa não encontrada no LinkedIn.");
                 }
@@ -247,7 +301,14 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         } else if (step === "confirm" || step === "scanning") {
             if (!confirmedBrand) { setError("Marca inválida."); return; }
             setStep("scanning");
-            fetchHierarchy(cnpj, domainTarget, confirmedBrand, productFocus);
+            fetchHierarchy(
+                cnpj, 
+                domainTarget, 
+                confirmedBrand, 
+                confirmedLogo, 
+                productFocus,
+                areaFocus
+            );
         }
     };
 
@@ -265,7 +326,22 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         setEdges(layoutedEdges);
     }, [rawEmployees, rawBackendEdges, setNodes, setEdges]);
 
+    const handleCopyData = () => {
+        if (rawEmployees.length === 0) {
+            console.warn("Sem dados para copiar.");
+            return;
+        }
+        // Formatar para JSON legível
+        const dataStr = JSON.stringify(rawEmployees, null, 2);
+        navigator.clipboard.writeText(dataStr).then(() => {
+            console.log("[Debug] Dados da hierarquia copiados.");
+        }).catch(err => {
+            console.error("Erro ao copiar para clipboard:", err);
+        });
+    };
+
     const toggleTheme = () => {
+
         const next = theme === "dark" ? "light" : "dark";
         setTheme(next);
         localStorage.setItem("preferred-theme", next);
@@ -280,7 +356,9 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 onReset={() => { setStep("input"); setNodes([]); setEdges([]); }}
+                onCopyData={handleCopyData}
             />
+
 
             <Drawer 
                 showDrawer={showDrawer}
@@ -289,12 +367,12 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 setSearchTerm={setSearchTerm}
                 filteredOrgs={filteredOrgs}
                 onOrgClick={handleOrgClick}
+                isLoading={loadingOrgs}
             />
 
             <main className={styles.mainContent}>
-                <div className={styles.dottedBackground} />
-
                 <Header confirmedBrand={confirmedBrand} />
+
 
                 <div className={styles.graphWrapper}>
                     <ReactFlow
@@ -303,21 +381,18 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                         nodeTypes={nodeTypes}
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
-                        onNodeMouseEnter={(_, node) => setHoveredNode(node.data)}
-                        onNodeMouseLeave={() => setHoveredNode(null)}
-                        onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                         fitView
+                        minZoom={0.1}
+                        maxZoom={1.5}
                     >
-                        <Background gap={30} color="rgba(255,255,255,0.03)" />
+                        <SmartBackground />
                         <Controls position="bottom-right" />
+
+
                     </ReactFlow>
 
-                    {hoveredNode && (
-                        <PersonaPreview 
-                            data={hoveredNode} 
-                            position={mousePos} 
-                        />
-                    )}
+
+
                 </div>
 
                 <FloatingToolbar 
@@ -335,6 +410,8 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                     setDomainTarget={setDomainTarget}
                     productFocus={productFocus}
                     setProductFocus={setProductFocus}
+                    areaFocus={areaFocus}
+                    setAreaFocus={setAreaFocus}
                     handleAutoEnrich={handleAutoEnrich}
                     enrichingIds={enrichingIds}
                     discovering={discovering}
@@ -343,9 +420,8 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                     brandOptions={brandOptions}
                     onBrandSelect={handleBrandSelect}
                 />
-
-                <Legend />
             </main>
         </div>
+
     );
 }

@@ -9,8 +9,10 @@ import {
     Eraser, 
     Sun, 
     Moon, 
-    Settings 
+    Settings,
+    Bug 
 } from 'lucide-react';
+
 import styles from './NetworkGraph.module.css';
 
 interface SidebarProps {
@@ -19,15 +21,19 @@ interface SidebarProps {
     theme: string;
     onToggleTheme: () => void;
     onReset: () => void;
+    onCopyData: () => void;
 }
+
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
     showDrawer, 
     setShowDrawer, 
     theme, 
     onToggleTheme, 
-    onReset 
+    onReset,
+    onCopyData 
 }) => {
+
     return (
         <aside className={styles.sidenav}>
             <div className={styles.headerLogo} style={{ marginBottom: '12px', color: '#3B82F6' }}>
@@ -75,9 +81,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Zap size={20} className={styles.iconSide} />
             </div>
 
-            <div className={styles.navIcon} title="Limpar Canvas">
+            <div className={styles.navIcon} title="Limpar Canvas" onClick={onReset}>
                 <Eraser size={20} className={styles.iconSide} />
             </div>
+
+            <div className={styles.navIcon} title="Copiar Dados (Debug)" onClick={onCopyData}>
+                <Bug size={20} className={styles.iconSide} />
+            </div>
+
 
             <div className="mt-auto flex flex-col gap-5 text-white/40 w-full">
                 <div className={styles.navIcon} onClick={onToggleTheme} title="Alternar Tema">

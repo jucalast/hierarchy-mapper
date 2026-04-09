@@ -26,7 +26,7 @@ export const useHierarchy = () => {
         if (!rawCnpj) return null;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/brand/discover?cnpj=${rawCnpj}${explicitDomain ? `&domain=${explicitDomain}` : ''}`);
+            const response = await fetch(`http://127.0.0.1:8000/api/v1/brand/discover?cnpj=${rawCnpj}${explicitDomain ? `&domain=${explicitDomain}` : ''}`);
             const data = await response.json();
             
             if (!response.ok) {
@@ -43,7 +43,10 @@ export const useHierarchy = () => {
                 name: cleanName(opt.name)
             }));
             setBrandOptions(cleaned);
-            return cleanName(data.brand); 
+            return { 
+                brand: cleanName(data.brand), 
+                domain: data.detected_domain 
+            }; 
         } catch (err: any) {
             console.error(err);
             setError("Falha na conexão com o servidor.");
@@ -60,30 +63,39 @@ export const useHierarchy = () => {
         setError("");
         console.log("[useHierarchy] Iniciando refinamento automático com Groq IA...");
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/hierarchy/refine`, {
+            const response = await fetch(`http://127.0.0.1:8000/api/v1/hierarchy/refine`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(employees)
             });
             const data = await response.json();
             if (data.nodes) {
-                setRawEmployees(data.nodes);
+                const refreshedNodes = data.nodes.map((emp: any) => {
+                    // Fallback de segurança: Se a IA desconectar alguém, reconecta na raiz
+                    if (!emp.manager_id && emp.id !== "root_company") {
+                        return { ...emp, manager_id: "root_company" };
+                    }
+                    return emp;
+                });
+
+                setRawEmployees(refreshedNodes);
                 const newEdges: Edge[] = [];
-                data.nodes.forEach((emp: any) => {
+                refreshedNodes.forEach((emp: any) => {
                     if (emp.manager_id) {
                         newEdges.push({
                             id: `e-${emp.manager_id}-${emp.id}`,
                             source: emp.manager_id,
                             target: emp.id,
-                            animated: true,
-                            markerEnd: { type: MarkerType.ArrowClosed, color: '#10b981' },
-                            style: { stroke: '#10b981', strokeWidth: 2 },
+                            animated: false,
+                            markerEnd: { type: MarkerType.ArrowClosed, color: '#30363d' },
+                            style: { stroke: '#30363d', strokeWidth: 2 },
                         });
                     }
                 });
                 setRawBackendEdges(newEdges);
-                console.log("[useHierarchy] Hierarquia refinada com sucesso.");
+                console.log("[useHierarchy] Hierarquia refinada e reconectada com sucesso.");
             }
+
         } catch (err) {
             console.error(err);
             setError("Erro ao refinar hierarquia com IA.");
@@ -92,7 +104,14 @@ export const useHierarchy = () => {
         }
     }, []);
 
-    const fetchHierarchy = useCallback((searchCnpj: string, explicitDomain: string = "", confirmedBrand: string = "", productFocus: string = "") => {
+    const fetchHierarchy = useCallback((
+        searchCnpj: string, 
+        explicitDomain: string = "", 
+        confirmedBrand: string = "", 
+        confirmedLogo: string = "",
+        productFocus: string = "",
+        areaFocus: string = "compras"
+    ) => {
         setLoading(true);
         setError("");
         setRawEmployees([]);
@@ -103,9 +122,11 @@ export const useHierarchy = () => {
         queryParams.append("cnpj", rawCnpj);
         if (explicitDomain) queryParams.append("domain", explicitDomain);
         if (confirmedBrand) queryParams.append("confirmed_brand", confirmedBrand);
+        if (confirmedLogo) queryParams.append("confirmed_logo", confirmedLogo);
         if (productFocus) queryParams.append("product_focus", productFocus);
+        if (areaFocus) queryParams.append("area_focus", areaFocus);
 
-        const apiUrl = `http://localhost:8000/api/v1/hierarchy/stream?${queryParams.toString()}`;
+        const apiUrl = `http://127.0.0.1:8000/api/v1/hierarchy/stream?${queryParams.toString()}`;
         const sse = new EventSource(apiUrl);
 
         let currentEmployees: HierarchyEmployee[] = [];
@@ -174,23 +195,44 @@ export const useHierarchy = () => {
         };
     }, [refineHierarchy]);
 
-    const loadStoredHierarchy = useCallback(async (orgId: number) => {
+    const loadStoredHierarchy = useCallback(async (orgId: number, isPipedriveId: boolean = true) => {
         setLoading(true);
         setError("");
         setRawEmployees([]);
         setRawBackendEdges([]);
         try {
-            const resp = await fetch(`http://localhost:8000/api/v1/hierarchy/${orgId}`);
+            const url = isPipedriveId 
+                ? `http://127.0.0.1:8000/api/v1/hierarchy/pipedrive/${orgId}`
+                : `http://127.0.0.1:8000/api/v1/hierarchy/${orgId}`;
+                
+            const resp = await fetch(url);
             const data = await resp.json();
-            if (data.nodes) {
+            
+            if (data.nodes && data.nodes.length > 0) {
                 setRawEmployees(data.nodes);
-                // Montar edges básicos por senioridade descendente se não houver manager_id real salvo
-                // (Aqui você pode expandir se tiver manager_id no banco)
-                console.log(`[Database] Carregados ${data.nodes.length} nós do banco.`);
+                
+                const newEdges: Edge[] = [];
+                data.nodes.forEach((emp: any) => {
+                    if (emp.manager_id && emp.id !== "root_company") {
+                        newEdges.push({
+                            id: `e-${emp.manager_id}-${emp.id}`,
+                            source: emp.manager_id,
+                            target: emp.id,
+                            animated: false,
+                            markerEnd: { type: MarkerType.ArrowClosed, color: '#30363d' },
+                            style: { stroke: '#30363d', strokeWidth: 2 },
+                        });
+                    }
+                });
+                setRawBackendEdges(newEdges);
+                console.log(`[Database] Carregados ${data.nodes.length} nós do banco para ${data.company_name}.`);
+                return data;
             }
+            return null;
         } catch (e) {
             console.error("Load hierarchy error", e);
             setError("Erro ao carregar dados do banco.");
+            return null;
         } finally {
             setLoading(false);
         }
@@ -210,7 +252,7 @@ export const useHierarchy = () => {
         setLoading(true);
         setError("");
         try {
-            const resp = await fetch(`http://localhost:8000/api/v1/pipedrive_smart_sync`, { method: 'POST' });
+            const resp = await fetch(`http://127.0.0.1:8000/api/v1/pipedrive_smart_sync`, { method: 'POST' });
             const data = await resp.json();
             if (data.status === "success") {
                 console.log("[Pipedrive] Smart Sync concluído:", data.message);
@@ -228,7 +270,7 @@ export const useHierarchy = () => {
 
     const confirmIntelligence = useCallback(async (payload: { name: string, cnpj?: string, domain?: string, address?: string, pipedrive_id?: number }) => {
         try {
-            const resp = await fetch(`http://localhost:8000/api/v1/intelligence/confirm`, {
+            const resp = await fetch(`http://127.0.0.1:8000/api/v1/intelligence/confirm`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

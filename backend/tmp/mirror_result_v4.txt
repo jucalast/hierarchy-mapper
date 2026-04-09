@@ -1,0 +1,40 @@
+
+[MIRROR TEST] Candidate: Victor Franchescoli Faria | Brand: Knorr-Bremse
+  -> Tentando slug: victor-franchescoli...
+     [DEBUG] URL Final: https://theorg.com/org/knorr-bremse/org-chart/victor-franchescoli
+     [DEBUG] Title Tag: page not found...
+  [-] Falha na validaþÒo de identidade (Slug ou Title mismatch)
+  -> Tentando slug: victor-franchescoli-faria...
+     [DEBUG] URL Final: https://theorg.com/org/knorr-bremse/org-chart/victor-franchescoli-faria
+     [DEBUG] Title Tag: victor franchescoli faria - comprador j·nior at knorr-bremse | the org...
+     [DEBUG] Cargo Limpo Final: Comprador J·nior
+  [MATCH!] Cargo Final: Comprador J·nior
+  [MATCH!] URL Final: https://theorg.com/org/knorr-bremse/org-chart/victor-franchescoli-faria
+
+[MIRROR TEST] Candidate: Ronaldo Cesar | Brand: Knorr-Bremse
+  -> Tentando slug: ronaldo-cesar...
+     [DEBUG] URL Final: https://theorg.com/org/knorr-bremse/org-chart/ronaldo-cesar
+     [DEBUG] Title Tag: ronaldo cesar - programador e operador cnc at knorr-bremse | the org...
+     [DEBUG] Cargo Limpo Final: Programador E Operador Cnc
+  [MATCH!] Cargo Final: Programador E Operador Cnc
+  [MATCH!] URL Final: https://theorg.com/org/knorr-bremse/org-chart/ronaldo-cesar
+
+[MIRROR TEST] Candidate: Gilson Caetano | Brand: Knorr-Bremse
+  -> Tentando slug: gilson-caetano...
+     [DEBUG] URL Final: https://theorg.com/org/knorr-bremse/org-chart/gilson-caetano
+     [DEBUG] Title Tag: gilson caetano - chefe assistÛncia tÚcnica at knorr-bremse | the org...
+     [DEBUG] Cargo Limpo Final: Chefe AssistÛncia TÚcnica
+  [MATCH!] Cargo Final: Chefe AssistÛncia TÚcnica
+  [MATCH!] URL Final: https://theorg.com/org/knorr-bremse/org-chart/gilson-caetano
+
+[MIRROR TEST] Candidate: Camila Montico de Paiva | Brand: Knorr-Bremse
+  -> Tentando slug: camila-paiva...
+     [DEBUG] URL Final: https://theorg.com/org/knorr-bremse/org-chart/camila-paiva
+     [DEBUG] Title Tag: page not found...
+  [-] Falha na validaþÒo de identidade (Slug ou Title mismatch)
+  -> Tentando slug: camila-montico-de-paiva...
+     [DEBUG] URL Final: https://theorg.com/org/knorr-bremse/org-chart/camila-montico-de-paiva
+     [DEBUG] Title Tag: camila montico de paiva - engenheira logÝstica at knorr-bremse | the org...
+     [DEBUG] Cargo Limpo Final: Engenheira LogÝstica
+  [MATCH!] Cargo Final: Engenheira LogÝstica
+  [MATCH!] URL Final: https://theorg.com/org/knorr-bremse/org-chart/camila-montico-de-paiva
