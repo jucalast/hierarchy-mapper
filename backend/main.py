@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from api.router import router as api_router
+from api.v1.api import api_router
 from core.rate_limiter import limiter
 # Backend Reload - Neon Official Key Fix (ssl=true).
 
@@ -30,12 +30,22 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 async def startup_event():
     print("[Server] 🚀 Inicializando Componentes de Inteligência...")
     try:
-        from services.database import init_db
+        from core.database import init_db
         await init_db()
     except Exception as e:
         import traceback
         print(f"[Database] 🚨 Erro Crítico de Conexão no Neon DB: {str(e)}")
         traceback.print_exc()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    print("[Server] 🛑 Desligando e limpando conexões...")
+    try:
+        from core.database import engine
+        await engine.dispose()
+        print("[Database] ✅ Conexões com o banco encerradas com segurança.")
+    except:
+        pass
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")

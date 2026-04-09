@@ -18,15 +18,21 @@ export const useHierarchy = () => {
             .trim();
     };
 
-    const discoverBrand = async (searchCnpj: string, explicitDomain: string = "") => {
+    const discoverBrand = async (searchCnpj: string, explicitDomain: string = "", force: boolean = true) => {
         setDiscovering(true);
         setError(null); 
         setBrandOptions([]);
-        const rawCnpj = searchCnpj.replace(/\D/g, "");
-        if (!rawCnpj) return null;
+        const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
+        // Pode buscar se tiver CNPJ OU se tiver Domínio Explicito
+        if (!rawCnpj && !explicitDomain) return null;
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/brand/discover?cnpj=${rawCnpj}${explicitDomain ? `&domain=${explicitDomain}` : ''}`);
+            const queryParams = new URLSearchParams();
+            queryParams.append("cnpj", rawCnpj);
+            if (explicitDomain) queryParams.append("domain", explicitDomain);
+            if (force) queryParams.append("force", "true");
+
+            const response = await fetch(`http://127.0.0.1:8000/api/v1/brand/discover?${queryParams.toString()}`);
             const data = await response.json();
             
             if (!response.ok) {
@@ -43,10 +49,7 @@ export const useHierarchy = () => {
                 name: cleanName(opt.name)
             }));
             setBrandOptions(cleaned);
-            return { 
-                brand: cleanName(data.brand), 
-                domain: data.detected_domain 
-            }; 
+            return data; 
         } catch (err: any) {
             console.error(err);
             setError("Falha na conexão com o servidor.");
@@ -104,7 +107,7 @@ export const useHierarchy = () => {
         }
     }, []);
 
-    const fetchHierarchy = useCallback((
+    const fetchHierarchy = useCallback(async (
         searchCnpj: string, 
         explicitDomain: string = "", 
         confirmedBrand: string = "", 
@@ -119,81 +122,126 @@ export const useHierarchy = () => {
         
         const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
         const queryParams = new URLSearchParams();
+        queryParams.append("company_name", confirmedBrand || "Empresa");
         queryParams.append("cnpj", rawCnpj);
-        if (explicitDomain) queryParams.append("domain", explicitDomain);
+        queryParams.append("domain", explicitDomain);
         if (confirmedBrand) queryParams.append("confirmed_brand", confirmedBrand);
         if (confirmedLogo) queryParams.append("confirmed_logo", confirmedLogo);
         if (productFocus) queryParams.append("product_focus", productFocus);
         if (areaFocus) queryParams.append("area_focus", areaFocus);
 
-        const apiUrl = `http://127.0.0.1:8000/api/v1/hierarchy/stream?${queryParams.toString()}`;
-        const sse = new EventSource(apiUrl);
-
-        let currentEmployees: HierarchyEmployee[] = [];
-
-        sse.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'error') { 
-                    setError(data.message); 
-                    sse.close(); 
-                    setLoading(false); 
-                    return; 
-                }
-                
-                if (data.type === 'done') { 
-                    console.log("[Stream] Finalizado com sucesso.");
-                    sse.close(); 
-                    refineHierarchy(currentEmployees);
-                    return; 
-                }
-                
-                if (data.type === 'initial' || data.type === 'batch') {
-                    const incomingNodes = (data.nodes || []) as HierarchyEmployee[];
-                    console.log(`[Stream] Recebido lote de ${incomingNodes.length} nós.`);
-                    
-                    setRawEmployees(prev => {
-                        const next = [...prev];
-                        incomingNodes.forEach(emp => {
-                            const idx = next.findIndex(n => n.id === emp.id);
-                            if (idx > -1) next[idx] = emp;
-                            else next.push(emp);
-                        });
-                        currentEmployees = next;
-                        return next;
-                    });
-
-                    setRawBackendEdges(prev => {
-                        const next = [...prev];
-                        incomingNodes.forEach(emp => {
-                            if (emp.manager_id) {
-                                const edgeIdx = next.findIndex(e => e.target === emp.id);
-                                const newEdge = {
-                                    id: `e-${emp.manager_id}-${emp.id}`,
-                                    source: emp.manager_id,
-                                    target: emp.id,
-                                    animated: true,
-                                    markerEnd: { type: MarkerType.ArrowClosed, color: '#30363d' },
-                                    style: { stroke: '#30363d', strokeWidth: 2 },
-                                };
-                                if (edgeIdx > -1) next[edgeIdx] = newEdge;
-                                else next.push(newEdge);
-                            }
-                        });
-                        return next;
-                    });
-                }
-            } catch (err) {
-                console.error("[Stream] Erro crítico no parsing do evento:", err);
-                setError("Erro de processamento no fluxo de dados.");
+        try {
+            // 1. Inicia o Job no Backend
+            const startResp = await fetch(`http://127.0.0.1:8000/api/v1/jobs/start-scan?${queryParams.toString()}`, {
+                method: 'POST'
+            });
+            const { job_id, message } = await startResp.json();
+            
+            if (!job_id) {
+                setError("Não foi possível iniciar o scan.");
+                setLoading(false);
+                return;
             }
-        };
 
-        sse.onerror = () => { 
-            sse.close(); 
-            setLoading(false); 
-        };
-    }, [refineHierarchy]);
+            console.log(`[Job API] Scan iniciado! ID: ${job_id}`);
+
+            // 2. Conecta no WebSocket para monitorar o progresso
+            const wsUrl = `ws://127.0.0.1:8000/api/v1/jobs/ws/${job_id}`;
+            const ws = new WebSocket(wsUrl);
+
+            let currentEmployees: HierarchyEmployee[] = [];
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'error') {
+                        setError(data.message);
+                        ws.close();
+                        setLoading(false);
+                        return;
+                    }
+
+                    if (data.type === 'done') {
+                        console.log("[Worker] Scan finalizado via WebSocket.");
+                        ws.close();
+                        setLoading(false);
+                        refineHierarchy(currentEmployees);
+                        return;
+                    }
+
+                    if (data.type === 'batch' || data.type === 'initial') {
+                        const incomingNodes = (data.nodes || []) as HierarchyEmployee[];
+                        
+                        setRawEmployees(prev => {
+                            const next = [...prev];
+                            incomingNodes.forEach(emp => {
+                                const idx = next.findIndex(n => n.id === emp.id);
+                                if (idx > -1) {
+                                    // 🛡️ BLINDAGEM AGRESSIVA: Logo/LinkedIn confirmados são permanentes
+                                    const merged = { ...next[idx], ...emp };
+                                    
+                                    // Lista de campos que podem conter imagens
+                                    const imgFields = ['logo', 'image', 'url', 'company_logo', 'logo_url', 'brand_logo', 'avatar', 'profile_pic', 'photo'];
+                                    
+                                    imgFields.forEach(field => {
+                                        const currentVal = (next[idx] as any)[field];
+                                        const newVal = (emp as any)[field];
+                                        
+                                        // Se tínhamos um valor e o novo é vazio/nulo, preservamos o antigo
+                                        if (currentVal && !newVal) {
+                                            (merged as any)[field] = currentVal;
+                                        }
+                                    });
+
+                                    // Proteção especial para LinkedIn
+                                    if (!emp.linkedin && next[idx].linkedin) merged.linkedin = next[idx].linkedin;
+                                    
+                                    next[idx] = merged;
+                                } else {
+                                    next.push(emp);
+                                }
+                            });
+                            currentEmployees = next;
+                            return next;
+                        });
+
+                        setRawBackendEdges(prev => {
+                            const next = [...prev];
+                            incomingNodes.forEach(emp => {
+                                if (emp.manager_id) {
+                                    const edgeIdx = next.findIndex(e => e.target === emp.id);
+                                    const newEdge = {
+                                        id: `e-${emp.manager_id}-${emp.id}`,
+                                        source: emp.manager_id,
+                                        target: emp.id,
+                                        animated: true,
+                                        markerEnd: { type: MarkerType.ArrowClosed, color: '#30363d' },
+                                        style: { stroke: '#30363d', strokeWidth: 2 },
+                                    };
+                                    if (edgeIdx > -1) next[edgeIdx] = newEdge;
+                                    else next.push(newEdge);
+                                }
+                            });
+                            return next;
+                        });
+                    }
+                } catch (e) {
+                    console.error("[WS] Erro ao processar mensagem:", e);
+                }
+            };
+
+            ws.onerror = () => {
+                setError("Erro na conexão WebSocket com o Worker.");
+                setLoading(false);
+            };
+
+        } catch (err) {
+            console.error("[Job API] Erro ao disparar scan:", err);
+            setError("Falha ao comunicar com o motor de tarefas.");
+            setLoading(false);
+        }
+    }, [refineHierarchy, setLoading, setError]);
 
     const loadStoredHierarchy = useCallback(async (orgId: number, isPipedriveId: boolean = true) => {
         setLoading(true);
@@ -268,7 +316,7 @@ export const useHierarchy = () => {
         }
     }, []);
 
-    const confirmIntelligence = useCallback(async (payload: { name: string, cnpj?: string, domain?: string, address?: string, pipedrive_id?: number }) => {
+    const confirmIntelligence = useCallback(async (payload: { name: string, cnpj?: string, domain?: string, address?: string, pipedrive_id?: number, linkedin_url?: string, logo_url?: string, partners?: any[] }) => {
         try {
             const resp = await fetch(`http://127.0.0.1:8000/api/v1/intelligence/confirm`, {
                 method: 'POST',

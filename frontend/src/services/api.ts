@@ -8,6 +8,8 @@ export interface HierarchyEmployee {
     level: number;
     email?: string;
     linkedin?: string;
+    logo?: string;
+    url?: string;
     location?: string;
 }
 

@@ -3,7 +3,7 @@ import {
     Asterisk, 
     LayoutDashboard, 
     CirclePlus, 
-    Bot, 
+    Brain, 
     History, 
     Zap, 
     Eraser, 
@@ -22,6 +22,7 @@ interface SidebarProps {
     onToggleTheme: () => void;
     onReset: () => void;
     onCopyData: () => void;
+    onRefine?: () => void;
 }
 
 
@@ -31,7 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     theme, 
     onToggleTheme, 
     onReset,
-    onCopyData 
+    onCopyData,
+    onRefine
 }) => {
 
     return (
@@ -69,8 +71,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <CirclePlus size={20} className={styles.iconSide} />
             </div>
 
-            <div className={styles.navIcon} title="Analista de IA">
-                <Bot size={20} className={styles.iconSide} />
+            <div 
+                className={styles.navIcon} 
+                title="Analista de IA"
+                onClick={onRefine}
+            >
+                <Brain size={20} className={styles.iconSide} />
             </div>
 
             <div className={styles.navIcon} title="Histórico">

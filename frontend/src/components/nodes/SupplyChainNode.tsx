@@ -19,12 +19,12 @@ import { LinkedInIcon } from '../icons/LinkedInIcon';
 
 export function SupplyChainNode({ data }: { data: any }) {
   // Helper to proxy external images through our backend (bypasses CORS/Hotlinking blocks)
-  const getProxiedUrl = (url: string) => {
-    if (!url) return '';
+  const getProxiedUrl = (url: any) => {
+    if (!url) return undefined;
     // Padronização Total: Todas as imagens externas agora passam pelo nosso Proxy do Backend
     // Isso evita qualquer bloqueio de CORS ou Hotlinking de qualquer fonte (LinkedIn, Google, Unavatar, etc)
-    if (url.startsWith('http') && !url.includes('localhost:8000')) {
-      return `http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(url)}`;
+    if (typeof url === 'string' && url.startsWith('http') && !url.includes('127.0.0.1:8000')) {
+      return `http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(url)}`;
     }
     return url;
   };
@@ -149,7 +149,7 @@ export function SupplyChainNode({ data }: { data: any }) {
               ) : (
                 /* Logo da Empresa para o Nó Principal (Tier 0) */
                 <img 
-                  src={getProxiedUrl(data.company_logo || data.logo || data.image || data.logo_url || data.brand_logo || (data.domain ? `https://unavatar.io/${data.domain}` : ''))} 
+                  src={getProxiedUrl(data.company_logo || data.logo || data.image || data.logo_url || data.brand_logo || (data.domain ? `https://unavatar.io/${data.domain}` : null))} 
                   alt="Company" 
                   className={styles.avatarImg}
                   style={{ objectFit: 'contain' }}

@@ -25,7 +25,7 @@ export function PersonaPreview({ data, position, companyLogo }: PersonaPreviewPr
                     <div className={styles.previewAvatar}>
                         {data.profile_pic ? (
                             <img 
-                                src={`http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(data.profile_pic)}`} 
+                                src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(data.profile_pic)}`} 
                                 className="w-full h-full object-cover"
                                 onError={(e) => { (e.target as any).style.display = 'none'; }}
                                 alt=""
@@ -37,7 +37,7 @@ export function PersonaPreview({ data, position, companyLogo }: PersonaPreviewPr
                     {companyLogo && (
                         <div className={styles.previewCompanyLogo}>
                             <img 
-                                src={companyLogo.startsWith('http') ? `http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(companyLogo)}` : companyLogo}
+                                src={companyLogo.startsWith('http') ? `http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(companyLogo)}` : companyLogo}
                                 className="w-full h-full object-contain"
                                 alt=""
                             />

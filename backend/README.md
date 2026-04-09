@@ -18,8 +18,19 @@ pip install -r requirements.txt
 3. Configurar variáveis de ambiente (opcional):
 - Copie `.env` e configure `EMAIL_API_KEY` para validação de emails
 
-4. Executar servidor de desenvolvimento:
+4. Executar Servidor Redis:
+- No Windows, basta dar um duplo clique no arquivo `ligar_redis.bat` na raiz do projeto.
+- Isso abrirá uma janela do Redis que deve permanecer aberta.
+
+5. Executar o Worker (Processamento em segundo plano):
 ```bash
+cd backend
+arq services.worker.WorkerSettings
+```
+
+6. Executar servidor de desenvolvimento do Backend:
+```bash
+cd backend
 uvicorn main:app --reload --port 8000
 ```
 

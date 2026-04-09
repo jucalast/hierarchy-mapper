@@ -96,7 +96,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                             <div className={styles.brandAvatarWrapper}>
                                 {opt.logo ? (
                                     <img 
-                                        src={`http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(opt.logo)}`} 
+                                        src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(opt.logo)}`} 
                                         alt={opt.name} 
                                         className={styles.brandAvatar} 
                                     />
@@ -164,7 +164,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                     <div className={styles.brandAvatarWrapper}>
                                         {confirmedLogo ? (
                                             <img 
-                                                src={`http://localhost:8000/api/v1/proxy/image?url=${encodeURIComponent(confirmedLogo)}`} 
+                                                src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(confirmedLogo)}`} 
                                                 className={styles.brandAvatar} 
                                                 alt="Logo" 
                                             />
@@ -220,7 +220,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                     </form>
 
                     <div className={styles.toolbarActions}>
-                        {domainTarget && (
+                        {domainTarget && confirmedBrand && !enrichingIds.has(999) && (
                             <button 
                                 onClick={handleSearch} 
                                 className={`${styles.detectBtn} ${discovering ? styles.detectBtnLoading : ''}`}

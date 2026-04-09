@@ -158,6 +158,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             
             const orgsResp = await fetch(`http://127.0.0.1:8000/api/v1/pipedrive/organizations?_=${Date.now()}`);
             const data = await orgsResp.json();
+            console.log("[Pipedrive API] Data Received:", data);
             const list = Array.isArray(data) ? data : [];
             setPipedriveOrgs(list);
             
@@ -186,12 +187,28 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         const name = typeof brandObj === 'string' ? brandObj : (brandObj.name || brandObj.url || "");
         const logo = brandObj.logo || "";
         const followers = brandObj.followers || "";
+        const partners = brandObj.partners || [];
 
-        console.log("[Graph] Setting Brand Data:", { name, logo, followers });
+        console.log("[Graph] Setting Brand Data:", { name, logo, followers, partnersCount: partners.length });
         setConfirmedBrand(cleanName(name));
         setConfirmedLogo(logo);
         setConfirmedFollowers(followers);
         setStep("confirm");
+
+        // 💾 PERSISTÊNCIA MANUAL: Salva no banco local ao selecionar
+        if (currentOrgId && cnpj) {
+            console.log("[Graph] Persistindo escolha no Banco Local...");
+            confirmIntelligence({
+                name: cleanName(name),
+                cnpj: cnpj,
+                domain: domainTarget,
+                address: "", // Pega do estado se houver
+                pipedrive_id: currentOrgId,
+                linkedin_url: brandObj.url || "",
+                logo_url: logo,
+                partners: partners
+            });
+        }
     };
 
     const handleOrgClick = async (org: any) => {
@@ -234,7 +251,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         setEnrichingIds(prev => new Set(prev).add(999));
         try {
             const query = `name=${encodeURIComponent(confirmedBrand || "Empresa")}&cnpj=${encodeURIComponent(cnpj)}`;
-            const resp = await fetch(`http://localhost:8000/api/v1/intelligence/enrich?${query}`);
+            const resp = await fetch(`http://127.0.0.1:8000/api/v1/intelligence/enrich?${query}&force=true`);
             const data = await resp.json();
 
             if (data.success && data.main_option) {
@@ -247,15 +264,6 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
                 if (currentOrgId) {
                     handleUpdatePipedrive(currentOrgId, { address: main.address, cnpj: cleanCnpj, domain: cleanDomain });
-
-                    // Persistir no Banco local
-                    await confirmIntelligence({
-                        name: confirmedBrand || "Empresa",
-                        cnpj: cleanCnpj,
-                        domain: cleanDomain,
-                        address: main.address,
-                        pipedrive_id: currentOrgId
-                    });
 
                     setPipedriveOrgs(prev => prev.map(o =>
                         Number(o.id) === currentOrgId ? { ...o, address: main.address, cnpj: cleanCnpj, domain: cleanDomain } : o
@@ -286,12 +294,13 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 return;
             }
             try {
-                const result = await discoverBrand(cnpj, domainTarget);
+                const result = await discoverBrand(cnpj, domainTarget, true);
                 if (result && result.brand) {
                     if (result.domain && !domainTarget) {
-                        console.log("[Graph] Detectando domínio via BrasilAPI:", result.domain);
                         setDomainTarget(result.domain);
                     }
+                    
+                    // Se não for Cache Hit, as alternativas aparecerão no carrossel via brandOptions
                 } else {
                     setError("Empresa não encontrada no LinkedIn.");
                 }
@@ -357,6 +366,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 onToggleTheme={toggleTheme}
                 onReset={() => { setStep("input"); setNodes([]); setEdges([]); }}
                 onCopyData={handleCopyData}
+                onRefine={() => refineHierarchy(rawEmployees)}
             />
 
 

@@ -55,7 +55,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 ) : (
                     filteredOrgs.map(org => (
                         <div 
-                            key={org.id} 
+                            key={org.local_id || org.id} 
                             className={styles.orgItem} 
                             onClick={() => onOrgClick(org)}
                         >
