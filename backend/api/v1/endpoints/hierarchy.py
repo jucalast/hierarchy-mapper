@@ -47,17 +47,18 @@ async def refine_hierarchy(
     # 2. Atualizar a lista original e PERSISTIR no banco
     updated_nodes = []
     
-    # Tentamos descobrir qual a organização desses funcionários
-    # Pegamos o primeiro nó que tenha linkedin e buscamos no banco
-    org_id = None
-    for n in raw_nodes:
-        if n.get("linkedin"):
-            stmt = select(Employee).where(Employee.linkedin_url == n.get("linkedin"))
-            res = await db.execute(stmt)
-            emp_db = res.scalars().first()
-            if emp_db:
-                org_id = emp_db.company_id
-                break
+    # 🕵️ Mapeamento de IDs Efêmeros para IDs de Banco Reais para esta leva
+    # Isso é CRUCIAL para que o manager_id salvo no banco seja estável e referenciável
+    ephemeral_to_db_id = {}
+    
+    # Primeiro, buscamos todos os funcionários desta leva no banco para ter os IDs reais
+    for node in employees:
+        stmt = select(Employee).where(Employee.name == node.get("name"), Employee.role == node.get("role"))
+        res = await db.execute(stmt)
+        emp_db = res.scalars().first()
+        if emp_db:
+            ephemeral_to_db_id[node["id"]] = f"node_{emp_db.id}"
+            if not org_id: org_id = emp_db.company_id
 
     for node in employees:
         ref_entry = ref_dict.get(node["id"])
@@ -69,17 +70,32 @@ async def refine_hierarchy(
             if node["id"] != "root_company" and new_level == 0:
                 new_level = get_seniority_level(node.get("role", ""))
 
+            # 🛠️ RESOLUÇÃO DE MANAGER ID PARA PERSISTÊNCIA ESTÁVEL
+            # Se a IA sugeriu um ID efêmero (ex: node_fulano), tentamos converter para o ID Real (node_45)
+            # Isso faz com que ao "puxar" do banco, o relacionamento já venha resolvido e correto.
+            final_manager_id = new_manager_id
+            if new_manager_id in ephemeral_to_db_id:
+                final_manager_id = ephemeral_to_db_id[new_manager_id]
+            elif new_manager_id == "root_company":
+                final_manager_id = "root_company"
+
             node["level"] = new_level
-            node["manager_id"] = new_manager_id
+            node["manager_id"] = final_manager_id
             
-            # Persistência
-            if node.get("linkedin"):
-                stmt = select(Employee).where(Employee.linkedin_url == node.get("linkedin"))
+            # Persistência no Banco de Dados
+            # Buscamos o registro real para salvar as alterações de senioridade e liderança
+            if node.get("linkedin") or node.get("name"):
+                stmt = select(Employee)
+                if node.get("linkedin"):
+                    stmt = stmt.where(Employee.linkedin_url == node.get("linkedin"))
+                else:
+                    stmt = stmt.where(Employee.name == node.get("name"), Employee.role == node.get("role"))
+                
                 res = await db.execute(stmt)
                 db_emp = res.scalars().first()
                 if db_emp:
                     db_emp.seniority = new_level
-                    db_emp.manager_id = str(new_manager_id)
+                    db_emp.manager_id = str(final_manager_id)
         
         updated_nodes.append(node)
     
