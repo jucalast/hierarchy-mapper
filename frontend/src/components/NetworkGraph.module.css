@@ -314,7 +314,8 @@
     width: 14px;
     height: 14px;
     margin-right: 10px;
-    opacity: 0.4; /* Matching Header/Sidenav icon opacity */
+    opacity: 0.4;
+    /* Matching Header/Sidenav icon opacity */
     transition: opacity 0.2s;
 }
 
@@ -369,7 +370,8 @@
     border: none;
     outline: none;
     color: #ffffff;
-    font-size: 0.85rem; /* Standardized with Drawer */
+    font-size: 0.85rem;
+    /* Standardized with Drawer */
     width: 120px;
     font-weight: 500;
 }
@@ -435,7 +437,8 @@
 
 
     /* Safety margin for mobile/tablet */
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4); /* Consistent with --sw-shadow */
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    /* Consistent with --sw-shadow */
     animation: swSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -452,7 +455,8 @@
     max-width: 100%;
 
     min-height: 48px;
-    background: #131313; /* Matching Sidenav/Header */
+    background: #131313;
+    /* Matching Sidenav/Header */
     border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
     border-bottom: none;
     padding: 8px 16px;
@@ -509,7 +513,8 @@
 
 
 .brandCard:hover {
-    background: rgba(255, 255, 255, 0.03); /* Subtle highlight like orgItem */
+    background: rgba(255, 255, 255, 0.03);
+    /* Subtle highlight like orgItem */
     color: #ffffff;
 }
 
@@ -683,7 +688,8 @@
     border: var(--sw-border-width) solid #ffffff;
     border-radius: 8px;
     color: #000000;
-    font-size: 0.85rem; /* Standardized */
+    font-size: 0.85rem;
+    /* Standardized */
     font-weight: 700;
     margin-left: 4px;
     cursor: pointer;
@@ -718,7 +724,8 @@
 .refineTab {
     display: flex;
     align-items: center;
-    background: #131313; /* Matching Sidenav/Header */
+    background: #131313;
+    /* Matching Sidenav/Header */
     border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
     padding: 4px 8px;
     border-radius: 16px;
@@ -765,37 +772,60 @@
     border-top: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.refineIconWrapper {
-    width: 40px;
-    height: 40px;
+.cleanSearchBtn {
     display: flex;
     align-items: center;
     justify-content: center;
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.3) !important;
     cursor: pointer;
-    background: #1e2145 !important;
-    border: none;
-    color: #7a8bff !important;
-    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 0 12px;
+    height: 38px;
     flex-shrink: 0;
-    transition: all 0.2s;
-
 }
 
-.refineIconWrapper:hover {
-    background: #252a5a !important;
+.cleanSearchBtn:hover {
     color: #ffffff !important;
 }
 
+.cleanSearchLoading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.enrichInlineBtn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: var(--sw-border-width) solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+.enrichInlineBtn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.enrichInlineLoading {
+    background: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+    pointer-events: none;
+}
 
 .refineTabEnriching {
     opacity: 1;
-}
-
-.refineIconLoading {
-    background: transparent !important;
-    color: rgba(255, 255, 255, 0.4) !important;
-    pointer-events: none;
-    box-shadow: none !important;
 }
 
 .loadingAnim {
@@ -1171,10 +1201,13 @@
 
 /* --- GRAPH NODES (SaaS PREMIUM CARDS) --- */
 .customNode {
-    background: #131313; /* Consistent with SideNav/Header */
+    background: #131313;
+    /* Consistent with SideNav/Header */
     border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px; /* Harmonized with FloatingToolbar */
-    width: 440px; /* Slightly wider for better text flow */
+    border-radius: 16px;
+    /* Harmonized with FloatingToolbar */
+    width: 440px;
+    /* Slightly wider for better text flow */
     padding: 0;
 
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1224,10 +1257,7 @@
 }
 
 
-.rootNode {
-    border: 2px solid var(--sw-primary) !important;
-    box-shadow: 0 0 30px rgba(129, 140, 248, 0.1);
-}
+
 
 .handle {
     width: 8px !important;
@@ -1312,7 +1342,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.02); /* Very subtle top bar */
+    background: rgba(255, 255, 255, 0.02);
+    /* Very subtle top bar */
     border-bottom: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
     border-radius: 16px 16px 0 0;
     position: relative;

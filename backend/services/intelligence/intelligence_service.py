@@ -121,8 +121,8 @@ class IntelligenceService:
                 print(f"[Intelligence] 🌐 Domínio encontrado via Clearbit: {found_domain}")
 
         # 4. CAMADA 3: Brand Discovery Engine (Fallback e Enriquecimento de Alternativas)
-        # Se force_refresh for True, SEMPRE rodamos para popular o carrossel com alternativas!
-        if not found_domain or force_refresh:
+        # Se NÃO temos domínio, acionamos o BrandEngine para tentar achar.
+        if not found_domain:
             from .brand_discovery import discover_company_brand
             search_target = result_data["main_option"]["official_name"] if result_data["main_option"] and result_data["main_option"].get("official_name") else company_name
             print(f"[Intelligence] 🧠 Acionando BrandEngine para alternativas de '{search_target}'...")

@@ -220,6 +220,13 @@ async def run_b2b_discovery_task(
             print(f"[Worker] Found {count} employees so far for {company_name}...")
 
     print(f"[Worker] Job completed for {company_name}. Total found: {count}")
+    
+    # 🏁 ÚLTIMO ESFORÇO: Garante que o Front-End saiba que ACABOU, 
+    # mesmo que o loop tenha vindo vazio.
+    try:
+        await ctx['redis'].publish(f"job_updates_{ctx['job_id']}", json.dumps({"type": "done"}))
+    except: pass
+
     return {"status": "completed", "count": count}
 
 async def startup(ctx):
@@ -231,5 +238,6 @@ async def shutdown(ctx):
 class WorkerSettings:
     functions = [run_b2b_discovery_task]
     redis_settings = redis_settings
+    job_timeout = 1800 # 30 min (Aumentando de 300s pra dar tempo aos fallback engines e delays)
     on_startup = startup
     on_shutdown = shutdown

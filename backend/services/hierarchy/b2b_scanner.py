@@ -142,8 +142,18 @@ async def discover_employees_stream(
             db_org_id = org.id
             
             # 🧹 FAIXINA GERAL: Se já existiam funcionários, deleta para "Redo"
+            # EXCEÇÃO: Preservar Quadro Societário (QSA) e Inteligência base
+            from sqlalchemy import or_
             print(f"[Database] 🧹 Limpando registros antigos para {temp_brand}...")
-            await session.execute(delete(Employee).where(Employee.company_id == db_org_id))
+            await session.execute(
+                delete(Employee).where(
+                    Employee.company_id == db_org_id,
+                    or_(
+                        Employee.department != "Quadro de Sócios (QSA)",
+                        Employee.department == None
+                    )
+                )
+            )
             await session.commit()
     except Exception as e:
         print(f"[Database] Link org error: {e}")
@@ -246,6 +256,12 @@ async def discover_employees_stream(
                 f.write(f"{'='*30}\n\n")
         except: pass
 
+        # ⏳ Pausa para evitar detecção (Simula ritmo humano)
+        if q_idx > 0:
+            delay = random.uniform(6.0, 10.0)
+            print(f"      [B2B Engine] 💤 Aguardando {delay:.2f}s para próxima consulta...")
+            await asyncio.sleep(delay)
+
         results = await get_duck_results(query, max_results=60)
         print(f"      [Debug] Search results for '{query}': {len(results)} found")
         if not results: continue
@@ -316,13 +332,15 @@ async def discover_employees_stream(
                     base_name = simplify_text(name).lower().replace(".", "").strip()
                     name_parts = [p for p in base_name.split() if len(p) > 1 or p.isalpha()]
                     
-                    # Variações: [nome-completo, nome-sobrenome, nome-primeiro-segundo]
+                    # Variações: [nome-completo, nome-sobrenome, nome-primeiro-segundo, nome-segundo-último]
                     slugs = [
                         "-".join(name_parts),
                         f"{name_parts[0]}-{name_parts[-1]}" if len(name_parts) > 1 else name_parts[0],
                     ]
                     if len(name_parts) > 2:
                         slugs.append(f"{name_parts[0]}-{name_parts[1]}")
+                        slugs.append(f"{name_parts[1]}-{name_parts[-1]}")
+                        slugs.append(f"{name_parts[0]}-{name_parts[1]}-{name_parts[-1]}")
                     
                     for s in list(set(slugs)):
                         check_url = f"https://theorg.com/org/{t_brand}/org-chart/{s}"
@@ -333,7 +351,7 @@ async def discover_employees_stream(
                             # SEGURANÇA MÁXIMA: O nome precisa estar NO TÍTULO principal (não na sidebar)
                             # e o primeiro nome precisa estar no final da URL
                             candidate_first_name = name_parts[0].lower()
-                            # Extrai apenas o conteúdo da tag <title>
+                            # Extrai apenas o conteúdo da tag <title> para checagem base
                             page_title_match = re.search(r'<title>(.*?)</title>', resp.text, re.I | re.S)
                             raw_title = html.unescape(page_title_match.group(1)) if page_title_match else ""
                             page_title_low = raw_title.lower()
@@ -343,26 +361,31 @@ async def discover_employees_stream(
                                 theorg_url = str(resp.url)
                                 theorg_info = f" [HIERARCHY CONFIRMED]: Profile officially listed on The Org"
                                 
-                                # LÓGICA ROBUSTA: Pegamos o título e limpamos o Nome e a Empresa
-                                clean_role = raw_title.split("|")[0].strip() # Remove "| The Org"
+                                # Extração de Cargo Real baseada no test_universal_theorg.py
+                                role = "Confirmed Profile"
+                                # Prioridade 1: og:title
+                                title_match = re.search(r'property="og:title" content="[^"-]*-\s*([^|@"]*)\s', resp.text, re.I)
+                                if not title_match:
+                                    # Prioridade 2: tag <title>
+                                    title_match = re.search(fr"<title>[^<]*{re.escape(name_parts[0])}[^<]*-\s*([^|@<]*)\s+", resp.text, re.I)
                                 
-                                # 1. Remove o nome do candidato (case insensitive)
-                                clean_role = re.sub(re.escape(name), "", clean_role, flags=re.I).strip()
-                                
-                                # 2. Remove partes óbvias do nome da empresa
-                                for part in temp_brand.split("-") + [temp_brand]:
-                                    if len(part) > 2:
-                                        clean_role = re.sub(re.escape(part), "", clean_role, flags=re.I).strip()
-                                
-                                # 3. Remove traços e "at" que sobraram
-                                clean_role = re.sub(r'^\s*[-—]\s*', '', clean_role)
-                                clean_role = re.sub(r'\bat\b', '', clean_role, flags=re.I).strip()
-                                clean_role = clean_role.strip(" -—|")
-                                
-                                if not clean_role or len(clean_role) < 3 or clean_role.lower() in temp_brand.lower():
-                                    theorg_role = "Confirmed Profile"
-                                else:
-                                    theorg_role = clean_role.title()
+                                if title_match:
+                                    role = title_match.group(1).strip()
+                                    role = html.unescape(role)
+                                    role = re.sub(fr'\s+(at|na|da|in|of|@)\s+.*', '', role, flags=re.IGNORECASE)
+                                    # Remove nome ou marca do cargo por segurança
+                                    role = re.sub(re.escape(name), "", role, flags=re.IGNORECASE).strip()
+                                    for part in temp_brand.split("-") + [temp_brand]:
+                                        if len(part) > 2:
+                                            role = re.sub(re.escape(part), "", role, flags=re.IGNORECASE).strip()
+                                    role = role.strip(" -—|")
+                                    
+                                    if len(role) >= 3 and role.lower() not in temp_brand.lower():
+                                        role = role.title()
+                                    else:
+                                        role = "Confirmed Profile"
+                                    
+                                theorg_role = role
                                 
                                 print(f"      [The Org] ✅ Sucesso real para {name}: {theorg_role}")
                                 break
@@ -393,35 +416,48 @@ async def discover_employees_stream(
             meta_desc = enriched.get('description', '')
             meta_title = f"{enriched.get('name', '')} | {enriched.get('role', '')}"
             
-            # ... (restante da lógica de brand e filter)
-            def slugify(text: str) -> str:
+            # 🛡️ NORMALIZAÇÃO PARA MATCHING (A&S -> AS ou ASTechnologies)
+            def slugify_lenient(text: str) -> str:
                 return re.sub(r'[^a-z0-9]', '', text.lower())
-
-            brand_slug = slugify(temp_brand)
-            brand_first_word_slug = slugify(temp_brand.split()[0]) if temp_brand.split() else brand_slug
+            
+            brand_slug = slugify_lenient(temp_brand)
+            # Pega termos significativos (ex: A&S Technologies -> as, technologies)
+            brand_words = [slugify_lenient(w) for w in temp_brand.replace('&', ' ').replace('-', ' ').split() if len(slugify_lenient(w)) >= 2]
             
             # Buscamos a marca no snippet (DDG) E no Metadata (LinkedIn)
             search_context = title + body + href
-            meta_context = meta_title + meta_desc
-            full_context_slug = slugify(search_context + meta_context)
+            meta_context = (enriched.get('role', '') or '') + (enriched.get('description', '') or '')
+            full_context_slug = slugify_lenient(search_context + meta_context)
             
             theorg_found = "HIERARCHY CONFIRMED" in (theorg_info or "")
-            brand_match = (brand_slug in full_context_slug) or (brand_first_word_slug in full_context_slug)
+            # Match se qualquer palavra significativa da marca estiver presente ou se o slug completo bater
+            brand_match = (brand_slug in full_context_slug) or any(w in full_context_slug for w in brand_words)
             
-            if not theorg_found and not brand_match: 
-                print(f"      [Debug] SKIP: Brand '{temp_brand}' not found in context for {name}")
+            # 🛡️ TRAVA DE ÂNCORA DE EMPRESA (Evita Ex-Funcionários e Erros de Marca)
+            is_wrong_company = False
+            if not theorg_found:
+                meta_role = (enriched.get('role', '') or '').lower()
+                
+                # Só marcamos como ERRO se aparecer o nome de OUTRA empresa clara no headline
+                # e nossa marca NÃO estiver lá.
+                other_known_signals = ["at ", "na ", "no ", "trabalha em ", "works at "]
+                has_at_signal = any(sig in meta_role for sig in other_known_signals)
+                
+                if has_at_signal:
+                    # Se ele diz que trabalha "na Empresa X" e nossa marca não aparece no headline
+                    if not any(w in meta_role for w in brand_words) and brand_slug not in meta_role:
+                        is_wrong_company = True
+            
+            if (not theorg_found and not brand_match) or is_wrong_company: 
+                print(f"      [Debug] SKIP: {'Company Mismatch' if is_wrong_company else 'Brand not found'}")
                 try:
                     with open("logs/engine_raw.log", "a", encoding="utf-8") as f:
-                        f.write(f"[DISTRAÇÃO DE BUSCA] CANDIDATO: {name}\n")
-                        f.write(f"LINK: {href}\n")
-                        f.write(f"--- [METADADOS BRUTOS] ---\n")
-                        f.write(f"GOOGLE TITLE: {title}\n")
-                        f.write(f"GOOGLE DESC: {body}\n")
-                        f.write(f"LINKEDIN OG: {meta_title} | {meta_desc}\n")
-                        f.write(f"MOTIVO: 🚫 Empresa Irrelevante (Marca '{temp_brand}' não encontrada)\n")
+                        f.write(f"[ÂNCORA DE EMPRESA] CANDIDATO: {name} | LINK: {href}\n")
+                        f.write(f"MOTIVO: 🚫 {'Mismatch' if is_wrong_company else 'Brand not found'} (Role: {enriched.get('role')} | Target: {temp_brand})\n")
                         f.write("-" * 50 + "\n\n")
                 except: pass
                 continue
+            
             
             # 3. 🛡️ FILTRAGEM MECÂNICA (Whitelist Ampliada)
             from .filters import apply_strict_filters
@@ -464,7 +500,7 @@ async def discover_employees_stream(
         if not candidates_pool: continue
 
         # --- 🧊 PROCESSAMENTO DE IA EM LOTE (BATCHING) ---
-        from services.role_engine import role_engine
+        from services.hierarchy.role_engine import role_engine
         batch_ai_results = await role_engine.distill_roles_batch(candidates_pool, temp_brand, product_focus, area_focus=area_focus)
 
         for c in candidates_pool:
@@ -505,64 +541,153 @@ async def discover_employees_stream(
 
             # --- 🕵️ MÓDULO DE REPESCAGEM IMEDIATA (Deep Research) ---
             reason_lower = str(ai_data.get("reason", "")).upper()
-            needs_repescagem = not is_valid and any(k in reason_lower for k in [
+            
+            # 🚨 TRIGGER REFORÇADO: 
+            # 1. Se a IA disse que não é válido por falta de info ou confiança baixa.
+            # 2. Se a IA aprovou mas o cargo é GENÉRICO (Professional, Employee, etc).
+            # 3. Se a IA aprovou mas a confiança não é TOTAL (< 90%).
+            is_generic = any(g in role_extracted for g in ["professional", "employee", "não identificado", "b2b profile", temp_brand.lower()])
+            
+            needs_repescagem = (not is_valid and any(k in reason_lower for k in [
                 "INSUFFICIENT", "UNCERTAIN", "GENERIC", "WHITELIST", "NOT FOUND", "LOW CONFIDENCE", "NO AI RESPONSE"
-            ])
+            ])) or (is_valid and (is_generic or matching_score < 90))
             
             if needs_repescagem:
-                print(f"      [Individual Search] 🕵️ Cavando biografia de: {name} (Imediato)...")
+                # Limpa a URL de sufixos de idioma para evitar dados obsoletos
+                href = re.sub(r'/(en|pt|es|fr|de|it|br)/?$', '', href.rstrip('/'))
+                
+                search_title = f"{title} | {body}"
+                print(f"      [Individual Search] 🕵️ Pesquisando especificamente por: {name} na {temp_brand}...")
+                
+                # 1. 🔍 BUSCA DEDICADA POR NOME (Evita ruído de buscas amplas)
+                individual_query = f'"{name}" "{temp_brand}" site:br.linkedin.com'
+                individual_results = await get_duck_results(individual_query, max_results=3)
+                
+                dedicated_context = ""
+                mechanical_title = "Não Identificado"
+                
+                if individual_results:
+                    # Pegamos o primeiro resultado que parece ser o perfil correto
+                    for ir in individual_results:
+                        ir_href = ir.get("href", "").split("?")[0].rstrip("/")
+                        if href in ir_href or ir_href in href: # É a mesma pessoa
+                            dedicated_context = f"DEDICATED SEARCH RESULT: {ir.get('title')} | {ir.get('body')}"
+                            # Extração mecânica pura do título do Google (Fidelidade Máxima)
+                            # Suporta formatos: Nome - Cargo, Nome | Cargo, Nome : Cargo
+                            t = ir.get('title', '')
+                            # Limpa sufixos do LinkedIn
+                            t = re.sub(r' \| LinkedIn$', '', t, flags=re.I)
+                            t = re.sub(r' - LinkedIn$', '', t, flags=re.I)
+                            
+                            separators = [r' - ', r' \| ', r' : ']
+                            for sep in separators:
+                                p = re.split(sep, t)
+                                if len(p) > 1:
+                                    potential = p[1].split(' | ')[0].strip()
+                                    if len(potential) > 3: 
+                                        # Se o que achamos for o nome da empresa, ignoramos como cargo
+                                        if slugify_lenient(potential) not in [slugify_lenient(temp_brand)]:
+                                            mechanical_title = potential
+                                            break
+                            
+                            # 🧪 REPESCAGEM POR SNIPPET (Se o título falhou)
+                            if mechanical_title == "Não Identificado":
+                                # Procura padrões como "atualmente atuo como X", "sou Y na empresa", etc.
+                                bio_lower = ir.get('body', '').lower()
+                                patterns = [
+                                    r"(?:atualmente |hoje |sou |atuo como )([^.!,·]*?)(?: na | da | em | na empresa|!|\.|\,)",
+                                    r"([^.!,·]*?)\s+(?:comprador|compradora|gerente|analista|assistente|diretor|coordenador|supervisor|estagiário)"
+                                ]
+                                for pat in patterns:
+                                    m = re.search(pat, bio_lower)
+                                    if m:
+                                        role_candidate = m.group(0).strip(" .!,")
+                                        if len(role_candidate) > 4 and len(role_candidate) < 50:
+                                            mechanical_title = role_candidate.title()
+                                            break
+                            break
+
                 try:
                     with open("logs/engine_raw.log", "a", encoding="utf-8") as f:
                         f.write(f"[REPESCAGEM IMEDIATA] CANDIDATO: {name}\n")
                         f.write(f"LINK: {href}\n")
                         f.write(f"--- [MOTIVO] ---\n")
-                        f.write(f"Iniciando raspagem profunda devido a: {ai_data.get('reason')}\n")
+                        f.write(f"Iniciando busca individual devido a: {ai_data.get('reason')}\n")
+                        if dedicated_context:
+                            f.write(f"--- [GOOGLE DEDICADO] ---\n")
+                            f.write(f"{dedicated_context}\n")
+                            f.write(f"CARGO EXTRAÍDO MECANICAMENTE: {mechanical_title}\n")
                         f.write("-" * 50 + "\n\n")
                 except: pass
 
-                # Raspagem Profunda (Anti-Alucinação + Enriquecimento Híbrido)
+                # 2. Raspagem de Metadados (Fallback/Enriquecimento)
                 deep_enriched = await get_url_preview(href, company_hint=temp_brand, fast_mode=False) 
                 
-                if not deep_enriched.get("error"):
-                    # 💡 Unificamos Google + LinkedIn + The Org (que já foi pego lá no início)
-                    search_title = f"{title} | {body}"
-                    deep_context = [
-                        f"Search Engine Insight: {search_title}",
-                        f"LinkedIn Status: {deep_enriched.get('name', '')} | {deep_enriched.get('role', '')}",
-                        f"LinkedIn Bio: {deep_enriched.get('description', '')}",
-                        f"Hierarchy Data: {theorg_info} | Official Role: {theorg_role}"
-                    ]
-                    
-                    print(f"      [IA Context] 🧠 Analisando {name} com contexto Triplo (Google+LI+TheOrg)...")
+                # 💡 Unificamos a Busca Dedicada + LinkedIn + The Org
+                deep_context = [
+                    f"Individual Search Insight: {dedicated_context if dedicated_context else search_title}",
+                    f"LinkedIn Status: {deep_enriched.get('name', '')} | {deep_enriched.get('role', '')}",
+                    # 🧹 Limpeza de ruído institucional do LinkedIn para não confundir a IA
+                    f"LinkedIn Bio: {re.sub(r'veja o perfil de .* no linkedin, uma comunidade profissional de.*', '', str(deep_enriched.get('description', '')), flags=re.I).strip()}",
+                    f"Hierarchy Data: {theorg_info} | Official Role: {theorg_role}",
+                    f"CRITICAL HINT: Use as primary evidence if valid: '{mechanical_title}'" if mechanical_title != "Não Identificado" else "HINT: Deduce the specific role from the 'atuo como' or experience sentences."
+                ]
+                
+                print(f"      [IA Context] 🧠 Analisando {name} focando no cargo extraído: {mechanical_title}...")
 
-                    # Destilação Individual
-                    ai_data = await role_engine.distill_role(name, temp_brand, deep_context, product_focus=product_focus)
+                # Destilação Individual (Enviamos o cargo mecânico como pista prioritária)
+                ai_data = await role_engine.distill_role(name, temp_brand, deep_context, product_focus=product_focus, area_focus=area_focus)
+                
+                # SE a IA tentou mudar um cargo mecânico forte por um ruído genérico, restauramos
+                if mechanical_title != "Não Identificado" and ai_data.get("is_valid"):
+                    ai_role = str(ai_data.get("role", "")).lower()
+                    generic_labels = ["professional", "employee", "pioneer", "profile", "member", "não identificado", "unidentified"]
                     
-                    # 🛡️ HEURÍSTICA DE RESSURREIÇÃO (Se a IA falhou mas os dados brutos são claros)
-                    ai_evidence = str(ai_data.get("evidence", "")).lower()
-                    ground_truth = (search_title + " " + str(deep_enriched.get("role", "")) + " " + str(deep_enriched.get("description", "")) + " " + (theorg_role or "") + " " + ai_evidence).lower()
-                    
-                    whitelist = ["buyer", "comprador", "compras", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic", "logistic", "logistica", "pcp", "expedição", "estoque", "warehouse", "comércio", "trade", "negociação", "assistencia", "assistência", "tecnica", "técnica"]
-                    has_proof = any(w in ground_truth for w in whitelist)
-                    
-                    is_valid = ai_data.get("is_valid", False)
-                    trust_score = ai_data.get('matching_score', 0)
+                    # Se o título extraído mecanicamente for bom e a IA deu algo genérico
+                    is_ai_generic = any(g == ai_role.strip() for g in generic_labels)
+                    if is_ai_generic or (len(ai_role) < 4 and len(mechanical_title) > 5):
+                        print(f"      [Fidelity Guard] 🛡️ Restaurando cargo real '{mechanical_title}' (IA deu '{ai_data.get('role')}')")
+                        ai_data["role"] = mechanical_title
 
-                    # Se encontramos prova no Google/TheOrg mas a IA se confundiu, nós resgatamos!
-                    if has_proof:
-                        print(f"      [Heuristic Recovery] 🚀 Resgatando {name} via Ground Truth (Google/TheOrg)!")
-                        is_valid = True
-                        ai_data["is_valid"] = True
-                        ai_data["reason"] = "Role confirmed via Ground Truth (Google/TheOrg)"
-                        ai_data["matching_score"] = 95 # Forçamos nota alta para passar em qualquer filtro
-                        if not ai_data.get("department"): ai_data["department"] = area_focus.upper()
+                # 🛡️ HEURÍSTICA DE RESSURREIÇÃO (Se a IA falhou mas os dados brutos são claros)
+                extracted_role_low = str(deep_enriched.get("role", "")).lower()
+                extracted_bio_low = str(deep_enriched.get("description", "")).lower()
+                ground_truth_narrow = (extracted_role_low + " " + (theorg_role or "").lower() + " " + mechanical_title.lower()).strip()
+                ground_truth_wide = (dedicated_context + " " + extracted_role_low + " " + extracted_bio_low + " " + (theorg_role or "").lower()).lower()
+                
+                whitelist = ["buyer", "comprador", "compras", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic", "logistic", "logistica", "pcp", "expedição", "estoque", "warehouse", "comex", "trade", "negociação"]
+                
+                # REGRAS DE RESSURREIÇÃO REFORÇADAS:
+                # 1. Prova forte no cargo real ou The Org
+                has_hard_proof = any(w in ground_truth_narrow for w in whitelist)
+                # 2. Prova no contexto amplo, mas sem ser post de vaga
+                is_recruitment_post = any(x in ground_truth_wide for x in ["temosvaga", "vaga para", "recrutamos", "contratando", "oportunidade para"])
+                has_soft_proof = any(w in ground_truth_wide for w in whitelist) and not is_recruitment_post
+                
+                # 3. Bloqueio de Vendedor (Vendedor NUNCA é Compras)
+                is_seller = any(s in ground_truth_wide for s in ["vendedor", "sales", "comercial", "representante"]) and "comprador" not in ground_truth_narrow
 
-                    # Validação Final de Whitelist de Segurança
-                    if not has_proof and trust_score < 90:
-                        is_valid = False
-                        ai_data["reason"] = "Safety Filter: No B2B keywords found in bio or AI evidence"
+                has_proof = (has_hard_proof or has_soft_proof) and not is_seller
+                
+                is_valid = ai_data.get("is_valid", False)
+                trust_score = ai_data.get('matching_score', 0)
 
-                    enriched = {**enriched, **deep_enriched}
+                # Se encontramos prova no Google/TheOrg mas a IA se confundiu, nós resgatamos!
+                if has_proof and not is_valid:
+                    print(f"      [Heuristic Recovery] 🚀 Resgatando {name} via Ground Truth (Google/TheOrg)!")
+                    is_valid = True
+                    ai_data["is_valid"] = True
+                    ai_data["reason"] = "Role confirmed via Ground Truth (Role/TheOrg Keywords)"
+                    ai_data["matching_score"] = 95
+                    if not ai_data.get("department"): ai_data["department"] = area_focus.upper()
+                    if mechanical_title != "Não Identificado": ai_data["role"] = mechanical_title
+
+                # Validação Final de Whitelist de Segurança
+                if not has_proof and trust_score < 70 and not is_valid:
+                    is_valid = False
+                    ai_data["reason"] = "Safety Filter: No B2B keywords found in bio or AI evidence"
+
+                enriched = {**enriched, **deep_enriched}
 
                 # Log do Resultado da Repescagem (Transparência Total)
                 try:

@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-    AlertCircle, 
-    Fingerprint, 
-    Globe, 
-    Target, 
-    Sparkles, 
-    Loader2, 
-    Play, 
+import {
+    AlertCircle,
+    Fingerprint,
+    Globe,
+    Target,
+    Sparkles,
+    Loader2,
+    Play,
     Building,
     ArrowLeft,
     Search,
@@ -95,10 +95,10 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                         >
                             <div className={styles.brandAvatarWrapper}>
                                 {opt.logo ? (
-                                    <img 
-                                        src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(opt.logo)}`} 
-                                        alt={opt.name} 
-                                        className={styles.brandAvatar} 
+                                    <img
+                                        src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(opt.logo)}`}
+                                        alt={opt.name}
+                                        className={styles.brandAvatar}
                                     />
                                 ) : (
                                     <div className={styles.brandAvatarPlaceholder}>
@@ -118,7 +118,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
             )}
 
             {/* 2. Main Search Bar (Refine Tab) */}
-            <div 
+            <div
                 className={`${styles.refineTab} ${isSearching ? styles.searching : ''} ${enrichingIds.has(999) ? styles.refineTabEnriching : ''}`}
                 title="Intelligence Controller"
             >
@@ -129,8 +129,8 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                             <>
                                 <div className={`${styles.toolbarSegment} ${needsAttention ? styles.inputAttention : ''}`}>
                                     <Fingerprint size={14} className={styles.inputIcon} />
-                                    <input 
-                                        placeholder="CNPJ" 
+                                    <input
+                                        placeholder="CNPJ"
                                         className={styles.input}
                                         value={cnpj}
                                         onChange={(e) => setCnpj(e.target.value)}
@@ -144,14 +144,51 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                         <div className={styles.toolbarDivider} />
                                         <div className={styles.toolbarSegment}>
                                             <Globe size={14} className={styles.inputIcon} />
-                                            <input 
-                                                placeholder="Domínio" 
+                                            <input
+                                                placeholder="Domínio"
                                                 className={styles.input}
                                                 value={domainTarget}
                                                 onChange={(e) => setDomainTarget(e.target.value)}
                                             />
+                                            {/* ✨ Botão de Lupa Integrado (Sem fundo, maior, cinza) */}
+                                            {!discovering && !loading && (
+                                                <button
+                                                    type="button"
+                                                    className={`${styles.cleanSearchBtn} ${enrichingIds.has(999) ? styles.cleanSearchLoading : ''}`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAutoEnrich();
+                                                    }}
+                                                    title="Enriquecer com IA"
+                                                >
+                                                    {enrichingIds.has(999) ? (
+                                                        <Loader2 size={18} className={styles.loadingAnim} />
+                                                    ) : (
+                                                        (domainTarget && cnpj) ? <RotateCcw size={18} /> : <Search size={18} />
+                                                    )}
+                                                </button>
+                                            )}
                                         </div>
                                     </>
+                                )}
+
+                                {/* Se NÃO tem domínio ainda, mostra a lupa ao lado do CNPJ para permitir o enriquecimento inicial */}
+                                {!domainTarget && !discovering && !loading && (
+                                    <button
+                                        type="button"
+                                        className={`${styles.cleanSearchBtn} ${enrichingIds.has(999) ? styles.cleanSearchLoading : ''}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAutoEnrich();
+                                        }}
+                                        title="Buscar Domínio e Dados"
+                                    >
+                                        {enrichingIds.has(999) ? (
+                                            <Loader2 size={18} className={styles.loadingAnim} />
+                                        ) : (
+                                            <Search size={18} />
+                                        )}
+                                    </button>
                                 )}
                             </>
                         ) : (
@@ -159,19 +196,19 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                 <button type="button" className={styles.backBtn} onClick={() => onBrandSelect(null)}>
                                     <ArrowLeft size={16} />
                                 </button>
-                                
+
                                 <div className={`${styles.brandCard} ${styles.selectedBrandPreview}`}>
                                     <div className={styles.brandAvatarWrapper}>
                                         {confirmedLogo ? (
-                                            <img 
-                                                src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(confirmedLogo)}`} 
-                                                className={styles.brandAvatar} 
-                                                alt="Logo" 
+                                            <img
+                                                src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(confirmedLogo)}`}
+                                                className={styles.brandAvatar}
+                                                alt="Logo"
                                             />
                                         ) : <Building size={14} className={styles.inputIcon} />}
                                     </div>
                                     <div className={styles.brandInfo}>
-                                        <input 
+                                        <input
                                             className={`${styles.input} ${styles.brandNameLine}`}
                                             value={confirmedBrand}
                                             onChange={(e) => setConfirmedBrand(e.target.value)}
@@ -185,18 +222,19 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                 </div>
 
                                 <div className={styles.toolbarDivider} />
-                                
+
+
                                 {/* Area Selector (Compras / Logística) */}
                                 <div className={styles.areaSelectorContainer}>
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         className={`${styles.areaBtn} ${areaFocus === 'compras' ? styles.areaBtnActive : ''}`}
                                         onClick={() => setAreaFocus('compras')}
                                     >
                                         Compras
                                     </button>
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         className={`${styles.areaBtn} ${areaFocus === 'logistica' ? styles.areaBtnActive : ''}`}
                                         onClick={() => setAreaFocus('logistica')}
                                     >
@@ -208,8 +246,8 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
 
                                 <div className={styles.toolbarSegment}>
                                     <Target size={14} className={styles.inputIcon} />
-                                    <input 
-                                        placeholder="Categoria (ex: Embalagens)" 
+                                    <input
+                                        placeholder="Categoria (ex: Embalagens)"
                                         className={styles.input}
                                         value={productFocus}
                                         onChange={(e) => setProductFocus(e.target.value)}
@@ -220,43 +258,25 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                     </form>
 
                     <div className={styles.toolbarActions}>
-                        {domainTarget && confirmedBrand && !enrichingIds.has(999) && (
-                            <button 
-                                onClick={handleSearch} 
-                                className={`${styles.detectBtn} ${discovering ? styles.detectBtnLoading : ''}`}
+                        {(step !== "input" || (domainTarget && confirmedBrand)) && !enrichingIds.has(999) && (
+                            <button
+                                onClick={handleSearch}
+                                className={`${styles.detectBtn} ${(discovering || loading) ? styles.detectBtnLoading : ''}`}
                                 disabled={discovering || loading}
                             >
-                                {discovering || loading ? (
+                                {(discovering || loading) ? (
                                     <Loader2 size={18} className={styles.loadingAnim} />
                                 ) : (
                                     <>
                                         {step === "confirm" ? <Target size={14} /> : <Play size={14} fill="currentColor" />}
-                                        {step === "confirm" ? "Mapear Hierarquia" : "Detectar"}
+                                        {step === "confirm" ? "Mapear Hierarquia" : "Mapear"}
                                     </>
                                 )}
                             </button>
                         )}
                     </div>
                 </div>
-
-                {/* Intelligence Trigger Button (Right) - Only show during SEARCH phase and if NOT detecting */}
-                {step === "input" && !discovering && (
-                    <div 
-                        className={`${styles.refineIconWrapper} ${enrichingIds.has(999) ? styles.refineIconLoading : ''}`} 
-                        onClick={handleAutoEnrich}
-                        title={ (domainTarget && cnpj) ? "Refinar Enriquecimento" : "Enriquecer Inteligência" }
-                    >
-                        {enrichingIds.has(999) ? (
-                            <Loader2 size={18} className={styles.loadingAnim} />
-                        ) : (
-                            (domainTarget && cnpj) ? <RotateCcw size={18} /> : <Search size={18} />
-                        )}
-                    </div>
-                )}
-
             </div>
         </div>
     );
 };
-
-

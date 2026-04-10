@@ -128,7 +128,8 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     cnpj: data.cnpj,
-                    domain: data.domain
+                    domain: data.domain,
+                    address: data.address
                 })
             });
         } catch (e) { console.error("Sync error", e); }
@@ -263,7 +264,11 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 if (cleanCnpj) setCnpj(cleanCnpj);
 
                 if (currentOrgId) {
-                    handleUpdatePipedrive(currentOrgId, { address: main.address, cnpj: cleanCnpj, domain: cleanDomain });
+                    handleUpdatePipedrive(currentOrgId, { 
+                        address: main.address, 
+                        cnpj: cleanCnpj, 
+                        domain: cleanDomain 
+                    });
 
                     setPipedriveOrgs(prev => prev.map(o =>
                         Number(o.id) === currentOrgId ? { ...o, address: main.address, cnpj: cleanCnpj, domain: cleanDomain } : o

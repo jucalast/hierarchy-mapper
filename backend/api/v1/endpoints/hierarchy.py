@@ -65,6 +65,10 @@ async def refine_hierarchy(
             new_level = ref_entry.get("level", node.get("level"))
             new_manager_id = ref_entry.get("manager_id", node.get("manager_id"))
             
+            # Garantir que funcionário não seja Nível 0 (reservado para a empresa)
+            if node["id"] != "root_company" and new_level == 0:
+                new_level = get_seniority_level(node.get("role", ""))
+
             node["level"] = new_level
             node["manager_id"] = new_manager_id
             
@@ -343,7 +347,8 @@ async def stream_company_hierarchy(
         for idx, socio in enumerate(qsa):
             name_socio = socio.get("nome_socio", "Sócio Anônimo")
             role_socio = socio.get("qualificacao_socio", "Sócio")
-            s_node = {"id": f"socio_{idx}", "name": name_socio, "role": role_socio, "department": "Quadro de Sócios (QSA)", "manager_id": "root_company", "level": 6}
+            clean_socio_id = f"socio_{re.sub(r'[^a-zA-Z0-9]', '_', name_socio.lower())}"
+            s_node = {"id": clean_socio_id, "name": name_socio, "role": role_socio, "department": "Quadro de Sócios (QSA)", "manager_id": "root_company", "level": 6}
             initial_nodes.append(s_node)
             hierarchy_pool.append(EmployeeNode(**s_node))
             
@@ -428,7 +433,7 @@ async def stream_company_hierarchy(
                 
             if new_nodes:
                 yield f"data: {json.dumps({'type': 'batch', 'nodes': new_nodes}, ensure_ascii=False)}\n\n"
-
+        
         yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(generator(), media_type="text/event-stream")
@@ -445,7 +450,7 @@ async def get_stored_hierarchy_by_pipedrive(pipedrive_id: int, db: AsyncSession 
 
 @router.get("/{org_id}")
 async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
-    """Busca a hierarquia completa já salva no banco de dados."""
+    """Busca a hierarquia completa já salva no banco de dados com resolução de IDs."""
     stmt_org = select(Organization).where(Organization.id == org_id)
     res_org = await db.execute(stmt_org)
     org = res_org.scalars().first()
@@ -456,7 +461,6 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
     result_emp = await db.execute(stmt_emp)
     employees = result_emp.scalars().all()
 
-    # Se não há funcionários, não retornamos nem o nó raiz para evitar "ghost nodes" no UI
     if not employees:
         return {"company_name": org.name, "nodes": [], "status": "empty"}
         
@@ -465,18 +469,57 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
     if logo_url and "http" in logo_url and "ui-avatars" not in logo_url:
         logo_url = f"http://127.0.0.1:8000/api/v1/proxy/image?url={logo_url}"
 
+    # 1. Nó Raiz
     nodes.append({
         "id": "root_company", "name": org.name, "role": "Entidade Principal", "department": "Supply Chain (Matriz)", 
         "manager_id": None, "level": 0, "company_logo": logo_url, "logo": logo_url, "domain": org.domain, "cnpj": org.cnpj,
         "linkedin": org.linkedin_url
     })
 
+    # 2. Build mapping of ephemeral IDs/Keys to the new stable DB-based node IDs
+    # Ephemeral IDs used during scan: node_{linkedin_user} or socio_{idx}
+    id_mapping = {}
     for emp in employees:
+        new_id = f"node_{emp.id}"
+        
+        # Mapping by LinkedIn URL (Stable username)
+        if emp.linkedin_url and '/in/' in emp.linkedin_url:
+            username = re.sub(r'[^a-zA-Z0-9]', '_', emp.linkedin_url.split('/in/')[-1].split('?')[0].rstrip('/'))
+            id_mapping[f"node_{username}"] = new_id
+            
+        # Mapping by Name (as fallback for partners/socios)
+        clean_name = re.sub(r'[^a-zA-Z0-9]', '_', emp.name.lower())
+        id_mapping[f"socio_{clean_name}"] = new_id
+
+    # 3. Create JSON nodes with corrected manager_ids and levels
+    for emp in employees:
+        new_id = f"node_{emp.id}"
+        level = emp.seniority
+        
+        # Proteção: Funcionário não pode ser Nível 0 (senão vira root entity no UI)
+        if level <= 0:
+            level = get_seniority_level(emp.role)
+            
+        manager_id = emp.manager_id
+        if not manager_id:
+            manager_id = "root_company"
+        elif manager_id in id_mapping:
+            # Resolve ephemeral ID to stable DB ID
+            manager_id = id_mapping[manager_id]
+        
         nodes.append({
-            "id": f"node_{emp.id}", "name": emp.name, "role": emp.role, "level": emp.seniority, 
-            "department": get_department_tag(emp.role), "manager_id": emp.manager_id or "root_company", 
-            "linkedin": emp.linkedin_url, "url": emp.linkedin_url, "profile_pic": emp.profile_pic, 
-            "email": emp.email, "education": emp.description, "location": emp.location
+            "id": new_id, 
+            "name": emp.name, 
+            "role": emp.role, 
+            "level": level, 
+            "department": get_department_tag(emp.role), 
+            "manager_id": manager_id, 
+            "linkedin": emp.linkedin_url, 
+            "url": emp.linkedin_url, 
+            "profile_pic": emp.profile_pic, 
+            "email": emp.email, 
+            "education": emp.description, 
+            "location": emp.location
         })
     
     return {"company_name": org.name, "nodes": nodes, "status": "cached"}

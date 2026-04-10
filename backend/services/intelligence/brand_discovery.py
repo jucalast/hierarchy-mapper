@@ -31,8 +31,8 @@ def clean_brand_name(raw_name: str) -> str:
     for pattern in noise:
         clean = re.sub(pattern, " ", clean, flags=re.IGNORECASE)
     
-    # 4. Remove múltiplos espaços e pontuações
-    clean = re.sub(r"[^a-zA-Z0-9À-ÿ\s]", " ", clean)
+    # 4. Remove múltiplos espaços e pontuações, mas PRESERVA o '&' que é comum em marcas
+    clean = re.sub(r"[^a-zA-Z0-9À-ÿ\s&]", " ", clean)
     clean = " ".join(clean.split())
     
     # Validação Básica
@@ -323,16 +323,29 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
 
     # 🔍 PASSO 2: Buscas Multi-Ângulo (Padrão HUMANO - Evita 429)
     from services.hierarchy.search_engine import get_duck_results
+    
+    # Extrai a cidade para busca local (Ex: Jaguariúna), o que ajuda muito em subsidiárias
+    city = ""
+    if official_data.get("address"):
+        addr_parts = official_data.get("address").split(",")
+        if len(addr_parts) > 1:
+            city_part = addr_parts[-1].split("-")[0].strip()
+            city = city_part
+    
+    # 🕵️ ESTRATÉGIA NOMINAL: O usuário quer que busquemos pelo NOME e não pelo domínio.
+    # O domínio da holding (OCQ) estava "envenenando" os resultados nominalistas.
     search_queries = [
-        f'"{search_name}" linkedin oficial perfil',
-        f'"{search_name}" linkedin company page',
-        f'linkedin {search_name} {domain}' if domain else None,
-        f'página da empresa {search_name} linkedin'
+        f'"{search_name}" linkedin',
+        f'site:linkedin.com/company "{search_name}"',
+        f'"{search_name}" {city} linkedin' if city else None,
+        f'linkedin "{search_name}" {domain if domain and search_name.lower() in domain.lower() else ""}'.strip(),
+        f'"{search_name.replace("&", " ")}" Brasil linkedin'
     ]
     
     # candidates_raw já inicializado no topo
     for query in filter(None, search_queries):
-        res = await get_duck_results(query, max_results=10, is_company=True)
+        # Aumentado para 25 para capturar subsidiárias que rankeiam abaixo da holding
+        res = await get_duck_results(query, max_results=25, is_company=True)
         for r in res:
             title = r.get("title", "")
             snippet = (r.get("body") or r.get("snippet") or "").lower()
@@ -356,7 +369,8 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
 
     # 🎯 Decisão e Scoring
     if not candidates_raw:
-        return {"brand": raw_name.title(), "alternatives": []}
+        final_brand = search_name or raw_name or "Empresa"
+        return {"brand": final_brand.title() if isinstance(final_brand, str) else str(final_brand), "alternatives": []}
         
     unique_candidates = {}
     for c in candidates_raw:
@@ -368,21 +382,55 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
         c = unique_candidates[name]
         score = 0
         name_norm = name.lower()
-        url = c["url"]
+        url = c["url"].lower()
         
-        corp_dna = ["friction", "tmd", "ltda", "ind", "freios", "solutions", "sistemas", "tecnologia", "brasil", "brazil", "group", "holdings"]
+        # DNA Corporativo - Termos que indicam ser uma página de empresa real
+        corp_dna = [
+            "friction", "tmd", "ltda", "ind", "freios", "solutions", 
+            "sistemas", "tecnologia", "technology", "technologies", 
+            "brasil", "brazil", "group", "holdings", "quimica", "química", 
+            "chemicals", "indústria", "comércio"
+        ]
         
-        if "/company/" in url: score += 150
-        if any(dna in name_norm for dna in corp_dna): score += 100
-        if " " in name: score += 40
-        if c["followers"] != "N/A": score += 80
+        # Bônus por ser uma página de empresa/escola (não perfil pessoal)
+        if "/company/" in url or "/school/" in url: 
+            score += 150
+            
+        # Bônus por termos corporativos no nome
+        if any(dna in name_norm for dna in corp_dna): 
+            score += 100
+            
+        # Bônus por possuir espaços (nomes de empresas tendem a ser compostos)
+        if " " in name: 
+            score += 40
+            
+        # Bônus por ter dados de seguidores extraídos (indica página ativa)
+        if c["followers"] != "N/A": 
+            score += 80
+
+        # ✨ NOVO: Bônus de Match de Nome (Imune a espaços e símbolos)
+        # Normaliza ambos para "astechnologies" para garantir match entre A&S e A & S
+        clean_search = search_name.lower()
+        simple_search = "".join(filter(str.isalnum, clean_search))
+        simple_name = "".join(filter(str.isalnum, name_norm))
         
+        if simple_search and simple_name:
+            if simple_search in simple_name or simple_name in simple_search:
+                score += 300 # Bônus de proximidade
+                # Super bônus se for um match exato de "corpo" do nome
+                if simple_search == simple_name:
+                    score += 600
+        
+        # Penalidade para nomes que parecem ser de pessoas (Sobrerenomes comuns)
         surnames = ["santos", "silva", "oliveira", "souza", "pereira", "costa", "ferreira", "lima", "natacci", "rodrigues"]
         words = name_norm.split()
         if any(s in words for s in surnames) and not any(dna in name_norm for dna in corp_dna):
             score -= 400
         
-        if len(name) > 35: score -= 100
+        # Penalidade para nomes excessivamente longos (ruído de SEO)
+        if len(name) > 45: 
+            score -= 150
+            
         return score
 
     sorted_names = sorted(unique_candidates.keys(), key=get_brand_score, reverse=True)
@@ -392,7 +440,7 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
         valid_names = [n for n in sorted_names if get_brand_score(n) > -50]
     
     top_alternatives = []
-    for n in valid_names[:8]: # Pega os Top 8 para buscar logos reais
+    for n in valid_names[:12]: # Aumentado para 12 para dar mais opções ao usuário
         cand = unique_candidates[n]
         # 🧪 Tenta buscar o logo REAL no LinkedIn
         real_logo = fetch_linkedin_logo(cand["url"])

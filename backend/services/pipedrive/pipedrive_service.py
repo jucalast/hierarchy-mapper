@@ -13,15 +13,38 @@ class PipedriveService:
         self.base_url = "https://api.pipedrive.com/v1"
 
     async def update_organization(self, org_id: int, data: dict):
-        """Atualiza Endereço, CNPJ e Domínio no Pipedrive."""
+        """Atualiza Endereço, CNPJ e Domínio no Pipedrive e no Banco Local."""
+        from core.database import async_session
+        from models import Organization
+        from sqlalchemy import select
+
+        # 1. Update no Pipedrive
         url = f"{self.base_url}/organizations/{org_id}?api_token={self.api_token}"
         payload = {"address": data.get("address")}
+        # Se você tiver campos customizados para CNPJ e Domínio no Pipedrive, adicione-os aqui
+        
+        pipedrive_success = False
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.put(url, json=payload)
-                return resp.status_code == 200
-        except: 
-            return False
+                pipedrive_success = resp.status_code == 200
+        except: pass
+
+        # 2. Update no Banco Local (Garante que o Drawer mostre o dado novo imediatamente)
+        try:
+            async with async_session() as session:
+                stmt = select(Organization).where(Organization.pipedrive_id == org_id)
+                res = await session.execute(stmt)
+                org = res.scalars().first()
+                if org:
+                    if data.get("cnpj"): org.cnpj = data.get("cnpj").replace(".", "").replace("/", "").replace("-", "")
+                    if data.get("domain"): org.domain = data.get("domain")
+                    if data.get("address"): org.address = data.get("address")
+                    await session.commit()
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro ao atualizar banco local: {e}")
+
+        return pipedrive_success
 
     async def list_organizations(self):
         """

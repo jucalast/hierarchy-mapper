@@ -70,16 +70,12 @@ async def test_theorg_direct(target_name, brand):
 if __name__ == "__main__":
     # Teste em lote com 10 perfis reais do log
     targets = [
-        ("Camila Lomba", "Knorr-Bremse"),
-        ("Clisman Luz", "Knorr-Bremse"),
-        ("Davy Morais", "Knorr-Bremse"),
-        ("Victor Franchescoli Faria", "Knorr-Bremse"),
-        ("Gláucia Souza", "Knorr-Bremse"),
-        ("Talles Cristian", "Knorr-Bremse"),
-        ("Maiara Betim", "Knorr-Bremse"),
-        ("Renilton S. Carvalho Carvalho", "Knorr-Bremse"),
-        ("Glauber Silva", "Knorr-Bremse"),
-        ("Gustavo Okumura", "Knorr-Bremse")
+        ("Marcos Santos", "Walsywa"),
+        ("Gabriel Silva", "Walsywa"),
+        ("Giovanna Guimarães", "Walsywa"),
+        ("Denis Fumache", "Walsywa"),
+        ("Fabrizio E.", "Walsywa"),
+        ("Janaina Jesus", "Walsywa")
     ]
     
     for name, brand in targets:

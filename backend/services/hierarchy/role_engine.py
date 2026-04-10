@@ -40,7 +40,7 @@ class RoleEngine:
                 smoke_payload = {"contents": [{"parts": [{"text": "hi"}]}], "generationConfig": {"maxOutputTokens": 1}}
                 smoke_resp = await client.post(smoke_url, json=smoke_payload)
                 if smoke_resp.status_code == 429:
-                    print("      [RoleEngine] 🚨 Gemini sem cota (Checagem Proativa). Usando Groq direto.")
+                    print("      [RoleEngine] [ALERT] Gemini sem cota (Checagem Proativa). Usando Groq direto.")
                     self.gemini_disabled = True
                     return False
                 elif smoke_resp.status_code != 200:
@@ -132,14 +132,14 @@ class RoleEngine:
                         f"1. {clean_sources[0] if clean_sources else 'N/A'}\n"
                         f"2. {clean_sources[1] if len(clean_sources) > 1 else 'N/A'}\n\n"
                         f"STRICT VALIDATION RULES:\n"
+                        f"- Rule AREA_FOCUS: If searching for '{area_focus.upper()}', you MUST reject candidates from Sales, 'Vendedor', 'Sales', 'Comercial', 'Representante', Marketing, Finance, IT, HR, Legal, or Production. These are NOT in the {area_focus.upper()} department.\n"
+                        f"- Rule POST_DETECTION: If the text says '#temosvaga', 'vaga para', 'auxiliar de compras', 'estamos contratando' but the candidate's title is 'Vendedor' or 'Sales', they are a RECRUITER or SHARING A VACANCY. They ARE NOT the professional we want. Reject them.\n"
                         f"- Rule NO_BOILERPLATE: NEVER return titles starting with 'Brasil...', 'Veja...', 'Experience...', 'Profissional com...'.\n"
-                        f"- Rule CLEAN_TITLE: Extract ONLY the functional job title (e.g. 'Senior Buyer'). If the context combines multiple people, isolate the title of {name} only.\n"
+                        f"- Rule CLEAN_TITLE: Extract ONLY the functional job title (e.g. 'Senior Buyer').\n"
                         f"- Rule ENTITY_ANCHORING: Candidate MUST work at {target}.\n"
                         f"- Rule GENERIC_TITLES: Reject if role is 'Professional', 'Employee', or just the name of the company '{target}'.\n"
-                        f"- Area Focus ({area_focus}): This is the MANDATORY department.\n"
-                        f"- Product Focus ({product_focus}): PRIORITY but NOT exclusion.\n"
-                        f"- Validation: Reject if from Finance, IT, HR, Sales, or Accounting.\n"
-                        f"5. CONFIDENCE SCAN: Calculate 'matching_score' (0-100). If weak, score < 40 and is_valid: False.\n"
+                        f"- Validation: Reject if from Finance, IT, HR, Sales, Vendas, Comercial or Accounting.\n"
+                        f"5. CONFIDENCE SCAN: Calculate 'matching_score' (0-100). If the role contradicts the Area Focus (e.g. Sales instead of Purchasing), score must be < 40 and is_valid must be false.\n"
                         f"6. SENIORITY (1-6): 6=C-Level, 5=Director, 4=Manager/Head, 3=Coord/Sup, 2=Senior/Analyst/Buyer, 1=Assistant/Intern.\n\n"
                         f"RETURN ONLY JSON:\n"
                         f"{{ \"clean_name\": \"...\", \"role\": \"...\", \"department\": \"...\", \"is_valid\": bool, \"evidence\": \"short quote\", \"reason\": \"...\", \"seniority\": int, \"matching_score\": int }}\n"
@@ -166,7 +166,7 @@ class RoleEngine:
                                     continue
                                 elif resp.status_code == 429:
                                     err_msg = resp.json().get("error", {}).get("message", "Quota Exceeded")
-                                    print(f"      [RoleEngine] 🚨 Gemini sem cota ({err_msg}). Acionando Groq...")
+                                    print(f"      [RoleEngine] [ALERT] Gemini sem cota ({err_msg}). Acionando Groq...")
                                     self.gemini_disabled = True
                                     break
                                 else:
@@ -178,7 +178,7 @@ class RoleEngine:
 
                     # 2. TENTA GROQ (Fallback) se Gemini falhar
                     if not distilled_raw and self.api_key:
-                        print(f"      [RoleEngine] ⚡ Acionando Groq para análise individual de: {name}...")
+                        print(f"      [RoleEngine] [ACTIVATE] Acionando Groq para análise individual de: {name}...")
                         resp = await client.post(
                             "https://api.groq.com/openai/v1/chat/completions",
                             headers={"Authorization": f"Bearer {self.api_key}"},
@@ -239,13 +239,12 @@ class RoleEngine:
         prompt += (
             f"STRICT VALIDATION RULES (APPLIED TO ALL):\n"
             f"1. ENTITY ANCHOR: Candidates MUST currently work at '{company}'.\n"
-            f"2. FORBIDDEN TITLES: NEVER approve or return generic roles like 'Professional', 'Employee', 'Experienced', 'B2B Professional', or just '{company}'.\n"
-            f"3. CLEAN TITLES: Extract ONLY the job title (e.g. 'Senior Buyer'). If Google snippet shows multiple people, focus ONLY on the target person's name as provided. NEVER return 'Brasil...', 'Veja o perfil...', or fragments of other people's titles.\n"
-            f"4. NO BOILERPLATE: NEVER return text like 'Experienced in...', '8 years of...', 'Law 8666...', or 'Great journey'.\n"
-            f"5. AREA FOCUS ({area_focus.upper()}): Mandatory department.\n"
-            f"6. HARD REJECTION: Reject from Finance, IT, HR, Legal, Facilities, or Production.\n"
-            f"7. CONFIDENCE SCAN: matching_score (0-100).\n"
-            f"8. SENIORITY (1-6).\n\n"
+            f"2. FORBIDDEN ROLES: Reject 'Sales', 'Vendedor', 'Comercial', 'Representante' when the focus is '{area_focus.upper()}'. Vendas e Compras são opostos. Rejeite vendedores sumariamente.\n"
+            f"3. POST DETECTION: If the snippet says '#temosvaga' or 'vaga para' followed by '{area_focus.upper()}', the person is likely a SHARER, not the professional. Reject if their own title is not clearly {area_focus.upper()}.\n"
+            f"4. FORBIDDEN TITLES: NEVER approve or return generic roles like 'Professional', 'Employee', 'Experienced', 'B2B Professional', or just '{company}'.\n"
+            f"5. CLEAN TITLES: Extract ONLY the job title (e.g. 'Senior Buyer'). NEVER return 'Brasil...', 'Veja o perfil...', or fragments of other people's titles.\n"
+            f"6. CONFIDENCE SCAN: matching_score (0-100). If the role is from a different department (e.g. Sales), score must be < 40 and is_valid must be false.\n"
+            f"7. SENIORITY (1-6).\n\n"
             f"RETURN ONLY THIS EXACT JSON FORMAT:\n"
             f"{{ \"results\": [ {{ \"id\": 0, \"clean_name\": \"...\", \"role\": \"...\", \"department\": \"...\", \"is_valid\": bool, \"evidence\": \"literal quote\", \"reason\": \"...\", \"seniority\": int, \"matching_score\": int }} ] }}"
         )
@@ -258,9 +257,9 @@ class RoleEngine:
                 async with httpx.AsyncClient(timeout=45.0) as client:
                     # Log correto dependendo do status do Gemini
                     if not self.gemini_disabled and self.gemini_ok:
-                        print(f"      [RoleEngine Batch] 📦 Processando {len(candidates)} perfis em lote no Gemini...")
+                        print(f"      [RoleEngine Batch] [INFO] Processando {len(candidates)} perfis em lote no Gemini...")
                     else:
-                        print(f"      [RoleEngine] ⚡ Redirecionando {len(candidates)} perfis direto para o Groq (Gemini Offline).")
+                        print(f"      [RoleEngine] [ACTIVATE] Redirecionando {len(candidates)} perfis direto para o Groq (Gemini Offline).")
 
                     # 1. TENTA GEMINI (Se passar no Health Check)
                     # O Smoke Test já foi feito proativamente ou será feito aqui se necessário
@@ -283,7 +282,7 @@ class RoleEngine:
                                     continue
                                 elif resp.status_code == 429:
                                     err_msg = resp.json().get("error", {}).get("message", "Quota Exceeded")
-                                    print(f"      [RoleEngine Batch] 🚨 COTA DIÁRIA EXCEDIDA NO GEMINI ({err_msg}). Desativando Gemini para esta sessão.")
+                                    print(f"      [RoleEngine Batch] [CRITICAL] COTA DIÁRIA EXCEDIDA NO GEMINI ({err_msg}). Desativando Gemini para esta sessão.")
                                     self.gemini_disabled = True # TRAVA ATIVADA
                                     break
                                 else:
@@ -295,11 +294,11 @@ class RoleEngine:
 
                     # 2. TENTA GROQ (INDIVIDUALMENTE OU EM LOTES DE 2)
                     if not distilled_raw and self.api_key:
-                        print(f"      [RoleEngine Fallback] 🕵️ Desmembrando lote ({len(candidates)} perfis) para processamento individual no Groq...")
+                        print(f"      [RoleEngine Fallback] [INFO] Desmembrando lote ({len(candidates)} perfis) para processamento individual no Groq...")
                         final_map = {}
                         
                         for c in candidates:
-                            print(f"      [Groq Individual] 🕵️ Analisando perfil: {c['name']}...")
+                            print(f"      [Groq Individual] [INFO] Analisando perfil: {c['name']}...")
                             try:
                                 # Prompt simplificado para 1 única pessoa (mais preciso no Groq)
                                 clean_context = [re.sub(r'<[^>]*>', ' ', t).strip() for t in c.get("context", []) if t]
@@ -308,12 +307,13 @@ class RoleEngine:
                                     f"Name: {c['name']}\n"
                                     f"METADATA & SNIPPETS:\n{' | '.join(clean_context)[:2000]}\n\n"
                                     f"CRITICAL RULES (STRICT MODE):\n"
-                                    f"1. MANDATORY BLACKLIST (REJECT): Sales, Vendas, Marketing, HR, RH, Finance, Accounting, IT, Software, Engineering (unless PCP), Production, Quality, Legal.\n"
-                                    f"2. WHITELIST (APPROVE): Only if the role is clearly Purchasing, Compras, Sourcing, Supply Chain, Logistics, PCP, Comex, Procurement, Buyer.\n"
-                                    f"3. UNCERTAIN/GENERIC ROLES: If you see 'Employee', 'Professional' or just 'Experience' without a department, set is_valid: False AND set reason to 'Insufficient role information for B2B validation'. This will trigger a deep research phase.\n"
-                                    f"4. CLEAN TITLE RULE: Return ONLY the functional role title (e.g., 'Category Manager'). NEVER include 'At Knorr', 'Knorr-Bremse', or similar branding phrases in the role field.\n"
-                                    f"5. TASK: If it is BLACKLIST, set is_valid: False and specify the department as the reason (e.g. 'Department: Sales').\n"
-                                    f"RETURN ONLY JSON: {{ \"is_valid\": bool, \"clean_name\": \"...\", \"role\": \"...\", \"seniority\": int(1-6), \"evidence\": \"...\", \"department\": \"Operations\", \"reason\": \"...\" }}\n"
+                                    f"1. MANDATORY BLACKLIST (REJECT): Sales, Vendas, Comercial, Marketing, HR, RH, Finance, Accounting, IT, Software, Production (unless PCP), Quality, Legal.\n"
+                                    f"2. SALES REJECTION: If focus is COMPRAS, you MUST reject anyone in SALES/VENDAS. 'Vendedor' is the opposite of 'Comprador'.\n"
+                                    f"3. POST DETECTION: If the snippet contains recruitment hashtags (#temosvaga) or mentions sharing a vacancy, ignore the vacancy's role and focus on the candidate's actual job title.\n"
+                                    f"4. WHITELIST (APPROVE): Only if the role is clearly Purchasing, Compras, Sourcing, Supply Chain, Logistics, PCP, Comex, Procurement, Buyer.\n"
+                                    f"5. UNCERTAIN/GENERIC ROLES: If you see 'Employee', 'Professional' or just 'Experience' without a department, set is_valid: False AND set reason to 'Insufficient role information for B2B validation'. This will trigger a deep research phase.\n"
+                                    f"6. CLEAN TITLE RULE: Return ONLY the functional role title.\n"
+                                    f"RETURN ONLY JSON: {{ \"is_valid\": bool, \"clean_name\": \"...\", \"role\": \"...\", \"seniority\": int(1-6), \"evidence\": \"...\", \"department\": \"...\", \"reason\": \"...\", \"matching_score\": int }}\n"
                                 )
                                 
                                 resp = await client.post(
