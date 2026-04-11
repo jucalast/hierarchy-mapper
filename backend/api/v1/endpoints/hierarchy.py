@@ -50,6 +50,7 @@ async def refine_hierarchy(
     # 🕵️ Mapeamento de IDs Efêmeros para IDs de Banco Reais para esta leva
     # Isso é CRUCIAL para que o manager_id salvo no banco seja estável e referenciável
     ephemeral_to_db_id = {}
+    org_id = None
     
     # Primeiro, buscamos todos os funcionários desta leva no banco para ter os IDs reais
     for node in employees:
@@ -61,13 +62,19 @@ async def refine_hierarchy(
             if not org_id: org_id = emp_db.company_id
 
     for node in employees:
-        ref_entry = ref_dict.get(node["id"])
+        original_id = node.get("id")
+        
+        # Sincroniza o ID do próprio nó com o banco de dados se houver mapeamento
+        if original_id in ephemeral_to_db_id:
+            node["id"] = ephemeral_to_db_id[original_id]
+            
+        ref_entry = ref_dict.get(original_id)
         if ref_entry:
             new_level = ref_entry.get("level", node.get("level"))
             new_manager_id = ref_entry.get("manager_id", node.get("manager_id"))
             
             # Garantir que funcionário não seja Nível 0 (reservado para a empresa)
-            if node["id"] != "root_company" and new_level == 0:
+            if original_id != "root_company" and new_level == 0:
                 new_level = get_seniority_level(node.get("role", ""))
 
             # 🛠️ RESOLUÇÃO DE MANAGER ID PARA PERSISTÊNCIA ESTÁVEL
@@ -79,11 +86,16 @@ async def refine_hierarchy(
             elif new_manager_id == "root_company":
                 final_manager_id = "root_company"
 
+            # 🛡️ TRAVA DE SEGURANÇA MÁXIMA: Sócios e Root são imutáveis no refinamento
+            if node.get("level") == 6 or node.get("department") == "Quadro de Sócios (QSA)" or original_id == "root_company":
+                print(f"      [Backend AI] 🛡️ Protegendo integridade do Sócio/Root: {node.get('name')}")
+                new_level = node.get("level", 6)
+                final_manager_id = "root_company" if original_id != "root_company" else None
+            
             node["level"] = new_level
             node["manager_id"] = final_manager_id
             
             # Persistência no Banco de Dados
-            # Buscamos o registro real para salvar as alterações de senioridade e liderança
             if node.get("linkedin") or node.get("name"):
                 stmt = select(Employee)
                 if node.get("linkedin"):
@@ -199,7 +211,7 @@ async def get_company_hierarchy(
     if not search_name: search_name = razao_social
     domain_guess = domain if domain else f"{search_name.lower().replace(' ', '')}.com.br"
     
-    custom_leads = discover_employees(search_name, domain_guess, email_api_key=EMAIL_API_KEY, max_results=100)
+    custom_leads = await discover_employees(search_name, domain_guess, email_api_key=EMAIL_API_KEY, max_results=100)
     for lead in custom_leads:
         cargo_custom = lead.get("role", "Especialista")
         temp_employees.append(EmployeeNode(
@@ -314,30 +326,64 @@ async def stream_company_hierarchy(
             
         razao_social = data.get("razao_social") or data.get("nome_fantasia") or "Empresa"
         qsa = data.get("qsa", [])
+        
         hierarchy_pool = []
         initial_nodes = []
         
         # 💾 PERSISTÊNCIA INCREMENTAL DA EMPRESA
         org_id = None
         cnpj_clean = clean_cnpj(cnpj)
+        
+        # Composição do endereço completo
+        full_address = ""
+        if data:
+            addr_parts = []
+            if data.get("logradouro"): addr_parts.append(f"{data.get('logradouro')}, {data.get('numero') or 'S/N'}")
+            if data.get("complemento"): addr_parts.append(str(data.get("complemento")))
+            if data.get("bairro"): addr_parts.append(str(data.get("bairro")))
+            if data.get("municipio"): addr_parts.append(f"{data.get('municipio')}-{data.get('uf')}")
+            if data.get("cep"): addr_parts.append(f"CEP: {data.get('cep')}")
+            full_address = " | ".join(addr_parts)
+
         try:
-            stmt = select(Organization).where(Organization.cnpj == cnpj_clean)
-            res = await db.execute(stmt)
-            org = res.scalars().first()
+            # 🏺 BUSCA RESILIENTE (Cascata: CNPJ -> Domínio -> Nome)
+            org = None
+            # 1. Tenta por CNPJ
+            stmt_cnpj = select(Organization).where(Organization.cnpj == cnpj_clean)
+            res_cnpj = await db.execute(stmt_cnpj)
+            org = res_cnpj.scalars().first()
+            
+            # 2. Se não achou, tenta por Domínio (se disponível)
+            if not org and domain:
+                stmt_dom = select(Organization).where(Organization.domain == domain)
+                res_dom = await db.execute(stmt_dom)
+                org = res_dom.scalars().first()
+            
+            # 3. Se ainda não achou, tenta por Nome (Case Insensitive)
+            if not org:
+                # Remove variações comuns para melhorar o match
+                clean_name = confirmed_brand or razao_social
+                stmt_name = select(Organization).where(func.lower(Organization.name) == clean_name.lower())
+                res_name = await db.execute(stmt_name)
+                org = res_name.scalars().first()
+
             if not org:
                 org = Organization(
                     name=confirmed_brand or (razao_social[:30] + "..." if len(razao_social) > 30 else razao_social),
                     cnpj=cnpj_clean,
                     domain=domain,
+                    address=full_address,
                     category=area_focus,
                     product_focus=product_focus
                 )
                 db.add(org)
                 await db.flush()
             else:
-                # Atualiza se mudou algo
+                # 🔄 ATUALIZAÇÃO SÍNCRONA: Une o CNPJ aos dados que já existiam (ex: do Pipedrive)
+                if not org.cnpj: org.cnpj = cnpj_clean
+                if not org.address or len(org.address) < 5: org.address = full_address
                 if confirmed_brand: org.name = confirmed_brand
-                if domain: org.domain = domain
+                if domain and not org.domain: org.domain = domain
                 if area_focus: org.category = area_focus
                 if product_focus: org.product_focus = product_focus
             
@@ -420,26 +466,49 @@ async def stream_company_hierarchy(
                     highlights=lead.get("highlights"), observations=lead.get("observations")
                 )
                 
+                # 🛠️ GESTÃO DE CONEXÕES AO VIVO (AGRESSIVA)
                 assigned_manager = "root_company"
+                
+                if emp.level <= 0:
+                    emp.level = get_seniority_level(emp.role)
+                    if emp.level <= 0: emp.level = 1
+
                 levels_map = {0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
-                for existing in hierarchy_pool: levels_map[existing.level].append(existing)
-                    
+                highest_senior_id = "root_company"
+                max_level_found = -1
+
+                for existing in hierarchy_pool: 
+                    if existing.id == emp.id: continue
+                    levels_map[existing.level].append(existing)
+                
+                # Passo A: Tenta achar um chefe (Nível IMEDIATAMENTE ACIMA do emp)
+                found_boss = False
+                # Começa do nível vizinho (emp.level + 1) e vai subindo até o topo (6)
                 for senior_level in range(emp.level + 1, 7):
+                    if found_boss: break
                     if not levels_map.get(senior_level): continue
-                    candidates = levels_map[senior_level]
-                    matching_bosses = [b for b in candidates if b.department == emp.department or any(k in b.department for k in ["Diretoria Executiva", "Raiz", "Administração", "Quadro de Sócios (QSA)"])]
+                    
+                    matching_bosses = [b for b in levels_map[senior_level] if b.department == emp.department or any(k in b.department for k in ["Diretoria Executiva", "Raiz", "Administração", "Quadro de Sócios (QSA)"])]
                     if matching_bosses:
                         assigned_manager = matching_bosses[0].id
-                        break
-                    if candidates:
-                        assigned_manager = candidates[0].id
-                        break
-                        
+                        found_boss = True
+                        found_boss = True
+                
                 emp.manager_id = assigned_manager
+                
+                # Passo C: RE-LIGAMENTO DINÂMICO (Quem já está lá pode ganhar um novo chefe melhor)
                 reparented_nodes = []
                 if emp.level > 1:
                     for existing in hierarchy_pool:
-                        if (existing.level < emp.level) and ((existing.department == emp.department) or (emp.department == "Quadro de Sócios (QSA)")) and (existing.manager_id == "root_company" or (existing.manager_id and str(existing.manager_id).startswith("socio_"))):
+                        if existing.id == emp.id: continue
+                        
+                        # Se o novo cara (emp) é do mesmo setor e é mais sênior que o subordinado (existing)
+                        # E o subordinado atualmente está na raiz ou em um fallback genérico
+                        is_same_dept = (existing.department == emp.department)
+                        is_emp_superior = (emp.level > existing.level)
+                        is_currently_orphan = (existing.manager_id == "root_company" or existing.manager_id == highest_senior_id)
+                        
+                        if is_same_dept and is_emp_superior and is_currently_orphan:
                             existing.manager_id = emp.id
                             reparented_nodes.append(existing.dict())
                 
@@ -481,14 +550,10 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
         return {"company_name": org.name, "nodes": [], "status": "empty"}
         
     nodes = []
-    logo_url = org.logo_url
-    if logo_url and "http" in logo_url and "ui-avatars" not in logo_url:
-        logo_url = f"http://127.0.0.1:8000/api/v1/proxy/image?url={logo_url}"
-
     # 1. Nó Raiz
     nodes.append({
         "id": "root_company", "name": org.name, "role": "Entidade Principal", "department": "Supply Chain (Matriz)", 
-        "manager_id": None, "level": 0, "company_logo": logo_url, "logo": logo_url, "domain": org.domain, "cnpj": org.cnpj,
+        "manager_id": None, "level": 0, "company_logo": org.logo_url, "logo": org.logo_url, "domain": org.domain, "cnpj": org.cnpj,
         "linkedin": org.linkedin_url
     })
 
@@ -517,11 +582,15 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
             level = get_seniority_level(emp.role)
             
         manager_id = emp.manager_id
-        if not manager_id:
+        if not manager_id or manager_id == "None":
             manager_id = "root_company"
         elif manager_id in id_mapping:
             # Resolve ephemeral ID to stable DB ID
             manager_id = id_mapping[manager_id]
+        elif "/" in str(manager_id) or "?" in str(manager_id):
+            # Se for um link direto ou ID sujo, tenta limpar para casar com mapping
+            clean_m_id = f"node_{re.sub(r'[^a-zA-Z0-9]', '_', str(manager_id).split('/in/')[-1].split('?')[0].rstrip('/'))}"
+            manager_id = id_mapping.get(clean_m_id, "root_company")
         
         nodes.append({
             "id": new_id, 

@@ -41,10 +41,11 @@ async def confirm_enrich_data(payload: ConfirmEnrichRequest):
                 session.add(org)
             
             # ✍️ ATRIBUIÇÃO: Vincula os dados escolhidos ao registro central
-            org.name = payload.name
-            org.cnpj = payload.cnpj.replace(".", "").replace("/", "").replace("-", "") if payload.cnpj else org.cnpj
-            org.domain = payload.domain
-            org.address = payload.address
+            if payload.name: org.name = payload.name
+            if payload.cnpj: org.cnpj = payload.cnpj.replace(".", "").replace("/", "").replace("-", "")
+            if payload.domain: org.domain = payload.domain
+            if payload.address and len(payload.address) > 3: 
+                org.address = payload.address
             # Se vierem dados de LinkedIn do carrossel no payload
             if hasattr(payload, 'linkedin_url'): org.linkedin_url = payload.linkedin_url
             if hasattr(payload, 'logo_url'): org.logo_url = payload.logo_url

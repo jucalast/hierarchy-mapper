@@ -82,7 +82,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const {
         rawEmployees, rawBackendEdges, loading, discovering, brandOptions, error, setError,
         fetchHierarchy, discoverBrand, refineHierarchy, loadStoredHierarchy,
-        smartSyncPipedrive, confirmIntelligence
+        smartSyncPipedrive, confirmIntelligence, resetHierarchy
     } = useHierarchy();
 
     // 🛡️ SEGURANÇA E FORMATAÇÃO
@@ -214,6 +214,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
     const handleOrgClick = async (org: any) => {
         console.log('--- HANDLE ORG CLICK START ---', org.name);
+        resetHierarchy(); // 🧹 Limpa o grafo anterior imediatamente
         setShowDrawer(false); 
         setStep("input");
 
@@ -434,6 +435,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                     step={step}
                     brandOptions={brandOptions}
                     onBrandSelect={handleBrandSelect}
+                    hasMapping={nodes.some(n => n.id.startsWith('node_'))}
                 />
             </main>
         </div>

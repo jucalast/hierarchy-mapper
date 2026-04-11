@@ -89,9 +89,7 @@ export const useHierarchy = () => {
                             id: `e-${emp.manager_id}-${emp.id}`,
                             source: emp.manager_id,
                             target: emp.id,
-                            animated: false,
-                            markerEnd: { type: MarkerType.ArrowClosed, color: '#30363d' },
-                            style: { stroke: '#30363d', strokeWidth: 2 },
+                            animated: false
                         });
                     }
                 });
@@ -173,38 +171,28 @@ export const useHierarchy = () => {
                     if (data.type === 'batch' || data.type === 'initial') {
                         const incomingNodes = (data.nodes || []) as HierarchyEmployee[];
                         
-                        setRawEmployees(prev => {
-                            const next = [...prev];
-                            incomingNodes.forEach(emp => {
-                                const idx = next.findIndex(n => n.id === emp.id);
-                                if (idx > -1) {
-                                    // 🛡️ BLINDAGEM AGRESSIVA: Logo/LinkedIn confirmados são permanentes
-                                    const merged = { ...next[idx], ...emp };
-                                    
-                                    // Lista de campos que podem conter imagens
-                                    const imgFields = ['logo', 'image', 'url', 'company_logo', 'logo_url', 'brand_logo', 'avatar', 'profile_pic', 'photo'];
-                                    
-                                    imgFields.forEach(field => {
-                                        const currentVal = (next[idx] as any)[field];
-                                        const newVal = (emp as any)[field];
-                                        
-                                        // Se tínhamos um valor e o novo é vazio/nulo, preservamos o antigo
-                                        if (currentVal && !newVal) {
-                                            (merged as any)[field] = currentVal;
-                                        }
-                                    });
-
-                                    // Proteção especial para LinkedIn
-                                    if (!emp.linkedin && next[idx].linkedin) merged.linkedin = next[idx].linkedin;
-                                    
-                                    next[idx] = merged;
-                                } else {
-                                    next.push(emp);
-                                }
-                            });
-                            currentEmployees = next;
-                            return next;
+                        // 🛠️ ATUALIZAÇÃO SÍNCRONA: Mantemos currentEmployees atualizado IMEDIATAMENTE.
+                        // Isso evita que a chamada para refineHierarchy() (que acontece no 'done')
+                        // use uma lista incompleta caso o estado do React ainda não tenha processado o último lote.
+                        incomingNodes.forEach(emp => {
+                            const idx = currentEmployees.findIndex(n => n.id === emp.id);
+                            if (idx > -1) {
+                                // Merge de metadados para evitar perda de imagens/urls
+                                const merged = { ...currentEmployees[idx], ...emp };
+                                const imgFields = ['logo', 'image', 'url', 'company_logo', 'logo_url', 'brand_logo', 'avatar', 'profile_pic', 'photo'];
+                                imgFields.forEach(field => {
+                                    if ((currentEmployees[idx] as any)[field] && !(emp as any)[field]) {
+                                        (merged as any)[field] = (currentEmployees[idx] as any)[field];
+                                    }
+                                });
+                                currentEmployees[idx] = merged;
+                            } else {
+                                currentEmployees.push(emp);
+                            }
                         });
+
+                        // Sincroniza com o state do React para renderização
+                        setRawEmployees([...currentEmployees]);
 
                         setRawBackendEdges(prev => {
                             const next = [...prev];
@@ -215,9 +203,7 @@ export const useHierarchy = () => {
                                         id: `e-${emp.manager_id}-${emp.id}`,
                                         source: emp.manager_id,
                                         target: emp.id,
-                                        animated: true,
-                                        markerEnd: { type: MarkerType.ArrowClosed, color: '#30363d' },
-                                        style: { stroke: '#30363d', strokeWidth: 2 },
+                                        animated: false
                                     };
                                     if (edgeIdx > -1) next[edgeIdx] = newEdge;
                                     else next.push(newEdge);
@@ -257,7 +243,24 @@ export const useHierarchy = () => {
             const data = await resp.json();
             
             if (data.nodes && data.nodes.length > 0) {
-                setRawEmployees(data.nodes);
+                // Limpeza de URLs para evitar Duplo Proxy (IDEMPOTÊNCIA)
+                const cleanedNodes = data.nodes.map((n: any) => {
+                    const cleanUrl = (url: string) => {
+                        if (!url) return url;
+                        if (url.includes('proxy/image?url=')) {
+                            return decodeURIComponent(url.split('proxy/image?url=')[1]);
+                        }
+                        return url;
+                    };
+                    return {
+                        ...n,
+                        logo: cleanUrl(n.logo),
+                        company_logo: cleanUrl(n.company_logo),
+                        profile_pic: cleanUrl(n.profile_pic)
+                    };
+                });
+                
+                setRawEmployees(cleanedNodes);
                 
                 const newEdges: Edge[] = [];
                 data.nodes.forEach((emp: any) => {
@@ -266,9 +269,7 @@ export const useHierarchy = () => {
                             id: `e-${emp.manager_id}-${emp.id}`,
                             source: emp.manager_id,
                             target: emp.id,
-                            animated: false,
-                            markerEnd: { type: MarkerType.ArrowClosed, color: '#30363d' },
-                            style: { stroke: '#30363d', strokeWidth: 2 },
+                            animated: false
                         });
                     }
                 });
@@ -330,6 +331,13 @@ export const useHierarchy = () => {
         }
     }, []);
 
+    const resetHierarchy = useCallback(() => {
+        setRawEmployees([]);
+        setRawBackendEdges([]);
+        setBrandOptions([]);
+        setError(null);
+    }, []);
+
     return { 
         rawEmployees, 
         rawBackendEdges, 
@@ -344,6 +352,7 @@ export const useHierarchy = () => {
         refineHierarchy,
         updateEmployee,
         smartSyncPipedrive,
-        confirmIntelligence
+        confirmIntelligence,
+        resetHierarchy
     };
 };

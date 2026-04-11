@@ -82,7 +82,7 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    background: #181818;
+    background: #1d1d1d;
 }
 
 
@@ -734,7 +734,7 @@
     width: fit-content;
     /* Dictates the board width */
     max-width: 100%;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+
     min-height: 48px;
     gap: 4px;
 
@@ -781,9 +781,16 @@
     color: rgba(255, 255, 255, 0.3) !important;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: 0 12px;
+    padding: 0 8px; /* Slightly reduced padding to fit group */
     height: 38px;
     flex-shrink: 0;
+}
+
+.segmentActionGroup {
+    display: flex;
+    align-items: center;
+    gap: 0; /* Gap zero to look like a toolset */
+    margin-left: 8px;
 }
 
 .cleanSearchBtn:hover {

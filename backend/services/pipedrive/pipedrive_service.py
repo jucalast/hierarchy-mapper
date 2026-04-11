@@ -101,12 +101,14 @@ class PipedriveService:
                                         db_org.name = name
                                     print(f"[Pipedrive Sync] Atualizando: {name}")
                                     
-                                # Atualiza metadados apenas se vierem novos do Pipedrive
+                                # Atualiza metadados apenas se vierem novos e válidos do Pipedrive
                                 p_domain = org.get("c04f98a7a9762df2f8a42e5d7a641a0292723326")
-                                if p_domain: db_org.domain = p_domain
+                                if p_domain and len(str(p_domain)) > 3: 
+                                    db_org.domain = p_domain
                                 
                                 p_address = org.get("address")
-                                if p_address: db_org.address = p_address
+                                if p_address and len(str(p_address)) > 3: 
+                                    db_org.address = p_address
                             
                             await session.commit()
                         async with async_session() as session:

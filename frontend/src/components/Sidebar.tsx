@@ -3,14 +3,14 @@ import {
     Asterisk, 
     LayoutDashboard, 
     CirclePlus, 
-    Brain, 
     History, 
     Zap, 
     Eraser, 
     Sun, 
     Moon, 
     Settings,
-    Bug 
+    Bug,
+    Workflow 
 } from 'lucide-react';
 
 import styles from './NetworkGraph.module.css';
@@ -76,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title="Analista de IA"
                 onClick={onRefine}
             >
-                <Brain size={20} className={styles.iconSide} />
+                <Workflow size={20} className={styles.iconSide} />
             </div>
 
             <div className={styles.navIcon} title="Histórico">

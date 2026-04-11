@@ -40,6 +40,7 @@ interface FloatingToolbarProps {
     step: string;
     brandOptions: any[];
     onBrandSelect: (brandObj: any) => void;
+    hasMapping?: boolean;
 }
 
 export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
@@ -65,7 +66,8 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     loading,
     step,
     brandOptions,
-    onBrandSelect
+    onBrandSelect,
+    hasMapping = false
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [localSelected, setLocalSelected] = React.useState<string | null>(null);
@@ -150,7 +152,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                                 value={domainTarget}
                                                 onChange={(e) => setDomainTarget(e.target.value)}
                                             />
-                                            {/* ✨ Botão de Lupa Integrado (Sem fundo, maior, cinza) */}
+                                            {/* ✨ Botão de Enriquecimento (Reload) */}
                                             {!discovering && !loading && (
                                                 <button
                                                     type="button"
@@ -159,12 +161,12 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                                         e.stopPropagation();
                                                         handleAutoEnrich();
                                                     }}
-                                                    title="Enriquecer com IA"
+                                                    title="Refinar Metadados com IA (CNPJ/Domínio)"
                                                 >
                                                     {enrichingIds.has(999) ? (
-                                                        <Loader2 size={18} className={styles.loadingAnim} />
+                                                        <Loader2 size={16} className={styles.loadingAnim} />
                                                     ) : (
-                                                        (domainTarget && cnpj) ? <RotateCcw size={18} /> : <Search size={18} />
+                                                        <RotateCcw size={16} />
                                                     )}
                                                 </button>
                                             )}
@@ -258,21 +260,43 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                     </form>
 
                     <div className={styles.toolbarActions}>
-                        {(step !== "input" || (domainTarget && confirmedBrand)) && !enrichingIds.has(999) && (
-                            <button
-                                onClick={handleSearch}
-                                className={`${styles.detectBtn} ${(discovering || loading) ? styles.detectBtnLoading : ''}`}
-                                disabled={discovering || loading}
-                            >
-                                {(discovering || loading) ? (
-                                    <Loader2 size={18} className={styles.loadingAnim} />
-                                ) : (
-                                    <>
-                                        {step === "confirm" ? <Target size={14} /> : <Play size={14} fill="currentColor" />}
-                                        {step === "confirm" ? "Mapear Hierarquia" : "Mapear"}
-                                    </>
+                        {/* 🚀 BOTÃO PRINCIPAL (DETECTAR OU MAPEAR) */}
+                        {!enrichingIds.has(999) && (
+                            <>
+                                {step === "input" && domainTarget && (
+                                    <button
+                                        onClick={handleSearch}
+                                        className={`${styles.detectBtn} ${(discovering || loading) ? styles.detectBtnLoading : ''}`}
+                                        disabled={discovering || loading}
+                                    >
+                                        {(discovering || loading) ? (
+                                            <Loader2 size={18} className={styles.loadingAnim} />
+                                        ) : (
+                                            <>
+                                                <Search size={14} />
+                                                Detectar
+                                            </>
+                                        )}
+                                    </button>
                                 )}
-                            </button>
+
+                                {step !== "input" && (
+                                    <button
+                                        onClick={handleSearch}
+                                        className={`${styles.detectBtn} ${(discovering || loading) ? styles.detectBtnLoading : ''}`}
+                                        disabled={discovering || loading}
+                                    >
+                                        {(discovering || loading) ? (
+                                            <Loader2 size={18} className={styles.loadingAnim} />
+                                        ) : (
+                                            <>
+                                                {hasMapping ? <RotateCcw size={14} /> : <Play size={14} fill="currentColor" />}
+                                                Mapear
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>

@@ -8,6 +8,48 @@ load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+class GroqService:
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or GROQ_API_KEY
+        self.base_url = "https://api.groq.com/openai/v1/chat/completions"
+
+    async def ask(self, prompt: str, json_mode: bool = False) -> Dict:
+        """Envia um prompt para a Groq e retorna o JSON parseado."""
+        if not self.api_key:
+            return {}
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "llama-3.1-8b-instant",
+            "messages": [
+                {"role": "system", "content": "Você é um assistente B2B preciso. Responda apenas em JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.1
+        }
+        
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(self.base_url, headers=headers, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    content = data['choices'][0]['message']['content']
+                    import json
+                    return json.loads(content)
+                else:
+                    print(f"[Groq AI] Erro {resp.status_code}: {resp.text}")
+        except Exception as e:
+            print(f"[Groq AI] Exception: {e}")
+            
+        return {}
+
 async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
     """
     Usa a IA da Groq (Llama-3-70b/8b) para analisar os cargos e definir uma hierarquia real.
@@ -29,35 +71,42 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
         })
 
     prompt = f"""
-    Você é um especialista em Estruturas Organizacionais B2B de grandes empresas multinacionais.
-    Sua tarefa é conectar as pontas de um organograma (manager_id) e validar a senioridade (level).
+    Você é um especialista em Estruturas Organizacionais B2B. Sua tarefa é refinar um organograma definindo a senioridade (level) e quem responde a quem (manager_id).
 
-    DIRETRIZES DE SENIORIDADE (level):
-    6: CEO/VP/Sócio. 5: Diretores. 4: Gerentes/Heads. 3: Coordenadores/Supervisores (ou Especialistas c/ Gestão). 2: Analistas Sr/Pl/Espec. 1: Operacional/Assistente/Junior.
-    
-    REGRAS DE OURO PARA RELACIONAMENTOS (manager_id):
-    1. DEPARTAMENTO (SILOS): Funcionários de um departamento (ex: TI) devem reportar para um Gerente/Diretor do MESMO departamento ou para "Executive Management".
-       - NUNCA faça um 'IT Lead' reportar para um 'Purchasing Coordinator' só porque o Coordenador apareceu primeiro na lista.
-    2. HIERARQUIA VERTICAL: Um funcionário Nível N deve reportar para alguém de Nível N+1 ou superior.
-       - NUNCA faça um Nível 4 reportar para outro Nível 4.
-    3. DISPERSÃO: Evite o erro de "Super-Gerente". Se você tem 20 pessoas e 3 Gerentes de Compras, distribua os Analistas entre esses 3 Gerentes de acordo com a senioridade ou proximidade de cargo, não coloque todos sob uma única pessoa.
-    4. FALLBACK: Se um funcionário não tem um líder claro no seu próprio departamento, ele reporta para "Executive Management" ou, em última instância, para "root_company".
-    5. RESPEITO ÀS ROLES: Se o cargo é explicitamente "Manager" ou "Gerente", ele deve ser Level 4. Se for "Director", Level 5. Não rebaixe cargos explicitamente citados.
+    REGRAS DE senioridade (level):
+    6: Sócio / CEO / VP / Board / Fundador.
+    5: Diretores / Superintendentes.
+    4: Gerentes / Heads / Lead / Gestores / Chefes.
+    3: Coordenadores / Supervisores / Especialistas Sêniores / Líderes.
+    1: Assistentes / Auxiliares / Estagiários / Operacional.
+    2: Analistas / Compradores / Engenheiros / Default (Tudo que não se encaixa acima).
 
-    INSTRUÇÕES - INFERÊNCIA DE SENIORIDADE: 
-    - Use a "bio" para confirmar se a pessoa exerce liderança ("managing", "leading", "coordenando", "gestor de equipe"). Se sim, promova para Level 3 ou 4.
+    🛡️ PROTEÇÃO DE SÓCIOS (LEVEL 6):
+    - Se um funcionário já possui Level 6 ou pertence ao departamento "Quadro de Sócios (QSA)", ele é IMUTÁVEL. 
+    - NUNCA rebaixe o nível de um sócio. 
+    - NUNCA subordine um Sócio a outra pessoa que não seja a "root_company".
+
+    REGRAS DE CONEXÃO (manager_id):
+    1. PRIORIDADE VERTICAL: Um funcionário deve reportar para alguém de nível SUPERIOR (ex: Nível 2 reporta para 3, 4, 5 ou 6).
+    2. PRIORIDADE DEPARTAMENTAL: Busque primeiro um líder no MESMO departamento. 
+    3. TRANSVERSALIDADE: Se não houver líder no mesmo departamento, ele deve reportar para a "Diretoria Executiva", "Quadro de Sócios (QSA)" ou "Executive Management".
+    4. FALLBACK FINAL: Se não houver nenhum líder humano disponível acima dele, conecte a "root_company".
+    5. DISTRIBUIÇÃO: Não sobrecarregue um único gerente se houver outros do mesmo nível e departamento. Distribua os subordinados.
+
+    INSTRUÇÕES - ANÁLISE DE BIO:
+    - Use a "bio" para validar se o cargo condiz com a realidade. Se a bio diz "gestor de 20 pessoas" mas o cargo é "Analista", promova para o nível de Gerencial (4).
     
     RETORNO OBRIGATÓRIO:
-    - Retorne APENAS o JSON. Não invente novos IDs. Use exatamente os IDs enviados.
-    - Todo funcionário deve ter um 'manager_id' (String).
+    - Retorne APENAS o JSON. Use exatamente os IDs enviados.
+    - Todo funcionário deve ter um 'manager_id'.
 
     FUNCIONÁRIOS PARA ANALISAR:
     {json.dumps(employee_data, ensure_ascii=False)}
 
-    FORMATO DE RESPOSTA (JSON ESTREITO):
+    FORMATO DE RESPOSTA (JSON):
     {{
       "hierarchy": [
-        {{ "id": "...", "level": 4, "manager_id": "..." }},
+        {{ "id": "...", "level": 4, "manager_id": "...", "role_refinado": "..." }},
         ...
       ]
     }}

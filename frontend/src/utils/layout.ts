@@ -2,60 +2,70 @@ import dagre from 'dagre';
 import { Node, Edge, Position, MarkerType } from 'reactflow';
 
 export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
-  if (backendEdges && backendEdges.length > 0) {
-    return backendEdges.map((e, index) => ({
-      id: `e-${e.source}-${e.target}-${index}`,
-      source: e.source,
-      target: e.target,
-      animated: false,
-      style: { stroke: '#6e7681', strokeWidth: 1.5 },
+  const finalEdges: Edge[] = [];
+  const processedTargets = new Set<string>();
 
-    }));
+  // 1. Prioridade: Conexões explícitas do Backend (Manager IDs)
+  if (backendEdges && backendEdges.length > 0) {
+    backendEdges.forEach((e, index) => {
+      finalEdges.push({
+        id: `e-${e.source}-${e.target}-${index}`,
+        source: e.source,
+        target: e.target,
+        animated: false,
+        style: { stroke: '#6e7681', strokeWidth: 1.5 },
+      });
+      processedTargets.add(e.target);
+    });
   }
 
-  const implicitEdges: Edge[] = [];
+  // 2. Fallback: Conexões Implícitas para quem está órfão
   const rootEntity = nodes.find(n => n.data.level === 0);
 
   nodes.forEach(child => {
-    const childLevel = child.data.level || 1;
-    if (childLevel === 0) return; // A própria empresa não tem pai
+    // Se o nó já tem pai ou é a raiz, não precisa de conexão implícita
+    if (processedTargets.has(child.id) || child.data.level === 0) return;
 
-    // Tenta encontrar o melhor pai (nível maior que o dele, ex: 1 busca 2,3,4,5,6)
-    // Exceto o root (level 0) que é sempre uma opção de fallback
-    // NOTA: Ignoramos Nível 6 (Sócios e QSA) nas ligações implícitas para não poluir
+    const childLevel = child.data.level || 1;
+
+    // Tenta encontrar o melhor pai (nível maior que o dele)
     const potentialParents = nodes
-      .filter(p => (p.data.level || 0) > childLevel && (p.data.level || 0) < 6)
+      .filter(p => (p.data.level || 0) > childLevel)
       .sort((a, b) => (a.data.level || 0) - (b.data.level || 0));
 
     let bestParent = null;
 
-    // 1. Prioridade: Mesmo Departamento + Nível mais próximo
+    // A. Prioridade: Mesmo Departamento + Nível mais próximo
     bestParent = potentialParents.find(p => p.data.department === child.data.department);
 
-    // 2. Fallback: Qualquer autoridade disponível acima dele
+    // B. Fallback: Qualquer autoridade disponível acima dele
     if (!bestParent && potentialParents.length > 0) {
       bestParent = potentialParents[0];
     }
 
-    // 3. Fallback de Segurança Máxima: Conecta na Empresa (Root 0) para evitar colisão/empilhamento
+    // B2. Se o nó é Nível 6 (Sócio/C-Level), ele deve reportar à Empresa Raiz se estiver sozinho no topo
+    if (childLevel === 6 && !bestParent) {
+        bestParent = rootEntity;
+    }
+
+    // C. Fallback de Segurança Máxima: Conecta na Empresa (Root 0)
     if (!bestParent && rootEntity && child.id !== rootEntity.id) {
        bestParent = rootEntity;
     }
 
     if (bestParent) {
-      implicitEdges.push({
-        id: `e-${bestParent.id}-${child.id}`,
+      finalEdges.push({
+        id: `e-impl-${bestParent.id}-${child.id}`,
         source: bestParent.id,
         target: child.id,
         animated: false,
         style: { stroke: '#8b949e', strokeWidth: 1.5 },
-
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#8b949e' },
       });
+      processedTargets.add(child.id);
     }
   });
 
-  return implicitEdges;
+  return finalEdges;
 };
 
 export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => {
