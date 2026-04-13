@@ -1,0 +1,119 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 24px;
+}
+
+.empty {
+    padding: 60px 0;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.contactRow {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.contactRow:last-child {
+    border-bottom: none;
+}
+
+.iconCircle {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
+}
+
+.contentCard {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.contactHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+}
+
+.role {
+    font-size: 0.7rem;
+    color: #7a8bff; /* Lavender from your callNote */
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.metaList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.metaItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.35);
+    transition: color 0.2s;
+}
+
+.metaItem:hover {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.metaItem svg {
+    opacity: 0.6;
+}
+
+.emailLink {
+    color: inherit;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
+
+.emailLink:hover {
+    text-decoration: underline;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.actionBtn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.actionBtn:hover {
+    color: #fff;
+}

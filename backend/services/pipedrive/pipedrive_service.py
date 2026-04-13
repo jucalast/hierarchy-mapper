@@ -12,6 +12,26 @@ class PipedriveService:
         self.user_id = 24921888 # ID João Luccas
         self.base_url = "https://api.pipedrive.com/v1"
 
+    async def create_organization(self, data: dict):
+        """Cria uma nova organização no Pipedrive e retorna o ID."""
+        url = f"{self.base_url}/organizations?api_token={self.api_token}"
+        payload = {
+            "name": data.get("name"),
+            "address": data.get("address"),
+            "c04f98a7a9762df2f8a42e5d7a641a0292723326": data.get("domain")
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(url, json=payload)
+                res_data = resp.json()
+                if res_data.get("success"):
+                    org_id = res_data["data"]["id"]
+                    print(f"[Pipedrive Service] ✨ Nova empresa criada no Pipedrive: {org_id}")
+                    return org_id
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro ao criar empresa no Pipedrive: {e}")
+        return None
+
     async def update_organization(self, org_id: int, data: dict):
         """Atualiza Endereço, CNPJ e Domínio no Pipedrive e no Banco Local."""
         from core.database import async_session
@@ -19,16 +39,21 @@ class PipedriveService:
         from sqlalchemy import select
 
         # 1. Update no Pipedrive
+        # c04f98a7a9762df2f8a42e5d7a641a0292723326 -> CHAVE DO DOMÍNIO IDENTIFICADA NO CÓDIGO
         url = f"{self.base_url}/organizations/{org_id}?api_token={self.api_token}"
-        payload = {"address": data.get("address")}
-        # Se você tiver campos customizados para CNPJ e Domínio no Pipedrive, adicione-os aqui
+        payload = {
+            "address": data.get("address"),
+            "c04f98a7a9762df2f8a42e5d7a641a0292723326": data.get("domain") # Sincroniza o domínio oficial
+        }
         
         pipedrive_success = False
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.put(url, json=payload)
+                print(f"[Pipedrive Service] Update Status: {resp.status_code}")
                 pipedrive_success = resp.status_code == 200
-        except: pass
+        except Exception as e: 
+            print(f"[Pipedrive Service] Erro Pipedrive API: {e}")
 
         # 2. Update no Banco Local (Garante que o Drawer mostre o dado novo imediatamente)
         try:
@@ -40,7 +65,11 @@ class PipedriveService:
                     if data.get("cnpj"): org.cnpj = data.get("cnpj").replace(".", "").replace("/", "").replace("-", "")
                     if data.get("domain"): org.domain = data.get("domain")
                     if data.get("address"): org.address = data.get("address")
+                    if data.get("linkedin_url"): org.linkedin_url = data.get("linkedin_url")
+                    if data.get("logo_url"): org.logo_url = data.get("logo_url")
+                    if data.get("name"): org.name = data.get("name")
                     await session.commit()
+                    print(f"[Pipedrive Service] Banco Local atualizado via Confirmação Intelligence.")
         except Exception as e:
             print(f"[Pipedrive Service] Erro ao atualizar banco local: {e}")
 
@@ -119,18 +148,44 @@ class PipedriveService:
                 print(f"[Pipedrive Sync] Erro: {e}")
 
         # Retorna o formato que o frontend espera
-        return [
-            {
-                "id": o.pipedrive_id or o.id,
-                "name": o.name,
-                "domain": o.domain,
-                "cnpj": o.cnpj,
-                "address": o.address,
-                "local_id": o.id,
-                "logo": o.logo_url,
-                "linkedin": o.linkedin_url
-            } for o in local_orgs
-        ]
+        result = []
+        async with async_session() as session:
+            for o in local_orgs:
+                # Busca os 3 últimos funcionários com foto
+                from models import Employee
+                from sqlalchemy import select, func
+                
+                # Employee count (Excluindo Sócios)
+                count_stmt = select(func.count(Employee.id)).where(
+                    (Employee.company_id == o.id) & (Employee.department != "Quadro Societário")
+                )
+                count_res = await session.execute(count_stmt)
+                emp_count = count_res.scalar() or 0
+                
+                # Top 3 pics (Apenas Funcionários reais)
+                pics_stmt = select(Employee.profile_pic).where(
+                    (Employee.company_id == o.id) & 
+                    (Employee.department != "Quadro Societário") &
+                    (Employee.profile_pic != None) & 
+                    (Employee.profile_pic != "")
+                ).limit(3)
+                pics_res = await session.execute(pics_stmt)
+                pics = [p for p in pics_res.scalars().all()]
+                
+                result.append({
+                    "id": o.pipedrive_id or o.id,
+                    "name": o.name,
+                    "domain": o.domain,
+                    "cnpj": o.cnpj,
+                    "address": o.address,
+                    "local_id": o.id,
+                    "logo": o.logo_url,
+                    "linkedin": o.linkedin_url,
+                    "employee_count": emp_count,
+                    "employee_pics": pics
+                })
+        
+        return result
 
     async def sync_overdue_activities(self):
         """Move todas as atrasadas para hoje (Perdoar Atrasos)."""
@@ -294,6 +349,49 @@ class PipedriveService:
             import traceback
             traceback.print_exc()
             return {"status": "error", "message": str(e)}
+
+    async def get_organization_details(self, org_id: int):
+        """Busca o 'Raio-X' completo da empresa: Contatos, Tarefas, Negócios e Notas."""
+        import asyncio
+        async with httpx.AsyncClient() as client:
+            # 1. Busca Negócios Primeiro para identificar o Principal
+            deals_resp = await client.get(f"{self.base_url}/organizations/{org_id}/deals?api_token={self.api_token}")
+            deals_data = deals_resp.json()
+            deals = deals_data.get("data") or []
+            
+            # Identifica o Negócio Principal (Aberto preferencialmente, ou o mais recente)
+            primary_deal = next((d for d in deals if d.get("status") == "open"), None)
+            if not primary_deal and deals:
+                primary_deal = deals[0] # Pega o mais recente
+            
+            primary_deal_id = primary_deal.get("id") if primary_deal else None
+
+            # 2. Prepara URLs filtradas (ou gerais se não houver deal)
+            urls = {
+                "persons": f"{self.base_url}/organizations/{org_id}/persons?api_token={self.api_token}",
+                "activities": f"{self.base_url}/activities?org_id={org_id}&api_token={self.api_token}",
+                "notes": f"{self.base_url}/notes?org_id={org_id}&api_token={self.api_token}",
+                "updates": f"{self.base_url}/organizations/{org_id}/updates?api_token={self.api_token}"
+            }
+            
+            tasks = {key: client.get(url) for key, url in urls.items()}
+            responses = await asyncio.gather(*tasks.values())
+            results = {key: resp.json().get("data") or [] for key, resp in zip(tasks.keys(), responses)}
+            
+            # 3. FILTRAGEM: Se temos um negócio principal, limpamos o ruído das outras atividades
+            if primary_deal_id:
+                results["activities"] = [a for a in results["activities"] if a.get("deal_id") == primary_deal_id]
+                results["notes"] = [n for n in results["notes"] if n.get("deal_id") == primary_deal_id]
+            
+            return {
+                "id": org_id,
+                "primary_deal_id": primary_deal_id,
+                "deals": deals,
+                "persons": results["persons"],
+                "activities": results["activities"],
+                "notes": results["notes"],
+                "updates": results["updates"]
+            }
 
 # Singleton
 pipedrive_service = PipedriveService()

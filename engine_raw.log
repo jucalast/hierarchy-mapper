@@ -1,45 +1,360 @@
-=============================================================================
-SESSÃO: MONTECNICA ELETRO MECANICA | LOCAL: BRASIL | FOCO: COMPRAS
-DATA: 2026-04-10 23:41:39
+================================================================================
+SESSÃO: 3M | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-13 15:05:33
 ================================================================================
 
 
 ==============================
-🔍 NOVA CONSULTA: "Montecnica Eletro Mecanica" Comprador linkedin
+🔍 NOVA CONSULTA: 3M Comprador Brasil linkedin
 ==============================
 
 
-[PROCESSO COMPLETO] CANDIDATO: Carlos Montécnica
-LINK: https://br.linkedin.com/in/carlos-montécnica-36829334
---- [METADADOS BRUTOS] ---
-GOOGLE TITLE: Carlos Montécnica - compras na Montécnica ... - LinkedIn Brasil
-GOOGLE BODY: compras na Montécnica Eletro Mecânica Ltda · Experiência: Montécnica Eletro Mecânica Ltda · Localidade: Salto · 15 conexões no LinkedIn . Veja o perfil de Carlos Montécnica no...
-LINKEDIN STATUS: montécnica eletro mecânica ltda
-LINKEDIN BIO: Experiência: Montécnica Eletro Mecânica Ltda · Localidade: Salto · 15 conexões no LinkedIn. Veja o perfil de Carlos Montécnica no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
---- [CONSULTA IA] ---
-RESULTADO: ✅ APROVADO
-EVIDÊNCIA: Foco COMPRAS: Detetive encontrou experiência na Montecnica Eletro Mecanica Ltda e o RH confirmou como Comprador relevante.
---- [HUNT RESULT (THE ORG)] ---
-CARGO THE ORG: Não Encontrado
-URL THE ORG: N/A
---- [DECISÃO DA INTELIGÊNCIA ARTIFICIAL] ---
-RESULTADO: ✅ APROVADO
-CARGO FINAL: Comprador
-DEPARTAMENTO: Suprimentos/Compras
-CONFIANÇA: 90%
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Antonio Martinez
+🔗 LINKEDIN: https://br.linkedin.com/in/antonio-martinez-817506153
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Antonio Martinez - Especialista de Compras na 3M | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Especialista de Compras na 3M · Experiência: 3M · Localidade: Taboão da Serra · 310 conexões no LinkedIn . Veja o perfil de Antonio Martinez no LinkedIn , uma comunidade profissional de 1...
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Analista De Compras
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 3m
+      ∟ BIO/DESCRIPTION: Experiência: 3M · Localidade: Taboão da Serra · 310 conexões no LinkedIn. Veja o perfil de Antonio Martinez no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Analista De Compras
+      ∟ BIO PROCESSADA: Especialista de Compras na 3M, com experiência em Taboão da Serra...
+      ∟ OUTROS PERFIS NO RUÍDO: 1 detectados
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Especialista de Compras na 3M, Experiência: 3M, 3m | LinkedIn...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Compras/Suprimentos
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo detectado é 'Analista De Compras', mas a bio higienizada menciona 'Especialista de Compras', o que sugere uma interface direta com SUPRIMENTOS/COMPRAS/PROCUREMENT. Além disso, o vínculo com a 3M foi confirmado.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Analista De Compras
+      ∟ SCORE DE MATCHING: 95%
+      ∟ EVIDÊNCIA DO JUIZ: Especialista de Compras na 3M, cargo e empresa coincidem com os dados do Detetive e do Especialista.
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Mayara de Paula
+🔗 LINKEDIN: https://br.linkedin.com/in/mayara-de-paula-4b8613152
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Mayara de Paula - LinkedIn Brasil Robson Jesus - Comprador na 3M do Brasil Ltda | LinkedIn 3M | LinkedIn Antonio Toni - Especialista de compras na 3M do Brasil Ltda ... 73 vagas de 3m em: Brasil - LinkedIn Brasil 80+ "3m" profiles | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: · Experiência: 3M do Brasil Ltda · Formação acadêmica: Universidade Paulista · Localidade: Campinas · 380 conexões no LinkedIn . Veja o perfil de Mayara de Paula no LinkedIn , uma comunidade... Comprador na 3M do Brasil Ltda · Experiência: 3M do Brasil Ltda · Localidade: 12010-240. Veja Robson Jesus o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Transforming industries around the world by applying science to create innovative solutions. | 3M touches virtually every part of your life. Our people and technology make the impossible,... Especialista de compras na 3M do Brasil Ltda · Experiência: 3M do Brasil Ltda · Localidade: Mairinque · 31 conexões no LinkedIn . Veja o perfil de Antonio Toni no LinkedIn , uma... 73 principais vagas de 3m hoje em Brasil . Aproveite sua rede profissional e seja contratado. Novas vagas de 3m adicionadas diariamente. View the profiles of professionals named " 3m " on LinkedIn . There are 80+ professionals named " 3m ", who use LinkedIn to exchange information, ideas, and opportunities.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 3m do brasil ltda
+      ∟ BIO/DESCRIPTION: • Conhecimento macro do processo de compras.
+• Gerenciamento de cadastro de… · Experiência: 3M do Brasil Ltda · Formação acadêmica: Universidade Paulista · Localidade: Campinas · 380 conexões no LinkedIn. Veja o perfil de Mayara de Paula no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
+      ∟ BIO PROCESSADA: Conhecimento macro do processo de compras. Gerenciamento de cadastro de......
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Experiência: 3M do Brasil Ltda, 3m do brasil ltda...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Não Identificado
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O cargo não foi identificado com clareza, mas a presença de 'Conhecimento macro do processo de compras' e 'Gerenciamento de cadastro de...' na bio sugere uma possível relação com compras ou suprimentos. No entanto, sem um cargo claro, não é possível confirmar a relevância para SUPRIMENTOS / COMPRAS / PROCUREMENT.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Linkedin Brasil Robson Jesus
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: Especialista marcou como não relevante (is_relevant: false), aplicando regra de Filtrro de Relevância
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Robson Jesus
+🔗 LINKEDIN: https://br.linkedin.com/in/robson-jesus-94b699265
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Robson Jesus - Comprador na 3M do Brasil Ltda | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Comprador na 3M do Brasil Ltda · Experiência: 3M do Brasil Ltda · Localidade: 12010-240. Veja Robson Jesus o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 3m do brasil ltda
+      ∟ BIO/DESCRIPTION: Experiência: 3M do Brasil Ltda · Localidade: 12010-240. Veja o perfil de Robson Jesus no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Comprador
+      ∟ BIO PROCESSADA: Experiência: 3M do Brasil Ltda · Localidade: 12010-240...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Comprador na 3M do Brasil Ltda, Experiência: 3M do Brasil Ltda · Localidade: 12010-240...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Compras/Suprimentos
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo detectado é 'Comprador', que tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT, portanto é relevante para a posição.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Comprador
+      ∟ SCORE DE MATCHING: 90%
+      ∟ EVIDÊNCIA DO JUIZ: Especialista marcou como relevante, cargo e departamento condizem com o foco de Compras, e não há veto de marca ou sobrenome.
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Antonio Toni
+🔗 LINKEDIN: https://br.linkedin.com/in/antonio-toni-a0595118a
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Antonio Toni - Especialista de compras na 3M do Brasil Ltda ... 73 vagas de 3m em: Brasil - LinkedIn Brasil 80+ "3m" profiles | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Especialista de compras na 3M do Brasil Ltda · Experiência: 3M do Brasil Ltda · Localidade: Mairinque · 31 conexões no LinkedIn . Veja o perfil de Antonio Toni no LinkedIn , uma... 73 principais vagas de 3m hoje em Brasil . Aproveite sua rede profissional e seja contratado. Novas vagas de 3m adicionadas diariamente. View the profiles of professionals named " 3m " on LinkedIn . There are 80+ professionals named " 3m ", who use LinkedIn to exchange information, ideas, and opportunities.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 3m do brasil ltda
+      ∟ BIO/DESCRIPTION: Experiência: 3M do Brasil Ltda · Localidade: Mairinque · 30 conexões no LinkedIn. Veja o perfil de Antonio Toni no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Especialista de compras
+      ∟ BIO PROCESSADA: Especialista de compras na 3M do Brasil Ltda...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Especialista De Compras Na 3M Do Brasil Ltda ... 73 Vagas De 3M Em: Brasil
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: 3M Compradora Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Nadia M .
+🔗 LINKEDIN: https://br.linkedin.com/in/311203
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Nadia M . - Compradora experiência em obra hospitalar... | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: São Paulo e Região, Brasil . Empresa com atuação em empreendimentos Minha Casa Minha Vida. -Contratação de Serviços; - Aquisição de insumos; - Melhorias no sistema de procedimentos e Processos, - Elaboração de Contratos. Sistemas Versato e UAU.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: autônomo
+      ∟ BIO/DESCRIPTION: Profissional no setor de suprimentos no segmento de Construção Civil. · Experiência: Autônomo · Formação acadêmica: IPEP Instituto Paulista de Ensino e Pesquisa · Localidade: Curitiba e Região · + de 500 conexões no LinkedIn. Veja o perfil de Nadia M. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: N/D
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Mayara Souza
+🔗 LINKEDIN: https://br.linkedin.com/in/mayara-souza-18238851
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Mayara Souza - 3M do Brasil Ltda - LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Experiência: 3M do Brasil Ltda · Localidade: Santa Bárbara d'Oeste · 56 conexões no LinkedIn. Veja o perfil de Mayara Souza no LinkedIn, uma comunidade ...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 3m do brasil ltda
+      ∟ BIO/DESCRIPTION: Experiência: 3M do Brasil Ltda · Localidade: Santa Bárbara d'Oeste · 56 conexões no LinkedIn. Veja o perfil de Mayara Souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: Mayara Souza | CARGO: 3M Do Brasil Ltda
+      ∟ BIO PROCESSADA: Candidate Name: Mayara Souza Google Page Title: Mayara Souza - 3M do Brasil Ltda Search Snippet: Experiência: 3M do Brasil Ltda · Localidade: Santa Bá...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: 3M Do Brasil Ltda
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Maria Claudia Passos
+🔗 LINKEDIN: https://br.linkedin.com/in/maria-claudia-passos-b2b2275
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Maria Claudia Passos - Senior Procurement Manager, Global Processes Supplier Performance Leader | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Experiência · 3M. 19 anos 5 meses. Gráfico 3M. Global Supplier performance process manager. 3M. fev. de 2025 - o momento 1 ano 3 meses. Sumaré, São Paulo, Brasil.
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Global Supplier Performance Process Manager
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 3m
+      ∟ BIO/DESCRIPTION: Professional with a degree in Food engineering and master’s degree in management… · Experiência: 3M · Formação acadêmica: Fundação Getulio Vargas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Maria Claudia Passos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: Maria Claudia Passos | CARGO: Senior Procurement Manager, Global Processes Supplier Performance Leader
+      ∟ BIO PROCESSADA: Candidate Name: Maria Claudia Passos Google Page Title: Maria Claudia Passos - Senior Procurement Manager, Global Processes Supplier Performance Leade...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Global Supplier Performance Process Manager
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: 3M Procurement Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: KPI Procurement Brasil
+🔗 LINKEDIN: https://br.linkedin.com/in/kpi-procurement-brasil
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: KPI Procurement Brasil - Diretor Operacional
+   ∟ [SEARCH SNIPPET] BODY: We cannot provide a description for this page right now
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: kpi procurement brasil
+      ∟ BIO/DESCRIPTION: A primeira empresa a combinar Serviços Profissionais em Gestão de Compras e Assessoria em… · Experiência: KPI Procurement Brasil · Localidade: Santos · 87 conexões no LinkedIn. Veja o perfil de KPI Procurement Brasil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: N/D
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: 3M Strategic Sourcing Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Luis Alvarez
+🔗 LINKEDIN: https://www.linkedin.com/in/luis-alvarez1508
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Luis Alvarez - 3M | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: July 16, 2018 - Changing Face of Procurement (From Reactive to Strategic) ... Congratulations! ... Felicitaciones Giovi! Todos los exitos en esta nueva etapa!! ... As we pause this Thanksgiving, I’m reflecting on the challenges, breakthroughs, and lessons of the past year — and, most importantly, the people who made all the progress possible. At 3M, I’m inspired daily by the culture we’re building together — rooted in innovation, challenging the status quo, instilling discipline, elevating performance, and relentlessly focused on our customers.
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Global Supply Planning Director
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 3m
+      ∟ BIO/DESCRIPTION: Offering 20+ years of experience and a proven track record of success as a global supply… · Experiência: 3M · Formação acadêmica: Right Chain Institute, Atlanta, GA · Localidade: Minneapolis-St. Paul e Região · + de 500 conexões no LinkedIn. Veja o perfil de Luis Alvarez no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: Luis Alvarez | CARGO: Google Page Title: Luis Alvarez - 3M
+      ∟ BIO PROCESSADA: Candidate Name: Luis Alvarez Google Page Title: Luis Alvarez - 3M Search Snippet: July 16, 2018 - Changing Face of Procurement (From Reactive to Strat...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: At 3M, I’m inspired daily by the culture we’re building together, LinkedIn Status: Luis Alvarez | 3m, LinkedIn Personal Bio: Offering 20+ years of experience and a proven track record of success as a ...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Global Supply Planning Director
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
+
+——————————————————————————————————————————————————
+
+================================================================================
+SESSÃO: 3M: JOBS | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-13 15:11:37
+================================================================================
+
+
+==============================
+🔍 NOVA CONSULTA: 3M: Jobs Comprador Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: Mayara de Paula
+LINK: https://br.linkedin.com/in/mayara-de-paula-4b8613152
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 --------------------------------------------------
 
-==============================
-🔍 NOVA CONSULTA: "Montecnica Eletro Mecanica" "Analista de Compras" linkedin
-==============================
 
-[FILTRO MECÂNICO] CANDIDATO: Vitor Gabriel Peron
-LINK: https://br.linkedin.com/in/vgperon
-MOTIVO: 🚫 Âncora de marca não encontrada no contexto
---------------------------------------------------
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Maria Claudia Passos
+🔗 LINKEDIN: https://br.linkedin.com/in/maria-claudia-passos-b2b2275
+················································································
 
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Maria Claudia Passos - Senior Procurement Manager, Global Processes Supplier Performance Leader | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Experiência · 3M. 19 anos 5 meses. Gráfico 3M. Global Supplier performance process manager. 3M. fev. de 2025 - o momento 1 ano 3 meses. Sumaré, São Paulo, Brasil.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 3m
+      ∟ BIO/DESCRIPTION: Professional with a degree in Food engineering and master’s degree in management… · Experiência: 3M · Formação acadêmica: Fundação Getulio Vargas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Maria Claudia Passos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: Maria Claudia Passos | CARGO: Senior Procurement Manager, Global Processes Supplier Performance Leader
+      ∟ BIO PROCESSADA: Candidate Name: Maria Claudia Passos Google Page Title: Maria Claudia Passos - Senior Procurement Manager, Global Processes Supplier Performance Leade...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Senior Procurement Manager, Global Processes Supplier Performance Leader
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
+
+——————————————————————————————————————————————————
 
 ==============================
-🔍 NOVA CONSULTA: "Montecnica Eletro Mecanica" Procurement linkedin
+🔍 NOVA CONSULTA: 3M: Jobs Compradora Brasil linkedin
 ==============================
 

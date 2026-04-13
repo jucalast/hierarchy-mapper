@@ -15,7 +15,7 @@ from services.hierarchy.role_engine import role_engine
 from services.hierarchy.org_search import org_search
 from services.hierarchy.candidate_processor import CandidateProcessor
 from services.intelligence.preview_service import get_url_preview
-from services.hierarchy.filters import get_seniority_level, get_department_tag
+from services.hierarchy.filters import get_seniority_level, get_department_tag, PURCHASING_KEYWORDS, LOGISTICS_KEYWORDS, apply_strict_filters
 from services.external.email_service import apply_pattern
 from services.hierarchy.logging_utils import log_session_start, log_query_start
 
@@ -79,12 +79,18 @@ async def discover_employees_stream(
         await session.execute(delete(Employee).where(Employee.company_id == db_org_id, or_(Employee.department != "Quadro de Sócios (QSA)", Employee.department == None)))
         await session.commit()
 
-    # 2. QUERY GENERATION
+    # 1. CLEAN BRAND FOR SEARCH (Remove ruído corporativo: GmbH, Ltda, etc)
+    clean_brand = temp_brand.replace("Gmb H", "").replace("GmbH", "").replace("Ltda", "").replace("S.A.", "").strip()
+    
+    # 2. DYNAMIC QUERY GENERATION (Lê do centralizador filters.py)
+    search_location = location if location else "Brasil"
+    selected_terms = LOGISTICS_KEYWORDS if area_focus == "logistica" else PURCHASING_KEYWORDS
     base_queries = []
-    if area_focus == "logistica":
-        base_queries = [f'"{temp_brand}" Logística linkedin', f'"{temp_brand}" "Supply Chain" linkedin', f'"{temp_brand}" Gerente Logística linkedin']
-    else:
-        base_queries = [f'"{temp_brand}" Comprador linkedin', f'"{temp_brand}" "Analista de Compras" linkedin', f'"{temp_brand}" Procurement linkedin']
+    
+    # Gera as queries (Marca simplificada e sem aspas rígidas para maior alcance)
+    for term in selected_terms:
+        # Usamos apenas a marca limpa, sem aspas forçadas na frente
+        base_queries.append(f'{clean_brand} {term} {search_location} linkedin')
     
     if product_focus:
         from services.external.groq_service import expand_product_to_b2b_terms
@@ -95,6 +101,7 @@ async def discover_employees_stream(
     # 3. SEARCH & PROCESSING LOOP
     processor = CandidateProcessor(temp_brand, domain, area_focus, location, product_focus)
     seen_urls = set()
+    consecutive_empty = 0  # 🛡️ FIX #5: Quórum de parada inteligente
     
     print(f"[B2B Engine] 🚀 Iniciando Escaneamento: {brand_name_log}")
     await role_engine.proactive_health_check()
@@ -102,7 +109,7 @@ async def discover_employees_stream(
 
     for idx, query in enumerate(base_queries[:12]):
         if idx > 0: 
-            wait_time = random.uniform(10.0, 15.0)
+            wait_time = random.uniform(20.0, 30.0) # Aumentado para segurança total
             print(f"      [B2B Engine] Aguardando {wait_time:.1f}s para a próxima busca...")
             await asyncio.sleep(wait_time)
         
@@ -118,30 +125,84 @@ async def discover_employees_stream(
             
             seen_urls.add(href)
             
-            # Processa o candidato usando o novo módulo
-            node_data = await processor.process_candidate(res)
+            # Processa o candidato usando o novo módulo (capturando órfãos)
+            processor_res = await processor.process_candidate(res)
+            if not processor_res: continue
             
+            node_data = processor_res.get("main")
+            orphans = processor_res.get("orphans", [])
+
+            # 1. Persistência do Nó Principal (se existir e for válido)
             if node_data:
-                # Persistência
                 async with async_session() as session:
-                    emp = Employee(
-                        name=node_data["name"],
-                        role=node_data["role"],
-                        department=node_data["department"],
-                        seniority=node_data["level"],
-                        linkedin_url=node_data["linkedin"],
-                        email=node_data["email"],
-                        company_id=db_org_id
-                    )
-                    session.add(emp)
+                    stmt_emp = select(Employee).where(Employee.linkedin_url == node_data["linkedin"])
+                    res_emp = await session.execute(stmt_emp)
+                    existing_emp = res_emp.scalars().first()
+
+                    if existing_emp:
+                        existing_emp.name = node_data["name"]
+                        existing_emp.role = node_data["role"]
+                        existing_emp.department = node_data["department"]
+                        existing_emp.seniority = node_data["level"]
+                        existing_emp.company_id = db_org_id
+                        existing_emp.profile_pic = node_data.get("avatar")
+                        existing_emp.last_scanned = func.now()
+                    else:
+                        emp = Employee(
+                            name=node_data["name"],
+                            role=node_data["role"],
+                            department=node_data["department"],
+                            seniority=node_data["level"],
+                            linkedin_url=node_data["linkedin"],
+                            email=node_data["email"],
+                            profile_pic=node_data.get("avatar"),
+                            company_id=db_org_id
+                        )
+                        session.add(emp)
                     await session.commit()
                 
                 found_nodes.append(node_data)
                 yield [node_data]
+
+            # 2. Promoção e Persistência de Órfãos (Aproveitamento com Repescagem)
+            for orphan in orphans:
+                # Verifica se já existe por nome e empresa no banco
+                async with async_session() as session:
+                    stmt_o = select(Employee).where(Employee.name == orphan["name"], Employee.company_id == db_org_id)
+                    res_o = await session.execute(stmt_o)
+                    if res_o.scalars().first():
+                        continue # Já conhecemos
                 
-                # 🛠️ OTIMIZAÇÃO: "SÓ PARA... SE APROVAR ALGUÉM"
-                # Uma vez que encontramos um candidato válido para esta query, passamos para a próxima
-                # para economizar processamento e API da IA.
+                # Roda a Repescagem para o Órfão (Transforma em nó completo)
+                upgraded_node = await processor.upgrade_orphan(orphan)
+                
+                if upgraded_node:
+                    async with async_session() as session:
+                        new_emp = Employee(
+                            name=upgraded_node["name"],
+                            role=upgraded_node["role"],
+                            company_id=db_org_id,
+                            department=upgraded_node["department"],
+                            seniority=upgraded_node["level"],
+                            linkedin_url=upgraded_node["linkedin"],
+                            email=upgraded_node["email"],
+                            profile_pic=upgraded_node.get("avatar")
+                        )
+                        session.add(new_emp)
+                        await session.commit()
+                        
+                        found_nodes.append(upgraded_node)
+                        # Opcional: Yield para o front-end ver o órfão aparecendo? 
+                        # Sim, pois ele já passou pelo filtro de relevância do upgrade_orphan.
+                        yield [upgraded_node]
+                
+        # 🛡️ FIX #5: Quórum de parada inteligente (substitui o 'break' prematuro)
+        if found_nodes:
+            consecutive_empty = 0  # Reset se encontrou alguém nesta query
+        else:
+            consecutive_empty += 1
+            if consecutive_empty >= 3:
+                print(f"      [B2B Engine] ⏹️ 3 consultas consecutivas sem resultados. Encerrando escaneamento.")
                 break
                 
     # Sinal de conclusão (MUITO IMPORTANTE para o front-end parar o loading)

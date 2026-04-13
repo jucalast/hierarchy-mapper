@@ -15,6 +15,24 @@ negative_keywords = [
     "manutenção Predial", "facilities management", "recepção", "portaria"
 ]
 
+# 🛒 DICIONÁRIO DE COMPRAS (DIVERSIFICADO)
+PURCHASING_KEYWORDS = [
+    "Comprador", "Compradora", "Procurement", "Strategic Sourcing", "Buyer", 
+    "Analista de Compras", "Sourcing", "Purchasing", "Category Manager", 
+    "Suprimentos", "Indirect Procurement", "Supply Management", "Capex Buyer", 
+    "Opex Buyer", "Commodity Manager", "Purchasing Agent", "Gestor de Suprimentos",
+    "Coordenador de Compras", "Gerente de Compras", "Diretor de Compras"
+]
+
+# 📦 DICIONÁRIO DE LOGÍSTICA (DIVERSIFICADO)
+LOGISTICS_KEYWORDS = [
+    "Logística", "Supply Chain", "Warehouse Manager", "PCP", "Coordenador de Logística",
+    "Inventory", "Almoxarifado", "Expedição", "Logistics Operations", "Cadeia de Suprimentos",
+    "Transporte", "Distribuição", "WMS", "TMS", "Fleet Manager", "Gerente de Logística",
+    "Analista de Logística", "Analista de PCP", "Planejamento de Produção", 
+    "Supply Chain Manager", "Demand Planner", "Logística Internacional"
+]
+
 def normalize_str(s: str) -> str:
     if not s: return ""
     s = s.lower()
@@ -60,15 +78,16 @@ def apply_strict_filters(name: str, title: str, snippet: str, core_company: str,
     if " " in target_brand:
         brand_variants.append(target_brand.split()[0].lower())
     
-    # 🕵️ 1. SEGURANÇA DE MARCA (Só passa se a nossa marca estiver presente de alguma forma)
+    # 🕵️ 1. SEGURANÇA DE MARCA
     has_our_brand = any(bv in context_clean for bv in brand_variants)
     
-    # RELAXAMENTO: Se for um cargo de compras MUITO relevante, permitimos passar para IA auditar
-    # Isso resgata quem tem o cargo no título mas a marca só no corpo escondido
-    high_value_keywords = ["buyer", "comprador", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic"]
-    is_high_value = any(kw in title_clean for kw in high_value_keywords)
+    # 🕵️ 4. FILTRAGEM POR RELEVÂNCIA (Whitelist vs Blacklist)
+    # Se houver uma palavra de ALTO VALOR, passamos para IA sem medo.
+    high_value_keywords = ["buyer", "comprador", "compradora", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic"]
+    is_high_value = any(kw in context_clean for kw in high_value_keywords) # Agora checa no contexto todo, não só título
 
     if not has_our_brand and not is_high_value:
+        # Se não tem a marca E não é um cargo óbvio de compras, descarta
         return False
 
     # 🕵️ 2. BLOQUEIO DE OUTRAS MARCAS (Anticoncorrente)

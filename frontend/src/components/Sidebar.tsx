@@ -23,6 +23,7 @@ interface SidebarProps {
     onReset: () => void;
     onCopyData: () => void;
     onRefine?: () => void;
+    onSmartSync?: () => void;
 }
 
 
@@ -33,7 +34,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onToggleTheme, 
     onReset,
     onCopyData,
-    onRefine
+    onRefine,
+    onSmartSync
 }) => {
 
     return (
@@ -83,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <History size={20} className={styles.iconSide} />
             </div>
 
-            <div className={styles.navIcon} title="Smart Sync">
+            <div className={styles.navIcon} title="Smart Sync" onClick={onSmartSync}>
                 <Zap size={20} className={styles.iconSide} />
             </div>
 

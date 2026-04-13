@@ -23,15 +23,24 @@ async def job_websocket(websocket: WebSocket, job_id: str):
     await pubsub.subscribe(channel_name)
     
     try:
-        while True:
-            # Verifica se há novas mensagens no Redis Pub/Sub
-            message = await pubsub.get_message(timeout=1.0)
+        # 🎯 Usar listen() em vez de get_message() para garantir que mensagens não sejam perdidas
+        async for message in pubsub.listen():
             if message and message['type'] == 'message':
                 data = message['data']
-                await websocket.send_text(data.decode('utf-8'))
-            
-            # Pequeno delay para não fritar o CPU
-            await asyncio.sleep(0.1)
+                if isinstance(data, bytes):
+                    data = data.decode('utf-8')
+                
+                print(f"[WS] Enviando para frontend ({job_id}): {data[:100]}")
+                await websocket.send_text(data)
+                
+                # Se recebeu "done", pode encerrar
+                try:
+                    msg_obj = json.loads(data)
+                    if msg_obj.get('type') == 'done':
+                        print(f"[WS] Job {job_id} finished, closing connection.")
+                        break
+                except:
+                    pass
     except WebSocketDisconnect:
         print(f"[WS] Cliente desconectado para Job: {job_id}")
     finally:

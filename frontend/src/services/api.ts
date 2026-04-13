@@ -11,6 +11,11 @@ export interface HierarchyEmployee {
     logo?: string;
     url?: string;
     location?: string;
+    domain?: string;
+    company_logo?: string;
+    seniority?: number;
+    bio?: string;
+    education?: string;
 }
 
 export interface HierarchyResponse {

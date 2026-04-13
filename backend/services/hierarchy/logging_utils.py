@@ -17,37 +17,78 @@ def log_query_start(query):
         f.write(f"🔍 NOVA CONSULTA: {query}\n")
         f.write("="*30 + "\n\n")
 
-def log_candidate_rejection(name, link, reason):
+def log_candidate_rejection(name, link, reason, stage="FILTRO MECÂNICO"):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"[FILTRO MECÂNICO] CANDIDATO: {name}\n")
+        f.write(f"[{stage}] CANDIDATO: {name}\n")
         f.write(f"LINK: {link}\n")
         f.write(f"MOTIVO: 🚫 {reason}\n")
         f.write("-" * 50 + "\n\n")
 
 def log_candidate_analysis(name, link, raw_meta, ai_result, theorg_result, final_decision):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"\n[PROCESSO COMPLETO] CANDIDATO: {name}\n")
-        f.write(f"LINK: {link}\n")
+        f.write(f"\n" + "·"*80 + "\n")
+        f.write(f"🔍 [ANÁLISE DE PERFIL] CANDIDATO: {name}\n")
+        f.write(f"🔗 LINKEDIN: {link}\n")
+        f.write("·"*80 + "\n")
         
-        f.write("--- [METADADOS BRUTOS] ---\n")
-        f.write(f"GOOGLE TITLE: {raw_meta.get('title')}\n")
-        f.write(f"GOOGLE BODY: {raw_meta.get('body')}\n")
-        f.write(f"LINKEDIN STATUS: {raw_meta.get('meta')}\n")
-        f.write(f"LINKEDIN BIO: {raw_meta.get('bio_lkn', 'N/A')}\n")
+        # FASE 4: FÁBRICA DE CANDIDATOS (DADOS BRUTOS)
+        f.write("\n📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)\n")
+        f.write(f"   ∟ [SEARCH SNIPPET] TITLE: {raw_meta.get('title')}\n")
+        f.write(f"   ∟ [SEARCH SNIPPET] BODY: {raw_meta.get('body')}\n")
+        f.write(f"   ∟ [THE ORG CHECK]: {'✅ ENCONTRADO' if theorg_result.get('role') != 'Não Encontrado' else '❌ NÃO CONSTA'}\n")
+        if theorg_result.get('role') != 'Não Encontrado':
+            f.write(f"      ∟ CARGO OFICIAL: {theorg_result.get('role')}\n")
+        
+        f.write(f"   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):\n")
+        f.write(f"      ∟ ROLE DETECTED: {raw_meta.get('meta')}\n")
+        f.write(f"      ∟ BIO/DESCRIPTION: {raw_meta.get('bio_lkn', 'N/A')}\n")
             
-        f.write("--- [CONSULTA IA] ---\n")
-        f.write(f"RESULTADO: {'✅ APROVADO' if ai_result.get('is_valid') else '🚫 REJEITADO'}\n")
-        f.write(f"EVIDÊNCIA: {ai_result.get('evidence', 'Sem evidência detalhada')}\n")
+        # FASE 5: PIPELINE DE INTELIGÊNCIA IA
+        f.write("\n🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)\n")
         
-        f.write("--- [HUNT RESULT (THE ORG)] ---\n")
-        f.write(f"CARGO THE ORG: {theorg_result.get('role', 'Não Encontrado')}\n")
-        f.write(f"URL THE ORG: {theorg_result.get('url', 'N/A')}\n")
+        # 1. SNIPER
+        clean_data = ai_result.get("clean_data", {})
+        target = clean_data.get("target_profile", {})
+        others = clean_data.get("all_mappings", [])
         
-        f.write("--- [DECISÃO DA INTELIGÊNCIA ARTIFICIAL] ---\n")
-        f.write(f"RESULTADO: {'✅ APROVADO' if final_decision.get('is_valid') else '🚫 REJEITADO'}\n")
-        f.write(f"CARGO FINAL: {final_decision.get('role')}\n")
-        f.write(f"DEPARTAMENTO: {final_decision.get('department')}\n")
-        f.write(f"CONFIANÇA: {final_decision.get('matching_score')}%\n")
-        if final_decision.get("evidence") and final_decision.get("evidence") != ai_result.get("evidence"):
-            f.write(f"MOTIVO FINAL: {final_decision.get('evidence')}\n")
-        f.write("-" * 50 + "\n")
+        f.write(f"   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):\n")
+        if clean_data:
+            f.write(f"      ∟ ALVO ISOLADO: {target.get('name')} | CARGO: {target.get('detected_role')}\n")
+            f.write(f"      ∟ BIO PROCESSADA: {target.get('clean_bio', 'N/A')[:150]}...\n")
+            if len(others) > 1:
+                f.write(f"      ∟ OUTROS PERFIS NO RUÍDO: {len(others)-1} detectados\n")
+        else:
+            f.write("      ∟ FALHA NA HIGIENIZAÇÃO\n")
+
+        # 2. DETETIVE
+        facts = ai_result.get("facts", {})
+        f.write(f"   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):\n")
+        if facts:
+            f.write(f"      ∟ EMPRESA ATUAL CONFIRMADA: {'SIM' if facts.get('employer_found') else 'NÃO/INCERTO'}\n")
+            f.write(f"      ∟ SNIPPETS RELEVANTES: {', '.join(facts.get('snippets', []))[:200]}...\n")
+            f.write(f"      ∟ PERFIL INSTITUCIONAL: {'⚠️ SIM' if facts.get('is_institutional') else 'NÃO'}\n")
+        else:
+            f.write("      ∟ SEM FATOS EXTRAÍDOS\n")
+
+        # 3. ESPECIALISTA
+        spec = ai_result.get("specialist", {})
+        f.write(f"   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):\n")
+        if spec:
+            f.write(f"      ∟ DEPARTAMENTO: {spec.get('dept')}\n")
+            f.write(f"      ∟ RELEVANTE: {'SIM' if spec.get('is_relevant') else 'NÃO'}\n")
+            f.write(f"      ∟ MOTIVO: {spec.get('reasoning')}\n")
+        else:
+            f.write(f"      ∟ DEPARTAMENTO SUGERIDO: {final_decision.get('department')}\n")
+            f.write(f"      ∟ RELEVANTE PARA O FOCO: {'SIM' if final_decision.get('is_valid') else 'NÃO'}\n")
+
+        # 4. JUIZ (VEREDITO)
+        f.write(f"   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):\n")
+        f.write(f"      ∟ RESULTADO: {'✅ APROVADO' if final_decision.get('is_valid') else '❌ REJEITADO'}\n")
+        f.write(f"      ∟ CARGO FINAL: {final_decision.get('role')}\n")
+        f.write(f"      ∟ SCORE DE MATCHING: {final_decision.get('matching_score')}%\n")
+        f.write(f"      ∟ EVIDÊNCIA DO JUIZ: {ai_result.get('evidence', 'Sem detalhes')}\n")
+
+        if "APROVADO VIA REPESCAGEM" in str(ai_result.get('evidence')):
+            f.write("\n🔄 [AUTO-REPESCAGEM] Ativada para confirmar dúvidas.\n")
+
+        f.write("\n" + "—"*50 + "\n")

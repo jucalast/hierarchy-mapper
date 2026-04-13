@@ -86,7 +86,8 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
             {/* 1. Header com Erro ou Brand Select Options (Progressivo) */}
             {error && <div className={styles.error}><AlertCircle size={18} /> {error}</div>}
 
-            {step === "input" && !discovering && brandOptions.length > 0 && (
+            {/* 🔄 Mostrar carrossel durante streaming (discovering=true) se houver candidatos */}
+            {step === "input" && brandOptions.length > 0 && (
                 <div className={styles.optionsContainer}>
                     {brandOptions.map((opt: any, idx: number) => (
                         <button
@@ -216,7 +217,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                             onChange={(e) => setConfirmedBrand(e.target.value)}
                                         />
                                         {confirmedFollowers && (
-                                            <div className={styles.brandFollowers}>
+                                            <div className={styles.brandFollowers} title={`${confirmedFollowers} seguidores`}>
                                                 {confirmedFollowers} seguidores
                                             </div>
                                         )}

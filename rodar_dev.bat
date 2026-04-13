@@ -2,12 +2,19 @@
 title GERENCIADOR-LINKB2B
 echo 🚀 Iniciando Ambiente de Desenvolvimento LINKB2B...
 
-:: 1. Limpeza de processos e janelas de SERVIÇO antigas (Surgica)
-echo 🧹 Limpando servicos antigos...
+:: 1. Limpeza de processos e janelas de SERVIÇO antigas
+echo 🧹 Limpando servicos e terminais antigos...
+
+:: Mata as janelas de PowerShell pelo título (muito eficaz para fechar o terminal)
 taskkill /f /fi "WINDOWTITLE eq LINKB2B-SVC-*" /t >nul 2>&1
-taskkill /f /im python.exe /t >nul 2>&1
+
+:: Limpa processos específicos que costumam travar portas
 taskkill /f /im node.exe /t >nul 2>&1
+taskkill /f /im python.exe /t >nul 2>&1
 taskkill /f /im redis-server.exe /t >nul 2>&1
+
+:: Aguarda um segundo para garantir a liberação das portas
+timeout /t 1 /nobreak > nul
 
 :: 2. Iniciar Redis em segundo plano (se existir na pasta)
 if exist "backend\redis\redis-server.exe" (

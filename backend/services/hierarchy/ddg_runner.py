@@ -12,7 +12,7 @@ def main():
     try:
         # Tenta usar a biblioteca com o padrão estável se possível
         with DDGS() as ddgs:
-            raw = list(ddgs.text(query, region="br-pt", max_results=max_results))
+            raw = list(ddgs.text(query, region="br-pt", max_results=max_results, backend="lite"))
             for r in raw:
                 # Simplificação para o dumper
                 results.append(r)

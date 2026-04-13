@@ -5,7 +5,7 @@ import httpx
 import urllib.parse
 import sys
 from typing import List, Dict, Optional
-from ddgs import DDGS # Usando o nome novo para evitar avisos
+from ddgs import DDGS
 
 async def get_duck_results(query: str, max_results: int = 50, is_company: bool = False) -> List[Dict]:
     """
@@ -19,8 +19,8 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     ]
     
-    # 💤 Delay randômico BASE para evitar sequenciamento robótico
-    await asyncio.sleep(random.uniform(2.0, 4.0))
+    # 💤 Delay randômico BASE aumentado significativamente para segurança extrema
+    await asyncio.sleep(random.uniform(10.0, 20.0))
     
     # --- RESILIÊNCIA DE REDE ---
     for dns_attempt in range(2):
@@ -35,10 +35,13 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
     # --- MOTOR PRINCIPAL: DUCKDUCKGO ---
     for attempt in range(4):
         try:
-            print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4)...")
+            # Rotaciona User-Agent aleatoriamente
+            ua = random.choice(user_agents)
+            print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4) com UA: {ua[:30]}...")
             
-            # Usamos o backend 'lite' com um timeout generoso de 30s para evitar fallbacks internos
+            # Usamos o backend 'lite' com um timeout generoso de 30s
             with DDGS(timeout=30) as ddgs:
+                # O backend 'lite' costuma ser mais resiliente a bloqueios
                 raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results, backend="lite"))
                 
                 if raw_results:
@@ -64,7 +67,7 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
             else:
                  print(f"[SearchEngine] Erro no DDG: {msg}")
             
-            wait_time = (attempt + 1) * 10
+            wait_time = (attempt + 1) * 20 # 20s, 40s, 60s... Progressão mais lenta
             await asyncio.sleep(wait_time)
             continue
 

@@ -28,10 +28,14 @@ export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
 
     const childLevel = child.data.level || 1;
 
-    // Tenta encontrar o melhor pai (nível maior que o dele)
+    // Tenta encontrar o melhor pai (nível maior que o dele ou Root 0)
     const potentialParents = nodes
-      .filter(p => (p.data.level || 0) > childLevel)
-      .sort((a, b) => (a.data.level || 0) - (b.data.level || 0));
+      .filter(p => p.data.level === 0 || (p.data.level || 0) > childLevel)
+      .sort((a, b) => {
+        if (a.data.level === 0) return 1; // Coloca root por último na busca de "mais próximo"
+        if (b.data.level === 0) return -1;
+        return (a.data.level || 0) - (b.data.level || 0);
+      });
 
     let bestParent = null;
 

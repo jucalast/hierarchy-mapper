@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Handle, Position } from 'reactflow';
 import styles from '../NetworkGraph.module.css';
 import {
@@ -18,69 +18,74 @@ import { LinkedInIcon } from '../icons/LinkedInIcon';
 
 
 export function SupplyChainNode({ data }: { data: any }) {
-  // Helper to proxy external images through our backend (bypasses CORS/Hotlinking blocks)
-  const getProxiedUrl = (url: any) => {
-    if (!url) return undefined;
-    // Padronização Total: Todas as imagens externas agora passam pelo nosso Proxy do Backend
-    // Isso evita qualquer bloqueio de CORS ou Hotlinking de qualquer fonte (LinkedIn, Google, Unavatar, etc)
-    if (typeof url === 'string' && url.startsWith('http') && !url.includes('127.0.0.1:8000')) {
-      return `http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(url)}`;
-    }
-    return url;
-  };
-
-  // Extract LinkedIn username for avatar fallback
-
-  const getLinkedinAvatar = () => {
-    if (!data.linkedin) return null;
-    let username = data.linkedin;
-    if (username.includes('linkedin.com/in/')) {
-      const match = username.match(/linkedin\.com\/in\/([^\/\?#]+)/);
-      if (match && match[1]) {
-        username = match[1];
+  // Memoize expensive computations
+  const memoizedUrls = useMemo(() => {
+    // Helper to proxy external images through our backend (bypasses CORS/Hotlinking blocks)
+    const getProxiedUrl = (url: any) => {
+      if (!url) return undefined;
+      // Padronização Total: Todas as imagens externas agora passam pelo nosso Proxy do Backend
+      // Isso evita qualquer bloqueio de CORS ou Hotlinking de qualquer fonte (LinkedIn, Google, Unavatar, etc)
+      if (typeof url === 'string' && url.startsWith('http') && !url.includes('127.0.0.1:8000')) {
+        return `http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(url)}`;
       }
-    }
-    // Final cleanup: remove trailing slashes or queries
-    username = username.split('/')[0].split('?')[0].trim();
-    if (!username) return null;
-    return `https://unavatar.io/linkedin/${username}`;
-  };
+      return url;
+    };
 
-
-  const avatarUrl = data.avatar || 
-                   data.profile_pic || 
-                   data.photo || 
-                   data.image || 
-                   data.profile_image ||
-                   data.linkedin_image ||
-                   data.linkedin_metadata?.profile_image ||
-                   getLinkedinAvatar();
-
-
-  // Extract Company domain for logo fallback
-  const getCompanyLogo = () => {
-    // If we have a direct domain field, use it
-    const domain = data.domain || data.company_domain;
-    if (domain) return `https://unavatar.io/${domain}`;
-
-    // Fallback to extraction from email
-    if (data.email && data.email.includes('@')) {
-      const parts = data.email.split('@');
-      const domainFromEmail = parts[parts.length - 1];
-      const excluded = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com'];
-      if (!excluded.includes(domainFromEmail.toLowerCase())) {
-        return `https://unavatar.io/${domainFromEmail}`;
+    // Extract LinkedIn username for avatar fallback
+    const getLinkedinAvatar = () => {
+      if (!data.linkedin) return null;
+      let username = data.linkedin;
+      if (username.includes('linkedin.com/in/')) {
+        const match = username.match(/linkedin\.com\/in\/([^\/\?#]+)/);
+        if (match && match[1]) {
+          username = match[1];
+        }
       }
-    }
-    return null;
-  };
+      // Final cleanup: remove trailing slashes or queries
+      username = username.split('/')[0].split('?')[0].trim();
+      if (!username) return null;
+      return `https://unavatar.io/linkedin/${username}`;
+    };
 
+    const avatarUrl = data.avatar || 
+                     data.profile_pic || 
+                     data.photo || 
+                     data.image || 
+                     data.profile_image ||
+                     data.linkedin_image ||
+                     data.linkedin_metadata?.profile_image ||
+                     getLinkedinAvatar();
 
-  const companyLogoUrl = data.confirmedLogo || 
-                        data.company_logo || 
-                        data.logo || 
-                        data.company_image ||
-                        getCompanyLogo();
+    // Extract Company domain for logo fallback
+    const getCompanyLogo = () => {
+      // If we have a direct domain field, use it
+      const domain = data.domain || data.company_domain;
+      if (domain) return `https://unavatar.io/${domain}`;
+
+      // Fallback to extraction from email
+      if (data.email && data.email.includes('@')) {
+        const parts = data.email.split('@');
+        const domainFromEmail = parts[parts.length - 1];
+        const excluded = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com'];
+        if (!excluded.includes(domainFromEmail.toLowerCase())) {
+          return `https://unavatar.io/${domainFromEmail}`;
+        }
+      }
+      return null;
+    };
+
+    const companyLogoUrl = data.confirmedLogo || 
+                          data.company_logo || 
+                          data.logo || 
+                          data.company_image ||
+                          getCompanyLogo();
+
+    return { getProxiedUrl, avatarUrl, companyLogoUrl };
+  }, [data.linkedin, data.avatar, data.profile_pic, data.photo, data.image, data.profile_image, 
+      data.linkedin_image, data.email, data.domain, data.company_domain, data.confirmedLogo,
+      data.company_logo, data.logo, data.company_image]);
+
+  const { getProxiedUrl, avatarUrl, companyLogoUrl } = memoizedUrls;
 
 
   const level = data.level !== undefined ? data.level : 5;
@@ -131,28 +136,36 @@ export function SupplyChainNode({ data }: { data: any }) {
                     src={getProxiedUrl(avatarUrl)} 
                     alt={data.name} 
                     className={styles.avatarImg}
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=6366f1&color=fff&bold=true&rounded=true&size=128`;
                     }}
                   />
                   
-                  {/* Badge de Empresa (Overlay) para Pessoas */}
-                  <div className={styles.nodeAvatarCompanyBadge}>
-                    <img 
-                      src={getProxiedUrl(data.company_logo || `https://unavatar.io/${data.domain || data.company || 'knorr-bremse.com'}`)} 
-                      alt="Company" 
-                      className={styles.companyBadgeImg}
-                    />
-                  </div>
+                  {/* Badge de Empresa (Overlay) - Apenas para pessoas normais, não para sócios (level 6) */}
+                  {level !== 6 && (
+                    <div className={styles.nodeAvatarCompanyBadge}>
+                      <img 
+                        src={getProxiedUrl(data.company_logo || `https://unavatar.io/${data.domain || data.company || 'knorr-bremse.com'}`)} 
+                        alt="Company" 
+                        className={styles.companyBadgeImg}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  )}
                 </>
               ) : (
-                /* Logo da Empresa para o Nó Principal (Tier 0) */
+                /* Logo da Empresa para o Nó Principal (Tier 0) - Sem badge pequena */
                 <img 
                   src={getProxiedUrl(data.company_logo || data.logo || data.image || data.logo_url || data.brand_logo || (data.domain ? `https://unavatar.io/${data.domain}` : null))} 
                   alt="Company" 
                   className={styles.avatarImg}
                   style={{ objectFit: 'contain' }}
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     const fallbackName = data.name || data.company || 'K';

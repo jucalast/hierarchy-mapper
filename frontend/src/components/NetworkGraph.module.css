@@ -121,10 +121,10 @@
 
 /* React Flow Controls Integration */
 .graphWrapper :global(.react-flow__controls) {
-    background: #0F1014;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    background: var(--sw-sidebar);
+    border: var(--sw-border-width) solid var(--sw-border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--sw-shadow);
     overflow: hidden;
     padding: 2px;
 }
@@ -132,10 +132,10 @@
 .graphWrapper :global(.react-flow__controls-button) {
     background: transparent;
     border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.4);
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
+    color: var(--sw-text-muted);
     fill: currentColor;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: var(--transition-fast);
 }
 
 .graphWrapper :global(.react-flow__controls-button:last-child) {
@@ -143,8 +143,8 @@
 }
 
 .graphWrapper :global(.react-flow__controls-button:hover) {
-    background: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
+    background: var(--sw-hover);
+    color: var(--sw-text-base);
 }
 
 .graphWrapper :global(.react-flow__controls-button svg) {
@@ -264,6 +264,8 @@
     padding-right: 4px;
     border-right: none;
     /* Removed vertical bar per user request */
+    flex: 1;
+    min-width: 0;
 }
 
 .toolbarSegment {
@@ -274,6 +276,8 @@
     border-radius: 8px;
     transition: var(--transition-fast);
     color: rgba(255, 255, 255, 0.4);
+    min-width: 0;
+    flex: 1;
 }
 
 .toolbarSegment:hover {
@@ -294,6 +298,7 @@
     width: 1px;
     height: 18px;
     background: rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
 }
 
 .toolbarBrandThumb {
@@ -317,6 +322,7 @@
     opacity: 0.4;
     /* Matching Header/Sidenav icon opacity */
     transition: opacity 0.2s;
+    flex-shrink: 0;
 }
 
 .toolbarSegment:hover .inputIcon,
@@ -329,11 +335,12 @@
     align-items: center !important;
     gap: 12px !important;
     padding: 2px 12px !important;
-    min-width: 200px !important;
+    min-width: 100px !important;
     max-width: 440px !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
+    flex: 1 !important;
 }
 
 .selectedBrandPreview .brandAvatarWrapper {
@@ -348,6 +355,7 @@
     align-items: center !important;
     justify-content: space-between !important;
     gap: 12px !important;
+    min-width: 0 !important;
 }
 
 .selectedBrandPreview .input {
@@ -355,8 +363,8 @@
     border: none !important;
     padding: 0 !important;
     outline: none !important;
-    width: auto !important;
-    min-width: 0 !important;
+    width: 100% !important;
+    min-width: 40px !important;
     flex: 1 !important;
 }
 
@@ -372,7 +380,9 @@
     color: #ffffff;
     font-size: 0.85rem;
     /* Standardized with Drawer */
-    width: 120px;
+    width: 100%;
+    min-width: 60px;
+    max-width: 120px;
     font-weight: 500;
 }
 
@@ -433,12 +443,8 @@
     pointer-events: none;
     width: fit-content;
     /* Dynamic again */
-    max-width: 90vw;
-
-
-    /* Safety margin for mobile/tablet */
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-    /* Consistent with --sw-shadow */
+    max-width: calc(100% - 40px);
+    /* Stay within mainContent with some margin */
     animation: swSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -503,7 +509,7 @@
     transition: all 0.2s;
     border: none;
     position: relative;
-    min-width: 220px;
+    min-width: 300px;
     flex-shrink: 0;
     pointer-events: auto;
     background: #ffffff00;
@@ -633,6 +639,10 @@
     font-size: 0.72rem;
     color: rgba(255, 255, 255, 0.4);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    max-width: 60px; /* Adapte se precisar de mais espaço: ex: 80px */
 }
 
 
@@ -724,27 +734,24 @@
 .refineTab {
     display: flex;
     align-items: center;
-    background: #131313;
+    background: var(--sw-sidebar);
     /* Matching Sidenav/Header */
-    border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    border: var(--sw-border-width) solid var(--sw-border-strong);
     padding: 4px 8px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     pointer-events: auto;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: var(--transition-smooth);
     width: fit-content;
     /* Dictates the board width */
     max-width: 100%;
 
     min-height: 48px;
     gap: 4px;
-
-
-
 }
 
 .refineTab.searching {
-    background: #131313 !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
+    background: var(--sw-sidebar) !important;
+    border-color: var(--sw-border) !important;
     box-shadow: none !important;
 }
 
@@ -781,7 +788,8 @@
     color: rgba(255, 255, 255, 0.3) !important;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: 0 8px; /* Slightly reduced padding to fit group */
+    padding: 0 8px;
+    /* Slightly reduced padding to fit group */
     height: 38px;
     flex-shrink: 0;
 }
@@ -789,7 +797,8 @@
 .segmentActionGroup {
     display: flex;
     align-items: center;
-    gap: 0; /* Gap zero to look like a toolset */
+    gap: 0;
+    /* Gap zero to look like a toolset */
     margin-left: 8px;
 }
 
@@ -857,8 +866,9 @@
     align-items: center;
     transition: all 0.3s;
     height: 40px;
-    width: fit-content;
-    flex: none;
+    width: 100%;
+    flex: 1;
+    min-width: 0;
 }
 
 
@@ -1109,7 +1119,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #14151A;
     padding: 8px 12px;
     border-radius: 8px;
     border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
@@ -1152,58 +1161,568 @@
 }
 
 .orgItem {
-    padding: 12px 16px;
-    /* Standardized spacing */
+    padding: 10px 16px;
     cursor: pointer;
-    transition: var(--transition-fast);
-    border: var(--sw-border-width) solid transparent;
-    border-radius: 10px;
-    /* Harmonized radius */
-    margin-bottom: 4px;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    margin: 4px 0;
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
 }
 
-.orgItem:hover {
-    color: #ffffff;
+.orgItem:hover,
+.selectedOrgItem {
     background: transparent;
 }
-
-
 
 .orgMainInfo {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 2px;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.orgLogoWrapper {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: all 0.2s ease;
+}
+
+.orgItem:hover .orgLogoWrapper,
+.selectedOrgItem .orgLogoWrapper {
+    opacity: 1;
+}
+
+.orgLogo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+    opacity: 0.4;
+    transition: all 0.2s ease;
+}
+
+.orgItem:hover .orgLogo,
+.selectedOrgItem .orgLogo {
+    opacity: 1;
 }
 
 .orgIcon {
     color: rgba(255, 255, 255, 0.3);
-    transition: var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
-.orgItem:hover .orgIcon {
-    color: rgba(255, 255, 255, 0.6);
+.orgItem:hover .orgIcon,
+.selectedOrgItem .orgIcon {
+    color: rgba(255, 255, 255, 1);
+}
+
+.orgIdentity {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
 }
 
 .orgName {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.7);
-    transition: var(--transition-fast);
-}
-
-.orgItem:hover .orgName {
-    color: #ffffff;
-}
-
-.orgAddress {
-    font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.25);
-    padding-left: 22px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: block;
+    transition: all 0.2s ease;
+}
+
+.orgItem:hover .orgName,
+.selectedOrgItem .orgName {
+    color: #ffffff;
+}
+
+.orgDomain {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.orgItem:hover .orgDomain,
+.selectedOrgItem .orgDomain {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.orgFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-left: 40px;
+}
+
+.employeeStack {
+    display: flex;
+    align-items: center;
+}
+
+.stackedAvatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid #131313;
+    object-fit: cover;
+    margin-left: -8px;
+    background: #2a2a2a;
+    transition: transform 0.2s, opacity 0.2s ease;
+    opacity: 0.4;
+}
+
+.stackedAvatar:first-child {
+    margin-left: 0;
+}
+
+.stackedAvatar:hover {
+    transform: translateY(-4px);
+    z-index: 10;
+    opacity: 1;
+}
+
+.orgItem:hover .stackedAvatar,
+.selectedOrgItem .stackedAvatar {
+    opacity: 0.8;
+}
+
+.mappedBadge {
+    font-size: 0.65rem;
+    font-weight: 800;
+    background: rgba(45, 212, 191, 0.1);
+    color: #2dd4bf;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(45, 212, 191, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.empCountBadge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.3);
+    margin-left: 8px;
+}
+
+.orgAddress {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: capitalize;
+    margin-top: 2px;
+}
+
+.expandToggle {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    margin-left: auto;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.expandToggle:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.expandedOrgItem {
+    background: rgba(255, 255, 255, 0.03);
+    margin-bottom: 8px !important;
+}
+
+.detailsPane {
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 24px 24px 0 24px;
+}
+
+.detailsLoading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 0;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.75rem;
+}
+
+.detailsContent {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mainNav {
+    display: flex;
+    gap: 28px;
+    margin-bottom: 24px;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.mainNavBtn {
+    background: transparent;
+    border: none;
+    padding: 8px 0;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mainNavBtn:hover {
+    color: #ffffff;
+}
+
+.mainNavActive {
+    background: transparent;
+    border: none;
+    padding: 8px 0;
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tabScrollArea {
+    padding-right: 4px;
+}
+
+/* Lists */
+.activityList,
+.personList,
+.dealList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.emptyState {
+    padding: 20px 0;
+    text-align: center;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.2);
+    font-style: italic;
+}
+
+/* Activity Items */
+.activityItem {
+    padding: 12px 0;
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.activityHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.statusDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.statusDone {
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+
+.statusPending {
+    background: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.activitySubject {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.activityMeta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Person Items */
+.personItem {
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-left: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.personInfo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.personIcon {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.personName {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.personRole {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.personEmail {
+    font-size: 0.65rem;
+    color: #3b82f6;
+    padding-left: 20px;
+}
+
+/* Deal Items */
+.dealItem {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dealTitle {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.dealMeta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dealValue {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #10b981;
+    display: flex;
+    align-items: center;
+}
+
+.dealStatus {
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.open {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.won {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.lost {
+    background: rgba(ef, 44, 44, 0.1);
+    color: #ef4444;
+}
+
+/* Focus Mode Header & View */
+.focusHeader {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.backToListBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 16px 20px;
+
+}
+
+.backToListBtn:hover {
+    color: #fff;
+}
+
+.focusedOrgView {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow-y: auto;
+    height: 100%;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.focusedOrgHero {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 24px 20px;
+    background: transparent;
+
+}
+
+.focusedOrgLogoWrapper {
+    width: 64px;
+    height: 64px;
+    background: transparent;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.focusedOrgLogo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.focusedOrgIdentity {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.focusedOrgName {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+.focusedOrgNameEdit {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+    caret-color: #7a8bff;
+    outline: none;
+}
+
+.focusedOrgNameEdit:focus {
+    outline: none;
+    background: transparent;
+    border: none;
+}
+
+.focusedOrgNameEdit:hover {
+    background: transparent;
+    border: none;
+}
+
+.focusedOrgNameEdit:active {
+    background: transparent;
+    border: none;
+}
+
+.focusedMetaRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.focusedOrgAddress {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    line-height: 1.4;
+}
+
+.dealFocusBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: 6px;
+    color: #60a5fa;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    height: fit-content;
+}
+
+.tabScrollAreaFocus {
+    padding-right: 4px;
+    margin-top: 12px;
 }
 
 /* --- GRAPH NODES (SaaS PREMIUM CARDS) --- */
@@ -1214,6 +1733,10 @@
     border-radius: 16px;
     /* Harmonized with FloatingToolbar */
     width: 440px;
+    /* High-performance rendering */
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
     /* Slightly wider for better text flow */
     padding: 0;
 
@@ -1452,6 +1975,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    contain: layout style paint;
 }
 
 .nodeNameWrapper {
@@ -1480,6 +2004,9 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    backface-visibility: hidden;
+    will-change: opacity;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
 }
 
 .nodeAvatarCompanyBadge {
@@ -1504,6 +2031,7 @@
     height: 100%;
     object-fit: contain;
     background: transparent;
+    backface-visibility: hidden;
 }
 
 

@@ -32,25 +32,37 @@ class CandidateProcessor:
             else:
                 flexible_name = f"{name_parts[0]} {name_parts[-1]}" if len(name_parts) > 1 else name
             
-            search_query = html.unescape(f'{flexible_name} "{self.brand}" linkedin')
+            clean_brand = self.brand.replace("Gmb H", "").replace("GmbH", "").replace("Ltda", "").replace("S.A.", "").strip()
+            search_location = self.location if self.location else "Brasil"
+            
+            # Formato mais fluido para repescagem (Marca limpa + Nome + Local + linkedin)
+            search_query = html.unescape(f'{flexible_name} {clean_brand} {search_location} linkedin')
+            print(f"      [Maestro] 🔎 Consultando fundo: {search_query}")
+            
             from services.hierarchy.search_engine import get_duck_results
             # Pegamos mais resultados (10) para garantir que achamos o snippet certo das atividades
-            extra_results = await get_duck_results(search_query, max_results=10)
+            extra_results = await get_duck_results(search_query, max_results=5)
             
             snippets = []
-            for r in extra_results:
+            suggested_linkedin = href # Fallback
+            for idx, r in enumerate(extra_results):
+                r_href = r.get('href', '')
+                # Se o órfão não tinha LinkedIn, pegamos o primeiro link de perfil que aparecer
+                if ("linkedin.com/in/" in r_href) and (not suggested_linkedin or "/in/" not in suggested_linkedin):
+                    suggested_linkedin = r_href.split("?")[0]
                 snippets.append(f"TÍTULO: {html.unescape(r.get('title'))}\nCORPO: {html.unescape(r.get('body', ''))}")
             
             # 2. Contexto de Repescagem
             repescagem_context = [
                 f"--- DADOS DE REPESCAGEM (PESQUISA DIRETA) ---",
                 *snippets,
-                f"Sugerido via URL: {href}"
+                f"Sugerido via URL: {suggested_linkedin}"
             ]
             
             # 3. Segunda Opinião da IA
             from services.hierarchy.role_engine import role_engine
-            res = await role_engine.distill_role(name, self.brand, repescagem_context, area_focus=self.area)
+            res = await role_engine.distill_role(name, self.brand, repescagem_context, area_focus=self.area, target_location=self.location)
+            res["verified_linkedin"] = suggested_linkedin
             return res
             
         except Exception as e:
@@ -70,6 +82,49 @@ class CandidateProcessor:
             
         return name_final.split('...')[0].strip()
 
+    async def upgrade_orphan(self, orphan_data: Dict) -> Optional[Dict]:
+        """
+        Pega um nome descoberto 'de carona' e roda uma investigação completa (Repescagem).
+        Isso transforma um órfão ruidoso em um candidato de alta fidelidade.
+        """
+        name = orphan_data.get("name")
+        print(f"      [Orphan Upgrade] 💎 Iniciando investigação para: {name}")
+        
+        # 1. Roda a Repescagem (IA + Busca Direta)
+        ai_data = await self.deep_research({"name": name, "linkedin": "None"})
+        
+        if not ai_data.get("is_valid") or ai_data.get("matching_score", 0) < 70:
+            print(f"      [Orphan Upgrade] 🚫 Rejeitado: {name} (Não relevante para {self.area})")
+            return None
+            
+        # 2. Enriquecimento de Metadados (Aproveitamos para pegar a imagem e bio real)
+        verified_linkedin = ai_data.get("verified_linkedin")
+        if verified_linkedin and "/in/" in verified_linkedin:
+            enriched = await get_url_preview(verified_linkedin, company_hint=self.brand, fast_mode=True)
+        else:
+            enriched = {}
+
+        # 3. Montagem do Nó Completo
+        final_role = ai_data.get("role", orphan_data.get("role", "Colaborador"))
+        
+        node_data = {
+            "id": f"node_{verified_linkedin.split('/in/')[-1].replace('/', '_')}" if verified_linkedin else f"node_orphan_{name.replace(' ', '_')}",
+            "name": name,
+            "role": final_role,
+            "company": self.brand,
+            "linkedin": verified_linkedin or "URL não encontrada",
+            "url": verified_linkedin or "URL não encontrada",
+            "department": get_department_tag(final_role),
+            "level": get_seniority_level(final_role),
+            "email": apply_pattern(name.split()[0].lower(), (name.split()[1:] or [name.split()[0]])[-1].lower(), self.domain, "first.last"),
+            "avatar": enriched.get("image") or None,
+            "company_logo": f"https://unavatar.io/{self.domain}" if self.domain else None,
+            "location": self.location or "Brasil"
+        }
+        
+        print(f"      [Orphan Upgrade] ✅ Sucesso: {name} promovido para {final_role}")
+        return node_data
+
     async def process_candidate(self, search_result: Dict) -> Optional[Dict]:
         """
         Orquestra toda a análise de um único candidato.
@@ -84,13 +139,40 @@ class CandidateProcessor:
             log_candidate_rejection(name or "Unknown", href, "Nome inválido ou coincidente com a marca")
             return None
 
+        # 🛡️ FIX #4: Ativa o Filtro Mecânico Estrito antes da IA
+        if not apply_strict_filters(name, title, body, self.brand, self.brand, self.location):
+            log_candidate_rejection(name, href, "REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)")
+            return None
+
         # 1. 🔍 THE ORG (Verdade Absoluta)
         theorg_info, theorg_role, theorg_url = await org_search.get_theorg_role(self.brand, name)
         theorg_found = "HIERARCHY" in theorg_info
 
         # 2. 📄 METADADOS (Preview LinkedIn)
         enriched = await get_url_preview(href, company_hint=self.brand, fast_mode=True)
+        
+        # 🧪 INTELIGÊNCIA DE NOME: Se o nome extraído do título parece um cargo ou é genérico,
+        # tentamos extrair o nome real dos metadados ou da URL.
+        meta_name = enriched.get('name', '').strip()
+        role_keywords = ['comprador', 'manager', 'diretor', 'director', 'gerente', 'analista', 'vp', 'ceo', 'coordenador', 'lead', 'pleno', 'sênior', 'jr']
+        
+        is_role_not_name = any(kw in name.lower() for kw in role_keywords) or (self.brand.lower() in name.lower())
+        
+        if (len(meta_name) > 3 and meta_name.lower() != self.brand.lower()) and (is_role_not_name or len(name) < 5):
+            print(f"      [CandidateProcessor] 👤 Refinando nome: '{name}' -> '{meta_name}' (via Metadados)")
+            name = meta_name
+        elif is_role_not_name:
+            # Fallback: Tenta extrair da URL Slug (ex: gislane-rodrigues-...)
+            url_slug = href.split("/in/")[-1].split("/")[0].split("?")[0]
+            slug_parts = [p.capitalize() for p in url_slug.split("-") if not p.isdigit() and len(p) > 2]
+            if len(slug_parts) >= 2:
+                inferred_name = " ".join(slug_parts[:3]) # Pega até 3 nomes
+                print(f"      [CandidateProcessor] 👤 Refinando nome: '{name}' -> '{inferred_name}' (via URL Slug)")
+                name = inferred_name
+
         meta_role = (enriched.get('role', '') or '').lower()
+        meta_role_clean = html.unescape(meta_role)
+        bio_clean = html.unescape(enriched.get('description', 'N/A'))
         
         # 3. 🛡️ FILTRO DE ÂNCORA (Marca)
         brand_slug = role_engine.slugify_lenient(self.brand)
@@ -99,7 +181,14 @@ class CandidateProcessor:
         
         brand_match = brand_slug in context_slug or any(w in context_slug for w in words)
         if not theorg_found and not brand_match:
-            log_candidate_rejection(name, href, "Âncora de marca não encontrada no contexto")
+            # Mesmo rejeitado aqui, vamos logar os dados brutos que já coletamos
+            log_candidate_analysis(
+                name, href, 
+                {"title": title, "body": body, "meta": meta_role_clean, "bio_lkn": bio_clean}, 
+                {"is_valid": False, "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"}, 
+                {"role": theorg_role, "url": theorg_url}, 
+                {"is_valid": False, "role": "N/D", "department": "N/D", "matching_score": 0}
+            )
             return None
 
         # 4. 🧠 REPESCAGEM / DEEP ANALYSIS
@@ -107,34 +196,43 @@ class CandidateProcessor:
         # Mas aqui faremos a lógica de decisão individual para este processador.
         mechanical_title = role_engine.extract_mechanical_title(title, body, self.brand)
         
-        # 🧹 LIMPEZA DE METADADOS E TÍTULO
-        import html
-        meta_role_clean = html.unescape(meta_role)
-        bio_clean = html.unescape(enriched.get('description', 'N/A'))
+        # ✂️ PODA MECÂNICA (Solução Definitiva contra ruído de múltiplos perfis)
+        # ✂️ PODA MECÂNICA (Solução Definitiva contra ruído de múltiplos perfis)
+        def isolate_context(text, target_name):
+            if "..." in text:
+                parts = text.split("...")
+                for p in parts:
+                    if target_name.lower() in p.lower():
+                        return p.strip()
+            return text
+
+        clean_title = isolate_context(title.split(" - LinkedIn")[0].split(" | LinkedIn")[0], name)
+        clean_body = isolate_context(body, name)
         
-        # Poda do Título (Remove ruído de outras pessoas no mesmo título do Google)
-        clean_title = title.split(" - LinkedIn")[0].split(" | LinkedIn")[0]
         if "..." in clean_title: clean_title = clean_title.split("...")[0]
-        # Se o título tiver o nome de outra pessoa conhecida (separada por pipe/hífen), corta
-        if " - " in clean_title and name not in clean_title.split(" - ")[-1]:
-            clean_title = clean_title.split(" - ")[0]
 
         # 🧠 CONTEXTO RICO PARA IA
         context = [
             f"Candidate Name: {name}",
             f"Google Page Title: {clean_title}",
-            f"Search Snippet: {body}",
+            f"Search Snippet: {clean_body}",
             f"LinkedIn Status: {enriched.get('name')} | {meta_role_clean}",
             f"LinkedIn Personal Bio: {bio_clean}",
             f"Verified Official Role: {theorg_role}"
         ]
         
-        ai_data = await role_engine.distill_role(name, self.brand, context, product_focus=self.product, area_focus=self.area)
+        ai_data = await role_engine.distill_role(name, self.brand, context, product_focus=self.product, area_focus=self.area, target_location=self.location)
         confidence = ai_data.get("matching_score", 0)
 
-        # 🔄 AUTO-REPESCAGEM: Se houver qualquer dúvida (abaixo de 90%), investiga a fundo.
-        if ai_data.get("is_valid") and confidence < 90:
-             print(f"      [Maestro] 🔄 Dúvida detectada ({confidence}%). Iniciando REPESCAGEM para {name}...")
+        # 🔄 AUTO-REPESCAGEM: Se houver qualquer dúvida (abaixo de 90%) OU cargo não identificado, investiga a fundo.
+        generic_roles = ["não identificado", "professional", "colaborador", "employee", "pioneer"]
+        needs_repescagem = (
+            (ai_data.get("is_valid") and confidence < 90) or 
+            (str(ai_data.get("role", "")).lower() in generic_roles)
+        )
+        
+        if ai_data.get("is_valid") and needs_repescagem:
+             print(f"      [Maestro] 🔄 Dúvida ou Cargo Genérico detectado ('{ai_data.get('role')}'). Iniciando REPESCAGEM para {name}...")
              repescagem_res = await self.deep_research({"name": name, "linkedin": href, "title": title, "body": body})
              if repescagem_res.get("is_valid"):
                  ai_data = repescagem_res
@@ -147,9 +245,12 @@ class CandidateProcessor:
             ai_data["evidence"] = f"VETO: Confiança insuficiente ({confidence}%)."
 
         # Fidelity Guard
-        final_role = role_engine.apply_fidelity_guard(ai_data.get("role", "Professional"), mechanical_title)
+        final_role = role_engine.apply_fidelity_guard(ai_data.get("role", "Professional"), mechanical_title, brand=self.brand)
         if theorg_found and theorg_role != "Não Encontrado":
             final_role = theorg_role
+
+        # 🔥 SOBERANIA DA IA: O nome final é o que a IA extraiu (proper_name), ignorando o chute inicial.
+        name = ai_data.get("proper_name", name)
 
         # Log Unificado
         log_candidate_analysis(
@@ -160,19 +261,23 @@ class CandidateProcessor:
             {"is_valid": ai_data.get("is_valid"), "role": final_role, "department": ai_data.get("department", "N/D"), "matching_score": confidence}
         )
 
-        if not ai_data.get("is_valid") and not theorg_found:
-            return None
+        # 🎁 COLETA DE ÓRFÃOS (Aproveitamento total dos dados)
+        potential_orphans = []
+        for mapping in ai_data.get("clean_data", {}).get("all_mappings", []):
+            m_name = mapping.get("name")
+            if m_name and m_name.lower() != name.lower() and len(m_name) > 5:
+                potential_orphans.append({
+                    "name": m_name,
+                    "role": mapping.get("role"),
+                    "company": self.brand,
+                    "source": "discovery_leak"
+                })
 
-        # 🎨 MONTAGEM DO NÓ
-        first_name = name.split()[0].lower() if name.split() else "colaborador"
-        last_parts = name.split()[1:]
-        last_name = last_parts[-1].lower() if last_parts else first_name
-        generated_email = apply_pattern(first_name, last_name, self.domain, "first.last")
-        
-        # 🏢 LOGO DA EMPRESA (Usando domínio para ser infalível no unavatar)
-        company_logo = f"https://unavatar.io/{self.domain}" if self.domain else None
-        
-        return {
+        if not ai_data.get("is_valid") and not theorg_found:
+            return {"main": None, "orphans": potential_orphans}
+
+        # 🎨 MONTAGEM DO NÓ PRINCIPAL
+        node_data = {
             "id": f"node_{href.split('/in/')[-1].replace('/', '_')}",
             "name": name,
             "role": final_role,
@@ -181,8 +286,10 @@ class CandidateProcessor:
             "url": href,
             "department": get_department_tag(final_role),
             "level": get_seniority_level(final_role),
-            "email": generated_email,
+            "email": apply_pattern(name.split()[0].lower(), (name.split()[1:] or [name.split()[0]])[-1].lower(), self.domain, "first.last"),
             "avatar": enriched.get("image"),
-            "company_logo": company_logo,
+            "company_logo": f"https://unavatar.io/{self.domain}" if self.domain else None,
             "location": self.location or "Brasil"
         }
+
+        return {"main": node_data, "orphans": potential_orphans}

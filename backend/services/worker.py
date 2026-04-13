@@ -103,12 +103,16 @@ async def run_b2b_discovery_task(
                     json.dumps({"type": "initial", "nodes": fast_nodes}, ensure_ascii=False)
                 )
 
-    # 🕵️ 1. Descoberta Completa (Só se não tivermos a empresa confirmada ou se faltar logo/linkedin no banco)
+    # 🕵️ 1. Descoberta Completa (PULA se já tivermos a confirmação do usuário)
     from services.intelligence.brand_discovery import discover_company_brand
     
-    # O usuário pediu explicitamente para NÃO encontrar o perfil novamente se já tivermos no banco.
-    needs_discovery = db_org is None
+    # Se o frontend mandou confirmed_brand, NÃO PRECISAMOS de descoberta de perfil. 
+    needs_discovery = (db_org is None) and (confirmed_brand is None)
 
+    if not needs_discovery:
+        display_name = confirmed_brand or (db_org.name if db_org else "Empresa Selecionada")
+        print(f"[Worker] 🛡️ Pulando descoberta de marca institucional. Usando: {display_name}")
+    
     if needs_discovery:
         try:
             print(f"[Worker] 🔎 Localizando marca oficial para {company_name}...")
@@ -182,10 +186,13 @@ async def run_b2b_discovery_task(
         except Exception as e:
             print(f"[Worker] Erro na descoberta completa: {e}")
     else:
-        print(f"[Worker] ✅ Marca já confirmada ({db_org.name}). Pulando descoberta de perfil.")
-        # Se temos o logo no banco, vamos enviar uma atualização final para garantir que o UI tenha ele
-        if db_org.logo_url:
-            logo_proxy = f"http://127.0.0.1:8000/api/v1/proxy/image?url={db_org.logo_url}" if "http" in db_org.logo_url else db_org.logo_url
+        display_name = confirmed_brand or (db_org.name if db_org else "Empresa Selecionada")
+        print(f"[Worker] ✅ Marca já confirmada ({display_name}). Pulando descoberta de perfil.")
+        
+        # Se temos o logo (confirmado ou no banco), vamos enviar uma atualização final para garantir que o UI tenha ele
+        target_logo = confirmed_logo or (db_org.logo_url if db_org else None)
+        if target_logo:
+            logo_proxy = f"http://127.0.0.1:8000/api/v1/proxy/image?url={target_logo}" if "http" in target_logo else target_logo
             await ctx['redis'].publish(
                 f"job_updates_{ctx['job_id']}", 
                 json.dumps({"type": "initial", "nodes": [{"id": "root_company", "logo": logo_proxy}]}, ensure_ascii=False)

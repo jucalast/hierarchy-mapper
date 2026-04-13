@@ -334,7 +334,22 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
     
     # 🕵️ ESTRATÉGIA NOMINAL: O usuário quer que busquemos pelo NOME e não pelo domínio.
     # O domínio da holding (OCQ) estava "envenenando" os resultados nominalistas.
+    
+    # 🆕 Extrai a marca curta (primeira palavra significativa) para buscas diretas
+    # Ex: "3M DO BRASIL LTDA" -> "3M" (apenas a primeira palavra importante)
+    brand_tokens = search_name.split()
+    brand_short = ""
+    for token in brand_tokens:
+        # Pula palavras genéricas corporativas e preposições
+        if not any(corp_word in token.upper() for corp_word in ["LTDA", "S.A.", "INC", "LLC", "BRASIL", "BRAZIL", "DO", "DE", "DA", "E"]):
+            brand_short = token  # Pega apenas a PRIMEIRA palavra significativa
+            break
+    brand_short = brand_short.strip() if brand_short else search_name.split()[0]
+    
     search_queries = [
+        f'"{brand_short}" linkedin' if brand_short else None,  # 🆕 Busca pela marca curta direto
+        f'"{brand_short}" company linkedin' if brand_short else None,  # 🆕 Variação com "company"
+        f'"{brand_short}" Brasil linkedin' if brand_short else None,  # 🆕 Variação com país
         f'"{search_name}" linkedin',
         f'site:linkedin.com/company "{search_name}"',
         f'"{search_name}" {city} linkedin' if city else None,
@@ -420,6 +435,13 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
                 # Super bônus se for um match exato de "corpo" do nome
                 if simple_search == simple_name:
                     score += 600
+        
+        # 🆕 SUPER BÔNUS: Se for um match exato com a marca curta (ex: "3M")
+        if 'brand_short' in locals() and brand_short:
+            brand_short_norm = brand_short.lower()
+            simple_brand_short = "".join(filter(str.isalnum, brand_short_norm))
+            if simple_brand_short == simple_name or name_norm.startswith(brand_short_norm):
+                score += 1000  # Bônus gigante para matches exatos da marca!
         
         # Penalidade para nomes que parecem ser de pessoas (Sobrerenomes comuns)
         surnames = ["santos", "silva", "oliveira", "souza", "pereira", "costa", "ferreira", "lima", "natacci", "rodrigues"]

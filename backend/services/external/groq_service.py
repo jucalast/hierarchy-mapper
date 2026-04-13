@@ -14,7 +14,30 @@ class GroqService:
         self.base_url = "https://api.groq.com/openai/v1/chat/completions"
 
     async def ask(self, prompt: str, json_mode: bool = False) -> Dict:
-        """Envia um prompt para a Groq e retorna o JSON parseado."""
+        """Envia um prompt para a IA (Gemini como primário, Groq como fallback)."""
+        gemini_key = os.getenv("GEMINI_API_KEY")
+        
+        # 1. TENTA GEMINI (Desejado pelo usuário e superior em lógica)
+        if gemini_key:
+            try:
+                # Usando gemini-2.0-flash para máximo desempenho em lógica
+                gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
+                gemini_payload = {
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "responseMimeType": "application/json" if json_mode else "text/plain",
+                        "temperature": 0.1
+                    }
+                }
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    resp = await client.post(gemini_url, json=gemini_payload)
+                    if resp.status_code == 200:
+                        content = resp.json()['candidates'][0]['content']['parts'][0]['text']
+                        return json.loads(content)
+            except Exception as e:
+                print(f"[AI Service] Gemini Fallback: {e}")
+
+        # 2. TENTA GROQ (Fallback)
         if not self.api_key:
             return {}
 
@@ -24,7 +47,7 @@ class GroqService:
         }
         
         payload = {
-            "model": "llama-3.1-8b-instant",
+            "model": "llama-3.3-70b-versatile", # Upgrade moral para o fallback
             "messages": [
                 {"role": "system", "content": "Você é um assistente B2B preciso. Responda apenas em JSON."},
                 {"role": "user", "content": prompt}
@@ -41,7 +64,6 @@ class GroqService:
                 if resp.status_code == 200:
                     data = resp.json()
                     content = data['choices'][0]['message']['content']
-                    import json
                     return json.loads(content)
                 else:
                     print(f"[Groq AI] Erro {resp.status_code}: {resp.text}")

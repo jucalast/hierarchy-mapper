@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import ReactFlow, {
     Controls,
     useNodesState,
@@ -8,12 +8,14 @@ import ReactFlow, {
     Node,
     Background,
     BackgroundVariant,
-    useStore
+    useStore,
+    useReactFlow
 } from 'reactflow';
 
 import 'reactflow/dist/style.css';
 import styles from './NetworkGraph.module.css';
 
+import { FloatingToolbar } from './FloatingToolbar';
 import { SupplyChainNode } from './nodes/SupplyChainNode';
 import { getLayoutedElements, calculateEdges } from '@/utils/layout';
 import { useHierarchy } from '@/hooks/useHierarchy';
@@ -22,7 +24,7 @@ import { useHierarchy } from '@/hooks/useHierarchy';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Drawer } from './Drawer';
-import { FloatingToolbar } from './FloatingToolbar';
+import { NotificationContainer, NotificationType } from './Notification';
 
 
 // --- SMART BACKGROUND COMPONENT ---
@@ -49,6 +51,20 @@ const SmartBackground = () => {
     );
 };
 
+// --- FIT VIEW HANDLER (dentro do ReactFlow context) ---
+const FitViewHandler = ({ shouldFitView, nodes }: { shouldFitView: boolean; nodes: Node[] }) => {
+    const { fitView } = useReactFlow();
+    useEffect(() => {
+        if (shouldFitView && nodes.length > 0) {
+            setTimeout(() => {
+                fitView({ padding: 0.2, duration: 800 });
+            }, 100);
+        }
+    }, [shouldFitView, nodes, fitView]);
+    
+    return null; // Componente invisível, apenas gerencia o fitView
+};
+
 
 export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: string }) {
 
@@ -71,6 +87,17 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const [confirmedLogo, setConfirmedLogo] = useState("");
     const [confirmedFollowers, setConfirmedFollowers] = useState("");
     const [areaFocus, setAreaFocus] = useState<"compras" | "logistica">("compras");
+    const [partners, setPartners] = useState<any[]>([]);
+    
+    // 🔄 Guardar estado anterior para poder restaurar quando volta
+    const [previousSearchState, setPreviousSearchState] = useState<{
+        brandOptions: any[];
+        cnpj: string;
+        domainTarget: string;
+    } | null>(null);
+
+    // 🛡️ FLAG para evitar reconexão infinita
+    const hasAttemptedReconnect = useRef(false);
 
     // 🎨 THEME PERSISTENCE
     useEffect(() => {
@@ -81,8 +108,8 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
     const {
         rawEmployees, rawBackendEdges, loading, discovering, brandOptions, error, setError,
-        fetchHierarchy, discoverBrand, refineHierarchy, loadStoredHierarchy,
-        smartSyncPipedrive, confirmIntelligence, resetHierarchy
+        activeJobId, fetchHierarchy, discoverBrand, discoverBrandStream, cancelDiscovery, refineHierarchy, loadStoredHierarchy,
+        smartSyncPipedrive, confirmIntelligence, resetHierarchy, reconnectToActiveJob
     } = useHierarchy();
 
     // 🛡️ SEGURANÇA E FORMATAÇÃO
@@ -113,6 +140,17 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const [loadingOrgs, setLoadingOrgs] = useState(true);
     const [showDrawer, setShowDrawer] = useState(false);
     const [enrichingIds, setEnrichingIds] = useState<Set<number>>(new Set());
+    const [shouldFitView, setShouldFitView] = useState(false);
+
+    // 🔔 NOTIFICATION STATE
+    const [notifications, setNotifications] = useState<Array<{ id: string; type: NotificationType; message: string }>>([]);
+    const addNotification = (type: NotificationType, message: string) => {
+        const id = Math.random().toString(36).substring(2, 9);
+        setNotifications(prev => [...prev, { id, type, message }]);
+    };
+    const removeNotification = (id: string) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    };
 
     const filteredOrgs = useMemo(() => {
         return pipedriveOrgs.filter(org => 
@@ -144,11 +182,80 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     setPipedriveOrgs(parsed);
                     setLoadingOrgs(false);
+                    return; // Retorna aqui se tiver cache válido
                 }
             } catch (e) { console.error("Cache parsing error", e); }
         }
+        // Só tenta fetch do backend se não tiver cache
         fetchPipedriveOrgs();
     }, []);
+
+    // 🔄 Verificar se há um job ativo ao montar o componente (apenas uma vez)
+    useEffect(() => {
+        // Evitar reconexão múltipla
+        if (hasAttemptedReconnect.current) return;
+        hasAttemptedReconnect.current = true;
+
+        const checkActiveJob = async () => {
+            const jobDataStr = localStorage.getItem('active-discovery-job');
+            if (jobDataStr) {
+                try {
+                    const jobData = JSON.parse(jobDataStr);
+                    const { brand, orgId } = jobData;
+                    
+                    // Reconectar ao job em andamento
+                    const reconnected = await reconnectToActiveJob((type, msg) => {
+                        addNotification(type, msg);
+                    });
+                    
+                    if (reconnected) {
+                        setStep("loading");
+                        setConfirmedBrand(brand);
+                        if (orgId) {
+                            setCurrentOrgId(orgId);
+                        }
+                    }
+                } catch (e) {
+                    console.error("[Job Check] Erro ao verificar job ativo:", e);
+                    localStorage.removeItem('active-discovery-job');
+                }
+            }
+        };
+
+        checkActiveJob();
+    }, []); // ✅ Dependency array vazio - executa apenas na montagem
+
+    // 🔄 Verificar job caso o usuário mude de empresa via Drawer
+    useEffect(() => {
+        if (!currentOrgId) return;
+
+        const checkActiveJobForOrg = async () => {
+            const jobDataStr = localStorage.getItem('active-discovery-job');
+            if (jobDataStr) {
+                try {
+                    const jobData = JSON.parse(jobDataStr);
+                    const { brand, orgId } = jobData;
+                    
+                    // Se o job ativo no localStorage for desta empresa e o step não for loading
+                    if (orgId === currentOrgId && step !== "loading" && step !== "graph") {
+                        // Reconectar ao job em andamento se ele for desta empresa
+                        const reconnected = await reconnectToActiveJob((type, msg) => {
+                            addNotification(type, msg);
+                        });
+                        
+                        if (reconnected) {
+                            setStep("loading");
+                            setConfirmedBrand(brand);
+                        }
+                    }
+                } catch (e) {
+                    console.error("[Job Check] Erro ao verificar job ativo ao trocar empresa:", e);
+                }
+            }
+        };
+
+        checkActiveJobForOrg();
+    }, [currentOrgId, step, reconnectToActiveJob, addNotification]);
 
     const fetchPipedriveOrgs = async () => {
         // Se já temos cache, não limpamos para não dar flicker na UI
@@ -158,6 +265,15 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             fetch('http://127.0.0.1:8000/api/v1/pipedrive_sync', { method: 'POST' }).catch(() => {});
             
             const orgsResp = await fetch(`http://127.0.0.1:8000/api/v1/pipedrive/organizations?_=${Date.now()}`);
+            
+            // Check do status HTTP
+            if (!orgsResp.ok) {
+                console.warn(`[Pipedrive API] HTTP ${orgsResp.status}: ${orgsResp.statusText}`);
+                if (pipedriveOrgs.length === 0) setPipedriveOrgs([]);
+                setLoadingOrgs(false);
+                return;
+            }
+            
             const data = await orgsResp.json();
             console.log("[Pipedrive API] Data Received:", data);
             const list = Array.isArray(data) ? data : [];
@@ -175,12 +291,28 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         }
     };
 
-    const handleBrandSelect = (brandObj: any) => {
+    const handleBrandSelect = async (brandObj: any) => {
         console.log("[Graph] handleBrandSelect called with:", brandObj);
+        
+        // 🛑 Cancelar o stream de descoberta se ainda estiver em andamento
+        if (discovering) {
+            console.log("[Graph] Cancelando stream de descoberta...");
+            cancelDiscovery();
+        }
+
         if (!brandObj) {
+            console.log("[Graph] VOLTAR CLICADO - Restaurando estado anterior");
+            // Restaurar estado anterior se existir
+            if (previousSearchState) {
+                console.log("[Graph] Restaurando:", previousSearchState);
+                setCnpj(previousSearchState.cnpj);
+                setDomainTarget(previousSearchState.domainTarget);
+                // brandOptions já está no hook, então será mostrado automaticamente
+            }
             setConfirmedBrand("");
             setConfirmedLogo("");
             setConfirmedFollowers("");
+            setPartners([]);
             setStep("input");
             return;
         }
@@ -191,31 +323,56 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         const partners = brandObj.partners || [];
 
         console.log("[Graph] Setting Brand Data:", { name, logo, followers, partnersCount: partners.length });
+        
+        // 💾 Guardar estado anterior antes de ir para confirm
+        console.log("[Graph] Guardando estado anterior para poder voltar depois");
+        setPreviousSearchState({
+            brandOptions: brandOptions,
+            cnpj: cnpj,
+            domainTarget: domainTarget
+        });
+        
         setConfirmedBrand(cleanName(name));
         setConfirmedLogo(logo);
         setConfirmedFollowers(followers);
+        setPartners(partners);
         setStep("confirm");
 
-        // 💾 PERSISTÊNCIA MANUAL: Salva no banco local ao selecionar
+        // 💾 PERSISTÊNCIA MANUAL: Salva no banco local ao selecionar e Sincroniza UI
         if (currentOrgId && cnpj) {
             console.log("[Graph] Persistindo escolha no Banco Local...");
-            confirmIntelligence({
+            const result = await confirmIntelligence({
                 name: cleanName(name),
                 cnpj: cnpj,
                 domain: domainTarget,
-                address: "", // Pega do estado se houver
+                address: "", // O backend já tem se for enriquecido
                 pipedrive_id: currentOrgId,
                 linkedin_url: brandObj.url || "",
                 logo_url: logo,
                 partners: partners
             });
+
+            // Se deu sucesso, atualiza a lista do Drawer localmente para evitar duplicados ou dados velhos
+            if (result && result.status !== "error") {
+                const isUpdate = result.is_update || result.status === "updated";
+                addNotification('success', isUpdate ? "Empresa atualizada com sucesso!" : "Empresa integrada com sucesso!");
+                
+                setPipedriveOrgs(prev => prev.map(org => 
+                    Number(org.id) === currentOrgId 
+                    ? { ...org, cnpj, domain: domainTarget, logo: logo, linkedin: brandObj.url, name: cleanName(name) }
+                    : org
+                ));
+            } else {
+                addNotification('error', "Erro ao salvar dados da empresa.");
+            }
         }
     };
 
     const handleOrgClick = async (org: any) => {
         console.log('--- HANDLE ORG CLICK START ---', org.name);
-        resetHierarchy(); // 🧹 Limpa o grafo anterior imediatamente
-        setShowDrawer(false); 
+        resetHierarchy(); // 🧹 Limpa os dados do hook
+        setNodes([]); // 🧹 Limpa os nodes do grafo
+        setEdges([]); // 🧹 Limpa as edges do grafo
         setStep("input");
 
         try {
@@ -240,6 +397,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 const data = await loadStoredHierarchy(Number(org.id), true);
                 if (data && data.status === "cached") {
                     setStep("confirm"); // Mostra o header mas já com os dados no grafo
+                    setShouldFitView(true); // 📍 Auto fit view após carregar dados
                 }
             }
         } catch (e) {
@@ -264,17 +422,8 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 if (cleanDomain) setDomainTarget(cleanDomain);
                 if (cleanCnpj) setCnpj(cleanCnpj);
 
-                if (currentOrgId) {
-                    handleUpdatePipedrive(currentOrgId, { 
-                        address: main.address, 
-                        cnpj: cleanCnpj, 
-                        domain: cleanDomain 
-                    });
-
-                    setPipedriveOrgs(prev => prev.map(o =>
-                        Number(o.id) === currentOrgId ? { ...o, address: main.address, cnpj: cleanCnpj, domain: cleanDomain } : o
-                    ));
-                }
+                // Sincronização e Atualização local removidas daqui. 
+                // Acontecerão apenas no handleBrandSelect (Confirmação).
             } else {
                 setError("Dados não encontrados para este CNPJ.");
             }
@@ -300,16 +449,13 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 return;
             }
             try {
-                const result = await discoverBrand(cnpj, domainTarget, true);
-                if (result && result.brand) {
-                    if (result.domain && !domainTarget) {
-                        setDomainTarget(result.domain);
-                    }
-                    
-                    // Se não for Cache Hit, as alternativas aparecerão no carrossel via brandOptions
-                } else {
-                    setError("Empresa não encontrada no LinkedIn.");
-                }
+                // 🔄 Usar streaming para mostrar candidatos conforme são encontrados
+                await discoverBrandStream(cnpj, domainTarget, true, (candidate: any) => {
+                    console.log(`[UI] Novo perfil encontrado: ${candidate.name}`);
+                    // O brandOptions já será atualizado via setState no hook
+                });
+                
+                // Se recebemos candidatos, o carrossel será atualizado via brandOptions
             } catch (err) {
                 setError("Erro de conexão.");
             }
@@ -322,7 +468,10 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 confirmedBrand, 
                 confirmedLogo, 
                 productFocus,
-                areaFocus
+                areaFocus,
+                addNotification,
+                partners,
+                currentOrgId
             );
         }
     };
@@ -363,6 +512,71 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         document.documentElement.setAttribute("data-theme", next);
     };
 
+    const handleOrgReset = (orgId: number) => {
+        console.log(`[Graph] Resetando UI para organização ${orgId}...`);
+        // 🧹 Limpar absolutamente tudo quando dados são resetados
+        setNodes([]);
+        setEdges([]);
+        setStep("input");
+        setCnpj("");
+        setDomainTarget("");
+        setProductFocus("");
+        setConfirmedBrand("");
+        setConfirmedLogo("");
+        setConfirmedFollowers("");
+        setPartners([]);
+        setPreviousSearchState(null);
+        resetHierarchy();
+        
+        // 🔄 Limpar dados antigos da empresa na lista do drawer
+        setPipedriveOrgs(prev => prev.map(org => 
+            Number(org.id) === orgId 
+            ? { ...org, cnpj: null, domain: null, logo: null, linkedin: null, name: org.name }
+            : org
+        ));
+        
+        // 🗑️ Limpar cache local (localStorage)
+        const cacheKeys = [
+            `org-${orgId}-details`,
+            `org-${orgId}-logo`,
+            `org-${orgId}-hierarchy`,
+            `hierarchy-${orgId}`,
+            `stored-hierarchy-${orgId}`
+        ];
+        cacheKeys.forEach(key => {
+            if (localStorage.getItem(key)) {
+                localStorage.removeItem(key);
+                console.log(`[LocalStorage] Removido: ${key}`);
+            }
+        });
+        
+        console.log("[Graph] UI, lista e cache completamente resetados");
+    };
+
+    const handleOrgRenamed = (orgId: number, newName: string) => {
+        // 🔄 Atualizar pipedriveOrgs
+        setPipedriveOrgs(prev => 
+            prev.map(org => 
+                Number(org.id) === orgId ? { ...org, name: newName } : org
+            )
+        );
+        
+        // 💾 Atualizar cache no localStorage
+        const cached = localStorage.getItem("pipedrive-orgs-cache");
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                const updated = parsed.map((org: any) =>
+                    Number(org.id) === orgId ? { ...org, name: newName } : org
+                );
+                localStorage.setItem("pipedrive-orgs-cache", JSON.stringify(updated));
+                console.log(`[Graph] Nome da empresa ${orgId} atualizado em cache`);
+            } catch (e) {
+                console.error("Erro ao atualizar cache", e);
+            }
+        }
+    };
+
     return (
         <div className={styles.container}>
             <Sidebar 
@@ -373,6 +587,13 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 onReset={() => { setStep("input"); setNodes([]); setEdges([]); }}
                 onCopyData={handleCopyData}
                 onRefine={() => refineHierarchy(rawEmployees)}
+                onSmartSync={async () => {
+                    const res = await smartSyncPipedrive();
+                    if (res && res.status === 'success') {
+                        addNotification('success', "Sincronização com Pipedrive concluída!");
+                        fetchPipedriveOrgs(); // Refresh the list
+                    }
+                }}
             />
 
 
@@ -383,7 +604,11 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 setSearchTerm={setSearchTerm}
                 filteredOrgs={filteredOrgs}
                 onOrgClick={handleOrgClick}
+                onOrgReset={handleOrgReset}
+                onOrgRenamed={handleOrgRenamed}
                 isLoading={loadingOrgs}
+                selectedOrgId={currentOrgId}
+                graphEmployees={rawEmployees}
             />
 
             <main className={styles.mainContent}>
@@ -402,6 +627,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                         maxZoom={1.5}
                     >
                         <SmartBackground />
+                        <FitViewHandler shouldFitView={shouldFitView} nodes={nodes} />
                         <Controls position="bottom-right" />
 
 
@@ -438,6 +664,11 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                     hasMapping={nodes.some(n => n.id.startsWith('node_'))}
                 />
             </main>
+
+            <NotificationContainer 
+                notifications={notifications} 
+                removeNotification={removeNotification} 
+            />
         </div>
 
     );
