@@ -347,9 +347,9 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
     brand_short = brand_short.strip() if brand_short else search_name.split()[0]
     
     search_queries = [
-        f'"{brand_short}" linkedin' if brand_short else None,  # 🆕 Busca pela marca curta direto
-        f'"{brand_short}" company linkedin' if brand_short else None,  # 🆕 Variação com "company"
-        f'"{brand_short}" Brasil linkedin' if brand_short else None,  # 🆕 Variação com país
+        f'"{brand_short}" linkedin' if brand_short else None,  # Busca pela marca curta direto
+        f'"{brand_short}" company linkedin' if brand_short else None,  # Variacao com "company"
+        f'"{brand_short}" Brasil linkedin' if brand_short else None,  # Variacao com pais
         f'"{search_name}" linkedin',
         f'site:linkedin.com/company "{search_name}"',
         f'"{search_name}" {city} linkedin' if city else None,

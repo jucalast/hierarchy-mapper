@@ -719,6 +719,27 @@
     padding: 0 12px !important;
 }
 
+.stopBtn {
+    background-color: rgba(239, 68, 68, 0.2) !important; /* Fundo vermelho mais evidente */
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    color: #ef4444 !important; /* Texto e Ícone Vermelhos */
+    box-shadow: none !important; /* Sem sombra */
+    pointer-events: auto !important;
+}
+
+.stopBtn:hover {
+    background-color: rgba(239, 68, 68, 0.3) !important;
+    border-color: #ef4444 !important;
+    color: #ef4444 !important;
+    box-shadow: none !important; /* Removemos sombra no hover tbm */
+}
+
+/* Força os ícones lucide (como o loading) a pegarem o vermelho também */
+.stopBtn svg {
+    stroke: #ef4444 !important;
+    color: #ef4444 !important;
+}
+
 .spinnerSmall {
     width: 20px;
     height: 20px;
@@ -761,7 +782,7 @@
 }
 
 .refineTab.searching .detectBtn {
-    background: transparent !important;
+  
     border: none !important;
     padding: 0 12px !important;
 }
@@ -1022,7 +1043,7 @@
 
 /* --- DRAWER --- */
 .drawer {
-    width: 320px;
+    width: 360px;
     /* w-80 */
     flex-shrink: 0;
     background: #131313;

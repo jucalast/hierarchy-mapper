@@ -28,5 +28,5 @@ try:
     # Testa conexão
     redis_client.ping()
 except Exception as e:
-    print(f"⚠️ Redis connection failed: {e}. Cache disabled.")
+    print(f"Redis connection failed: {e}. Cache disabled.")
     redis_client = None

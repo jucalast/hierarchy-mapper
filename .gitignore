@@ -12,6 +12,11 @@ backend/logs/
 backend/*.log
 backend/.env
 
+# Custom Services (Node, etc)
+backend/services/whatsapp-service/node_modules/
+backend/services/whatsapp-service/.wwebjs_auth/
+backend/services/whatsapp-service/.wwebjs_cache/
+
 # Frontend
 frontend/node_modules/
 frontend/.next/
@@ -33,3 +38,9 @@ frontend/next-env.d.ts
 .vercel
 .vscode/
 .idea/
+
+# WhatsApp Service Node
+backend/whatsapp-service/node_modules/
+backend/whatsapp-service/.wwebjs_auth/
+backend/whatsapp-service/.wwebjs_cache/
+backend/whatsapp-service/.env

@@ -208,3 +208,83 @@
     margin-left: -4px;
     color: #7a8bff;
 }
+
+/* Estilos para Tarefas Concluídas */
+.eventCardDone {
+    opacity: 0.6;
+
+}
+
+.eventCardDone .eventTitle {
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: line-through;
+}
+
+.eventCardDone .eventMeta {
+    color: rgba(255, 255, 255, 0.15);
+}
+
+.eventCardDone .eventContent {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.iconCircleDone {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Seção de Avisos (Updates) */
+.alertsSection {
+    margin-top: 32px;
+    padding-top: 0;
+}
+
+.alertsTitle {
+    display: none;
+}
+
+.alertsList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.alertItem {
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+    transition: all 0.2s;
+}
+
+.alertItem:hover {
+    opacity: 1;
+}
+
+.alertHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 2px;
+}
+
+.alertHeader .alertTitle {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: rgb(122, 139, 255);
+    flex: 1;
+    opacity: 0.8;
+}
+
+.alertTime {
+    font-size: 0.7rem;
+    color: rgb(122, 139, 255);
+    opacity: 0.5;
+    white-space: nowrap;
+}
+
+.alertSubtext {
+    font-size: 0.72rem;
+    color: rgb(122, 139, 255);
+    opacity: 0.6;
+    margin-left: 0;
+}

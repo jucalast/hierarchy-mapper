@@ -3,9 +3,45 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import text
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Resolver caminho SQLite para encontrar o arquivo correto
+if DATABASE_URL and "sqlite" in DATABASE_URL.lower():
+    # Extrair o caminho do arquivo do DATABASE_URL
+    # Exemplos: sqlite:///./intelligence.db ou sqlite+aiosqlite:///./intelligence.db
+    db_path = DATABASE_URL.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
+    
+    # Tentar encontrar o arquivo em localizações comuns
+    possible_paths = [
+        Path(db_path),  # Caminho relativo como está
+        Path(__file__).parent.parent / db_path.lstrip("./"),  # Relativo a backend/
+        Path(__file__).parent.parent.parent / db_path.lstrip("./"),  # Relativo a raiz
+    ]
+    
+    resolved_path = None
+    for path in possible_paths:
+        if path.exists():
+            resolved_path = path.resolve()
+            print(f"[Database] Usando banco: {resolved_path}")
+            break
+    
+    if resolved_path:
+        # Reconstruct DATABASE_URL com caminho absoluto
+        if "aiosqlite" in DATABASE_URL:
+            DATABASE_URL = f"sqlite+aiosqlite:///{resolved_path}"
+        else:
+            DATABASE_URL = f"sqlite:///{resolved_path}"
+    else:
+        # Se não encontrar, usar o caminho padrão
+        default_backend_db = Path(__file__).parent.parent / "intelligence.db"
+        print(f"[Database] Banco não encontrado em {possible_paths}. Usando: {default_backend_db}")
+        if "aiosqlite" in DATABASE_URL:
+            DATABASE_URL = f"sqlite+aiosqlite:///{default_backend_db}"
+        else:
+            DATABASE_URL = f"sqlite:///{default_backend_db}"
 
 Base = declarative_base()
 
@@ -56,4 +92,4 @@ async def init_db():
             await conn.commit()
         except: pass
 
-    print(f"[Database] ✅ Sistema de Dados Pronto ({engine.url.drivername})")
+    print(f"[Database] Sistema de Dados Pronto ({engine.url.drivername})")

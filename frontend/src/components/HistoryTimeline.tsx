@@ -42,7 +42,7 @@ type TimelineEvent = {
 export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ details, orgName }) => {
     const [activeTab, setActiveTab] = useState('Todos');
 
-    // Consolidar e normalizar eventos
+    // Consolidar e normalizar eventos (sem updates)
     const events = useMemo(() => {
         if (!details) return [];
 
@@ -59,7 +59,7 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ details, orgNa
                 contact: act.person_name,
                 company: act.org_name || orgName,
                 content: act.note,
-                done: act.done === 1,
+                done: act.done === true || act.done === 1,
                 activityType: act.type,
                 icon: act.type === 'call' ? <Phone size={14} /> : 
                       act.type === 'meeting' ? <Calendar size={14} /> : 
@@ -82,33 +82,40 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ details, orgNa
             });
         });
 
-        // 3. Processar Updates (Registro de alterações)
-        (details.updates || []).forEach(upd => {
-            if (upd.type === 'activity' || upd.type === 'note') return; // Evitar duplicidade
-
-            result.push({
-                id: `upd-${upd.id}`,
-                type: 'update',
-                timestamp: upd.timestamp || upd.add_time,
-                title: upd.data?.field_name ? `Alterado: ${upd.data.field_name}` : 'Atualização de Sistema',
-                subtext: upd.data?.old_value && upd.data?.new_value ? 
-                         `${upd.data.old_value} → ${upd.data.new_value}` : '',
-                user: upd.user_name || 'Sistema',
-                icon: <Clock size={14} />
-            });
-        });
-
         // Ordenar por data decrescente
         return result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }, [details, orgName]);
 
-    const tabs = ['Todos', 'Anotações', 'Atividades', 'Histórico'];
+    // Processar apenas Updates (Registro de alterações)
+    const updates = useMemo(() => {
+        if (!details?.updates) return [];
+
+        const result: TimelineEvent[] = [];
+
+        (details.updates || []).forEach((upd, index) => {
+            if (upd.object === 'activity' || upd.object === 'note') return; // Evitar duplicidade
+
+            result.push({
+                id: `upd-${upd.data?.id || index}`,
+                type: 'update',
+                timestamp: upd.timestamp || upd.data?.add_time || upd.add_time,
+                title: (upd.data?.field_name || upd.data?.field_key) ? `Alterado: ${upd.data?.field_name || upd.data?.field_key}` : 'Atualização de Sistema',
+                subtext: upd.data?.old_value && upd.data?.new_value ? 
+                         `${upd.data.old_value} → ${upd.data.new_value}` : '',
+                user: upd.author?.name || upd.user_name || 'Sistema',
+                icon: <Clock size={14} />
+            });
+        });
+
+        return result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }, [details]);
+
+    const tabs = ['Todos', 'Anotações', 'Atividades'];
 
     const filteredEvents = events.filter(e => {
         if (activeTab === 'Todos') return true;
         if (activeTab === 'Anotações') return e.type === 'note';
         if (activeTab === 'Atividades') return e.type === 'activity';
-        if (activeTab === 'Histórico') return e.type === 'update';
         return true;
     });
 
@@ -128,14 +135,14 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ details, orgNa
                     <div key={event.id} className={styles.eventRow}>
                         {/* Linha e Ícone Lateral */}
                         <div className={styles.timelineSide}>
-                            <div className={styles.iconCircle}>
+                            <div className={`${styles.iconCircle} ${event.done ? styles.iconCircleDone : ''}`}>
                                 {event.icon}
                             </div>
                             {idx < filteredEvents.length - 1 && <div className={styles.dashedLine} />}
                         </div>
 
                         {/* Conteúdo do Card */}
-                        <div className={styles.eventCard}>
+                        <div className={`${styles.eventCard} ${event.done ? styles.eventCardDone : ''}`}>
                             <div className={styles.eventHeader}>
                                 <div className={styles.titleArea}>
                                     {event.done && <Check size={12} className={styles.doneCheck} />}
@@ -173,6 +180,26 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ details, orgNa
                     </div>
                 ))}
             </div>
+
+            {/* Seção de Avisos (Updates) */}
+            {updates.length > 0 && (
+                <div className={styles.alertsSection}>
+                    <div className={styles.alertsTitle}>Avisos de Sistema</div>
+                    <div className={styles.alertsList}>
+                        {updates.map((update) => (
+                            <div key={update.id} className={styles.alertItem}>
+                                <div className={styles.alertHeader}>
+                                    <span className={styles.alertTitle}>{update.title}</span>
+                                    <span className={styles.alertTime}>{formatDateTime(update.timestamp)}</span>
+                                </div>
+                                {update.subtext && (
+                                    <div className={styles.alertSubtext}>{update.subtext}</div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

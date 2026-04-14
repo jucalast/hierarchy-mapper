@@ -41,11 +41,15 @@ class PipedriveService:
         # 1. Update no Pipedrive
         # c04f98a7a9762df2f8a42e5d7a641a0292723326 -> CHAVE DO DOMÍNIO IDENTIFICADA NO CÓDIGO
         url = f"{self.base_url}/organizations/{org_id}?api_token={self.api_token}"
-        payload = {
-            "address": data.get("address"),
-            "c04f98a7a9762df2f8a42e5d7a641a0292723326": data.get("domain") # Sincroniza o domínio oficial
-        }
+        payload = {}
+        if data.get("address"): payload["address"] = data.get("address")
+        if data.get("domain"): payload["c04f98a7a9762df2f8a42e5d7a641a0292723326"] = data.get("domain") # Sincroniza o domínio oficial
+        if data.get("name"): payload["name"] = data.get("name")
         
+        # Pipedrive não fará requisição sem payload
+        if not payload:
+            return True
+            
         pipedrive_success = False
         try:
             async with httpx.AsyncClient() as client:
@@ -221,7 +225,7 @@ class PipedriveService:
         if today_date.weekday() >= 5:
             today_date += timedelta(days=(7 - today_date.weekday()))
 
-        print(f"[Smart Scheduler] 🚀 Iniciando v2. Data base: {today_date.isoformat()}")
+        print(f"[Smart Scheduler] Iniciando v2. Data base: {today_date.isoformat()}")
         
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -339,7 +343,7 @@ class PipedriveService:
                 
                 final_day = max([u[1] for u in scheduled_updates]) if scheduled_updates else today_date.isoformat()
                 
-                print(f"[Smart Scheduler] ✅ Concluído v2 (Balanced): {updated} tasks.")
+                print(f"[Smart Scheduler] Concluído v2 (Balanced): {updated} tasks.")
                 return {
                     "status": "success",
                     "message": f"Remanejamento Balanceado: {updated} tarefas priorizadas por negócio e distribuídas por etapa. Máximo 1 tarefa por negócio/dia.",
@@ -369,9 +373,9 @@ class PipedriveService:
             # 2. Prepara URLs filtradas (ou gerais se não houver deal)
             urls = {
                 "persons": f"{self.base_url}/organizations/{org_id}/persons?api_token={self.api_token}",
-                "activities": f"{self.base_url}/activities?org_id={org_id}&api_token={self.api_token}",
+                "activities": f"{self.base_url}/organizations/{org_id}/activities?api_token={self.api_token}",
                 "notes": f"{self.base_url}/notes?org_id={org_id}&api_token={self.api_token}",
-                "updates": f"{self.base_url}/organizations/{org_id}/updates?api_token={self.api_token}"
+                "updates": f"{self.base_url}/organizations/{org_id}/flow?api_token={self.api_token}"
             }
             
             tasks = {key: client.get(url) for key, url in urls.items()}

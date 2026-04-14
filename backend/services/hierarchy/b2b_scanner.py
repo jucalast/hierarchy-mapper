@@ -103,7 +103,7 @@ async def discover_employees_stream(
     seen_urls = set()
     consecutive_empty = 0  # 🛡️ FIX #5: Quórum de parada inteligente
     
-    print(f"[B2B Engine] 🚀 Iniciando Escaneamento: {brand_name_log}")
+    print(f"[B2B Engine] Iniciando Escaneamento: {brand_name_log}")
     await role_engine.proactive_health_check()
     log_session_start(temp_brand, location, area_focus)
 
@@ -166,9 +166,13 @@ async def discover_employees_stream(
 
             # 2. Promoção e Persistência de Órfãos (Aproveitamento com Repescagem)
             for orphan in orphans:
-                # Verifica se já existe por nome e empresa no banco
+                # Verifica se já existe no banco (Prioridade: linkedin_url, senão nome+empresa)
                 async with async_session() as session:
-                    stmt_o = select(Employee).where(Employee.name == orphan["name"], Employee.company_id == db_org_id)
+                    if orphan.get("linkedin"):
+                        stmt_o = select(Employee).where(Employee.linkedin_url == orphan["linkedin"])
+                    else:
+                        stmt_o = select(Employee).where(Employee.name == orphan["name"], Employee.company_id == db_org_id)
+                    
                     res_o = await session.execute(stmt_o)
                     if res_o.scalars().first():
                         continue # Já conhecemos
@@ -178,6 +182,13 @@ async def discover_employees_stream(
                 
                 if upgraded_node:
                     async with async_session() as session:
+                        # Segunda verificação pós-upgrade para garantir que não achou um linkedin já cadastrado
+                        if upgraded_node.get("linkedin"):
+                            check_stmt = select(Employee).where(Employee.linkedin_url == upgraded_node["linkedin"])
+                            check_res = await session.execute(check_stmt)
+                            if check_res.scalars().first():
+                                continue
+                            
                         new_emp = Employee(
                             name=upgraded_node["name"],
                             role=upgraded_node["role"],
@@ -202,7 +213,7 @@ async def discover_employees_stream(
         else:
             consecutive_empty += 1
             if consecutive_empty >= 3:
-                print(f"      [B2B Engine] ⏹️ 3 consultas consecutivas sem resultados. Encerrando escaneamento.")
+                print(f"      [B2B Engine] 3 consultas consecutivas sem resultados. Encerrando escaneamento.")
                 break
                 
     # Sinal de conclusão (MUITO IMPORTANTE para o front-end parar o loading)

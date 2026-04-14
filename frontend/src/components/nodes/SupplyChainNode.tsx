@@ -144,8 +144,8 @@ export function SupplyChainNode({ data }: { data: any }) {
                     }}
                   />
                   
-                  {/* Badge de Empresa (Overlay) - Apenas para pessoas normais, não para sócios (level 6) */}
-                  {level !== 6 && (
+                  {/* Badge de Empresa (Overlay) - Apenas para pessoas normais, não para sócios (level 6) ou root entity (level 0) */}
+                  {level !== 6 && level !== 0 && (
                     <div className={styles.nodeAvatarCompanyBadge}>
                       <img 
                         src={getProxiedUrl(data.company_logo || `https://unavatar.io/${data.domain || data.company || 'knorr-bremse.com'}`)} 
@@ -160,7 +160,7 @@ export function SupplyChainNode({ data }: { data: any }) {
               ) : (
                 /* Logo da Empresa para o Nó Principal (Tier 0) - Sem badge pequena */
                 <img 
-                  src={getProxiedUrl(data.company_logo || data.logo || data.image || data.logo_url || data.brand_logo || (data.domain ? `https://unavatar.io/${data.domain}` : null))} 
+                  src={getProxiedUrl(data.confirmedLogo || data.company_logo || data.logo || data.image || data.logo_url || data.brand_logo || (data.domain ? `https://unavatar.io/${data.domain}` : null))} 
                   alt="Company" 
                   className={styles.avatarImg}
                   style={{ objectFit: 'contain' }}

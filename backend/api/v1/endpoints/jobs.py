@@ -90,8 +90,10 @@ async def get_job_status(job_id: str):
     """
     Verifica o estado atual de um job no Redis.
     """
+    from core.redis_config import redis_settings
+    from arq.connections import create_pool
+    
     redis = await create_pool(redis_settings)
-    job = await redis.all_job_results() # Apenas para debug/listagem se necessário
     
     # Pegamos o job específico
     target_job = None
@@ -100,11 +102,43 @@ async def get_job_status(job_id: str):
     
     try:
         status = await target_job.status()
-        result = await target_job.result()
+        if not status or status.value == "not_found":
+            raise HTTPException(status_code=404, detail="Job não encontrado.")
         return {
             "job_id": job_id,
-            "status": status,
-            "result": result
+            "status": status.value
         }
-    except Exception:
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
         raise HTTPException(status_code=404, detail="Job não encontrado ou expirado.")
+
+@router.post("/stop/{job_id}")
+async def stop_scan(job_id: str):
+    """
+    Cancela um job ARQ em andamento.
+    """
+    from core.redis_config import redis_settings
+    from arq.connections import create_pool
+    from arq.jobs import Job
+    
+    try:
+        redis = await create_pool(redis_settings)
+        job = Job(job_id, redis=redis)
+        
+        status = await job.status()
+        if not status or status.value == "not_found":
+            return {"status": "not_found", "message": "Job não encontrado ou já finalizado."}
+            
+        success = await job.abort()
+        if success:
+            await redis.publish(f"job_updates_{job_id}", json.dumps({
+                "type": "error",
+                "message": "Operação cancelada com sucesso na interface."
+            }))
+            return {"job_id": job_id, "status": "aborted", "message": "Scan abortado pelo usuário"}
+        else:
+            return {"job_id": job_id, "status": "failed", "message": "Não foi possível abortar o scan"}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao tentar parar o job: {str(e)}")

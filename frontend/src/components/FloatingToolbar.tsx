@@ -41,6 +41,8 @@ interface FloatingToolbarProps {
     brandOptions: any[];
     onBrandSelect: (brandObj: any) => void;
     hasMapping?: boolean;
+    stopHierarchyScan?: () => void;
+    activeJobId?: string | null;
 }
 
 export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
@@ -67,7 +69,9 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     step,
     brandOptions,
     onBrandSelect,
-    hasMapping = false
+    hasMapping = false,
+    stopHierarchyScan,
+    activeJobId
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const [localSelected, setLocalSelected] = React.useState<string | null>(null);
@@ -282,20 +286,27 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                 )}
 
                                 {step !== "input" && (
-                                    <button
-                                        onClick={handleSearch}
-                                        className={`${styles.detectBtn} ${(discovering || loading) ? styles.detectBtnLoading : ''}`}
-                                        disabled={discovering || loading}
-                                    >
-                                        {(discovering || loading) ? (
-                                            <Loader2 size={18} className={styles.loadingAnim} />
-                                        ) : (
-                                            <>
+                                    <>
+                                        {(!discovering && !loading) && (
+                                            <button
+                                                onClick={handleSearch}
+                                                className={styles.detectBtn}
+                                            >
                                                 {hasMapping ? <RotateCcw size={14} /> : <Play size={14} fill="currentColor" />}
                                                 Mapear
-                                            </>
+                                            </button>
                                         )}
-                                    </button>
+                                        {(discovering || loading) && (
+                                            <button
+                                                onClick={stopHierarchyScan}
+                                                className={`${styles.detectBtn} ${styles.stopBtn}`}
+                                                title="Cancelar mapeamento em andamento"
+                                            >
+                                                <Loader2 size={18} className={styles.loadingAnim} />
+                                                Parar
+                                            </button>
+                                        )}
+                                    </>
                                 )}
                             </>
                         )}

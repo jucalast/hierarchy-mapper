@@ -63,7 +63,7 @@ export const useHierarchy = () => {
             setBrandOptions(cleaned);
             return data; 
         } catch (err: any) {
-            console.error(err);
+            console.error(err.message || err);
             setError("Falha na conexão com o servidor.");
             return null;
         } finally {
@@ -198,7 +198,7 @@ export const useHierarchy = () => {
 
             return { alternatives: streamedCandidates };
         } catch (err: any) {
-            console.error(err);
+            console.error(err.message || err);
             setError("Falha na conexão com o servidor (streaming).");
             return null;
         } finally {
@@ -210,6 +210,14 @@ export const useHierarchy = () => {
 
     const refineHierarchy = useCallback(async (employees: HierarchyEmployee[]) => {
         if (!employees || employees.length === 0) return;
+        
+        // 🚫 Proteção: Não permite rodar a inteligência enquanto um Discovery/Scanner Job estiver rodando em background
+        if (localStorage.getItem('active-discovery-job')) {
+            console.warn("[useHierarchy] O Analista de IA focou ignorado pois um mapeamento já está em andamento.");
+            setError("Aguarde o mapeamento atual terminar antes de utilizar o Analista de IA.");
+            return;
+        }
+
         setLoading(true);
         setError("");
         console.log("[useHierarchy] Iniciando refinamento automático com Groq IA...");
@@ -242,16 +250,62 @@ export const useHierarchy = () => {
                     }
                 });
                 setRawBackendEdges(newEdges);
+                
+                // 🧹 LIMPA o cache de layouts e arestas anteriores
+                // Quando a hierarquia é refinada, todas as posições e conexões antigas ficam inválidas
+                // Por isso, removemos TODOS os caches para forçar o recalcul do layout no próximo render
+                const keysToDelete: string[] = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('layout-cache-') || key.startsWith('edges-cache-'))) {
+                        keysToDelete.push(key);
+                    }
+                }
+                keysToDelete.forEach(key => localStorage.removeItem(key));
+                console.log(`[useHierarchy] Limpou ${keysToDelete.length} caches de layout/arestas antigas.`);
                 console.log("[useHierarchy] Hierarquia refinada e reconectada com sucesso.");
             }
 
-        } catch (err) {
-            console.error(err);
+        } catch (err: any) {
+            console.error(err.message || err);
             setError("Erro ao refinar hierarquia com IA.");
         } finally {
             setLoading(false);
         }
     }, []);
+
+    const stopHierarchyScan = useCallback(async (onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void) => {
+        if (!activeJobId) {
+            console.warn("[stopHierarchyScan] Nenhum job em andamento para cancelar.");
+            return;
+        }
+        
+        try {
+            const resp = await fetch(`http://127.0.0.1:8000/api/v1/jobs/stop/${activeJobId}`, {
+                method: "POST"
+            });
+            const data = await resp.json();
+            
+            if (resp.ok) {
+                console.log("[Job API] Mapeamento abortado com sucesso.");
+                if (onNotification) {
+                    onNotification('error', "Mapeamento cancelado pelo usuário.");
+                }
+                setError(""); // Opcionalmente limpar erro se não quiser display duplicado
+            } else {
+                console.warn("[Job API] Erro ao tentar abortar o job:", data.message);
+                if (onNotification) {
+                    onNotification('error', "Erro ao cancelar o mapeamento.");
+                }
+            }
+        } catch (e) {
+            console.error("[Job API] Erro na requisição de cancelamento de job:", (e as any).message || e);
+        } finally {
+            setLoading(false);
+            localStorage.removeItem('active-discovery-job');
+            setActiveJobId(null);
+        }
+    }, [activeJobId, setLoading, setError]);
 
     const fetchHierarchy = useCallback(async (
         searchCnpj: string, 
@@ -262,12 +316,17 @@ export const useHierarchy = () => {
         areaFocus: string = "compras",
         onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void,
         partners: any[] = [],
-        orgId?: number | null
+        orgId?: number | null,
+        initialEmployees?: HierarchyEmployee[]
     ) => {
         setLoading(true);
         setError("");
-        setRawEmployees([]);
-        setRawBackendEdges([]);
+        
+        // Em vez de pisar, mantemos o visual limpo apenas se não houver dados iniciais persistentes
+        if (!initialEmployees || initialEmployees.length === 0) {
+            setRawEmployees([]);
+            setRawBackendEdges([]);
+        }
         
         const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
         const queryParams = new URLSearchParams();
@@ -308,10 +367,10 @@ export const useHierarchy = () => {
             setActiveJobId(job_id);
 
             // Conectar ao WebSocket e monitorar
-            connectToJobWebSocket(job_id, confirmedBrand, confirmedLogo, explicitDomain, partners, onNotification);
+            connectToJobWebSocket(job_id, confirmedBrand, confirmedLogo, explicitDomain, partners, onNotification, initialEmployees);
 
-        } catch (err) {
-            console.error("[Job API] Erro ao disparar scan:", err);
+        } catch (err: any) {
+            console.error("[Job API] Erro ao disparar scan:", err.message || err);
             setError("Falha ao comunicar com o motor de tarefas.");
             if (onNotification) onNotification('error', "Não foi possível iniciar o scan.");
             setLoading(false);
@@ -324,45 +383,53 @@ export const useHierarchy = () => {
         confirmedLogo: string,
         explicitDomain: string,
         partners: any[],
-        onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void
+        onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void,
+        initialEmployees?: HierarchyEmployee[]
     ) => {
         // 2. Conecta no WebSocket para monitorar o progresso
         const wsUrl = `ws://127.0.0.1:8000/api/v1/jobs/ws/${job_id}`;
         const ws = new WebSocket(wsUrl);
         
-        // 🏢 INICIALIZAÇÃO IMEDIATA: Root Company + Sócios (QSA)
-        let currentEmployees: HierarchyEmployee[] = [
-            {
-                id: 'root_company',
-                name: confirmedBrand || "Empresa",
-                role: "Holding / Matriz",
-                department: "Corporate Root",
-                level: 0,
-                logo: confirmedLogo,
-                company_logo: confirmedLogo,
-                domain: explicitDomain
-            }
-        ];
+        let currentEmployees: HierarchyEmployee[];
 
-        // Adiciona Sócios se existirem
-        partners.forEach((p, idx) => {
-            currentEmployees.push({
-                id: `partner_${idx}`,
-                name: p.name || `Sócio ${idx + 1}`,
-                role: p.role || "Sócio / Administrador",
-                department: "Quadro de Sócios (QSA)",
-                level: 6, // Board / C-Level
-                manager_id: 'root_company',
-                company: confirmedBrand
+        if (initialEmployees && initialEmployees.length > 0) {
+            // Usa o que já foi mapeado (útil para reconexão)
+            currentEmployees = [...initialEmployees];
+        } else {
+            // 🏢 INICIALIZAÇÃO IMEDIATA: Root Company + Sócios (QSA)
+            currentEmployees = [
+                {
+                    id: 'root_company',
+                    name: confirmedBrand || "Empresa",
+                    role: "Holding / Matriz",
+                    department: "Corporate Root",
+                    level: 0,
+                    logo: confirmedLogo,
+                    company_logo: confirmedLogo,
+                    domain: explicitDomain
+                }
+            ];
+
+            // Adiciona Sócios se existirem
+            partners.forEach((p, idx) => {
+                currentEmployees.push({
+                    id: `partner_${idx}`,
+                    name: p.name || `Sócio ${idx + 1}`,
+                    role: p.role || "Sócio / Administrador",
+                    department: "Quadro de Sócios (QSA)",
+                    level: 6, // Board / C-Level
+                    manager_id: 'root_company',
+                    company: confirmedBrand
+                });
             });
-        });
+        }
 
         // Sincroniza estado inicial para renderização instantânea
         setRawEmployees([...currentEmployees]);
 
         const initialEdges: Edge[] = [];
         currentEmployees.forEach(emp => {
-            if (emp.manager_id) {
+            if (emp.manager_id && emp.id !== "root_company") {
                 initialEdges.push({
                     id: `e-${emp.manager_id}-${emp.id}`,
                     source: emp.manager_id,
@@ -405,7 +472,11 @@ export const useHierarchy = () => {
                     localStorage.removeItem('active-discovery-job');
                     setActiveJobId(null);
                     if (onNotification) onNotification('success', "Mapeamento concluído com sucesso!");
-                    refineHierarchy(currentEmployees);
+                    // Ensure the backend worker has fully exited before refining
+                    // and allow setRawEmployees to settle completely 
+                    setTimeout(() => {
+                        refineHierarchy(currentEmployees);
+                    }, 500);
                     return;
                 }
 
@@ -414,10 +485,23 @@ export const useHierarchy = () => {
                     
                     // 🛠️ ATUALIZAÇÃO SÍNCRONA: Mantemos currentEmployees atualizado IMEDIATAMENTE.
                     incomingNodes.forEach(emp => {
-                        const idx = currentEmployees.findIndex(n => n.id === emp.id);
+                        // 🔍 Match por ID (Stream), ou LinkedIn/Nome (Cruzamento Stream vs Database durante Reconexão)
+                        const idx = currentEmployees.findIndex(n => 
+                            n.id === emp.id || 
+                            (n.linkedin && emp.linkedin && n.linkedin === emp.linkedin) ||
+                            (n.name === emp.name && n.role === emp.role)
+                        );
+                        
                         if (idx > -1) {
-                            // Merge de metadados para evitar perda de imagens/urls
-                            const merged = { ...currentEmployees[idx], ...emp };
+                            // Merge de metadados (preserva o ID do Banco se já foi mapeado, para não quebrar edges antigas)
+                            const merged = { ...emp, ...currentEmployees[idx] };
+                            
+                            // Mas força as atualizações novas do emp (stream) por cima
+                            merged.role = emp.role || merged.role;
+                            merged.department = emp.department || merged.department;
+                            merged.level = emp.level || merged.level;
+                            merged.manager_id = emp.manager_id || merged.manager_id;
+                            
                             const imgFields = ['logo', 'image', 'url', 'company_logo', 'logo_url', 'brand_logo', 'avatar', 'profile_pic', 'photo'];
                             imgFields.forEach(field => {
                                 if ((currentEmployees[idx] as any)[field] && !(emp as any)[field]) {
@@ -436,12 +520,19 @@ export const useHierarchy = () => {
                     setRawBackendEdges(prev => {
                         const next = [...prev];
                         incomingNodes.forEach(emp => {
-                            if (emp.manager_id) {
-                                const edgeIdx = next.findIndex(e => e.target === emp.id);
+                            // Encontrar o Nó real (que pode estar com ID antigo de DB) para amarrar certo 
+                            const myNode = currentEmployees.find(n => 
+                                n.id === emp.id || 
+                                (n.linkedin && emp.linkedin && n.linkedin === emp.linkedin) ||
+                                (n.name === emp.name && n.role === emp.role)
+                            ) || emp;
+
+                            if (myNode.manager_id && myNode.id !== "root_company") {
+                                const edgeIdx = next.findIndex(e => e.target === myNode.id);
                                 const newEdge = {
-                                    id: `e-${emp.manager_id}-${emp.id}`,
-                                    source: emp.manager_id,
-                                    target: emp.id,
+                                    id: `e-${myNode.manager_id}-${myNode.id}`,
+                                    source: myNode.manager_id,
+                                    target: myNode.id,
                                     animated: false
                                 };
                                 if (edgeIdx > -1) next[edgeIdx] = newEdge;
@@ -452,7 +543,7 @@ export const useHierarchy = () => {
                     });
                 }
             } catch (e) {
-                console.error("[WS] Erro ao processar mensagem:", e);
+                console.error("[WS] Erro ao processar mensagem:", (e as any).message || e);
             }
         };
 
@@ -471,17 +562,66 @@ export const useHierarchy = () => {
             const jobData = JSON.parse(jobDataStr);
             const { job_id, brand, logo, domain } = jobData;
 
+            // 🔍 VALIDAR: O job ainda existe no Redis/Backend?
+            const verifyResp = await fetch(`http://127.0.0.1:8000/api/v1/jobs/status/${job_id}`);
+            if (!verifyResp.ok) {
+                console.warn(`[Reconnect] Job ${job_id} não existe mais no backend. Limpando cache.`);
+                localStorage.removeItem('active-discovery-job');
+                return false;
+            }
+
             console.log(`[Reconnect] 🔄 Reconectando ao job: ${job_id}`);
             if (onNotification) {
                 onNotification('info', `Reconectado ao mapeamento em andamento (${brand})...`);
             }
 
-            // Reconecta ao WebSocket
-            connectToJobWebSocket(job_id, brand, logo, domain, [], onNotification);
+            // 💾 ANTES DE RECONECTAR: Buscar o que JÁ FOI MAPEADO no banco!
+            let existingEmployees: HierarchyEmployee[] = [];
+            if (jobData.orgId) {
+                try {
+                    const resp = await fetch(`http://127.0.0.1:8000/api/v1/hierarchy/pipedrive/${jobData.orgId}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data && data.nodes && data.nodes.length > 0) {
+                            // Limpeza de URLs para não duplicar proxy
+                            existingEmployees = data.nodes.map((n: any) => {
+                                const cleanUrl = (url: string) => {
+                                    if (!url) return url;
+                                    if (url.includes('proxy/image?url=')) {
+                                        return decodeURIComponent(url.split('proxy/image?url=')[1]);
+                                    }
+                                    return url;
+                                };
+                                return {
+                                    ...n,
+                                    logo: cleanUrl(n.logo),
+                                    company_logo: cleanUrl(n.company_logo),
+                                    profile_pic: cleanUrl(n.profile_pic)
+                                };
+                            });
+                            console.log(`[Reconnect] Carregados ${existingEmployees.length} nós já existentes para ${brand}.`);
+                        }
+                    }
+                } catch (e) {
+                    console.warn("[Reconnect] Erro ao buscar hierarquia prévia antes de reconectar:", e);
+                }
+            }
+
+            // Reconecta ao WebSocket passando o que já temos
+            setLoading(true);
+            connectToJobWebSocket(
+                job_id, 
+                brand, 
+                logo, 
+                domain, 
+                [], 
+                onNotification, 
+                existingEmployees.length > 0 ? existingEmployees : undefined
+            );
             setActiveJobId(job_id);
             return true;
         } catch (e) {
-            console.error("[Reconnect] Erro ao reconectar:", e);
+            console.error("[Reconnect] Erro ao reconectar:", (e as any).message || e);
             localStorage.removeItem('active-discovery-job');
             return false;
         }
@@ -536,8 +676,8 @@ export const useHierarchy = () => {
                 return data;
             }
             return null;
-        } catch (e) {
-            console.error("Load hierarchy error", e);
+        } catch (e: any) {
+            console.warn("[useHierarchy] Load hierarchy error:", (e as any).message || e);
             setError("Erro ao carregar dados do banco.");
             return null;
         } finally {
@@ -568,7 +708,7 @@ export const useHierarchy = () => {
                 setError(data.message || "Erro no Smart Sync.");
             }
         } catch (e) {
-            console.error("Smart Sync error", e);
+            console.error("Smart Sync error:", (e as any).message || e);
             setError("Erro ao conectar com Pipedrive.");
         } finally {
             setLoading(false);
@@ -584,7 +724,7 @@ export const useHierarchy = () => {
             });
             return await resp.json();
         } catch (e) {
-            console.error("Confirm intelligence error", e);
+            console.error("Confirm intelligence error:", (e as any).message || e);
             return { status: "error" };
         }
     }, []);
@@ -609,6 +749,7 @@ export const useHierarchy = () => {
         discoverBrandStream,
         cancelDiscovery,
         fetchHierarchy,
+        stopHierarchyScan,
         connectToJobWebSocket,
         reconnectToActiveJob,
         loadStoredHierarchy,

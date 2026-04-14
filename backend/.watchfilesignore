@@ -1,0 +1,53 @@
+# Ignore Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist
+build
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment
+venv
+env
+.env
+.env.local
+
+# Databases and logs
+*.db
+*.sqlite
+*.log
+logs/
+tmp/
+temp/
+
+# OS files
+.DS_Store
+Thumbs.db
+.git
+
+# Tests
+.pytest_cache
+.coverage
+htmlcov/
+
+# Node modules (if any in backend)
+node_modules/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Project specific
+intelligence.db
+dump.rdb
+.watchfilesignore

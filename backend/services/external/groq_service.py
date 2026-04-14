@@ -47,7 +47,7 @@ class GroqService:
         }
         
         payload = {
-            "model": "llama-3.3-70b-versatile", # Upgrade moral para o fallback
+            "model": "llama-3.3-70b-versatile", # Modelo principal
             "messages": [
                 {"role": "system", "content": "Você é um assistente B2B preciso. Responda apenas em JSON."},
                 {"role": "user", "content": prompt}
@@ -61,16 +61,46 @@ class GroqService:
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 resp = await client.post(self.base_url, headers=headers, json=payload)
+                
+                # Se batermos o rate limit no modelo principal principal, tenta o fallback
+                if resp.status_code == 429:
+                    print(f"[Groq AI] Rate limit no llama-3.3-70b-versatile, fallback para llama-3.1-8b-instant...")
+                    payload["model"] = "llama-3.1-8b-instant"
+                    resp = await client.post(self.base_url, headers=headers, json=payload)
+                    
+                # Se bater o rate limit mesmo no secundário, tenta o terciário
+                if resp.status_code == 429:
+                    print(f"[Groq AI] Rate limit no llama-3.1-8b-instant, fallback para gemma2-9b-it...")
+                    payload["model"] = "gemma2-9b-it"
+                    resp = await client.post(self.base_url, headers=headers, json=payload)
+                    
                 if resp.status_code == 200:
-                    data = resp.json()
-                    content = data['choices'][0]['message']['content']
-                    return json.loads(content)
+                    try:
+                        data = resp.json()
+                        content = data['choices'][0]['message']['content']
+                        
+                        # Se json_mode, tenta fazer parse de JSON
+                        if json_mode:
+                            try:
+                                return json.loads(content)
+                            except json.JSONDecodeError:
+                                print(f"[Groq AI] Conteúdo não é JSON válido, retornando como texto: {content[:100]}")
+                                return {"response": content}
+                        else:
+                            # Se não é json_mode, retorna o conteúdo como resposta
+                            return {"response": content}
+                    except (KeyError, IndexError) as e:
+                        print(f"[Groq AI] Erro ao parsear resposta: {e}")
+                        return {"response": "Erro ao processar resposta da IA"}
                 else:
-                    print(f"[Groq AI] Erro {resp.status_code}: {resp.text}")
+                    error_msg = f"Erro {resp.status_code}: {resp.text[:200]}"
+                    print(f"[Groq AI] {error_msg}")
+                    return {"error": error_msg}
         except Exception as e:
-            print(f"[Groq AI] Exception: {e}")
-            
-        return {}
+            import traceback
+            print(f"[Groq AI] Exception: {str(e)}")
+            print(f"[Groq AI] Traceback: {traceback.format_exc()}")
+            return {"error": str(e)}
 
 async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
     """
@@ -150,7 +180,7 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
                         "contents": [{"parts": [{"text": prompt}]}],
                         "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}
                     }
-                    print(f"[Gemini AI] 🧠 Refinando Hierarquia com gemini-2.0-flash...")
+                    print(f"[Gemini AI] Refinando Hierarquia com gemini-2.0-flash...")
                     resp = await client.post(gemini_url, json=gemini_payload)
                     
                     if resp.status_code == 200:
@@ -180,7 +210,7 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
                     "temperature": 0.1,
                     "response_format": {"type": "json_object"}
                 }
-                print(f"[Groq AI] 🧠 Refinando Hierarquia com {target_model}...")
+                print(f"[Groq AI] Refinando Hierarquia com {target_model}...")
                 for attempt in range(2):
                     response = await client.post(url, headers=headers, json=payload)
                     

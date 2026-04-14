@@ -20,7 +20,7 @@ async def run_b2b_discovery_task(
     max_results: int = 100
 ):
     import urllib.parse
-    print(f"[Worker] 🚀 TASK INVOKED: run_b2b_discovery_task for {company_name}")
+    print(f"[Worker] TASK INVOKED: run_b2b_discovery_task for {company_name}")
     print(f"         Args: domain={domain}, cnpj={cnpj}, brand={confirmed_brand}, logo={confirmed_logo}, area={area_focus}")
     
     # 🕵️ Passo 0: Check Rápido no Banco (Para resposta instantânea)
@@ -47,13 +47,20 @@ async def run_b2b_discovery_task(
             requested_name = company_name.lower()
             is_valid = (requested_name in cached_name or cached_name in requested_name)
             
-            if not is_valid:
-                print(f"[Worker] ⚠️ Cache de Organização ignorado por divergência: {db_org.name} vs {company_name}")
-                db_org = None
-            else:
-                print(f"[Worker] ⚡ Encontro rápido no banco! Enviando nós imediatos para {db_org.name}")
-            # Se já temos no banco mas falta logo, atualiza agora
-            if (confirmed_logo and not db_org.logo_url) or (confirmed_brand and db_org.name != confirmed_brand):
+            # Se já temos no banco mas o nome mudou visivelmente ou falta o logo, atualiza
+            if db_org and ((confirmed_logo and not db_org.logo_url) or (confirmed_brand and db_org.name != confirmed_brand)):
+                print(f"[Worker] ⚡ Atualizando metadados da Organização {db_org.name} -> {confirmed_brand}")
+                
+                # Se o nome mudou na mão, vamos atualizar também no Pipedrive para não duplicar!
+                if confirmed_brand and db_org.name != confirmed_brand and db_org.pipedrive_id:
+                    from services.pipedrive.pipedrive_service import PipedriveService
+                    svc = PipedriveService()
+                    try:
+                        import asyncio
+                        asyncio.create_task(svc.update_organization(db_org.pipedrive_id, {"name": confirmed_brand}))
+                    except Exception as pe:
+                        print(f"[Worker] Falha ao refletir novo nome no Pipedrive: {pe}")
+
                 async with async_session() as session:
                     target = await session.get(Organization, db_org.id)
                     if target:
@@ -62,6 +69,11 @@ async def run_b2b_discovery_task(
                         await session.commit()
                 if confirmed_logo: db_org.logo_url = confirmed_logo
                 if confirmed_brand: db_org.name = confirmed_brand
+            else:
+                if not is_valid:
+                    print(f"[Worker] Cache de Organização utilizado mesmo com leve divergência: {db_org.name} vs {company_name}")
+                else:
+                    print(f"[Worker] ⚡ Encontro rápido no banco! Enviando nós imediatos para {db_org.name}")
 
             logo_url = confirmed_logo or db_org.logo_url
             if logo_url and "http" in logo_url and "ui-avatars" not in logo_url:
@@ -111,7 +123,7 @@ async def run_b2b_discovery_task(
 
     if not needs_discovery:
         display_name = confirmed_brand or (db_org.name if db_org else "Empresa Selecionada")
-        print(f"[Worker] 🛡️ Pulando descoberta de marca institucional. Usando: {display_name}")
+        print(f"[Worker] Pulando descoberta de marca institucional. Usando: {display_name}")
     
     if needs_discovery:
         try:
@@ -187,7 +199,7 @@ async def run_b2b_discovery_task(
             print(f"[Worker] Erro na descoberta completa: {e}")
     else:
         display_name = confirmed_brand or (db_org.name if db_org else "Empresa Selecionada")
-        print(f"[Worker] ✅ Marca já confirmada ({display_name}). Pulando descoberta de perfil.")
+        print(f"[Worker] Marca já confirmada ({display_name}). Pulando descoberta de perfil.")
         
         # Se temos o logo (confirmado ou no banco), vamos enviar uma atualização final para garantir que o UI tenha ele
         target_logo = confirmed_logo or (db_org.logo_url if db_org else None)
@@ -246,5 +258,6 @@ class WorkerSettings:
     functions = [run_b2b_discovery_task]
     redis_settings = redis_settings
     job_timeout = 1800 # 30 min (Aumentando de 300s pra dar tempo aos fallback engines e delays)
+    allow_abort_jobs = True
     on_startup = startup
     on_shutdown = shutdown

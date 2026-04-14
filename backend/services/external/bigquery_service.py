@@ -15,18 +15,18 @@ class BigQueryService:
             try:
                 credentials = service_account.Credentials.from_service_account_file(self.key_path)
                 self.client = bigquery.Client(credentials=credentials, project=self.project_id)
-                print(f"[BigQuery] 🚀 Cliente iniciado com sucesso (Projeto: {self.project_id})")
+                print(f"[BigQuery] Cliente iniciado com sucesso (Projeto: {self.project_id})")
             except Exception as e:
                 print(f"[BigQuery] ❌ Erro ao inicializar cliente: {e}")
         else:
-            print(f"[BigQuery] ⚠️ Arquivo de chave não encontrado em: {self.key_path}")
+            print(f"[BigQuery] Arquivo de chave não encontrado em: {self.key_path}")
 
     async def search_company_by_name(self, name: str, limit: int = 5) -> List[Dict]:
         """
         Busca empresas pelo nome na base pública da Receita Federal (BigQuery).
         """
         if not self.client:
-            print("[BigQuery] ⚠️ Cliente não disponível.")
+            print("[BigQuery] Cliente não disponível.")
             return []
 
         # A query usa a base 'estabelecimentos' e 'empresas' da base-dos-dados
@@ -58,7 +58,7 @@ class BigQueryService:
         )
 
         try:
-            print(f"[BigQuery] 🕵️‍♂️ Buscando: '{name}'...")
+            print(f"[BigQuery] Buscando: '{name}'...")
             
             # Executa em um thread pool para não bloquear o loop async
             loop = asyncio.get_event_loop()
@@ -81,7 +81,7 @@ class BigQueryService:
                     "domain": row.get("email").split("@")[1] if row.get("email") and "@" in row.get("email") else None
                 })
             
-            print(f"[BigQuery] ✅ {len(companies)} resultados encontrados.")
+            print(f"[BigQuery] {len(companies)} resultados encontrados.")
             return companies
 
         except Exception as e:

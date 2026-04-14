@@ -112,7 +112,7 @@ async def reset_org_data(org_id: int, db: AsyncSession = Depends(get_db)):
                                 if cursor == 0:
                                     break
                         except Exception as e:
-                            print(f"⚠️ Aviso ao limpar padrão {pattern}: {e}")
+                            print(f"Aviso ao limpar padrão {pattern}: {e}")
                     
                     # Flush completo das imagens em cache (mais agressivo)
                     try:
@@ -122,7 +122,7 @@ async def reset_org_data(org_id: int, db: AsyncSession = Depends(get_db)):
                         pass
                         
             except Exception as e:
-                print(f"⚠️ Erro ao limpar cache Redis: {e}")
+                print(f"Erro ao limpar cache Redis: {e}")
             
             return {
                 "status": "success",

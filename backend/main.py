@@ -4,7 +4,9 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from api.v1.api import api_router
+from api.v1.endpoints.communication import router as comm_router
 from core.rate_limiter import limiter
+from services.communication.scheduler import start_email_scheduler
 # Backend Reload - Neon Official Key Fix (ssl=true).
 
 app = FastAPI(
@@ -28,22 +30,26 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.on_event("startup")
 async def startup_event():
-    print("[Server] 🚀 Inicializando Componentes de Inteligência...")
+    print("[Server] Inicializando Componentes de Inteligencia...")
+    start_email_scheduler()
     try:
         from core.database import init_db
         await init_db()
     except Exception as e:
         import traceback
-        print(f"[Database] 🚨 Erro Crítico de Conexão no Neon DB: {str(e)}")
+        print(f"[Database] Erro Critico de Conexao no Neon DB: {str(e)}")
         traceback.print_exc()
+
+# Include Communication Router
+app.include_router(comm_router, prefix="/api/v1/communication", tags=["communication"])
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    print("[Server] 🛑 Desligando e limpando conexões...")
+    print("[Server] Desligando e limpando conexoes...")
     try:
         from core.database import engine
         await engine.dispose()
-        print("[Database] ✅ Conexões com o banco encerradas com segurança.")
+        print("[Database] Conexoes com o banco encerradas com seguranca.")
     except:
         pass
 

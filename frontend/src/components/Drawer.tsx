@@ -20,6 +20,7 @@ import {
 import styles from './NetworkGraph.module.css';
 import { HistoryTimeline } from './HistoryTimeline';
 import { ContactList } from './ContactList';
+import type { NotificationType } from './Notification';
 
 interface DrawerProps {
     showDrawer: boolean;
@@ -32,7 +33,10 @@ interface DrawerProps {
     onOrgRenamed?: (orgId: number, newName: string) => void;
     isLoading?: boolean;
     selectedOrgId?: number | null;
+    activeJobId?: string | null;
     graphEmployees?: any[];
+    refreshDetailsTrigger?: number; // Para forçar a recarga dos detalhes
+    addNotification?: (type: NotificationType, message: string) => void;
 }
 
 export const Drawer: React.FC<DrawerProps> = ({
@@ -46,7 +50,10 @@ export const Drawer: React.FC<DrawerProps> = ({
     onOrgRenamed,
     isLoading = false,
     selectedOrgId = null,
-    graphEmployees = []
+    activeJobId = null,
+    graphEmployees = [],
+    refreshDetailsTrigger = 0,
+    addNotification = () => {}
 }) => {
     const [expandedOrgId, setExpandedOrgId] = useState<number | null>(null);
     const [orgDetails, setOrgDetails] = useState<Record<number, any>>({});
@@ -55,10 +62,8 @@ export const Drawer: React.FC<DrawerProps> = ({
     const [editingNameOrgId, setEditingNameOrgId] = useState<number | null>(null);
     const [editingNameValue, setEditingNameValue] = useState<string>('');
 
-    if (!showDrawer) return null;
-
-    const fetchOrgDetails = async (orgId: number) => {
-        if (orgDetails[orgId]) return; // Já carregado
+    const fetchOrgDetails = async (orgId: number, force: boolean = false) => {
+        if (!force && orgDetails[orgId]) return; // Já carregado
 
         setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
         try {
@@ -66,12 +71,20 @@ export const Drawer: React.FC<DrawerProps> = ({
             const resp = await fetch(`${API_BASE}/api/v1/pipedrive/organizations/${orgId}/details`);
             const data = await resp.json();
             setOrgDetails(prev => ({ ...prev, [orgId]: data }));
-        } catch (e) {
-            console.error("Erro ao carregar detalhes:", e);
+        } catch (e: any) {
+            console.error("Erro ao carregar detalhes:", e.message || e);
         } finally {
             setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
         }
     };
+
+    React.useEffect(() => {
+        if (refreshDetailsTrigger > 0) {
+            // Em nova varredura ou job explícito, zera estado local
+            setOrgDetails({});
+            setExpandedOrgId(null);
+        }
+    }, [refreshDetailsTrigger]);
 
     const toggleExpand = (e: React.MouseEvent, orgId: number) => {
         e.stopPropagation();
@@ -106,7 +119,9 @@ export const Drawer: React.FC<DrawerProps> = ({
                     `org-${orgId}-details`,
                     `org-${orgId}-logo`,
                     `org-${orgId}-hierarchy`,
-                    `pipedrive-orgs-cache`
+                    `pipedrive-orgs-cache`,
+                    `layout-cache-${orgId}`,
+                    `edges-cache-${orgId}`
                 ];
                 cacheKeys.forEach(key => {
                     if (localStorage.getItem(key)) {
@@ -128,13 +143,13 @@ export const Drawer: React.FC<DrawerProps> = ({
                     onOrgReset(orgId);
                 }
                 
-                alert("✅ Todos os dados e cache da empresa foram resetados!");
+                addNotification('success', "Todos os dados e cache da empresa foram resetados!");
             } else {
-                alert("❌ Erro ao resetar dados. Tente novamente.");
+                addNotification('error', "Erro ao resetar dados. Tente novamente.");
             }
-        } catch (e) {
-            console.error("Erro ao resetar:", e);
-            alert("❌ Erro ao resetar dados.");
+        } catch (e: any) {
+            console.error("Erro ao resetar:", e.message || e);
+            addNotification('error', "Erro ao resetar dados.");
         }
     };
 
@@ -180,13 +195,13 @@ export const Drawer: React.FC<DrawerProps> = ({
                     onOrgRenamed(orgId, editingNameValue.trim());
                 }
                 
-                alert("✅ Nome da empresa atualizado!");
+                addNotification('success', "Nome da empresa atualizado!");
             } else {
-                alert("❌ Erro ao renomear empresa. Tente novamente.");
+                addNotification('error', "Erro ao renomear empresa. Tente novamente.");
             }
-        } catch (e) {
-            console.error("Erro ao renomear:", e);
-            alert("❌ Erro ao renomear empresa.");
+        } catch (e: any) {
+            console.error("Erro ao renomear:", e.message || e);
+            addNotification('error', "Erro ao renomear empresa.");
         }
     };
 
@@ -197,6 +212,15 @@ export const Drawer: React.FC<DrawerProps> = ({
 
     // Filtra a organização que está em foco
     const focusedOrg = expandedOrgId ? filteredOrgs.find(o => Number(o.id) === expandedOrgId) : null;
+    
+    // Identificar qual organização está escaneando/mapeando ativamente agora
+    let scanningOrgId: number | null = null;
+    if (activeJobId) {
+        try {
+            const jobStr = localStorage.getItem('active-discovery-job');
+            if (jobStr) scanningOrgId = JSON.parse(jobStr).orgId;
+        } catch (e: any) {}
+    }
 
     return (
         <div className={styles.drawer}>
@@ -278,9 +302,12 @@ export const Drawer: React.FC<DrawerProps> = ({
                                             setEditingNameValue(focusedOrg.name);
                                         }}
                                         title="Clique duas vezes para renomear"
-                                        style={{ cursor: 'pointer' }}
+                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                                     >
                                         {focusedOrg.name}
+                                        {scanningOrgId === expandedOrgId && (
+                                            <Loader2 size={16} className={styles.loadingAnim} style={{ color: 'rgb(122, 139, 255)' }} />
+                                        )}
                                     </h2>
                                 )}
                                 <div className={styles.focusedMetaRow}>
@@ -370,15 +397,19 @@ export const Drawer: React.FC<DrawerProps> = ({
 
                         if (isSelected && graphEmployees.length > 0) {
                             const validEmps = graphEmployees.filter(emp =>
+                                emp.id !== "root_company" &&
                                 emp.department !== "Quadro Societário" &&
-                                emp.level !== 6
+                                emp.department !== "Quadro de Sócios (QSA)" &&
+                                emp.level !== 6 &&
+                                !String(emp.id).startsWith("partner_")
                             );
 
                             const graphPics = validEmps
                                 .map(emp => emp.profile_pic || emp.avatar)
                                 .filter(pic => pic && pic.length > 10);
 
-                            if (graphPics.length > 0) displayPics = graphPics;
+                            // Sobrescreve sempre, para zerar as imagems caso comece um novo mapeamento
+                            displayPics = graphPics;
                             displayCount = validEmps.length;
                         }
 
@@ -397,7 +428,12 @@ export const Drawer: React.FC<DrawerProps> = ({
                                         )}
                                     </div>
                                     <div className={styles.orgIdentity}>
-                                        <span className={styles.orgName}>{org.name}</span>
+                                        <span className={styles.orgName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            {org.name}
+                                            {scanningOrgId === orgId && (
+                                                <Loader2 size={14} className={styles.loadingAnim} style={{ color: 'rgb(122, 139, 255)' }} />
+                                            )}
+                                        </span>
                                         {org.address && (
                                             <div className={styles.orgAddress}>
                                                 {org.address.toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}

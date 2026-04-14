@@ -19,28 +19,44 @@ timeout /t 1 /nobreak > nul
 :: 2. Iniciar Redis em segundo plano (se existir na pasta)
 if exist "backend\redis\redis-server.exe" (
     echo 🔴 Iniciando Redis e limpando filas...
-    start /b "LINKB2B-SVC-Redis" "backend\redis\redis-server.exe" "backend\redis\redis.windows.conf"
+    :: Usar pushd para garantir que o diretório corrente seja preservado
+    pushd backend\redis
+    start /b redis-server.exe "redis.windows.conf"
+    popd
     timeout /t 2 /nobreak > nul
     if exist "backend\redis\redis-cli.exe" (
-        "backend\redis\redis-cli.exe" FLUSHALL > nul 2>&1
+        pushd backend\redis
+        redis-cli.exe FLUSHALL >nul 2>&1
+        popd
         echo ✅ Fila de tarefas limpa!
     )
 ) else (
     echo ⚠️ Redis nao encontrado em backend\redis.
 )
 
-:: 3. Iniciar Backend (FastAPI) - Adicionado -NoExit para voce ver se der erro
+:: 3. Iniciar Backend (FastAPI)
 echo 🐍 Iniciando Backend (Porta 8000)...
-start powershell -NoExit -Command "$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Backend'; cd backend; watchfiles --ignore-paths 'intelligence.db,logs,__pycache__' 'uvicorn main:app --port 8000' ."
+start "LINKB2B-SVC-Backend" cmd /k "cd backend && watchfiles ^"uvicorn main:app --port 8000^" ."
 
 :: 4. Iniciar Worker (Arq)
 echo 🛠️ Iniciando Worker...
-start powershell -NoExit -Command "$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Worker'; cd backend; watchfiles --ignore-paths 'intelligence.db,logs,__pycache__' 'arq services.worker.WorkerSettings' ."
+start "LINKB2B-SVC-Worker" cmd /k "cd backend && watchfiles ^"arq services.worker.WorkerSettings^" ."
 
-:: 5. Iniciar Frontend (Vite)
-echo ⚛️ Iniciando Frontend (Porta 5173)...
-start powershell -NoExit -Command "$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Frontend'; cd frontend; npm run dev"
+:: 5. Iniciar Frontend (Next.js dev)
+echo ⚛️ Iniciando Frontend (Porta 3000)...
+start "LINKB2B-SVC-Frontend" cmd /k "cd frontend && npm run dev"
 
+:: 6. Iniciar Servico WhatsApp (Node)
+echo 💬 Iniciando Servico WhatsApp (Porta 8001)...
+start "LINKB2B-SVC-WhatsApp" cmd /k "cd backend\services\whatsapp-service && npm start"
+
+echo.
 echo ✅ Tudo pronto! Verifique as janelas abertas.
+echo 💡 URLs:
+echo    - Frontend:  http://localhost:3000
+echo    - Backend:   http://localhost:8000
+echo    - Swagger:   http://localhost:8000/docs
+echo    - WhatsApp:  http://localhost:8001
+echo.
 echo 💡 Dica: Se algo travar, rode este script novamente para limpar e subir tudo.
 pause
