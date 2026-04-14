@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { CheckCircle, XCircle, Info, X } from 'lucide-react';
+import { CheckCircle, XCircle, Info, X, AlertTriangle } from 'lucide-react';
 import styles from './Notification.module.css';
 
-export type NotificationType = 'success' | 'error' | 'info';
+export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 interface NotificationProps {
     id: string;
@@ -22,7 +22,8 @@ export const Notification: React.FC<NotificationProps> = ({ id, type, message, o
     const Icon = {
         success: CheckCircle,
         error: XCircle,
-        info: Info
+        info: Info,
+        warning: AlertTriangle
     }[type];
 
     return (

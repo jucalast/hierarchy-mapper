@@ -463,7 +463,8 @@ async def stream_company_hierarchy(
                     manager_id=None, level=lead.get("level", 2), email=lead.get("email"), 
                     linkedin=lead.get("url") or lead.get("linkedin", ""), url=lead.get("url") or lead.get("linkedin", ""),
                     education=lead.get("education"), location=lead.get("location"), connections=lead.get("connections"),
-                    highlights=lead.get("highlights"), observations=lead.get("observations")
+                    highlights=lead.get("highlights"), observations=lead.get("observations"),
+                    temperature=lead.get("temperature")
                 )
                 
                 # 🛠️ GESTÃO DE CONEXÕES AO VIVO (AGRESSIVA)

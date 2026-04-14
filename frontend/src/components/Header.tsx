@@ -1,12 +1,14 @@
 import React from 'react';
-import { Database } from 'lucide-react';
+import { Database, PanelRight, PanelRightOpen } from 'lucide-react';
 import styles from './NetworkGraph.module.css';
 
 interface HeaderProps {
     confirmedBrand: string;
+    showChat?: boolean;
+    onToggleChat?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ confirmedBrand }) => {
+export const Header: React.FC<HeaderProps> = ({ confirmedBrand, showChat, onToggleChat }) => {
     return (
         <header className={styles.header}>
             <div className={styles.breadcrumbs}>
@@ -18,6 +20,17 @@ export const Header: React.FC<HeaderProps> = ({ confirmedBrand }) => {
                 <span className={styles.breadcrumbActive}>{confirmedBrand || 'OSINT Flow'}</span>
                 <span className={styles.statusBadge}>DRAFT</span>
             </div>
+            
+            {onToggleChat && (
+                <button
+                    onClick={onToggleChat}
+                    className={`${styles.navIcon}`}
+                    style={{ marginLeft: 'auto', background: 'transparent', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center', color: showChat ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.6)' }}
+                    title={showChat ? "Fechar Assistente" : "Abrir Assistente"}
+                >
+                    {showChat ? <PanelRightOpen size={20} /> : <PanelRight size={20} />}
+                </button>
+            )}
         </header>
     );
 };

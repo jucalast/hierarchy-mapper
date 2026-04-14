@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
+from datetime import datetime
 from services.pipedrive.pipedrive_service import pipedrive_service
 from core.database import get_db
 
@@ -57,20 +59,19 @@ async def reset_org_data(org_id: int, db: AsyncSession = Depends(get_db)):
         from models.organization import Organization
         from models.employee import Employee
         from core.redis_config import redis_client
-        import json
         
         # Buscar a organização no banco
         result = await db.execute(
-            __import__('sqlalchemy').select(Organization).where(Organization.pipedrive_id == org_id)
+            select(Organization).where(Organization.pipedrive_id == org_id)
         )
         org = result.scalar()
         
         if org:
             # 🗑️ DELETAR TODOS OS EMPLOYEES DA ORGANIZAÇÃO (limpar hierarquia completamente)
             employees_result = await db.execute(
-                __import__('sqlalchemy').delete(Employee).where(Employee.company_id == org.id)
+                delete(Employee).where(Employee.company_id == org.id)
             )
-            deleted_employees = employees_result.rowcount
+            deleted_employees = employees_result.rowcount or 0
             print(f"[Reset] Deletados {deleted_employees} employees da organização {org_id}")
             
             # Resetar TODOS os campos da organização no banco
@@ -80,7 +81,7 @@ async def reset_org_data(org_id: int, db: AsyncSession = Depends(get_db)):
             org.linkedin_url = None
             org.partners = None
             org.intelligence_data = None
-            org.updated_at = __import__('datetime').datetime.utcnow()
+            org.updated_at = datetime.utcnow()
             
             await db.commit()
             
@@ -118,7 +119,7 @@ async def reset_org_data(org_id: int, db: AsyncSession = Depends(get_db)):
                     try:
                         redis_client.delete(f"image-cache:{org_id}")
                         redis_client.delete(f"logo-cache:{org_id}")
-                    except:
+                    except Exception:
                         pass
                         
             except Exception as e:
@@ -133,8 +134,23 @@ async def reset_org_data(org_id: int, db: AsyncSession = Depends(get_db)):
             }
         else:
             raise HTTPException(status_code=404, detail=f"Organização {org_id} não encontrada.")
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
+        print(f"[Reset] Erro ao resetar organização {org_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao resetar dados: {str(e)}")
+
+@router.delete("/pipedrive/organizations/{org_id}")
+async def delete_pipedrive_org(org_id: int):
+    """Exclui completamente a organização do Pipedrive e apaga do banco local."""
+    try:
+        success = await pipedrive_service.delete_organization(org_id)
+        if success:
+            return {"status": "success", "message": "Organização excluída do Pipedrive e do banco local."}
+        else:
+            raise HTTPException(status_code=400, detail="Erro ou falha na exclusão do lado do Pipedrive.")
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/pipedrive/organizations/{org_id}/rename")

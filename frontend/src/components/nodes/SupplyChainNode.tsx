@@ -130,54 +130,7 @@ export function SupplyChainNode({ data }: { data: any }) {
         <div className={styles.nodeNameWrapper}>
           {(data.linkedin || level === 0) && (
             <div className={styles.nodeAvatar}>
-              {data.linkedin ? (
-                <>
-                  <img 
-                    src={getProxiedUrl(avatarUrl)} 
-                    alt={data.name} 
-                    className={styles.avatarImg}
-                    loading="lazy"
-                    decoding="async"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=6366f1&color=fff&bold=true&rounded=true&size=128`;
-                    }}
-                  />
-                  
-                  {/* Badge de Empresa (Overlay) - Apenas para pessoas normais, não para sócios (level 6) ou root entity (level 0) */}
-                  {level !== 6 && level !== 0 && (
-                    <div className={styles.nodeAvatarCompanyBadge}>
-                      <img 
-                        src={getProxiedUrl(data.company_logo || `https://unavatar.io/${data.domain || data.company || 'knorr-bremse.com'}`)} 
-                        alt="Company" 
-                        className={styles.companyBadgeImg}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </div>
-                  )}
-                </>
-              ) : (
-                /* Logo da Empresa para o Nó Principal (Tier 0) - Sem badge pequena */
-                <img 
-                  src={getProxiedUrl(data.confirmedLogo || data.company_logo || data.logo || data.image || data.logo_url || data.brand_logo || (data.domain ? `https://unavatar.io/${data.domain}` : null))} 
-                  alt="Company" 
-                  className={styles.avatarImg}
-                  style={{ objectFit: 'contain' }}
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    const fallbackName = data.name || data.company || 'K';
-                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=000&color=fff`;
-                  }}
-                />
-              )}
-            </div>
-          )}
-
-
-          <div className={styles.nodeTitles}>
+              {level === 0 ? ( <img src={getProxiedUrl(data.confirmedLogo || data.company_logo || data.logo || data.avatar || data.image || data.logo_url || data.brand_logo || (data.domain ? "https://unavatar.io/" + data.domain : null))} alt="Company" className={styles.avatarImg} style={{ objectFit: "contain", background: "#fff" }} loading="lazy" decoding="async" onError={(e) => { const target = e.target as HTMLImageElement; const fallbackName = data.name || data.company || "K"; if (!target.src.includes("ui-avatars")) { target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=000&color=fff`; } }} /> ) : data.linkedin ? ( <> <img src={getProxiedUrl(avatarUrl)} alt={data.name} className={styles.avatarImg} loading="lazy" decoding="async" onError={(e) => { const target = e.target as HTMLImageElement; target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=6366f1&color=fff&bold=true&rounded=true&size=128`; }} /> {level !== 6 && level !== 0 && ( <div className={styles.nodeAvatarCompanyBadge}> <img src={getProxiedUrl(data.company_logo || `https://unavatar.io/${data.domain || data.company || "knorr-bremse.com"}`)} alt="Company" className={styles.companyBadgeImg} loading="lazy" decoding="async" /> </div> )} </> ) : null} </div> )} <div className={styles.nodeTitles}>
             <h3 className={styles.nodeName}>{data.name || 'Professional'}</h3>
             <div className={styles.roleWrapper}>
               <span className={styles.roleDept}>
@@ -195,6 +148,18 @@ export function SupplyChainNode({ data }: { data: any }) {
         <div className={styles.osintSection}>
 
           <div className={styles.osintBox}>
+            {data.temperature && (
+              <div className={`${styles.osintLine} ${styles.temperatureLine}`} style={{
+                color: data.temperature === 'Quente' ? '#ef4444' : 
+                       data.temperature === 'Morno' ? '#f59e0b' : 
+                       data.temperature === 'Frio' ? '#3b82f6' : '#9ca3af',
+                fontWeight: 'bold',
+                backgroundColor: 'rgba(255,255,255,0.03)'
+              }}>
+                <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '8px' }}>🔥 Temp. Lead: </span>
+                <span className={styles.osintText} style={{ color: 'unset' }}>{data.temperature}</span>
+              </div>
+            )}
             <div className={styles.osintLine}>
               <MapPin className={styles.osintIcon} />
               <span className={styles.osintText}>{data.location || 'Localização não identificada'}</span>
@@ -239,3 +204,4 @@ export function SupplyChainNode({ data }: { data: any }) {
 export const nodeTypes = {
   supplyChain: SupplyChainNode,
 };
+

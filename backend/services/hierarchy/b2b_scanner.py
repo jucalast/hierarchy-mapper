@@ -93,10 +93,13 @@ async def discover_employees_stream(
         base_queries.append(f'{clean_brand} {term} {search_location} linkedin')
     
     if product_focus:
-        from services.external.groq_service import expand_product_to_b2b_terms
+        from services.external.groq_service import expand_product_to_b2b_terms, evaluate_lead_temperature
         all_terms = await expand_product_to_b2b_terms(product_focus)
         for t in all_terms[:3]:
             base_queries.insert(0, f'"{temp_brand}" "{area_focus}" "{t}" linkedin')
+
+    from services.external.groq_service import evaluate_lead_temperature
+    from services.pipedrive.pipedrive_service import pipedrive_service
 
     # 3. SEARCH & PROCESSING LOOP
     processor = CandidateProcessor(temp_brand, domain, area_focus, location, product_focus)
@@ -106,6 +109,75 @@ async def discover_employees_stream(
     print(f"[B2B Engine] Iniciando Escaneamento: {brand_name_log}")
     await role_engine.proactive_health_check()
     log_session_start(temp_brand, location, area_focus)
+
+    # 🚀 EXTRAÇÃO E AVALIAÇÃO DE TEMPERATURA DOS LEADS DO PIPEDRIVE
+    pipedrive_org_id = None
+    async with async_session() as session:
+        res = await session.execute(select(Organization).where(Organization.id == db_org_id))
+        org_check = res.scalars().first()
+        if org_check and org_check.pipedrive_id:
+            pipedrive_org_id = org_check.pipedrive_id
+
+    if pipedrive_org_id:
+        print(f"[B2B Engine] Organização tem Pipedrive ID ({pipedrive_org_id}). Buscando pessoas e definindo temperatura...")
+        try:
+            pd_details = await pipedrive_service.get_organization_details(pipedrive_org_id)
+            pd_persons = pd_details.get("persons", [])
+            pd_activities = pd_details.get("activities", [])
+            pd_notes = pd_details.get("notes", [])
+            
+            for person in pd_persons:
+                if not person.get("name"): continue
+                
+                # Filtra atividades e notas desse contato
+                person_activities = [a for a in pd_activities if a.get("person_id") == person.get("id")]
+                person_notes = [n for n in pd_notes if n.get("person_id") == person.get("id")]
+                
+                a_text = " | ".join([f"{a.get('subject')} ({a.get('type')})" for a in person_activities])
+                n_text = " | ".join([n.get("content", "") for n in person_notes])
+                
+                # IA Avalia a temperatura do lead baseada no histórico CRM
+                temperature = await evaluate_lead_temperature(a_text, n_text)
+                
+                # Processa o funcionário usando o processador (simula como se visse do duckduckgo mas com dados exatos)
+                name = person.get("name")
+                email = None
+                if person.get("email") and len(person["email"]) > 0:
+                    email = person["email"][0].get("value")
+                phone = None
+                if person.get("phone") and len(person["phone"]) > 0:
+                    phone = person["phone"][0].get("value")
+                
+                # Emula o dictionary do DuckDuckGo p/ CandidateProcessor
+                fake_res = {
+                    "title": f"{name} - {temp_brand}",
+                    "body": f"Email: {email} | Telefone: {phone} | Pipedrive ID: {person.get('id')}",
+                    "href": f"https://linkedin.com/in/pd_{person.get('id')}" # Falso, só pra não dar erro se não tiver
+                }
+                
+                processor_res = await processor.process_candidate(fake_res)
+                if processor_res and processor_res.get("main"):
+                    node_data = processor_res.get("main")
+                    node_data["temperature"] = temperature
+                    node_data["source"] = "Pipedrive"
+                    
+                    async with async_session() as session:
+                        emp = Employee(
+                            name=name,
+                            role=node_data.get("role", "Contato no Pipedrive"),
+                            department="Vendas/Pipedrive", # Fake it until real is found
+                            seniority=node_data.get("level", 5),
+                            email=email,
+                            temperature=temperature,
+                            company_id=db_org_id,
+                            linkedin_url=f"pipedrive_{person.get('id')}",
+                        )
+                        session.add(emp)
+                        await session.commit()
+                    
+                    yield [node_data]
+        except Exception as e:
+            print(f"[B2B Engine/Pipedrive] Erro ao processar pessoas via CRM: {str(e)}")
 
     for idx, query in enumerate(base_queries[:12]):
         if idx > 0: 

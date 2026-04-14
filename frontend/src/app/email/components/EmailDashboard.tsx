@@ -73,8 +73,6 @@ export default function EmailDashboard() {
     <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: 'var(--bg-color)' }}>
       {/* Menu Lateral (Igual ao do sistema central) */}
       <Sidebar 
-        showChat={showChat}
-        setShowChat={setShowChat}
         showDrawer={false} 
         setShowDrawer={() => {}} 
         theme="dark" 

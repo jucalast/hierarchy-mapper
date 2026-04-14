@@ -101,3 +101,10 @@
 .info .message { color: #131415; }
 .info .closeBtn { color: rgba(19, 20, 21, 0.6); }
 .info .closeBtn:hover { background: rgba(19, 20, 21, 0.1); color: #131415; }
+
+/* WARNING THEME */
+.warning { background: #f59e0b; }
+.warning .iconWrapper { color: #451a03; }
+.warning .message { color: #451a03; }
+.warning .closeBtn { color: rgba(69, 26, 3, 0.6); }
+.warning .closeBtn:hover { background: rgba(69, 26, 3, 0.1); color: #451a03; }

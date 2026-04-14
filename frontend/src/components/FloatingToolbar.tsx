@@ -42,6 +42,7 @@ interface FloatingToolbarProps {
     onBrandSelect: (brandObj: any) => void;
     hasMapping?: boolean;
     stopHierarchyScan?: () => void;
+    cancelDiscovery?: () => void;
     activeJobId?: string | null;
 }
 
@@ -71,6 +72,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     onBrandSelect,
     hasMapping = false,
     stopHierarchyScan,
+    cancelDiscovery,
     activeJobId
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
@@ -269,20 +271,27 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                         {!enrichingIds.has(999) && (
                             <>
                                 {step === "input" && domainTarget && (
-                                    <button
-                                        onClick={handleSearch}
-                                        className={`${styles.detectBtn} ${(discovering || loading) ? styles.detectBtnLoading : ''}`}
-                                        disabled={discovering || loading}
-                                    >
-                                        {(discovering || loading) ? (
-                                            <Loader2 size={18} className={styles.loadingAnim} />
-                                        ) : (
-                                            <>
+                                    <>
+                                        {(!discovering && !loading) && (
+                                            <button
+                                                onClick={handleSearch}
+                                                className={`${styles.detectBtn}`}
+                                            >
                                                 <Search size={14} />
                                                 Detectar
-                                            </>
+                                            </button>
                                         )}
-                                    </button>
+                                        {(discovering || loading) && (
+                                            <button
+                                                onClick={cancelDiscovery}
+                                                className={`${styles.detectBtn} ${styles.stopBtn}`}
+                                                title="Parar busca de empresa"
+                                            >
+                                                <Loader2 size={18} className={styles.loadingAnim} />
+                                                Parar
+                                            </button>
+                                        )}
+                                    </>
                                 )}
 
                                 {step !== "input" && (

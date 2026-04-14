@@ -104,8 +104,6 @@ export default function WhatsAppClone() {
       <Sidebar 
           showDrawer={showDrawer} 
           setShowDrawer={setShowDrawer}
-          showChat={showChat}
-          setShowChat={setShowChat}
           theme="dark"
           onToggleTheme={() => {}}
           onReset={() => { window.location.href = '/'; }}

@@ -214,7 +214,7 @@ export const useHierarchy = () => {
         // 🚫 Proteção: Não permite rodar a inteligência enquanto um Discovery/Scanner Job estiver rodando em background
         if (localStorage.getItem('active-discovery-job')) {
             console.warn("[useHierarchy] O Analista de IA focou ignorado pois um mapeamento já está em andamento.");
-            setError("Aguarde o mapeamento atual terminar antes de utilizar o Analista de IA.");
+            // Agora o toast é chamado no frontend, então apenas ignoramos a execução
             return;
         }
 

@@ -18,6 +18,7 @@ class EmployeeNode(BaseModel):
     email: Optional[str] = None
     linkedin: Optional[str] = None
     url: Optional[str] = None
+    temperature: Optional[str] = None
     education: Optional[str] = None
     location: Optional[str] = None
     connections: Optional[str] = None

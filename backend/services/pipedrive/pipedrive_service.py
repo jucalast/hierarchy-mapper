@@ -354,6 +354,48 @@ class PipedriveService:
             traceback.print_exc()
             return {"status": "error", "message": str(e)}
 
+    async def delete_organization(self, org_id: int):
+        """Exclui uma organização no Pipedrive pelo ID e do banco de dados local."""
+        from core.database import async_session
+        from models import Organization, Employee
+        from sqlalchemy import select, delete
+        
+        # 1. Deletar do Pipedrive (Faz soft-delete/move para lixeira lá)
+        url = f"{self.base_url}/organizations/{org_id}?api_token={self.api_token}"
+        pipedrive_success = False
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.delete(url)
+                if resp.status_code in [200, 204]:
+                    pipedrive_success = True
+                    print(f"[Pipedrive Service] Organização {org_id} excluída com sucesso.")
+                else:
+                    print(f"[Pipedrive Service] Falha ao excluir no Pipedrive: {resp.status_code} - {resp.text}")
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro ao excluir no Pipedrive: {e}")
+
+        # 2. Deletar do Banco de Dados Local para limpar a interface (Cascata)
+        try:
+            async with async_session() as session:
+                # Busca empresa para pegar o ID real no banco
+                stmt = select(Organization).where(Organization.pipedrive_id == org_id)
+                res = await session.execute(stmt)
+                org = res.scalars().first()
+                
+                if org:
+                    local_id = org.id
+                    # Deleta todos os funcionários associados primeiro (Cascata manual, caso não tenha pragma ON DELETE CASCADE configurado)
+                    await session.execute(delete(Employee).where(Employee.company_id == local_id))
+                    
+                    # Deleta a própria organização
+                    await session.execute(delete(Organization).where(Organization.id == local_id))
+                    await session.commit()
+                    print(f"[Pipedrive Service] Banco local limpado (Organização e pessoas associadas ao PipedriveID {org_id}).")
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro ao limpar banco local: {e}")
+
+        return pipedrive_success
+
     async def get_organization_details(self, org_id: int):
         """Busca o 'Raio-X' completo da empresa: Contatos, Tarefas, Negócios e Notas."""
         import asyncio

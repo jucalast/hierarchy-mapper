@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-    Send,
+    ArrowUp,
     X,
     Lightbulb,
     ChevronRight,
@@ -118,6 +118,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [hasAtSymbol, setHasAtSymbol] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const autocompleteRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -262,10 +263,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         // Completar o texto do input com o nome da empresa
         const lastAtIndex = inputValue.lastIndexOf('@');
+        let newValue = inputValue;
         if (lastAtIndex !== -1) {
             const beforeAt = inputValue.substring(0, lastAtIndex);
-            // Por exemplo: "oi @kn" vira "oi @Knorr Bremse " com espaço no final
-            const newValue = beforeAt + '@' + company.name + ' ';
+            // Completa o nome da empresa e adiciona um espaço para continuar digitando
+            newValue = beforeAt + '@' + company.name + ' ';
             setInputValue(newValue);
             // Remover roxo após seleção
             setHasAtSymbol(false);
@@ -274,6 +276,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setShowAutocomplete(false);
         setSearchTerm('');
         setCompanies([]);
+
+        // Focus input after React processes the state update
+        setTimeout(() => {
+            if (inputRef.current) {
+                inputRef.current.focus();
+                // Move o cursor exatamente para o final, depois do espaço
+                const length = inputRef.current.value.length;
+                inputRef.current.setSelectionRange(length, length);
+            }
+        }, 10);
     };
 
     if (!showChat) {
@@ -286,15 +298,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             {/* Cabeçalho */}
             <div className={styles.chatHeader}>
                 <h2 className={styles.chatTitle}>Novo Chat</h2>
-                <div className={styles.headerActions}>
-                    <button 
-                        onClick={() => setShowChat(false)}
-                        className={styles.closeBtn}
-                        title="Fechar chat"
-                    >
-                        <X size={18} strokeWidth={2.5} />
-                    </button>
-                </div>
             </div>
 
             {/* Área de Chat com Scroll */}
@@ -427,7 +430,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                         <span className={styles.pillCompanyName}>{company.name}</span>
                                         <button
                                             className={styles.removePillBtn}
-                                            onClick={() => setSelectedCompanies(selectedCompanies.filter(c => c.id !== company.id))}
+                                            onClick={() => {
+                                                setSelectedCompanies(selectedCompanies.filter(c => c.id !== company.id));
+                                                setTimeout(() => {
+                                                    if (inputRef.current) {
+                                                        inputRef.current.focus();
+                                                    }
+                                                }, 10);
+                                            }}
                                             type="button"
                                         >
                                             <X size={14} />
@@ -438,6 +448,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         )}
                         {/* Campo de Texto */}
                         <input 
+                            ref={inputRef}
                             type="text" 
                             value={inputValue}
                             onChange={handleInputChange}
@@ -520,7 +531,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             className={styles.sendBtn}
                             title="Enviar"
                         >
-                            <Send size={16} className={styles.sendIcon} strokeWidth={2.5}/>
+                            <ArrowUp size={16} strokeWidth={2.5}/>
                         </button>
                     </div>
                 </div>

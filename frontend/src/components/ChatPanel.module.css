@@ -1,19 +1,16 @@
 /* === CHAT PANEL - CONTAINER PRINCIPAL === */
 .chatPanel {
-  position: fixed;
-  right: 0;
-  top: 0;
-  height: 100vh;
-  width: 100%;
-  max-width: 420px;
+  position: relative;
+  height: 100%;
+  width: 420px;
+  min-width: 420px;
   background: #ffffff;
   border-radius: 0;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
-  position: relative;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
+  border-left: 1px solid #e5e7eb;
   animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   transition: background 0.3s ease, border-color 0.3s ease;
 }
@@ -261,10 +258,12 @@
   color: #374151;
   line-height: 1.7;
   word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
   flex: 1;
   transition: all 0.3s ease;
   border-radius: 8px;
-
+  font-family: inherit;
 }
 
 .chatPanel.dark .aiMessage {
@@ -285,29 +284,6 @@
 .aiMessage > p:first-child,
 .aiMessage > div:first-child {
   margin-top: 0;
-}
-
-/* Listas dentro da mensagem */
-.aiMessage ul,
-.aiMessage ol {
-  margin: 8px 0;
-  padding-left: 24px;
-}
-
-.aiMessage li {
-  margin: 6px 0;
-  color: inherit;
-}
-
-/* Destaque para informações importantes */
-.aiMessage em {
-  color: #d97706;
-  font-style: italic;
-  font-weight: 500;
-}
-
-.chatPanel.dark .aiMessage em {
-  color: #fbbf24;
 }
 
 /* === AI METADATA (Thinking Time & Sources) === */
@@ -765,9 +741,9 @@
 .sendBtn {
   padding: 8px;
   border-radius: 12px;
-  background: #f9fafb;
-  color: #d1d5db;
-  border: 1px solid #f3f4f6;
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #e5e7eb;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -777,7 +753,7 @@
 
 .sendBtn:hover:not(:disabled) {
   background: #f3f4f6;
-  color: #9ca3af;
+  color: #000000;
 }
 
 .sendBtn:disabled {
@@ -786,18 +762,17 @@
 }
 
 .chatPanel.dark .sendBtn {
-  background: rgba(255, 255, 255, 0.02);
-  color: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.05);
+  background: #ffffff;
+  color: #000000;
+  border-color: #e5e7eb;
 }
 
 .chatPanel.dark .sendBtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.4);
+  background: #f3f4f6;
+  color: #000000;
 }
 
 .sendIcon {
-  margin-left: 2px;
 }
 
 /* === ANIMATION === */

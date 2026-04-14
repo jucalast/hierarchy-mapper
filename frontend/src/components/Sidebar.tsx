@@ -10,8 +10,7 @@ import {
     Moon, 
     Settings,
     Bug,
-    Workflow,
-    MessageCircle
+    Workflow
 } from 'lucide-react';
 
 import styles from './NetworkGraph.module.css';
@@ -19,8 +18,6 @@ import styles from './NetworkGraph.module.css';
 interface SidebarProps {
     showDrawer: boolean;
     setShowDrawer: (show: boolean) => void;
-    showChat: boolean;
-    setShowChat: (show: boolean) => void;
     theme: string;
     onToggleTheme: () => void;
     onReset: () => void;
@@ -33,8 +30,6 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ 
     showDrawer, 
     setShowDrawer,
-    showChat,
-    setShowChat,
     theme, 
     onToggleTheme, 
     onReset,
@@ -68,14 +63,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                     className={styles.sidebarBrandIcon}
                 />
-            </div>
-
-            <div
-                className={`${styles.navIcon} ${showChat ? styles.navIconActive : ''}`}
-                onClick={() => setShowChat(!showChat)}
-                title="Assistente IA"
-            >
-                <MessageCircle size={20} className={styles.iconSide} />
             </div>
 
             <div

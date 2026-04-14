@@ -17,4 +17,5 @@ class Employee(Base):
     location = Column(String, nullable=True)
     company_id = Column(Integer, ForeignKey("organizations.id"))
     manager_id = Column(String, nullable=True) # ID do gerente (pode ser "root_company" ou outro "node_ID")
+    temperature = Column(String, nullable=True) # Ex: "quente", "morno", "frio"
     last_scanned = Column(DateTime(timezone=True), server_default=func.now())

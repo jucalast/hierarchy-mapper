@@ -79,7 +79,8 @@ async def init_db():
             "ALTER TABLE organizations ADD COLUMN product_focus VARCHAR",
             "ALTER TABLE employees ADD COLUMN department VARCHAR",
             "ALTER TABLE organizations ADD COLUMN linkedin_url VARCHAR",
-            "ALTER TABLE organizations ADD COLUMN logo_url VARCHAR"
+            "ALTER TABLE organizations ADD COLUMN logo_url VARCHAR",
+            "ALTER TABLE employees ADD COLUMN temperature VARCHAR"
         ]:
             try:
                 await conn.execute(text(query))

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     ChevronRight,
     Search,
@@ -15,7 +15,8 @@ import {
     UserCheck,
     DollarSign,
     Target,
-    Trash2
+    Trash2,
+    MoreHorizontal
 } from 'lucide-react';
 import styles from './NetworkGraph.module.css';
 import { HistoryTimeline } from './HistoryTimeline';
@@ -61,6 +62,22 @@ export const Drawer: React.FC<DrawerProps> = ({
     const [activeTab, setActiveTab] = useState<string>('activities');
     const [editingNameOrgId, setEditingNameOrgId] = useState<number | null>(null);
     const [editingNameValue, setEditingNameValue] = useState<string>('');
+    const [showOptionsDropdown, setShowOptionsDropdown] = useState<boolean>(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setShowOptionsDropdown(false);
+            }
+        };
+        if (showOptionsDropdown) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showOptionsDropdown]);
 
     const fetchOrgDetails = async (orgId: number, force: boolean = false) => {
         if (!force && orgDetails[orgId]) return; // Já carregado
@@ -153,6 +170,62 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
+    const handleDeleteOrg = async (e: React.MouseEvent, orgId: number) => {
+        e.stopPropagation();
+        
+        if (!confirm("Tem certeza CUIDADO ABSOLUTO que quer excluir DEFINITIVAMENTE esta empresa do Pipedrive e de todo o seu banco de dados?")) {
+            return;
+        }
+        
+        try {
+            const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+            const resp = await fetch(`${API_BASE}/api/v1/pipedrive/organizations/${orgId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (resp.ok) {
+                const data = await resp.json();
+                console.log("[Drawer] Empresa excluída:", data);
+                
+                // Limpar cache local (localStorage)
+                const cacheKeys = [
+                    `org-${orgId}-details`,
+                    `org-${orgId}-logo`,
+                    `org-${orgId}-hierarchy`,
+                    `pipedrive-orgs-cache`,
+                    `layout-cache-${orgId}`,
+                    `edges-cache-${orgId}`
+                ];
+                cacheKeys.forEach(key => {
+                    if (localStorage.getItem(key)) localStorage.removeItem(key);
+                });
+                
+                // Atualizar a lista localmente removendo
+                setOrgDetails(prev => {
+                    const updated = { ...prev };
+                    delete updated[orgId];
+                    return updated;
+                });
+                setExpandedOrgId(null);
+                
+                // Chamar callback para resetar UI (FloatingToolbar, Grafo)
+                if (onOrgReset) {
+                    onOrgReset(orgId); // Reutilizamos a mesma trigger do reset
+                }
+                
+                if (addNotification) {
+                    addNotification('success', "Empresa foi apagada do CRM com sucesso!");
+                }
+            } else {
+                if (addNotification) addNotification('error', "Erro ao excluir empresa. Verifique o servidor.");
+            }
+        } catch (e: any) {
+            console.error("Erro ao excluir:", e.message || e);
+            if (addNotification) addNotification('error', "Erro na comunicação ao excluir empresa.");
+        }
+    };
+
     const handleRenameOrg = async (orgId: number) => {
         if (!editingNameValue || editingNameValue.trim() === '') {
             setEditingNameOrgId(null);
@@ -231,15 +304,43 @@ export const Drawer: React.FC<DrawerProps> = ({
                             <X size={14} />
                             <span>Voltar para a lista</span>
                         </button>
-                        <button 
-                            onClick={(e) => handleResetOrgData(e, expandedOrgId)} 
-                            className={styles.backToListBtn}
-                            title="Resetar todos os dados desta empresa"
-                            style={{ color: '#ef4444', marginLeft: '8px' }}
-                        >
-                            <Trash2 size={14} />
-                            <span>Resetar Dados</span>
-                        </button>
+                        
+                        <div className={styles.focusHeaderActions} ref={dropdownRef}>
+                            <button 
+                                onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
+                                className={styles.moreOptionsBtn}
+                                title="Mais opções"
+                            >
+                                <MoreHorizontal size={20} />
+                            </button>
+                            
+                            {showOptionsDropdown && (
+                                <div className={styles.dropdownMenu}>
+                                    <button 
+                                        onClick={(e) => {
+                                            handleResetOrgData(e, expandedOrgId);
+                                            setShowOptionsDropdown(false);
+                                        }} 
+                                        className={styles.dropdownItem}
+                                        style={{ color: '#f59e0b' }}
+                                    >
+                                        <Trash2 size={14} />
+                                        <span>Resetar Cache</span>
+                                    </button>
+                                    <button 
+                                        onClick={(e) => {
+                                            handleDeleteOrg(e, expandedOrgId);
+                                            setShowOptionsDropdown(false);
+                                        }} 
+                                        className={styles.dropdownItem}
+                                        style={{ color: '#ef4444' }}
+                                    >
+                                        <X size={14} />
+                                        <span>Excluir Empresa</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <>
@@ -311,9 +412,11 @@ export const Drawer: React.FC<DrawerProps> = ({
                                     </h2>
                                 )}
                                 <div className={styles.focusedMetaRow}>
-                                    <span className={styles.focusedOrgAddress}>
-                                        {focusedOrg.address.toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}
-                                    </span>
+                                    {focusedOrg.address && (
+                                        <span className={styles.focusedOrgAddress}>
+                                            {focusedOrg.address.toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}
+                                        </span>
+                                    )}
 
                                 </div>
                             </div>

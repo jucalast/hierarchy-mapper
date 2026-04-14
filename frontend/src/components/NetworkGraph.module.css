@@ -51,19 +51,6 @@
     box-shadow: none !important;
 }
 
-/* Active Indicator Line */
-.navIconActive::before {
-    content: '';
-    position: absolute;
-    left: -8px;
-    /* Anchor to the left side relative to centering */
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #ffffff;
-    border-radius: 0 4px 4px 0;
-}
-
 .navIconDisabled {
     opacity: 0.15;
     cursor: not-allowed;
@@ -76,14 +63,31 @@
 }
 
 /* --- MAIN WORKSPACE --- */
-.mainContent {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-    background: #1d1d1d;
-}
+  .mainWrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      background: #1d1d1d;
+  }
+
+  .contentWrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      position: relative;
+      overflow: hidden;
+  }
+
+  .mainContent {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      background: #1d1d1d;
+  }
 
 
 
@@ -2459,4 +2463,64 @@
     display: flex;
     align-items: center;
     gap: 10px;
+}
+.focusHeaderActions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-right: 16px;
+}
+
+.moreOptionsBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.moreOptionsBtn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: 100%;
+    right: 16px;
+    margin-top: 4px;
+    background: #1e1e1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px 0;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, color 0.2s;
+}
+
+.dropdownItem:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
 }

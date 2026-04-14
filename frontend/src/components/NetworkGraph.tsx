@@ -690,13 +690,16 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     useEffect(() => {
         if (rawEmployees.length === 0) return;
         
-        let uiNodes: Node[] = rawEmployees.map(emp => ({
-            id: emp.id,
-            type: 'supplyChain',
-            // Default temporário (será sobrescrito pelo getLayoutedElements se for node novo, ou local storage se já existir)
-            position: { x: 0, y: 0 }, 
-            data: { ...emp, isRoot: emp.level === 0, confirmedLogo: emp.level === 0 ? confirmedLogo : undefined },
-        }));
+        let uiNodes: Node[] = rawEmployees.map(emp => {
+            const isRootNode = emp.id === 'root_company' || emp.level === 0;
+            return {
+                id: emp.id,
+                type: 'supplyChain',
+                // Default temporário (será sobrescrito pelo getLayoutedElements se for node novo, ou local storage se já existir)
+                position: { x: 0, y: 0 }, 
+                data: { ...emp, isRoot: isRootNode, confirmedLogo: isRootNode ? confirmedLogo : undefined },
+            };
+        });
         
         let finalEdges = calculateEdges(uiNodes, rawBackendEdges);
         const getStableId = (n: any) => n?.data?.linkedin || n?.data?.name || n?.id;
@@ -875,13 +878,17 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             <Sidebar 
                 showDrawer={showDrawer}
                 setShowDrawer={setShowDrawer}
-                showChat={showChat}
-                setShowChat={setShowChat}
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 onReset={() => { setStep("input"); setNodes([]); setEdges([]); localStorage.removeItem('last-viewed-org'); }}
                 onCopyData={handleCopyData}
-                onRefine={() => refineHierarchy(rawEmployees)}
+                onRefine={() => {
+                    if (localStorage.getItem('active-discovery-job')) {
+                        addNotification('warning', "Aguarde o mapeamento atual terminar antes de utilizar o Analista de IA.");
+                        return;
+                    }
+                    refineHierarchy(rawEmployees);
+                }}
                 onSmartSync={async () => {
                     const res = await smartSyncPipedrive();
                     if (res && res.status === 'success') {
@@ -909,15 +916,21 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 addNotification={addNotification}
             />
 
-            <main className={styles.mainContent}>
-                <Header confirmedBrand={confirmedBrand} />
-
-                <NotificationContainer 
-                    notifications={notifications} 
-                    removeNotification={removeNotification} 
+            <div className={styles.mainWrapper}>
+                <Header 
+                    confirmedBrand={confirmedBrand}
+                    showChat={showChat}
+                    onToggleChat={() => setShowChat(!showChat)}
                 />
+                
+                <div className={styles.contentWrapper}>
+                    <main className={styles.mainContent}>
+                        <NotificationContainer 
+                            notifications={notifications} 
+                            removeNotification={removeNotification} 
+                        />
 
-                <div className={styles.graphWrapper}>
+                        <div className={styles.graphWrapper}>
                     <ReactFlow
                         nodes={nodes}
                         edges={edges}
@@ -939,46 +952,51 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
 
 
+                        </div>
+
+                        <FloatingToolbar 
+                            error={error}
+                            handleSearch={handleSearch}
+                            cnpj={cnpj}
+                            setCnpj={setCnpj}
+                            confirmedBrand={confirmedBrand}
+                            setConfirmedBrand={setConfirmedBrand}
+                            confirmedLogo={confirmedLogo}
+                            setConfirmedLogo={setConfirmedLogo}
+                            confirmedFollowers={confirmedFollowers}
+                            setConfirmedFollowers={setConfirmedFollowers}
+                            domainTarget={domainTarget}
+                            setDomainTarget={setDomainTarget}
+                            productFocus={productFocus}
+                            setProductFocus={setProductFocus}
+                            areaFocus={areaFocus}
+                            setAreaFocus={setAreaFocus}
+                            handleAutoEnrich={handleAutoEnrich}
+                            enrichingIds={enrichingIds}
+                            discovering={discovering}
+                            loading={loading}
+                            step={step}
+                            brandOptions={brandOptions}
+                            onBrandSelect={handleBrandSelect}
+                            hasMapping={nodes.some(n => n.id.startsWith('node_'))}
+                            stopHierarchyScan={() => stopHierarchyScan(addNotification)}
+                            cancelDiscovery={cancelDiscovery}
+                            activeJobId={activeJobId}
+                        />
+                    </main>
+                    
+                    {showChat && (
+                        <ChatPanel 
+                            showChat={showChat}
+                            setShowChat={setShowChat}
+                            selectedOrgId={currentOrgId}
+                            selectedOrgName={confirmedBrand}
+                            theme={theme}
+                            onToggleTheme={toggleTheme}
+                        />
+                    )}
                 </div>
-
-                <FloatingToolbar 
-                    error={error}
-                    handleSearch={handleSearch}
-                    cnpj={cnpj}
-                    setCnpj={setCnpj}
-                    confirmedBrand={confirmedBrand}
-                    setConfirmedBrand={setConfirmedBrand}
-                    confirmedLogo={confirmedLogo}
-                    setConfirmedLogo={setConfirmedLogo}
-                    confirmedFollowers={confirmedFollowers}
-                    setConfirmedFollowers={setConfirmedFollowers}
-                    domainTarget={domainTarget}
-                    setDomainTarget={setDomainTarget}
-                    productFocus={productFocus}
-                    setProductFocus={setProductFocus}
-                    areaFocus={areaFocus}
-                    setAreaFocus={setAreaFocus}
-                    handleAutoEnrich={handleAutoEnrich}
-                    enrichingIds={enrichingIds}
-                    discovering={discovering}
-                    loading={loading}
-                    step={step}
-                    brandOptions={brandOptions}
-                    onBrandSelect={handleBrandSelect}
-                    hasMapping={nodes.some(n => n.id.startsWith('node_'))}
-                    stopHierarchyScan={() => stopHierarchyScan(addNotification)}
-                    activeJobId={activeJobId}
-                />
-            </main>
-
-            <ChatPanel 
-                showChat={showChat}
-                setShowChat={setShowChat}
-                selectedOrgId={currentOrgId}
-                selectedOrgName={confirmedBrand}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-            />
+            </div>
         </div>
 
     );

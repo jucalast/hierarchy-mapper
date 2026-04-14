@@ -39,6 +39,21 @@ frontend/next-env.d.ts
 .vscode/
 .idea/
 
+# Root level node modules
+node_modules/
+package-lock.json
+
+# Database files
+*.db
+dump.rdb
+
+# Logs
+engine_raw.log
+
+# Python cache
+__pycache__/
+*.pyc
+
 # WhatsApp Service Node
 backend/whatsapp-service/node_modules/
 backend/whatsapp-service/.wwebjs_auth/

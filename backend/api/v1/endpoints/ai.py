@@ -51,6 +51,9 @@ def _clean_response(text: str) -> str:
     # Remove markdown links [text](url)
     text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
     
+    # Remove JSON objects {}
+    text = re.sub(r'\{[^{}]*\}', '', text)
+    
     # Limpa espaços em branco extras
     text = re.sub(r'\n\n+', '\n\n', text)
     text = text.strip()
@@ -59,81 +62,63 @@ def _clean_response(text: str) -> str:
 
 def _format_context_for_prompt(context_dict: dict) -> str:
     """
-    Formata contexto estruturado em texto legível para o Groq.
-    Isso torna explícito qual é o dado disponível.
+    Formata contexto em texto legível, sem JSON.
+    Inclui APENAS dados que estão disponíveis no dict.
     """
     if not context_dict:
-        return "NENHUM DADO INTERNO MAPEADO FOI ENCONTRADO"
+        return ""
     
-    lines = ["═" * 60, "DADOS INTERNOS MAPEADOS:", "═" * 60]
+    lines = ["\n--- INÍCIO DOS DADOS INTERNOS MAPEADOS DO SISTEMA ---"]
     
-    # Organização
+    # Organização (sempre incluir)
     if "organization" in context_dict:
         org = context_dict["organization"]
-        lines.append("\nORGANIZAÇÃO:")
-        lines.append(f"  Nome: {org.get('name', 'N/A')}")
-        lines.append(f"  CNPJ: {org.get('cnpj', 'N/A')}")
-        lines.append(f"  Categoria: {org.get('category', 'Não especificada')}")
-        lines.append(f"  Foco: {org.get('product_focus', 'Não especificado')}")
-        lines.append(f"  Site: {org.get('domain', 'Não informado')}")
-    
-    # Estatísticas
-    if "statistics" in context_dict:
-        stats = context_dict["statistics"]
-        lines.append("\nESTATÍSTICAS:")
-        lines.append(f"  Total de funcionários mapeados: {stats.get('total_employees_mapped', 0)}")
-        depts = stats.get('departments', [])
-        if depts:
-            lines.append(f"  Departamentos: {', '.join(depts)}")
-        else:
-            lines.append("  Departamentos: Não informados")
+        if org and isinstance(org, dict):
+            if org.get('name'):
+                lines.append(f"Empresa: {org.get('name')}")
+            if org.get('cnpj'):
+                lines.append(f"CNPJ: {org.get('cnpj')}")
+            if org.get('domain'):
+                lines.append(f"Site/Domínio: {org.get('domain')}")
+            if org.get('industry'):
+                lines.append(f"Indústria: {org.get('industry')}")
     
     # Decision Makers
     if "decision_makers" in context_dict:
-        makers = context_dict["decision_makers"]
+        makers_data = context_dict.get("decision_makers")
+        makers = makers_data if isinstance(makers_data, list) else makers_data.get("decision_makers", []) if isinstance(makers_data, dict) else []
         if makers:
-            lines.append("\nTOMADORES DE DECISÃO (por influência):")
-            for i, maker in enumerate(makers[:10], 1):
-                lines.append(f"  {i}. {maker.get('name', 'Desconhecido')} - {maker.get('role', 'Cargo desconhecido')} (Dept: {maker.get('department', 'N/A')} | Score: {maker.get('influence_score', 0)})")
-        else:
-            lines.append("\nTOMADORES DE DECISÃO: Nenhum encontrado nos dados mapeados")
+            lines.append("\nTOMADORES DE DECISÃO MAPEADOS:")
+            for maker in makers[:15]:
+                if isinstance(maker, dict):
+                    name = maker.get('name', 'Desconhecido')
+                    role = maker.get('role', 'Cargo não informado')
+                    dept = maker.get('department', 'Departamento não informado')
+                    lines.append(f"- {name} ({role} de {dept})")
     
-    # Employees
-    if "employees" in context_dict:
-        emps = context_dict["employees"]
-        if isinstance(emps, dict):
-            lines.append("\nFUNCIONÁRIOS POR DEPARTAMENTO:")
-            for dept, emp_list in emps.items():
-                lines.append(f"  {dept}:")
+    # Employees by Department
+    if "employees_by_dept" in context_dict:
+        emps = context_dict["employees_by_dept"]
+        if emps and isinstance(emps, dict) and emps.get("by_department"):
+            lines.append("\nFUNCIONÁRIOS MAPEADOS:")
+            for dept, emp_list in list(emps.get("by_department", {}).items())[:10]:
+                lines.append(f"\nEm {dept}:")
                 for emp in emp_list[:5]:
-                    lines.append(f"    - {emp.get('name', 'Desconhecido')} ({emp.get('role', 'Cargo desconhecido')})")
-                if len(emp_list) > 5:
-                    lines.append(f"    ... e mais {len(emp_list) - 5}")
-        elif isinstance(emps, list) and emps:
-            lines.append("\nFUNCIONÁRIOS:")
-            for emp in emps[:10]:
-                lines.append(f"  - {emp.get('name', 'Desconhecido')} ({emp.get('role', 'Cargo')}) - {emp.get('department', 'Dept N/A')}")
-            if len(emps) > 10:
-                lines.append(f"  ... e mais {len(emps) - 10}")
-        elif not emps:
-            lines.append("\nFUNCIONÁRIOS: Nenhum funcionário mapeado para essa organização")
+                    if isinstance(emp, dict):
+                        lines.append(f"- {emp.get('name', 'Desconhecido')} ({emp.get('role', 'S/C')})")
     
-    # Contatos
-    if "contacts" in context_dict:
-        contacts = context_dict["contacts"]
-        if contacts.get("contacts"):
-            lines.append("\nCONTATOS COM WHATSAPP:")
-            for contact in contacts.get("contacts", [])[:10]:
-                status = "✓ ATIVO" if contact.get("whatsapp_active") else "✗ Não no WhatsApp"
-                lines.append(f"  - {contact.get('name', 'Desconhecido')} ({contact.get('role', 'Cargo')})")
-                lines.append(f"    Email: {contact.get('email', 'N/A')} | {status}")
-        else:
-            lines.append("\nCONTATOS: Nenhum contato mapeado")
+    # Estatísticas
+    if "statistics" in context_dict and ("decision_makers" in context_dict or "employees_by_dept" in context_dict):
+        stats = context_dict["statistics"]
+        if isinstance(stats, dict):
+            total_emp = stats.get('total_employees', stats.get('total_employees_mapped', 0))
+            if total_emp > 0:
+                lines.append(f"\nTotal de funcionários guardados no banco de dados para esta empresa: {total_emp}")
     
-    lines.append("\n" + "═" * 60)
-    lines.append("FIM DOS DADOS")
-    lines.append("═" * 60)
-    
+    if len(lines) == 1:
+        return ""
+        
+    lines.append("--- FIM DOS DADOS INTERNOS MAPEADOS ---")
     return "\n".join(lines)
 
 
@@ -179,7 +164,49 @@ async def chat_with_ai(
         # 2. Buscar contexto do banco se temos orgId
         internal_context = {}
         if org_id:
-            internal_context = await ContextService.build_context_for_ai(session, org_id, intent)
+            try:
+                # Sempre buscar apenas informações organizacionais básicas (sem estatísticas de departamentos)
+                basic_context = await ContextService.fetch_organization_overview(session, org_id)
+                org_data = basic_context.get("organization", {})
+                
+                # Iniciar com apenas organização (sem departamentos, sem estatísticas)
+                internal_context = {
+                    "organization": {
+                        "name": org_data.get("name") if org_data else None,
+                        "cnpj": org_data.get("cnpj") if org_data else None,
+                        "domain": org_data.get("domain") if org_data else None
+                    }
+                }
+                print(f"[AI Chat] Contexto inicial: {internal_context}")
+                
+                # Apenas buscar dados detalhados se o usuário perguntou sobre eles
+                message_lower = payload.message.lower()
+                if any(word in message_lower for word in ['funcionário', 'employee', 'contato', 'contact', 'pessoas', 'people', 'quem', 'nome', 'nomes', 'executivo', 'diretor', 'ceo', 'manager', 'gerente', 'departamento', 'responsável', 'chefe', 'estrutura']):
+                    print(f"[AI Chat] Usuário perguntou sobre funcionários/estrutura, buscando dados completos...")
+                    # Buscar informações completas quando solicitado
+                    if org_data:
+                        internal_context["organization"] = org_data
+                    
+                    # Buscar decision makers
+                    try:
+                        decision_makers_context = await ContextService.fetch_decision_makers(session, org_id)
+                        internal_context.update(decision_makers_context)
+                    except Exception as e:
+                        print(f"[AI Chat] Erro ao buscar decision makers: {e}")
+                    
+                    # Buscar employees por departamento
+                    try:
+                        employees_context = await ContextService.fetch_employees_by_department(session, org_id)
+                        internal_context['employees_by_dept'] = employees_context
+                    except Exception as e:
+                        print(f"[AI Chat] Erro ao buscar employees: {e}")
+                    
+                    # Incluir statistics quando houver detalhes
+                    internal_context['statistics'] = basic_context.get('statistics', {})
+            except Exception as e:
+                print(f"[AI Chat] Erro ao buscar contexto: {e}")
+                # Continuar com contexto vazio ao invés de falhar
+                internal_context = {}
         
         # 3. Montar o prompt com contexto
         # Se payload.context não for fornecido, usar o intent detectado automaticamente
@@ -190,6 +217,7 @@ async def chat_with_ai(
         context_prompt = ""
         if internal_context:
             formatted_context = _format_context_for_prompt(internal_context)
+            print(f"[AI Chat] Contexto formatado para Groq:\n{formatted_context}")
             context_prompt = f"\n\n{formatted_context}"
         
         full_prompt = f"{system_context}{context_prompt}\n\nPergunta do Usuário: {payload.message}"
@@ -219,6 +247,14 @@ async def chat_with_ai(
         # LIMPAR A RESPOSTA: remover markdown, code blocks, etc
         cleaned_response = _clean_response(response_text)
         
+        # Remover estrutura de seções (SEÇÃO: ) para deixar mais natural
+        cleaned_response = re.sub(r'\n?[A-Z][A-Z\s]+:\s*\n', ' ', cleaned_response)
+        cleaned_response = re.sub(r'^[A-Z][A-Z\s]+:\s*', '', cleaned_response, flags=re.MULTILINE)
+        
+        # Remover também seções com **Título:**
+        cleaned_response = re.sub(r'\*\*[^*]+:\*\*\s*\n', '', cleaned_response)
+        cleaned_response = re.sub(r'\*\*[^*]+:\*\*\s*', '', cleaned_response)
+        
         return ChatResponse(response=cleaned_response)
         
     except HTTPException:
@@ -233,82 +269,46 @@ async def chat_with_ai(
 
 def _get_system_context(context: str) -> str:
     """Retorna o contexto do sistema baseado no tipo de conversa."""
-    base_instructions = """BASE DE DADOS INTERNA:
-Você tem acesso a dados mapeados internamente sobre organizações e seus funcionários.
+    base_instructions = """BASE DE DADOS INTERNA - RESPONDA COMO PROSA NATURAL E CONVERSACIONAL:
 
-🔴 REGRA CRÍTICA: Use APENAS os dados fornecidos entre "DADOS INTERNOS MAPEADOS" e "FIM DOS DADOS"
-- NÃO invente nomes de pessoas, cargos ou departamentos
-- NÃO assuma informações não fornecidas
-- Se um dado não estiver na lista, diga claramente: "Não encontramos essas informações nos dados mapeados"
-- Seja específico - cite APENAS nomes, cargos, departamentos reais que aparecem nos dados
+🔴 INSTRUÇÕES CRÍTICAS E OBRIGATÓRIAS:
+- NUNCA responda com JSON, tabelas, tópicos, listas numeradas ou títulos.
+- NUNCA responda como um formato de dicionário ou estrutura.
+- TODO o seu texto deve ser em prosa corrida/parágrafos naturais, como um assistente de vendas e prospecção conversando com o usuário.
+- Se a pergunta é apenas sobre a empresa e você não tem muitos dados, VOCÊ PODE dar uma breve descrição do que a empresa faz (da sua base de conhecimento aberta).
+- MAS, você DEVE também inserir os dados mapeados fornecidos a você entre "DADOS INTERNOS". Inclua informações como CNPJ e Site na sua resposta de forma natural se eles existirem no texto de entrada.
 
-FORMATO DE RESPOSTA:
-- Texto plano bem estruturado
-- SEM markdown, backticks ou code blocks
-- Títulos em MAIÚSCULAS com dois-pontos
-- Listas com • para itens
-- Espaçamento claro entre sections
+EXEMPLOS DE RESPOSTA CORRETA EM PROSA (Misto de conhecimento com o banco + dados extraídos):
+"A Empresa Tal é uma corporação do setor industrial. Nosso banco de dados informa que o CNPJ é 00.000.000/0001-00 e o site é empresatal.com.br. (Se houver funcionários na lista: Entre os contatos, pude identificar o João Silva que é Analista e a Mariana que atua no RH...)"
 
-ESTRUTURA DOS DADOS FORNECIDOS:
-Se há dados incompletos ou poucos registros, reporte isso honestamente ao usuário."""
+REGRAS SOBRE LER DADOS DO BANCO EM "INÍCIO DOS DADOS INTERNOS MAPEADOS DO SISTEMA":
+- Todo o conteúdo lá dentro é referente ESTRITAMENTE ao CNPJ e site e contatos da empresa requisitada.
+- Nunca ignore esses dados, faça o possível para encaixá-los na sua resposta natural.
+- 🔴 É PROIBIDO inventar/alucinar nomes de funcionários e cargos. Se a lista de funcionários/tomadores de decisão de dados internos estiver vazia, diga apenas que "ainda não mapeamos os funcionários dessa empresa na base de dados".
+- O exemplo dado acima é APENAS um formato. Nunca copie os nomes "João Silva" ou "Mariana" para a resposta real."""
     
     contexts = {
         "hierarchy_analysis": f"""{base_instructions}
 
-Você é um assistente especializado em análise de hierarquias organizacionais e mapeamento B2B. 
-Sua função é ajudar a entender estruturas organizacionais reais baseado em dados mapeados.
-
-ANÁLISE COM DADOS REAIS:
-- Use dados fornecidos para identificar tomadores de decisão (pelos cargos: Diretor, CEO, Sócio, Administrador)
-- Reconheça departamentos reais que aparecem nos dados
-- Aponte oportunidades baseadas APENAS na estrutura real encontrada
-- Se os dados forem limitados, seja honesto: "Os dados mapeados mostram X registros, mas há limitações em..."
-
-NUNCA invente executivos ou estrutura organizacional.""",
+Você é um assistente especializado em análise de negócios. Leia e assimile os DADOS INTERNOS fornecidos logo abaixo. Dê insights misturando os dados do banco com a sua compreensão comercial, lembrando 100% de escrever em formato de redação/parágrafos e sem seções/tópicos.""",
         
         "contacts": f"""{base_instructions}
 
-Você é especialista em contatos e relacionamentos B2B. 
-
-DADOS DE WHATSAPP E CONTATOS:
-Quando contatos forem fornecidos com dados de WhatsApp:
-- Priorize contatos com whatsapp_active=true (confirmados no WhatsApp)
-- Forneça nome completo EXATO, cargo, departamento e email conforme nos dados
-- Indique claramente quem está ativo no WhatsApp para comunicação direta
-- Organize por departamento quando houver múltiplos contatos
-- Se não houver contatos ativos em WhatsApp, esclareça: "Não encontramos contatos confirmados no WhatsApp"
-
-REGRA: Use NOMES EXATOS dos dados fornecidos, não invente variações.""",
+Você é especialista em contatos B2B.
+Liste os contatos e os departamentos EXATOS que encontrar nos dados informados pela API, MAS o faça sempre em prosa, falando em parágrafos normais.""",
         
         "general": f"""{base_instructions}
 
-Você é um assistente B2B profissional que analisa dados internos da empresa.
-- Forneça respostas precisas baseadas nos dados que receber
-- Se informações não estiverem disponíveis, diga explicitamente
-- Seja conciso e objetivo""",
+Você é assistente B2B. Resuma as informações recebidas dos "DADOS INTERNOS" de forma muito cortês e proativa, em texto fluido natural sem estrutura de tópicos.""",
         
         "strategy": f"""{base_instructions}
 
-Você é um estrategista B2B. Analise os dados internos para identificar:
-- Mercados e oportunidades baseados em dados reais
-- Padrões na estrutura organizacional encontrados
-- Recomendações estratégicas fundamentadas nos dados
-
-IMPORTANTE: Diferencie entre dados confirmados e especulação:
-- "Encontramos..." = dados reais
-- "Poderia haver..." = especulação (deixe claro o risco)""",
+Você é estrategista B2B analisando dados organizacionais.
+Sempre fale em prosa livre de marcações especiais de texto.""",
         
         "relationship": f"""{base_instructions}
 
-Você é especialista em relacionamentos comerciais e networking B2B.
-Com os dados internos, identifique:
-- Conexões reais entre pessoas registradas nos dados
-- Parceiros potenciais com base em estrutura real
-- Oportunidades de colaboração confirmadas
-
-NUNCA assuma relacionamentos que não estejam nos dados fornecidos."""
+Você é especialista em relacionamentos de vendas B2B. Apresente os fatos em texto corrido e discuta conexões entre as pessoas se aplicável."""
     }
-    
-    return contexts.get(context, contexts["general"])
     
     return contexts.get(context, contexts["general"])

@@ -298,3 +298,58 @@ async def expand_product_to_b2b_terms(product_focus: str) -> List[str]:
         print(f"[Groq B2B] Erro na tradução: {e}")
     
     return [product_focus] # fallback
+async def evaluate_lead_temperature(activities_text: str, notes_text: str) -> str:
+    """
+    Usa IA para ler o histórico de um lead do Pipedrive e classificá-lo em uma temperatura.
+    Retorna "Quente", "Morno", "Frio" ou "Sem Contato".
+    """
+    if not activities_text.strip() and not notes_text.strip():
+        return "Sem Contato"
+        
+    prompt = f"""
+    Analise o histórico de um lead no CRM (atividades e notas) e decida a temperatura atual deste lead.
+    
+    Regras:
+    - "Quente": Demonstrou interesse claro, pediu orçamento, marcou reunião recentemente ou está em negociação ativa.
+    - "Morno": Teve algum contato, respondeu e-mail ou pediu pra retornar depois, mas sem compromisso claro.
+    - "Frio": Contato distante sem resposta, recusou educadamente, ou sem contato há muito tempo.
+    - "Sem Contato": Nenhuma ou poucas notas que indiquem conversa real.
+    
+    Atividades:
+    {activities_text}
+    
+    Notas:
+    {notes_text}
+    
+    RETORNE APENAS UMA DAS 4 PALAVRAS, SEM ASPAS OU PONTUAÇÕES: Quente, Morno, Frio, ou Sem Contato.
+    """
+    
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "temperature": 0.2,
+        "messages": [
+            {"role": "system", "content": "Você é um classificador especializado em leads B2B de compras (temperatura)."},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                res_str = data["choices"][0]["message"]["content"].strip()
+                for t in ["Quente", "Morno", "Frio", "Sem Contato"]:
+                    if t.lower() in res_str.lower(): return t
+                return res_str
+    except Exception as e:
+        print(f"[Groq AI] Erro AI Temperature: {e}")
+        
+    return "Sem Contato"
+
