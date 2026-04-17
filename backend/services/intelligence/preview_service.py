@@ -1,12 +1,31 @@
 import httpx
 import re
+import base64
 from typing import Dict, Optional
 from bs4 import BeautifulSoup
-from services.hierarchy.role_engine import role_engine
+
+async def _download_and_convert_to_base64(url: str) -> Optional[str]:
+    """Faz o download da imagem e converte para base64 para persistência no banco."""
+    if not url: return None
+    try:
+        # User-Agent de navegador para evitar bloqueios no download da imagem
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                content_type = resp.headers.get("Content-Type", "image/jpeg")
+                b64 = base64.b64encode(resp.content).decode("utf-8")
+                return f"data:{content_type};base64,{b64}"
+    except Exception as e:
+        print(f"      [Preview Service] Falha ao capturar imagem real: {e}")
+    return None
 
 async def get_url_preview(url: str, role_hint: str = "", company_hint: str = "", fast_mode: bool = False) -> Dict:
     """
     Simula um crawler de rede social para extrair metadados Open Graph REAIS do LinkedIn.
+    Agora também captura a imagem em base64 para persistência definitiva.
     """
     if not url: return {"error": "URL missing"}
 
@@ -37,23 +56,33 @@ async def get_url_preview(url: str, role_hint: str = "", company_hint: str = "",
                         soup = BeautifulSoup(resp.text, 'html.parser')
                         og_image = get_tag('property', 'og:image') or get_tag('name', 'twitter:image')
 
+                # Captura de Imagem Base64 (O "Pulo do Gato" para persistência)
+                image_baked = None
+                if og_image:
+                    image_baked = await _download_and_convert_to_base64(og_image)
+
                 og_title = get_tag('property', 'og:title') or get_tag('name', 'title') or ""
                 og_desc = get_tag('property', 'og:description') or get_tag('name', 'description') or ""
                 
-                # --- PARSER PURO DE METADADOS ---
-                # Ex: "Israel Fernandes - Empresa Hellermann Tyton"
                 title_clean = og_title.replace(" | LinkedIn", "").replace(" | LinkedIn Profile", "").strip()
                 parts = [p.strip() for p in re.split(r'[-–|:·•]', title_clean) if p.strip()]
                 
-                # Nome e Cargo "Brutos" dos Metadados
                 name = parts[0] if len(parts) > 0 else "Colaborador"
-                role = parts[1] if len(parts) >= 2 else "Cargo não identificado nos metadados"
                 
-                # Se for o caso de Repescagem (Deep Research)
+                # 🛡️ Proteção: Se houver apenas 2 partes, e a segunda for a empresa, o cargo é desconhecido
+                potential_role = parts[1] if len(parts) >= 2 else "Cargo não identificado nos metadados"
+                if len(parts) == 2 and company_hint:
+                    from difflib import SequenceMatcher
+                    similarity = SequenceMatcher(None, potential_role.lower(), company_hint.lower()).ratio()
+                    if similarity > 0.8:
+                        potential_role = "Cargo não identificado nos metadados"
+                
+                role = potential_role
+                
                 raw_sources = [og_title, og_desc]
                 if not fast_mode:
                     try:
-                        search_query = f'"{name}" "{company_hint or ""}" linkedin cargo'
+                        search_query = f'{name} {company_hint or ""} linkedin cargo'
                         async with httpx.AsyncClient(timeout=10.0) as s_client:
                             s_url = f"https://duckduckgo.com/html/?q={search_query}"
                             s_resp = await s_client.get(s_url, headers={"User-Agent": "Mozilla/5.0"})
@@ -66,9 +95,9 @@ async def get_url_preview(url: str, role_hint: str = "", company_hint: str = "",
 
                 return {
                     "name": name,
-                    "role": role, # Agora vem do Texto Real do Título, não da IA
+                    "role": role,
                     "company": company_hint or (parts[1] if len(parts) >= 2 else "N/A"),
-                    "image": og_image,
+                    "image": image_baked or og_image, # Prioriza o Base64, fallback para URL
                     "description": og_desc if len(og_desc) < 400 else og_desc[:400] + "...",
                     "url": url,
                     "raw_sources": raw_sources 

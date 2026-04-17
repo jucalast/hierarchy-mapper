@@ -96,7 +96,7 @@ async def discover_employees_stream(
         from services.external.groq_service import expand_product_to_b2b_terms, evaluate_lead_temperature
         all_terms = await expand_product_to_b2b_terms(product_focus)
         for t in all_terms[:3]:
-            base_queries.insert(0, f'"{temp_brand}" "{area_focus}" "{t}" linkedin')
+            base_queries.insert(0, f'{temp_brand} {area_focus} {t} linkedin')
 
     from services.external.groq_service import evaluate_lead_temperature
     from services.pipedrive.pipedrive_service import pipedrive_service
@@ -149,33 +149,53 @@ async def discover_employees_stream(
                     phone = person["phone"][0].get("value")
                 
                 # Emula o dictionary do DuckDuckGo p/ CandidateProcessor
+                job_title_crm = ""
+                # Tenta buscar algo que sugira o cargo no Pipedrive, se disponível (custom fields ou notas)
+                if n_text:
+                    job_title_crm = f" Notes: {n_text[:100]}"
+                    
                 fake_res = {
-                    "title": f"{name} - {temp_brand}",
-                    "body": f"Email: {email} | Telefone: {phone} | Pipedrive ID: {person.get('id')}",
+                    "title": f"{name} - Contato {temp_brand}",
+                    "body": f"Email: {email} | Telefone: {phone} | Pipedrive ID: {person.get('id')}{job_title_crm}",
                     "href": f"https://linkedin.com/in/pd_{person.get('id')}" # Falso, só pra não dar erro se não tiver
                 }
                 
                 processor_res = await processor.process_candidate(fake_res)
+                
+                # Se o CandidateProcessor retornar dados (aprovou), usamos.
+                # Se rejeitar (por falta de info ou filtro de área), AINDA ASSIM aceitamos por ser CRM!
                 if processor_res and processor_res.get("main"):
                     node_data = processor_res.get("main")
-                    node_data["temperature"] = temperature
-                    node_data["source"] = "Pipedrive"
-                    
-                    async with async_session() as session:
-                        emp = Employee(
-                            name=name,
-                            role=node_data.get("role", "Contato no Pipedrive"),
-                            department="Vendas/Pipedrive", # Fake it until real is found
-                            seniority=node_data.get("level", 5),
-                            email=email,
-                            temperature=temperature,
-                            company_id=db_org_id,
-                            linkedin_url=f"pipedrive_{person.get('id')}",
-                        )
-                        session.add(emp)
-                        await session.commit()
-                    
-                    yield [node_data]
+                else:
+                    # Fallback para Contatos do CRM que foram rejeitados pela IA
+                    node_data = {
+                        "name": name,
+                        "role": "Contato no Pipedrive",
+                        "level": 5,
+                        "department": "Vendas/Pipedrive",
+                        "linkedin": fake_res["href"],
+                        "confidence": 100 # Confiança máxima pois vem do CRM
+                    }
+
+                node_data["temperature"] = temperature
+                node_data["source"] = "Pipedrive"
+                
+                async with async_session() as session:
+                    emp = Employee(
+                        name=name,
+                        role=node_data.get("role", "Contato no Pipedrive"),
+                        department=node_data.get("department", "Vendas/Pipedrive"),
+                        seniority=node_data.get("level", 5),
+                        email=email,
+                        phone=phone,
+                        temperature=temperature,
+                        company_id=db_org_id,
+                        linkedin_url=f"pipedrive_{person.get('id')}",
+                    )
+                    session.add(emp)
+                    await session.commit()
+                
+                yield [node_data]
         except Exception as e:
             print(f"[B2B Engine/Pipedrive] Erro ao processar pessoas via CRM: {str(e)}")
 
@@ -218,6 +238,12 @@ async def discover_employees_stream(
                         existing_emp.seniority = node_data["level"]
                         existing_emp.company_id = db_org_id
                         existing_emp.profile_pic = node_data.get("avatar")
+                        existing_emp.location = node_data.get("location")
+                        existing_emp.description = node_data.get("observations")
+                        existing_emp.education = node_data.get("education")
+                        existing_emp.matching_score = node_data.get("matching_score")
+                        existing_emp.evidence = node_data.get("evidence")
+                        existing_emp.headline = node_data.get("headline")
                         existing_emp.last_scanned = func.now()
                     else:
                         emp = Employee(
@@ -228,6 +254,12 @@ async def discover_employees_stream(
                             linkedin_url=node_data["linkedin"],
                             email=node_data["email"],
                             profile_pic=node_data.get("avatar"),
+                            location=node_data.get("location"),
+                            description=node_data.get("observations"),
+                            education=node_data.get("education"),
+                            matching_score=node_data.get("matching_score"),
+                            evidence=node_data.get("evidence"),
+                            headline=node_data.get("headline"),
                             company_id=db_org_id
                         )
                         session.add(emp)
@@ -269,7 +301,13 @@ async def discover_employees_stream(
                             seniority=upgraded_node["level"],
                             linkedin_url=upgraded_node["linkedin"],
                             email=upgraded_node["email"],
-                            profile_pic=upgraded_node.get("avatar")
+                            profile_pic=upgraded_node.get("avatar"),
+                            location=upgraded_node.get("location"),
+                            description=upgraded_node.get("observations"),
+                            education=upgraded_node.get("education"),
+                            matching_score=upgraded_node.get("matching_score"),
+                            evidence=upgraded_node.get("evidence"),
+                            headline=upgraded_node.get("headline")
                         )
                         session.add(new_emp)
                         await session.commit()

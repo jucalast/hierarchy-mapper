@@ -9,7 +9,12 @@
  */
 const normalizeString = (str) => {
     if (!str) return '';
-    return str.toLowerCase().trim().replace(/\s+/g, ' ');
+    return str.toString()
+        .toLowerCase()
+        .normalize('NFD') // Decompõe caracteres acentuados (ex: 'ã' -> 'a' + '~')
+        .replace(/[\u0300-\u036f]/g, '') // Remove os acentos
+        .trim()
+        .replace(/\s+/g, ' ');
 };
 
 /**
@@ -77,29 +82,72 @@ const searchContactsByName = async (client, searchName, options = {}) => {
         throw new Error('Nome de busca inválido');
     }
 
+    if (!client) {
+        throw new Error('Cliente WhatsApp não fornecido');
+    }
+
     try {
-        const allContacts = await client.getContacts();
+        if (typeof client.getContacts !== 'function') {
+            throw new Error('Instância do cliente inválida ou não inicializada corretamente');
+        }
+
+        // Busca em Contatos e em Chats em paralelo para máxima abrangência
+        const [allContacts, allChats] = await Promise.all([
+            client.getContacts(),
+            client.getChats()
+        ]);
         
-        const results = allContacts
-            .map(contact => ({
-                ...contact,
-                similarity: calculateSimilarity(contact.name || contact.id.user, searchName),
-                displayName: contact.name || contact.id.user
-            }))
+        // Combina e remove duplicatas baseadas no ID
+        const combinedMap = new Map();
+        
+        // Processa Contatos
+        allContacts.forEach(c => {
+            if (c && c.id && c.id._serialized) {
+                combinedMap.set(c.id._serialized, {
+                    ...c,
+                    displayName: c.name || c.id.user,
+                    source: 'contact'
+                });
+            }
+        });
+        
+        // Processa Chats (contatos recentes que podem não estar salvos)
+        allChats.forEach(c => {
+            if (c && c.id && c.id._serialized && !combinedMap.has(c.id._serialized)) {
+                combinedMap.set(c.id._serialized, {
+                    ...c,
+                    displayName: c.name || c.id.user,
+                    source: 'chat'
+                });
+            }
+        });
+
+        const results = Array.from(combinedMap.values())
+            .map(contact => {
+                try {
+                    const similarity = calculateSimilarity(contact.displayName, searchName);
+                    return {
+                        id: contact.id._serialized,
+                        name: contact.displayName,
+                        number: contact.id.user,
+                        isBusiness: !!contact.isBusiness,
+                        isMyContact: !!contact.isMyContact,
+                        source: contact.source,
+                        similarity
+                    };
+                } catch (e) { return null; }
+            })
             .filter(contact => {
+                if (!contact || !contact.id) return false;
                 if (exactMatch) {
-                    return normalizeString(contact.displayName) === normalizeString(searchName);
+                    return normalizeString(contact.name) === normalizeString(searchName);
                 }
                 return contact.similarity >= minSimilarity;
             })
             .sort((a, b) => b.similarity - a.similarity)
             .slice(0, limit)
             .map(contact => ({
-                id: contact.id._serialized,
-                name: contact.displayName,
-                number: contact.id.user,
-                isBusiness: contact.isBusiness,
-                isMyContact: contact.isMyContact,
+                ...contact,
                 similarity: Math.round(contact.similarity * 100)
             }));
 
@@ -134,6 +182,8 @@ const findContactByNumber = async (client, number) => {
         const formattedNumber = number.includes('@c.us') ? number : `${number}@c.us`;
         const contact = await client.getContactById(formattedNumber);
         
+        if (!contact || !contact.id) return null;
+
         return {
             id: contact.id._serialized,
             name: contact.name || contact.id.user,
@@ -164,21 +214,99 @@ const listAllContacts = async (client, options = {}) => {
     try {
         let contacts = await client.getContacts();
         
+        let filtered = contacts.filter(c => c && c.id && c.id._serialized);
+        
         if (onlyMyContacts) {
-            contacts = contacts.filter(c => c.isMyContact);
+            filtered = filtered.filter(c => c.isMyContact);
         }
         
-        return contacts
+        return filtered
             .slice(0, limit)
-            .map(contact => ({
-                id: contact.id._serialized,
-                name: contact.name || contact.id.user,
-                number: contact.id.user,
-                isBusiness: contact.isBusiness,
-                isMyContact: contact.isMyContact
-            }));
+            .map(contact => {
+                try {
+                    if (!contact || !contact.id || !contact.id._serialized) return null;
+                    return {
+                        id: contact.id._serialized,
+                        name: contact.name || contact.displayName || (contact.id ? contact.id.user : "Contato"),
+                        number: contact.id ? contact.id.user : "",
+                        isBusiness: !!contact.isBusiness,
+                        isMyContact: !!contact.isMyContact
+                    };
+                } catch (e) {
+                    return null;
+                }
+            })
+            .filter(c => c !== null);
     } catch (error) {
         throw new Error(`Erro ao listar contatos: ${error.message}`);
+    }
+};
+
+/**
+ * Busca chats por nome com suporte a busca fuzzy
+ * @param {Object} client - Cliente WhatsApp
+ * @param {string} searchName - Nome ou parte do nome para buscar
+ * @param {Object} options - Opções de busca
+ * @param {number} options.minSimilarity - Score mínimo de similaridade (0-1)
+ * @param {number} options.limit - Número máximo de resultados
+ * @returns {Promise<Array>} Array de chats encontrados
+ */
+const searchChatsByName = async (client, searchName, options = {}) => {
+    const {
+        minSimilarity = 0.5,
+        limit = 10
+    } = options;
+
+    if (!searchName || typeof searchName !== 'string') {
+        throw new Error('Nome de busca inválido');
+    }
+
+    try {
+        const allChats = await client.getChats();
+        
+        const results = allChats
+            .map(chat => ({
+                ...chat,
+                similarity: calculateSimilarity(chat.name || chat.id.user, searchName),
+                displayName: chat.name || chat.id.user
+            }))
+            .filter(chat => chat.similarity >= minSimilarity)
+            .sort((a, b) => b.similarity - a.similarity)
+            .slice(0, limit)
+            .map(chat => ({
+                id: chat.id._serialized,
+                name: chat.displayName,
+                unreadCount: chat.unreadCount,
+                timestamp: chat.timestamp,
+                similarity: Math.round(chat.similarity * 100)
+            }));
+
+        return results;
+    } catch (error) {
+        throw new Error(`Erro ao buscar chats: ${error.message}`);
+    }
+};
+
+/**
+ * Obtém a URL da foto de perfil de um contato
+ * @param {Object} client - Cliente WhatsApp
+ * @param {string} contactId - ID do contato ou número
+ * @returns {Promise<string|null>} URL da foto ou null
+ */
+const getProfilePic = async (client, contactId) => {
+    try {
+        let id = contactId.includes('@c.us') ? contactId : `${contactId}@c.us`;
+        let url = await client.getProfilePicUrl(id);
+        
+        // Se falhou e o número parece ser brasileiro sem o 55
+        if (!url && !contactId.startsWith('55') && contactId.replace(/\D/g, '').length >= 10) {
+            const altId = `55${contactId.replace(/\D/g, '')}@c.us`;
+            url = await client.getProfilePicUrl(altId);
+        }
+        
+        return url;
+    } catch (error) {
+        return null;
     }
 };
 
@@ -187,6 +315,8 @@ module.exports = {
     findContactByExactName,
     findContactByNumber,
     listAllContacts,
+    searchChatsByName,
+    getProfilePic,
     normalizeString,
     calculateSimilarity
 };

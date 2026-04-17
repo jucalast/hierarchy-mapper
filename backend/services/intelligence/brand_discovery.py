@@ -335,21 +335,26 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
     # 🕵️ ESTRATÉGIA NOMINAL: O usuário quer que busquemos pelo NOME e não pelo domínio.
     # O domínio da holding (OCQ) estava "envenenando" os resultados nominalistas.
     
-    # 🆕 Extrai a marca curta (primeira palavra significativa) para buscas diretas
-    # Ex: "3M DO BRASIL LTDA" -> "3M" (apenas a primeira palavra importante)
+    # 🆕 Extrai a marca curta (duas primeiras palavras significativas) para buscas diretas
+    # Ex: "SARLO INDUSTRIA E COMERCIO..." -> "SARLO INDUSTRIA"
     brand_tokens = search_name.split()
-    brand_short = ""
+    meaningful_tokens = []
     for token in brand_tokens:
         # Pula palavras genéricas corporativas e preposições
-        if not any(corp_word in token.upper() for corp_word in ["LTDA", "S.A.", "INC", "LLC", "BRASIL", "BRAZIL", "DO", "DE", "DA", "E"]):
-            brand_short = token  # Pega apenas a PRIMEIRA palavra significativa
-            break
-    brand_short = brand_short.strip() if brand_short else search_name.split()[0]
+        if not any(corp_word == token.upper() for corp_word in ["LTDA", "S.A.", "INC", "LLC", "BRASIL", "BRAZIL", "DO", "DE", "DA", "E"]):
+            meaningful_tokens.append(token)
+            if len(meaningful_tokens) == 2:
+                break
+    brand_short = " ".join(meaningful_tokens).strip() if meaningful_tokens else search_name.split()[0]
+    
+    domain_base = domain.split(".")[0] if domain else ""
     
     search_queries = [
         f'"{brand_short}" linkedin' if brand_short else None,  # Busca pela marca curta direto
         f'"{brand_short}" company linkedin' if brand_short else None,  # Variacao com "company"
         f'"{brand_short}" Brasil linkedin' if brand_short else None,  # Variacao com pais
+        f'"{domain_base}" linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None, # Busca pelo prefixo do dominio
+        f'"{domain_base}" Brasil linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None,
         f'"{search_name}" linkedin',
         f'site:linkedin.com/company "{search_name}"',
         f'"{search_name}" {city} linkedin' if city else None,

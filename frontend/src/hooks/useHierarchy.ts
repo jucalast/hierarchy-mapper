@@ -390,11 +390,12 @@ export const useHierarchy = () => {
         const wsUrl = `ws://127.0.0.1:8000/api/v1/jobs/ws/${job_id}`;
         const ws = new WebSocket(wsUrl);
         
-        let currentEmployees: HierarchyEmployee[];
+        let currentEmployees: HierarchyEmployee[] = [];
 
         if (initialEmployees && initialEmployees.length > 0) {
             // Usa o que já foi mapeado (útil para reconexão)
             currentEmployees = [...initialEmployees];
+            console.log(`[WS] Inicializando com ${currentEmployees.length} funcionários pré-existentes.`);
         } else {
             // 🏢 INICIALIZAÇÃO IMEDIATA: Root Company + Sócios (QSA)
             currentEmployees = [
@@ -434,7 +435,8 @@ export const useHierarchy = () => {
                     id: `e-${emp.manager_id}-${emp.id}`,
                     source: emp.manager_id,
                     target: emp.id,
-                    animated: false
+                    animated: false,
+                    style: { stroke: '#6e7681', strokeWidth: 1.5 }
                 });
             }
         });
@@ -633,12 +635,26 @@ export const useHierarchy = () => {
         setRawEmployees([]);
         setRawBackendEdges([]);
         try {
-            const url = isPipedriveId 
+            let url = isPipedriveId 
                 ? `http://127.0.0.1:8000/api/v1/hierarchy/pipedrive/${orgId}`
                 : `http://127.0.0.1:8000/api/v1/hierarchy/${orgId}`;
                 
-            const resp = await fetch(url);
-            const data = await resp.json();
+            let resp = await fetch(url);
+            let data = await resp.json();
+            
+            // 🔄 FALLBACK: Se tentou por Pipedrive e não achou nada, tenta pelo ID local
+            // Isso resolve o caso de empresas criadas manualmente ou que perderam o vínculo.
+            if (isPipedriveId && (!data.nodes || data.nodes.length === 0)) {
+                console.log(`[useHierarchy] Hierarquia não encontrada por Pipedrive ID ${orgId}. Tentando ID local...`);
+                const localUrl = `http://127.0.0.1:8000/api/v1/hierarchy/${orgId}`;
+                const localResp = await fetch(localUrl);
+                if (localResp.ok) {
+                    const localData = await localResp.json();
+                    if (localData.nodes && localData.nodes.length > 0) {
+                        data = localData;
+                    }
+                }
+            }
             
             if (data.nodes && data.nodes.length > 0) {
                 // Limpeza de URLs para evitar Duplo Proxy (IDEMPOTÊNCIA)
@@ -757,6 +773,7 @@ export const useHierarchy = () => {
         updateEmployee,
         smartSyncPipedrive,
         confirmIntelligence,
+        setBrandOptions,
         resetHierarchy
     };
 };

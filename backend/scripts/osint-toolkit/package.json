@@ -1,0 +1,13 @@
+{
+  "name": "osint-enrichment-toolkit",
+  "version": "1.0.0",
+  "description": "Ferramentas de OSINT para enriquecimento B2B",
+  "main": "enrichment_engine.js",
+  "scripts": {
+    "test": "node test_toolkit.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12"
+  }
+}

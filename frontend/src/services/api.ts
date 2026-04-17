@@ -16,6 +16,11 @@ export interface HierarchyEmployee {
     seniority?: number;
     bio?: string;
     education?: string;
+    avatar?: string;
+    profile_pic?: string;
+    matching_score?: number;
+    evidence?: string;
+    headline?: string;
 }
 
 export interface HierarchyResponse {

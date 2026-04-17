@@ -1,0 +1,1169 @@
+{
+    "timestamp": "2026-04-17T07:28:19.456135",
+    "candidate": "Luca Trovó",
+    "linkedin": "https://br.linkedin.com/in/luca-trovó-379977307",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luca Trovó - DVA Brasil | LinkedIn",
+            "body": "Veja o perfil de Luca Trovó no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "dva brasil",
+            "bio": "Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150 · 32 conexões no LinkedIn. Veja o perfil de Luca Trovó no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Luca Trovó",
+        "role": "Não Identificado",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Não Identificado). O Detetive confirmou a empresa como DVA Brasil e o Especialista não identificou o cargo, mas não há indícios de veto",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: DVA Brasil",
+                "CURRENT COMPANY (Declarada): Dva",
+                "Google Page Title: Luca Trovó - DVA Brasil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luca Trovó",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luca Trovó",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo não foi explicitamente identificado e não há termos técnicos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets que permitam inferir uma relação direta com essas áreas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Colaborador",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T07:28:24.443432",
+    "candidate": "Eduardo Camelo",
+    "linkedin": "https://br.linkedin.com/in/eduardo-marques-compras",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Eduardo Camelo - Comprador Pleno l Negociação com ...",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "cobra brasil",
+            "bio": "Comprador com experiência no setor de energia desde 2012, atuando em projetos de… · Experiência: Cobra Brasil · Formação acadêmica: Faculdade UniBF · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Eduardo Camelo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T07:29:15.011326",
+    "candidate": "Valeria Compras",
+    "linkedin": "https://br.linkedin.com/in/valeria-compras-5a241a98",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Valeria Compras - COMPRADORA - DISTRIPACK",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "distripack distribuidora de embal. eirele",
+            "bio": "Experiência: DISTRIPACK DISTRIBUIDORA DE EMBAL. EIRELE · Localidade: Belo Horizonte e Região · 73 conexões no LinkedIn. Veja o perfil de Valeria Compras no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T07:43:01.900516",
+    "candidate": "Luca Trovó",
+    "linkedin": "https://br.linkedin.com/in/luca-trovó-379977307",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luca Trovó - DVA Brasil | LinkedIn DVA Brasil on LinkedIn: #agro #desenvolvimento #tecnologia # ... DVA Intermediações - LinkedIn DVA Brasil posted on LinkedIn Ludimila Ferreira - Analista Financeiro | LinkedIn",
+            "body": "Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150 · 31 conexões no LinkedIn . Veja o perfil de Luca Trovó no LinkedIn , uma... A DVA Brasil se transformou e agora nos tornamos AGROALLIANZ, uma empresa do grupo DVA GLOBAL, com o mesmo propósito, uma empresa feita de produtor para produtor, conectados com à realidade dos... A DVA Intermediações atua na originação, estruturação e viabilização de operações com ativos reais de alto valor, com presença nos mercados de agro, commodities, crédito de carbono ... A DVA Brasil gostaria de aproveitar este momento para expressar a sincera gratidão pela contribuição valiosa que vocês clientes, fornecedores, amigos e familiares trouxeram no ano de 2023. · Experiência: Dva Comercio Atacadista De Alimentos SA · Formação acadêmica: Grupo Projeção · Localidade: Brasília. Veja o perfil de Ludimila Ferreira no LinkedIn , uma comunidade profissional..."
+        },
+        "osint_metadata": {
+            "role": "dva brasil",
+            "bio": "Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150 · 32 conexões no LinkedIn. Veja o perfil de Luca Trovó no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Luca Trovó",
+        "role": "Não Identificado",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Especialista marcou como não relevante e não há Cargo Oficial Verificado para contradizer.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: DVA Brasil",
+                "Google Page Title: Luca Trovó - DVA Brasil",
+                "CURRENT COMPANY (Declarada): Dva"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luca Trovó",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luca Trovó",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo não foi explicitamente identificado e não há termos técnicos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets que permitam inferir uma relação direta com essas áreas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista Financeiro",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T07:43:10.380421",
+    "candidate": "Ludimila Ferreira",
+    "linkedin": "https://br.linkedin.com/in/ludimila-ferreira-45b8173b3",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ludimila Ferreira - Analista Financeiro | LinkedIn",
+            "body": "· Experiência: Dva Comercio Atacadista De Alimentos SA · Formação acadêmica: Grupo Projeção · Localidade: Brasília. Veja o perfil de Ludimila Ferreira no LinkedIn , uma comunidade profissional..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Ludimila Ferreira",
+        "role": "Analista Financeiro",
+        "matching_score": 80,
+        "department": "Finanças",
+        "evidence": "Especialista marcou como não relevante e não há Cargo Oficial Verificado para contradizer.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Dva Comercio Atacadista De Alimentos SA",
+                "Cargo Detectado: Analista Financeiro"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Analista Financeiro na Dva Comercio Atacadista De Alimentos SA"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ludimila Ferreira",
+                    "role": "Analista Financeiro"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ludimila Ferreira",
+                "detected_role": "Analista Financeiro",
+                "clean_bio": "Experiência: Dva Comercio Atacadista De Alimentos SA, Formação acadêmica: Grupo Projeção, Localidade: Brasília"
+            }
+        },
+        "specialist": {
+            "role_name": "Analista Financeiro",
+            "dept": "Finanças",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é Analista Financeiro, que está dentro do veto absoluto de Financeiro, portanto não é relevante para SUPRIMENTOS / COMPRAS / PROCUREMENT."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista Financeiro",
+        "department": "Finanças",
+        "matching_score": 80
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T07:43:14.428268",
+    "candidate": "Eduardo Camelo",
+    "linkedin": "https://br.linkedin.com/in/eduardo-marques-compras",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Eduardo Camelo - Comprador Pleno l Negociação com ...",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "cobra brasil",
+            "bio": "Comprador com experiência no setor de energia desde 2012, atuando em projetos de… · Experiência: Cobra Brasil · Formação acadêmica: Faculdade UniBF · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Eduardo Camelo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T07:44:05.262124",
+    "candidate": "Carlos Pellicer",
+    "linkedin": "https://br.linkedin.com/in/carlos-pellicer-05141123",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Pellicer - Presidente DVA Brasil | LinkedIn",
+            "body": "Veja o perfil de Carlos Pellicer no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "dva agro do brasil",
+            "bio": "Specialties: UNESP - Jabotical\nFGV - SP\nHavard \nUniversidade Federal de Viçosa… · Experiência: DVA Agro do Brasil · Localidade: Campinas · 237 conexões no LinkedIn. Veja o perfil de Carlos Pellicer no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Carlos Pellicer",
+        "role": "Presidente",
+        "matching_score": 0,
+        "department": "Diretoria",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Presidente). O Detetive confirmou o emprego na Dva e o cargo de Presidente, alinhado com a META_COMPANY_DECLARADA.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Presidente DVA Brasil",
+                "DVA Agro do Brasil",
+                "CURRENT COMPANY (Declarada): Dva"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Presidente DVA Brasil, especialidades em UNESP - Jabotical, FGV - SP, Havard e Universidade Federal de Viçosa"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Carlos Pellicer",
+                    "role": "Presidente"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Carlos Pellicer",
+                "detected_role": "Presidente",
+                "clean_bio": "Presidente DVA Brasil, especialidades em UNESP - Jabotical, FGV - SP, Havard e Universidade Federal de Viçosa"
+            }
+        },
+        "specialist": {
+            "role_name": "Presidente",
+            "dept": "Diretoria",
+            "is_relevant": false,
+            "reasoning": "O cargo de Presidente não está diretamente relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT, e não há termos técnicos explícitos na Bio ou Snippets que indiquem uma interface direta com essas áreas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Presidente",
+        "department": "Diretoria",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T07:44:08.929683",
+    "candidate": "Valeria Compras",
+    "linkedin": "https://br.linkedin.com/in/valeria-compras-5a241a98",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Valeria Compras - COMPRADORA - DISTRIPACK",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "distripack distribuidora de embal. eirele",
+            "bio": "Experiência: DISTRIPACK DISTRIBUIDORA DE EMBAL. EIRELE · Localidade: Belo Horizonte e Região · 73 conexões no LinkedIn. Veja o perfil de Valeria Compras no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T07:44:55.995819",
+    "candidate": "Fernando Fernandes",
+    "linkedin": "https://br.linkedin.com/in/fernando-fernandes-49679745",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fernando Fernandes - General Manager DVA Brasil | LinkedIn DVA Intermediações - LinkedIn DVA - GO FURTHER. TOGETHER Publicação de DVA Brasil - LinkedIn Portugal DVA Brasil no LinkedIn: #estagio #compras #campinas",
+            "body": "Veja o perfil de Fernando Fernandes no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. • DVA Intermediações operates in the origination, structuring and execution of high-value real asset transactions, with presence across agro, commodities, carbon credits, corporate credit ... DVA is a global chemical company with more than 50 years of experience. We develop intelligent solutions for complex markets and industries. Let us help you improve yields, efficiency and quality – together we shape a better, sustainable future. Parabéns, Natália Gonçalves! Vamos além, juntos! 💙 Confira a matéria completa na Revista Cultivar pelo link abaixo: https://lnkd.in/dXd8ExEC #dvagroup # dvaagrobrasil #agro #agronegocio... Estágio em Compras A DVA Agro Brasil está em busca de jovens talentos que tenham vontade de inovar, que sejam pessoas curiosas e que buscam por novos desafios!"
+        },
+        "osint_metadata": {
+            "role": "dva group",
+            "bio": "Experiência: DVA Group · Formação acadêmica: Faculdades Metropolitanas Unidas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Fernando Fernandes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Fernando Fernandes",
+        "role": "General Manager",
+        "matching_score": 0,
+        "department": "Gerência Geral",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (General Manager). O Detetive confirmou a empresa DVA e o cargo de General Manager, alinhado com a declaração do candidato.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Fernando Fernandes - General Manager DVA Brasil",
+                "DVA Group",
+                "Experiência: DVA Group"
+            ],
+            "is_institutional": false,
+            "bio_raw": "General Manager na DVA Group"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Fernando Fernandes",
+                    "role": "General Manager"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Fernando Fernandes",
+                "detected_role": "General Manager",
+                "clean_bio": "DVA Group, Formação acadêmica: Faculdades Metropolitanas Unidas, Localidade: Campinas"
+            }
+        },
+        "specialist": {
+            "role_name": "General Manager",
+            "dept": "Gerência Geral",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é General Manager, que não está diretamente relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "General Manager",
+        "department": "Gerência Geral",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T11:28:05.597632",
+    "candidate": "Wagner Walsywa",
+    "linkedin": "https://br.linkedin.com/in/wagner-walsywa-2211bb93",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "WagnerWalsywa-Walsywae alge |LinkedIn",
+            "body": "Veja o perfil de WagnerWalsywanoLinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "walsywa e alge",
+            "bio": "Experiência: Walsywa e alge · Localidade: São Paulo · 22 conexões no LinkedIn. Veja o perfil de Wagner Walsywa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Wagner Walsywa",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Experiência: Walsywa e alge",
+                "Cargo Detectado: Não Identificado",
+                "Wagner Walsywa | walsywa e alge",
+                "SURNAME_SKEPTICISM: O sobrenome coincide com a empresa e não há indicadores funcionais (ex: 'at' ou 'na') que confirmem vínculo atual."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Wagner Walsywa possui experiência listada na Walsywa e Alge, localizado em São Paulo, porém sem cargo atual identificado no perfil."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Wagner Walsywa",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Wagner Walsywa",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência em Walsywa e alge, localizado em São Paulo com 22 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Indeterminado",
+            "is_relevant": false,
+            "reasoning": "O perfil não apresenta um cargo específico ou termos técnicos relacionados a Suprimentos, Compras ou Logística. Conforme as instruções de rigor técnico, na ausência de cargo identificado e de palavras-chave explícitas da área na bio, o perfil deve ser considerado irrelevante."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T11:28:14.637710",
+    "candidate": "Gustavo Demetino",
+    "linkedin": "https://br.linkedin.com/in/gustavo-demetino-ab9775219",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Demetino - Auxiliar de compras na ... - LinkedIn Brasil",
+            "body": "Auxiliar decomprasna empresawalsywaindústria e comercio de produtos metalúrgicos · Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões..."
+        },
+        "osint_metadata": {
+            "role": "walsywa industria e comercio de produtos metalurgicos",
+            "bio": "Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões no LinkedIn. Veja o perfil de Gustavo Demetino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Gustavo Demetino",
+        "role": "Auxiliar de Compras",
+        "matching_score": 95,
+        "department": "Compras/Suprimentos",
+        "evidence": "Especialista confirmou relevância, Detetive encontrou evidências de trabalho na Walsywa e não há veto mecânico detectado.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Auxiliar de compras na Walsywa Industria e Comercio de Produtos Metalurgicos",
+                "Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos",
+                "LinkedIn CURRENT COMPANY (Declarada): Walsywa"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Auxiliar de compras na Walsywa Industria e Comercio de Produtos Metalurgicos"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Gustavo Demetino",
+                    "role": "Auxiliar de compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Gustavo Demetino",
+                "detected_role": "Auxiliar de compras",
+                "clean_bio": "Auxiliar de compras na Walsywa Industria e Comercio de Produtos Metalurgicos"
+            }
+        },
+        "specialist": {
+            "role_name": "Auxiliar de Compras",
+            "dept": "Compras/Suprimentos",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Auxiliar de compras', que tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, a Bio Higienizada e os Snippets do Detetive confirmam o vínculo com a empresa Walsywa e o cargo de Auxiliar de Compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Auxiliar de Compras",
+        "department": "Compras/Suprimentos",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T11:29:48.628783",
+    "candidate": "Bruno Lopes",
+    "linkedin": "https://br.linkedin.com/in/bruno-lopes-b9a95992",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bruno Lopes - Walsywa | LinkedIn",
+            "body": "Veja o perfil de Bruno Lopes noLinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou formado em Marketing, apaixonado por vendas.\nFocado em resultados, sempre visando… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Bruno Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Bruno Lopes",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Walsywa",
+                "Experiência: Walsywa"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sou formado em Marketing, apaixonado por vendas. Focado em resultados, sempre visando…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Bruno Lopes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Bruno Lopes",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Sou formado em Marketing, apaixonado por vendas. Focado em resultados, sempre visando..."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Aplicável",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Não Identificado' e a bio do candidato menciona formação em Marketing e paixão por vendas, o que não está relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na bio ou snippets."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T11:30:07.241702",
+    "candidate": "Acaia Fabricio",
+    "linkedin": "https://br.linkedin.com/in/acaia-fabricio-530617231",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Coordernadora de Controladoria Sr. na Walsywa - LinkedIn Brasil",
+            "body": "Coordernadora de Controladoria Sr. naWalsywa· Experiência:Walsywa· Localidade: Louveira · 105 conexões noLinkedIn. Veja o perfil de Acaia Fabricio noLinkedIn, uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Walsywa · Localidade: Louveira · 104 conexões no LinkedIn. Veja o perfil de Acaia Fabricio no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Acaia Fabricio",
+        "role": "Coordenadora de Controladoria Sr.",
+        "matching_score": 0,
+        "department": "Controladoria",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Coordenadora de Controladoria Sr.). O Detetive confirmou a empresa como Walsywa e o cargo é relevante para a área de Compras/Suprimentos, apesar do Especialista ter marcado como não relevante, o cargo é consistente com a descrição.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Coordenadora de Controladoria Sr. na Walsywa",
+                "Experiência: Walsywa",
+                "LinkedIn CURRENT COMPANY (Declarada): Walsywa"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Coordenadora de Controladoria Sr. na Walsywa"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Acaia Fabricio",
+                    "role": "Coordenadora de Controladoria Sr."
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Acaia Fabricio",
+                "detected_role": "Coordenadora de Controladoria Sr.",
+                "clean_bio": "Coordenadora de Controladoria Sr. na Walsywa. Localidade: Louveira. 105 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Coordenadora de Controladoria Sr.",
+            "dept": "Controladoria",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é de Controladoria, que está relacionado a finanças e não tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Coordenadora de Controladoria Sr.",
+        "department": "Controladoria",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T11:30:59.874315",
+    "candidate": "Fabrizio E.",
+    "linkedin": "https://br.linkedin.com/in/fabrizioeizo",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gerente de Engenharia e Suprimentos | Walsywa - LinkedIn",
+            "body": "ExperiênciaWalsywa10 anos 9 meses Gerente de Engenharia e Suprimentos set. de 2019 - o momento 6 anos 7 meses Jundiaí, São Paulo,Brasil"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Fabrizio E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Fabrizio E.",
+        "role": "Gerente de Engenharia e Suprimentos",
+        "matching_score": 90,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "Especialista confirmou relevância e Detetive encontrou evidências de experiência na Walsywa",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Walsywa",
+                "Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí",
+                "Gerente de Engenharia e Suprimentos set. de 2019 - o momento"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Fabrizio E.",
+                    "role": "Gerente de Engenharia e Suprimentos"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Fabrizio E.",
+                "detected_role": "Gerente de Engenharia e Suprimentos",
+                "clean_bio": "Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí"
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de Engenharia e Suprimentos",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Gerente de Engenharia e Suprimentos', que tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, o vínculo com a empresa Walsywa é confirmado e o cargo não contém termos vetados."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Gerente de Engenharia e Suprimentos",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 90
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T11:32:02.988819",
+    "candidate": "John Kennedy",
+    "linkedin": "https://br.linkedin.com/in/john-kennedy-0a17597b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "John Kennedy - Gerente Nacional de Vendas - LinkedIn BrasilPágina Inicial - WalsywaGerente de Engenharia e Suprimentos - LinkedIn Brasil",
+            "body": "Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.Somos a número 1 em obras de Infraestrutura noBrasil! Ao longo da história, contribuímos ativamente para a economia brasileira e estivemos presentes em importantes obras nacionais.Veja o perfil de Fabrizio E. noLinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Salesiano de São Paulo · Localidade: Monte Mor · + de 500 conexões no LinkedIn. Veja o perfil de John Kennedy no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "John Kennedy",
+        "role": "Gerente Nacional de Vendas",
+        "matching_score": 80,
+        "department": "Comercial / Vendas",
+        "evidence": "Especialista marcou como não relevante e não há Cargo Oficial Verificado para contradizer.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Gerente Nacional de vendas com mais de 20 anos de experiência na área comercial na Walsywa",
+                "LinkedIn CURRENT COMPANY (Declarada): Walsywa",
+                "Experiência: Walsywa"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gerente Nacional de Vendas na Walsywa com mais de 20 anos de experiência na área comercial."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "John Kennedy",
+                    "role": "Gerente Nacional de Vendas"
+                },
+                {
+                    "name": "Fabrizio E.",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "John Kennedy",
+                "detected_role": "Gerente Nacional de Vendas",
+                "clean_bio": "Gerente Nacional de vendas com mais de 20 anos de experiência na área comercial na Walsywa, formado no Centro Universitário Salesiano de São Paulo."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente Nacional de Vendas",
+            "dept": "Comercial / Vendas",
+            "is_relevant": false,
+            "reasoning": "O candidato ocupa uma posição de liderança na área comercial (Vendas), o que aciona o veto absoluto conforme as instruções técnicas, visto que não possui interface direta com o departamento de Suprimentos ou Compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Gerente Nacional de Vendas",
+        "department": "Comercial / Vendas",
+        "matching_score": 80
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T13:48:18.431754",
+    "candidate": "Gustavo Demetino",
+    "linkedin": "https://br.linkedin.com/in/gustavo-demetino-ab9775219",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Demetino - Auxiliar de compras na ... - LinkedIn Brasil",
+            "body": "Auxiliar decomprasna empresawalsywaindústria e comercio de produtos metalúrgicos · Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões..."
+        },
+        "osint_metadata": {
+            "role": "walsywa industria e comercio de produtos metalurgicos",
+            "bio": "Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões no LinkedIn. Veja o perfil de Gustavo Demetino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Gustavo Demetino",
+        "role": "Auxiliar de Compras",
+        "matching_score": 95,
+        "department": "Suprimentos / Compras",
+        "evidence": "Especialista confirmou relevância, Detetive encontrou informações consistentes e não há veto de empresa ou cargo vazio.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Auxiliar decomprasna empresawalsywaindústria e comercio de produtos metalúrgicos",
+                "Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Auxiliar de compras na Walsywa Industria E Comercio De Produtos Metalurgicos em Jundiaí"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Gustavo Demetino",
+                    "role": "Auxiliar de Compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Gustavo Demetino",
+                "detected_role": "Auxiliar de Compras",
+                "clean_bio": "Auxiliar de compras na Walsywa Industria E Comercio De Produtos Metalurgicos em Jundiaí com 58 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Auxiliar de Compras",
+            "dept": "Suprimentos / Compras",
+            "is_relevant": true,
+            "reasoning": "O candidato ocupa o cargo de Auxiliar de Compras na própria empresa alvo (Walsywa), o que representa uma função operacional direta dentro do departamento de Suprimentos/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Auxiliar de Compras",
+        "department": "Suprimentos / Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T13:48:31.878795",
+    "candidate": "Gabriel Silva",
+    "linkedin": "https://br.linkedin.com/in/gabriel-silva-854818243",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gabriel Silva - Comprador - Walsywa",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Walsywa · Formação acadêmica: Grupo Anchieta · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Gabriel Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Gabriel Silva",
+        "role": "Comprador",
+        "matching_score": 95,
+        "department": "Compras/Procurement",
+        "evidence": "Especialista confirmou relevância, Detetive encontrou informações consistentes e não há veto de empresa ou cargo vazio.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Gabriel Silva - Comprador - Walsywa",
+                "Experiência: Walsywa",
+                "LinkedIn CURRENT COMPANY (Declarada): Walsywa"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Comprador na Walsywa, formado pelo Grupo Anchieta, localizado em Jundiaí"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Gabriel Silva",
+                    "role": "Comprador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Gabriel Silva",
+                "detected_role": "Comprador",
+                "clean_bio": "Experiência: Walsywa · Formação acadêmica: Grupo Anchieta · Localidade: Jundiaí"
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Comprador', que está diretamente relacionado a SUPRIMENTOS/COMPRAS/PROCUREMENT. Além disso, o vínculo com a empresa Walsywa foi confirmado e não há indícios de veto absoluto."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Compras/Procurement",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T13:51:57.515468",
+    "candidate": "Wagner",
+    "linkedin": "https://br.linkedin.com/in/wagner-walsywa-2211bb93",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "WagnerWalsywa-Walsywae alge |LinkedIn",
+            "body": "Veja o perfil de WagnerWalsywanoLinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "walsywa e alge",
+            "bio": "Experiência: Walsywa e alge · Localidade: São Paulo · 22 conexões no LinkedIn. Veja o perfil de Wagner Walsywa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Wagner",
+        "role": "Não Identificado",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Rejeitado devido à falta de Cargo Oficial Verificado e Especialista marcou como não relevante",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "CURRENT COMPANY (Declarada): Walsywa",
+                "Experiência: Walsywa e alge",
+                "Localidade: São Paulo"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: Walsywa e alge · Localidade: São Paulo"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Wagner Walsywa",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Wagner Walsywa",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência: Walsywa e alge · Localidade: São Paulo"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo não foi explicitamente identificado, e a bio do candidato não contém termos técnicos de SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, o 'Cargo Detectado' é 'Não Identificado' e não há informações suficientes para sugerir um departamento específico."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Colaborador",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T13:53:42.806004",
+    "candidate": "Jorge Camilo Trabulsi",
+    "linkedin": "https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jorge Camilo Trabulsi - Walsywa | LinkedInA Walsywa, referência em fixação para construção civil no ...Home - WalsywaJohn Kennedy - Gerente Nacional de Vendas - LinkedIn BrasilBruno Lopes - Walsywa | LinkedInJoão Paulo Marques - Vendedor Externo Walsywa | LinkedIn",
+            "body": "· Experiência:Walsywa· Localidade: Jundiaí · + de 500 conexões noLinkedIn. Veja o perfil de Jorge Camilo Trabulsi noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.Compartilhe essa mensagem com sua rede e ajude-nos a encontrar talentos que queiram crescer junto com aWalsywa.Walsywaspecialists develop exclusive articles on Fastening for Civil Construction and share them here with you, to make your work even more efficient. Here you will also find the latest company news.Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.· Experiência:Walsywa· Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões noLinkedIn. Veja o perfil de Bruno Lopes noLinkedIn, uma...Vendedor ExternoWalsywa· Experiência:Walsywa· Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: São José dos Campos · 415 conexões noLinkedIn. Veja o perfil de..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Jorge Camilo Trabulsi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Jorge Camilo Trabulsi",
+        "role": "Vendas",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "Veto de Departamento: O departamento é Vendas, o que não é relevante para a busca de Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Jorge Camilo Trabulsi - Walsywa",
+                "Experiência:Walsywa",
+                "Compartilhe essa mensagem com sua rede e ajude-nos a encontrar talentos que queiram crescer junto com a Walsywa."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jorge Camilo Trabulsi",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "John Kennedy",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Bruno Lopes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jorge Camilo Trabulsi",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes…"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Vendas",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado não foi identificado explicitamente, e a bio higienizada menciona experiência em vendas, o que é um veto absoluto de acordo com as instruções técnicas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Vendas",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T13:54:48.176612",
+    "candidate": "John Kennedy",
+    "linkedin": "https://br.linkedin.com/in/john-kennedy-0a17597b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "John Kennedy - Gerente Nacional de Vendas - LinkedIn BrasilBruno Lopes - Walsywa | LinkedInJoão Paulo Marques - Vendedor Externo Walsywa | LinkedIn",
+            "body": "Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.· Experiência:Walsywa· Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões noLinkedIn. Veja o perfil de Bruno Lopes noLinkedIn, uma...Vendedor ExternoWalsywa· Experiência:Walsywa· Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: São José dos Campos · 415 conexões noLinkedIn. Veja o perfil de..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Salesiano de São Paulo · Localidade: Monte Mor · + de 500 conexões no LinkedIn. Veja o perfil de John Kennedy no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "error": "Erro 400: {\"error\":{\"message\":\"The model `gemma2-9b-it` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to use ",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Walsywa",
+                "LinkedIn CURRENT COMPANY (Declarada): Walsywa",
+                "Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Mais de 20 anos de experiência na área comercial."
+        },
+        "proper_name": "John Kennedy",
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "John Kennedy",
+                    "role": "Gerente Nacional de Vendas"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "John Kennedy",
+                "detected_role": "Gerente Nacional de Vendas",
+                "clean_bio": "Mais de 20 anos de experiência na área comercial."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente Nacional de Vendas",
+            "dept": "Comercial",
+            "is_relevant": false,
+            "reasoning": "O cargo de Gerente Nacional de Vendas não é relevante para SUPRIMENTOS / COMPRAS / PROCUREMENT, pois contém termos de vendas e comercial."
+        },
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 10,
+        "evidence": "VETO: Confiança insuficiente (0%)."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-17T13:55:52.298444",
+    "candidate": "Fabrizio E.",
+    "linkedin": "https://br.linkedin.com/in/fabrizioeizo",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gerente de Engenharia e Suprimentos - LinkedIn Brasil",
+            "body": "Veja o perfil de Fabrizio E. noLinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Fabrizio E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------

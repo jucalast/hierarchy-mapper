@@ -10,7 +10,8 @@ import {
     Building,
     ArrowLeft,
     Search,
-    RotateCcw
+    RotateCcw,
+    User
 } from 'lucide-react';
 
 
@@ -70,15 +71,36 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     step,
     brandOptions,
     onBrandSelect,
-    hasMapping = false,
+    hasMapping,
     stopHierarchyScan,
     cancelDiscovery,
     activeJobId
 }) => {
+    const [isClosing, setIsClosing] = React.useState(false);
+    const [displayOptions, setDisplayOptions] = React.useState<any[]>([]);
     const [isFocused, setIsFocused] = React.useState(false);
+
+    // 🎭 Gerencia a animação de entrada e saída do carrossel
+    React.useEffect(() => {
+        if (brandOptions.length > 0) {
+            setIsClosing(false);
+            setDisplayOptions(brandOptions);
+        } else if (displayOptions.length > 0) {
+            setIsClosing(true);
+            const timer = setTimeout(() => {
+                setDisplayOptions([]);
+                setIsClosing(false);
+            }, 300); // Duração da animação swSlideDown
+            return () => clearTimeout(timer);
+        }
+    }, [brandOptions]);
+
+    const isDiscoveryActive = discovering || loading;
+
     const [localSelected, setLocalSelected] = React.useState<string | null>(null);
     const isSearching = discovering || loading || enrichingIds.has(999);
-    const needsAttention = !!confirmedBrand && !cnpj && !isFocused && !isSearching;
+    const isNewCompanyMode = confirmedBrand === " ";
+    const needsAttention = (!!confirmedBrand || isNewCompanyMode) && !cnpj && !isFocused && !isSearching;
 
     const handleLocalSelect = (opt: any) => {
         const key = opt.name || opt.url;
@@ -92,10 +114,10 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
             {/* 1. Header com Erro ou Brand Select Options (Progressivo) */}
             {error && <div className={styles.error}><AlertCircle size={18} /> {error}</div>}
 
-            {/* 🔄 Mostrar carrossel durante streaming (discovering=true) se houver candidatos */}
-            {step === "input" && brandOptions.length > 0 && (
-                <div className={styles.optionsContainer}>
-                    {brandOptions.map((opt: any, idx: number) => (
+            {/* 🔄 Mostrar carrossel se houver candidatos (inclusive em outros steps como 'confirm' para análise humana) */}
+            {displayOptions.length > 0 && (
+                <div className={`${styles.optionsContainer} ${isClosing ? styles.optionsContainerClosing : ""}`}>
+                    {displayOptions.map((opt: any, idx: number) => (
                         <button
                             key={`brand-opt-${idx}-${opt.url || opt.name}`}
                             type="button"
@@ -105,13 +127,14 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                             <div className={styles.brandAvatarWrapper}>
                                 {opt.logo ? (
                                     <img
-                                        src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(opt.logo)}`}
+                                        src={opt.logo.startsWith('http') ? (opt.logo.includes('proxy/image') ? opt.logo : `http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(opt.logo)}`) : opt.logo}
                                         alt={opt.name}
                                         className={styles.brandAvatar}
+                                        style={opt.type === 'person' ? { borderRadius: '50%' } : {}}
                                     />
                                 ) : (
                                     <div className={styles.brandAvatarPlaceholder}>
-                                        <Building size={16} />
+                                        {opt.type === 'person' ? <User size={16} /> : <Building size={16} />}
                                     </div>
                                 )}
                             </div>

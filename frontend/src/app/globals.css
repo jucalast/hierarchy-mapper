@@ -67,12 +67,16 @@
   -webkit-font-smoothing: antialiased;
 }
 
-body {
+html, body {
+  margin: 0;
+  padding: 0;
   background-color: var(--sw-bg);
   color: var(--sw-text-base);
   overflow: hidden;
   height: 100vh;
   width: 100vw;
+  min-height: 100vh;
+  min-width: 100vw;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 

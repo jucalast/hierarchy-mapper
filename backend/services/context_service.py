@@ -101,10 +101,12 @@ class ContextService:
         
         return {
             "organization": {
+                "id": org.id,
                 "name": org.name,
                 "cnpj": org.cnpj,
                 "domain": org.domain,
                 "address": org.address,
+                "pipedrive_id": org.pipedrive_id,
                 "category": org.category,
                 "product_focus": org.product_focus,
                 "linkedin_url": org.linkedin_url,
@@ -154,6 +156,8 @@ class ContextService:
                     "department": emp.department,
                     "linkedin": emp.linkedin_url,
                     "email": emp.email,
+                    "phone": emp.phone,
+                    "whatsapp_number": emp.whatsapp_number,
                     "influence_score": score
                 })
         
@@ -187,6 +191,8 @@ class ContextService:
                 "role": emp.role,
                 "email": emp.email,
                 "linkedin": emp.linkedin_url,
+                "phone": emp.phone,
+                "whatsapp_number": emp.whatsapp_number,
                 "seniority": emp.seniority
             })
         
@@ -275,7 +281,9 @@ class ContextService:
                     "role": emp.role or "Não especificado",
                     "department": emp.department or "Não especificado",
                     "email": emp.email or "",
-                    "phone": emp.linkedin_url or "",  # Pode ter telefone em linkedin_url temporariamente
+                    "linkedin": emp.linkedin_url or "",
+                    "phone": emp.phone or emp.linkedin_url or "",  # Fallback pro linkedin caso o banco antigo tenha lá
+                    "whatsapp_number": emp.whatsapp_number or "",
                     "seniority": emp.seniority or "Não especificado"
                 }
                 contact_list.append(contact_data)

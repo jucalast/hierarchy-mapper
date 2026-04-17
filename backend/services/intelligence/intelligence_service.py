@@ -22,21 +22,38 @@ class IntelligenceService:
         return f"{clean[:2]}.{clean[2:5]}.{clean[5:8]}/{clean[8:12]}-{clean[12:]}"
 
     async def _save_org_to_db(self, name: str, data: dict):
-        """Salva ou atualiza a empresa no Banco de Dados SQL."""
+        """Salva ou atualiza a empresa no Banco de Dados SQL com limpeza de CNPJ."""
         try:
             async with async_session() as session:
-                stmt = select(Organization).where(Organization.name == name)
-                result = await session.execute(stmt)
-                org = result.scalars().first()
+                clean_cnpj = None
+                if data.get("cnpj"):
+                    clean_cnpj = re.sub(r'\D', '', str(data["cnpj"]))
+
+                # 🕵️ Busca sequencial: CNPJ > Nome
+                org = None
+                if clean_cnpj:
+                    stmt = select(Organization).where(Organization.cnpj == clean_cnpj)
+                    res = await session.execute(stmt)
+                    org = res.scalars().first()
                 
+                if not org:
+                    stmt = select(Organization).where(Organization.name == name)
+                    res = await session.execute(stmt)
+                    org = res.scalars().first()
+                    # Se achamos pelo nome mas o CNPJ é diferente, tratamos como nova
+                    if org and org.cnpj and clean_cnpj and org.cnpj != clean_cnpj:
+                        org = None
+
                 if not org:
                     org = Organization(name=name)
                     session.add(org)
                 
                 if data:
-                    org.cnpj = self._format_cnpj(data.get("cnpj")) or org.cnpj
+                    org.cnpj = clean_cnpj or org.cnpj
                     org.domain = data.get("domain") or org.domain
                     org.address = data.get("address") or org.address
+                    if data.get("pipedrive_id"):
+                        org.pipedrive_id = data.get("pipedrive_id")
                 
                 await session.commit()
                 print(f"[Database] 🐘 Empresa '{name}' Sincronizada.")
@@ -185,8 +202,8 @@ class IntelligenceService:
             try:
                 async with async_session() as session:
                     # Verifica se já temos essa empresa ligada ao Pipedrive
-                    fmt_cnpj = self._format_cnpj(result_data["main_option"]["cnpj"])
-                    stmt = select(Organization).where(Organization.cnpj == fmt_cnpj)
+                    clean_cnpj = re.sub(r'\D', '', str(result_data["main_option"]["cnpj"]))
+                    stmt = select(Organization).where(Organization.cnpj == clean_cnpj)
                     res = await session.execute(stmt)
                     existing = res.scalars().first()
                     

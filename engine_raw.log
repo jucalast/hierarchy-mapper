@@ -1,63 +1,63 @@
-================================================================================
-SESSÃO: SEMORIN | LOCAL: BRASIL | FOCO: COMPRAS
-DATA: 2026-04-14 11:41:26
-================================================================================
-
-
-==============================
-🔍 NOVA CONSULTA: Semorin Comprador Brasil linkedin
-==============================
-
-[FILTRO MECÂNICO] CANDIDATO: Mauricio Baronowsky Benatti
-LINK: https://br.linkedin.com/in/mauricio-baronowsky-benatti-0a228b42
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-[FILTRO MECÂNICO] CANDIDATO: Lucas Massucato Candido
-LINK: https://br.linkedin.com/in/lucas-massucato-candido-a126b263
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-
-==============================
-🔍 NOVA CONSULTA: Semorin Compradora Brasil linkedin
-==============================
-
-[FILTRO MECÂNICO] CANDIDATO: Célio Soares
-LINK: https://br.linkedin.com/in/célio-soares-325669276
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-
-==============================
-🔍 NOVA CONSULTA: Semorin Procurement Brasil linkedin
-==============================
-
-[FILTRO MECÂNICO] CANDIDATO: Zilma Lima
-LINK: https://br.linkedin.com/in/zilma-lima-0a03a933b
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-[FILTRO MECÂNICO] CANDIDATO: Kamila Felisberta Santos
-LINK: https://br.linkedin.com/in/kamila-felisberta-santos-2343033b8
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
 
 ================================================================================
-SESSÃO: KNORR BREMSE | LOCAL: BRASIL | FOCO: COMPRAS
-DATA: 2026-04-14 12:18:06
+SESSÃO: DVA | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-17 07:42:07
 ================================================================================
+
+
+==============================
+🔍 NOVA CONSULTA: Dva Comprador Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: João Aleixo
+LINK: https://br.linkedin.com/in/aleixo
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
 
 
 ················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Ezequiel Silva
-🔗 LINKEDIN: https://linkedin.com/in/pd_126
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Luca Trovó
+🔗 LINKEDIN: https://br.linkedin.com/in/luca-trovó-379977307
 ················································································
 
 📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Ezequiel Silva - Knorr Bremse
-   ∟ [SEARCH SNIPPET] BODY: Email: ezequiel.silva@knor-bremse.com | Telefone: (11) 4593-4000 | Pipedrive ID: 126
+   ∟ [SEARCH SNIPPET] TITLE: Luca Trovó - DVA Brasil | LinkedIn DVA Brasil on LinkedIn: #agro #desenvolvimento #tecnologia # ... DVA Intermediações - LinkedIn DVA Brasil posted on LinkedIn Ludimila Ferreira - Analista Financeiro | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150 · 31 conexões no LinkedIn . Veja o perfil de Luca Trovó no LinkedIn , uma... A DVA Brasil se transformou e agora nos tornamos AGROALLIANZ, uma empresa do grupo DVA GLOBAL, com o mesmo propósito, uma empresa feita de produtor para produtor, conectados com à realidade dos... A DVA Intermediações atua na originação, estruturação e viabilização de operações com ativos reais de alto valor, com presença nos mercados de agro, commodities, crédito de carbono ... A DVA Brasil gostaria de aproveitar este momento para expressar a sincera gratidão pela contribuição valiosa que vocês clientes, fornecedores, amigos e familiares trouxeram no ano de 2023. · Experiência: Dva Comercio Atacadista De Alimentos SA · Formação acadêmica: Grupo Projeção · Localidade: Brasília. Veja o perfil de Ludimila Ferreira no LinkedIn , uma comunidade profissional...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: dva brasil
+      ∟ BIO/DESCRIPTION: Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150 · 32 conexões no LinkedIn. Veja o perfil de Luca Trovó no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
+      ∟ BIO PROCESSADA: Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Experiência: DVA Brasil, Google Page Title: Luca Trovó - DVA Brasil, CURRENT COMPANY (Declarada): Dva...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Não Identificado
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O cargo não foi explicitamente identificado e não há termos técnicos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets que permitam inferir uma relação direta com essas áreas.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Analista Financeiro
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Especialista marcou como não relevante e não há Cargo Oficial Verificado para contradizer.
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Ludimila Ferreira
+🔗 LINKEDIN: https://br.linkedin.com/in/ludimila-ferreira-45b8173b3
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Ludimila Ferreira - Analista Financeiro | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: · Experiência: Dva Comercio Atacadista De Alimentos SA · Formação acadêmica: Grupo Projeção · Localidade: Brasília. Veja o perfil de Ludimila Ferreira no LinkedIn , uma comunidade profissional...
    ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
    ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
       ∟ ROLE DETECTED: 
@@ -65,862 +65,702 @@ DATA: 2026-04-14 12:18:06
 
 🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
    🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Não Encontrado...
+      ∟ ALVO ISOLADO: None | CARGO: Analista Financeiro
+      ∟ BIO PROCESSADA: Experiência: Dva Comercio Atacadista De Alimentos SA, Formação acadêmica: Grupo Projeção, Localidade: Brasília...
    🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
       ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Email: ezequiel.silva@knor-bremse.com, Google Page Title: Ezequiel Silva - Knorr Bremse...
+      ∟ SNIPPETS RELEVANTES: Experiência: Dva Comercio Atacadista De Alimentos SA, Cargo Detectado: Analista Financeiro...
       ∟ PERFIL INSTITUCIONAL: NÃO
    👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Não Identificado
+      ∟ DEPARTAMENTO: Finanças
       ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo não foi identificado e não há informações suficientes para determinar a relevância para SUPRIMENTOS / COMPRAS / PROCUREMENT.
+      ∟ MOTIVO: O cargo detectado é Analista Financeiro, que está dentro do veto absoluto de Financeiro, portanto não é relevante para SUPRIMENTOS / COMPRAS / PROCUREMENT.
    ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
       ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Não Identificado
+      ∟ CARGO FINAL: Analista Financeiro
+      ∟ SCORE DE MATCHING: 80%
+      ∟ EVIDÊNCIA DO JUIZ: Especialista marcou como não relevante e não há Cargo Oficial Verificado para contradizer.
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Eduardo Camelo
+🔗 LINKEDIN: https://br.linkedin.com/in/eduardo-marques-compras
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Eduardo Camelo - Comprador Pleno l Negociação com ...
+   ∟ [SEARCH SNIPPET] BODY: We cannot provide a description for this page right now
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cobra brasil
+      ∟ BIO/DESCRIPTION: Comprador com experiência no setor de energia desde 2012, atuando em projetos de… · Experiência: Cobra Brasil · Formação acadêmica: Faculdade UniBF · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Eduardo Camelo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: N/D
       ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Especialista marcou como não relevante (is_relevant: false)
+      ∟ EVIDÊNCIA DO JUIZ: REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)
 
 ——————————————————————————————————————————————————
 
 ==============================
-🔍 NOVA CONSULTA: Knorr Bremse Comprador Brasil linkedin
+🔍 NOVA CONSULTA: Dva Compradora Brasil linkedin
 ==============================
 
 
 ················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Bruno Rodrigues
-🔗 LINKEDIN: https://br.linkedin.com/in/bruno-rodrigues-16404131
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Carlos Pellicer
+🔗 LINKEDIN: https://br.linkedin.com/in/carlos-pellicer-05141123
 ················································································
 
 📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Bruno Rodrigues - Comprador na Knorr-Bremse | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Comprador na Knorr- Bremse · Experiência: Knorr- Bremse · Formação acadêmica: FEI - Faculdade de Engenharia Industrial · Localidade: São Paulo · 11 conexões no LinkedIn . Veja o perfil de...
+   ∟ [SEARCH SNIPPET] TITLE: Carlos Pellicer - Presidente DVA Brasil | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Carlos Pellicer no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
    ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
    ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Experiência: Knorr-Bremse · Formação acadêmica: FEI - Faculdade de Engenharia Industrial · Localidade: São Paulo · 11 conexões no LinkedIn. Veja o perfil de Bruno Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+      ∟ ROLE DETECTED: dva agro do brasil
+      ∟ BIO/DESCRIPTION: Specialties: UNESP - Jabotical
+FGV - SP
+Havard 
+Universidade Federal de Viçosa… · Experiência: DVA Agro do Brasil · Localidade: Campinas · 237 conexões no LinkedIn. Veja o perfil de Carlos Pellicer no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Presidente
+      ∟ BIO PROCESSADA: Presidente DVA Brasil, especialidades em UNESP - Jabotical, FGV - SP, Havard e Universidade Federal de Viçosa...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Presidente DVA Brasil, DVA Agro do Brasil, CURRENT COMPANY (Declarada): Dva...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Diretoria
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O cargo de Presidente não está diretamente relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT, e não há termos técnicos explícitos na Bio ou Snippets que indiquem uma interface direta com essas áreas.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Presidente
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Presidente). O Detetive confirmou o emprego na Dva e o cargo de Presidente, alinhado com a META_COMPANY_DECLARADA.
+
+——————————————————————————————————————————————————
+[FILTRO MECÂNICO] CANDIDATO: DP DVA
+LINK: https://br.linkedin.com/in/dp-dva-7a58a037b
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Valeria Compras
+🔗 LINKEDIN: https://br.linkedin.com/in/valeria-compras-5a241a98
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Valeria Compras - COMPRADORA - DISTRIPACK
+   ∟ [SEARCH SNIPPET] BODY: We cannot provide a description for this page right now
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: distripack distribuidora de embal. eirele
+      ∟ BIO/DESCRIPTION: Experiência: DISTRIPACK DISTRIBUIDORA DE EMBAL. EIRELE · Localidade: Belo Horizonte e Região · 73 conexões no LinkedIn. Veja o perfil de Valeria Compras no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: N/D
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Dva Procurement Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Fernando Fernandes
+🔗 LINKEDIN: https://br.linkedin.com/in/fernando-fernandes-49679745
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Fernando Fernandes - General Manager DVA Brasil | LinkedIn DVA Intermediações - LinkedIn DVA - GO FURTHER. TOGETHER Publicação de DVA Brasil - LinkedIn Portugal DVA Brasil no LinkedIn: #estagio #compras #campinas
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Fernando Fernandes no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. • DVA Intermediações operates in the origination, structuring and execution of high-value real asset transactions, with presence across agro, commodities, carbon credits, corporate credit ... DVA is a global chemical company with more than 50 years of experience. We develop intelligent solutions for complex markets and industries. Let us help you improve yields, efficiency and quality – together we shape a better, sustainable future. Parabéns, Natália Gonçalves! Vamos além, juntos! 💙 Confira a matéria completa na Revista Cultivar pelo link abaixo: https://lnkd.in/dXd8ExEC #dvagroup # dvaagrobrasil #agro #agronegocio... Estágio em Compras A DVA Agro Brasil está em busca de jovens talentos que tenham vontade de inovar, que sejam pessoas curiosas e que buscam por novos desafios!
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: dva group
+      ∟ BIO/DESCRIPTION: Experiência: DVA Group · Formação acadêmica: Faculdades Metropolitanas Unidas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Fernando Fernandes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: General Manager
+      ∟ BIO PROCESSADA: DVA Group, Formação acadêmica: Faculdades Metropolitanas Unidas, Localidade: Campinas...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Fernando Fernandes - General Manager DVA Brasil, DVA Group, Experiência: DVA Group...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Gerência Geral
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O cargo detectado é General Manager, que não está diretamente relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets que justifiquem a relevância.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: General Manager
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (General Manager). O Detetive confirmou a empresa DVA e o cargo de General Manager, alinhado com a declaração do candidato.
+
+——————————————————————————————————————————————————
+
+================================================================================
+SESSÃO: WALSYWA | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-17 11:26:41
+================================================================================
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Comprador Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Wagner Walsywa
+🔗 LINKEDIN: https://br.linkedin.com/in/wagner-walsywa-2211bb93
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: WagnerWalsywa-Walsywae alge |LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de WagnerWalsywanoLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: walsywa e alge
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa e alge · Localidade: São Paulo · 22 conexões no LinkedIn. Veja o perfil de Wagner Walsywa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
+      ∟ BIO PROCESSADA: Experiência em Walsywa e alge, localizado em São Paulo com 22 conexões no LinkedIn....
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
+      ∟ SNIPPETS RELEVANTES: Experiência: Walsywa e alge, Cargo Detectado: Não Identificado, Wagner Walsywa | walsywa e alge, SURNAME_SKEPTICISM: O sobrenome coincide com a empresa e não há indicadores funcionais (ex: 'at' ou 'na...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Indeterminado
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O perfil não apresenta um cargo específico ou termos técnicos relacionados a Suprimentos, Compras ou Logística. Conforme as instruções de rigor técnico, na ausência de cargo identificado e de palavras-chave explícitas da área na bio, o perfil deve ser considerado irrelevante.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Análise Humana
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Gustavo Demetino
+🔗 LINKEDIN: https://br.linkedin.com/in/gustavo-demetino-ab9775219
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gustavo Demetino - Auxiliar de compras na ... - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Auxiliar decomprasna empresawalsywaindústria e comercio de produtos metalúrgicos · Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: walsywa industria e comercio de produtos metalurgicos
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões no LinkedIn. Veja o perfil de Gustavo Demetino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Auxiliar de compras
+      ∟ BIO PROCESSADA: Auxiliar de compras na Walsywa Industria e Comercio de Produtos Metalurgicos...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Auxiliar de compras na Walsywa Industria e Comercio de Produtos Metalurgicos, Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos, LinkedIn CURRENT COMPANY (Declarada): Walsywa...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Compras/Suprimentos
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo detectado é 'Auxiliar de compras', que tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, a Bio Higienizada e os Snippets do Detetive confirmam o vínculo com a empresa Walsywa e o cargo de Auxiliar de Compras.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Auxiliar de Compras
+      ∟ SCORE DE MATCHING: 95%
+      ∟ EVIDÊNCIA DO JUIZ: Especialista confirmou relevância, Detetive encontrou evidências de trabalho na Walsywa e não há veto mecânico detectado.
+
+——————————————————————————————————————————————————
+[FILTRO MECÂNICO] CANDIDATO: Jorge Camilo Trabulsi
+LINK: https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+[FILTRO MECÂNICO] CANDIDATO: Marcos Santos
+LINK: https://www.linkedin.com/in/marcos-santos-62215394
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Compradora Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: João Paulo Marques
+LINK: https://br.linkedin.com/in/joão-paulo-marques-16295964
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Bruno Lopes
+🔗 LINKEDIN: https://br.linkedin.com/in/bruno-lopes-b9a95992
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Bruno Lopes - Walsywa | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Bruno Lopes noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Sou formado em Marketing, apaixonado por vendas.
+Focado em resultados, sempre visando… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Bruno Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
+      ∟ BIO PROCESSADA: Sou formado em Marketing, apaixonado por vendas. Focado em resultados, sempre visando......
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: LinkedIn CURRENT COMPANY (Declarada): Walsywa, Experiência: Walsywa...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Não Aplicável
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O cargo detectado é 'Não Identificado' e a bio do candidato menciona formação em Marketing e paixão por vendas, o que não está relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na bio ou snippets.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Análise Humana
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Acaia Fabricio
+🔗 LINKEDIN: https://br.linkedin.com/in/acaia-fabricio-530617231
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Coordernadora de Controladoria Sr. na Walsywa - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Coordernadora de Controladoria Sr. naWalsywa· Experiência:Walsywa· Localidade: Louveira · 105 conexões noLinkedIn. Veja o perfil de Acaia Fabricio noLinkedIn, uma comunidade...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Localidade: Louveira · 104 conexões no LinkedIn. Veja o perfil de Acaia Fabricio no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Coordenadora de Controladoria Sr.
+      ∟ BIO PROCESSADA: Coordenadora de Controladoria Sr. na Walsywa. Localidade: Louveira. 105 conexões no LinkedIn....
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Coordenadora de Controladoria Sr. na Walsywa, Experiência: Walsywa, LinkedIn CURRENT COMPANY (Declarada): Walsywa...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Controladoria
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O cargo detectado é de Controladoria, que está relacionado a finanças e não tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Coordenadora de Controladoria Sr.
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Coordenadora de Controladoria Sr.). O Detetive confirmou a empresa como Walsywa e o cargo é relevante para a área de Compras/Suprimentos, apesar do Especialista ter marcado como não relevante, o cargo é consistente com a descrição.
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Procurement Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Fabrizio E.
+🔗 LINKEDIN: https://br.linkedin.com/in/fabrizioeizo
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gerente de Engenharia e Suprimentos | Walsywa - LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: ExperiênciaWalsywa10 anos 9 meses Gerente de Engenharia e Suprimentos set. de 2019 - o momento 6 anos 7 meses Jundiaí, São Paulo,Brasil
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Fabrizio E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Gerente de Engenharia e Suprimentos
+      ∟ BIO PROCESSADA: Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Experiência: Walsywa, Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí, Gerente de Engenharia e Suprimentos set. de 2019 - o momento...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Suprimentos/Compras/Procurement
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo detectado é 'Gerente de Engenharia e Suprimentos', que tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, o vínculo com a empresa Walsywa é confirmado e o cargo não contém termos vetados.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Gerente de Engenharia e Suprimentos
+      ∟ SCORE DE MATCHING: 90%
+      ∟ EVIDÊNCIA DO JUIZ: Especialista confirmou relevância e Detetive encontrou evidências de experiência na Walsywa
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Strategic Sourcing Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: John Kennedy
+🔗 LINKEDIN: https://br.linkedin.com/in/john-kennedy-0a17597b
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: John Kennedy - Gerente Nacional de Vendas - LinkedIn BrasilPágina Inicial - WalsywaGerente de Engenharia e Suprimentos - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.Somos a número 1 em obras de Infraestrutura noBrasil! Ao longo da história, contribuímos ativamente para a economia brasileira e estivemos presentes em importantes obras nacionais.Veja o perfil de Fabrizio E. noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Salesiano de São Paulo · Localidade: Monte Mor · + de 500 conexões no LinkedIn. Veja o perfil de John Kennedy no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Gerente Nacional de Vendas
+      ∟ BIO PROCESSADA: Gerente Nacional de vendas com mais de 20 anos de experiência na área comercial na Walsywa, formado no Centro Universitário Salesiano de São Paulo....
+      ∟ OUTROS PERFIS NO RUÍDO: 1 detectados
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Gerente Nacional de vendas com mais de 20 anos de experiência na área comercial na Walsywa, LinkedIn CURRENT COMPANY (Declarada): Walsywa, Experiência: Walsywa...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Comercial / Vendas
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O candidato ocupa uma posição de liderança na área comercial (Vendas), o que aciona o veto absoluto conforme as instruções técnicas, visto que não possui interface direta com o departamento de Suprimentos ou Compras.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Gerente Nacional de Vendas
+      ∟ SCORE DE MATCHING: 80%
+      ∟ EVIDÊNCIA DO JUIZ: Especialista marcou como não relevante e não há Cargo Oficial Verificado para contradizer.
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Buyer Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: Rafael Bonatti
+LINK: https://br.linkedin.com/in/rafael-bonatti-56b850170
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+[FILTRO MECÂNICO] CANDIDATO: Paulo Lima
+LINK: https://br.linkedin.com/in/paulo-lima-39380813a
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Analista de Compras Brasil linkedin
+==============================
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Sourcing Brasil linkedin
+==============================
+
+
+================================================================================
+SESSÃO: WALSYWA | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-17 13:47:26
+================================================================================
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Comprador Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Gustavo Demetino
+🔗 LINKEDIN: https://br.linkedin.com/in/gustavo-demetino-ab9775219
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gustavo Demetino - Auxiliar de compras na ... - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Auxiliar decomprasna empresawalsywaindústria e comercio de produtos metalúrgicos · Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: walsywa industria e comercio de produtos metalurgicos
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões no LinkedIn. Veja o perfil de Gustavo Demetino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Auxiliar de Compras
+      ∟ BIO PROCESSADA: Auxiliar de compras na Walsywa Industria E Comercio De Produtos Metalurgicos em Jundiaí com 58 conexões no LinkedIn....
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Auxiliar decomprasna empresawalsywaindústria e comercio de produtos metalúrgicos, Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Suprimentos / Compras
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O candidato ocupa o cargo de Auxiliar de Compras na própria empresa alvo (Walsywa), o que representa uma função operacional direta dentro do departamento de Suprimentos/Procurement.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Auxiliar de Compras
+      ∟ SCORE DE MATCHING: 95%
+      ∟ EVIDÊNCIA DO JUIZ: Especialista confirmou relevância, Detetive encontrou informações consistentes e não há veto de empresa ou cargo vazio.
+
+——————————————————————————————————————————————————
+[FILTRO MECÂNICO] CANDIDATO: Jorge Camilo Trabulsi
+LINK: https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+[FILTRO MECÂNICO] CANDIDATO: Marcos Santos
+LINK: https://www.linkedin.com/in/marcos-santos-62215394
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Gabriel Silva
+🔗 LINKEDIN: https://br.linkedin.com/in/gabriel-silva-854818243
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gabriel Silva - Comprador - Walsywa
+   ∟ [SEARCH SNIPPET] BODY: We cannot provide a description for this page right now
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Formação acadêmica: Grupo Anchieta · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Gabriel Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
 
 🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
    🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
       ∟ ALVO ISOLADO: None | CARGO: Comprador
-      ∟ BIO PROCESSADA: Comprador na Knorr-Bremse, formado pela FEI - Faculdade de Engenharia Industrial, localizado em São Paulo...
+      ∟ BIO PROCESSADA: Experiência: Walsywa · Formação acadêmica: Grupo Anchieta · Localidade: Jundiaí...
    🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
       ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Comprador na Knorr - Bremse, Experiência: Knorr - Bremse...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: SUPRIMENTOS / COMPRAS / PROCUREMENT
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Comprador é diretamente relacionado ao departamento de SUPRIMENTOS / COMPRAS / PROCUREMENT e não contém palavras de veto.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Comprador
-      ∟ SCORE DE MATCHING: 80%
-      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: O candidato Bruno Rodrigues foi verificado como Comprador na Knorr Bremse, com experiência relevante e departamento correto. Detetive e Especialista confirmaram a veracidade das informações.
-
-🔄 [AUTO-REPESCAGEM] Ativada para confirmar dúvidas.
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Nelson Beck
-🔗 LINKEDIN: https://br.linkedin.com/in/nelson-beck-comprador
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Nelson Beck - Knorr-Bremse Rail Vehicle Systems | LinkedIn edilson teshima - Comprador sênior na Knorr-Bremse | LinkedIn 9 "Knorr Bremse" profiles | LinkedIn Knorr-Bremse - LinkedIn Brasil COMPRADOR - (18385) | Odilom C. - LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies do LinkedIn . Comprador sênior na Knorr- Bremse · Experiência: Knorr- Bremse · Localidade: 13090-150. Veja edilson teshima o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. View the profiles of professionals named "Knorr Bremse " on LinkedIn . There are 9 professionals named "Knorr Bremse ", who use LinkedIn to exchange information, ideas, and opportunities. Knorr- Bremse is the global market and technology leader for braking systems and a leading supplier of other rail and commercial vehicle systems. Knorr- Bremse ’s products make a decisive... Ótima oportunidade para se juntar ao time de compras da Bosch! Vaga nova para suportar nossos projetos. #oportunidade, #compras, #wearebosch 8 1,337 followers 15 Posts
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Highly skilled in supply base methodologies and best practices, with a deep understanding… · Experiência: Knorr-Bremse Rail Vehicle Systems · Formação acadêmica: Universidade de São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Nelson Beck no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Comprador sênior
-      ∟ BIO PROCESSADA: Highly skilled in supply base methodologies and best practices, with a deep understanding… · Experiência: Knorr-Bremse Rail Vehicle Systems · Formação...
-      ∟ OUTROS PERFIS NO RUÍDO: 18 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Comprador sênior na Knorr- Bremse, Experiência: Knorr- Bremse, Veja o perfil de Nelson Beck no LinkedIn, uma comunidade profissional de 1 bilhão de usuários....
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: None
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: None
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Knorr-Bremse Rail Vehicle Systems
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Edilson Teshima
-🔗 LINKEDIN: https://br.linkedin.com/in/edilson-teshima-9a3206312
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: edilson teshima - Comprador sênior na Knorr-Bremse | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Comprador sênior na Knorr- Bremse · Experiência: Knorr- Bremse · Localidade: 13090-150. Veja edilson teshima o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Experiência: Knorr-Bremse · Localidade: 13090-150. Veja o perfil de edilson teshima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Comprador sênior
-      ∟ BIO PROCESSADA: Experiência em Knorr-Bremse, localizado em 13090-150....
-      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
-      ∟ SNIPPETS RELEVANTES: ...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: None
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: None
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Comprador Sênior
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: O candidato foi rejeitado devido ao erro 400 detectado pelo Detetive, que indica que o modelo utilizado está descontinuado e não é mais suportado.
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Victor Franchescoli Faria
-🔗 LINKEDIN: https://br.linkedin.com/in/victor-franchescoli-faria-4b3620142
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Victor Franchescoli Faria - Comprador Jr - Materiais diretos | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: · Experiência: Knorr - Bremse · Localidade: Jundiaí · 298 conexões no LinkedIn . Veja o perfil de Victor Franchescoli Faria no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
-   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
-      ∟ CARGO OFICIAL: Comprador Júnior
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: •	Graduado em Engenharia de Produção no Centro Universitário Padre Anchieta. Conclusão do… · Experiência: Knorr-Bremse · Localidade: Jundiaí · 317 conexões no LinkedIn. Veja o perfil de Victor Franchescoli Faria no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: Victor Franchescoli Faria | CARGO: Comprador Jr
-      ∟ BIO PROCESSADA: Candidate Name: Victor Franchescoli Faria Google Page Title: Victor Franchescoli Faria - Comprador Jr - Materiais diretos Search Snippet: · Experiênci...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
-      ∟ SNIPPETS RELEVANTES: ...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: SUPRIMENTOS / COMPRAS / PROCUREMENT
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O vínculo com Knorr Bremse não foi confirmado, portanto, o cargo não é relevante para a empresa alvo.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Comprador Júnior
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Knorr Bremse Compradora Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Diana S.
-🔗 LINKEDIN: https://br.linkedin.com/in/diana-s-compras/pt
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Diana S. - Knorr - Bremse AG | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: · Experiência: Knorr - Bremse AG · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · + de 500 conexões no LinkedIn .
-   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
-      ∟ CARGO OFICIAL: Regional Category Manager
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Administradora de empresas com alta experiência nas áreas de compras e marketing… · Experiência: Knorr-Bremse AG · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Diana S. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Regional Category Manager
-      ∟ BIO PROCESSADA: Administradora de empresas com alta experiência nas áreas de compras e marketing...
-      ∟ OUTROS PERFIS NO RUÍDO: 1 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Experiência: Knorr-Bremse AG, Veja o perfil de Diana S. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários....
+      ∟ SNIPPETS RELEVANTES: Gabriel Silva - Comprador - Walsywa, Experiência: Walsywa, LinkedIn CURRENT COMPANY (Declarada): Walsywa...
       ∟ PERFIL INSTITUCIONAL: NÃO
    👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
       ∟ DEPARTAMENTO: Compras/Procurement
       ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Regional Category Manager tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT, pois envolve a gestão de categorias e fornecedores. Além disso, o vínculo com Knorr Bremse foi confirmado, o que torna o perfil relevante para a empresa alvo.
+      ∟ MOTIVO: O cargo detectado é 'Comprador', que está diretamente relacionado a SUPRIMENTOS/COMPRAS/PROCUREMENT. Além disso, o vínculo com a empresa Walsywa foi confirmado e não há indícios de veto absoluto.
    ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
       ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Regional Category Manager
-      ∟ SCORE DE MATCHING: 80%
-      ∟ EVIDÊNCIA DO JUIZ: O candidato tem experiência relevante na área de compras e marketing, e o cargo de Regional Category Manager é considerado relevante para o foco. Não há vetos mecânicos detectados e o candidato não está fora da localização.
+      ∟ CARGO FINAL: Comprador
+      ∟ SCORE DE MATCHING: 95%
+      ∟ EVIDÊNCIA DO JUIZ: Especialista confirmou relevância, Detetive encontrou informações consistentes e não há veto de empresa ou cargo vazio.
 
 ——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Knorr Bremse Procurement Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Clecius Ribeiro
-🔗 LINKEDIN: https://www.linkedin.com/in/clecius-ribeiro-cpsm-227956
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Clecius Ribeiro, CPSM - Director of Purchasing - LinkedIn Odilom C. - Purchasing Manager at Knorr-Bremse Brasil | LinkedIn Ezequiel Araujo da Silva Junior - Knorr-Bremse | LinkedIn Lorenzo Gezzele – Director - Excellence in Procurement | LinkedIn Knorr-Bremse Brasil no LinkedIn: #vendas #supplychain
-   ∟ [SEARCH SNIPPET] BODY: · Experience: Knorr- Bremse Rail Vehicle Systems · Education: Fundação de Estudos Sociais do Paraná · Location: Westminster · 500+ connections on LinkedIn . View Clecius Ribeiro, CPSM’s profile... Purchasing Manager at Knorr- Bremse Brasil · Engaged, willing to learn, willing to contribute, focused on results, team player, good communicator, leadership skills, and persistence. Senior Buyer at Knorr- Bremse - Key User módulo MM · Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance. Director - Excellence in Procurement · Multilingual director with international experience and a consulting background, skilled at structuring complex problems, defining and driving clear,... O canal Knorr- Bremse Brasil Academy tem o objetivo de disponibilizar vídeos técnicos instrutivos para auxiliar a reparação, testes e regulagens das peças originais Knorr-Bremse, garantindo...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Specialties: Leadership, Purchasing, Supply Chain Managemnet, Segment Strategies… · Experiência: Knorr-Bremse Rail Vehicle Systems · Formação acadêmica: Fundação de Estudos Sociais do Paraná · Localidade: Westminster · + de 500 conexões no LinkedIn. Veja o perfil de Clecius Ribeiro, CPSM no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Director of Purchasing
-      ∟ BIO PROCESSADA: Specialties: Leadership, Purchasing, Supply Chain Managemnet, Segment Strategies… · Experiência: Knorr-Bremse Rail Vehicle Systems · Formação acadêmic...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: · Experience: Knorr- Bremse Rail Vehicle Systems, · Experiência: Knorr-Bremse Rail Vehicle Systems...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Compras/Suprimentos
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Director of Purchasing é diretamente relacionado a Compras/Suprimentos, e o vínculo com Knorr Bremse foi confirmado.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Director of Purchasing
-      ∟ SCORE DE MATCHING: 90%
-      ∟ EVIDÊNCIA DO JUIZ: O candidato tem experiência em Knorr-Bremse Rail Vehicle Systems e foi classificado como relevante pelo especialista. O cargo de Director of Purchasing é consistente com a experiência do candidato e não há vetos mecânicos detectados.
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Odilom C.
-🔗 LINKEDIN: https://br.linkedin.com/in/odilom-c-454b4331
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Odilom C. - Purchasing Manager at Knorr-Bremse Brasil | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Purchasing Manager at Knorr- Bremse Brasil · Engaged, willing to learn, willing to contribute, focused on results, team player, good communicator, leadership skills, and persistence.
-   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
-      ∟ CARGO OFICIAL: Purchasing Manager
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Engaged, willing to learn, willing to contribute, focused on results, team player, good… · Experiência: Knorr-Bremse · Formação acadêmica: UNAT - Brasil · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Odilom C. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Purchasing Manager
-      ∟ BIO PROCESSADA: Engaged, willing to learn, willing to contribute, focused on results, team player, good communicator, leadership skills, and persistence....
-      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Purchasing Manager at Knorr- Bremse Brasil, Odilom C. - Purchasing Manager at Knorr-Bremse Brasil, Verified Official Role: Purchasing Manager...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Compras
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Purchasing Manager tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT e não contém palavras de veto.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Purchasing Manager
-      ∟ SCORE DE MATCHING: 100%
-      ∟ EVIDÊNCIA DO JUIZ: O candidato foi verificado como Purchasing Manager na Knorr-Bremse Brasil, atendendo aos critérios de relevância e cargo funcional.
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Ezequiel Araujo da Silva Junior
-🔗 LINKEDIN: https://br.linkedin.com/in/ezequiel-araujo-da-silva-junior-0a8b3663
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Ezequiel Araujo da Silva Junior - Knorr-Bremse | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Senior Buyer at Knorr- Bremse - Key User módulo MM · Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance.
-   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
-      ∟ CARGO OFICIAL: Purchasing Buyer
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Profissional Graduado em Administração de Empresas e Pós graduando MBA… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance....
-      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
-      ∟ SNIPPETS RELEVANTES: ...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: None
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: None
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Purchasing Buyer
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: O candidato não foi identificado corretamente e não há informações suficientes para avaliar sua validade.
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Lorenzo Gezzele
-🔗 LINKEDIN: https://de.linkedin.com/in/lorenzo-gezzele-2998b018
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Lorenzo Gezzele – Director - Excellence in Procurement | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Director - Excellence in Procurement · Multilingual director with international experience and a consulting background, skilled at structuring complex problems, defining and driving clear,...
-   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
-      ∟ CARGO OFICIAL: Deputy Vice President Global Indirect Purchasing
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Multilingual director with international experience and a consulting background, skilled… · Berufserfahrung: Knorr-Bremse AG · Ausbildung: Politecnico di Milano · Ort: Metropolregion München · 500+ Kontakte auf LinkedIn. Sehen Sie sich das Profil von Lorenzo Gezzele Lorenzo Gezzele auf LinkedIn, einer professionellen Community mit mehr als 1 Milliarde Mitgliedern, an.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: Lorenzo Gezzele | CARGO: Excellence In Procurement
-      ∟ BIO PROCESSADA: Candidate Name: Lorenzo Gezzele Google Page Title: Lorenzo Gezzele – Director - Excellence in Procurement Search Snippet: Director - Excellence in Pro...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Multilingual director with international experience and a consulting background, skilled at structuring complex problems, defining and driving clear, measurable goals and objectives., Director - Excel...
-      ∟ PERFIL INSTITUCIONAL: ⚠️ SIM
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: None
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: None
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Deputy Vice President Global Indirect Purchasing
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Knorr Bremse Strategic Sourcing Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: João Henrique Marques Martins
-🔗 LINKEDIN: https://br.linkedin.com/in/joão-henrique-marques-martins-02924053
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: João Henrique Marques Martins - LinkedIn Brasil
-   ∟ [SEARCH SNIPPET] BODY: Atualmente, atuo como Sênior de Logística Operacional na Knorr- Bremse , onde sou responsável pela análise de inconsistências no SAP (COGI), gestão de inventários rotativos e cíclicos, e...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Profissional com mais de 20 anos de experiência em logística, desenvolvendo uma carreira… · Experiência: Knorr-Bremse · Formação acadêmica: Instituto IPB · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de João Henrique Marques Martins no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Sênior de Logística Operacional
-      ∟ BIO PROCESSADA: Profissional com mais de 20 anos de experiência em logística, desenvolvendo uma carreira…...
-      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Atuo como Sênior de Logística Operacional na Knorr-Bremse, Experiência: Knorr-Bremse...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Logística/Supply Chain
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Sênior de Logística Operacional tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT, pois envolve gestão de inventários e análise de inconsistências no SAP (COGI), o que sugere uma conexão com a gestão de materiais e fornecedores.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Sênior de Logística Operacional
-      ∟ SCORE DE MATCHING: 90%
-      ∟ EVIDÊNCIA DO JUIZ: O candidato tem experiência relevante em logística operacional na Knorr Bremse, sem indicações de trabalho em outra empresa ou fora da localização.
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Knorr Bremse Buyer Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Carlos A.
-🔗 LINKEDIN: https://br.linkedin.com/in/carlos-a-a1a00433
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Carlos A. - Sr. Commodity Buyer | LinkedIn Knorr-Bremse - LinkedIn Brasil Knorr-Bremse in Brazil 9 "Knorr Bremse" profiles | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Sr. Commodity Buyer · • Professional with more than 11 years of career in the automotive industry. • Experience in supplier and parts development, negotiation, strategy, inventory management and... Knorr- Bremse is the global market and technology leader for braking systems and a leading supplier of other rail and commercial vehicle systems. Knorr- Bremse ’s products make a decisive... Knorr- Bremse Brazil | Explore our locations, community activities engagements, and initiatives, and check out our open job positions in your country! View the profiles of professionals named "Knorr Bremse " on LinkedIn . There are 9 professionals named "Knorr Bremse ", who use LinkedIn to exchange information, ideas, and opportunities.
-   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
-      ∟ CARGO OFICIAL: Sr. Commodity Buyer
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: • Professional with more than 11 years of career in the automotive industry.
-•… · Experiência: Knorr-Bremse · Formação acadêmica: Facens | Faculdade de Engenharia de Sorocaba · Localidade: Sorocaba · + de 500 conexões no LinkedIn. Veja o perfil de Carlos A. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Professional with more than 11 years of career in the automotive industry. • Experience in supplier and parts development, negotiation, strategy, inve...
-      ∟ OUTROS PERFIS NO RUÍDO: 4 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Experience in supplier and parts development, negotiation, strategy, inventory management and..., Verified Official Role: Sr. Commodity Buyer, Sr. Commodity Buyer · • Professional with more than 11 ye...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: SUPRIMENTOS / COMPRAS / PROCUREMENT
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Commodity Buyer tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT e o vínculo com Knorr Bremse foi confirmado.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Sr. Commodity Buyer
-      ∟ SCORE DE MATCHING: 90%
-      ∟ EVIDÊNCIA DO JUIZ: O candidato tem mais de 11 anos de experiência na indústria automotiva e é um Commodity Buyer verificado, o que atende aos critérios de relevância e cargo funcional.
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Knorr Bremse Analista de Compras Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Leonardo Pereira
-🔗 LINKEDIN: https://br.linkedin.com/in/leonardo-pereira-356503249
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Leonardo Pereira - Administração | Analista de Compras Jr ...
-   ∟ [SEARCH SNIPPET] BODY: Administração | Analista de Compras Jr · Atualmente profissional no departamento de compras direto na empresa Knorr- Bremse Brasil , onde desempenho o papel de apoio aos compradores...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil,… · Experiência: Knorr-Bremse · Formação acadêmica: FADITU · Localidade: Cabreúva · 195 conexões no LinkedIn. Veja o perfil de Leonardo Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Analista de Compras Jr
-      ∟ BIO PROCESSADA: Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil , onde desempenho o papel de apoio aos compradores......
-      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil, apoio aos compradores......
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Compras
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Analista de Compras é relevante para a área de SUPRIMENTOS / COMPRAS / PROCUREMENT, pois o candidato desempenha o papel de apoio aos compradores na empresa Knorr-Bremse Brasil.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Analista de Compras
-      ∟ SCORE DE MATCHING: 80%
-      ∟ EVIDÊNCIA DO JUIZ: Rejeitado por VETO DE MARCA: O cargo final é igual ao nome da empresa 'Knorr Bremse', o que é inaceitável.
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Giovanna Pirasoli
-🔗 LINKEDIN: https://br.linkedin.com/in/giovanna-pirasoli-b47a14230
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Giovanna Pirasoli - Analista de Suprimentos. | LinkedIn Knorr-Bremse Brasil - LinkedIn Rafael Costa - Knorr-Bremse | LinkedIn Adilson Andrade - Analista de Contratos Junior na Knorr ... 9 "Knorr Bremse" profiles | LinkedIn OPORTUNIDADES DE CARREIRA NO BRASIL. - Knorr-Bremse
-   ∟ [SEARCH SNIPPET] BODY: Analista de Suprimentos . · Busco evoluir profissionalmente e assumo o compromisso de dedicar-me ao máximo para desenvolver minhas habilidades contribuindo assim para o sucesso da empresa. ·... No mercado de reposição, comercializa seus produtos através dos principais distribuidores de auto peças no Brasil e na América Latina. · Experiência: Knorr- Bremse · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Rafael Costa no LinkedIn , uma comunidade profissional... Analista de Contratos Junior na Knorr- Bremse · Experiência: Knorr- Bremse · Localidade: São Paulo. Veja Adilson Andrade o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de... View the profiles of professionals named "Knorr Bremse " on LinkedIn . There are 9 professionals named "Knorr Bremse ", who use LinkedIn to exchange information, ideas, and opportunities. Trabalhando conosco você terá a oportunidade de desenvolver suas habilidades e compartilhar conhecimentos. Valorizamos as individualidades e transparencia, e isto permite o reconhecimento claro das conquistas individuais. Acompanhe nosso perfil no LinkedIn e fique por dentro das oportunidades.
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Busco evoluir profissionalmente e assumo o compromisso de dedicar-me ao máximo para… · Experiência: Knorr-Bremse · Formação acadêmica: PUC-Campinas · Localidade: Jundiaí · 81 conexões no LinkedIn. Veja o perfil de Giovanna Pirasoli no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Analista de Suprimentos
-      ∟ BIO PROCESSADA: Busco evoluir profissionalmente e assumo o compromisso de dedicar-me ao máximo para desenvolver minhas habilidades contribuindo assim para o sucesso d...
-      ∟ OUTROS PERFIS NO RUÍDO: 3 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Experiência: Knorr- Bremse, Analista de Suprimentos . · Busco evoluir profissionalmente e assumo o compromisso de dedicar-me ao máximo para desenvolver minhas habilidades contribuindo assim para o suc...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Compras/Suprimentos
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Analista de Suprimentos tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT e o vínculo com Knorr Bremse foi confirmado.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Analista De Suprimentos.
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Rafael Costa
-🔗 LINKEDIN: https://br.linkedin.com/in/rafael-costa-49151392
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Rafael Costa - Knorr-Bremse | LinkedIn Adilson Andrade - Analista de Contratos Junior na Knorr ... 9 "Knorr Bremse" profiles | LinkedIn OPORTUNIDADES DE CARREIRA NO BRASIL. - Knorr-Bremse
-   ∟ [SEARCH SNIPPET] BODY: · Experiência: Knorr- Bremse · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Rafael Costa no LinkedIn , uma comunidade profissional... Analista de Contratos Junior na Knorr- Bremse · Experiência: Knorr- Bremse · Localidade: São Paulo. Veja Adilson Andrade o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de... View the profiles of professionals named "Knorr Bremse " on LinkedIn . There are 9 professionals named "Knorr Bremse ", who use LinkedIn to exchange information, ideas, and opportunities. Trabalhando conosco você terá a oportunidade de desenvolver suas habilidades e compartilhar conhecimentos. Valorizamos as individualidades e transparencia, e isto permite o reconhecimento claro das conquistas individuais. Acompanhe nosso perfil no LinkedIn e fique por dentro das oportunidades.
-   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
-      ∟ CARGO OFICIAL: Compras
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Olá, tudo bem?
-Sou formado em relações internacionais pela Universidade Estadual… · Experiência: Knorr-Bremse · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Rafael Costa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Compras
-      ∟ BIO PROCESSADA: Olá, tudo bem? Sou formado em relações internacionais pela Universidade Estadual......
-      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
-      ∟ SNIPPETS RELEVANTES: ...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: None
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: None
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Compras
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Adilson Andrade
-🔗 LINKEDIN: https://br.linkedin.com/in/adilson-andrade-80521a21
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Adilson Andrade - Analista de Contratos Junior na Knorr ...
-   ∟ [SEARCH SNIPPET] BODY: Analista de Contratos Junior na Knorr- Bremse · Experiência: Knorr- Bremse · Localidade: São Paulo. Veja Adilson Andrade o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Experiência: Knorr-Bremse · Localidade: São Paulo. Veja o perfil de Adilson Andrade no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Analista de Contratos Junior
-      ∟ BIO PROCESSADA: Experiência: Knorr-Bremse · Localidade: São Paulo....
-      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Analista de Contratos Junior na Knorr- Bremse, Experiência: Knorr- Bremse · Localidade: São Paulo...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: None
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: None
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Analista de Contratos
-      ∟ SCORE DE MATCHING: 80%
-      ∟ EVIDÊNCIA DO JUIZ: O candidato foi rejeitado pois o cargo "Analista de Contratos Junior" é igual ao nome da empresa "Knorr Bremse", o que viola o VETO DE MARCA.
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Aline Drebes
-🔗 LINKEDIN: https://br.linkedin.com/in/aline-drebes-45a3a333
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: ALINE DREBES - ANALISTA DE COMERCIO EXTERIOR... | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: ANALISTA DE COMERCIO EXTERIOR na Knorr - Bremse · Experiência: Knorr - Bremse · Localidade: São Paulo · 7 conexões no LinkedIn . Veja o perfil de ALINE DREBES no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Experiência: Knorr-Bremse · Localidade: São Paulo · 7 conexões no LinkedIn. Veja o perfil de ALINE DREBES no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: ALINE DREBES | CARGO: Analista De Comercio Exterior
-      ∟ BIO PROCESSADA: Candidate Name: ALINE DREBES Google Page Title: ALINE DREBES - ANALISTA DE COMERCIO EXTERIOR Search Snippet: ANALISTA DE COMERCIO EXTERIOR na Knorr - ...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
-      ∟ SNIPPETS RELEVANTES: ...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: None
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: None
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Analista de Comércio Exterior
-      ∟ SCORE DE MATCHING: 80%
-      ∟ EVIDÊNCIA DO JUIZ: O veto mecânico detectado foi ignorado, mas o veto de marca foi ativado pois o cargo final é igual ao nome da empresa. Além disso, o veto de departamento não foi ativado pois o departamento não foi especificado.
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Knorr Bremse Sourcing Brasil linkedin
-==============================
-
-
-==============================
-🔍 NOVA CONSULTA: Knorr Bremse Purchasing Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Robson Lúcio de Souza
-🔗 LINKEDIN: https://br.linkedin.com/in/robson-lúcio-de-souza-05a125137
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Robson Lúcio de Souza - Sr. Purchasing and ... - LinkedIn Brasil Clecius Ribeiro, CPSM - Director of Purchasing - LinkedIn Ezequiel Araujo da Silva Junior - Knorr-Bremse | LinkedIn 9 "Knorr Bremse" profiles | LinkedIn Lorenzo Gezzele – Director - Excellence in Procurement | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Robson Lúcio de Souza no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. · Experience: Knorr- Bremse Rail Vehicle Systems · Education: Fundação de Estudos Sociais do Paraná · Location: Westminster · 500+ connections on LinkedIn . View Clecius Ribeiro, CPSM’s profile... Senior Buyer at Knorr- Bremse - Key User módulo MM · Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance. There are 9 professionals named "Knorr Bremse ", who use LinkedIn to exchange information, ideas, and opportunities. Director Governance & Processes Global Indirect Purchasing (procurement excellence) Knorr- Bremse
-   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
-      ∟ CARGO OFICIAL: Purchasing & Supply Chain Manager
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Carreira desenvolvida nos Mercados Agrícola, Automotivo e Eletroeletrônico nas áreas de… · Experiência: Knorr-Bremse · Formação acadêmica: Fundação Dom Cabral · Localidade: Itupeva · + de 500 conexões no LinkedIn. Veja o perfil de Robson Lúcio de Souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Purchasing & Supply Chain Manager
-      ∟ BIO PROCESSADA: Carreira desenvolvida nos Mercados Agrícola, Automotivo e Eletroeletrônico nas áreas de…...
-      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Veja o perfil de Robson Lúcio de Souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. · Experience: Knorr- Bremse Rail Vehicle Systems, Experiência: Knorr-Bremse, Veja o perfil de R...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Compras e Suprimentos
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Purchasing & Supply Chain Manager tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT e não contém palavras de veto.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Purchasing & Supply Chain Manager
-      ∟ SCORE DE MATCHING: 80%
-      ∟ EVIDÊNCIA DO JUIZ: Rejeitado devido ao Veto de Marca (Cargo Final igual ao nome da empresa)
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Knorr Bremse Category Manager Brasil linkedin
-==============================
-
-[FILTRO MECÂNICO] CANDIDATO: Antonio C Silva
-LINK: https://br.linkedin.com/in/antonio-c-silva-8192b0227
+[FILTRO MECÂNICO] CANDIDATO: Eustaquio Nascimento
+LINK: https://br.linkedin.com/in/eustaquio-nascimento-82051aa6
 MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 --------------------------------------------------
 
 
 ==============================
-🔍 NOVA CONSULTA: Knorr Bremse Suprimentos Brasil linkedin
+🔍 NOVA CONSULTA: Walsywa Compradora Brasil linkedin
 ==============================
 
 
 ================================================================================
-SESSÃO: SEMORIN | LOCAL: BRASIL | FOCO: COMPRAS
-DATA: 2026-04-14 12:30:47
+SESSÃO: WALSYWA | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-17 13:50:32
 ================================================================================
 
 
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Julio Prates
-🔗 LINKEDIN: https://br.linkedin.com/in/julio-prates-bbab6857
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Julio Prates - Analista Logistica na Knorr - Bremse | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Analista Logistica na Knorr - Bremse · Responsável pelo Planejamento e Programação de Produção de Produtos, execução e análise de MRP via sistema integrado SAP e EDI, atualização das Listas de Materiais.
-   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
-      ∟ CARGO OFICIAL: Analista Logistica
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: knorr
-      ∟ BIO/DESCRIPTION: Responsável pelo Planejamento e Programação de Produção de Produtos, execução e análise… · Experiência: Knorr-Bremse · Formação acadêmica: Faenac Anhanguera · Localidade: Santo André · + de 500 conexões no LinkedIn. Veja o perfil de Julio Prates no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Analista Logistica
-      ∟ BIO PROCESSADA: Responsável pelo Planejamento e Programação de Produção de Produtos, execução e análise de MRP via sistema integrado SAP e EDI, atualização das Listas...
-      ∟ OUTROS PERFIS NO RUÍDO: 4 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Analista Logistica na Knorr - Bremse, Responsável pelo Planejamento e Programação de Produção de Produtos, execução e análise de MRP via sistema integrado SAP e EDI, atualização das Listas de Materiai...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Compras/SUPRIMENTOS
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo de Analista Logística foi refinado com base na Bio Higienizada, que menciona planejamento e programação de produção, execução e análise de MRP via sistema integrado SAP e EDI, atualização das Listas de Materiais. Isso sugere uma interface direta com SUPRIMENTOS/COMPRAS/PROCUREMENT. Além disso, o vínculo com Knorr Bremse foi confirmado, o que torna o cargo relevante.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Analista Logistica
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
-
-——————————————————————————————————————————————————
-[FILTRO MECÂNICO] CANDIDATO: Jonatas Souza
-LINK: https://br.linkedin.com/in/jonatas-souza-85551466
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
+==============================
+🔍 NOVA CONSULTA: Walsywa Comprador Brasil linkedin
+==============================
 
 
 ················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Lucas
-🔗 LINKEDIN: https://linkedin.com/in/pd_61
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Wagner
+🔗 LINKEDIN: https://br.linkedin.com/in/wagner-walsywa-2211bb93
 ················································································
 
 📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Lucas - Semorin
-   ∟ [SEARCH SNIPPET] BODY: Email:  | Telefone: 11 4591-1807 | Pipedrive ID: 61
+   ∟ [SEARCH SNIPPET] TITLE: WagnerWalsywa-Walsywae alge |LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de WagnerWalsywanoLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
    ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
    ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: 
-      ∟ BIO/DESCRIPTION: N/A
+      ∟ ROLE DETECTED: walsywa e alge
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa e alge · Localidade: São Paulo · 22 conexões no LinkedIn. Veja o perfil de Wagner Walsywa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
 
 🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
    🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
       ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Não Encontrado...
-      ∟ OUTROS PERFIS NO RUÍDO: 1 detectados
+      ∟ BIO PROCESSADA: Experiência: Walsywa e alge · Localidade: São Paulo...
    🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
-      ∟ SNIPPETS RELEVANTES: Lucas - Semorin...
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: CURRENT COMPANY (Declarada): Walsywa, Experiência: Walsywa e alge, Localidade: São Paulo...
       ∟ PERFIL INSTITUCIONAL: NÃO
    👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
       ∟ DEPARTAMENTO: Não Identificado
       ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O vínculo com Semorin não foi confirmado e o cargo não foi identificado com precisão.
+      ∟ MOTIVO: O cargo não foi explicitamente identificado, e a bio do candidato não contém termos técnicos de SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, o 'Cargo Detectado' é 'Não Identificado' e não há informações suficientes para sugerir um departamento específico.
    ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
       ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Não Identificado
+      ∟ CARGO FINAL: Colaborador
       ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Filtro de Relevância (Mandatário) - Especialista marcou is_relevant: false
+      ∟ EVIDÊNCIA DO JUIZ: REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Rejeitado devido à falta de Cargo Oficial Verificado e Especialista marcou como não relevante
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
 
 ——————————————————————————————————————————————————
 
+==============================
+🔍 NOVA CONSULTA: Walsywa Compradora Brasil linkedin
+==============================
+
+
 ················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Giovanna Agiani da Silva
-🔗 LINKEDIN: https://linkedin.com/in/pd_2056
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Jorge Camilo Trabulsi
+🔗 LINKEDIN: https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416
 ················································································
 
 📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Giovanna Agiani da Silva - Semorin
-   ∟ [SEARCH SNIPPET] BODY: Email:  | Telefone:  | Pipedrive ID: 2056
+   ∟ [SEARCH SNIPPET] TITLE: Jorge Camilo Trabulsi - Walsywa | LinkedInA Walsywa, referência em fixação para construção civil no ...Home - WalsywaJohn Kennedy - Gerente Nacional de Vendas - LinkedIn BrasilBruno Lopes - Walsywa | LinkedInJoão Paulo Marques - Vendedor Externo Walsywa | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: · Experiência:Walsywa· Localidade: Jundiaí · + de 500 conexões noLinkedIn. Veja o perfil de Jorge Camilo Trabulsi noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.Compartilhe essa mensagem com sua rede e ajude-nos a encontrar talentos que queiram crescer junto com aWalsywa.Walsywaspecialists develop exclusive articles on Fastening for Civil Construction and share them here with you, to make your work even more efficient. Here you will also find the latest company news.Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.· Experiência:Walsywa· Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões noLinkedIn. Veja o perfil de Bruno Lopes noLinkedIn, uma...Vendedor ExternoWalsywa· Experiência:Walsywa· Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: São José dos Campos · 415 conexões noLinkedIn. Veja o perfil de...
    ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
    ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: 
-      ∟ BIO/DESCRIPTION: N/A
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Jorge Camilo Trabulsi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
 
 🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
    🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
       ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: N/A...
-      ∟ OUTROS PERFIS NO RUÍDO: 1 detectados
+      ∟ BIO PROCESSADA: Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes…...
+      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
    🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
       ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Giovanna Agiani da Silva - Semorin...
-      ∟ PERFIL INSTITUCIONAL: ⚠️ SIM
+      ∟ SNIPPETS RELEVANTES: Jorge Camilo Trabulsi - Walsywa, Experiência:Walsywa, Compartilhe essa mensagem com sua rede e ajude-nos a encontrar talentos que queiram crescer junto com a Walsywa....
+      ∟ PERFIL INSTITUCIONAL: NÃO
    👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: None
+      ∟ DEPARTAMENTO: Vendas
       ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: None
+      ∟ MOTIVO: O cargo detectado não foi identificado explicitamente, e a bio higienizada menciona experiência em vendas, o que é um veto absoluto de acordo com as instruções técnicas.
    ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
       ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Professional
+      ∟ CARGO FINAL: Vendas
       ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
+      ∟ EVIDÊNCIA DO JUIZ: Veto de Departamento: O departamento é Vendas, o que não é relevante para a busca de Compras.
 
 ——————————————————————————————————————————————————
 
-==============================
-🔍 NOVA CONSULTA: Knorr Bremse Indirect Procurement Brasil linkedin
-==============================
-
-
 ················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Joselia Martins Gama Ferreira
-🔗 LINKEDIN: https://linkedin.com/in/pd_2057
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: John Kennedy
+🔗 LINKEDIN: https://br.linkedin.com/in/john-kennedy-0a17597b
 ················································································
 
 📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Joselia Martins Gama Ferreira - Semorin
-   ∟ [SEARCH SNIPPET] BODY: Email:  | Telefone:  | Pipedrive ID: 2057
+   ∟ [SEARCH SNIPPET] TITLE: John Kennedy - Gerente Nacional de Vendas - LinkedIn BrasilBruno Lopes - Walsywa | LinkedInJoão Paulo Marques - Vendedor Externo Walsywa | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.· Experiência:Walsywa· Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões noLinkedIn. Veja o perfil de Bruno Lopes noLinkedIn, uma...Vendedor ExternoWalsywa· Experiência:Walsywa· Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: São José dos Campos · 415 conexões noLinkedIn. Veja o perfil de...
    ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
    ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: 
-      ∟ BIO/DESCRIPTION: N/A
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Salesiano de São Paulo · Localidade: Monte Mor · + de 500 conexões no LinkedIn. Veja o perfil de John Kennedy no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
 
 🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
    🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Email:  | Telefone:  | Pipedrive ID: 2057 LinkedIn Status: None |  LinkedIn Personal Bio: N/A Verified Official Role: Não Encontrado...
-      ∟ OUTROS PERFIS NO RUÍDO: 1 detectados
+      ∟ ALVO ISOLADO: None | CARGO: Gerente Nacional de Vendas
+      ∟ BIO PROCESSADA: Mais de 20 anos de experiência na área comercial....
    🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
-      ∟ SNIPPETS RELEVANTES: ...
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Experiência: Walsywa, LinkedIn CURRENT COMPANY (Declarada): Walsywa, Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa...
       ∟ PERFIL INSTITUCIONAL: NÃO
    👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: None
+      ∟ DEPARTAMENTO: Comercial
       ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: None
+      ∟ MOTIVO: O cargo de Gerente Nacional de Vendas não é relevante para SUPRIMENTOS / COMPRAS / PROCUREMENT, pois contém termos de vendas e comercial.
    ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Professional
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Análise Humana
       ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
 
 ——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Edvaldo
-🔗 LINKEDIN: https://linkedin.com/in/pd_2094
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Edvaldo - Semorin
-   ∟ [SEARCH SNIPPET] BODY: Email:  | Telefone: +55 11 94774-9050 | Pipedrive ID: 2094
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: 
-      ∟ BIO/DESCRIPTION: N/A
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Não Encontrado...
-      ∟ OUTROS PERFIS NO RUÍDO: 1 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
-      ∟ SNIPPETS RELEVANTES: ...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Não Identificado
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O vínculo com Semorin não foi confirmado e o cargo não foi identificado com precisão.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Professional
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Sem detalhes
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Semorin Comprador Brasil linkedin
-==============================
-
-[FILTRO MECÂNICO] CANDIDATO: Mauricio Baronowsky Benatti
-LINK: https://br.linkedin.com/in/mauricio-baronowsky-benatti-0a228b42
+[FILTRO MECÂNICO] CANDIDATO: Bruno Lopes
+LINK: https://br.linkedin.com/in/bruno-lopes-b9a95992
 MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 --------------------------------------------------
 
-[FILTRO MECÂNICO] CANDIDATO: Lucas Massucato Candido
-LINK: https://br.linkedin.com/in/lucas-massucato-candido-a126b263
+[FILTRO MECÂNICO] CANDIDATO: João Paulo Marques
+LINK: https://br.linkedin.com/in/joão-paulo-marques-16295964
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Procurement Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Fabrizio E.
+🔗 LINKEDIN: https://br.linkedin.com/in/fabrizioeizo
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gerente de Engenharia e Suprimentos - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Fabrizio E. noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Fabrizio E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: N/D
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Strategic Sourcing Brasil linkedin
+==============================
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Buyer Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: Marcos Santos
+LINK: https://www.linkedin.com/in/marcos-santos-62215394
 MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 --------------------------------------------------
 

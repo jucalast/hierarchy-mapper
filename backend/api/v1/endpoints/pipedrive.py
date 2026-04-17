@@ -145,11 +145,18 @@ async def reset_org_data(org_id: int, db: AsyncSession = Depends(get_db)):
 async def delete_pipedrive_org(org_id: int):
     """Exclui completamente a organização do Pipedrive e apaga do banco local."""
     try:
-        success = await pipedrive_service.delete_organization(org_id)
-        if success:
+        status = await pipedrive_service.delete_organization(org_id)
+        if status == True:
             return {"status": "success", "message": "Organização excluída do Pipedrive e do banco local."}
+        elif status == "partial_success_permissions":
+            return {
+                "status": "partial_success", 
+                "message": "Empresa removida do Mapeador, mas você não tem permissão para excluí-la do Pipedrive."
+            }
         else:
-            raise HTTPException(status_code=400, detail="Erro ou falha na exclusão do lado do Pipedrive.")
+            return {"status": "error", "message": "Erro ao processar exclusão no Pipedrive."}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -11,6 +11,7 @@ Write-Host "🧹 Limpando servicos e terminais antigos..." -ForegroundColor Yell
 Get-Process | Where-Object { $_.MainWindowTitle -like "*LINKB2B-*" } | Stop-Process -Force
 Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process chrome, msedge, headless_shell -ErrorAction SilentlyContinue | Stop-Process -Force
 
 Start-Sleep -Seconds 1
 
@@ -45,14 +46,16 @@ if ((Test-Path $redisPath) -and (Test-Path $redisConf)) {
 }
 
 # 3. Iniciar Backend (SEM watchfiles - apenas uvicorn)
-Write-Host "🐍 Iniciando Backend (Porta 8000 - SEM AUTO-RELOAD)..." -ForegroundColor Cyan
 $backendPath = Join-Path $PSScriptRoot "backend"
+$pythonPath = Join-Path $backendPath "venv\Scripts\python.exe"
+
+Write-Host "🐍 Iniciando Backend (Porta 8000 - SEM AUTO-RELOAD)..." -ForegroundColor Cyan
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Backend'
     Set-Location '$backendPath'
     Write-Host 'ℹ️ Backend iniciado. Pressione Ctrl+C para parar.' -ForegroundColor Yellow
     Write-Host 'Para mudanças automáticas, use: .\rodar_dev.ps1' -ForegroundColor Cyan
-    uvicorn main:app --port 8000 --reload
+    & '$pythonPath' -m uvicorn main:app --port 8000
 "
 
 # 4. Iniciar Worker (SEM watchfiles)
@@ -61,7 +64,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Worker'
     Set-Location '$backendPath'
     Write-Host 'ℹ️ Worker iniciado. Pressione Ctrl+C para parar.' -ForegroundColor Yellow
-    arq services.worker.WorkerSettings
+    & '$pythonPath' -m arq services.worker.WorkerSettings
 "
 
 # 5. Iniciar Frontend
@@ -82,6 +85,15 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     npm start
 "
 
+# 7. Iniciar Email Service (Python)
+Write-Host "📧 Iniciando Servico de Email (Porta 8002)..." -ForegroundColor Cyan
+$emailPath = Join-Path $PSScriptRoot "backend\services\email-service"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "
+    `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Email'
+    Set-Location '$emailPath'
+    & '$pythonPath' main.py
+"
+
 Write-Host ""
 Write-Host "✅ Tudo pronto! Versão ESTÁVEL (sem auto-reload)." -ForegroundColor Green
 Write-Host ""
@@ -90,6 +102,7 @@ Write-Host "   - Frontend:  http://localhost:3000" -ForegroundColor Cyan
 Write-Host "   - Backend:   http://localhost:8000" -ForegroundColor Cyan
 Write-Host "   - Swagger:   http://localhost:8000/docs" -ForegroundColor Cyan
 Write-Host "   - WhatsApp:  http://localhost:8001" -ForegroundColor Cyan
+Write-Host "   - Email:     http://localhost:8002" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "📝 Versões:" -ForegroundColor Yellow
 Write-Host "   - rodar_dev.ps1: COM watchfiles (auto-reload de código)" -ForegroundColor Cyan

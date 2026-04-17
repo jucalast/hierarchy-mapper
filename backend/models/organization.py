@@ -17,4 +17,5 @@ class Organization(Base):
     product_focus = Column(String, nullable=True) # Ex: "Embalagens", "TI"
     linkedin_url = Column(String, nullable=True)
     logo_url = Column(String, nullable=True)
+    is_excluded = Column(Integer, server_default="0") # 1 = Excluída/Oculta
     last_enrichment = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

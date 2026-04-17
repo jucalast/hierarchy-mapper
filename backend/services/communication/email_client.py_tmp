@@ -1,0 +1,205 @@
+import msal
+import requests
+import time
+import random
+import os
+import json
+from typing import List, Dict, Optional
+
+class EmailClient:
+    """
+    Cliente de email que utiliza Microsoft Graph API com autenticação OAuth2.
+    Funciona com tenants corporativos do Office365 que têm BasicAuth desabilitado.
+    """
+    
+    GRAPH_API_ENDPOINT = "https://graph.microsoft.com/v1.0"
+    SCOPES = ["Mail.Read", "Mail.Send", "offline_access"]
+    
+    def __init__(self, email_address=None):
+        self.email_address = email_address or os.getenv("EMAIL_SENDER_USER")
+        self.tenant_id = os.getenv("AZURE_TENANT_ID")
+        self.client_id = os.getenv("AZURE_CLIENT_ID")
+        self.client_secret = os.getenv("AZURE_CLIENT_SECRET")
+        
+        if not all([self.tenant_id, self.client_id, self.client_secret]):
+            raise ValueError("❌ Credenciais OAuth não configuradas no .env")
+        
+        self.access_token = None
+        self._authenticate()
+
+    def _authenticate(self):
+        """Autentica usando OAuth2 e obtém access token."""
+        try:
+            app = msal.ConfidentialClientApplication(
+                client_id=self.client_id,
+                client_credential=self.client_secret,
+                authority=f"https://login.microsoftonline.com/{self.tenant_id}"
+            )
+            
+            result = app.acquire_token_for_client(scopes=self.SCOPES)
+            
+            if "access_token" in result:
+                self.access_token = result["access_token"]
+                print("[EmailClient] ✅ Autenticação OAuth2 bem-sucedida")
+            else:
+                error = result.get("error_description", "Erro desconhecido")
+                raise Exception(f"❌ Erro OAuth: {error}")
+                
+        except Exception as e:
+            print(f"[EmailClient] ❌ Erro de Autenticação OAuth: {e}")
+            raise e
+
+    def _get_headers(self):
+        """Retorna headers autenticados para requisições à Graph API."""
+        return {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+
+    def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: str):
+        """
+        Envia e-mail via Microsoft Graph API injetando um pixel invisível para rastrear aberturas
+        com atraso aleatório para simular comportamento humano.
+        """
+        # Delay humano (evitar block de spam)
+        time.sleep(random.uniform(2.0, 5.0))
+
+        # Injetar Pixel de Rastreio
+        tracking_url = f"{os.getenv('API_BASE_URL', 'http://127.0.0.1:8000')}/api/v1/communication/track?id={tracking_id}"
+        pixel_html = f'<img src="{tracking_url}" width="1" height="1" style="display:none;" />'
+        final_body = html_body + pixel_html
+
+        # Estrutura do email para Graph API
+        email_msg = {
+            "message": {
+                "subject": subject,
+                "body": {
+                    "contentType": "HTML",
+                    "content": final_body
+                },
+                "toRecipients": [
+                    {
+                        "emailAddress": {
+                            "address": to_email
+                        }
+                    }
+                ]
+            },
+            "saveToSentItems": True
+        }
+
+        try:
+            url = f"{self.GRAPH_API_ENDPOINT}/me/sendMail"
+            response = requests.post(
+                url,
+                headers=self._get_headers(),
+                json=email_msg
+            )
+            
+            return response.status_code == 202
+        except Exception as e:
+            print(f"Erro ao enviar e-mail via Graph API: {e}")
+            return False
+
+    def scan_inbound_replies(self, folder: str = "inbox", max_results: int = 10) -> List[Dict]:
+                """
+        Varre a inbox usando Microsoft Graph API buscando e-mails não lidos.
+        
+        Args:
+            folder: Pasta a varrer (padrão: 'inbox')
+            max_results: Número máximo de e-mails a retornar
+            
+        Returns:
+            Lista de dicionários com sender, subject, body dos e-mails
+        """
+        try:
+            # Obter ID da pasta (se não for inbox padrão)
+            folder_id = "inbox"
+            if folder.lower() != "inbox":
+                folder_id = self._get_folder_id(folder) or "inbox"
+            
+            # Buscar e-mails não lidos via Graph API
+            url = f"{self.GRAPH_API_ENDPOINT}/me/mailFolders/{folder_id}/messages"
+            params = {
+                "$filter": "isRead eq false",
+                "$select": "sender,subject,bodyPreview,body,from",
+                "$top": max_results,
+                "$orderby": "receivedDateTime desc"
+            }
+            
+            response = requests.get(
+                url,
+                headers=self._get_headers(),
+                params=params
+            )
+            
+            if response.status_code != 200:
+                print(f"[EmailClient] ❌ Erro ao buscar e-mails: {response.text}")
+                return []
+            
+            data = response.json()
+            replies = []
+            
+            for msg in data.get("value", []):
+                try:
+                    sender_info = msg.get("sender", {}).get("emailAddress", {})
+                    sender = f"{sender_info.get('name')} <{sender_info.get('address')}>"
+                    subject = msg.get("subject", "(Sem assunto)")
+                    body = msg.get("body", {}).get("content", msg.get("bodyPreview", ""))
+                    
+                    replies.append({
+                        "sender": sender,
+                        "subject": subject,
+                        "body": body,
+                        "messageId": msg.get("id")
+                    })
+                except Exception as e:
+                    print(f"[EmailClient] ⚠️ Erro ao processar mensagem: {e}")
+                    continue
+            
+            print(f"[EmailClient] ✅ {len(replies)} e-mail(s) não lido(s) encontrado(s)")
+            return replies
+            
+        except Exception as e:
+            print(f"[EmailClient] ❌ Erro ao escanear respostas: {e}")
+            return []
+
+    def _get_folder_id(self, folder_name: str) -> Optional[str]:
+        """Obtém o ID de uma pasta específica pelo nome."""
+        try:
+            url = f"{self.GRAPH_API_ENDPOINT}/me/mailFolders"
+            params = {"$filter": f"displayName eq '{folder_name}'"}
+            
+            response = requests.get(
+                url,
+                headers=self._get_headers(),
+                params=params
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("value"):
+                    return data["value"][0]["id"]
+            
+            return None
+        except Exception as e:
+            print(f"[EmailClient] ⚠️ Erro ao obter ID da pasta '{folder_name}': {e}")
+            return None           if type == "text/plain" and "attachment" not in content_disposition:
+                                    body = part.get_payload(decode=True).decode()
+                                    break
+                        else:
+                            body = msg.get_payload(decode=True).decode()
+                            
+                        replies.append({
+                            "sender": sender,
+                            "subject": subject,
+                            "body": body
+                        })
+            
+            mail.close()
+            mail.logout()
+            return replies
+            
+        except Exception as e:
+            print(f"[EmailClient] ❌ Erro ao escanear respostas: {e}")
+            return []

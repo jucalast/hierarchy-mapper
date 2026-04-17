@@ -8,7 +8,7 @@ from services.hierarchy.org_search import org_search
 from services.intelligence.preview_service import get_url_preview
 from services.hierarchy.filters import apply_strict_filters, get_department_tag, get_seniority_level
 from services.external.email_service import apply_pattern
-from services.hierarchy.logging_utils import log_candidate_rejection, log_candidate_analysis
+from services.hierarchy.logging_utils import log_candidate_rejection, log_candidate_analysis, register_raw_data
 
 class CandidateProcessor:
     def __init__(self, brand: str, domain: str, area: str, location: str, product: str):
@@ -35,13 +35,14 @@ class CandidateProcessor:
             clean_brand = self.brand.replace("Gmb H", "").replace("GmbH", "").replace("Ltda", "").replace("S.A.", "").strip()
             search_location = self.location if self.location else "Brasil"
             
-            # Formato mais fluido para repescagem (Marca limpa + Nome + Local + linkedin)
-            search_query = html.unescape(f'{flexible_name} {clean_brand} {search_location} linkedin')
+            # Formato buscador de experiência (Nome + Marca + Local + linkedin + cargo/experiência)
+            # Focamos em capturar a aba de 'Experiência' do LinkedIn no snippet do Google/Duck
+            search_query = html.unescape(f'{flexible_name} {clean_brand} {search_location} linkedin cargo experiência')
             print(f"      [Maestro] 🔎 Consultando fundo: {search_query}")
             
             from services.hierarchy.search_engine import get_duck_results
-            # Pegamos mais resultados (10) para garantir que achamos o snippet certo das atividades
-            extra_results = await get_duck_results(search_query, max_results=5)
+            # Aumentamos para 15 resultados para garantir que pegamos o snippet de experiência se houver
+            extra_results = await get_duck_results(search_query, max_results=15)
             
             snippets = []
             suggested_linkedin = href # Fallback
@@ -93,9 +94,21 @@ class CandidateProcessor:
         # 1. Roda a Repescagem (IA + Busca Direta)
         ai_data = await self.deep_research({"name": name, "linkedin": "None"})
         
-        if not ai_data.get("is_valid") or ai_data.get("matching_score", 0) < 70:
-            print(f"      [Orphan Upgrade] 🚫 Rejeitado: {name} (Não relevante para {self.area})")
-            return None
+        # 🎭 FALLBACK PARA ÓRFÃOS: 'Análise Humana'
+        is_invalid = not ai_data.get("is_valid") or ai_data.get("matching_score", 0) < 70
+        generic_roles = ["não identificado", "professional", "colaborador", "employee", "pioneer", "cargo não identificado nos metadados"]
+        current_role_lower = str(ai_data.get("role", "")).lower()
+
+        if is_invalid and (current_role_lower in generic_roles or not ai_data.get("role")):
+             # Para órfãos, exigimos um pouco mais de evidência para não encher de lixo
+             if ai_data.get("department") != "Não Identificado" and ai_data.get("matching_score", 0) > 0:
+                 ai_data["is_valid"] = True
+                 ai_data["role"] = "Análise Humana"
+                 ai_data["department"] = "A validar (Órfão)"
+                 print(f"      [Orphan Upgrade] 🎭 Promovido para ANÁLISE HUMANA: {name}")
+             else:
+                 print(f"      [Orphan Upgrade] 🚫 Rejeitado: {name} (Não relevante para {self.area})")
+                 return None
             
         # 2. Enriquecimento de Metadados (Aproveitamos para pegar a imagem e bio real)
         verified_linkedin = ai_data.get("verified_linkedin")
@@ -106,6 +119,8 @@ class CandidateProcessor:
 
         # 3. Montagem do Nó Completo
         final_role = ai_data.get("role", orphan_data.get("role", "Colaborador"))
+        
+        confidence = ai_data.get("matching_score", 0)
         
         node_data = {
             "id": f"node_{verified_linkedin.split('/in/')[-1].replace('/', '_')}" if verified_linkedin else f"node_orphan_{name.replace(' ', '_')}",
@@ -119,9 +134,24 @@ class CandidateProcessor:
             "email": apply_pattern(name.split()[0].lower(), (name.split()[1:] or [name.split()[0]])[-1].lower(), self.domain, "first.last"),
             "avatar": enriched.get("image") or None,
             "company_logo": f"https://unavatar.io/{self.domain}" if self.domain else None,
-            "location": self.location or "Brasil"
+            "location": enriched.get("location") or self.location or "Brasil",
+            "observations": ai_data.get("evidence") or enriched.get("description"),
+            "education": enriched.get("education"),
+            "headline": enriched.get("role") or final_role,
+            "matching_score": confidence,
+            "evidence": ai_data.get("evidence")
         }
         
+        # Registro de Dados Brutos para Órfãos
+        register_raw_data(
+            name, 
+            verified_linkedin or "N/A", 
+            {"title": "Orphan Upgrade", "body": "N/D", "meta": enriched.get("role"), "bio_lkn": enriched.get("description")}, 
+            ai_data, 
+            {"role": "Não Encontrado"}, 
+            {"is_valid": ai_data.get("is_valid"), "role": final_role, "department": ai_data.get("department", "N/D"), "matching_score": confidence}
+        )
+
         print(f"      [Orphan Upgrade] ✅ Sucesso: {name} promovido para {final_role}")
         return node_data
 
@@ -150,6 +180,7 @@ class CandidateProcessor:
 
         # 2. 📄 METADADOS (Preview LinkedIn)
         enriched = await get_url_preview(href, company_hint=self.brand, fast_mode=True)
+        meta_company = (enriched.get('company', '') or '').strip()
         
         # 🧪 INTELIGÊNCIA DE NOME: Se o nome extraído do título parece um cargo ou é genérico,
         # tentamos extrair o nome real dos metadados ou da URL.
@@ -197,13 +228,19 @@ class CandidateProcessor:
         mechanical_title = role_engine.extract_mechanical_title(title, body, self.brand)
         
         # ✂️ PODA MECÂNICA (Solução Definitiva contra ruído de múltiplos perfis)
-        # ✂️ PODA MECÂNICA (Solução Definitiva contra ruído de múltiplos perfis)
         def isolate_context(text, target_name):
             if "..." in text:
                 parts = text.split("...")
+                # Tenta match pelo nome completo
                 for p in parts:
                     if target_name.lower() in p.lower():
                         return p.strip()
+                # Tenta match pelo primeiro nome (Último recurso para snippets cortados)
+                first_name = target_name.split()[0].lower()
+                if len(first_name) > 2:
+                    for p in parts:
+                        if first_name in p.lower():
+                            return p.strip()
             return text
 
         clean_title = isolate_context(title.split(" - LinkedIn")[0].split(" | LinkedIn")[0], name)
@@ -217,31 +254,60 @@ class CandidateProcessor:
             f"Google Page Title: {clean_title}",
             f"Search Snippet: {clean_body}",
             f"LinkedIn Status: {enriched.get('name')} | {meta_role_clean}",
+            f"LinkedIn CURRENT COMPANY (Declarada): {meta_company or 'Não detectada'}",
             f"LinkedIn Personal Bio: {bio_clean}",
             f"Verified Official Role: {theorg_role}"
         ]
         
-        ai_data = await role_engine.distill_role(name, self.brand, context, product_focus=self.product, area_focus=self.area, target_location=self.location)
+        ai_data = await role_engine.distill_role(
+            name, self.brand, context, 
+            product_focus=self.product, 
+            area_focus=self.area, 
+            target_location=self.location,
+            official_role=theorg_role if theorg_found else None,
+            meta_company=meta_company
+        )
         confidence = ai_data.get("matching_score", 0)
 
         # 🔄 AUTO-REPESCAGEM: Se houver qualquer dúvida (abaixo de 90%) OU cargo não identificado, investiga a fundo.
-        generic_roles = ["não identificado", "professional", "colaborador", "employee", "pioneer"]
+        # Agora ativamos repescagem MESMO se for inválido, mas o cargo for genérico (Pode ser um falso negativo por falta de dado)
+        generic_roles = ["não identificado", "professional", "colaborador", "employee", "pioneer", "cargo não identificado nos metadados"]
+        current_role_lower = str(ai_data.get("role", "")).lower()
+        
         needs_repescagem = (
             (ai_data.get("is_valid") and confidence < 90) or 
-            (str(ai_data.get("role", "")).lower() in generic_roles)
+            (current_role_lower in generic_roles)
         )
         
-        if ai_data.get("is_valid") and needs_repescagem:
+        if needs_repescagem:
              print(f"      [Maestro] 🔄 Dúvida ou Cargo Genérico detectado ('{ai_data.get('role')}'). Iniciando REPESCAGEM para {name}...")
              repescagem_res = await self.deep_research({"name": name, "linkedin": href, "title": title, "body": body})
              if repescagem_res.get("is_valid"):
                  ai_data = repescagem_res
                  confidence = ai_data.get("matching_score", 95)
                  ai_data["evidence"] = f"APROVADO VIA REPESCAGEM: {ai_data.get('evidence')}"
+             else:
+                 # 🛡️ FIX: Se a investigação profunda diz que NÃO é válido, atualizamos o status global.
+                 ai_data["is_valid"] = False
+                 ai_data["evidence"] = f"REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. {ai_data.get('evidence', '')}"
+
+        # 🎭 FALLBACK DE ÚLTIMA INSTÂNCIA: 'Análise Humana'
+        # Se chegamos aqui e o cargo ainda é genérico/inválido mas a pessoa TRABALHA na empresa, não descartamos.
+        # Salvamos para que o usuário possa decidir manualmente.
+        if not ai_data.get("is_valid") and (current_role_lower in generic_roles or not ai_data.get("role")):
+             # Só fazemos o fallback se o Detetive ou Sniper confirmaram o vínculo com a empresa
+             if ai_data.get("department") != "Não Identificado" or confidence > 0:
+                 ai_data["is_valid"] = True
+                 ai_data["role"] = "Análise Humana"
+                 ai_data["department"] = "A validar"
+                 ai_data["matching_score"] = 10 
+                 ai_data["evidence"] = "ENVIADO PARA ANÁLISE HUMANA: Empresa confirmada, mas cargo oculto no LinkedIn."
 
         # 🛡️ TRAVA FINAL: Só rejeita se a confiança for realmente nula ou se a IA for categórica.
-        if ai_data.get("is_valid") and confidence < 60:
-            ai_data["is_valid"] = False
+        if ai_data.get("is_valid") and confidence < 5:
+            # Mantemos o "Análise Humana" se for o caso
+            if ai_data.get("role") != "Análise Humana":
+                ai_data["is_valid"] = False
             ai_data["evidence"] = f"VETO: Confiança insuficiente ({confidence}%)."
 
         # Fidelity Guard
@@ -255,7 +321,7 @@ class CandidateProcessor:
         # Log Unificado
         log_candidate_analysis(
             name, href, 
-            {"title": title, "body": body, "meta": meta_role_clean, "bio_lkn": bio_clean}, 
+            {"title": title, "body": body, "meta": meta_role_clean, "bio_lkn": bio_clean, "mechanical_role": mechanical_title}, 
             ai_data, 
             {"role": theorg_role, "url": theorg_url}, 
             {"is_valid": ai_data.get("is_valid"), "role": final_role, "department": ai_data.get("department", "N/D"), "matching_score": confidence}
@@ -289,7 +355,12 @@ class CandidateProcessor:
             "email": apply_pattern(name.split()[0].lower(), (name.split()[1:] or [name.split()[0]])[-1].lower(), self.domain, "first.last"),
             "avatar": enriched.get("image"),
             "company_logo": f"https://unavatar.io/{self.domain}" if self.domain else None,
-            "location": self.location or "Brasil"
+            "location": enriched.get("location") or self.location or "Brasil",
+            "observations": enriched.get("description"), # A Bio vinda do OSINT
+            "education": enriched.get("education"),
+            "headline": enriched.get("role") or final_role,
+            "matching_score": confidence,
+            "evidence": ai_data.get("evidence")
         }
 
         return {"main": node_data, "orphans": potential_orphans}

@@ -1,6 +1,6 @@
 .container {
     display: flex;
-    height: 100vh;
+    height: calc(100vh - 24px);
     width: 100vw;
     background-color: var(--sw-bg);
     color: var(--sw-text-base);
@@ -10,6 +10,8 @@
 
 /* --- SIDEBAR (SOFTWARE STYLE) --- */
 .sidenav {
+    height: 100%;
+    flex-shrink: 0;
     width: 56px;
     /* w-14 */
     background: #131313;
@@ -63,31 +65,34 @@
 }
 
 /* --- MAIN WORKSPACE --- */
-  .mainWrapper {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-      background: #1d1d1d;
-  }
+.mainWrapper {
+    height: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: #1d1d1d;
+}
 
-  .contentWrapper {
-      flex: 1;
-      display: flex;
-      flex-direction: row;
-      position: relative;
-      overflow: hidden;
-  }
+.contentWrapper {
+    height: 100%;
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    overflow: hidden;
+}
 
-  .mainContent {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-      background: #1d1d1d;
-  }
+.mainContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: #1d1d1d;
+}
 
 
 
@@ -161,15 +166,15 @@
 
 
 .header {
-    height: 56px;
-    /* h-14 */
-    border-bottom: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    height: 52px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     padding: 0 24px;
-    gap: 12px;
+    gap: 16px;
     background: #131313;
-    z-index: 10;
+    z-index: 50;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .headerLogo {
@@ -195,14 +200,13 @@
 .breadcrumbs {
     display: flex;
     align-items: center;
-    gap: 8px;
-    /* Standardized gap */
-    font-size: 0.82rem;
+    gap: 10px;
+    font-size: 0.88rem;
 }
 
 .breadcrumbItem {
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .breadcrumbDivider {
@@ -275,13 +279,14 @@
 .toolbarSegment {
     display: flex;
     align-items: center;
-    padding: 0 16px;
+    padding: 0 12px;
     height: 38px;
     border-radius: 8px;
     transition: var(--transition-fast);
     color: rgba(255, 255, 255, 0.4);
     min-width: 0;
-    flex: 1;
+    flex: 1 1 auto;
+    /* Permite crescer e encolher conforme o espaço */
 }
 
 .toolbarSegment:hover {
@@ -340,11 +345,13 @@
     gap: 12px !important;
     padding: 2px 12px !important;
     min-width: 100px !important;
-    max-width: 440px !important;
+    max-width: 200px !important;
+    /* Reduzido de 440px para evitar quebras */
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    flex: 1 !important;
+    flex: 0 1 auto !important;
+    /* Não deixa crescer indefinidamente */
 }
 
 .selectedBrandPreview .brandAvatarWrapper {
@@ -397,8 +404,10 @@
 .areaSelectorContainer {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
     padding: 0 4px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .areaBtn {
@@ -428,27 +437,21 @@
 .toolbarActions {
     display: flex;
     align-items: center;
-    padding-left: 8px;
-    gap: 4px;
+    padding-left: 12px;
+    gap: 8px;
     margin-right: 6px;
+    flex-shrink: 0;
+    /* Impede que os botões de ação sejam esmagados ou sobrepostos */
 }
 
 .toolbarUnifiedWrapper {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    /* Stretch children to share max content width */
-
     z-index: 1200;
     pointer-events: none;
     width: fit-content;
-    /* Dynamic again */
     max-width: calc(100% - 40px);
-    /* Stay within mainContent with some margin */
     animation: swSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -465,22 +468,52 @@
     max-width: 100%;
 
     min-height: 48px;
-    background: #131313;
+    background: var(--sw-sidebar);
     /* Matching Sidenav/Header */
-    border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    border: var(--sw-border-width) solid var(--sw-border-strong);
     border-bottom: none;
     padding: 8px 16px;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap !important;
     gap: 12px;
-    border-radius: 16px 16px 0 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     position: relative;
-    animation: swSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* 🎭 Animação Ultra-Fluida */
+    animation: swSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
+
+@keyframes swSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.optionsContainerClosing {
+    animation: swSlideOut 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes swSlideOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
+
 
 
 
@@ -498,6 +531,28 @@
 }
 
 
+.closeCarouselBtn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    align-self: center;
+    margin-left: auto;
+}
+
+.closeCarouselBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
 .optionsContainer::-webkit-scrollbar {
     display: none;
 }
@@ -508,7 +563,7 @@
     align-items: center;
     padding: 6px 12px;
     gap: 12px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     cursor: pointer;
     transition: all 0.2s;
     border: none;
@@ -516,16 +571,17 @@
     min-width: 300px;
     flex-shrink: 0;
     pointer-events: auto;
-    background: #ffffff00;
-    /* Subtle card highlight */
+    background: transparent;
     scroll-snap-align: start;
 }
 
-
 .brandCard:hover {
-    background: rgba(255, 255, 255, 0.03);
-    /* Subtle highlight like orgItem */
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.brandCardActive {
+    background: var(--sw-primary-soft) !important;
+    box-shadow: 0 0 0 1px var(--sw-primary-light);
 }
 
 
@@ -646,7 +702,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     display: inline-block;
-    max-width: 60px; /* Adapte se precisar de mais espaço: ex: 80px */
+    max-width: 60px;
+    /* Adapte se precisar de mais espaço: ex: 80px */
 }
 
 
@@ -724,10 +781,13 @@
 }
 
 .stopBtn {
-    background-color: rgba(239, 68, 68, 0.2) !important; /* Fundo vermelho mais evidente */
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    /* Fundo vermelho mais evidente */
     border: 1px solid rgba(239, 68, 68, 0.5) !important;
-    color: #ef4444 !important; /* Texto e Ícone Vermelhos */
-    box-shadow: none !important; /* Sem sombra */
+    color: #ef4444 !important;
+    /* Texto e Ícone Vermelhos */
+    box-shadow: none !important;
+    /* Sem sombra */
     pointer-events: auto !important;
 }
 
@@ -735,7 +795,8 @@
     background-color: rgba(239, 68, 68, 0.3) !important;
     border-color: #ef4444 !important;
     color: #ef4444 !important;
-    box-shadow: none !important; /* Removemos sombra no hover tbm */
+    box-shadow: none !important;
+    /* Removemos sombra no hover tbm */
 }
 
 /* Força os ícones lucide (como o loading) a pegarem o vermelho também */
@@ -786,7 +847,7 @@
 }
 
 .refineTab.searching .detectBtn {
-  
+
     border: none !important;
     padding: 0 12px !important;
 }
@@ -973,8 +1034,11 @@
 .confirmState {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 4px;
+    /* Mais compacto para evitar overflow */
     flex: 1;
+    min-width: 0;
+    width: 100%;
 }
 
 .confirmLabelWrapper {
@@ -1047,6 +1111,8 @@
 
 /* --- DRAWER --- */
 .drawer {
+    height: 100%;
+    flex-shrink: 0;
     width: 360px;
     /* w-80 */
     flex-shrink: 0;
@@ -1071,7 +1137,7 @@
 }
 
 .drawerHeader {
-    height: 56px;
+    height: 52px;
     /* h-14 */
     padding: 0 12px;
     display: flex;
@@ -1189,15 +1255,17 @@
     padding: 10px 16px;
     cursor: pointer;
     transition: all 0.2s ease;
-    border-radius: 8px;
+    border-radius: 0 8px 8px 0;
     margin: 4px 0;
     background: transparent;
     border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    box-shadow: inset 0px 0 0 0 var(--sw-primary);
 }
 
 .orgItem:hover,
 .selectedOrgItem {
     background: transparent;
+    box-shadow: inset 3px 0 0 0 var(--sw-primary);
 }
 
 .orgMainInfo {
@@ -1214,13 +1282,8 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    opacity: 0.5;
-    transition: all 0.2s ease;
-}
-
-.orgItem:hover .orgLogoWrapper,
-.selectedOrgItem .orgLogoWrapper {
     opacity: 1;
+    transition: all 0.2s ease;
 }
 
 .orgLogo {
@@ -1228,17 +1291,12 @@
     height: 100%;
     object-fit: contain;
     border-radius: 6px;
-    opacity: 0.4;
+    opacity: 1;
     transition: all 0.2s ease;
 }
 
-.orgItem:hover .orgLogo,
-.selectedOrgItem .orgLogo {
-    opacity: 1;
-}
-
 .orgIcon {
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.8);
     transition: all 0.2s ease;
 }
 
@@ -1256,29 +1314,23 @@
 
 .orgName {
     font-size: 0.9rem;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.4);
+    font-weight: 400;
+    color: #ffffff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: all 0.2s ease;
 }
 
-.orgItem:hover .orgName,
 .selectedOrgItem .orgName {
-    color: #ffffff;
+    font-weight: 700;
 }
 
 .orgDomain {
     font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.8);
     font-weight: 500;
     transition: all 0.2s ease;
-}
-
-.orgItem:hover .orgDomain,
-.selectedOrgItem .orgDomain {
-    color: rgba(255, 255, 255, 0.8);
 }
 
 .orgFooter {
@@ -1303,7 +1355,7 @@
     margin-left: -8px;
     background: #2a2a2a;
     transition: transform 0.2s, opacity 0.2s ease;
-    opacity: 0.4;
+    opacity: 1;
 }
 
 .stackedAvatar:first-child {
@@ -1318,7 +1370,7 @@
 
 .orgItem:hover .stackedAvatar,
 .selectedOrgItem .stackedAvatar {
-    opacity: 0.8;
+    opacity: 1;
 }
 
 .mappedBadge {
@@ -1775,6 +1827,23 @@
     transform-style: preserve-3d;
 }
 
+.chatNode {
+    cursor: default !important;
+    will-change: auto !important;
+    transition: none !important;
+    transform-style: preserve-3d !important;
+}
+
+.chatNode .seniorityWrapper {
+    transform: translateZ(-1px) !important;
+    z-index: auto !important;
+}
+
+.chatNode:hover {
+    box-shadow: none !important;
+    transform: none !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
 
 
 .customNode:hover {
@@ -1929,51 +1998,50 @@
 
 /* Color Variants - Harmonized Intelligence Palette */
 .badge_6 {
-    background: #1E2145 !important;
-    color: #7A8BFF !important;
-    border-color: rgba(122, 139, 255, 0.3) !important;
+    color: #1E2145 !important;
+    background: #7A8BFF !important;
+
 }
 
 /* C-Level (Indigo) */
 .badge_5 {
-    background: #1E2D45 !important;
-    color: #60A5FA !important;
-    border-color: rgba(96, 165, 250, 0.3) !important;
+    color: #1E2D45 !important;
+    background: #60A5FA !important;
+
 }
 
 /* Director (Royal) */
 .badge_4 {
-    background: #11363B !important;
-    color: #2DD4BF !important;
-    border-color: rgba(45, 212, 191, 0.3) !important;
+    color: #11363B !important;
+    background: #2DD4BF !important;
+
 }
 
 /* Manager (Cyan) */
 .badge_3 {
-    background: #063720 !important;
-    color: #4ADE80 !important;
-    border-color: rgba(74, 222, 128, 0.3) !important;
+    color: #063720 !important;
+    background: #4ADE80 !important;
+
 }
 
 /* Coordinator (Pipedrive Green) */
 .badge_2 {
-    background: #372A10 !important;
-    color: #FBBF24 !important;
-    border-color: rgba(251, 191, 36, 0.3) !important;
+    color: #372A10 !important;
+    background: #FBBF24 !important;
 }
 
 /* Specialist (Amber) */
 .badge_1 {
-    background: #27272A !important;
-    color: #A1A1AA !important;
-    border-color: rgba(161, 161, 170, 0.3) !important;
+    color: #27272A !important;
+    background: #A1A1AA !important;
+
 }
 
 /* Support (Slate) */
 .badge_0 {
-    background: #3F3F46 !important;
-    color: #F4F4F5 !important;
-    border-color: rgba(244, 244, 245, 0.3) !important;
+    color: #3F3F46 !important;
+    background: #F4F4F5 !important;
+
 }
 
 /* Root (Silver) */
@@ -1992,6 +2060,16 @@
     font-size: 11px;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.3);
+}
+
+.scoreBadge {
+    padding: 2px 8px;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
 }
 
 
@@ -2031,7 +2109,7 @@
     object-fit: cover;
     backface-visibility: hidden;
     will-change: opacity;
-    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
 }
 
 .nodeAvatarCompanyBadge {
@@ -2206,6 +2284,18 @@
     font-size: 11px;
     color: rgba(255, 255, 255, 0.4);
     line-height: 1.6;
+    max-height: 120px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.osintParagraph::-webkit-scrollbar {
+    width: 3px;
+}
+
+.osintParagraph::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
 }
 
 .emailLine {
@@ -2464,6 +2554,7 @@
     align-items: center;
     gap: 10px;
 }
+
 .focusHeaderActions {
     margin-left: auto;
     display: flex;
@@ -2523,4 +2614,205 @@
 .dropdownItem:hover {
     background: rgba(255, 255, 255, 0.05);
     color: #fff;
+}
+
+/* --- 🎭 ANÁLISE HUMANA BADGE --- */
+.bottomToolbarRow {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 1200;
+    pointer-events: none;
+}
+
+.bottomToolbarRow>* {
+    pointer-events: auto;
+}
+
+.humanAnalysisTrigger {
+    height: auto;
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    position: relative;
+    pointer-events: auto;
+    transition: var(--transition-smooth);
+}
+
+.humanAnalysisTrigger:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+
+
+.humanAnalysisAvatarStack {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 60px;
+    /* Base width plus space for stack */
+    height: 48px;
+    margin-right: 8px;
+    /* Give space for the tilted cards */
+}
+
+.humanAnalysisStackedAvatar {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    border: 2px solid #1a1a1b;
+    background: #2a2a2b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    /* To allow the notification to pop out */
+    color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+    will-change: transform, opacity;
+}
+
+/* Layer Logic for Stacking and Tilting */
+.stackLayer0 {
+    z-index: 30;
+    transform: translateX(0) rotate(0deg);
+}
+
+.stackLayer1 {
+    z-index: 20;
+    transform: translateX(12px) rotate(8deg);
+    opacity: 0.9;
+    filter: brightness(0.8);
+}
+
+.stackLayer2 {
+    z-index: 10;
+    transform: translateX(24px) rotate(16deg);
+    opacity: 0.7;
+    filter: brightness(0.6);
+}
+
+.humanAnalysisStackedAvatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 14px;
+    /* Slightly inner radius for border effect */
+}
+
+.humanAnalysisAvatarPlaceholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #2a2a2b, #1a1a1b);
+    border-radius: 14px;
+}
+
+.humanAnalysisNotification {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ff3b30;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    border: 1.5px solid #1a1a1b;
+    z-index: 50;
+}
+
+/* Fan out effect on hover */
+.humanAnalysisTrigger:hover .stackLayer1 {
+    transform: translateX(18px) rotate(12deg);
+}
+
+.humanAnalysisTrigger:hover .stackLayer2 {
+    transform: translateX(36px) rotate(24deg);
+}
+
+.humanAnalysisList {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    width: 260px;
+    background: #1a1a1b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 171, 0, 0.05);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 2000;
+    backdrop-filter: blur(15px);
+}
+
+.humanAnalysisCard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 12px;
+    transition: var(--transition-fast);
+}
+
+.humanAnalysisCard:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.humanAnalysisCardAvatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: #2a2a2b;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.humanAnalysisCardAvatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.humanAnalysisCardInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.humanAnalysisCardName {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.humanAnalysisCardSub {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.4);
 }

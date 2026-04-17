@@ -28,43 +28,73 @@ async def confirm_enrich_data(payload: ConfirmEnrichRequest):
         from services.pipedrive.pipedrive_service import pipedrive_service
         
         async with async_session() as session:
-            # 🕵️ BUSCA AGRESSIVA DE DEDUPLICAÇÃO (Prioriza Pipedrive ID > CNPJ > Nome)
-            from sqlalchemy import func
+            # 🕵️ BUSCA DE DEDUPLICAÇÃO REFINADA (Prioridade Sequencial)
+            org = None
             
-            # Filtro 1: Pipedrive ID
-            filters = [Organization.pipedrive_id == payload.pipedrive_id]
+            # 1. Tenta pelo Pipedrive ID (O mais seguro)
+            if payload.pipedrive_id:
+                stmt = select(Organization).where(Organization.pipedrive_id == payload.pipedrive_id)
+                res = await session.execute(stmt)
+                org = res.scalars().first()
             
-            # Filtro 2: CNPJ (se fornecido)
-            if payload.cnpj:
+            # 2. Se não achou, tenta pelo CNPJ (Identificador único nacional)
+            if not org and payload.cnpj:
                 clean_cnpj = payload.cnpj.replace(".", "").replace("/", "").replace("-", "")
-                filters.append(Organization.cnpj == clean_cnpj)
+                stmt = select(Organization).where(Organization.cnpj == clean_cnpj)
+                res = await session.execute(stmt)
+                found_by_cnpj = res.scalars().first()
+                if found_by_cnpj:
+                    org = found_by_cnpj
+                    print(f"[Intelligence] 🎯 Deduplicação via CNPJ: {clean_cnpj}")
             
-            # Filtro 3: Nome (Case Insensitive)
-            if payload.name:
-                filters.append(func.lower(Organization.name) == payload.name.lower())
-                
-            stmt = select(Organization).where(or_(*filters))
-            res = await session.execute(stmt)
-            org = res.scalars().first()
+            # 3. Se ainda não achou, tenta pelo Nome (Apenas se não houver conflito de CNPJ)
+            if not org and payload.name:
+                from sqlalchemy import func
+                stmt = select(Organization).where(func.lower(Organization.name) == payload.name.lower())
+                res = await session.execute(stmt)
+                found_by_name = res.scalars().first()
+                # Só reutilizamos se o registro encontrado NÃO tiver um CNPJ diferente ou PD ID diferente
+                if found_by_name:
+                    if not found_by_name.cnpj or (payload.cnpj and found_by_name.cnpj == payload.cnpj.replace(".", "").replace("/", "").replace("-", "")):
+                        org = found_by_name
+                        print(f"[Intelligence] 📝 Deduplicação via Nome: {payload.name}")
+                    else:
+                        print(f"[Intelligence] 🛡️ Nome coincide ({payload.name}) mas CNPJ é diferente. Criando novo registro.")
             
+            # 🚀 SINCRONIZAÇÃO/CRIAÇÃO PIPEDRIVE
+            was_manually_created = False
+            target_pid = payload.pipedrive_id
+            
+            if not target_pid:
+                print(f"[Intelligence] 🚀 Criando nova empresa no Pipedrive: {payload.name}")
+                target_pid = await pipedrive_service.create_organization({
+                    "name": payload.name,
+                    "address": payload.address,
+                    "domain": payload.domain,
+                    "cnpj": payload.cnpj
+                })
+                was_manually_created = True
+
+            # 🕵️ VÍNCULO COM REGISTRO LOCAL
             if not org:
-                print(f"[Intelligence] 🆕 Criando novo registro para: {payload.name}")
-                org = Organization(pipedrive_id=payload.pipedrive_id)
+                print(f"[Intelligence] 🆕 Criando novo registro local para: {payload.name}")
+                org = Organization(pipedrive_id=target_pid)
                 session.add(org)
             else:
-                print(f"[Intelligence] 🤝 Fundindo dados no registro existente ID {org.id}: {org.name}")
-                # Se o registro existente não tinha Pipedrive ID e agora temos, vincula.
-                if not org.pipedrive_id and payload.pipedrive_id:
-                    org.pipedrive_id = payload.pipedrive_id
+                # Se achamos um registro mas ele já tem um Pipedrive ID diferente do que acabamos de criar...
+                if was_manually_created and org.pipedrive_id and org.pipedrive_id != target_pid:
+                    print(f"[Intelligence] ⚠️ Conflito: Registro local '{org.name}' já está vinculado ao Pipedrive ID {org.pipedrive_id}. Criando NOVO registro local para evitar overwrite.")
+                    org = Organization(pipedrive_id=target_pid)
+                    session.add(org)
+                else:
+                    print(f"[Intelligence] 🤝 Vinculando dados ao registro local ID {org.id}: {org.name}")
+                    org.pipedrive_id = target_pid
             
-            # ✍️ ATRIBUIÇÃO LOCAL: Vincula os dados escolhidos ao registro central
+            # ✍️ ATRIBUIÇÃO DE DADOS (Agora no registro correto)
             if payload.name: org.name = payload.name
             if payload.cnpj: org.cnpj = payload.cnpj.replace(".", "").replace("/", "").replace("-", "")
             if payload.domain: org.domain = payload.domain
-            if payload.address and len(payload.address) > 3: 
-                org.address = payload.address
-            
-            # Persiste dados do LinkedIn
+            if payload.address: org.address = payload.address
             if payload.linkedin_url: org.linkedin_url = payload.linkedin_url
             if payload.logo_url: org.logo_url = payload.logo_url
             
@@ -87,8 +117,8 @@ async def confirm_enrich_data(payload: ConfirmEnrichRequest):
                     session.add(new_p)
                 await session.commit()
             
-            # 🚀 SINCRONIZAÇÃO PIPEDRIVE (Só agora que foi confirmado!)
-            if payload.pipedrive_id:
+            # 🚀 ATUALIZAÇÃO PIPEDRIVE (se já existia ou foi criado)
+            if target_pid:
                 pipedrive_data = {
                     "address": payload.address,
                     "domain": payload.domain,
@@ -97,12 +127,13 @@ async def confirm_enrich_data(payload: ConfirmEnrichRequest):
                     "logo_url": payload.logo_url,
                     "name": payload.name
                 }
-                await pipedrive_service.update_organization(payload.pipedrive_id, pipedrive_data)
+                await pipedrive_service.update_organization(target_pid, pipedrive_data)
 
             return {
                 "status": "success", 
                 "message": f"Organização '{payload.name}' mapeada e sincronizada com sucesso.",
-                "local_id": org.id
+                "local_id": org.id,
+                "pipedrive_id": target_pid
             }
     except Exception as e:
         import traceback

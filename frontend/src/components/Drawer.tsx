@@ -295,6 +295,8 @@ export const Drawer: React.FC<DrawerProps> = ({
         } catch (e: any) {}
     }
 
+    if (!showDrawer) return null;
+
     return (
         <div className={styles.drawer}>
             <div className={styles.drawerHeader}>
@@ -504,7 +506,8 @@ export const Drawer: React.FC<DrawerProps> = ({
                                 emp.department !== "Quadro Societário" &&
                                 emp.department !== "Quadro de Sócios (QSA)" &&
                                 emp.level !== 6 &&
-                                !String(emp.id).startsWith("partner_")
+                                !String(emp.id).startsWith("partner_") &&
+                                emp.role !== "Análise Humana"
                             );
 
                             const graphPics = validEmps
@@ -520,7 +523,9 @@ export const Drawer: React.FC<DrawerProps> = ({
                             <div
                                 key={org.local_id || org.id}
                                 className={`${styles.orgItem} ${isSelected ? styles.selectedOrgItem : ''}`}
-                                onClick={() => onOrgClick(org)}
+                                onClick={() => {
+                                    onOrgClick(org);
+                                }}
                             >
                                 <div className={styles.orgMainInfo}>
                                     <div className={styles.orgLogoWrapper}>

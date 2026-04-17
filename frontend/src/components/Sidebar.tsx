@@ -21,6 +21,7 @@ interface SidebarProps {
     theme: string;
     onToggleTheme: () => void;
     onReset: () => void;
+    onNewCompany?: () => void;
     onCopyData: () => void;
     onRefine?: () => void;
     onSmartSync?: () => void;
@@ -33,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     theme, 
     onToggleTheme, 
     onReset,
+    onNewCompany,
     onCopyData,
     onRefine,
     onSmartSync
@@ -67,8 +69,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <div
                 className={styles.navIcon}
-                onClick={onReset}
-                title="Nova Busca"
+                onClick={onNewCompany || onReset}
+                title="Nova Empresa"
             >
                 <CirclePlus size={20} className={styles.iconSide} />
             </div>
@@ -94,10 +96,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={styles.navIcon} 
                 title="Mensagens (WhatsApp)" 
                 onClick={() => window.location.href = '/whatsapp'}
+                style={{ overflow: 'hidden', padding: '6px' }}
             >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={styles.iconSide}>
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                </svg>
+                <img 
+                    src="/wppicon.png" 
+                    alt="WhatsApp" 
+                    style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'contain', 
+                        borderRadius: '6px',
+                        transition: 'transform 0.2s'
+                    }}
+                />
             </div>
 
             <div className={styles.navIcon} title="Limpar Canvas" onClick={onReset}>

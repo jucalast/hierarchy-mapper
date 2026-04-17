@@ -96,6 +96,13 @@ async def discover_company_brand_stream(
             print(f"[BrandDiscovery] 📡 Dados oficiais extraídos (Stream): {search_name}")
             partners = [{"name": p.get("name"), "role": p.get("role", "Sócio")} for p in official_data.get("partners", [])]
     
+    # Fallback se busca de dados corporativos falhou e não temos nome
+    if not search_name:
+        search_name = raw_name or (domain.split(".")[0] if domain else "")
+        
+    if not search_name:
+        raise ValueError("Não foi possível identificar o nome da empresa nem pelo CNPJ nem pelo Domínio.")
+
     # Descoberta de domínio
     try:
         if official_data.get("success") and not domain:
@@ -108,9 +115,6 @@ async def discover_company_brand_stream(
                 domain = detected_domain
     except Exception as e:
         print(f"[BrandDiscovery] Domain discovery error (Stream): {e}")
-        search_name = raw_name or (domain.split(".")[0] if domain else "")
-        if not search_name:
-            raise ValueError("Não foi possível identificar a empresa.")
 
     # PASSO 2: Buscas Multi-Ângulo
     city = ""
@@ -120,21 +124,26 @@ async def discover_company_brand_stream(
             city_part = addr_parts[-1].split("-")[0].strip()
             city = city_part
     
-    # Extrai a marca curta (primeira palavra significativa) para buscas diretas
-    # Ex: "3M DO BRASIL LTDA" -> "3M" (apenas a primeira palavra importante)
+    # Extrai a marca curta (duas primeiras palavras significativas) para buscas diretas
+    # Ex: "SARLO INDUSTRIA E COMERCIO..." -> "SARLO INDUSTRIA"
     brand_tokens = search_name.split()
-    brand_short = ""
+    meaningful_tokens = []
     for token in brand_tokens:
         # Pula palavras genéricas corporativas e preposições
-        if not any(corp_word in token.upper() for corp_word in ["LTDA", "S.A.", "INC", "LLC", "BRASIL", "BRAZIL", "DO", "DE", "DA", "E"]):
-            brand_short = token  # Pega apenas a PRIMEIRA palavra significativa
-            break
-    brand_short = brand_short.strip() if brand_short else search_name.split()[0]
+        if not any(corp_word == token.upper() for corp_word in ["LTDA", "S.A.", "INC", "LLC", "BRASIL", "BRAZIL", "DO", "DE", "DA", "E"]):
+            meaningful_tokens.append(token)
+            if len(meaningful_tokens) == 2:
+                break
+    brand_short = " ".join(meaningful_tokens).strip() if meaningful_tokens else search_name.split()[0]
+    
+    domain_base = domain.split(".")[0] if domain else ""
     
     search_queries = [
         f'"{brand_short}" linkedin' if brand_short else None,  # 🆕 Busca pela marca curta direto
         f'"{brand_short}" company linkedin' if brand_short else None,  # 🆕 Variação com "company"
         f'"{brand_short}" Brasil linkedin' if brand_short else None,  # 🆕 Variação com país
+        f'"{domain_base}" linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None, # 🆕 Busca pelo prefixo do dominio
+        f'"{domain_base}" Brasil linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None,
         f'"{search_name}" linkedin',
         f'site:linkedin.com/company "{search_name}"',
         f'"{search_name}" {city} linkedin' if city else None,

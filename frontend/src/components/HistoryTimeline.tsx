@@ -12,6 +12,7 @@ import {
     Building2,
     Check
 } from 'lucide-react';
+import { TimelineEventRow, TimelineEvent } from './TimelineEventRow';
 import styles from './HistoryTimeline.module.css';
 
 interface HistoryTimelineProps {
@@ -24,21 +25,8 @@ interface HistoryTimelineProps {
     orgName: string;
 }
 
-type TimelineEvent = {
-    id: string | number;
-    type: 'activity' | 'note' | 'update';
-    timestamp: string;
-    title: string;
-    subtext?: string;
-    content?: string;
-    user?: string;
-    contact?: string;
-    company?: string;
-    icon: React.ReactNode;
-    done?: boolean;
-    activityType?: string;
-};
-
+ 
+ 
 export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ details, orgName }) => {
     const [activeTab, setActiveTab] = useState('Todos');
 
@@ -128,56 +116,15 @@ export const HistoryTimeline: React.FC<HistoryTimelineProps> = ({ details, orgNa
     return (
         <div className={styles.container}>
             <div className={styles.timeline}>
-                {events.length === 0 && (
-                    <div className={styles.empty}>Nenhum registro encontrado para este negócio.</div>
+                {filteredEvents.length === 0 && (
+                    <div className={styles.empty}>Nenhum registro encontrado para esta aba.</div>
                 )}
-                {events.map((event, idx) => (
-                    <div key={event.id} className={styles.eventRow}>
-                        {/* Linha e Ícone Lateral */}
-                        <div className={styles.timelineSide}>
-                            <div className={`${styles.iconCircle} ${event.done ? styles.iconCircleDone : ''}`}>
-                                {event.icon}
-                            </div>
-                            {idx < filteredEvents.length - 1 && <div className={styles.dashedLine} />}
-                        </div>
-
-                        {/* Conteúdo do Card */}
-                        <div className={`${styles.eventCard} ${event.done ? styles.eventCardDone : ''}`}>
-                            <div className={styles.eventHeader}>
-                                <div className={styles.titleArea}>
-                                    {event.done && <Check size={12} className={styles.doneCheck} />}
-                                    <span className={styles.eventTitle}>{event.title}</span>
-                                </div>
-                                <span className={styles.moreOptions}>•••</span>
-                            </div>
-
-                            <div className={styles.eventMeta}>
-                                <span className={styles.metaItem}>{formatDateTime(event.timestamp)}</span>
-                                {event.user && <span className={styles.metaSeparator}>•</span>}
-                                {event.user && <span className={styles.metaItem}>{event.user}</span>}
-                                {event.contact && (
-                                    <>
-                                        <span className={styles.metaSeparator}>•</span>
-                                        <span className={styles.metaItem}><User size={10} /> {event.contact}</span>
-                                    </>
-                                )}
-                                <span className={styles.metaSeparator}>•</span>
-                                <span className={styles.metaItem}><Building2 size={10} /> {event.company}</span>
-                            </div>
-
-                            {event.subtext && (
-                                <div className={styles.eventSubtext}>
-                                    {event.subtext}
-                                </div>
-                            )}
-
-                            {event.content && (
-                                <div className={`${styles.eventContent} ${event.activityType === 'call' || event.type === 'note' ? styles.callNote : ''}`}>
-                                    <div dangerouslySetInnerHTML={{ __html: event.content }} />
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                {filteredEvents.map((event, idx) => (
+                    <TimelineEventRow 
+                        key={event.id} 
+                        event={event} 
+                        isLast={idx === filteredEvents.length - 1} 
+                    />
                 ))}
             </div>
 

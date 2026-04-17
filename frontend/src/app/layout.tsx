@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   description: 'Enterprise visual hierarchy and supply chain network mapper',
 };
 
+import Footer from '@/components/Footer';
+
 export default function RootLayout({
   children,
 }: {
@@ -17,7 +19,12 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Symbols:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@300;400;500;600&display=swap" />
       </head>
-      <body>{children}</body>
+      <body>
+        <div style={{ height: 'calc(100vh - 24px)', overflow: 'hidden', position: 'relative' }}>
+          {children}
+        </div>
+        <Footer />
+      </body>
     </html>
   );
 }

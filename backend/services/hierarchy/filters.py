@@ -68,23 +68,25 @@ def apply_strict_filters(name: str, title: str, snippet: str, core_company: str,
     """
     PRE-FILTRO DE SEGURANÇA: Bloqueia marcas invasoras e lixo óbvio para economizar API da IA.
     Retorna True se o candidato PARECE ser da empresa certa, False se for lixo óbvio.
-    A decisão REAL sobre cargo e departamento agora fica com a IA (RoleEngine).
     """
-    title_clean = title.lower().strip()
-    snippet_clean = snippet.lower().strip()
+    # 🛡️ NORMALIZAÇÃO: Remove acentos para garantir match (ex: Böttcher -> Bottcher)
+    title_clean = normalize_str(title)
+    snippet_clean = normalize_str(snippet)
     context_clean = f"{title_clean} | {snippet_clean}"
     
-    brand_variants = [target_brand.lower(), core_company.lower()]
+    brand_variants = [normalize_str(target_brand), normalize_str(core_company)]
     if " " in target_brand:
-        brand_variants.append(target_brand.split()[0].lower())
+        brand_parts = target_brand.split()
+        if len(brand_parts[0]) > 2:
+            brand_variants.append(normalize_str(brand_parts[0]))
     
     # 🕵️ 1. SEGURANÇA DE MARCA
-    has_our_brand = any(bv in context_clean for bv in brand_variants)
+    has_our_brand = any(bv in context_clean for bv in brand_variants if len(bv) > 2)
     
     # 🕵️ 4. FILTRAGEM POR RELEVÂNCIA (Whitelist vs Blacklist)
     # Se houver uma palavra de ALTO VALOR, passamos para IA sem medo.
-    high_value_keywords = ["buyer", "comprador", "compradora", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic"]
-    is_high_value = any(kw in context_clean for kw in high_value_keywords) # Agora checa no contexto todo, não só título
+    high_value_keywords = ["buyer", "compras", "comprador", "compradora", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic"]
+    is_high_value = any(kw in context_clean for kw in high_value_keywords)
 
     if not has_our_brand and not is_high_value:
         # Se não tem a marca E não é um cargo óbvio de compras, descarta
@@ -94,25 +96,28 @@ def apply_strict_filters(name: str, title: str, snippet: str, core_company: str,
     # Se mencionar outras marcas GRANDES no título com "na" ou "at", bloqueia
     other_competitors = ["mercedes", "scania", "volkswagen", "bosch", "zf ", "continental", "gm", "volvo"]
     for comp in other_competitors:
-        if f"at {comp}" in title_clean or f"na {comp}" in title_clean or f"no {comp}" in title_clean:
+        normalized_comp = normalize_str(comp)
+        if f"at {normalized_comp}" in title_clean or f"na {normalized_comp}" in title_clean or f"no {normalized_comp}" in title_clean:
             return False
 
     # 🕵️ 3. LIXO DE BUSCA (Páginas de vagas, perfis sem nome, etc)
-    junk_patterns = ["vagas em", "trabalhe na", "talentos", "recrutamento", "vaga para", "visualizar perfil", "quem é", "salário"]
+    junk_patterns = ["vagas em", "trabalhe na", "talentos", "recrutamento", "vaga para", "visualizar perfil", "quem e", "salario"]
     if any(p in title_clean for p in junk_patterns):
         return False
 
     # 🕵️ 4. FILTRAGEM POR RELEVÂNCIA (Whitelist vs Blacklist)
     # Se houver uma palavra de ALTO VALOR (Compras, Suprimentos, Sourcing), ignoramos as negativas e passamos para IA.
-    positive_keywords = ["buyer", "comprador", "compras", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic", "logistic", "logistica", "pcp", "expedição", "estoque", "warehouse", "comércio", "trade", "negociação"]
+    # Adicionado variações para capturar posts informativos (como o da Kamila)
+    positive_keywords = ["buyer", "comprador", "compras", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic", "logistic", "logistica", "pcp", "expedicao", "estoque", "warehouse", "comercio", "trade", "negociacao", "operacoes", "diretor", "gerente", "manager", "head"]
     has_positive = any(pk in context_clean for pk in positive_keywords)
     
     if has_positive:
-        # Se tem algo positivo, deixamos a IA decidir (mesmo que tenha lixo junto)
+        # Se tem algo positivo (cargo ou departamento), deixamos a IA decidir
         return True
 
     # Só aplicamos o bloqueio de negativas se NÃO houver nenhuma palavra positiva forte
-    if any(nk in context_clean for nk in negative_keywords):
+    normalized_negatives = [normalize_str(nk) for nk in negative_keywords]
+    if any(nk in context_clean for nk in normalized_negatives):
         return False
 
     return True

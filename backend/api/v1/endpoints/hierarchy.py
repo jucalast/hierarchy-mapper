@@ -368,24 +368,48 @@ async def stream_company_hierarchy(
                 org = res_name.scalars().first()
 
             if not org:
+                # 🚀 CRIAR NO PIPEDRIVE SE FOR NOVA
+                from services.pipedrive.pipedrive_service import pipedrive_service
+                
+                new_name = confirmed_brand or (razao_social[:30] + "..." if len(razao_social) > 30 else razao_social)
+                p_id = await pipedrive_service.create_organization({
+                    "name": new_name,
+                    "address": full_address,
+                    "domain": domain
+                })
+                
                 org = Organization(
-                    name=confirmed_brand or (razao_social[:30] + "..." if len(razao_social) > 30 else razao_social),
+                    name=new_name,
                     cnpj=cnpj_clean,
                     domain=domain,
                     address=full_address,
                     category=area_focus,
-                    product_focus=product_focus
+                    product_focus=product_focus,
+                    pipedrive_id=p_id # Salva o ID retornado (ou None se falhou)
                 )
                 db.add(org)
                 await db.flush()
+                print(f"[Stream] Nova empresa criada. Local ID: {org.id}, Pipedrive ID: {p_id}")
             else:
-                # 🔄 ATUALIZAÇÃO SÍNCRONA: Une o CNPJ aos dados que já existiam (ex: do Pipedrive)
+                # 🔄 ATUALIZAÇÃO SÍNCRONA: Une o CNPJ aos dados que já existiam
                 if not org.cnpj: org.cnpj = cnpj_clean
                 if not org.address or len(org.address) < 5: org.address = full_address
                 if confirmed_brand: org.name = confirmed_brand
                 if domain and not org.domain: org.domain = domain
                 if area_focus: org.category = area_focus
                 if product_focus: org.product_focus = product_focus
+                
+                # Se ela existia no banco local mas não tinha Pipedrive ID (caso raro), tenta criar agora
+                if not org.pipedrive_id:
+                    from services.pipedrive.pipedrive_service import pipedrive_service
+                    p_id = await pipedrive_service.create_organization({
+                        "name": org.name,
+                        "address": org.address,
+                        "domain": org.domain
+                    })
+                    if p_id:
+                        org.pipedrive_id = p_id
+                        print(f"[Stream] Empresa existente vinculada ao Pipedrive. ID: {p_id}")
             
             org_id = org.id
             await db.commit()
@@ -530,6 +554,13 @@ async def get_stored_hierarchy_by_pipedrive(pipedrive_id: int, db: AsyncSession 
     stmt = select(Organization).where(Organization.pipedrive_id == pipedrive_id)
     res = await db.execute(stmt)
     org = res.scalars().first()
+    
+    # 🔄 FALLBACK: Se não encontrou por Pipedrive ID, tenta pelo ID local
+    if not org:
+        stmt_local = select(Organization).where(Organization.id == pipedrive_id)
+        res_local = await db.execute(stmt_local)
+        org = res_local.scalars().first()
+        
     if not org:
         return {"nodes": [], "company_name": "Não encontrada", "status": "new"}
     return await get_stored_hierarchy(org.id, db)
@@ -593,19 +624,29 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
             clean_m_id = f"node_{re.sub(r'[^a-zA-Z0-9]', '_', str(manager_id).split('/in/')[-1].split('?')[0].rstrip('/'))}"
             manager_id = id_mapping.get(clean_m_id, "root_company")
         
+        # Limpeza de e-mail (Bypass logic style)
+        clean_email = emp.email
+        if clean_email and clean_email.endswith("@") and org.domain:
+            clean_email = f"{clean_email}{org.domain}"
+
         nodes.append({
             "id": new_id, 
             "name": emp.name, 
             "role": emp.role, 
-            "level": level, 
+            "level": level,
+            "seniority": level, # Garante que o PersonaCard pegue o nível correto
             "department": get_department_tag(emp.role), 
             "manager_id": manager_id, 
             "linkedin": emp.linkedin_url, 
             "url": emp.linkedin_url, 
             "profile_pic": emp.profile_pic, 
-            "email": emp.email, 
+            "email": clean_email, 
             "education": emp.description, 
-            "location": emp.location
+            "observations": emp.description, # Duplica para compatibilidade
+            "location": emp.location,
+            "phone": emp.phone,
+            "whatsapp_number": emp.whatsapp_number,
+            "temperature": emp.temperature
         })
     
     return {"company_name": org.name, "nodes": nodes, "status": "cached"}

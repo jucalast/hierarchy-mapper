@@ -88,9 +88,9 @@ class PipedriveService:
         from models import Organization
         from sqlalchemy import select
 
-        # 1. Busca imediata no banco local
+        # 1. Busca imediata no banco local (Filtrando as excluídas)
         async with async_session() as session:
-            stmt = select(Organization).order_by(Organization.last_enrichment.desc())
+            stmt = select(Organization).where(Organization.is_excluded != 1).order_by(Organization.last_enrichment.desc())
             res = await session.execute(stmt)
             local_orgs = res.scalars().all()
             
@@ -108,10 +108,14 @@ class PipedriveService:
                                 pid = org.get("id")
                                 name = org.get("name", "").strip()
                                 
-                                # 🔍 FILTRO: Ignora empresas com negócios PERDIDOS e nenhum ABERTO
+                                # 🔍 FILTRO AGRESSIVO: Só traz empresas com NEGÓCIOS ABERTOS
+                                # Isso garante que se você excluiu o negócio, ela suma do Drawer
                                 open_deals = org.get("open_deals_count", 0)
-                                lost_deals = org.get("lost_deals_count", 0)
-                                if open_deals == 0 and lost_deals > 0:
+                                if open_deals == 0:
+                                    continue
+                                
+                                # 🔍 FILTRO 2: Ignora se o nome for muito genérico ou vazio
+                                if not name or len(name) < 2:
                                     continue
                                 
                                 # Tenta achar por ID ou por Nome (Case Insensitive) para evitar duplicidade
@@ -123,16 +127,21 @@ class PipedriveService:
                                 res = await session.execute(stmt)
                                 db_org = res.scalars().first()
                                 
+                                # 🔍 FILTRO 3: Se já existe na BLACKLIST local, ignora permanentemente
+                                if db_org and db_org.is_excluded == 1:
+                                    continue
+
                                 if not db_org:
+                                    # SE NÃO EXISTE LOCALMENTE, SÓ ADICIONA SE TIVER NEGÓCIO ABERTO (Já garantido pelo filtro acima)
                                     db_org = Organization(pipedrive_id=pid, name=name)
                                     session.add(db_org)
-                                    print(f"[Pipedrive Sync] Nova empresa: {name}")
+                                    print(f"[Pipedrive Sync] Nova empresa detectada: {name}")
                                 else:
-                                    # Atualiza registro existente (Sincroniza IDs, mas preserva NOME se ele já estiver 'limpo')
+                                    # Atualiza registro existente
                                     db_org.pipedrive_id = pid
                                     if not db_org.name: 
                                         db_org.name = name
-                                    print(f"[Pipedrive Sync] Atualizando: {name}")
+                                    # print(f"[Pipedrive Sync] Atualizando: {name}")
                                     
                                 # Atualiza metadados apenas se vierem novos e válidos do Pipedrive
                                 p_domain = org.get("c04f98a7a9762df2f8a42e5d7a641a0292723326")
@@ -185,6 +194,8 @@ class PipedriveService:
                     "local_id": o.id,
                     "logo": o.logo_url,
                     "linkedin": o.linkedin_url,
+                    "category": o.category,
+                    "product_focus": o.product_focus,
                     "employee_count": emp_count,
                     "employee_pics": pics
                 })
@@ -355,53 +366,131 @@ class PipedriveService:
             return {"status": "error", "message": str(e)}
 
     async def delete_organization(self, org_id: int):
-        """Exclui uma organização no Pipedrive pelo ID e do banco de dados local."""
+        """Exclui uma organização no Pipedrive pelo ID e do banco de dados local (Blacklist)."""
         from core.database import async_session
         from models import Organization, Employee
-        from sqlalchemy import select, delete
+        from sqlalchemy import select, delete, or_
         
-        # 1. Deletar do Pipedrive (Faz soft-delete/move para lixeira lá)
-        url = f"{self.base_url}/organizations/{org_id}?api_token={self.api_token}"
-        pipedrive_success = False
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.delete(url)
-                if resp.status_code in [200, 204]:
-                    pipedrive_success = True
-                    print(f"[Pipedrive Service] Organização {org_id} excluída com sucesso.")
-                else:
-                    print(f"[Pipedrive Service] Falha ao excluir no Pipedrive: {resp.status_code} - {resp.text}")
-        except Exception as e:
-            print(f"[Pipedrive Service] Erro ao excluir no Pipedrive: {e}")
-
-        # 2. Deletar do Banco de Dados Local para limpar a interface (Cascata)
+        target_pid = None
+        org_local_id = None
+        
+        # 🕵️ 1. BUSCA AGRESSIVA NO BANCO LOCAL PARA IDENTIFICAR A EMPRESA
         try:
             async with async_session() as session:
-                # Busca empresa para pegar o ID real no banco
-                stmt = select(Organization).where(Organization.pipedrive_id == org_id)
+                # O org_id recebido pode ser o Pipedrive ID OU o ID local
+                stmt = select(Organization).where(
+                    or_(Organization.pipedrive_id == org_id, Organization.id == org_id)
+                )
                 res = await session.execute(stmt)
                 org = res.scalars().first()
                 
                 if org:
-                    local_id = org.id
-                    # Deleta todos os funcionários associados primeiro (Cascata manual, caso não tenha pragma ON DELETE CASCADE configurado)
-                    await session.execute(delete(Employee).where(Employee.company_id == local_id))
-                    
-                    # Deleta a própria organização
-                    await session.execute(delete(Organization).where(Organization.id == local_id))
-                    await session.commit()
-                    print(f"[Pipedrive Service] Banco local limpado (Organização e pessoas associadas ao PipedriveID {org_id}).")
+                    target_pid = org.pipedrive_id
+                    org_local_id = org.id
+                    print(f"[Pipedrive Service] Empresa encontrada localmente: {org.name} (Local ID: {org.id}, Pipedrive ID: {target_pid})")
+                else:
+                    # Se não achou localmente, assumimos que o org_id seja o Pipedrive ID
+                    target_pid = org_id
+                    print(f"[Pipedrive Service] Empresa não encontrada localmente. Assumindo org_id {org_id} como Pipedrive ID.")
         except Exception as e:
-            print(f"[Pipedrive Service] Erro ao limpar banco local: {e}")
+            print(f"[Pipedrive Service] Erro ao buscar empresa local: {e}")
+            target_pid = org_id # Fallback
 
+        pipedrive_success = False
+        error_code = None
+        
+        # 2. DELETAR DO PIPEDRIVE (Só se tivermos um Pipedrive ID válido)
+        if target_pid:
+            url = f"{self.base_url}/organizations/{target_pid}?api_token={self.api_token}"
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.delete(url)
+                    res_data = resp.json() if resp.status_code != 204 else {"success": True}
+                    
+                    if resp.status_code in [200, 204] and res_data.get("success"):
+                        pipedrive_success = True
+                        print(f"[Pipedrive Service] Organização {target_pid} excluída com sucesso no Pipedrive.")
+                    elif resp.status_code == 403 or res_data.get("code") == "ERR_ORGANIZATION_MISSING_PERMISSIONS":
+                        error_code = "ERR_ORGANIZATION_MISSING_PERMISSIONS"
+                        print(f"[Pipedrive Service] 🛡️ Permissão negada para excluir Org {target_pid}. Tentando limpar negócios...")
+                        
+                        # Limpa negócios (mais agressivo)
+                        try:
+                            deals_url = f"{self.base_url}/organizations/{target_pid}/deals?status=open&api_token={self.api_token}"
+                            d_resp = await client.get(deals_url)
+                            d_data = d_resp.json()
+                            if d_data.get("success") and d_data.get("data"):
+                                for deal in d_data["data"]:
+                                    deal_id = deal["id"]
+                                    del_resp = await client.delete(f"{self.base_url}/deals/{deal_id}?api_token={self.api_token}")
+                                    if del_resp.status_code in [200, 204]:
+                                        print(f"[Pipedrive Service] 🗑️ Negócio {deal_id} EXCLUÍDO.")
+                                    else:
+                                        await client.put(
+                                            f"{self.base_url}/deals/{deal_id}?api_token={self.api_token}", 
+                                            json={"status": "lost", "lost_reason": "Removido via Hierarchy Mapper"}
+                                        )
+                        except Exception as deal_err:
+                            print(f"[Pipedrive Service] ⚠️ Falha ao limpar negócios: {deal_err}")
+                    else:
+                        error_code = res_data.get("code")
+            except Exception as e:
+                print(f"[Pipedrive Service] Erro Pipedrive API: {e}")
+
+        # 3. BLACKLIST LOCAL: Marca como EXCLUÍDA no banco (Impedir re-sync)
+        try:
+            async with async_session() as session:
+                # O org_local_id ou target_pid DEVEM existir aqui se a empresa foi encontrada no passo 1
+                stmt = None
+                if target_pid is not None and org_local_id is not None:
+                    stmt = select(Organization).where(or_(Organization.pipedrive_id == target_pid, Organization.id == org_local_id))
+                elif target_pid is not None:
+                    stmt = select(Organization).where(Organization.pipedrive_id == target_pid)
+                elif org_local_id is not None:
+                    stmt = select(Organization).where(Organization.id == org_local_id)
+                
+                if stmt is not None:
+                    res = await session.execute(stmt)
+                    org = res.scalars().first()
+                    
+                    if org:
+                        # Limpa funcionários
+                        await session.execute(delete(Employee).where(Employee.company_id == org.id))
+                        
+                        # Blacklist
+                        org.is_excluded = 1
+                        org.cnpj = None
+                        org.domain = None
+                        await session.commit()
+                        print(f"[Pipedrive Service] Blacklist ativada para {org.name} (Local ID: {org.id}).")
+                    elif target_pid:
+                        # Se não existia, cria registro de bloqueio
+                        new_blocked = Organization(pipedrive_id=target_pid, is_excluded=1, name="EXCLUDED_ORG")
+                        session.add(new_blocked)
+                        await session.commit()
+                        print(f"[Pipedrive Service] Criado registro de bloqueio para Pipedrive ID {target_pid}.")
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"[Pipedrive Service] Erro ao processar blacklist local: {e}")
+
+        if not pipedrive_success and error_code == "ERR_ORGANIZATION_MISSING_PERMISSIONS":
+            return "partial_success_permissions"
+            
         return pipedrive_success
 
-    async def get_organization_details(self, org_id: int):
+        # Se falhou no Pipedrive por falta de permissão, mas limpou local, avisamos o chamador
+        if not pipedrive_success and error_code == "ERR_ORGANIZATION_MISSING_PERMISSIONS":
+            return "partial_success_permissions"
+            
+        return pipedrive_success
+
+    async def get_organization_details(self, org_id: int, done: Optional[int] = None):
         """Busca o 'Raio-X' completo da empresa: Contatos, Tarefas, Negócios e Notas."""
         import asyncio
         async with httpx.AsyncClient() as client:
-            # 1. Busca Negócios Primeiro para identificar o Principal
-            deals_resp = await client.get(f"{self.base_url}/organizations/{org_id}/deals?api_token={self.api_token}")
+            # 1. Busca Negócios Primeiro para identificar o Principal (Filtrado por Usuário)
+            deals_resp = await client.get(f"{self.base_url}/organizations/{org_id}/deals?user_id={self.user_id}&api_token={self.api_token}")
             deals_data = deals_resp.json()
             deals = deals_data.get("data") or []
             
@@ -412,13 +501,18 @@ class PipedriveService:
             
             primary_deal_id = primary_deal.get("id") if primary_deal else None
 
-            # 2. Prepara URLs filtradas (ou gerais se não houver deal)
+            # Filtro de status de atividade
+            done_param = f"&done={done}" if done is not None else ""
+
+            # 2. Prepara URLs filtradas por Usuário (ou gerais se não houver deal)
             urls = {
-                "persons": f"{self.base_url}/organizations/{org_id}/persons?api_token={self.api_token}",
-                "activities": f"{self.base_url}/organizations/{org_id}/activities?api_token={self.api_token}",
-                "notes": f"{self.base_url}/notes?org_id={org_id}&api_token={self.api_token}",
+                "persons": f"{self.base_url}/organizations/{org_id}/persons?user_id={self.user_id}&api_token={self.api_token}",
+                "activities": f"{self.base_url}/organizations/{org_id}/activities?user_id={self.user_id}{done_param}&api_token={self.api_token}",
+                "notes": f"{self.base_url}/notes?org_id={org_id}&user_id={self.user_id}&api_token={self.api_token}",
                 "updates": f"{self.base_url}/organizations/{org_id}/flow?api_token={self.api_token}"
             }
+
+
             
             tasks = {key: client.get(url) for key, url in urls.items()}
             responses = await asyncio.gather(*tasks.values())

@@ -18,6 +18,8 @@ import ReactFlow, {
     Connection,
     addEdge
 } from 'reactflow';
+import { Users } from 'lucide-react';
+import { getAvatarUrl, getProxiedUrl } from '../utils/avatarUtils';
 
 import 'reactflow/dist/style.css';
 import styles from './NetworkGraph.module.css';
@@ -32,6 +34,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Drawer } from './Drawer';
 import { ChatPanel } from './ChatPanel';
+import { WhatsAppView } from './WhatsAppView';
 import { NotificationContainer, NotificationType } from './Notification';
 
 
@@ -41,7 +44,7 @@ const SmartBackground = () => {
     // Get the current zoom from the ReactFlow store
     const transform = useStore((s) => s.transform);
     const zoom = transform[2];
-    
+
     // Calculate a gap that stops shrinking after zoom 0.5
     // Visual gap = gap * zoom. If we want visual gap >= 20px, then gap = 20 / zoom.
     // We'll base it on 40px standard.
@@ -50,11 +53,11 @@ const SmartBackground = () => {
     const effectiveGap = zoom < minZoomForScale ? (baseGap * minZoomForScale) / zoom : baseGap;
 
     return (
-        <Background 
-            variant={BackgroundVariant.Lines} 
-            gap={effectiveGap} 
-            size={1} 
-            color="rgba(255, 255, 255, 0.05)" 
+        <Background
+            variant={BackgroundVariant.Lines}
+            gap={effectiveGap}
+            size={1}
+            color="rgba(255, 255, 255, 0.05)"
         />
     );
 };
@@ -69,7 +72,7 @@ const FitViewHandler = ({ shouldFitView, nodes }: { shouldFitView: boolean; node
             }, 100);
         }
     }, [shouldFitView, nodes, fitView]);
-    
+
     return null; // Componente invisível, apenas gerencia o fitView
 };
 
@@ -93,7 +96,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 const nextNodes = applyNodeChanges(changes, nds);
                 return nextNodes;
             });
-            
+
             // Depois que reagiu state asiosamente dispara update
             setTimeout(() => {
                 setNodes((currentNds) => {
@@ -102,24 +105,24 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                         const lObj = JSON.parse(localStorage.getItem('last-viewed-org') || '{}');
                         if (lObj.id) cacheId = lObj.id.toString();
                         else if (lObj.name) cacheId = lObj.name;
-                    } catch(e) {}
-                    
+                    } catch (e) { }
+
                     const positionsCacheKey = `layout-cache-${cacheId}`;
-                    let cachedPositions: Record<string, {x:number, y:number}> = {};
-                    
-                    try { 
+                    let cachedPositions: Record<string, { x: number, y: number }> = {};
+
+                    try {
                         const cached = localStorage.getItem(positionsCacheKey);
                         if (cached) cachedPositions = JSON.parse(cached);
-                    } catch(e) {}
-                    
+                    } catch (e) { }
+
                     const getStableId = (n: any) => n?.data?.linkedin || n?.data?.name || n?.id;
-                    
+
                     // Somente os nós que estão renderizados agora
                     currentNds.forEach(node => {
                         // Não salvar posições de nós que estão selecionados se for apenas um select
                         cachedPositions[getStableId(node)] = { x: node.position.x, y: node.position.y };
                     });
-                    
+
                     localStorage.setItem(positionsCacheKey, JSON.stringify(cachedPositions));
                     return currentNds;
                 });
@@ -132,7 +135,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         (changes: EdgeChange[]) => {
             setEdges((eds) => {
                 const nextEdges = applyEdgeChanges(changes, eds);
-                
+
                 // Salvar edições de conexões no localStorage
                 setTimeout(() => {
                     let cacheId = "default";
@@ -140,11 +143,11 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                         const lObj = JSON.parse(localStorage.getItem('last-viewed-org') || '{}');
                         if (lObj.id) cacheId = lObj.id.toString();
                         else if (lObj.name) cacheId = lObj.name;
-                    } catch(e) {}
-                    
+                    } catch (e) { }
+
                     const edgesCacheKey = `edges-cache-${cacheId}`;
                     const customEdges: Record<string, string> = {};
-                    
+
                     // Usar setNodes de forma não intrusiva apenas para ler a lista atual de nós
                     setNodes(currentNds => {
                         const getStableId = (n: any) => n?.data?.linkedin || n?.data?.name || n?.id;
@@ -162,7 +165,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                         return currentNds;
                     });
                 }, 100);
-                
+
                 return nextEdges;
             });
         },
@@ -175,24 +178,24 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 // A node typically only has one manager, so we remove any existing incoming edge to the target
                 const filteredEdges = eds.filter(e => e.target !== params.target);
                 const nextEdges = addEdge(
-                    { ...params, animated: false, style: { stroke: '#6e7681', strokeWidth: 1.5 } }, 
+                    { ...params, animated: false, style: { stroke: '#6e7681', strokeWidth: 1.5 } },
                     filteredEdges
                 );
-                
+
                 setTimeout(() => {
                     let cacheId = "default";
                     try {
                         const lObj = JSON.parse(localStorage.getItem('last-viewed-org') || '{}');
                         if (lObj.id) cacheId = lObj.id.toString();
                         else if (lObj.name) cacheId = lObj.name;
-                    } catch(e) {}
-                    
+                    } catch (e) { }
+
                     const edgesCacheKey = `edges-cache-${cacheId}`;
                     const customEdges: Record<string, string> = {};
-                    
+
                     setNodes(currentNds => {
                         const getStableId = (n: any) => n?.data?.linkedin || n?.data?.name || n?.id;
-                        
+
                         currentNds.forEach(node => {
                             const incomingEdge = nextEdges.find(e => e.target === node.id);
                             if (incomingEdge) {
@@ -226,7 +229,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const [confirmedFollowers, setConfirmedFollowers] = useState("");
     const [areaFocus, setAreaFocus] = useState<"compras" | "logistica">("compras");
     const [partners, setPartners] = useState<any[]>([]);
-    
+
     // 🔄 Guardar estado anterior para poder restaurar quando volta
     const [previousSearchState, setPreviousSearchState] = useState<{
         brandOptions: any[];
@@ -247,7 +250,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const {
         rawEmployees, rawBackendEdges, loading, discovering, brandOptions, error, setError,
         activeJobId, fetchHierarchy, stopHierarchyScan, discoverBrand, discoverBrandStream, cancelDiscovery, refineHierarchy, loadStoredHierarchy,
-        smartSyncPipedrive, confirmIntelligence, resetHierarchy, reconnectToActiveJob
+        smartSyncPipedrive, confirmIntelligence, resetHierarchy, reconnectToActiveJob, setBrandOptions
     } = useHierarchy();
 
     // 🛡️ SEGURANÇA E FORMATAÇÃO
@@ -276,8 +279,34 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const [pipedriveOrgs, setPipedriveOrgs] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loadingOrgs, setLoadingOrgs] = useState(true);
+
+
+    // 💾 PERSISTENCE FOR DRAWER AND CHAT
     const [showDrawer, setShowDrawer] = useState(false);
     const [showChat, setShowChat] = useState(false);
+    const [activeView, setActiveView] = useState<'graph' | 'whatsapp'>('graph');
+    const [activeChatInfo, setActiveChatInfo] = useState<{ name: string, id?: string } | null>(null);
+
+    // 💾 PERSISTENCE FOR DRAWER AND CHAT
+    useEffect(() => {
+        const savedDrawer = localStorage.getItem("show-drawer") === "true";
+        const savedChat = localStorage.getItem("show-chat") === "true";
+        setShowDrawer(savedDrawer);
+        setShowChat(savedChat);
+    }, []);
+
+    // Sync Drawer state to localStorage
+    const handleSetShowDrawer = (val: boolean) => {
+        setShowDrawer(val);
+        localStorage.setItem("show-drawer", val.toString());
+    };
+
+    // Sync Chat state to localStorage
+    const handleSetShowChat = (val: boolean) => {
+        setShowChat(val);
+        localStorage.setItem("show-chat", val.toString());
+    };
+
     const [enrichingIds, setEnrichingIds] = useState<Set<number>>(new Set());
     const [shouldFitView, setShouldFitView] = useState(false);
 
@@ -292,7 +321,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     };
 
     const filteredOrgs = useMemo(() => {
-        return pipedriveOrgs.filter(org => 
+        return pipedriveOrgs.filter(org =>
             org.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             org.domain?.toLowerCase().includes(searchTerm.toLowerCase())
         );
@@ -326,7 +355,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 }
             } catch (e: any) { console.error("Cache parsing error:", (e as Error).message || e); }
         }
-        
+
         // Sempre busca do backend para garantir dados focados com a realidade
         fetchPipedriveOrgs();
     }, []);
@@ -343,30 +372,39 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 try {
                     const jobData = JSON.parse(jobDataStr);
                     const { brand, orgId } = jobData;
-                    
-                    // Mudar o state pra loading imediatamente para evitar re-loops
-                    setStep("loading");
 
-                    // Reconectar ao job em andamento
+                    console.log(`[Job Check] Detectado Job Ativo para ${brand}. Carregando dados prévios...`);
+
+                    // 1. CARREGAR DADOS DO BANCO IMEDIATAMENTE (Se houver orgId)
+                    // Isso garante que os cards apareçam ANTES de qualquer coisa
+                    if (orgId) {
+                        const data = await loadStoredHierarchy(Number(orgId), true);
+                        if (data && data.nodes && data.nodes.length > 0) {
+                            console.log(`[Job Check] ${data.nodes.length} nós restaurados do banco.`);
+                        }
+                    }
+
+                    // 2. Só agora mudamos para o estado visual de mapeamento
+                    setStep("scanning");
+                    setConfirmedBrand(brand);
+                    if (orgId) setCurrentOrgId(orgId);
+
+                    // 3. Reconectar ao WebSocket para continuar recebendo novos nós
                     const reconnected = await reconnectToActiveJob((type, msg) => {
                         addNotification(type, msg);
                     });
-                    
-                    if (reconnected) {
-                        setConfirmedBrand(brand);
-                        if (orgId) {
-                            setCurrentOrgId(orgId);
-                        }
-                    } else {
-                        checkLastOrg(); // Tenta o fallback caso o reconnected retorne false
+
+                    if (!reconnected) {
+                        console.warn("[Job Check] Job expirou no backend.");
+                        setStep("confirm"); // Mantém o que carregou do banco mas sai do modo scanning
                     }
                 } catch (e: any) {
-                    console.error("[Job Check] Erro ao verificar job ativo:", (e as Error).message || e);
+                    console.error("[Job Check] Erro na reconexão:", e);
                     localStorage.removeItem('active-discovery-job');
-                    checkLastOrg(); // Erro? cai pro fallback
+                    checkLastOrg();
                 }
             } else {
-                checkLastOrg(); // Sem job? Tenta recarregar a última org visualizada
+                checkLastOrg();
             }
         };
 
@@ -378,7 +416,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                     const cleanOrgName = org.name || "";
                     setConfirmedBrand(cleanOrgName);
                     setConfirmedLogo(org.logo || "");
-                    
+
                     let targetCnpj = org.cnpj || "";
                     const onlyNums = targetCnpj.replace(/\D/g, '');
                     if (onlyNums.length >= 5) {
@@ -398,12 +436,14 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                     } else {
                         setStep("input");
                     }
-                } catch(e) {
+                } catch (e) {
                     console.error("[Last Org Check] Erro ao verificar last-viewed-org:", (e as Error).message || e);
-                    setStep("initial");
+                    setConfirmedBrand(" "); // Sentinel para ativar modo "Nova Empresa" (Vermelho)
+                    setStep("input");
                 }
             } else {
-                setStep("initial");
+                setConfirmedBrand(" "); // Sentinel para ativar modo "Nova Empresa" (Vermelho)
+                setStep("input");
             }
         };
 
@@ -417,10 +457,10 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         if (pipedriveOrgs.length === 0) setLoadingOrgs(true);
         try {
             // Sincronização em background (Pipedrive -> DB Local)
-            fetch('http://127.0.0.1:8000/api/v1/pipedrive_sync', { method: 'POST' }).catch(() => {});
-            
+            fetch('http://127.0.0.1:8000/api/v1/pipedrive_sync', { method: 'POST' }).catch(() => { });
+
             const orgsResp = await fetch(`http://127.0.0.1:8000/api/v1/pipedrive/organizations?_=${Date.now()}`);
-            
+
             // Check do status HTTP
             if (!orgsResp.ok) {
                 console.warn(`[Pipedrive API] HTTP ${orgsResp.status}: ${orgsResp.statusText}`);
@@ -428,12 +468,12 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 setLoadingOrgs(false);
                 return;
             }
-            
+
             const data = await orgsResp.json();
             console.log("[Pipedrive API] Data Received:", data);
             const list = Array.isArray(data) ? data : [];
             setPipedriveOrgs(list);
-            
+
             // Revalida o cache com a versão real do banco
             if (list.length > 0) {
                 localStorage.setItem("pipedrive-orgs-cache", JSON.stringify(list));
@@ -450,7 +490,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
     const handleBrandSelect = async (brandObj: any) => {
         console.log("[Graph] handleBrandSelect called with:", brandObj);
-        
+
         // 🛑 Cancelar o stream de descoberta se ainda estiver em andamento
         if (discovering) {
             console.log("[Graph] Cancelando stream de descoberta...");
@@ -458,8 +498,17 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         }
 
         if (!brandObj) {
-            console.log("[Graph] VOLTAR CLICADO - Restaurando estado anterior");
-            // Restaurar estado anterior se existir
+            console.log("[Graph] VOLTAR CLICADO - Verificando se fecha carrossel ou volta step");
+            
+            // 🔄 Se o carrossel está aberto, o primeiro "Voltar" apenas o fecha
+            if (brandOptions.length > 0) {
+                setBrandOptions([]);
+                // Se não estamos no input, apenas fechamos o carrossel e paramos por aqui
+                if (step !== "input") return;
+            }
+
+            // Se o carrossel já estava fechado ou se estamos no input, executa a volta completa
+            console.log("[Graph] Restaurando estado anterior de busca");
             if (previousSearchState) {
                 console.log("[Graph] Restaurando:", previousSearchState);
                 setCnpj(previousSearchState.cnpj);
@@ -473,14 +522,26 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             setStep("input");
             return;
         }
-        
+
+        // 🛡️ Se for uma PESSOA (Análise Humana), abrimos o perfil para revisão em vez de tratar como marca
+        if (brandObj.type === 'person') {
+            console.log("[Graph] Reviewing person:", brandObj.name);
+            const linkedin = brandObj.originalEmployee?.linkedin || brandObj.originalEmployee?.url;
+            if (linkedin && linkedin.startsWith('http')) {
+                window.open(linkedin, '_blank');
+            } else {
+                addNotification('info', `Analisando ${brandObj.name} (LinkedIn não disponível)`);
+            }
+            return;
+        }
+
         const name = typeof brandObj === 'string' ? brandObj : (brandObj.name || brandObj.url || "");
         const logo = brandObj.logo || "";
         const followers = brandObj.followers || "";
         const partners = brandObj.partners || [];
 
         console.log("[Graph] Setting Brand Data:", { name, logo, followers, partnersCount: partners.length });
-        
+
         // 💾 Guardar estado anterior antes de ir para confirm
         console.log("[Graph] Guardando estado anterior para poder voltar depois");
         setPreviousSearchState({
@@ -488,7 +549,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             cnpj: cnpj,
             domainTarget: domainTarget
         });
-        
+
         setConfirmedBrand(cleanName(name));
         setConfirmedLogo(logo);
         setConfirmedFollowers(followers);
@@ -496,14 +557,14 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         setStep("confirm");
 
         // 💾 PERSISTÊNCIA MANUAL: Salva no banco local ao selecionar e Sincroniza UI
-        if (currentOrgId && cnpj) {
+        if (cnpj) {
             console.log("[Graph] Persistindo escolha no Banco Local...");
             const result = await confirmIntelligence({
                 name: cleanName(name),
                 cnpj: cnpj,
                 domain: domainTarget,
                 address: "", // O backend já tem se for enriquecido
-                pipedrive_id: currentOrgId,
+                pipedrive_id: currentOrgId || undefined,
                 linkedin_url: brandObj.url || "",
                 logo_url: logo,
                 partners: partners
@@ -511,14 +572,25 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
             // Se deu sucesso, atualiza a lista do Drawer localmente para evitar duplicados ou dados velhos
             if (result && result.status !== "error") {
-                const isUpdate = result.is_update || result.status === "updated";
+                const isUpdate = result.is_update || result.status === "updated" || result.status === "success";
+                const newOrgId = result.pipedrive_id || result.local_id; // Depende do que o backend retorna
+
+                if (!currentOrgId && newOrgId) {
+                    setCurrentOrgId(Number(newOrgId));
+                }
+
                 addNotification('success', isUpdate ? "Empresa atualizada com sucesso!" : "Empresa integrada com sucesso!");
-                
-                setPipedriveOrgs(prev => prev.map(org => 
-                    Number(org.id) === currentOrgId 
-                    ? { ...org, cnpj, domain: domainTarget, logo: logo, linkedin: brandObj.url, name: cleanName(name) }
-                    : org
-                ));
+
+                // Se for uma nova empresa, recarrega a lista
+                if (!currentOrgId) {
+                    fetchPipedriveOrgs();
+                } else {
+                    setPipedriveOrgs(prev => prev.map(org =>
+                        Number(org.id) === currentOrgId
+                            ? { ...org, cnpj, domain: domainTarget, logo: logo, linkedin: brandObj.url, name: cleanName(name) }
+                            : org
+                    ));
+                }
             } else {
                 addNotification('error', "Erro ao salvar dados da empresa.");
             }
@@ -534,19 +606,29 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
         try {
             const cleanOrgName = cleanName(org.name || "");
-            setConfirmedBrand(cleanOrgName); 
-            setConfirmedLogo(org.logo || ""); 
+            setConfirmedBrand(cleanOrgName);
+            setConfirmedLogo(org.logo || "");
             setConfirmedFollowers("");
-            
+
             let targetCnpj = org.cnpj || "";
             const onlyNums = targetCnpj.replace(/\D/g, '');
             if (onlyNums.length < 5) {
-                targetCnpj = ""; 
+                targetCnpj = "";
             }
 
             setCnpj(formatCnpj(targetCnpj));
-            setDomainTarget(org.domain || ""); 
-            setProductFocus(""); 
+            setDomainTarget(org.domain || "");
+
+            // 🔄 Restaurar foco de produto e área
+            if (org.product_focus) setProductFocus(org.product_focus);
+            else setProductFocus("");
+
+            if (org.category === "compras" || org.category === "logistica") {
+                setAreaFocus(org.category);
+            } else {
+                setAreaFocus("compras"); // Default
+            }
+
             setCurrentOrgId(Number(org.id));
             localStorage.setItem('last-viewed-org', JSON.stringify(org));
 
@@ -562,7 +644,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                             const reconnected = await reconnectToActiveJob((type, msg) => {
                                 addNotification(type, msg);
                             });
-                            
+
                             if (reconnected) {
                                 console.log('[NetworkGraph] Reconectado com sucesso através do onClick no Drawer.');
                                 return; // Se reconectou com sucesso, encerra e deixa a UI em "loading"
@@ -571,7 +653,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                             }
                         }
                     } catch (e: any) {
-                         console.error("[Job Check] Erro de parse no jobData ao interagir com org:", (e as Error).message || e);
+                        console.error("[Job Check] Erro de parse no jobData ao interagir com org:", (e as Error).message || e);
                     }
                 }
 
@@ -598,7 +680,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         setError(null);
         setEnrichingIds(prev => new Set(prev).add(999));
         try {
-            const query = `name=${encodeURIComponent(confirmedBrand || "Empresa")}&cnpj=${encodeURIComponent(cnpj)}`;
+            const query = `name=${encodeURIComponent(confirmedBrand.trim() || "Empresa")}&cnpj=${encodeURIComponent(cnpj)}`;
             const resp = await fetch(`http://127.0.0.1:8000/api/v1/intelligence/enrich?${query}&force=true`);
             const data = await resp.json();
 
@@ -606,12 +688,48 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 const main = data.main_option;
                 const cleanDomain = sanitizeVal(main.domain);
                 const cleanCnpj = formatCnpj(sanitizeVal(main.cnpj));
+                const officialName = sanitizeVal(main.official_name);
 
                 if (cleanDomain) setDomainTarget(cleanDomain);
                 if (cleanCnpj) setCnpj(cleanCnpj);
 
-                // Sincronização e Atualização local removidas daqui. 
-                // Acontecerão apenas no handleBrandSelect (Confirmação).
+                // 🆕 Se não temos orgId (fluxo nova empresa via botão +),
+                // o backend /enrich já criou auto no Pipedrive+DB.
+                // Precisamos apenas linkar a UI com o novo org criado.
+                if (!currentOrgId && cleanCnpj) {
+                    console.log("[NewCompany] Empresa nova detectada. Vinculando UI...");
+                    try {
+                        // Atualiza a marca se temos um nome oficial
+                        if (officialName) setConfirmedBrand(officialName);
+
+                        // Aguarda um momento para o backend processar a criação
+                        await new Promise(resolve => setTimeout(resolve, 500));
+
+                        // Recarrega a lista do Drawer para incluir a nova empresa
+                        await fetchPipedriveOrgs();
+
+                        // Busca a nova org na lista para vincular ao estado
+                        const rawCnpjClean = cleanCnpj.replace(/\D/g, '');
+                        const orgsResp = await fetch(`http://127.0.0.1:8000/api/v1/pipedrive/organizations?_=${Date.now()}`);
+                        const orgsList = await orgsResp.json();
+                        const newOrg = Array.isArray(orgsList)
+                            ? orgsList.find((o: any) => o.cnpj && o.cnpj.replace(/\D/g, '') === rawCnpjClean)
+                            : null;
+
+                        if (newOrg) {
+                            setCurrentOrgId(Number(newOrg.id));
+                            localStorage.setItem('last-viewed-org', JSON.stringify(newOrg));
+                            if (newOrg.logo) setConfirmedLogo(newOrg.logo);
+                            console.log(`[NewCompany] Vinculada! Pipedrive ID: ${newOrg.id}`);
+                            addNotification('success', `Empresa '${officialName || "Nova Empresa"}' integrada com sucesso!`);
+                        } else {
+                            console.log("[NewCompany] Org não encontrada na lista (pode não ter sido criada no Pipedrive).");
+                            addNotification('info', `Dados encontrados para o CNPJ. Prossiga com a busca.`);
+                        }
+                    } catch (linkErr) {
+                        console.error("[NewCompany] Erro ao vincular empresa:", linkErr);
+                    }
+                }
             } else {
                 setError("Dados não encontrados para este CNPJ.");
             }
@@ -642,7 +760,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                     console.log(`[UI] Novo perfil encontrado: ${candidate.name}`);
                     // O brandOptions já será atualizado via setState no hook
                 });
-                
+
                 // Se recebemos candidatos, o carrossel será atualizado via brandOptions
             } catch (err) {
                 setError("Erro de conexão.");
@@ -651,32 +769,32 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             if (!confirmedBrand) { setError("Marca inválida."); return; }
             setStep("scanning");
             setRefreshDrawerTrigger(prev => prev + 1); // Recarrega/Zera o drawer
-            
+
             // Só mandamos raiz e sócios, para "zerar" os outros funcionarios já mapeados
             const rootAndPartnersOnly = rawEmployees.filter(emp => {
                 const isRoot = emp.id === 'root_company' || emp.level === 0;
                 const isPartner = emp.level === 6 || String(emp.id).startsWith('partner_');
                 const isPartnerDept = emp.department && (
-                    emp.department.includes('QSA') || 
-                    emp.department.includes('Sócio') || 
+                    emp.department.includes('QSA') ||
+                    emp.department.includes('Sócio') ||
                     emp.department.includes('Societário') ||
                     emp.department.includes('Conselho')
                 );
                 const isPartnerRole = emp.role && (
-                    emp.role.includes('Sócio') || 
-                    emp.role.includes('Conselho') || 
+                    emp.role.includes('Sócio') ||
+                    emp.role.includes('Conselho') ||
                     emp.role.includes('Board') ||
                     emp.role.includes('Fundador')
                 );
-                
+
                 return isRoot || isPartner || isPartnerDept || isPartnerRole;
             });
 
             fetchHierarchy(
-                cnpj, 
-                domainTarget, 
-                confirmedBrand, 
-                confirmedLogo, 
+                cnpj,
+                domainTarget,
+                confirmedBrand,
+                confirmedLogo,
                 productFocus,
                 areaFocus,
                 addNotification,
@@ -689,28 +807,32 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
     useEffect(() => {
         if (rawEmployees.length === 0) return;
-        
-        let uiNodes: Node[] = rawEmployees.map(emp => {
+
+        // 🕵️ Filtrar 'Análise Humana' dos nós do grafo principal para não poluir
+        const humanAnalysisCandidates = rawEmployees.filter(emp => emp.role === "Análise Humana");
+        const visibleEmployees = rawEmployees.filter(emp => emp.role !== "Análise Humana");
+
+        let uiNodes: Node[] = visibleEmployees.map(emp => {
             const isRootNode = emp.id === 'root_company' || emp.level === 0;
             return {
                 id: emp.id,
                 type: 'supplyChain',
                 // Default temporário (será sobrescrito pelo getLayoutedElements se for node novo, ou local storage se já existir)
-                position: { x: 0, y: 0 }, 
+                position: { x: 0, y: 0 },
                 data: { ...emp, isRoot: isRootNode, confirmedLogo: isRootNode ? confirmedLogo : undefined },
             };
         });
-        
+
         let finalEdges = calculateEdges(uiNodes, rawBackendEdges);
         const getStableId = (n: any) => n?.data?.linkedin || n?.data?.name || n?.id;
-        
+
         // Puxa as conexões manuais do cache
         const edgesCacheKey = `edges-cache-${currentOrgId || confirmedBrand}`;
         let cachedEdges: Record<string, string> | null = null;
         try {
             const cacheRaw = localStorage.getItem(edgesCacheKey);
             if (cacheRaw) cachedEdges = JSON.parse(cacheRaw);
-        } catch(e) {}
+        } catch (e) { }
 
         if (cachedEdges) {
             // Remove qualquer aresta do backend cujo filho/target foi reposicionado manualmente
@@ -719,13 +841,13 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 const childStableId = childNode ? getStableId(childNode) : e.target;
                 return !(childStableId in cachedEdges!);
             });
-            
+
             // Adiciona as arestas customizadas
             Object.entries(cachedEdges).forEach(([childStableId, parentStableId]) => {
                 if (parentStableId !== "NONE") {
                     const childNode = uiNodes.find(n => getStableId(n) === childStableId);
                     const parentNode = uiNodes.find(n => getStableId(n) === parentStableId);
-                    
+
                     if (childNode && parentNode) {
                         finalEdges.push({
                             id: `e-${parentNode.id}-${childNode.id}`,
@@ -738,15 +860,15 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 }
             });
         }
-        
+
         // Puxa o cache de posições manuais ou anteriores do localStorage
         const layoutCacheKey = `layout-cache-${currentOrgId || confirmedBrand}`;
         let cachedPositions: Record<string, { x: number, y: number }> = {};
-        
+
         try {
             const cacheRaw = localStorage.getItem(layoutCacheKey);
             if (cacheRaw) cachedPositions = JSON.parse(cacheRaw);
-        } catch(e) {}
+        } catch (e) { }
 
         const nodesSemCache = uiNodes.filter(n => !cachedPositions[getStableId(n)]);
         const nodesComCache = uiNodes.filter(n => !!cachedPositions[getStableId(n)]);
@@ -759,7 +881,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             // Para não quebrar o design do Dagre, passamos tudo pro Dagre, mas depois 
             // restauramos a posição exata X,Y dos que já estavam no cache.
             const { layoutedNodes, layoutedEdges } = getLayoutedElements(uiNodes, finalEdges);
-            
+
             finalNodes = layoutedNodes.map(node => {
                 const stableId = getStableId(node);
                 if (cachedPositions[stableId]) {
@@ -770,17 +892,17 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 cachedPositions[stableId] = node.position;
                 return node;
             });
-            
+
             setEdges(layoutedEdges);
         } else {
             // Todo mundo já tinha cache
-            finalNodes = uiNodes.map(n => ({...n, position: cachedPositions[getStableId(n)]}));
-            setEdges(finalEdges); 
+            finalNodes = uiNodes.map(n => ({ ...n, position: cachedPositions[getStableId(n)] }));
+            setEdges(finalEdges);
         }
 
         // Salva as posições atualizadas para o futuro
         localStorage.setItem(layoutCacheKey, JSON.stringify(cachedPositions));
-        
+
         setNodes(finalNodes);
     }, [rawEmployees, rawBackendEdges, setNodes, setEdges, currentOrgId, confirmedBrand, confirmedLogo]);
 
@@ -808,6 +930,10 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
     const handleOrgReset = (orgId: number) => {
         console.log(`[Graph] Resetando UI para organização ${orgId}...`);
+
+        // 🚀 Atualização Reativa: Remove imediatamente da lista local para que suma do Drawer sem delay
+        setPipedriveOrgs(prev => prev.filter(org => Number(org.id) !== orgId && Number(org.local_id) !== orgId));
+
         // 🧹 Limpar absolutamente tudo quando dados são resetados
         setNodes([]);
         setEdges([]);
@@ -822,14 +948,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         setPreviousSearchState(null);
         resetHierarchy();
         localStorage.removeItem('last-viewed-org');
-        
-        // 🔄 Limpar dados antigos da empresa na lista do drawer
-        setPipedriveOrgs(prev => prev.map(org => 
-            Number(org.id) === orgId 
-            ? { ...org, cnpj: null, domain: null, logo: null, linkedin: null, name: org.name }
-            : org
-        ));
-        
+
         // 🗑️ Limpar cache local (localStorage)
         const cacheKeys = [
             `org-${orgId}-details`,
@@ -837,7 +956,8 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             `org-${orgId}-hierarchy`,
             `hierarchy-${orgId}`,
             `stored-hierarchy-${orgId}`,
-            `edges-cache-${orgId}`
+            `edges-cache-${orgId}`,
+            `layout-cache-${orgId}`
         ];
         cacheKeys.forEach(key => {
             if (localStorage.getItem(key)) {
@@ -845,18 +965,18 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 console.log(`[LocalStorage] Removido: ${key}`);
             }
         });
-        
+
         console.log("[Graph] UI, lista e cache completamente resetados");
     };
 
     const handleOrgRenamed = (orgId: number, newName: string) => {
         // 🔄 Atualizar pipedriveOrgs
-        setPipedriveOrgs(prev => 
-            prev.map(org => 
+        setPipedriveOrgs(prev =>
+            prev.map(org =>
                 Number(org.id) === orgId ? { ...org, name: newName } : org
             )
         );
-        
+
         // 💾 Atualizar cache no localStorage
         const cached = localStorage.getItem("pipedrive-orgs-cache");
         if (cached) {
@@ -875,12 +995,48 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
     return (
         <div className={styles.container}>
-            <Sidebar 
+            <Sidebar
                 showDrawer={showDrawer}
-                setShowDrawer={setShowDrawer}
+                setShowDrawer={handleSetShowDrawer}
                 theme={theme}
                 onToggleTheme={toggleTheme}
-                onReset={() => { setStep("input"); setNodes([]); setEdges([]); localStorage.removeItem('last-viewed-org'); }}
+                onReset={() => {
+                    // 🧹 Limpar Canvas: Limpa grafo e toolbar
+                    setNodes([]);
+                    setEdges([]);
+                    setStep("input");
+                    setCnpj("");
+                    setDomainTarget("");
+                    setProductFocus("");
+                    setConfirmedBrand("");
+                    setConfirmedLogo("");
+                    setConfirmedFollowers("");
+                    setPartners([]);
+                    setCurrentOrgId(null);
+                    setPreviousSearchState(null);
+                    resetHierarchy();
+                    setActiveView('graph');
+                    setActiveChatInfo(null);
+                    localStorage.removeItem('last-viewed-org');
+                }}
+                onNewCompany={() => {
+                    // 🆕 Modo "Nova Empresa": Limpa tudo e força a toolbar no estado de CNPJ-only com atenção vermelha
+                    resetHierarchy();
+                    setNodes([]);
+                    setEdges([]);
+                    setCnpj("");
+                    setDomainTarget("");
+                    setProductFocus("");
+                    setConfirmedBrand(" "); // Sentinel para ativar needsAttention (!!confirmedBrand && !cnpj)
+                    setConfirmedLogo("");
+                    setConfirmedFollowers("");
+                    setPartners([]);
+                    setCurrentOrgId(null);
+                    setPreviousSearchState(null);
+                    setStep("input");
+                    handleSetShowDrawer(false);
+                    localStorage.removeItem('last-viewed-org');
+                }}
                 onCopyData={handleCopyData}
                 onRefine={() => {
                     if (localStorage.getItem('active-discovery-job')) {
@@ -899,9 +1055,9 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             />
 
 
-            <Drawer 
+            <Drawer
                 showDrawer={showDrawer}
-                setShowDrawer={setShowDrawer}
+                setShowDrawer={handleSetShowDrawer}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 filteredOrgs={filteredOrgs}
@@ -917,82 +1073,201 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             />
 
             <div className={styles.mainWrapper}>
-                <Header 
+                <Header
                     confirmedBrand={confirmedBrand}
                     showChat={showChat}
-                    onToggleChat={() => setShowChat(!showChat)}
+                    onToggleChat={() => handleSetShowChat(!showChat)}
                 />
-                
+
                 <div className={styles.contentWrapper}>
                     <main className={styles.mainContent}>
-                        <NotificationContainer 
-                            notifications={notifications} 
-                            removeNotification={removeNotification} 
+                        <NotificationContainer
+                            notifications={notifications}
+                            removeNotification={removeNotification}
                         />
 
                         <div className={styles.graphWrapper}>
-                    <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        nodeTypes={nodeTypes}
-                        edgeTypes={edgeTypes}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onConnect={onConnect}
-                        fitView
-                        minZoom={0.1}
-                        maxZoom={1.5}
-                    >
-                        <SmartBackground />
-                        <FitViewHandler shouldFitView={shouldFitView} nodes={nodes} />
-                        <Controls position="bottom-right" />
-
-
-                    </ReactFlow>
-
-
-
+                            {activeView === 'graph' ? (
+                                <ReactFlow
+                                    nodes={nodes}
+                                    edges={edges}
+                                    nodeTypes={nodeTypes}
+                                    edgeTypes={edgeTypes}
+                                    onNodesChange={onNodesChange}
+                                    onEdgesChange={onEdgesChange}
+                                    onConnect={onConnect}
+                                    fitView
+                                    minZoom={0.1}
+                                    maxZoom={1.5}
+                                >
+                                    <SmartBackground />
+                                    <FitViewHandler shouldFitView={shouldFitView} nodes={nodes} />
+                                    <Controls position="top-right" />
+                                </ReactFlow>
+                            ) : (
+                                <div className={styles.whatsappContainer} style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#131313' }}>
+                                    <WhatsAppView
+                                        chatName={activeChatInfo?.name || "WhatsApp"}
+                                        chatId={activeChatInfo?.id}
+                                        onBack={() => setActiveView('graph')}
+                                    />
+                                </div>
+                            )}
                         </div>
 
-                        <FloatingToolbar 
-                            error={error}
-                            handleSearch={handleSearch}
-                            cnpj={cnpj}
-                            setCnpj={setCnpj}
-                            confirmedBrand={confirmedBrand}
-                            setConfirmedBrand={setConfirmedBrand}
-                            confirmedLogo={confirmedLogo}
-                            setConfirmedLogo={setConfirmedLogo}
-                            confirmedFollowers={confirmedFollowers}
-                            setConfirmedFollowers={setConfirmedFollowers}
-                            domainTarget={domainTarget}
-                            setDomainTarget={setDomainTarget}
-                            productFocus={productFocus}
-                            setProductFocus={setProductFocus}
-                            areaFocus={areaFocus}
-                            setAreaFocus={setAreaFocus}
-                            handleAutoEnrich={handleAutoEnrich}
-                            enrichingIds={enrichingIds}
-                            discovering={discovering}
-                            loading={loading}
-                            step={step}
-                            brandOptions={brandOptions}
-                            onBrandSelect={handleBrandSelect}
-                            hasMapping={nodes.some(n => n.id.startsWith('node_'))}
-                            stopHierarchyScan={() => stopHierarchyScan(addNotification)}
-                            cancelDiscovery={cancelDiscovery}
-                            activeJobId={activeJobId}
-                        />
+                        {activeView === 'graph' && (
+                            <div className={styles.bottomToolbarRow}>
+                                <FloatingToolbar
+                                    error={error}
+                                    handleSearch={handleSearch}
+                                    cnpj={cnpj}
+                                    setCnpj={setCnpj}
+                                    confirmedBrand={confirmedBrand}
+                                    setConfirmedBrand={setConfirmedBrand}
+                                    confirmedLogo={confirmedLogo}
+                                    setConfirmedLogo={setConfirmedLogo}
+                                    confirmedFollowers={confirmedFollowers}
+                                    setConfirmedFollowers={setConfirmedFollowers}
+                                    domainTarget={domainTarget}
+                                    setDomainTarget={setDomainTarget}
+                                    productFocus={productFocus}
+                                    setProductFocus={setProductFocus}
+                                    areaFocus={areaFocus}
+                                    setAreaFocus={setAreaFocus}
+                                    handleAutoEnrich={handleAutoEnrich}
+                                    enrichingIds={enrichingIds}
+                                    discovering={discovering}
+                                    loading={loading}
+                                    step={step}
+                                    brandOptions={brandOptions}
+                                    onBrandSelect={handleBrandSelect}
+                                    hasMapping={nodes.some(n => n.id.startsWith('node_'))}
+                                    stopHierarchyScan={() => stopHierarchyScan(addNotification)}
+                                    cancelDiscovery={cancelDiscovery}
+                                    activeJobId={activeJobId}
+                                />
+
+                                {/* 🎭 ANÁLISE HUMANA BADGE (Independente) */}
+                                {rawEmployees.filter(e => e.role === 'Análise Humana').length > 0 && (
+                                    <div 
+                                        className={styles.humanAnalysisTrigger} 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+
+                                            // 🔄 Lógica de Toggle: Se já estiver mostrando pessoas, fecha ao clicar de novo
+                                            const isAlreadyShowingHuman = brandOptions.length > 0 && brandOptions[0]?.type === 'person';
+                                            if (isAlreadyShowingHuman) {
+                                                setBrandOptions([]);
+                                                return;
+                                            }
+
+                                            const pending = rawEmployees.filter(e => e.role === 'Análise Humana');
+                                            const candidates = pending.map(p => ({
+                                                name: p.name,
+                                                logo: getAvatarUrl(p),
+                                                followers: p.department || (p.role === 'Análise Humana' ? 'Review Pendente' : p.role),
+                                                type: 'person',
+                                                id: p.id,
+                                                originalEmployee: p
+                                            }));
+                                            setBrandOptions(candidates);
+                                            // Mantemos o step atual conforme pedido pelo usuário
+                                        }}
+                                    >
+                                 {(() => {
+                                                const humanPending = rawEmployees.filter(e => e.role === 'Análise Humana');
+                                                if (humanPending.length === 0) return null;
+                                                
+                                                // Pegamos até os 3 primeiros para o efeito de stack
+                                                const stack = humanPending.slice(0, 3);
+                                                
+                                                return (
+                                                    <div className={styles.humanAnalysisAvatarStack}>
+                                                        {stack.map((node, idx) => {
+                                                            const rawUrl = getAvatarUrl(node);
+                                                            const proxiedUrl = getProxiedUrl(rawUrl);
+                                                            
+                                                            return (
+                                                                <div 
+                                                                    key={node.id} 
+                                                                    className={`${styles.humanAnalysisStackedAvatar} ${styles[`stackLayer${idx}`]}`}
+                                                                >
+                                                                    {proxiedUrl ? (
+                                                                        <img
+                                                                            src={proxiedUrl}
+                                                                            alt=""
+                                                                            onError={(e) => {
+                                                                                const target = e.target as HTMLImageElement;
+                                                                                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(node.name || 'P')}&background=ffab00&color=fff&bold=true&rounded=true&size=128`;
+                                                                            }}
+                                                                        />
+                                                                    ) : (
+                                                                        <div className={styles.humanAnalysisAvatarPlaceholder}>
+                                                                            <Users size={idx === 0 ? 20 : 14} />
+                                                                        </div>
+                                                                    )}
+                                                                    
+                                                                    {/* O badge de notificação só aparece no avatar do topo */}
+                                                                    {idx === 0 && humanPending.length > 0 && (
+                                                                        <div className={styles.humanAnalysisNotification}>
+                                                                            {humanPending.length}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                );
+                                            })()}
+                                        <div className={styles.humanAnalysisList}>
+                                            <div className={styles.humanAnalysisListTitle}>Análise Humana Pendente</div>
+                                            {rawEmployees.filter(e => e.role === 'Análise Humana').slice(0, 15).map((n, i) => {
+                                                const rawUrl = getAvatarUrl(n);
+                                                const proxiedUrl = getProxiedUrl(rawUrl);
+                                                return (
+                                                    <div key={i} className={styles.humanAnalysisCard}>
+                                                        {proxiedUrl ? (
+                                                            <img
+                                                                className={styles.humanAnalysisCardAvatar}
+                                                                src={proxiedUrl}
+                                                                alt={n.name}
+                                                                onError={(e) => {
+                                                                    const target = e.target as HTMLImageElement;
+                                                                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(n.name || 'P')}&background=ffab00&color=fff&bold=true&rounded=true&size=128`;
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <Users 
+                                                                className={styles.humanAnalysisCardAvatar}
+                                                                size={14} 
+                                                            />
+                                                        )}
+                                                        <div className={styles.humanAnalysisCardInfo}>
+                                                            <div className={styles.humanAnalysisCardName}>{n.name}</div>
+                                                            <div className={styles.humanAnalysisCardSub}>Cargo não identificado</div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </main>
-                    
+
                     {showChat && (
-                        <ChatPanel 
+                        <ChatPanel
                             showChat={showChat}
-                            setShowChat={setShowChat}
+                            setShowChat={handleSetShowChat}
                             selectedOrgId={currentOrgId}
                             selectedOrgName={confirmedBrand}
                             theme={theme}
                             onToggleTheme={toggleTheme}
+                            onOpenWhatsApp={(info) => {
+                                setActiveChatInfo(info);
+                                setActiveView('whatsapp');
+                            }}
                         />
                     )}
                 </div>

@@ -19,23 +19,28 @@ class GroqService:
         
         # 1. TENTA GEMINI (Desejado pelo usuário e superior em lógica)
         if gemini_key:
-            try:
-                # Usando gemini-2.0-flash para máximo desempenho em lógica
-                gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
-                gemini_payload = {
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {
-                        "responseMimeType": "application/json" if json_mode else "text/plain",
-                        "temperature": 0.1
+            from services.external.base_gemini_service import _is_gemini_available, _trip_gemini_circuit, _reset_gemini_circuit
+            if _is_gemini_available():
+                try:
+                    # Usando gemini-2.0-flash para máximo desempenho em lógica
+                    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={gemini_key}"
+                    gemini_payload = {
+                        "contents": [{"parts": [{"text": prompt}]}],
+                        "generationConfig": {
+                            "responseMimeType": "application/json" if json_mode else "text/plain",
+                            "temperature": 0.1
+                        }
                     }
-                }
-                async with httpx.AsyncClient(timeout=30.0) as client:
-                    resp = await client.post(gemini_url, json=gemini_payload)
-                    if resp.status_code == 200:
-                        content = resp.json()['candidates'][0]['content']['parts'][0]['text']
-                        return json.loads(content)
-            except Exception as e:
-                print(f"[AI Service] Gemini Fallback: {e}")
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        resp = await client.post(gemini_url, json=gemini_payload)
+                        if resp.status_code == 200:
+                            _reset_gemini_circuit()
+                            content = resp.json()['candidates'][0]['content']['parts'][0]['text']
+                            return json.loads(content)
+                        elif resp.status_code == 429:
+                            _trip_gemini_circuit()
+                except Exception as e:
+                    print(f"[AI Service] Gemini Fallback: {e}")
 
         # 2. TENTA GROQ (Fallback)
         if not self.api_key:
@@ -68,7 +73,7 @@ class GroqService:
                     payload["model"] = "llama-3.1-8b-instant"
                     resp = await client.post(self.base_url, headers=headers, json=payload)
                     
-                # Se bater o rate limit mesmo no secundário, tenta o terciário
+                # Se bater o rate limit mesmo no secundário, tenta o terciário (Gemma 2)
                 if resp.status_code == 429:
                     print(f"[Groq AI] Rate limit no llama-3.1-8b-instant, fallback para gemma2-9b-it...")
                     payload["model"] = "gemma2-9b-it"
@@ -169,25 +174,27 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
 
     try:
         import asyncio
+        from services.external.base_gemini_service import _is_gemini_available, _trip_gemini_circuit, _reset_gemini_circuit
         async with httpx.AsyncClient(timeout=60.0) as client:
             
-            # 1. TENTA GEMINI (Primário)
-            if gemini_key:
+            # 1. TENTA GEMINI (Primário) - respeitando circuit breaker global
+            if gemini_key and _is_gemini_available():
                 try:
-                    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={gemini_key}"
+                    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={gemini_key}"
                     gemini_payload = {
                         "system_instruction": {"parts": [{"text": "Você é um assistente de RH que gera organogramas e responde apenas em formato JSON estrito."}]},
                         "contents": [{"parts": [{"text": prompt}]}],
                         "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}
                     }
-                    print(f"[Gemini AI] Refinando Hierarquia com gemini-2.0-flash...")
+                    print(f"[Gemini AI] Refinando Hierarquia com gemini-3-flash-preview...")
                     resp = await client.post(gemini_url, json=gemini_payload)
                     
                     if resp.status_code == 200:
+                        _reset_gemini_circuit()
                         content = resp.json()['candidates'][0]['content']['parts'][0]['text']
                     elif resp.status_code == 429:
-                        err_msg = resp.json().get("error", {}).get("message", "Quota Exceeded")
-                        print(f"[Gemini AI] Rate limit atingido ({err_msg}). Indo para Groq Fallback...")
+                        _trip_gemini_circuit()
+                        print(f"[Gemini AI] Rate limit atingido. Circuit breaker ativado, indo para Groq Fallback...")
                     else:
                         print(f"[Gemini AI] Erro {resp.status_code}: {resp.text[:200]}. Indo para Groq Fallback...")
                 except Exception as e:
