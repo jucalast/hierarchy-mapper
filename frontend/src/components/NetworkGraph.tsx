@@ -22,6 +22,7 @@ import { Users } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../utils/avatarUtils';
 
 import 'reactflow/dist/style.css';
+import { ConfirmModal } from './ConfirmModal';
 import styles from './NetworkGraph.module.css';
 
 import { FloatingToolbar } from './FloatingToolbar';
@@ -250,7 +251,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const {
         rawEmployees, rawBackendEdges, loading, discovering, brandOptions, error, setError,
         activeJobId, fetchHierarchy, stopHierarchyScan, discoverBrand, discoverBrandStream, cancelDiscovery, refineHierarchy, loadStoredHierarchy,
-        smartSyncPipedrive, confirmIntelligence, resetHierarchy, reconnectToActiveJob, setBrandOptions
+        smartSyncPipedrive, confirmIntelligence, resetHierarchy, reconnectToActiveJob, setBrandOptions, approveCandidate, rejectCandidate
     } = useHierarchy();
 
     // 🛡️ SEGURANÇA E FORMATAÇÃO
@@ -311,6 +312,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const [shouldFitView, setShouldFitView] = useState(false);
 
     // 🔔 NOTIFICATION STATE
+    const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, empId: string | null}>({isOpen: false, empId: null});
     const [notifications, setNotifications] = useState<Array<{ id: string; type: NotificationType; message: string }>>([]);
     const addNotification = useCallback((type: NotificationType, message: string) => {
         const id = Math.random().toString(36).substring(2, 9);
@@ -1145,6 +1147,17 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                                     stopHierarchyScan={() => stopHierarchyScan(addNotification)}
                                     cancelDiscovery={cancelDiscovery}
                                     activeJobId={activeJobId}
+                                    onApproveCandidate={async (id) => {
+                                        try {
+                                            await approveCandidate(id);
+                                            addNotification('success', "Perfil aprovado e integrado ao grafo.");
+                                        } catch(e: any) {
+                                            addNotification('error', e.message);
+                                        }
+                                    }}
+                                    onRejectCandidate={async (id) => {
+                                        setConfirmModal({ isOpen: true, empId: id });
+                                    }}
                                 />
 
                                 {/* 🎭 ANÁLISE HUMANA BADGE (Independente) */}
@@ -1270,6 +1283,26 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                             }}
                         />
                     )}
+
+                    <ConfirmModal 
+                        isOpen={confirmModal.isOpen}
+                        title="Descartar Perfil"
+                        message="Deseja realmente descartar este perfil? Esta ação removerá o candidato do banco de dados permanentemente."
+                        confirmLabel="Descartar"
+                        cancelLabel="Manter"
+                        onCancel={() => setConfirmModal({ isOpen: false, empId: null })}
+                        onConfirm={async () => {
+                            if (confirmModal.empId) {
+                                try {
+                                    await rejectCandidate(confirmModal.empId);
+                                    addNotification('info', "Perfil descartado com sucesso.");
+                                } catch(e: any) {
+                                    addNotification('error', e.message);
+                                }
+                            }
+                            setConfirmModal({ isOpen: false, empId: null });
+                        }}
+                    />
                 </div>
             </div>
         </div>

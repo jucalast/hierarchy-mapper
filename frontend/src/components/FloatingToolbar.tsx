@@ -11,7 +11,9 @@ import {
     ArrowLeft,
     Search,
     RotateCcw,
-    User
+    User,
+    Check,
+    X
 } from 'lucide-react';
 
 
@@ -45,6 +47,8 @@ interface FloatingToolbarProps {
     stopHierarchyScan?: () => void;
     cancelDiscovery?: () => void;
     activeJobId?: string | null;
+    onApproveCandidate?: (id: string) => void;
+    onRejectCandidate?: (id: string) => void;
 }
 
 export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
@@ -74,7 +78,9 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     hasMapping,
     stopHierarchyScan,
     cancelDiscovery,
-    activeJobId
+    activeJobId,
+    onApproveCandidate,
+    onRejectCandidate
 }) => {
     const [isClosing, setIsClosing] = React.useState(false);
     const [displayOptions, setDisplayOptions] = React.useState<any[]>([]);
@@ -118,9 +124,8 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
             {displayOptions.length > 0 && (
                 <div className={`${styles.optionsContainer} ${isClosing ? styles.optionsContainerClosing : ""}`}>
                     {displayOptions.map((opt: any, idx: number) => (
-                        <button
+                        <div
                             key={`brand-opt-${idx}-${opt.url || opt.name}`}
-                            type="button"
                             className={`${styles.brandCard} ${(confirmedBrand === (opt.name || opt.url) || localSelected === (opt.name || opt.url)) ? styles.brandCardActive : ''}`}
                             onClick={() => handleLocalSelect(opt)}
                         >
@@ -144,7 +149,35 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                     <div className={styles.brandFollowers}>{opt.followers} seguidores</div>
                                 )}
                             </div>
-                        </button>
+                            
+                            {/* 🛠️ AÇÕES RÁPIDAS (Análise Humana) */}
+                            {opt.type === 'person' && (
+                                <div className={styles.cardQuickActions}>
+                                    <button 
+                                        type="button" 
+                                        className={styles.rejectBtn}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onRejectCandidate) onRejectCandidate(opt.id);
+                                        }}
+                                        title="Reprovar e Descartar"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        className={styles.approveBtn}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (onApproveCandidate) onApproveCandidate(opt.id);
+                                        }}
+                                        title="Aprovar Perfil"
+                                    >
+                                        <Check size={14} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     ))}
                 </div>
             )}

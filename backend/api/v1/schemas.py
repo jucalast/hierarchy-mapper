@@ -39,3 +39,7 @@ class ConfirmEnrichRequest(BaseModel):
     linkedin_url: Optional[str] = None
     logo_url: Optional[str] = None
     partners: Optional[List[dict]] = None
+
+class CandidateActionRequest(BaseModel):
+    employee_id: str
+    action: str # 'approve' or 'reject'

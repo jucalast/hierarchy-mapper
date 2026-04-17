@@ -45,7 +45,7 @@ interface Message {
     sources?: number;
     thinkingTime?: string;
     selectedCompanies?: CompanyResult[];
-    ui_module?: 'TaskList' | 'ContactGrid' | 'CompanyCard' | 'WhatsAppThread' | null;
+    ui_module?: 'TaskList' | 'ContactGrid' | 'CompanyCard' | 'WhatsAppThread' | 'EmailThread' | null;
     data?: any;
     debug?: {
         intent?: any;
@@ -306,6 +306,54 @@ const WhatsAppThread: React.FC<{ data: any, onOpenWhatsApp?: (info: { name: stri
                         <div className={styles.waText}>{m.body}</div>
                     </div>
                 ))}
+            </div>
+        </div>
+    );
+};
+
+const EmailThread: React.FC<{ data: any }> = ({ data }) => {
+    const emailResult = data?.email_result || {};
+    const action = emailResult.email_action || data?.email_action;
+    const contact = emailResult.contact || emailResult.resolved_contact || {};
+    const sentMessage = emailResult.sent_message || emailResult.body_preview || "";
+    const subject = emailResult.subject || "Sem Assunto";
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Se for uma confirmação de email enviado, mostra o preview (miniatura)
+    return (
+        <div className={styles.moduleContainer}>
+            <div className={styles.emailPreviewCard}>
+                <div className={styles.emailPreviewHeader}>
+                    <div className={styles.emailAvatarSmall}>
+                        {contact.profilePicture || contact.avatar_url ? (
+                            <img src={getProxiedUrl(contact.profilePicture || contact.avatar_url)} alt="Avatar" className={styles.waAvatarImg} />
+                        ) : (
+                            <div className={styles.emailInitials}>
+                                {(contact.name || 'D').charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                        <div className={styles.outlookBadge}>
+                            <Mail size={10} color="white" fill="white" />
+                        </div>
+                    </div>
+                    <div className={styles.emailPreviewInfo}>
+                        <div className={styles.emailPreviewRecipient}>{contact.name || contact.email || 'Destinatário'}</div>
+                        <div className={styles.emailPreviewSnippet}>{subject}</div>
+                    </div>
+                    <div className={styles.emailExternalIcon}>
+                         <ExternalLink size={14} />
+                    </div>
+                </div>
+                <div className={styles.emailPreviewBody}>
+                    <div className={styles.emailBodyText}>{sentMessage}</div>
+                    <div className={styles.emailPreviewMeta}>
+                        <div className={styles.emailSentStatus}>
+                            <CheckCheck size={14} />
+                            <span>Enviado via Outlook</span>
+                        </div>
+                        <div className={styles.emailTime}>{time}</div>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -862,6 +910,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                         {message.ui_module === 'ContactGrid' && <ContactGrid data={message.data} />}
                                         {message.ui_module === 'CompanyCard' && <CompanyCard data={message.data} />}
                                         {message.ui_module === 'WhatsAppThread' && <WhatsAppThread data={message.data} onOpenWhatsApp={onOpenWhatsApp} />}
+                                        {message.ui_module === 'EmailThread' && <EmailThread data={message.data} />}
                                     </div>
                                 </div>
 

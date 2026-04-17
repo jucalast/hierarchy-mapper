@@ -1800,3 +1800,172 @@
   justify-content: center;
   gap: 8px;
 }
+
+/* === EMAIL PREVIEW (OUTLOOK LIKE) === */
+.emailPreviewCard {
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 0;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  animation: fadeIn 0.4s ease;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.chatPanel.dark .emailPreviewCard {
+  background-color: #1a1a1a;
+  border-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.emailPreviewHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.chatPanel.dark .emailPreviewHeader {
+  background: #242424;
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.emailAvatarSmall {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.emailInitials {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0078d4, #005a9e);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: 8px;
+}
+
+.outlookBadge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #0078d4;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chatPanel.dark .outlookBadge {
+  border-color: #242424;
+}
+
+.emailPreviewInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.emailPreviewRecipient {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chatPanel.dark .emailPreviewRecipient {
+  color: #e4e4e7;
+}
+
+.emailPreviewSnippet {
+  font-size: 11px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.emailExternalIcon {
+  color: #9ca3af;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.emailExternalIcon:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0078d4;
+}
+
+.emailPreviewBody {
+  padding: 16px;
+  background: white;
+}
+
+.chatPanel.dark .emailPreviewBody {
+  background: #1a1a1a;
+}
+
+.emailBodyText {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #4b5563;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-wrap: break-word;
+}
+
+.chatPanel.dark .emailBodyText {
+  color: #a1a1aa;
+}
+
+.emailPreviewMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f8f9fa;
+}
+
+.chatPanel.dark .emailPreviewMeta {
+  border-top-color: rgba(255, 255, 255, 0.05);
+}
+
+.emailSentStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0078d4;
+}
+
+.emailTime {
+  font-size: 11px;
+  color: #9ca3af;
+}

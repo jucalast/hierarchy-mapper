@@ -652,7 +652,15 @@ async def chat_with_ai(
                             resp = await client_http.post(f"{email_base}/send", json={
                                 "to": to, "subject": subject, "body": body
                             })
-                            email_result_context = {"email_action": action, "status": resp.status_code, "to": to, "resultado": resp.json()}
+                            email_result_context = {
+                                "email_action": action, 
+                                "status": resp.status_code, 
+                                "to": to, 
+                                "subject": subject,
+                                "sent_message": body,
+                                "contact": {"email": to, "name": intent_info.get("extracted_person_name") or to},
+                                "resultado": resp.json()
+                            }
                         else:
                             email_result_context = {"error": "Destinatário ou corpo do email ausente.", "email_action": action}
                     
@@ -1184,6 +1192,7 @@ async def chat_with_ai(
                 print("[AI Pipeline] ⚡ Bypass Email acionado (Sucesso).")
                 return ChatResponse(
                     response=f"Seu e-mail para {email_ctx.get('to')} foi enviado com sucesso via Outlook!",
+                    ui_module="EmailThread",
                     data=internal_context,
                     debug={"intent": intent_info, "bypass": True}
                 )
@@ -1201,7 +1210,7 @@ async def chat_with_ai(
 Retorne obrigatoriamente um JSON com a seguinte estrutura:
 {
   "response": "Sua resposta textual aqui",
-  "ui_module": "TaskList" | "ContactGrid" | "CompanyCard" | "WhatsAppThread" | null,
+  "ui_module": "TaskList" | "ContactGrid" | "CompanyCard" | "WhatsAppThread" | "EmailThread" | null,
   "data_module": { ... }
 }
 """

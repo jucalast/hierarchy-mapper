@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Edge, MarkerType } from 'reactflow';
 import { HierarchyEmployee } from '@/services/api';
+import { apiPost } from '@/services/config';
 
 export const useHierarchy = () => {
     const [rawEmployees, setRawEmployees] = useState<HierarchyEmployee[]>([]);
@@ -752,6 +753,50 @@ export const useHierarchy = () => {
         setError(null);
     }, []);
 
+    const handleCandidateAction = async (employeeId: string, action: 'approve' | 'reject') => {
+        try {
+            const data = await apiPost('/hierarchy/candidate-action', {
+                employee_id: employeeId, 
+                action 
+            });
+
+            console.log(`[useHierarchy] Candidato ${action === 'approve' ? 'aprovado' : 'rejeitado'}:`, data);
+
+            // 🔄 Atualização de Estado Local
+            if (action === 'approve') {
+                // Se aprovou, removemos da lista de opções do carrossel (brandOptions)
+                // e recarregamos/atualizamos o funcionario no grafo (ou forçamos um fetch se necessário)
+                setBrandOptions(prev => prev.filter(opt => opt.id !== employeeId));
+                
+                // Atualiza o funcionário no grafo se ele já estiver lá (format 'node_ID')
+                setRawEmployees(prev => {
+                    return prev.map(emp => {
+                        if (emp.id === employeeId && emp.role === 'Análise Humana') {
+                            // O backend já alterou pro headline, mas como não sabemos o headline aqui 
+                            // (ou poderíamos passar no retorno do server), vamos colocar 'Aprovado' 
+                            // O próximo fetch database resolverá 100%.
+                            return { ...emp, role: 'Aprovado (Recarregue para ver cargo)' };
+                        }
+                        return emp;
+                    });
+                });
+            } else {
+                // Se rejeitou, removemos de tudo
+                setBrandOptions(prev => prev.filter(opt => opt.id !== employeeId));
+                setRawEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+                setRawBackendEdges(prev => prev.filter(edge => edge.target !== employeeId && edge.source !== employeeId));
+            }
+
+            return data;
+        } catch (e: any) {
+            console.error(`[useHierarchy] Erro na ação ${action}:`, e.message);
+            throw e;
+        }
+    };
+
+    const approveCandidate = useCallback((id: string) => handleCandidateAction(id, 'approve'), []);
+    const rejectCandidate = useCallback((id: string) => handleCandidateAction(id, 'reject'), []);
+
     return { 
         rawEmployees, 
         rawBackendEdges, 
@@ -774,6 +819,8 @@ export const useHierarchy = () => {
         smartSyncPipedrive,
         confirmIntelligence,
         setBrandOptions,
-        resetHierarchy
+        resetHierarchy,
+        approveCandidate,
+        rejectCandidate
     };
 };

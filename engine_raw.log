@@ -1,7 +1,234 @@
 
 ================================================================================
+SESSÃO: WALSYWA | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-17 14:38:12
+================================================================================
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Comprador Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Gustavo Demetino
+🔗 LINKEDIN: https://br.linkedin.com/in/gustavo-demetino-ab9775219
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gustavo Demetino - Auxiliar de compras na empresa ... - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Auxiliar de compras na empresawalsywaindústria e comercio de produtos metalúrgicos · Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: walsywa industria e comercio de produtos metalurgicos
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões no LinkedIn. Veja o perfil de Gustavo Demetino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Auxiliar de compras
+      ∟ BIO PROCESSADA: Auxiliar de compras na Walsywa Industria e Comercio de Produtos Metalurgicos...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Auxiliar de compras na Walsywa Industria e Comercio de Produtos Metalurgicos...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Compras
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo de Auxiliar de Compras é relevante para SUPRIMENTOS / COMPRAS / PROCUREMENT, pois envolve a compra de produtos e materiais. Além disso, o vínculo com a empresa Walsywa é confirmado e o perfil não é institucional.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Auxiliar de Compras
+      ∟ SCORE DE MATCHING: 90%
+      ∟ EVIDÊNCIA DO JUIZ: Candidato atendeu a todos os critérios de validação, incluindo emprego verificado em Walsywa e cargo relevante para a área de Compras.
+
+——————————————————————————————————————————————————
+[FILTRO MECÂNICO] CANDIDATO: Marcos Santos
+LINK: https://br.linkedin.com/in/marcos-santos-62215394
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Compradora Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Jorge Camilo Trabulsi
+🔗 LINKEDIN: https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Jorge Camilo Trabulsi - Walsywa | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Jorge Camilo Trabulsi noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Jorge Camilo Trabulsi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
+      ∟ BIO PROCESSADA: Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conex...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Experiência: Walsywa, Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conexões no LinkedIn....
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Não Identificado
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: A bio do candidato menciona experiência em vendas e relacionamento com clientes, o que sugere que o cargo não está relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, o cargo não foi identificado com precisão e não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na bio ou snippets.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Vendedor
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Não Identificado). O candidato trabalha na área de vendas há 15 anos e tem experiência em relacionamento com clientes. O Detetive encontrou evidências de que ele trabalha na Walsywa, o que coincide com a empresa declarada pelo candidato.
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Bruno Lopes
+🔗 LINKEDIN: https://br.linkedin.com/in/bruno-lopes-b9a95992
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Bruno Lopes - Walsywa | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Bruno Lopes noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Sou formado em Marketing, apaixonado por vendas.
+Focado em resultados, sempre visando… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Bruno Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
+      ∟ BIO PROCESSADA: Sou formado em Marketing, apaixonado por vendas. Focado em resultados, sempre visando…...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Veja o perfil de Bruno Lopes noLinkedIn, uma comunidade profissional de 1 bilhão de usuários., LinkedIn CURRENT COMPANY (Declarada): Walsywa, Experiência: Walsywa...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Não Identificado
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: A bio de Bruno Lopes não menciona termos técnicos de SUPRIMENTOS / COMPRAS / PROCUREMENT e o cargo não foi identificado com precisão. Além disso, a bio menciona Marketing e Vendas, o que é vetado.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Análise Humana
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+[FILTRO MECÂNICO] CANDIDATO: João Paulo Marques
+LINK: https://br.linkedin.com/in/joão-paulo-marques-16295964
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: John Kennedy
+🔗 LINKEDIN: https://br.linkedin.com/in/john-kennedy-0a17597b
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: John Kennedy - Gerente Nacional de Vendas | Walsywa ... - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Salesiano de São Paulo · Localidade: Monte Mor · + de 500 conexões no LinkedIn. Veja o perfil de John Kennedy no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Gerente Nacional de Vendas
+      ∟ BIO PROCESSADA: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Salesiano de São Paulo ...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
+      ∟ SNIPPETS RELEVANTES: ...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: None
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: None
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Análise Humana
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Procurement Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Fabrizio E.
+🔗 LINKEDIN: https://br.linkedin.com/in/fabrizioeizo
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gerente de Engenharia e Suprimentos | Walsywa - LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: ExperiênciaWalsywa10 anos 9 meses Gerente de Engenharia e Suprimentos set. de 2019 - o momento 6 anos 7 meses Jundiaí, São Paulo,Brasil
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Fabrizio E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Gerente de Engenharia e Suprimentos
+      ∟ BIO PROCESSADA: Experiência de 10 anos 9 meses como Gerente de Engenharia e Suprimentos na Walsywa...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Experiência de 10 anos 9 meses como Gerente de Engenharia e Suprimentos na Walsywa, Gerente de Engenharia e Suprimentos set. de 2019 - o momento 6 anos 7 meses Jundiaí, São Paulo,Brasil, LinkedIn CURR...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Suprimentos/Compras/Procurement
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo de Gerente de Engenharia e Suprimentos tem interface direta com Suprimentos/Compras/Procurement, pois envolve a gestão de materiais e fornecedores.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Gerente de Engenharia e Suprimentos
+      ∟ SCORE DE MATCHING: 100%
+      ∟ EVIDÊNCIA DO JUIZ: Candidato atendeu a todos os critérios de validação, incluindo cargo e empresa declarados, relevância e departamento.
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Strategic Sourcing Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: Marcos Santos
+LINK: https://www.linkedin.com/in/marcos-santos-62215394
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Buyer Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: Paulo Lima
+LINK: https://br.linkedin.com/in/paulo-lima-39380813a
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Analista de Compras Brasil linkedin
+==============================
+
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Sourcing Brasil linkedin
+==============================
+
+
+================================================================================
 SESSÃO: DVA | LOCAL: BRASIL | FOCO: COMPRAS
-DATA: 2026-04-17 07:42:07
+DATA: 2026-04-17 15:07:47
 ================================================================================
 
 
@@ -14,74 +241,6 @@ LINK: https://br.linkedin.com/in/aleixo
 MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 --------------------------------------------------
 
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Luca Trovó
-🔗 LINKEDIN: https://br.linkedin.com/in/luca-trovó-379977307
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Luca Trovó - DVA Brasil | LinkedIn DVA Brasil on LinkedIn: #agro #desenvolvimento #tecnologia # ... DVA Intermediações - LinkedIn DVA Brasil posted on LinkedIn Ludimila Ferreira - Analista Financeiro | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150 · 31 conexões no LinkedIn . Veja o perfil de Luca Trovó no LinkedIn , uma... A DVA Brasil se transformou e agora nos tornamos AGROALLIANZ, uma empresa do grupo DVA GLOBAL, com o mesmo propósito, uma empresa feita de produtor para produtor, conectados com à realidade dos... A DVA Intermediações atua na originação, estruturação e viabilização de operações com ativos reais de alto valor, com presença nos mercados de agro, commodities, crédito de carbono ... A DVA Brasil gostaria de aproveitar este momento para expressar a sincera gratidão pela contribuição valiosa que vocês clientes, fornecedores, amigos e familiares trouxeram no ano de 2023. · Experiência: Dva Comercio Atacadista De Alimentos SA · Formação acadêmica: Grupo Projeção · Localidade: Brasília. Veja o perfil de Ludimila Ferreira no LinkedIn , uma comunidade profissional...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: dva brasil
-      ∟ BIO/DESCRIPTION: Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150 · 32 conexões no LinkedIn. Veja o perfil de Luca Trovó no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Experiência: DVA Brasil, Google Page Title: Luca Trovó - DVA Brasil, CURRENT COMPANY (Declarada): Dva...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Não Identificado
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo não foi explicitamente identificado e não há termos técnicos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets que permitam inferir uma relação direta com essas áreas.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Analista Financeiro
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Especialista marcou como não relevante e não há Cargo Oficial Verificado para contradizer.
-
-🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Ludimila Ferreira
-🔗 LINKEDIN: https://br.linkedin.com/in/ludimila-ferreira-45b8173b3
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Ludimila Ferreira - Analista Financeiro | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: · Experiência: Dva Comercio Atacadista De Alimentos SA · Formação acadêmica: Grupo Projeção · Localidade: Brasília. Veja o perfil de Ludimila Ferreira no LinkedIn , uma comunidade profissional...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: 
-      ∟ BIO/DESCRIPTION: N/A
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Analista Financeiro
-      ∟ BIO PROCESSADA: Experiência: Dva Comercio Atacadista De Alimentos SA, Formação acadêmica: Grupo Projeção, Localidade: Brasília...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Experiência: Dva Comercio Atacadista De Alimentos SA, Cargo Detectado: Analista Financeiro...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Finanças
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo detectado é Analista Financeiro, que está dentro do veto absoluto de Financeiro, portanto não é relevante para SUPRIMENTOS / COMPRAS / PROCUREMENT.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Analista Financeiro
-      ∟ SCORE DE MATCHING: 80%
-      ∟ EVIDÊNCIA DO JUIZ: Especialista marcou como não relevante e não há Cargo Oficial Verificado para contradizer.
-
-——————————————————————————————————————————————————
 
 ················································································
 🔍 [ANÁLISE DE PERFIL] CANDIDATO: Eduardo Camelo
@@ -118,58 +277,17 @@ MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 
 
 ················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Carlos Pellicer
-🔗 LINKEDIN: https://br.linkedin.com/in/carlos-pellicer-05141123
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Angela B.
+🔗 LINKEDIN: https://br.linkedin.com/in/angela-b-b8657b90
 ················································································
 
 📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Carlos Pellicer - Presidente DVA Brasil | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Carlos Pellicer no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [SEARCH SNIPPET] TITLE: Angela B. - RhodiaBrasil|LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Profissional com sólida experiência na área de compras industriais, atuando como… · Experiência: RhodiaBrasil· Formação acadêmica: Universidade Cruzeiro do Sul · Localidade:Brasil· 366 conexões noLinkedIn.
    ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
    ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: dva agro do brasil
-      ∟ BIO/DESCRIPTION: Specialties: UNESP - Jabotical
-FGV - SP
-Havard 
-Universidade Federal de Viçosa… · Experiência: DVA Agro do Brasil · Localidade: Campinas · 237 conexões no LinkedIn. Veja o perfil de Carlos Pellicer no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Presidente
-      ∟ BIO PROCESSADA: Presidente DVA Brasil, especialidades em UNESP - Jabotical, FGV - SP, Havard e Universidade Federal de Viçosa...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Presidente DVA Brasil, DVA Agro do Brasil, CURRENT COMPANY (Declarada): Dva...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Diretoria
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo de Presidente não está diretamente relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT, e não há termos técnicos explícitos na Bio ou Snippets que indiquem uma interface direta com essas áreas.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Presidente
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Presidente). O Detetive confirmou o emprego na Dva e o cargo de Presidente, alinhado com a META_COMPANY_DECLARADA.
-
-——————————————————————————————————————————————————
-[FILTRO MECÂNICO] CANDIDATO: DP DVA
-LINK: https://br.linkedin.com/in/dp-dva-7a58a037b
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Valeria Compras
-🔗 LINKEDIN: https://br.linkedin.com/in/valeria-compras-5a241a98
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Valeria Compras - COMPRADORA - DISTRIPACK
-   ∟ [SEARCH SNIPPET] BODY: We cannot provide a description for this page right now
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: distripack distribuidora de embal. eirele
-      ∟ BIO/DESCRIPTION: Experiência: DISTRIPACK DISTRIBUIDORA DE EMBAL. EIRELE · Localidade: Belo Horizonte e Região · 73 conexões no LinkedIn. Veja o perfil de Valeria Compras no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+      ∟ ROLE DETECTED: rhodia brasil
+      ∟ BIO/DESCRIPTION: Profissional com sólida experiência na área de compras industriais, atuando como… · Experiência: Rhodia Brasil · Formação acadêmica: Universidade Cruzeiro do Sul · Localidade: Brasil · 365 conexões no LinkedIn. Veja o perfil de Angela B. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
 
 🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
    🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
@@ -198,8 +316,8 @@ MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 ················································································
 
 📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Fernando Fernandes - General Manager DVA Brasil | LinkedIn DVA Intermediações - LinkedIn DVA - GO FURTHER. TOGETHER Publicação de DVA Brasil - LinkedIn Portugal DVA Brasil no LinkedIn: #estagio #compras #campinas
-   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Fernando Fernandes no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. • DVA Intermediações operates in the origination, structuring and execution of high-value real asset transactions, with presence across agro, commodities, carbon credits, corporate credit ... DVA is a global chemical company with more than 50 years of experience. We develop intelligent solutions for complex markets and industries. Let us help you improve yields, efficiency and quality – together we shape a better, sustainable future. Parabéns, Natália Gonçalves! Vamos além, juntos! 💙 Confira a matéria completa na Revista Cultivar pelo link abaixo: https://lnkd.in/dXd8ExEC #dvagroup # dvaagrobrasil #agro #agronegocio... Estágio em Compras A DVA Agro Brasil está em busca de jovens talentos que tenham vontade de inovar, que sejam pessoas curiosas e que buscam por novos desafios!
+   ∟ [SEARCH SNIPPET] TITLE: Fernando Fernandes - General Manager DVA Brasil | LinkedInDVA Intermediações - LinkedInDVA - GO FURTHER. TOGETHERPublicação de DVA Brasil - LinkedIn PortugalDVA Brasil posted on LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Fernando Fernandes noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.•DVAIntermediações operates in the origination, structuring and execution of high-value real asset transactions, with presence across agro, commodities, carbon credits, corporate credit ...DVAis a global chemical company with more than 50 years of experience. We develop intelligent solutions for complex markets and industries. Let us help you improve yields, efficiency and quality – together we shape a better, sustainable future.Parabéns, Natália Gonçalves! Vamos além, juntos! 💙 Confira a matéria completa na Revista Cultivar pelo link abaixo: https://lnkd.in/dXd8ExEC #dvagroup #dvaagrobrasil#agro #agronegocio...ADVABrasilgostaria de aproveitar este momento para expressar a sincera gratidão pela contribuição valiosa que vocês clientes, fornecedores, amigos e familiares trouxeram no ano de 2023.
    ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
    ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
       ∟ ROLE DETECTED: dva group
@@ -208,559 +326,39 @@ MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
    🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
       ∟ ALVO ISOLADO: None | CARGO: General Manager
-      ∟ BIO PROCESSADA: DVA Group, Formação acadêmica: Faculdades Metropolitanas Unidas, Localidade: Campinas...
+      ∟ BIO PROCESSADA: Experiência: DVA Group · Formação acadêmica: Faculdades Metropolitanas Unidas · Localidade: Campinas · + de 500 conexões no LinkedIn....
    🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
       ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Fernando Fernandes - General Manager DVA Brasil, DVA Group, Experiência: DVA Group...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Gerência Geral
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo detectado é General Manager, que não está diretamente relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets que justifiquem a relevância.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: General Manager
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (General Manager). O Detetive confirmou a empresa DVA e o cargo de General Manager, alinhado com a declaração do candidato.
-
-——————————————————————————————————————————————————
-
-================================================================================
-SESSÃO: WALSYWA | LOCAL: BRASIL | FOCO: COMPRAS
-DATA: 2026-04-17 11:26:41
-================================================================================
-
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Comprador Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Wagner Walsywa
-🔗 LINKEDIN: https://br.linkedin.com/in/wagner-walsywa-2211bb93
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: WagnerWalsywa-Walsywae alge |LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de WagnerWalsywanoLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: walsywa e alge
-      ∟ BIO/DESCRIPTION: Experiência: Walsywa e alge · Localidade: São Paulo · 22 conexões no LinkedIn. Veja o perfil de Wagner Walsywa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Experiência em Walsywa e alge, localizado em São Paulo com 22 conexões no LinkedIn....
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
-      ∟ SNIPPETS RELEVANTES: Experiência: Walsywa e alge, Cargo Detectado: Não Identificado, Wagner Walsywa | walsywa e alge, SURNAME_SKEPTICISM: O sobrenome coincide com a empresa e não há indicadores funcionais (ex: 'at' ou 'na...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Indeterminado
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O perfil não apresenta um cargo específico ou termos técnicos relacionados a Suprimentos, Compras ou Logística. Conforme as instruções de rigor técnico, na ausência de cargo identificado e de palavras-chave explícitas da área na bio, o perfil deve ser considerado irrelevante.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Análise Humana
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Gustavo Demetino
-🔗 LINKEDIN: https://br.linkedin.com/in/gustavo-demetino-ab9775219
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Gustavo Demetino - Auxiliar de compras na ... - LinkedIn Brasil
-   ∟ [SEARCH SNIPPET] BODY: Auxiliar decomprasna empresawalsywaindústria e comercio de produtos metalúrgicos · Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: walsywa industria e comercio de produtos metalurgicos
-      ∟ BIO/DESCRIPTION: Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões no LinkedIn. Veja o perfil de Gustavo Demetino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Auxiliar de compras
-      ∟ BIO PROCESSADA: Auxiliar de compras na Walsywa Industria e Comercio de Produtos Metalurgicos...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Auxiliar de compras na Walsywa Industria e Comercio de Produtos Metalurgicos, Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos, LinkedIn CURRENT COMPANY (Declarada): Walsywa...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Compras/Suprimentos
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo detectado é 'Auxiliar de compras', que tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, a Bio Higienizada e os Snippets do Detetive confirmam o vínculo com a empresa Walsywa e o cargo de Auxiliar de Compras.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Auxiliar de Compras
-      ∟ SCORE DE MATCHING: 95%
-      ∟ EVIDÊNCIA DO JUIZ: Especialista confirmou relevância, Detetive encontrou evidências de trabalho na Walsywa e não há veto mecânico detectado.
-
-——————————————————————————————————————————————————
-[FILTRO MECÂNICO] CANDIDATO: Jorge Camilo Trabulsi
-LINK: https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-[FILTRO MECÂNICO] CANDIDATO: Marcos Santos
-LINK: https://www.linkedin.com/in/marcos-santos-62215394
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Compradora Brasil linkedin
-==============================
-
-[FILTRO MECÂNICO] CANDIDATO: João Paulo Marques
-LINK: https://br.linkedin.com/in/joão-paulo-marques-16295964
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Bruno Lopes
-🔗 LINKEDIN: https://br.linkedin.com/in/bruno-lopes-b9a95992
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Bruno Lopes - Walsywa | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Bruno Lopes noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: cargo não identificado nos metadados
-      ∟ BIO/DESCRIPTION: Sou formado em Marketing, apaixonado por vendas.
-Focado em resultados, sempre visando… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Bruno Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Sou formado em Marketing, apaixonado por vendas. Focado em resultados, sempre visando......
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: LinkedIn CURRENT COMPANY (Declarada): Walsywa, Experiência: Walsywa...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Não Aplicável
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo detectado é 'Não Identificado' e a bio do candidato menciona formação em Marketing e paixão por vendas, o que não está relacionado a SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na bio ou snippets.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Análise Humana
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Acaia Fabricio
-🔗 LINKEDIN: https://br.linkedin.com/in/acaia-fabricio-530617231
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Coordernadora de Controladoria Sr. na Walsywa - LinkedIn Brasil
-   ∟ [SEARCH SNIPPET] BODY: Coordernadora de Controladoria Sr. naWalsywa· Experiência:Walsywa· Localidade: Louveira · 105 conexões noLinkedIn. Veja o perfil de Acaia Fabricio noLinkedIn, uma comunidade...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: cargo não identificado nos metadados
-      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Localidade: Louveira · 104 conexões no LinkedIn. Veja o perfil de Acaia Fabricio no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Coordenadora de Controladoria Sr.
-      ∟ BIO PROCESSADA: Coordenadora de Controladoria Sr. na Walsywa. Localidade: Louveira. 105 conexões no LinkedIn....
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Coordenadora de Controladoria Sr. na Walsywa, Experiência: Walsywa, LinkedIn CURRENT COMPANY (Declarada): Walsywa...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Controladoria
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo detectado é de Controladoria, que está relacionado a finanças e não tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Coordenadora de Controladoria Sr.
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Coordenadora de Controladoria Sr.). O Detetive confirmou a empresa como Walsywa e o cargo é relevante para a área de Compras/Suprimentos, apesar do Especialista ter marcado como não relevante, o cargo é consistente com a descrição.
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Procurement Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Fabrizio E.
-🔗 LINKEDIN: https://br.linkedin.com/in/fabrizioeizo
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Gerente de Engenharia e Suprimentos | Walsywa - LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: ExperiênciaWalsywa10 anos 9 meses Gerente de Engenharia e Suprimentos set. de 2019 - o momento 6 anos 7 meses Jundiaí, São Paulo,Brasil
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: cargo não identificado nos metadados
-      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Fabrizio E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Gerente de Engenharia e Suprimentos
-      ∟ BIO PROCESSADA: Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Experiência: Walsywa, Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí, Gerente de Engenharia e Suprimentos set. de 2019 - o momento...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Suprimentos/Compras/Procurement
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo detectado é 'Gerente de Engenharia e Suprimentos', que tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, o vínculo com a empresa Walsywa é confirmado e o cargo não contém termos vetados.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Gerente de Engenharia e Suprimentos
-      ∟ SCORE DE MATCHING: 90%
-      ∟ EVIDÊNCIA DO JUIZ: Especialista confirmou relevância e Detetive encontrou evidências de experiência na Walsywa
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Strategic Sourcing Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: John Kennedy
-🔗 LINKEDIN: https://br.linkedin.com/in/john-kennedy-0a17597b
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: John Kennedy - Gerente Nacional de Vendas - LinkedIn BrasilPágina Inicial - WalsywaGerente de Engenharia e Suprimentos - LinkedIn Brasil
-   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.Somos a número 1 em obras de Infraestrutura noBrasil! Ao longo da história, contribuímos ativamente para a economia brasileira e estivemos presentes em importantes obras nacionais.Veja o perfil de Fabrizio E. noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: cargo não identificado nos metadados
-      ∟ BIO/DESCRIPTION: Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Salesiano de São Paulo · Localidade: Monte Mor · + de 500 conexões no LinkedIn. Veja o perfil de John Kennedy no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Gerente Nacional de Vendas
-      ∟ BIO PROCESSADA: Gerente Nacional de vendas com mais de 20 anos de experiência na área comercial na Walsywa, formado no Centro Universitário Salesiano de São Paulo....
-      ∟ OUTROS PERFIS NO RUÍDO: 1 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Gerente Nacional de vendas com mais de 20 anos de experiência na área comercial na Walsywa, LinkedIn CURRENT COMPANY (Declarada): Walsywa, Experiência: Walsywa...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Comercial / Vendas
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O candidato ocupa uma posição de liderança na área comercial (Vendas), o que aciona o veto absoluto conforme as instruções técnicas, visto que não possui interface direta com o departamento de Suprimentos ou Compras.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Gerente Nacional de Vendas
-      ∟ SCORE DE MATCHING: 80%
-      ∟ EVIDÊNCIA DO JUIZ: Especialista marcou como não relevante e não há Cargo Oficial Verificado para contradizer.
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Buyer Brasil linkedin
-==============================
-
-[FILTRO MECÂNICO] CANDIDATO: Rafael Bonatti
-LINK: https://br.linkedin.com/in/rafael-bonatti-56b850170
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-[FILTRO MECÂNICO] CANDIDATO: Paulo Lima
-LINK: https://br.linkedin.com/in/paulo-lima-39380813a
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Analista de Compras Brasil linkedin
-==============================
-
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Sourcing Brasil linkedin
-==============================
-
-
-================================================================================
-SESSÃO: WALSYWA | LOCAL: BRASIL | FOCO: COMPRAS
-DATA: 2026-04-17 13:47:26
-================================================================================
-
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Comprador Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Gustavo Demetino
-🔗 LINKEDIN: https://br.linkedin.com/in/gustavo-demetino-ab9775219
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Gustavo Demetino - Auxiliar de compras na ... - LinkedIn Brasil
-   ∟ [SEARCH SNIPPET] BODY: Auxiliar decomprasna empresawalsywaindústria e comercio de produtos metalúrgicos · Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: walsywa industria e comercio de produtos metalurgicos
-      ∟ BIO/DESCRIPTION: Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões no LinkedIn. Veja o perfil de Gustavo Demetino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Auxiliar de Compras
-      ∟ BIO PROCESSADA: Auxiliar de compras na Walsywa Industria E Comercio De Produtos Metalurgicos em Jundiaí com 58 conexões no LinkedIn....
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Auxiliar decomprasna empresawalsywaindústria e comercio de produtos metalúrgicos, Experiência:WalsywaIndustria E Comercio De Produtos Metalurgicos...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Suprimentos / Compras
-      ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O candidato ocupa o cargo de Auxiliar de Compras na própria empresa alvo (Walsywa), o que representa uma função operacional direta dentro do departamento de Suprimentos/Procurement.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Auxiliar de Compras
-      ∟ SCORE DE MATCHING: 95%
-      ∟ EVIDÊNCIA DO JUIZ: Especialista confirmou relevância, Detetive encontrou informações consistentes e não há veto de empresa ou cargo vazio.
-
-——————————————————————————————————————————————————
-[FILTRO MECÂNICO] CANDIDATO: Jorge Camilo Trabulsi
-LINK: https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-[FILTRO MECÂNICO] CANDIDATO: Marcos Santos
-LINK: https://www.linkedin.com/in/marcos-santos-62215394
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Gabriel Silva
-🔗 LINKEDIN: https://br.linkedin.com/in/gabriel-silva-854818243
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Gabriel Silva - Comprador - Walsywa
-   ∟ [SEARCH SNIPPET] BODY: We cannot provide a description for this page right now
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: cargo não identificado nos metadados
-      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Formação acadêmica: Grupo Anchieta · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Gabriel Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Comprador
-      ∟ BIO PROCESSADA: Experiência: Walsywa · Formação acadêmica: Grupo Anchieta · Localidade: Jundiaí...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Gabriel Silva - Comprador - Walsywa, Experiência: Walsywa, LinkedIn CURRENT COMPANY (Declarada): Walsywa...
+      ∟ SNIPPETS RELEVANTES: Experiência: DVA Group, Google Page Title: Fernando Fernandes - General Manager DVA Brasil, CURRENT COMPANY (Declarada): Dva...
       ∟ PERFIL INSTITUCIONAL: NÃO
    👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
       ∟ DEPARTAMENTO: Compras/Procurement
       ∟ RELEVANTE: SIM
-      ∟ MOTIVO: O cargo detectado é 'Comprador', que está diretamente relacionado a SUPRIMENTOS/COMPRAS/PROCUREMENT. Além disso, o vínculo com a empresa Walsywa foi confirmado e não há indícios de veto absoluto.
+      ∟ MOTIVO: O cargo de General Manager em uma empresa como Dva, que opera em originação, estruturação e execução de transações de ativos reais de alta valor, sugere uma interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, a bio do candidato menciona experiência em DVA Group, o que reforça a relevância do cargo.
    ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
       ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Comprador
-      ∟ SCORE DE MATCHING: 95%
-      ∟ EVIDÊNCIA DO JUIZ: Especialista confirmou relevância, Detetive encontrou informações consistentes e não há veto de empresa ou cargo vazio.
+      ∟ CARGO FINAL: General Manager
+      ∟ SCORE DE MATCHING: 90%
+      ∟ EVIDÊNCIA DO JUIZ: Candidato atendeu a todos os critérios de validação, incluindo empregador verificado e cargo relevante para a área de Compras/Procurement.
 
 ——————————————————————————————————————————————————
-[FILTRO MECÂNICO] CANDIDATO: Eustaquio Nascimento
-LINK: https://br.linkedin.com/in/eustaquio-nascimento-82051aa6
+
+==============================
+🔍 NOVA CONSULTA: Dva Strategic Sourcing Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: DP DVA
+LINK: https://br.linkedin.com/in/dp-dva-7a58a037b
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+[FILTRO MECÂNICO] CANDIDATO: Perla Fernandes
+LINK: https://br.linkedin.com/in/perlafernandes
 MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 --------------------------------------------------
 
 
 ==============================
-🔍 NOVA CONSULTA: Walsywa Compradora Brasil linkedin
+🔍 NOVA CONSULTA: Dva Buyer Brasil linkedin
 ==============================
-
-
-================================================================================
-SESSÃO: WALSYWA | LOCAL: BRASIL | FOCO: COMPRAS
-DATA: 2026-04-17 13:50:32
-================================================================================
-
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Comprador Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Wagner
-🔗 LINKEDIN: https://br.linkedin.com/in/wagner-walsywa-2211bb93
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: WagnerWalsywa-Walsywae alge |LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de WagnerWalsywanoLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: walsywa e alge
-      ∟ BIO/DESCRIPTION: Experiência: Walsywa e alge · Localidade: São Paulo · 22 conexões no LinkedIn. Veja o perfil de Wagner Walsywa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Experiência: Walsywa e alge · Localidade: São Paulo...
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: CURRENT COMPANY (Declarada): Walsywa, Experiência: Walsywa e alge, Localidade: São Paulo...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Não Identificado
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo não foi explicitamente identificado, e a bio do candidato não contém termos técnicos de SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, o 'Cargo Detectado' é 'Não Identificado' e não há informações suficientes para sugerir um departamento específico.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Colaborador
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Rejeitado devido à falta de Cargo Oficial Verificado e Especialista marcou como não relevante
-
-🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Compradora Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Jorge Camilo Trabulsi
-🔗 LINKEDIN: https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Jorge Camilo Trabulsi - Walsywa | LinkedInA Walsywa, referência em fixação para construção civil no ...Home - WalsywaJohn Kennedy - Gerente Nacional de Vendas - LinkedIn BrasilBruno Lopes - Walsywa | LinkedInJoão Paulo Marques - Vendedor Externo Walsywa | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: · Experiência:Walsywa· Localidade: Jundiaí · + de 500 conexões noLinkedIn. Veja o perfil de Jorge Camilo Trabulsi noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.Compartilhe essa mensagem com sua rede e ajude-nos a encontrar talentos que queiram crescer junto com aWalsywa.Walsywaspecialists develop exclusive articles on Fastening for Civil Construction and share them here with you, to make your work even more efficient. Here you will also find the latest company news.Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.· Experiência:Walsywa· Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões noLinkedIn. Veja o perfil de Bruno Lopes noLinkedIn, uma...Vendedor ExternoWalsywa· Experiência:Walsywa· Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: São José dos Campos · 415 conexões noLinkedIn. Veja o perfil de...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: cargo não identificado nos metadados
-      ∟ BIO/DESCRIPTION: Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Jorge Camilo Trabulsi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
-      ∟ BIO PROCESSADA: Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes…...
-      ∟ OUTROS PERFIS NO RUÍDO: 2 detectados
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Jorge Camilo Trabulsi - Walsywa, Experiência:Walsywa, Compartilhe essa mensagem com sua rede e ajude-nos a encontrar talentos que queiram crescer junto com a Walsywa....
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Vendas
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo detectado não foi identificado explicitamente, e a bio higienizada menciona experiência em vendas, o que é um veto absoluto de acordo com as instruções técnicas.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: Vendas
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: Veto de Departamento: O departamento é Vendas, o que não é relevante para a busca de Compras.
-
-——————————————————————————————————————————————————
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: John Kennedy
-🔗 LINKEDIN: https://br.linkedin.com/in/john-kennedy-0a17597b
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: John Kennedy - Gerente Nacional de Vendas - LinkedIn BrasilBruno Lopes - Walsywa | LinkedInJoão Paulo Marques - Vendedor Externo Walsywa | LinkedIn
-   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de John Kennedy noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.· Experiência:Walsywa· Formação acadêmica: Centro Universitário Padre Anchieta · Localidade: Jundiaí · + de 500 conexões noLinkedIn. Veja o perfil de Bruno Lopes noLinkedIn, uma...Vendedor ExternoWalsywa· Experiência:Walsywa· Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: São José dos Campos · 415 conexões noLinkedIn. Veja o perfil de...
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: cargo não identificado nos metadados
-      ∟ BIO/DESCRIPTION: Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa · Formação acadêmica: Centro Universitário Salesiano de São Paulo · Localidade: Monte Mor · + de 500 conexões no LinkedIn. Veja o perfil de John Kennedy no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ ALVO ISOLADO: None | CARGO: Gerente Nacional de Vendas
-      ∟ BIO PROCESSADA: Mais de 20 anos de experiência na área comercial....
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ EMPRESA ATUAL CONFIRMADA: SIM
-      ∟ SNIPPETS RELEVANTES: Experiência: Walsywa, LinkedIn CURRENT COMPANY (Declarada): Walsywa, Gerente Nacional de vendas: Mais de 20 anos de experiência na área comercial. Nesses 20… · Experiência: Walsywa...
-      ∟ PERFIL INSTITUCIONAL: NÃO
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO: Comercial
-      ∟ RELEVANTE: NÃO
-      ∟ MOTIVO: O cargo de Gerente Nacional de Vendas não é relevante para SUPRIMENTOS / COMPRAS / PROCUREMENT, pois contém termos de vendas e comercial.
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ✅ APROVADO
-      ∟ CARGO FINAL: Análise Humana
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
-
-——————————————————————————————————————————————————
-[FILTRO MECÂNICO] CANDIDATO: Bruno Lopes
-LINK: https://br.linkedin.com/in/bruno-lopes-b9a95992
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-[FILTRO MECÂNICO] CANDIDATO: João Paulo Marques
-LINK: https://br.linkedin.com/in/joão-paulo-marques-16295964
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
-
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Procurement Brasil linkedin
-==============================
-
-
-················································································
-🔍 [ANÁLISE DE PERFIL] CANDIDATO: Fabrizio E.
-🔗 LINKEDIN: https://br.linkedin.com/in/fabrizioeizo
-················································································
-
-📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
-   ∟ [SEARCH SNIPPET] TITLE: Gerente de Engenharia e Suprimentos - LinkedIn Brasil
-   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Fabrizio E. noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
-   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
-      ∟ ROLE DETECTED: cargo não identificado nos metadados
-      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Fabrizio E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
-
-🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
-   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
-      ∟ FALHA NA HIGIENIZAÇÃO
-   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
-      ∟ SEM FATOS EXTRAÍDOS
-   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
-      ∟ DEPARTAMENTO SUGERIDO: N/D
-      ∟ RELEVANTE PARA O FOCO: NÃO
-   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
-      ∟ RESULTADO: ❌ REJEITADO
-      ∟ CARGO FINAL: N/D
-      ∟ SCORE DE MATCHING: 0%
-      ∟ EVIDÊNCIA DO JUIZ: REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)
-
-——————————————————————————————————————————————————
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Strategic Sourcing Brasil linkedin
-==============================
-
-
-==============================
-🔍 NOVA CONSULTA: Walsywa Buyer Brasil linkedin
-==============================
-
-[FILTRO MECÂNICO] CANDIDATO: Marcos Santos
-LINK: https://www.linkedin.com/in/marcos-santos-62215394
-MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
---------------------------------------------------
 

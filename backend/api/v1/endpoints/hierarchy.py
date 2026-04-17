@@ -14,9 +14,61 @@ from models import Employee, Organization
 from services.hierarchy.b2b_scanner import discover_employees, discover_employees_stream
 from services.hierarchy.filters import get_seniority_level, get_department_tag
 from services.external.groq_service import refine_hierarchy_ai
-from api.v1.schemas import EmployeeNode, HierarchyResponse, clean_cnpj
+from api.v1.schemas import EmployeeNode, HierarchyResponse, clean_cnpj, CandidateActionRequest
 
 router = APIRouter()
+
+@router.post("/candidate-action")
+async def candidate_action(payload: CandidateActionRequest, db: AsyncSession = Depends(get_db)):
+    """Aprova ou rejeita um candidato em análise humana."""
+    # Extrair ID real se vier no formato node_123
+    db_id = payload.employee_id
+    emp = None
+
+    if "_" in str(db_id) and str(db_id).startswith("node_"):
+        parts = str(db_id).split("_")
+        if parts[1].isdigit():
+             db_id_int = int(parts[1])
+             stmt = select(Employee).where(Employee.id == db_id_int)
+             res = await db.execute(stmt)
+             emp = res.scalars().first()
+        else:
+             # Se for um node_username, precisamos buscar pelo linkedin_url
+             username = "_".join(parts[1:])
+             stmt = select(Employee).where(Employee.linkedin_url.contains(username))
+             res = await db.execute(stmt)
+             emp = res.scalars().first()
+    
+    if not emp:
+        # Tenta busca direta se for apenas o número
+        try:
+            db_id_int = int(db_id)
+            stmt = select(Employee).where(Employee.id == db_id_int)
+            res = await db.execute(stmt)
+            emp = res.scalars().first()
+        except:
+            pass
+
+    if not emp:
+        raise HTTPException(status_code=404, detail="Funcionário não encontrado.")
+
+    if payload.action == "approve":
+        # Se for análise humana, tentamos restaurar o cargo real se tiver headline
+        if emp.role == "Análise Humana":
+            emp.role = emp.headline or "Colaborador"
+            # Recalcula departamento se necessário
+            emp.department = get_department_tag(emp.role)
+        
+        await db.commit()
+        return {"status": "success", "message": f"Candidato {emp.name} aprovado."}
+    
+    elif payload.action == "reject":
+        await db.delete(emp)
+        await db.commit()
+        return {"status": "success", "message": f"Candidato {emp.name} removido."}
+
+    else:
+        raise HTTPException(status_code=400, detail="Ação inválida. Use 'approve' ou 'reject'.")
 
 @router.post("/refine")
 async def refine_hierarchy(
@@ -548,6 +600,7 @@ async def stream_company_hierarchy(
 
     return StreamingResponse(generator(), media_type="text/event-stream")
 
+
 @router.get("/pipedrive/{pipedrive_id}")
 async def get_stored_hierarchy_by_pipedrive(pipedrive_id: int, db: AsyncSession = Depends(get_db)):
     """Busca a hierarquia salva usando o ID do Pipedrive."""
@@ -650,3 +703,4 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
         })
     
     return {"company_name": org.name, "nodes": nodes, "status": "cached"}
+
