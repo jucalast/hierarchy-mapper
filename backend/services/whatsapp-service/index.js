@@ -29,26 +29,39 @@ const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: 'new',
-        executablePath: process.env.CHROME_PATH || undefined, // Permite override via env
+        executablePath: process.env.CHROME_PATH || undefined,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
-            '--no-zygote',
             '--disable-gpu',
-            '--disable-software-rasterizer',
             '--disable-extensions',
             '--disable-features=IsolateOrigins,site-per-process',
-            '--v8-cache-options=none'
+            '--window-size=1280,720'
         ]
     },
     webVersionCache: {
         type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1037280436-alpha.html'
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
     }
 });
+
+// Contador de falhas fatais para auto-restart
+let fatalErrorCount = 0;
+const MAX_FATAL_ERRORS = 3;
+
+const restartClient = async () => {
+    console.log('[WA Service] Reiniciando cliente devido a falhas excessivas...');
+    isReady = false;
+    fatalErrorCount = 0;
+    try {
+        await client.destroy();
+    } catch (e) {}
+    await delay(2000);
+    client.initialize();
+};
 
 let isReady = false;
 
@@ -59,8 +72,20 @@ client.on('qr', (qr) => {
 });
 
 client.on('ready', () => {
-    console.log('Cliente WhatsApp está logado e pronto!');
+    console.log('[WA Service] Cliente WhatsApp está logado e pronto!');
     isReady = true;
+});
+
+client.on('auth_failure', msg => {
+    console.error('[WA Service] FALHA DE AUTENTICAÇÃO:', msg);
+    isReady = false;
+});
+
+client.on('disconnected', (reason) => {
+    console.log('[WA Service] Cliente foi desconectado:', reason);
+    isReady = false;
+    // Tenta reinicializar após um tempo
+    setTimeout(() => client.initialize(), 5000);
 });
 
 client.on('message', async msg => {
@@ -82,38 +107,67 @@ app.post('/api/whatsapp/send', async (req, res) => {
 
     let formattedNumber = number;
     if (!number.includes('@c.us') && !number.includes('@lid') && !number.includes('@g.us')) {
-        let rawNumber = number.replace(/\D/g, ''); 
+        const rawNumber = number.replace(/\D/g, ''); 
+        if (!rawNumber) {
+            return res.status(400).json({ error: 'Número inválido ou malformado. Certifique-se de enviar um número de telefone ou um ID válido.' });
+        }
         formattedNumber = `${rawNumber}@c.us`;
     }
 
     try {
+        // Validação contra IDs truncados (ex: "5511... @c.us")
+        if (formattedNumber.includes('...')) {
+            throw new Error(`ID de contato truncado/inválido recebido: ${formattedNumber}. Verifique o frontend.`);
+        }
+
         let isRegistered = true;
         
         // Apenas verifica registro para números normais (@c.us)
-        if (formattedNumber.includes('@c.us')) {
-            isRegistered = await client.isRegisteredUser(formattedNumber);
+        if (formattedNumber.includes('@c.us') && formattedNumber.length > 5) {
+            try {
+                isRegistered = await client.isRegisteredUser(formattedNumber);
+                fatalErrorCount = 0; // Reset se funcionar
+            } catch (regError) {
+                console.error(`[WA Service] Erro ao verificar registro para ${formattedNumber}: ${regError.message}`);
+                
+                // Detecta erro de contexto do Puppeteer (t: t)
+                if (regError.message === 't' || regError.message.includes('Execution context was destroyed')) {
+                    fatalErrorCount++;
+                    if (fatalErrorCount >= MAX_FATAL_ERRORS) restartClient();
+                }
+
+                // Se falhar o check, assumimos true e deixamos o envio tentar (mais resiliente a erros 't: t')
+                isRegistered = true;
+            }
             
             // Regra do 9º dígito brasileiro (Tenta alternar caso falhe o primário)
-            let rawNumber = formattedNumber.replace('@c.us', '');
-            if (!isRegistered && rawNumber.startsWith('55') && rawNumber.length === 13) {
-                let altNumber = `55${rawNumber.substring(4)}`;
-                if (await client.isRegisteredUser(`${altNumber}@c.us`)) {
-                    formattedNumber = `${altNumber}@c.us`;
-                    isRegistered = true;
-                }
-            } else if (!isRegistered && rawNumber.startsWith('55') && rawNumber.length === 12) {
-                let altNumber = `55${rawNumber.substring(2,4)}9${rawNumber.substring(4)}`;
-                if (await client.isRegisteredUser(`${altNumber}@c.us`)) {
-                    formattedNumber = `${altNumber}@c.us`;
-                    isRegistered = true;
+            if (!isRegistered && formattedNumber.startsWith('55')) {
+                const raw = formattedNumber.replace('@c.us', '');
+                if (raw.length === 13) {
+                    // Tem 9 dígitos, tenta sem o 9
+                    let altNumber = `55${raw.substring(4)}@c.us`;
+                    try {
+                        if (await client.isRegisteredUser(altNumber)) {
+                            formattedNumber = altNumber;
+                            isRegistered = true;
+                        }
+                    } catch (e) {}
+                } else if (raw.length === 12) {
+                    // Não tem 9 dígitos, tenta com o 9
+                    let altNumber = `55${raw.substring(2,4)}9${raw.substring(4)}@c.us`;
+                    try {
+                        if (await client.isRegisteredUser(altNumber)) {
+                            formattedNumber = altNumber;
+                            isRegistered = true;
+                        }
+                    } catch (e) {}
                 }
             }
-        }
-        
-        if (!isRegistered) {
-            return res.status(404).json({ error: 'Este número não está registrado no WhatsApp.' });
-        }
 
+            if (!isRegistered) {
+                return res.status(404).json({ error: 'Este número não está registrado no WhatsApp.' });
+            }
+        }
         let chat;
         try {
             chat = await client.getChatById(formattedNumber);
@@ -125,14 +179,25 @@ app.post('/api/whatsapp/send', async (req, res) => {
                 await chat.clearState(); // Para de reportar que está digitando
             }
         } catch (e) {
-            console.log("Chat não encontrado no cache, enviando mensagem direta.");
+            console.log(`[WA Service] Chat ${formattedNumber} não encontrado no cache ou erro Puppeteer: ${e.message}`);
+            if (e.message === 't') {
+                fatalErrorCount++;
+                if (fatalErrorCount >= MAX_FATAL_ERRORS) restartClient();
+            }
         }
 
         await client.sendMessage(formattedNumber, message);
+        fatalErrorCount = 0; // Sucesso no envio reseta contador de erros
 
         res.json({ success: true, number: formattedNumber });
     } catch (err) {
-        console.error(err);
+        console.error('[WA Service] Erro no envio:', err.message);
+        
+        if (err.message === 't' || err.message.includes('navigating')) {
+            fatalErrorCount++;
+            if (fatalErrorCount >= MAX_FATAL_ERRORS) restartClient();
+        }
+
         res.status(500).json({ error: 'Falha no envio da mensagem.', details: err.message });
     }
 });
@@ -159,8 +224,8 @@ app.get('/api/whatsapp/chats/search', async (req, res) => {
             chats
         });
     } catch (error) {
-        console.error('Erro ao buscar chats:', error);
-        res.status(500).json({ error: error.message });
+        console.error('[WA Service] Erro ao buscar chats:', error);
+        res.status(500).json({ error: error.message, isReady });
     }
 });
 
@@ -227,15 +292,27 @@ app.get('/api/whatsapp/chats/:chatId/messages', async (req, res) => {
     try {
         let chat;
         try {
+            // Verifica ID truncado
+            if (chatId.includes('...')) {
+                throw new Error(`ID truncado detectado: ${chatId}. O frontend provavelmente enviou um valor visual em vez do ID real.`);
+            }
+
             chat = await client.getChatById(chatId);
+            fatalErrorCount = 0;
         } catch (e) {
-            console.log(`[WA Service] Falha ao buscar por ID ${chatId}. Tentando extrair número...`);
+            console.warn(`[WA Service] Falha na primeira tentativa de getChatById(${chatId}):`, e.message);
+            
+            if (e.message === 't') {
+                fatalErrorCount++;
+                if (fatalErrorCount >= MAX_FATAL_ERRORS) restartClient();
+            }
+
             // Se falhou e termina em @lid ou @c.us, tenta extrair apenas os números e buscar novamente
-            const cleanNumber = chatId.split('@')[0];
-            if (cleanNumber && cleanNumber.length > 5) {
+            const cleanNumber = chatId.replace('@c.us', '').replace('@lid', '').replace('@g.us', '').replace('@', '');
+            if (cleanNumber && cleanNumber.length > 5 && !isNaN(cleanNumber) && !cleanNumber.includes('..')) {
                 chat = await client.getChatById(`${cleanNumber}@c.us`);
             } else {
-                throw e;
+                throw new Error(e.message === 't' ? 'Erro de comunicação com o WhatsApp (Puppeteer Crash)' : `ID de conversa inválido: ${chatId}`);
             }
         }
 
@@ -340,19 +417,30 @@ app.post('/api/whatsapp/send-media', async (req, res) => {
     let formattedNumber = `${rawNumber}@c.us`;
 
     try {
-        let isRegistered = await client.isRegisteredUser(formattedNumber);
+        try {
+            isRegistered = await client.isRegisteredUser(formattedNumber);
+        } catch (regError) {
+            console.error(`[WA Service] Erro ao verificar registro (Media) para ${formattedNumber}: ${regError.message}`);
+            isRegistered = true;
+        }
         
         // Regra do 9º dígito brasileiro 
         if (!isRegistered && rawNumber.startsWith('55') && rawNumber.length === 13) {
             let altNumber = `55${rawNumber.substring(4)}`;
-            if (await client.isRegisteredUser(`${altNumber}@c.us`)) {
-                formattedNumber = `${altNumber}@c.us`;
-            }
+            try {
+                if (await client.isRegisteredUser(`${altNumber}@c.us`)) {
+                    formattedNumber = `${altNumber}@c.us`;
+                    isRegistered = true;
+                }
+            } catch (e) {}
         } else if (!isRegistered && rawNumber.startsWith('55') && rawNumber.length === 12) {
             let altNumber = `55${rawNumber.substring(2,4)}9${rawNumber.substring(4)}`;
-            if (await client.isRegisteredUser(`${altNumber}@c.us`)) {
-                formattedNumber = `${altNumber}@c.us`;
-            }
+            try {
+                if (await client.isRegisteredUser(`${altNumber}@c.us`)) {
+                    formattedNumber = `${altNumber}@c.us`;
+                    isRegistered = true;
+                }
+            } catch (e) {}
         } else if (!isRegistered) {
             return res.status(404).json({ error: 'Este número não está registrado no WhatsApp.' });
         }
@@ -401,20 +489,22 @@ app.get('/api/whatsapp/contacts/search', async (req, res) => {
     }
 
     try {
+        console.log(`[WA Service] Recebida busca de contatos: "${name}" (exact: ${exactMatch}, minSim: ${minSimilarity})`);
         const contacts = await contactService.searchContactsByName(client, name, {
             exactMatch: exactMatch === 'true',
             minSimilarity: parseFloat(minSimilarity),
             limit: parseInt(limit)
         });
         
+        console.log(`[WA Service] Busca por "${name}" retornou ${contacts.length} resultados.`);
         res.json({
             query: name,
             count: contacts.length,
             contacts
         });
     } catch (error) {
-        console.error('Erro ao buscar contatos:', error);
-        res.status(500).json({ error: error.message });
+        console.error('[WA Service] Erro ao buscar contatos:', error);
+        res.status(500).json({ error: error.message, isReady });
     }
 });
 

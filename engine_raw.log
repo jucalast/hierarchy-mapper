@@ -362,3 +362,530 @@ MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
 🔍 NOVA CONSULTA: Dva Buyer Brasil linkedin
 ==============================
 
+
+==============================
+🔍 NOVA CONSULTA: Dva Analista de Compras Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Carolina Gil Molina Analista administrativa y Compras
+🔗 LINKEDIN: https://co.linkedin.com/in/carolina-gil-molina
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Carolina Gil MolinaAnalistaadministrativa yCompras... |LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Mira el perfil de Carolina Gil MolinaAnalistaadministrativa yComprasenLinkedIn, una red profesional de más de 1.000 millones de miembros.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: buentipo
+      ∟ BIO/DESCRIPTION: Soy profesional con más de 8 años de experiencia en cargos como coordinación y asistencia… · Experiencia: Buentipo · Educación: CORPORACIÓN UNIVERSITARIA REMINGTON · Ubicación: Bogotá · Más de 500 contactos en LinkedIn. Ver el perfil de Carolina Gil Molina Analista administrativa y Compras en LinkedIn, una red profesional de más de 1.000 millones de miembros.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: N/D
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Dva Sourcing Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Bianca Lima
+🔗 LINKEDIN: https://br.linkedin.com/in/biancadelimasilva
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Bianca Lima - DVA Brasil | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Bianca Lima noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: dva brasil
+      ∟ BIO/DESCRIPTION: Experiência: DVA Brasil · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: 13330-005 · 219 conexões no LinkedIn. Veja o perfil de Bianca Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
+      ∟ BIO PROCESSADA: Veja o perfil de Bianca Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários....
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Veja o perfil de Bianca Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários., CURRENT COMPANY (Declarada): Dva, DVA Brasil · Formação acadêmica: UniMax - Centro Universitário Max Pla...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Não Identificado
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O cargo não foi identificado com clareza e não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Não Identificado). O candidato foi verificado como trabalhando na empresa Dva, mas o cargo não foi identificado. O especialista não considerou relevante, mas não há um cargo oficial verificado para contradizer isso.
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+================================================================================
+SESSÃO: KNORR BREMSE | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-17 15:38:34
+================================================================================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Marquinhos
+🔗 LINKEDIN: https://linkedin.com/in/pd_2117
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Marquinhos - Contato Knorr Bremse
+   ∟ [SEARCH SNIPPET] BODY: Email:  | Telefone:  | Pipedrive ID: 2117
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 
+      ∟ BIO/DESCRIPTION: N/A
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Não Identificado
+      ∟ BIO PROCESSADA: N/A...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
+      ∟ SNIPPETS RELEVANTES: Google Page Title: Marquinhos - Contato Knorr Bremse...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Não Identificado
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: O cargo não foi identificado com precisão e não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou Snippets. Além disso, o vínculo com a empresa Knorr Bremse não foi confirmado.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Veto de Empresa (CRÍTICO): Detetive encontrou que Marquinhos trabalha em outra empresa, não Knorr Bremse.
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Knorr Bremse Comprador Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Odilom
+🔗 LINKEDIN: https://br.linkedin.com/in/odilom-c-454b4331
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Odilom C. - Purchasing Manager atKnorr-BremseBrasil|LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: · Experiência:Knorr-Bremse· Formação acadêmica: UNAT -Brasil· Localidade: Campinas · + de 500 conexões noLinkedIn.Itupeva, São Paulo,Brasil. In charge of Commercial and Project Purchasing activities, related to direct material, for Commercial Vehicle Systems division.
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Purchasing Manager
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: Engaged, willing to learn, willing to contribute, focused on results, team player, good… · Experiência: Knorr-Bremse · Formação acadêmica: UNAT - Brasil · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Odilom C. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Purchasing Manager
+      ∟ BIO PROCESSADA: Engaged, willing to learn, willing to contribute, focused on results, team player, good......
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Experiência: Knorr-Bremse, In charge of Commercial and Project Purchasing activities, related to direct material, for Commercial Vehicle Systems division., Odilom C. - Purchasing Manager at Knorr-Brem...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: None
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: None
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Purchasing Manager
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Victor Franchescoli Faria
+🔗 LINKEDIN: https://br.linkedin.com/in/victor-franchescoli-faria-4b3620142
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Victor Franchescoli Faria -CompradorJr - Materiais diretos |LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: · Experiência:Knorr-Bremse· Localidade: Jundiaí · 298 conexões noLinkedIn. Veja o perfil de Victor Franchescoli Faria noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Comprador Júnior
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: •	Graduado em Engenharia de Produção no Centro Universitário Padre Anchieta. Conclusão do… · Experiência: Knorr-Bremse · Localidade: Jundiaí · 318 conexões no LinkedIn. Veja o perfil de Victor Franchescoli Faria no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Comprador Júnior
+      ∟ BIO PROCESSADA: Graduado em Engenharia de Produção no Centro Universitário Padre Anchieta. Conclusão do…...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
+      ∟ SNIPPETS RELEVANTES: ...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: None
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: None
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Comprador Júnior
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Knorr Bremse Compradora Brasil linkedin
+==============================
+
+
+==============================
+🔍 NOVA CONSULTA: Knorr Bremse Procurement Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Clecius Ribeiro
+🔗 LINKEDIN: https://www.linkedin.com/in/clecius-ribeiro-cpsm-227956
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Clecius Ribeiro, CPSM - Director of Purchasing - LinkedInKnorr-Bremse - LinkedIn Brasil9 "Knorr Bremse" profiles | LinkedInJoão Henrique Marques Martins - LinkedIn BrasilKnorr-Bremse|LinkedInKnorr-Bremse|LinkedInKnorr-Bremse|LinkedInClayton de Oliveira Santos – Knorr-Bremse | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: · Experience: Knorr-BremseRail Vehicle Systems · Education: Fundação de Estudos Sociais do Paraná · Location: Westminster · 500+ connections onLinkedIn. View Clecius Ribeiro, CPSM’s profile...Knorr-Bremseis the global market and technology leader for braking systems and a leading supplier of other rail and commercial vehicle systems. Knorr-Bremse’s products make a decisive...There are 9 professionals named "KnorrBremse", who useLinkedInto exchange information, ideas, and opportunities.Atualmente, atuo como Sênior de Logística Operacional na Knorr-Bremse, onde sou responsável pela análise de inconsistências no SAP (COGI), gestão de inventários rotativos e cíclicos, e...Who is Knorr-Bremse?Knorr-Bremse | 168.570 seguidores no LinkedIn. Knorr-Bremse is theglobal market and technology leader for braking systemsand a leading supplier of other rail and commercial vehicle systems. Knorr-Bremse’s products make a decisive contribution to greater safety and energy efficiency on rail tracks and roads around the world.Why should you choose Knorr-Bremse?Knorr-Bremse’s products make a decisive contribution to greater safety and energy efficiency on rail tracks and roads around the world. About 30,500 employees at over 100 locations in 30 countries develop and produce innovative solutions and services that meet the highest technological standards.How much money did Knorr-Bremse make in 2024?In 2024, Knorr-Bremse’s two divisions together generated revenues ofapproximately € 7.9 billion. For 120 years, the Company has been at the cutting edge of its industries, driving innovation in mobility and transportation technologies with a leading edge in connected system solutions.Quality Management Program forProcurementis the core document designed to manage Knorr-Bremsesupply base, and I was fortunate enough to improve it jointly with my friend Thomas Scherg....
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: Specialties: Leadership, Purchasing, Supply Chain Managemnet, Segment Strategies… · Experiência: Knorr-Bremse Rail Vehicle Systems · Formação acadêmica: Fundação de Estudos Sociais do Paraná · Localidade: Westminster · + de 500 conexões no LinkedIn. Veja o perfil de Clecius Ribeiro, CPSM no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Director of Purchasing
+      ∟ BIO PROCESSADA: Specialties: Leadership, Purchasing, Supply Chain Managemnet, Segment Strategies......
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Experience: Knorr-BremseRail Vehicle Systems, CURRENT COMPANY (Declarada): Knorr Bremse, Veja o perfil de Clecius Ribeiro, CPSM no LinkedIn, uma comunidade profissional de 1 bilhão de usuários na Knor...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Compras
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo de Director of Purchasing é diretamente relacionado a Compras e SUPRIMENTOS, e a Bio e Snippets do candidato mencionam especialidades em Purchasing e Supply Chain Management.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Director of Purchasing
+      ∟ SCORE DE MATCHING: 90%
+      ∟ EVIDÊNCIA DO JUIZ: Candidato atendeu a todos os critérios de validação, incluindo empregador verificado e cargo relevante.
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: João Henrique Marques Martins
+🔗 LINKEDIN: https://br.linkedin.com/in/joão-henrique-marques-martins-02924053
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: João Henrique Marques Martins - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Atualmente, atuo como Sênior de Logística Operacional na Knorr-Bremse, onde sou responsável pela análise de inconsistências no SAP (COGI), gestão de inventários rotativos e cíclicos, e...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: Profissional com mais de 20 anos de experiência em logística, desenvolvendo uma carreira… · Experiência: Knorr-Bremse · Formação acadêmica: Instituto IPB · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de João Henrique Marques Martins no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Sênior de Logística Operacional
+      ∟ BIO PROCESSADA: Atualmente, atuo como Sênior de Logística Operacional na Knorr-Bremse, onde sou responsável pela análise de inconsistências no SAP (COGI), gestão de i...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
+      ∟ SNIPPETS RELEVANTES: ...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: None
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: None
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Análise Humana
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Clayton de Oliveira Santos
+🔗 LINKEDIN: https://de.linkedin.com/in/claytonos
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Clayton de Oliveira Santos – Knorr-Bremse | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Quality Management Program forProcurementis the core document designed to manage Knorr-Bremsesupply base, and I was fortunate enough to improve it jointly with my friend Thomas Scherg....
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Global Head
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: I started my personal development on a solid technical basis, first with General… · Berufserfahrung: Knorr-Bremse · Ausbildung: Universidade Paulista / UNIP · Ort: Metropolregion München · 500+ Kontakte auf LinkedIn. Sehen Sie sich das Profil von Clayton de Oliveira Santos Clayton de Oliveira Santos auf LinkedIn, einer professionellen Community mit mehr als 1 Milliarde Mitgliedern, an.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Global Head
+      ∟ BIO PROCESSADA: I started my personal development on a solid technical basis, first with General… · Berufserfahrung: Knorr-Bremse · Ausbildung: Universidade Paulista ...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: NÃO/INCERTO
+      ∟ SNIPPETS RELEVANTES: ...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: None
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: None
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Global Head
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Knorr Bremse Strategic Sourcing Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Carlos A.
+🔗 LINKEDIN: https://br.linkedin.com/in/carlos-a-a1a00433
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Carlos A. - Sr. Commodity Buyer | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies doLinkedIn.
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Sr. Commodity Buyer
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: • Professional with more than 11 years of career in the automotive industry.
+•… · Experiência: Knorr-Bremse · Formação acadêmica: Facens | Faculdade de Engenharia de Sorocaba · Localidade: Sorocaba · + de 500 conexões no LinkedIn. Veja o perfil de Carlos A. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Sr. Commodity Buyer
+      ∟ BIO PROCESSADA: Professional with more than 11 years of career in the automotive industry....
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies doLinkedIn., knorr...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Compras
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo de Sr. Commodity Buyer é diretamente relacionado a Compras e tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, a Bio e o Título do LinkedIn confirmam o vínculo com a empresa Knorr Bremse.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Sr. Commodity Buyer
+      ∟ SCORE DE MATCHING: 90%
+      ∟ EVIDÊNCIA DO JUIZ: Candidato atendeu a todos os critérios de validação, incluindo cargo oficial verificado e relevância do especialista.
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Jefferson Germano
+🔗 LINKEDIN: https://br.linkedin.com/in/jefferson-germano-0694181a
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Jefferson Germano - Gerente de Aftermarket - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Gerente de Aftermarket -Brasil/ America latina at Knorr-Bremse· Graduado em Administração de Empresas e pós graduado em Gestão estratégica de Negócios com MBA Gold em gestão de pessoas e...
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Gerente De Aftermarket - Brasil / America Latina
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: Graduado em Administração de Empresas e pós graduado em Gestão estratégica de Negócios… · Experiência: Knorr-Bremse · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Jefferson Germano no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Gerente de Aftermarket - Brasil / America Latina
+      ∟ BIO PROCESSADA: Graduado em Administração de Empresas e pós graduado em Gestão estratégica de Negócios com MBA Gold em gestão de pessoas e......
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Gerente de Aftermarket - Brasil / America Latina at Knorr-Bremse, Knorr-Bremse · Graduado em Administração de Empresas e pós graduado em Gestão estratégica de Negócios com MBA Gold em gestão de pessoa...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: None
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: None
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Gerente De Aftermarket - Brasil / America Latina
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Knorr Bremse Buyer Brasil linkedin
+==============================
+
+
+==============================
+🔍 NOVA CONSULTA: Knorr Bremse Analista de Compras Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Aline Drebes
+🔗 LINKEDIN: https://br.linkedin.com/in/aline-drebes-45a3a333
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: ALINE DREBES -ANALISTADECOMERCIO EXTERIOR... |LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: ANALISTADECOMERCIO EXTERIOR naKnorr-Bremse· Experiência:Knorr-Bremse· Localidade: São Paulo · 7 conexões noLinkedIn. Veja o perfil de ALINE DREBES noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: Experiência: Knorr-Bremse · Localidade: São Paulo · 7 conexões no LinkedIn. Veja o perfil de ALINE DREBES no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: ANALISTADECOMERCIO EXTERIOR
+      ∟ BIO PROCESSADA: Experiência em Knorr Bremse · Localidade: São Paulo · 7 conexões no LinkedIn....
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: ANALISTADECOMERCIO EXTERIOR na Knorr-Bremse, Experiência: Knorr-Bremse...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Compras
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo de Analista de Comércio Exterior tem interface direta com Compras, pois envolve a análise de comércio exterior e provavelmente envolve a gestão de compras e fornecedores.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Analista de Comércio Exterior
+      ∟ SCORE DE MATCHING: 90%
+      ∟ EVIDÊNCIA DO JUIZ: O candidato foi verificado como trabalhando na Knorr Bremse, empresa declarada como meta, e o cargo é relevante para a busca de Compras.
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Knorr Bremse Sourcing Brasil linkedin
+==============================
+
+
+==============================
+🔍 NOVA CONSULTA: Knorr Bremse Purchasing Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Ezequiel Araujo da Silva Junior
+🔗 LINKEDIN: https://br.linkedin.com/in/ezequiel-araujo-da-silva-junior-0a8b3663
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Ezequiel Araujo da Silva Junior - Knorr-Bremse | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Senior Buyer at Knorr-Bremse- Key User módulo MM · Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance.
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Purchasing Buyer
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: Profissional Graduado em Administração de Empresas e Pós graduando MBA… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Senior Buyer
+      ∟ BIO PROCESSADA: Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance....
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Senior Buyer at Knorr-Bremse, Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance., Verified Official Role: Purchasing Buyer...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: Compras
+      ∟ RELEVANTE: SIM
+      ∟ MOTIVO: O cargo de Senior Buyer é diretamente relacionado a Compras e tem interface direta com SUPRIMENTOS / COMPRAS / PROCUREMENT. Além disso, a Bio e os Snippets do candidato mencionam experiência em Knorr Bremse e uso do módulo MM, o que sugere uma forte conexão com a área de Compras.
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Purchasing Buyer
+      ∟ SCORE DE MATCHING: 90%
+      ∟ EVIDÊNCIA DO JUIZ: Candidato atendeu a todos os critérios de validação, incluindo cargo e departamento relevantes, e não há evidências de veto mecânico ou de empresa.
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Robson Lúcio de Souza
+🔗 LINKEDIN: https://br.linkedin.com/in/robson-lúcio-de-souza-05a125137
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Robson Lúcio de Souza - Sr. Purchasing and ... - LinkedIn Brasil9 "Knorr Bremse" profiles | LinkedInKnorr-Bremse AG - LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Robson Lúcio de Souza noLinkedIn, uma comunidade profissional de 1 bilhão de usuários.There are 9 professionals named "KnorrBremse", who useLinkedInto exchange information, ideas, and opportunities.Knorr-Bremseis the global market and technology leader for braking systems and a leading supplier of other innovative solutions for the rail and commercial vehicle industries.
+   ∟ [THE ORG CHECK]: ✅ ENCONTRADO
+      ∟ CARGO OFICIAL: Purchasing & Supply Chain Manager
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: knorr
+      ∟ BIO/DESCRIPTION: Carreira desenvolvida nos Mercados Agrícola, Automotivo e Eletroeletrônico nas áreas de… · Experiência: Knorr-Bremse · Formação acadêmica: Fundação Dom Cabral · Localidade: Itupeva · + de 500 conexões no LinkedIn. Veja o perfil de Robson Lúcio de Souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ ALVO ISOLADO: None | CARGO: Purchasing & Supply Chain Manager
+      ∟ BIO PROCESSADA: Carreira desenvolvida nos Mercados Agrícola, Automotivo e Eletroeletrônico nas áreas de…...
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ EMPRESA ATUAL CONFIRMADA: SIM
+      ∟ SNIPPETS RELEVANTES: Veja o perfil de Robson Lúcio de Souza noLinkedIn, uma comunidade profissional de 1 bilhão de usuários., CURRENT COMPANY (Declarada): Knorr Bremse, Experiência: Knorr-Bremse...
+      ∟ PERFIL INSTITUCIONAL: NÃO
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO: None
+      ∟ RELEVANTE: NÃO
+      ∟ MOTIVO: None
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Purchasing & Supply Chain Manager
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: VETO: Confiança insuficiente (0%).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Flavio Goto
+🔗 LINKEDIN: https://br.linkedin.com/in/flaviogotoespecialistacompras
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Flavio Goto - Especialista de Compras, Comprador Sr.... |LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Purchasing· - Gestão de compras em projetos de saving, negociação com fornecedores nacionais e internacionais, resolução de problemas técnicos, KPIs. Utilização de ferramentas como TCO (total cost ownership), BBC, SWOT, VA/VE, análise de risco, Cost Breakdown, global sourcing, SAP.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: zf do brasil
+      ∟ BIO/DESCRIPTION: - Gestão de compras em projetos de saving, negociação com fornecedores nacionais e… · Experiência: ZF do Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Sorocaba · + de 500 conexões no LinkedIn. Veja o perfil de Flavio Goto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: N/D
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Knorr Bremse Category Manager Brasil linkedin
+==============================
+

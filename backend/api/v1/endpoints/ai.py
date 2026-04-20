@@ -316,12 +316,8 @@ REGRAS DE RESOLUÇÃO DE CONTEXTO:
 2. Se o usuário perguntou "o que tem na conversa dela?" e o histórico menciona "Momo", você deve extrair "Momo" como extracted_person_name e definir query_type como "whatsapp" e whatsapp_action como "get_messages".
 
 Categorias (query_type):
-- "contacts": O usuário focou em PESSOAS (funcionários, diretoria, equipe, contatos, "quem trabalha lá")
-- "company_info": O usuário focou na EMPRESA (o que faz, cnpj, site, resumo)
-- "pipedrive_info": O usuário focou em VENDAS/CRM (prospecção, deals, atividades, anotações, funil)
-- "pipedrive_tasks": O usuário quer saber das TAREFAS/ATIVIDADES pendentes (o que fazer hoje, tarefas de uma empresa, agenda geral, próximos passos)
-- "whatsapp": O usuário quer interagir com o WHATSAPP (enviar mensagem, ler histórico, buscar chats)
-- "email": O usuário quer interagir com o EMAIL (enviar email, ler emails, ver pastas, buscar mensagens do Outlook)
+- "email": O usuário quer interagir com o EMAIL (enviar email, escrever um email, mandar um email, ler emails, ver pastas, buscar mensagens do Outlook). IMPORTANTE: Se o usuário quer MANDAR um e-mail para alguém, use "email" e não "contacts".
+- "contacts": O usuário focou em PESSOAS para obter informações (quem são, cargos, quem trabalha lá, listagem de equipe). Se o objetivo for ENVIAR uma mensagem, use "whatsapp" ou "email".
 - "enrichment": O usuário quer ENCONTRAR O CONTATO, WHATSAPP ou EMAIL de uma pessoa ("fala com ela", "encontre o zap", "pesquise os dados dela", "fale com o fulano")
 - "general": Conversa fiada ou assuntos que não encaixam
 
@@ -348,7 +344,7 @@ Retorne APENAS um JSON válido neste formato (sem backticks):
     "extracted_person_hint": "Dica sobre a pessoa ou null",
     "whatsapp_action": "send_message" | "get_chats" | "get_messages" | "search_contacts" | null,
     "whatsapp_message": "Mensagem para enviar ou null",
-    "whatsapp_chat_id": "ID do chat ou null",
+    "whatsapp_chat_id": "ID técnico real (ex: '5511... @c.us' ou '... @lid'). NUNCA use o nome da pessoa/empresa aqui. Se não souber o ID técnico, deixe null.",
     "email_action": "send_email" | "get_unread" | "get_messages" | "list_folders" | null,
     "email_to": "Email do destinatário ou null",
     "email_subject": "Assunto do e-mail ou null",
@@ -357,16 +353,16 @@ Retorne APENAS um JSON válido neste formato (sem backticks):
 }}
 
 REGRAS PARA activity_done_filter:
-- Use 0 para "a fazer", "pendentes", "próximas", "agendadas". (Padrão)
-- Use 1 para "concluídas", "feitas", "realizadas", "histórico de tarefas".
-- Use null para "todas", "tudo o que foi feito e o que falta", "completo".
+- Use 0 para "a fazer", "pendentes", "próximas", "agendadas", "em aberto".
+- Use 1 para "concluídas", "feitas", "realizadas", "terminadas".
+- Use null para "todas", "feitas e não feitas", "tudo o que tem", "histórico completo", "tudo da empresa", "geral".
 
 REGRAS PARA activity_date_filter:
 - "today": apenas de hoje.
 - "tomorrow": apenas de amanhã.
 - "overdue": apenas as atrasadas.
 - "future": próximas tarefas (hoje e futuro).
-- "all": sem filtro de data (todo o histórico).
+- "all": sem filtro de data (todo o histórico). Use "all" se o usuário pedir "todas", "tudo", "do começo ao fim".
 """
     try:
         response = await ask_gemini(prompt, json_mode=True)
@@ -443,6 +439,23 @@ async def chat_with_ai(
         # --- ESTÁGIO 1: Classificação de Intenção (Pipeline Routing) ---
         print(f"[AI Pipeline] Estágio 1 - Analisando intenção do usuário com histórico de {len(payload.history or [])} mensagens...")
         intent_info = await _classify_user_intent_with_llm(payload.message, payload.history)
+        
+        # HEURÍSTICA MECÂNICA: Se o usuário quer mandar email e a IA falhou em detectar o tipo
+        if "email para" in payload.message.lower() or "mandar email" in payload.message.lower() or "enviar email" in payload.message.lower():
+            if intent_info.get("query_type") != "email":
+                print("[AI Pipeline] Corrigindo intenção mecanicamente para 'email'")
+                intent_info["query_type"] = "email"
+                if not intent_info.get("email_action"):
+                    intent_info["email_action"] = "send_email"
+        
+        # Extração mecânica de email se estiver faltando
+        if intent_info.get("query_type") == "email" and not intent_info.get("email_to"):
+            # Procura por padrão de email na mensagem (incluindo possíveis tags @ extras)
+            emails_found = re.findall(r'[\w\.-]+@[\w\.-]+\.\w+', payload.message)
+            if emails_found:
+                intent_info["email_to"] = emails_found[0]
+                print(f"[AI Pipeline] Email extraído mecanicamente: {intent_info['email_to']}")
+        
         query_type = intent_info.get("query_type", "general")
         extracted_name = intent_info.get("extracted_company_name")
         print(f"[AI Pipeline] Intenção detectada: {query_type}")
@@ -522,13 +535,22 @@ async def chat_with_ai(
                         # Se já temos um chat_id (ID completo com @c.us ou @lid), usamos ele integralmente
                         # para evitar que o Node.js service tente reformatar erroneamente.
                         if chat_id and ("@" in str(chat_id)):
-                            number_to_send = chat_id
-                            number_str = chat_id
+                            # Validação básica de ID do WhatsApp (@c.us, @lid, @g.us)
+                            valid_suffixes = ["@c.us", "@lid", "@g.us"]
+                            if any(suffix in str(chat_id) for suffix in valid_suffixes):
+                                number_to_send = chat_id
+                                number_str = chat_id
+                            else:
+                                print(f"[AI Chat] ⚠️ Descartando ID inválido (provável nome): {chat_id}")
+                                number_to_send = None
                         else:
                             number_to_send = target_number or (chat_id.split('@')[0] if chat_id else None)
-                            number_str = str(number_to_send).strip().replace("+", "").replace(" ", "").replace("-", "")
-                            if len(number_str) <= 11 and not number_str.startswith("55"):
-                                number_str = f"55{number_str}"
+                            if number_to_send:
+                                number_str = str(number_to_send).strip().replace("+", "").replace(" ", "").replace("-", "")
+                                if len(number_str) <= 11 and not number_str.startswith("55"):
+                                    number_str = f"55{number_str}"
+                            else:
+                                number_str = None
                         
                         if number_to_send:
                             msg_text = intent_info.get("whatsapp_message")
@@ -642,41 +664,36 @@ async def chat_with_ai(
                         subject = intent_info.get("email_subject") or "Mensagem de Contato"
                         body = intent_info.get("email_body")
                         
-                        # Resolução de email se não houver destinatário
-                        if not to and (intent_info.get("extracted_person_name") or intent_info.get("extracted_company_name")):
-                             # Aqui poderíamos chamar um resolvedor similar ao de WhatsApp
-                             # Mas por simplificação agora, vamos assumir que o sistema tenta encontrar no banco
-                             pass
-
                         if to and body:
                             resp = await client_http.post(f"{email_base}/send", json={
                                 "to": to, "subject": subject, "body": body
                             })
+                            res_data = resp.json()
                             email_result_context = {
-                                "email_action": action, 
-                                "status": resp.status_code, 
-                                "to": to, 
+                                "email_action": "send_email",
+                                "status": resp.status_code,
+                                "to": to,
                                 "subject": subject,
                                 "sent_message": body,
-                                "contact": {"email": to, "name": intent_info.get("extracted_person_name") or to},
-                                "resultado": resp.json()
+                                "contact": {"id": to, "email": to, "name": intent_info.get("extracted_person_name") or to},
+                                "resultado": res_data
                             }
+                            print(f"[AI Chat] ✅ Email enviado para {to}")
                         else:
-                            email_result_context = {"error": "Destinatário ou corpo do email ausente.", "email_action": action}
+                            email_result_context = {
+                                "error": "Destinatário ou corpo do email ausente.", 
+                                "email_action": action
+                            }
                     
                     elif action == "list_folders":
                         resp = await client_http.get(f"{email_base}/folders")
                         email_result_context = {"email_action": action, "status": resp.status_code, "folders": resp.json().get("folders", [])}
                         
-                    elif action == "get_messages":
+                    elif action == "get_messages" or action == "get_unread":
                         folder = intent_info.get("email_folder") or "Inbox"
-                        resp = await client_http.get(f"{email_base}/messages?folder={folder}&limit=10")
-                        email_result_context = {"email_action": action, "status": resp.status_code, "folder": folder, "messages": resp.json().get("messages", [])}
-                        
-                    elif action == "get_unread":
-                        folder = intent_info.get("email_folder") or "Inbox"
-                        resp = await client_http.get(f"{email_base}/unread?folder={folder}&limit=10")
-                        email_result_context = {"email_action": action, "status": resp.status_code, "folder": folder, "messages": resp.json().get("messages", [])}
+                        endpoint = "unread" if action == "get_unread" else "messages"
+                        resp = await client_http.get(f"{email_base}/{endpoint}?folder={folder}&limit=10")
+                        email_result_context = {"email_action": action, "status": resp.status_code, "folder": folder, "resultado": resp.json()}
 
             except Exception as e:
                 print(f"[AI Chat] Erro ao conectar com Email Service: {e}")
@@ -812,8 +829,9 @@ async def chat_with_ai(
 
         # --- BUSCA DE TAREFAS (Com filtro inteligente de empresa se houver) ---
         if "today_tasks" in data_scope:
+            date_f = intent_info.get("activity_date_filter", "today")
             filter_msg = f"para Empresa ID {pipedrive_org_id}" if pipedrive_org_id else "Global"
-            print(f"[AI Pipeline] 📅 Buscando tarefas de hoje ({filter_msg})...")
+            print(f"[AI Pipeline] 📅 Buscando tarefas ({date_f}) {filter_msg}...")
             try:
                 from services.pipedrive.pipedrive_service import pipedrive_service
                 from datetime import date, timedelta

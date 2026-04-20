@@ -312,48 +312,73 @@ const WhatsAppThread: React.FC<{ data: any, onOpenWhatsApp?: (info: { name: stri
 };
 
 const EmailThread: React.FC<{ data: any }> = ({ data }) => {
-    const emailResult = data?.email_result || {};
-    const action = emailResult.email_action || data?.email_action;
-    const contact = emailResult.contact || emailResult.resolved_contact || {};
+    const emailResult = data?.email_result || data || {};
+    const action = emailResult.email_action;
+    const contact = emailResult.contact || emailResult.resolved_contact || { email: emailResult.to };
     const sentMessage = emailResult.sent_message || emailResult.body_preview || "";
     const subject = emailResult.subject || "Sem Assunto";
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    // Se for uma confirmação de email enviado, mostra o preview (miniatura)
+    // Renderização de Preview (igual ao WhatsApp)
+    if (action === 'send_email' || action === 'send' || !action) {
+        return (
+            <div className={styles.moduleContainer}>
+                <div className={styles.emailPreviewCard}>
+                    <div className={styles.emailPreviewHeader}>
+                        <div className={styles.emailAvatarSmall}>
+                            {contact.profilePicture || contact.avatar_url ? (
+                                <img 
+                                    src={getProxiedUrl(contact.profilePicture || contact.avatar_url)} 
+                                    alt="Avatar" 
+                                    className={styles.waAvatarImg} 
+                                />
+                            ) : (
+                                <div className={styles.emailInitials}>
+                                    {(contact.name || contact.email || 'D').charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                            <div className={styles.outlookBadge}>
+                                <Mail size={10} color="white" fill="white" />
+                            </div>
+                        </div>
+                        <div className={styles.emailPreviewInfo}>
+                            <div className={styles.emailPreviewRecipient}>{contact.name || contact.email || 'Destinatário'}</div>
+                            <div className={styles.emailPreviewSnippet}>{subject}</div>
+                        </div>
+                        <div className={styles.emailExternalIcon}>
+                             <ExternalLink size={14} />
+                        </div>
+                    </div>
+                    <div className={styles.emailPreviewBody}>
+                        <div className={styles.emailBodyText}>{sentMessage}</div>
+                        <div className={styles.emailPreviewMeta}>
+                            <div className={styles.emailSentStatus}>
+                                <CheckCheck size={14} />
+                                <span>Enviado via Outlook</span>
+                            </div>
+                            <div className={styles.emailTime}>{time}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Se no futuro houver listagem de emails (thread), entra aqui como o WhatsAppThread
+    const result = emailResult.resultado || {};
+    const messages = result.messages || emailResult.messages || [];
+    if (!messages.length) return <div className={styles.emptyModule}>Sem emails recentes na pasta.</div>;
+
     return (
         <div className={styles.moduleContainer}>
-            <div className={styles.emailPreviewCard}>
-                <div className={styles.emailPreviewHeader}>
-                    <div className={styles.emailAvatarSmall}>
-                        {contact.profilePicture || contact.avatar_url ? (
-                            <img src={getProxiedUrl(contact.profilePicture || contact.avatar_url)} alt="Avatar" className={styles.waAvatarImg} />
-                        ) : (
-                            <div className={styles.emailInitials}>
-                                {(contact.name || 'D').charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                        <div className={styles.outlookBadge}>
-                            <Mail size={10} color="white" fill="white" />
-                        </div>
+            <div className={styles.moduleHeader}><Mail size={16} /> <span>Conversa Outlook</span></div>
+            <div className={styles.emailList}>
+                {messages.slice(0, 5).map((m: any, i: number) => (
+                    <div key={i} className={styles.emailListItem}>
+                        <div className={styles.emailListSubject}>{m.subject}</div>
+                        <div className={styles.emailListSnippet}>{m.snippet || m.body}</div>
                     </div>
-                    <div className={styles.emailPreviewInfo}>
-                        <div className={styles.emailPreviewRecipient}>{contact.name || contact.email || 'Destinatário'}</div>
-                        <div className={styles.emailPreviewSnippet}>{subject}</div>
-                    </div>
-                    <div className={styles.emailExternalIcon}>
-                         <ExternalLink size={14} />
-                    </div>
-                </div>
-                <div className={styles.emailPreviewBody}>
-                    <div className={styles.emailBodyText}>{sentMessage}</div>
-                    <div className={styles.emailPreviewMeta}>
-                        <div className={styles.emailSentStatus}>
-                            <CheckCheck size={14} />
-                            <span>Enviado via Outlook</span>
-                        </div>
-                        <div className={styles.emailTime}>{time}</div>
-                    </div>
-                </div>
+                ))}
             </div>
         </div>
     );
@@ -641,11 +666,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     useEffect(() => {
         if (inputRef.current) {
-            inputRef.current.style.height = 'auto';
-            const newHeight = Math.min(inputRef.current.scrollHeight, 95); // Ajustado para ~3 linhas
+            // Force reset to 0px to accurately measure scrollHeight (shrinking)
+            inputRef.current.style.height = '0px';
+            
+            // Calculate height (line height + padding)
+            const newHeight = inputRef.current.scrollHeight || 36; // Fallback to 36px
+            
+            // Apply new height
             inputRef.current.style.height = `${newHeight}px`;
             
-            // Sincroniza o highlighter
+            // Synchronize highlighter
             if (highlighterRef.current) {
                 highlighterRef.current.style.height = `${newHeight}px`;
             }

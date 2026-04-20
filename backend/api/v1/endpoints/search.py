@@ -96,7 +96,7 @@ async def universal_search(
         async def fetch_wa():
             try:
                 async with httpx.AsyncClient(timeout=5.0) as client:
-                    resp = await client.get(f"http://localhost:8001/api/whatsapp/contacts/search?name={q}")
+                    resp = await client.get("http://localhost:8001/api/whatsapp/contacts/search", params={"name": q})
                     if resp.status_code == 200:
                         data = resp.json()
                         wa_res = data.get("contacts", []) or data.get("results", [])

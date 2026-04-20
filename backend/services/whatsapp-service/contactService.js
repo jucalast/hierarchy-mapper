@@ -2,6 +2,16 @@
  * Contact Service - Gerencia buscas e operações com contatos do WhatsApp
  */
 
+// Cache para evitar buscas pesadas frequentes
+let contactsCache = {
+    all: [],
+    chats: [],
+    lastUpdate: 0,
+    isUpdating: false
+};
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
 /**
  * Normaliza string para comparação case-insensitive e sem espaços
  * @param {string} str - String a normalizar
@@ -13,6 +23,7 @@ const normalizeString = (str) => {
         .toLowerCase()
         .normalize('NFD') // Decompõe caracteres acentuados (ex: 'ã' -> 'a' + '~')
         .replace(/[\u0300-\u036f]/g, '') // Remove os acentos
+        .replace(/[^a-z0-9\s]/g, '') // Remove tudo que não é alfanumérico básico ou espaço
         .trim()
         .replace(/\s+/g, ' ');
 };
@@ -28,13 +39,22 @@ const calculateSimilarity = (str1, str2) => {
     const s2 = normalizeString(str2);
     
     if (s1 === s2) return 1;
-    if (s1.includes(s2) || s2.includes(s1)) return 0.9;
     
+    // Prioridade altíssima para prefixos exatos
+    if (s1.startsWith(s2)) return 0.95;
+    
+    // Contém a string
+    if (s1.includes(s2)) return 0.9;
+    
+    // Fallback para Levenshtein
     const longer = s1.length > s2.length ? s1 : s2;
     const shorter = s1.length > s2.length ? s2 : s1;
     
     if (longer.length === 0) return 1;
     
+    // Se a query for muito curta (1-2 chars) e não deu matching de prefixo/inclusão, ignorar fuzzy
+    if (s2.length <= 2) return 0;
+
     const editDistance = getEditDistance(longer, shorter);
     return (longer.length - editDistance) / longer.length;
 };
@@ -91,12 +111,53 @@ const searchContactsByName = async (client, searchName, options = {}) => {
             throw new Error('Instância do cliente inválida ou não inicializada corretamente');
         }
 
-        // Busca em Contatos e em Chats em paralelo para máxima abrangência
-        const [allContacts, allChats] = await Promise.all([
-            client.getContacts(),
-            client.getChats()
-        ]);
+        const now = Date.now();
+        let allContacts = [];
+        let allChats = [];
+
+        // Verifica cache
+        if (contactsCache.all.length > 0 && (now - contactsCache.lastUpdate < CACHE_TTL)) {
+            allContacts = contactsCache.all;
+            allChats = contactsCache.chats;
+            console.log(`[WA ContactService] Usando cache (${allContacts.length} contatos).`);
+        } else {
+            // Se já estiver atualizando, usa o cache antigo se houver, ou espera
+            if (contactsCache.isUpdating && contactsCache.all.length > 0) {
+                allContacts = contactsCache.all;
+                allChats = contactsCache.chats;
+            } else {
+                contactsCache.isUpdating = true;
+                try {
+                    // Busca em Contatos e em Chats com tratamento individual de erros
+                    const contactsPromise = client.getContacts().catch(err => {
+                        console.error('[WA ContactService] Erro ao buscar contatos:', err.message);
+                        return [];
+                    });
+                    
+                    const chatsPromise = client.getChats().catch(err => {
+                        console.error('[WA ContactService] Erro ao buscar chats:', err.message);
+                        return [];
+                    });
+
+                    [allContacts, allChats] = await Promise.all([contactsPromise, chatsPromise]);
+                    
+                    // Atualiza cache apenas se encontramos contatos (evita cachear lista vazia em inicialização)
+                    if (allContacts.length > 0 || allChats.length > 0) {
+                        contactsCache.all = allContacts;
+                        contactsCache.chats = allChats;
+                        contactsCache.lastUpdate = now;
+                        console.log(`[WA ContactService] Cache atualizado: ${allContacts.length} contatos, ${allChats.length} chats.`);
+                    } else {
+                        console.log('[WA ContactService] Nenhum contato encontrado. Cache não atualizado.');
+                    }
+                } finally {
+                    contactsCache.isUpdating = false;
+                }
+            }
+        }
         
+        console.log(`[WA ContactService] Pesquisando "${searchName}" em ${allContacts.length} contatos e ${allChats.length} chats.`);
+
         // Combina e remove duplicatas baseadas no ID
         const combinedMap = new Map();
         
@@ -105,7 +166,7 @@ const searchContactsByName = async (client, searchName, options = {}) => {
             if (c && c.id && c.id._serialized) {
                 combinedMap.set(c.id._serialized, {
                     ...c,
-                    displayName: c.name || c.id.user,
+                    displayName: c.name || c.pushname || c.id.user,
                     source: 'contact'
                 });
             }
