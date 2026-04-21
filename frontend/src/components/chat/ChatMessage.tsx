@@ -1,0 +1,226 @@
+import React, { useState } from 'react';
+import { 
+    CheckCircle2, Loader2, ThumbsDown, Copy, RotateCcw, ThumbsUp, Building2, User2, MessageSquare, Mail, Check, ChevronDown, ChevronUp
+} from 'lucide-react';
+import { Message, CompanyResult, ApprovalAction } from './ChatInterfaces';
+import { TaskList, ContactGrid, CompanyCard } from './modules/ContextModules';
+import { WhatsAppThread, EmailThread } from './modules/CommunicationModules';
+import { ActionApproval } from './modules/ActionApproval';
+import { DebugPanel } from './DebugPanel';
+import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
+import styles from '../ChatPanel.module.css';
+
+interface ChatMessageProps {
+    message: Message;
+    currentLogs?: string[];
+    onApprove: (actionId: string) => void;
+    onReject: (actionId: string) => void;
+    onOpenWhatsApp?: (info: { name: string, id?: string }) => void;
+    approvalStatuses?: Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>;
+}
+
+const AIAsterisk = () => (
+    <img src="/gemini.png" alt="Gemini AI" width="22" height="22" className="shrink-0 mt-0.5 object-contain" />
+);
+
+const SourceIcon = () => (
+    <div className="w-[18px] h-[18px] bg-[#5E6AD2] rounded-[4px] border border-white flex items-center justify-center shadow-sm relative -ml-1.5 first:ml-0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-2.5 h-2.5">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+    </div>
+);
+
+const GeminiIcon = () => (
+    <img src="/gemini.png" alt="Gemini" width="16" height="16" className="shrink-0 object-contain" />
+);
+
+export const ChatMessage: React.FC<ChatMessageProps> = ({ 
+    message, currentLogs, onApprove, onReject, onOpenWhatsApp, approvalStatuses
+}) => {
+    const isUser = message.role === 'user';
+    const [isLogsExpanded, setIsLogsExpanded] = useState(message.role === 'assistant' && !message.content); // Expandido por padrão se estiver rodando
+
+    const renderHighlightedText = (text: string) => {
+        const parts = text.split(/(@\w*)/g);
+        return parts.map((part, i) => {
+            if (part.startsWith('@')) {
+                return <span key={i} className={styles.highlightPurple}>{part}</span>;
+            }
+            return part;
+        });
+    };
+
+    const renderInlineMarkdown = (text: string, messageData?: any) => {
+        const parts = text.split(/(\[\[(?:TASK|NEW_TASK):\d+\]\])/g);
+        return parts.map((part, i) => {
+            if (part.startsWith('[[TASK:')) {
+                const match = part.match(/\[\[TASK:(\d+)\]\]/);
+                const idx = match ? parseInt(match[1]) - 1 : -1;
+                const task = messageData?.past_activities?.[idx];
+                return task ? <div key={i} style={{ margin: '12px 0' }}><TaskList data={{ activities: [task] }} /></div> : null;
+            }
+            if (part.startsWith('[[NEW_TASK:')) {
+                const match = part.match(/\[\[NEW_TASK:(\d+)\]\]/);
+                const idx = match ? parseInt(match[1]) - 1 : -1;
+                const task = messageData?.new_activities?.[idx];
+                return task ? (
+                    <div key={i} style={{ margin: '12px 0' }}>
+                        <div style={{ fontSize: '10px', color: '#5E6AD2', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 600 }}>Nova Atividade agendada</div>
+                        <TaskList data={{ activities: [task] }} />
+                    </div>
+                ) : null;
+            }
+            const boldParts = part.split(/(\*\*.*?\*\*)/g);
+            return boldParts.map((bPart, bi) => {
+                if (bPart.startsWith('**') && bPart.endsWith('**')) {
+                    return <strong key={`${i}-${bi}`} style={{ fontWeight: 700 }}>{bPart.slice(2, -2)}</strong>;
+                }
+                return renderHighlightedText(bPart);
+            });
+        });
+    };
+
+    const renderMarkdown = (text: string, messageData?: any) => {
+        if (!text) return null;
+        const lines = text.split('\n');
+        return lines.map((line, idx) => {
+            if (line.includes('[[PAST_TASKS]]')) {
+                return (
+                    <div key={idx} style={{ margin: '8px 0' }}>
+                        <div style={{ fontSize: '14px', color: '#888', marginBottom: '12px', textTransform: 'uppercase', fontWeight: 800 }}>Cenário Analisado (Pipedrive)</div>
+                        <TaskList data={{ activities: messageData?.past_activities }} />
+                    </div>
+                );
+            }
+            if (line.includes('[[NEW_TASKS]]')) {
+                return (
+                    <div key={idx} style={{ margin: '12px 0' }}>
+                        <div style={{ fontSize: '14px', color: '#5E6AD2', marginBottom: '12px', textTransform: 'uppercase', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <CheckCircle2 size={16} /> Nova Atividade Gerada
+                        </div>
+                        <TaskList data={{ activities: messageData?.new_activities }} />
+                    </div>
+                );
+            }
+            if (line.trim() === '---') return <hr key={idx} style={{ margin: '12px 0', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />;
+            if (line.startsWith('### ')) {
+                return <h3 key={idx} style={{ fontSize: '20px', fontWeight: 'bold', marginTop: '4px', marginBottom: '8px' }}>{renderInlineMarkdown(line.replace('### ', '').replace('🎯 ', ''), messageData)}</h3>;
+            }
+            return <div key={idx} style={{ marginBottom: '12px', lineHeight: '1.6' }}>{renderInlineMarkdown(line, messageData)}</div>;
+        });
+    };
+
+    if (isUser) {
+        return (
+            <div className={styles.userMessageWrapper}>
+                {message.selectedCompanies && message.selectedCompanies.length > 0 && (
+                    <div className={styles.userCompaniesContainer}>
+                        {message.selectedCompanies.map((c) => (
+                            <div key={c.id} className={styles.inputContextPill}>
+                                {c.type === 'organization' ? (
+                                    getCompanyLogoUrl(c) ? (
+                                        <img 
+                                            src={getProxiedUrl(getCompanyLogoUrl(c))} 
+                                            alt={c.name} 
+                                            style={{ width: 28, height: 28, borderRadius: '4px', objectFit: 'contain' }} 
+                                        />
+                                    ) : (
+                                        <Building2 size={20} className="shrink-0 opacity-40" />
+                                    )
+                                ) : (
+                                    getAvatarUrl(c) ? (
+                                        <img 
+                                            src={getProxiedUrl(getAvatarUrl(c))} 
+                                            alt={c.name} 
+                                            style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} 
+                                        />
+                                    ) : (
+                                        c.type === 'whatsapp' ? 
+                                            <img src="/wppicon.png" alt="W" style={{ width: 22, height: 22, objectFit: 'contain' }} /> : 
+                                            <img src="/outlook.png" alt="E" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                                    )
+                                )}
+                                <div>
+                                    <div className={styles.contextTitle}>{c.name}</div>
+                                    <div className={styles.contextSubtitle}>
+                                        {c.type === 'organization' ? 'Empresa' : (c.phone || c.email || (c.type === 'whatsapp' ? 'WhatsApp' : 'E-mail'))}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className={styles.userMessage}>{message.content}</div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={styles.assistantMessageGroup}>
+            <div className={styles.aiMessageWrapper}>
+                <AIAsterisk />
+                <div className={styles.aiMessage}>
+                    {renderMarkdown(message.content, message.data)}
+                </div>
+            </div>
+
+            {/* Módulos de Interface se houver ui_module definido */}
+            {message.ui_module === 'TaskList' && <TaskList data={message.data} />}
+            {message.ui_module === 'ContactGrid' && <ContactGrid data={message.data} />}
+            {message.ui_module === 'CompanyCard' && <CompanyCard data={message.data} />}
+            {message.ui_module === 'WhatsAppThread' && <WhatsAppThread data={message.data} onOpenWhatsApp={onOpenWhatsApp} />}
+            {message.ui_module === 'EmailThread' && <EmailThread data={message.data} />}
+
+            {/* Aprovações Pendentes */}
+            {message.pending_approvals && message.pending_approvals.length > 0 && (
+                <div className="flex flex-col gap-3 px-4 mb-6 pl-12">
+                    {message.pending_approvals.map((act) => (
+                        <ActionApproval 
+                            key={act.action_id} 
+                            action={act} 
+                            onApprove={onApprove} 
+                            onReject={onReject}
+                            status={approvalStatuses?.[act.action_id]}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* Logs de Streaming e Históricos (Acordeon de Pensamento) */}
+            {((currentLogs && currentLogs.length > 0) || (message.logs && message.logs.length > 0)) && (
+                <div className="px-4 mb-4 pl-12">
+                    <div className={styles.debugCard}>
+                        <button 
+                            className={styles.debugHeader}
+                            onClick={() => setIsLogsExpanded(!isLogsExpanded)}
+                            style={{ cursor: 'pointer', background: 'none', border: 'none', width: '100%', outline: 'none' }}
+                        >
+                            <div className="flex items-center gap-2">
+                                <GeminiIcon /> 
+                                <span>{isLogsExpanded ? 'Esconder Pensamento' : 'Ver Pensamento da IA'}</span>
+                                {message.thinkingTime && <span className={styles.thinkingTime}>({message.thinkingTime})</span>}
+                            </div>
+                            {isLogsExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                        
+                        {isLogsExpanded && (
+                            <div className={styles.streamingLogs}>
+                                {((currentLogs && currentLogs.length > 0) ? currentLogs : (message.logs || [])).map((log, i) => (
+                                    <div key={i} className={styles.logLine}>
+                                        <Loader2 size={12} className={styles.spinner} /> <span>{log}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};

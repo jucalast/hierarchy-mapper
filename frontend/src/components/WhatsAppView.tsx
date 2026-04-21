@@ -115,10 +115,10 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
             {/* Wallpaper Padrão Pura sem cor de fundo */}
             <div style={{
                 position: 'absolute',
-                top: 0, left: 0, right: 0, bottom: 0,
+                inset: '0px',
                 backgroundImage: 'url("/wpp.png")',
                 backgroundRepeat: 'repeat',
-                backgroundSize: '400px',
+                backgroundSize: '600px',
                 opacity: 1,
                 zIndex: 0,
                 pointerEvents: 'none'

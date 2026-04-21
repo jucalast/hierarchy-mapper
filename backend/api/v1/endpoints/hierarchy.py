@@ -1,22 +1,29 @@
+"""
+Endpoint de Hierarquia — Thin Router.
+Descobre, persiste e retorna hierarquias corporativas via CNPJ.
+"""
 from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from fastapi.responses import StreamingResponse
 import json
 import re
-import os
-from dotenv import load_dotenv
 from typing import List, Optional, Dict, Any
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from core.database import get_db
+from core.config import settings
 from models import Employee, Organization
 from services.hierarchy.b2b_scanner import discover_employees, discover_employees_stream
 from services.hierarchy.filters import get_seniority_level, get_department_tag
+from services.hierarchy.cnpj_resolver import fetch_company_data_by_cnpj, build_full_address
+from services.hierarchy.org_persistence import upsert_organization, persist_socios
+from services.hierarchy.graph_builder import build_root_node, build_socio_nodes, assign_managers, reparent_subordinates
 from services.external.groq_service import refine_hierarchy_ai
 from api.v1.schemas import EmployeeNode, HierarchyResponse, clean_cnpj, CandidateActionRequest
 
 router = APIRouter()
+
 
 @router.post("/candidate-action")
 async def candidate_action(payload: CandidateActionRequest, db: AsyncSession = Depends(get_db)):
@@ -99,8 +106,7 @@ async def refine_hierarchy(
     # 2. Atualizar a lista original e PERSISTIR no banco
     updated_nodes = []
     
-    # 🕵️ Mapeamento de IDs Efêmeros para IDs de Banco Reais para esta leva
-    # Isso é CRUCIAL para que o manager_id salvo no banco seja estável e referenciável
+    # Mapeamento de IDs Efêmeros para IDs de Banco Reais para esta leva
     ephemeral_to_db_id = {}
     org_id = None
     
@@ -129,18 +135,16 @@ async def refine_hierarchy(
             if original_id != "root_company" and new_level == 0:
                 new_level = get_seniority_level(node.get("role", ""))
 
-            # 🛠️ RESOLUÇÃO DE MANAGER ID PARA PERSISTÊNCIA ESTÁVEL
-            # Se a IA sugeriu um ID efêmero (ex: node_fulano), tentamos converter para o ID Real (node_45)
-            # Isso faz com que ao "puxar" do banco, o relacionamento já venha resolvido e correto.
+            # RESOLUÇÃO DE MANAGER ID PARA PERSISTÊNCIA ESTÁVEL
             final_manager_id = new_manager_id
             if new_manager_id in ephemeral_to_db_id:
                 final_manager_id = ephemeral_to_db_id[new_manager_id]
             elif new_manager_id == "root_company":
                 final_manager_id = "root_company"
 
-            # 🛡️ TRAVA DE SEGURANÇA MÁXIMA: Sócios e Root são imutáveis no refinamento
+            # TRAVA DE SEGURANÇA: Sócios e Root são imutáveis no refinamento
             if node.get("level") == 6 or node.get("department") == "Quadro de Sócios (QSA)" or original_id == "root_company":
-                print(f"      [Backend AI] 🛡️ Protegendo integridade do Sócio/Root: {node.get('name')}")
+                print(f"      [Backend AI] Protegendo integridade do Socio/Root: {node.get('name')}")
                 new_level = node.get("level", 6)
                 final_manager_id = "root_company" if original_id != "root_company" else None
             
@@ -165,9 +169,9 @@ async def refine_hierarchy(
     
     if org_id:
         await db.commit()
-        print(f"[Backend AI] Persistência concluída para Org ID {org_id}.")
+        print(f"[Backend AI] Persistencia concluida para Org ID {org_id}.")
         
-    print(f"[Backend AI] Refinamento concluído com sucesso.")
+    print(f"[Backend AI] Refinamento concluido com sucesso.")
     return {"nodes": updated_nodes}
 
 @router.get("", response_model=HierarchyResponse)
@@ -176,57 +180,22 @@ async def get_company_hierarchy(
     cnpj: str = Query(..., description="O CNPJ da empresa (ex: 07.526.557/0001-00)"),
     domain: Optional[str] = Query(None, description="Opcional. O domínio da empresa (ex: empresa.com.br)")
 ):
-    """
-    Busca os dados reais da empresa e seus sócios/diretores na BrasilAPI.
-    """
+    """Busca os dados reais da empresa e seus sócios/diretores na BrasilAPI."""
     print(f"[Backend] Recebida chamada para /hierarchy. CNPJ: {cnpj}, Domain: {domain}")
     
-    load_dotenv(override=True)
-    EMAIL_API_KEY = os.getenv("EMAIL_API_KEY")
+    EMAIL_API_KEY = settings.EMAIL_API_KEY
     
     cnpj_clean = clean_cnpj(cnpj)
     if len(cnpj_clean) != 14:
         raise HTTPException(status_code=400, detail="CNPJ Inválido. Deve conter 14 dígitos.")
 
-    # 🏺 BUSCA EM CASCATA RESILIENTE (Plano A -> B -> C)
-    data = None
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        # Camada 1: BRASILAPI
-        try:
-            resp = await client.get(f"https://brasilapi.com.br/api/cnpj/v1/{cnpj_clean}")
-            if resp.status_code == 200:
-                data = resp.json()
-        except: pass
-        
-        # Camada 2: MINHA RECEITA
-        if not data:
-            try:
-                print(f"[Backend] BrasilAPI Limitada (429) - Tentando Fallback 1: Minha Receita...")
-                resp = await client.get(f"https://minhareceita.org/{cnpj_clean}")
-                if resp.status_code == 200:
-                    data = resp.json()
-            except: pass
-            
-        # Camada 3: RECEITAWS
-        if not data:
-            try:
-                print(f"[Backend] Minha Receita Limitada - Tentando Fallback 2: ReceitaWS...")
-                resp = await client.get(f"https://receitaws.com.br/v1/cnpj/{cnpj_clean}")
-                if resp.status_code == 200:
-                    raw = resp.json()
-                    data = {
-                        "razao_social": raw.get("nome"),
-                        "nome_fantasia": raw.get("fantasia"),
-                        "municipio": raw.get("municipio"),
-                        "uf": raw.get("uf"),
-                        "qsa": [{"nome_socio": s.get("nome"), "qualificacao_socio": s.get("qual")} for s in raw.get("qsa", [])]
-                    }
-            except: pass
+    # Busca em cascata resiliente
+    data = await fetch_company_data_by_cnpj(cnpj_clean)
 
     if not data:
         raise HTTPException(
             status_code=502, 
-            detail="⚠️ Limite de requisições excedido em todas as APIs. Tente novamente em alguns minutos ou use um CNPJ diferente."
+            detail="Limite de requisicoes excedido em todas as APIs. Tente novamente em alguns minutos ou use um CNPJ diferente."
         )
             
     razao_social = data.get("razao_social") or data.get("nome_fantasia") or "Empresa Desconhecida"
@@ -340,37 +309,14 @@ async def stream_company_hierarchy(
     db: AsyncSession = Depends(get_db)
 ):
     """Endpoint SSE que envia dados progressivamente para a interface."""
-    print(f"[Backend Streaming] Iniciando para CNPJ: {cnpj}, Domain: {domain}, Foco: {product_focus}, Área: {area_focus}")
+    print(f"[Backend Streaming] Iniciando para CNPJ: {cnpj}, Domain: {domain}, Foco: {product_focus}, Area: {area_focus}")
     
-    load_dotenv(override=True)
-    EMAIL_API_KEY = os.getenv("EMAIL_API_KEY")
+    EMAIL_API_KEY = settings.EMAIL_API_KEY
     cnpj_clean = clean_cnpj(cnpj)
     
     async def generator():
-        data = None
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            try:
-                res = await client.get(f"https://brasilapi.com.br/api/cnpj/v1/{cnpj_clean}")
-                if res.status_code == 200: data = res.json()
-            except: pass
-            if not data:
-                try:
-                    res = await client.get(f"https://minhareceita.org/{cnpj_clean}")
-                    if res.status_code == 200: data = res.json()
-                except: pass
-            if not data:
-                try:
-                    res = await client.get(f"https://receitaws.com.br/v1/cnpj/{cnpj_clean}")
-                    if res.status_code == 200:
-                        raw = res.json()
-                        data = {
-                            "razao_social": raw.get("nome"),
-                            "nome_fantasia": raw.get("fantasia"),
-                            "municipio": raw.get("municipio"),
-                            "uf": raw.get("uf"),
-                            "qsa": [{"nome_socio": s.get("nome"), "qualificacao_socio": s.get("qual")} for s in raw.get("qsa", [])]
-                        }
-                except: pass
+        # Resolução de dados via CNPJ (cascata resiliente)
+        data = await fetch_company_data_by_cnpj(cnpj_clean)
 
         if not data:
             yield f"data: {json.dumps({'type': 'error', 'message': 'Houve um erro geral nas APIs.'})}\n\n"
@@ -382,134 +328,35 @@ async def stream_company_hierarchy(
         hierarchy_pool = []
         initial_nodes = []
         
-        # 💾 PERSISTÊNCIA INCREMENTAL DA EMPRESA
-        org_id = None
-        cnpj_clean = clean_cnpj(cnpj)
+        # Persistência incremental da empresa
+        full_address = build_full_address(data)
         
-        # Composição do endereço completo
-        full_address = ""
-        if data:
-            addr_parts = []
-            if data.get("logradouro"): addr_parts.append(f"{data.get('logradouro')}, {data.get('numero') or 'S/N'}")
-            if data.get("complemento"): addr_parts.append(str(data.get("complemento")))
-            if data.get("bairro"): addr_parts.append(str(data.get("bairro")))
-            if data.get("municipio"): addr_parts.append(f"{data.get('municipio')}-{data.get('uf')}")
-            if data.get("cep"): addr_parts.append(f"CEP: {data.get('cep')}")
-            full_address = " | ".join(addr_parts)
-
+        org_id = None
         try:
-            # 🏺 BUSCA RESILIENTE (Cascata: CNPJ -> Domínio -> Nome)
-            org = None
-            # 1. Tenta por CNPJ
-            stmt_cnpj = select(Organization).where(Organization.cnpj == cnpj_clean)
-            res_cnpj = await db.execute(stmt_cnpj)
-            org = res_cnpj.scalars().first()
-            
-            # 2. Se não achou, tenta por Domínio (se disponível)
-            if not org and domain:
-                stmt_dom = select(Organization).where(Organization.domain == domain)
-                res_dom = await db.execute(stmt_dom)
-                org = res_dom.scalars().first()
-            
-            # 3. Se ainda não achou, tenta por Nome (Case Insensitive)
-            if not org:
-                # Remove variações comuns para melhorar o match
-                clean_name = confirmed_brand or razao_social
-                stmt_name = select(Organization).where(func.lower(Organization.name) == clean_name.lower())
-                res_name = await db.execute(stmt_name)
-                org = res_name.scalars().first()
-
-            if not org:
-                # 🚀 CRIAR NO PIPEDRIVE SE FOR NOVA
-                from services.pipedrive.pipedrive_service import pipedrive_service
-                
-                new_name = confirmed_brand or (razao_social[:30] + "..." if len(razao_social) > 30 else razao_social)
-                p_id = await pipedrive_service.create_organization({
-                    "name": new_name,
-                    "address": full_address,
-                    "domain": domain
-                })
-                
-                org = Organization(
-                    name=new_name,
-                    cnpj=cnpj_clean,
-                    domain=domain,
-                    address=full_address,
-                    category=area_focus,
-                    product_focus=product_focus,
-                    pipedrive_id=p_id # Salva o ID retornado (ou None se falhou)
-                )
-                db.add(org)
-                await db.flush()
-                print(f"[Stream] Nova empresa criada. Local ID: {org.id}, Pipedrive ID: {p_id}")
-            else:
-                # 🔄 ATUALIZAÇÃO SÍNCRONA: Une o CNPJ aos dados que já existiam
-                if not org.cnpj: org.cnpj = cnpj_clean
-                if not org.address or len(org.address) < 5: org.address = full_address
-                if confirmed_brand: org.name = confirmed_brand
-                if domain and not org.domain: org.domain = domain
-                if area_focus: org.category = area_focus
-                if product_focus: org.product_focus = product_focus
-                
-                # Se ela existia no banco local mas não tinha Pipedrive ID (caso raro), tenta criar agora
-                if not org.pipedrive_id:
-                    from services.pipedrive.pipedrive_service import pipedrive_service
-                    p_id = await pipedrive_service.create_organization({
-                        "name": org.name,
-                        "address": org.address,
-                        "domain": org.domain
-                    })
-                    if p_id:
-                        org.pipedrive_id = p_id
-                        print(f"[Stream] Empresa existente vinculada ao Pipedrive. ID: {p_id}")
-            
-            org_id = org.id
-            await db.commit()
+            org_id = await upsert_organization(
+                db, razao_social, cnpj_clean, domain, full_address,
+                confirmed_brand=confirmed_brand, area_focus=area_focus,
+                product_focus=product_focus, confirmed_logo=confirmed_logo
+            )
         except Exception as e:
-            print(f"[DB] Erro ao salvar Organização: {e}")
+            print(f"[DB] Erro ao salvar Organizacao: {e}")
 
-        root_node = {
-            "id": "root_company",
-            "name": confirmed_brand or (razao_social[:30] + "..." if len(razao_social) > 30 else razao_social),
-            "role": "Entidade Principal",
-            "department": "Supply Chain (Matriz)",
-            "manager_id": None,
-            "level": 0,
-            "company_logo": confirmed_logo,
-            "domain": domain
-        }
+        # Nó raiz
+        root_node = build_root_node(razao_social, confirmed_brand, confirmed_logo, domain)
         initial_nodes.append(root_node)
         hierarchy_pool.append(EmployeeNode(**root_node))
         
-        # 💾 PERSISTÊNCIA DOS SÓCIOS (QSA)
-        for idx, socio in enumerate(qsa):
-            name_socio = socio.get("nome_socio", "Sócio Anônimo")
-            role_socio = socio.get("qualificacao_socio", "Sócio")
-            clean_socio_id = f"socio_{re.sub(r'[^a-zA-Z0-9]', '_', name_socio.lower())}"
-            s_node = {"id": clean_socio_id, "name": name_socio, "role": role_socio, "department": "Quadro de Sócios (QSA)", "manager_id": "root_company", "level": 6}
+        # Persistência e nós dos Sócios (QSA)
+        socio_nodes = build_socio_nodes(qsa, razao_social)
+        for s_node in socio_nodes:
             initial_nodes.append(s_node)
             hierarchy_pool.append(EmployeeNode(**s_node))
-            
-            # Salva o sócio no banco se ainda não existir
-            if org_id:
-                try:
-                    stmt_s = select(Employee).where(Employee.name == name_socio, Employee.company_id == org_id)
-                    res_s = await db.execute(stmt_s)
-                    if not res_s.scalars().first():
-                        db.add(Employee(
-                            name=name_socio,
-                            role=role_socio,
-                            seniority=6,
-                            company_id=org_id,
-                            manager_id="root_company",
-                            description="Sócio (QSA)"
-                        ))
-                except: pass
         
-        if org_id: await db.commit()
+        if org_id:
+            await persist_socios(db, org_id, qsa)
 
         if not qsa:
-            initial_nodes.append({"id": "aviso", "name": "Sem dados QSA", "role": "Público Indisponível", "department": "Aviso", "manager_id": "root_company", "level": 6})
+            initial_nodes.append({"id": "aviso", "name": "Sem dados QSA", "role": "Publico Indisponivel", "department": "Aviso", "manager_id": "root_company", "level": 6})
             
         city = data.get("municipio", "")
         state = data.get("uf", "")
@@ -543,55 +390,16 @@ async def stream_company_hierarchy(
                     temperature=lead.get("temperature")
                 )
                 
-                # 🛠️ GESTÃO DE CONEXÕES AO VIVO (AGRESSIVA)
-                assigned_manager = "root_company"
+                # Atribuição de manager via módulo graph_builder
+                emp.manager_id = assign_managers(emp, hierarchy_pool)
                 
-                if emp.level <= 0:
-                    emp.level = get_seniority_level(emp.role)
-                    if emp.level <= 0: emp.level = 1
-
-                levels_map = {0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []}
-                highest_senior_id = "root_company"
-                max_level_found = -1
-
-                for existing in hierarchy_pool: 
-                    if existing.id == emp.id: continue
-                    levels_map[existing.level].append(existing)
-                
-                # Passo A: Tenta achar um chefe (Nível IMEDIATAMENTE ACIMA do emp)
-                found_boss = False
-                # Começa do nível vizinho (emp.level + 1) e vai subindo até o topo (6)
-                for senior_level in range(emp.level + 1, 7):
-                    if found_boss: break
-                    if not levels_map.get(senior_level): continue
-                    
-                    matching_bosses = [b for b in levels_map[senior_level] if b.department == emp.department or any(k in b.department for k in ["Diretoria Executiva", "Raiz", "Administração", "Quadro de Sócios (QSA)"])]
-                    if matching_bosses:
-                        assigned_manager = matching_bosses[0].id
-                        found_boss = True
-                        found_boss = True
-                
-                emp.manager_id = assigned_manager
-                
-                # Passo C: RE-LIGAMENTO DINÂMICO (Quem já está lá pode ganhar um novo chefe melhor)
-                reparented_nodes = []
-                if emp.level > 1:
-                    for existing in hierarchy_pool:
-                        if existing.id == emp.id: continue
-                        
-                        # Se o novo cara (emp) é do mesmo setor e é mais sênior que o subordinado (existing)
-                        # E o subordinado atualmente está na raiz ou em um fallback genérico
-                        is_same_dept = (existing.department == emp.department)
-                        is_emp_superior = (emp.level > existing.level)
-                        is_currently_orphan = (existing.manager_id == "root_company" or existing.manager_id == highest_senior_id)
-                        
-                        if is_same_dept and is_emp_superior and is_currently_orphan:
-                            existing.manager_id = emp.id
-                            reparented_nodes.append(existing.dict())
+                # Re-ligamento dinâmico de subordinados existentes
+                reparented_nodes = reparent_subordinates(emp, hierarchy_pool)
                 
                 hierarchy_pool.append(emp)
                 new_nodes.append(emp.dict())
-                if reparented_nodes: new_nodes.extend(reparented_nodes)
+                if reparented_nodes:
+                    new_nodes.extend(reparented_nodes)
                 
             if new_nodes:
                 yield f"data: {json.dumps({'type': 'batch', 'nodes': new_nodes}, ensure_ascii=False)}\n\n"
@@ -608,14 +416,14 @@ async def get_stored_hierarchy_by_pipedrive(pipedrive_id: int, db: AsyncSession 
     res = await db.execute(stmt)
     org = res.scalars().first()
     
-    # 🔄 FALLBACK: Se não encontrou por Pipedrive ID, tenta pelo ID local
+    # Fallback: Se não encontrou por Pipedrive ID, tenta pelo ID local
     if not org:
         stmt_local = select(Organization).where(Organization.id == pipedrive_id)
         res_local = await db.execute(stmt_local)
         org = res_local.scalars().first()
         
     if not org:
-        return {"nodes": [], "company_name": "Não encontrada", "status": "new"}
+        return {"nodes": [], "company_name": "Nao encontrada", "status": "new"}
     return await get_stored_hierarchy(org.id, db)
 
 @router.get("/{org_id}")
@@ -625,7 +433,7 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
     res_org = await db.execute(stmt_org)
     org = res_org.scalars().first()
     if not org:
-        raise HTTPException(status_code=404, detail="Organização não encontrada no banco local.")
+        raise HTTPException(status_code=404, detail="Organizacao nao encontrada no banco local.")
 
     stmt_emp = select(Employee).where(Employee.company_id == org_id).order_by(Employee.seniority.desc())
     result_emp = await db.execute(stmt_emp)
@@ -643,7 +451,6 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
     })
 
     # 2. Build mapping of ephemeral IDs/Keys to the new stable DB-based node IDs
-    # Ephemeral IDs used during scan: node_{linkedin_user} or socio_{idx}
     id_mapping = {}
     for emp in employees:
         new_id = f"node_{emp.id}"
@@ -687,7 +494,7 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
             "name": emp.name, 
             "role": emp.role, 
             "level": level,
-            "seniority": level, # Garante que o PersonaCard pegue o nível correto
+            "seniority": level,
             "department": get_department_tag(emp.role), 
             "manager_id": manager_id, 
             "linkedin": emp.linkedin_url, 
@@ -695,7 +502,7 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
             "profile_pic": emp.profile_pic, 
             "email": clean_email, 
             "education": emp.description, 
-            "observations": emp.description, # Duplica para compatibilidade
+            "observations": emp.description,
             "location": emp.location,
             "phone": emp.phone,
             "whatsapp_number": emp.whatsapp_number,
@@ -703,4 +510,3 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
         })
     
     return {"company_name": org.name, "nodes": nodes, "status": "cached"}
-

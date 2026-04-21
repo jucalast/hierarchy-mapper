@@ -38,11 +38,14 @@ async def proxy_linkedin_image(url: str):
             pass  # Se cache falha, continua com a requisição
     
     headers = {
-        "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        "Referer": "https://www.linkedin.com/",
         "Connection": "keep-alive"
     }
+    
+    # Adiciona Referer específico apenas para domínios que o exigem (LinkedIn)
+    if "licdn.com" in url or "linkedin.com" in url:
+        headers["Referer"] = "https://www.linkedin.com/"
     import asyncio
     async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
         # Tenta até 4 vezes com jitter incremental para burlar o Rate Limit de Bursts

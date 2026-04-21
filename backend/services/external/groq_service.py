@@ -2,11 +2,10 @@ import json
 import httpx
 import os
 from typing import List, Dict
-from dotenv import load_dotenv
 
-load_dotenv()
+from core.config import settings
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_API_KEY = settings.GROQ_API_KEY
 
 class GroqService:
     def __init__(self, api_key: str = None):
@@ -15,7 +14,7 @@ class GroqService:
 
     async def ask(self, prompt: str, json_mode: bool = False) -> Dict:
         """Envia um prompt para a IA (Gemini como primário, Groq como fallback)."""
-        gemini_key = os.getenv("GEMINI_API_KEY")
+        gemini_key = settings.GEMINI_API_KEY
         
         # 1. TENTA GEMINI (Desejado pelo usuário e superior em lógica)
         if gemini_key:
@@ -169,7 +168,7 @@ async def refine_hierarchy_ai(employees: List[Dict]) -> List[Dict]:
     }}
     """
 
-    gemini_key = os.getenv("GEMINI_API_KEY")
+    gemini_key = settings.GEMINI_API_KEY
     content = None
 
     try:

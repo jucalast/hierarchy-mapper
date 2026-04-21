@@ -1,0 +1,56 @@
+/* === CHAT DESIGN SYSTEM TOKENS === */
+
+:root {
+  /* Colors - Light */
+  --chat-bg-primary: #ffffff;
+  --chat-bg-secondary: #f3f4f6;
+  --chat-bg-tertiary: #f9fafb;
+  --chat-border-color: #e5e7eb;
+  --chat-text-primary: #1f2937;
+  --chat-text-secondary: #4b5563;
+  --chat-text-tertiary: #9ca3af;
+  
+  /* Accent Colors */
+  --chat-accent-color: #5E6AD2;
+  --chat-accent-hover: #4c56af;
+  --chat-accent-soft: rgba(94, 106, 210, 0.1);
+  --chat-whatsapp-green: #25D366;
+  --chat-outlook-blue: #0078D4;
+  
+  /* Message Bubbles - Light */
+  --chat-user-msg-bg: #303030;
+  --chat-user-msg-text: #ffffff;
+  --chat-ai-msg-text: #374151;
+  
+  /* Glassmorphism & Effects */
+  --chat-glass-bg: rgba(255, 255, 255, 0.8);
+  --chat-glass-border: rgba(229, 231, 235, 0.5);
+  --chat-glass-blur: blur(12px);
+  --chat-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --chat-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --chat-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  /* Radii */
+  --chat-radius-sm: 6px;
+  --chat-radius-md: 12px;
+  --chat-radius-lg: 18px;
+}
+
+[data-theme='dark'] {
+  --chat-bg-primary: #131313;
+  --chat-bg-secondary: rgba(255, 255, 255, 0.05);
+  --chat-bg-tertiary: rgba(255, 255, 255, 0.02);
+  --chat-border-color: rgba(255, 255, 255, 0.05);
+  --chat-text-primary: #e4e4e7;
+  --chat-text-secondary: #a1a1aa;
+  --chat-text-tertiary: rgba(255, 255, 255, 0.4);
+  
+  /* Message Bubbles - Dark */
+  --chat-user-msg-bg: #ffffff;
+  --chat-user-msg-text: #000000;
+  --chat-ai-msg-text: #e4e4e7;
+  
+  /* Glassmorphism - Dark */
+  --chat-glass-bg: rgba(19, 19, 19, 0.8);
+  --chat-glass-border: rgba(255, 255, 255, 0.05);
+}

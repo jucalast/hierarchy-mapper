@@ -103,9 +103,12 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 setNodes((currentNds) => {
                     let cacheId = "default";
                     try {
-                        const lObj = JSON.parse(localStorage.getItem('last-viewed-org') || '{}');
-                        if (lObj.id) cacheId = lObj.id.toString();
-                        else if (lObj.name) cacheId = lObj.name;
+                        const raw = localStorage.getItem('last-viewed-org');
+                        if (raw && raw !== "NaN" && raw !== "undefined") {
+                            const lObj = JSON.parse(raw);
+                            if (lObj.id) cacheId = lObj.id.toString();
+                            else if (lObj.name) cacheId = lObj.name;
+                        }
                     } catch (e) { }
 
                     const positionsCacheKey = `layout-cache-${cacheId}`;
@@ -141,9 +144,12 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 setTimeout(() => {
                     let cacheId = "default";
                     try {
-                        const lObj = JSON.parse(localStorage.getItem('last-viewed-org') || '{}');
-                        if (lObj.id) cacheId = lObj.id.toString();
-                        else if (lObj.name) cacheId = lObj.name;
+                        const raw = localStorage.getItem('last-viewed-org');
+                        if (raw && raw !== "NaN" && raw !== "undefined") {
+                            const lObj = JSON.parse(raw);
+                            if (lObj.id) cacheId = lObj.id.toString();
+                            else if (lObj.name) cacheId = lObj.name;
+                        }
                     } catch (e) { }
 
                     const edgesCacheKey = `edges-cache-${cacheId}`;
@@ -186,9 +192,12 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 setTimeout(() => {
                     let cacheId = "default";
                     try {
-                        const lObj = JSON.parse(localStorage.getItem('last-viewed-org') || '{}');
-                        if (lObj.id) cacheId = lObj.id.toString();
-                        else if (lObj.name) cacheId = lObj.name;
+                        const raw = localStorage.getItem('last-viewed-org');
+                        if (raw && raw !== "NaN" && raw !== "undefined") {
+                            const lObj = JSON.parse(raw);
+                            if (lObj.id) cacheId = lObj.id.toString();
+                            else if (lObj.name) cacheId = lObj.name;
+                        }
                     } catch (e) { }
 
                     const edgesCacheKey = `edges-cache-${cacheId}`;
@@ -371,6 +380,11 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         const checkActiveJob = async () => {
             const jobDataStr = localStorage.getItem('active-discovery-job');
             if (jobDataStr) {
+                if (jobDataStr === "NaN" || jobDataStr === "undefined") {
+                    localStorage.removeItem('active-discovery-job');
+                    checkLastOrg();
+                    return;
+                }
                 try {
                     const jobData = JSON.parse(jobDataStr);
                     const { brand, orgId } = jobData;
@@ -413,6 +427,12 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         const checkLastOrg = async () => {
             const lastOrgStr = localStorage.getItem('last-viewed-org');
             if (lastOrgStr) {
+                if (lastOrgStr === "NaN" || lastOrgStr === "undefined") {
+                    localStorage.removeItem('last-viewed-org');
+                    setConfirmedBrand(" ");
+                    setStep("input");
+                    return;
+                }
                 try {
                     const org = JSON.parse(lastOrgStr);
                     const cleanOrgName = org.name || "";

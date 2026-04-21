@@ -46,6 +46,8 @@ async def universal_search(
     
     # Define o tipo final (Prioridade para tag, depois parâmetro)
     final_type = found_tag_type or type
+    if final_type == "empresa": final_type = "organization"
+    if final_type == "contato": final_type = "whatsapp"
     
     # Detecção automática de e-mail puro (ex: joao@gmail.com) para priorizar busca de contatos
     if not final_type and "@" in q and "." in q.split("@")[-1]:

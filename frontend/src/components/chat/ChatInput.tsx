@@ -1,0 +1,253 @@
+import React, { useRef, useEffect } from 'react';
+import { 
+    X, Loader2, MessageSquare, Mail, Building2, Mic, MicOff, Wand2, ArrowUp, Sparkles, Zap 
+} from 'lucide-react';
+import { CompanyResult } from './ChatInterfaces';
+import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
+import styles from '../ChatPanel.module.css';
+
+interface ChatInputProps {
+    inputValue: string;
+    setInputValue: (val: string) => void;
+    isLoading: boolean;
+    onSend: (text: string, companies: CompanyResult[]) => void;
+    selectedCompanies: CompanyResult[];
+    setSelectedCompanies: (companies: CompanyResult[]) => void;
+    // Autocomplete props
+    showAutocomplete: boolean;
+    isSearching: boolean;
+    searchingCategory: string | null;
+    searchTerm: string;
+    companies: CompanyResult[];
+    selectSearchResult: (company: CompanyResult) => void;
+    // Speech props
+    isListening: boolean;
+    startListening: () => void;
+    stopListening: () => void;
+    // Model props
+    model: 'gemini' | 'groq';
+    setModel: (model: 'gemini' | 'groq') => void;
+    // Styling
+    theme: string;
+}
+
+export const ChatInput: React.FC<ChatInputProps> = ({
+    inputValue, setInputValue, isLoading, onSend,
+    selectedCompanies, setSelectedCompanies,
+    showAutocomplete, isSearching, searchingCategory, searchTerm, companies, selectSearchResult,
+    isListening, startListening, stopListening,
+    model, setModel,
+    theme
+}) => {
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const highlighterRef = useRef<HTMLDivElement>(null);
+    const autocompleteRef = useRef<HTMLDivElement>(null);
+
+    // Sincronizar scroll do highlighter com o textarea
+    const handleScroll = () => {
+        if (inputRef.current && highlighterRef.current) {
+            highlighterRef.current.scrollTop = inputRef.current.scrollTop;
+        }
+    };
+
+    // Auto-ajuste de altura
+    useEffect(() => {
+        if (inputRef.current) {
+            inputRef.current.style.height = 'auto';
+            inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 76)}px`;
+        }
+    }, [inputValue]);
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey && !showAutocomplete) {
+            e.preventDefault();
+            if (inputValue.trim() || selectedCompanies.length > 0) {
+                onSend(inputValue, selectedCompanies);
+            }
+        }
+    };
+
+    const renderHighlightedText = (text: string) => {
+        if (!text) return text;
+        
+        // Criar um regex dinâmico com os nomes das empresas selecionadas (se houver)
+        // Isso garante que apenas o nome exato seja destacado em roxo
+        let entityRegexPart = "";
+        if (selectedCompanies.length > 0) {
+            const escapedNames = selectedCompanies
+                .map(c => c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+                .join('|');
+            // Priorizamos a entidade completa antes do @ genérico
+            entityRegexPart = `@(?:${escapedNames})|`;
+        }
+
+        // Regex final: busca nomes selecionados OU @ seguido de caracteres (incluindo acentos)
+        // Usamos [A-Za-z\u00C0-\u00FF] para suportar acentos como em @João
+        const finalRegex = new RegExp(`(${entityRegexPart}@[A-Za-z\\u00C0-\\u00FF0-9]*)`, 'g');
+        const parts = text.split(finalRegex);
+        
+        return parts.map((part, i) => {
+            if (part && part.startsWith('@')) {
+                return <span key={i} className={styles.highlightPurple}>{part}</span>;
+            }
+            return part;
+        });
+    };
+
+    const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+    const OrgIcon = () => <Building2 size={16} className="shrink-0 opacity-40" />;
+
+    return (
+        <div className={styles.inputContainer}>
+            <div className={styles.inputBox}>
+                <div className={styles.inputFieldWrapper}>
+                    {selectedCompanies.length > 0 && (
+                        <div className={styles.inputCompaniesContainer}>
+                            {selectedCompanies.map((company) => (
+                                <div key={company.id} className={styles.inputCompanyPill}>
+                                    {company.type === 'organization' ? (
+                                        getCompanyLogoUrl(company) ? <img src={getProxiedUrl(getCompanyLogoUrl(company))} className={styles.pillCompanyLogo} /> : <OrgIcon />
+                                    ) : (
+                                        getAvatarUrl(company) ? <img src={getProxiedUrl(getAvatarUrl(company))} className={styles.pillCompanyLogo} style={{ borderRadius: '50%' }} /> : 
+                                        (company.type === 'whatsapp' ? <img src="/wppicon.png" alt="W" style={{ width: 22, height: 22, objectFit: 'contain' }} /> : <img src="/outlook.png" alt="E" style={{ width: 22, height: 22, objectFit: 'contain' }} />)
+                                    )}
+                                    <span className={styles.pillCompanyName}>{company.name}</span>
+                                    <button
+                                        className={styles.removePillBtn}
+                                        onClick={() => setSelectedCompanies(selectedCompanies.filter(c => c.id !== company.id))}
+                                        type="button"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    
+                    <div className={styles.inputBoxInterior}>
+                        <div className={styles.inputHighlighter} ref={highlighterRef}>
+                            {renderHighlightedText(inputValue)}
+                            {inputValue.endsWith(' ') && <span style={{ visibility: 'hidden' }}>&nbsp;</span>}
+                        </div>
+
+                        <textarea
+                            ref={inputRef}
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onScroll={handleScroll}
+                            onKeyDown={handleKeyPress}
+                            placeholder="Digite @ para buscar uma empresa..."
+                            className={styles.inputField}
+                            disabled={isLoading}
+                            rows={1}
+                            spellCheck={false}
+                            autoCorrect="off"
+                            autoCapitalize="sentences"
+                        />
+                    </div>
+
+                    {showAutocomplete && (
+                        <div ref={autocompleteRef} className={styles.autocompleteDropdown}>
+                            {isSearching && (
+                                <div className={styles.autocompleteLoading}>
+                                    <Loader2 size={16} className={styles.spinner} />
+                                    Buscando {searchingCategory || 'empresas'}...
+                                </div>
+                            )}
+                            {!isSearching && companies.length === 0 && searchTerm.trim().length > 0 && (
+                                <div className={styles.autocompleteEmpty}>Nenhum resultado encontrado</div>
+                            )}
+                            {!isSearching && companies.length > 0 && (
+                                <div className={styles.autocompleteList}>
+                                    {companies.map((item, index) => (
+                                        <button
+                                            key={`${item.type}-${item.id}-${index}`}
+                                            className={styles.autocompleteItem}
+                                            onClick={() => {
+                                                selectSearchResult(item);
+                                                setTimeout(() => {
+                                                    // Se o que vem após o @ já é exatamente um dos nomes selecionados, 
+                                                    // paramos de pesquisar para este @ específico.
+                                                    const query = searchTerm;
+                                                    const matchedSelection = selectedCompanies.find(c => query.toLowerCase().startsWith(c.name.toLowerCase()));
+                                                    if (matchedSelection) {
+                                                        const afterName = query.substring(matchedSelection.name.length);
+                                                        if (afterName.length > 0) {
+                                                            return;
+                                                        }
+                                                    }
+                                                    if (inputRef.current) {
+                                                        inputRef.current.focus();
+                                                        const length = inputRef.current.value.length;
+                                                        inputRef.current.setSelectionRange(length, length);
+                                                    }
+                                                }, 50); // Um tempo levemente maior para garantir o render do texto novo
+                                            }}
+                                        >
+                                            <div className={styles.itemIcon} style={{ background: 'transparent' }}>
+                                                {item.type === 'organization' ? (
+                                                    <div className={`${styles.initialsAvatar} ${styles.square}`} style={{ borderRadius: '4px' }}>
+                                                        {getInitials(item.name)}
+                                                    </div>
+                                                ) : (
+                                                    getAvatarUrl(item) ? (
+                                                        <img 
+                                                            src={getProxiedUrl(getAvatarUrl(item))} 
+                                                            alt={item.name} 
+                                                            style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} 
+                                                        />
+                                                    ) : (
+                                                        item.type === 'whatsapp' ? 
+                                                            <img src="/wppicon.png" alt="W" style={{ width: 22, height: 22, objectFit: 'contain' }} /> : 
+                                                            <img src="/outlook.png" alt="E" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                                                    )
+                                                )}
+                                            </div>
+                                            <div className={styles.itemInfo}>
+                                                <div className={styles.itemName}>{item.name}</div>
+                                                <div className={styles.itemSub}>{item.domain || item.type}</div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className={styles.inputBottom}>
+                    <div className={styles.inputLeftButtons}>
+                        <button
+                            className={styles.modelBtn}
+                            onClick={() => setModel(model === 'gemini' ? 'groq' : 'gemini')}
+                            title="Alternar entre Gemini e Groq (mais rápido)"
+                        >
+                            {model === 'gemini' ? (
+                                <img src="/gemini.png" alt="Gemini" className={styles.modelIcon} />
+                            ) : (
+                                <Zap size={14} />
+                            )}
+                            <span>{model === 'gemini' ? 'Gemini' : 'Groq'}</span>
+                        </button>
+                        <div className={styles.dividerSmall}>|</div>
+                        <button 
+                            className={`${styles.iconBtn} ${isListening ? styles.micActive : ''}`}
+                            onClick={isListening ? stopListening : startListening}
+                            title={isListening ? "Parar Gravação" : "Enviar por Voz"}
+                        >
+                            {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                        </button>
+                    </div>
+                    
+                    <button 
+                        className={`${styles.sendBtn} ${(!isLoading && (inputValue.trim() || selectedCompanies.length > 0)) ? styles.active : ''}`} 
+                        disabled={isLoading || (!inputValue.trim() && selectedCompanies.length === 0)}
+                        onClick={() => onSend(inputValue, selectedCompanies)}
+                    >
+                        {isLoading ? <Loader2 size={18} className={styles.spinner} /> : <ArrowUp size={18} />}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};

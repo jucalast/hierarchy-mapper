@@ -22,7 +22,8 @@ export const getLinkedinAvatar = (linkedinUrl: string | null | undefined) => {
 };
 
 export const getAvatarUrl = (data: any) => {
-    const avatarUrl = data.avatar || 
+    const avatarUrl = data.avatar_url ||
+                     data.avatar || 
                      data.profile_pic || 
                      data.photo || 
                      data.image || 
@@ -54,6 +55,7 @@ export const getCompanyLogoUrl = (data: any) => {
     };
 
     const logoUrl = data.confirmedLogo || 
+                    data.logo_url ||
                     data.company_logo || 
                     data.logo || 
                     data.company_image ||

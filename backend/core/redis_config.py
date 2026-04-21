@@ -1,13 +1,11 @@
-import os
 import redis
 from arq.connections import RedisSettings
-from dotenv import load_dotenv
 
-load_dotenv()
+from core.config import settings
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+REDIS_HOST = settings.REDIS_HOST
+REDIS_PORT = settings.REDIS_PORT
+REDIS_PASSWORD = settings.REDIS_PASSWORD
 
 redis_settings = RedisSettings(
     host=REDIS_HOST,

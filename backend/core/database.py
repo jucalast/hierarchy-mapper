@@ -1,12 +1,11 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import text
-import os
-from dotenv import load_dotenv
 from pathlib import Path
 
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+from core.config import settings
+
+DATABASE_URL = settings.DATABASE_URL
 
 # Resolver caminho SQLite para encontrar o arquivo correto
 if DATABASE_URL and "sqlite" in DATABASE_URL.lower():

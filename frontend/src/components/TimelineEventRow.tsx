@@ -102,7 +102,7 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                 )}
 
                 {event.content && (
-                    <div className={`${styles.eventContent} ${event.activityType === 'call' || event.type === 'note' ? styles.callNote : ''}`}>
+                    <div className={`${styles.eventContent} ${styles.callNote}`}>
                         <div dangerouslySetInnerHTML={{ __html: event.content }} />
                     </div>
                 )}

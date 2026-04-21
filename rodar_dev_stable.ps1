@@ -11,7 +11,7 @@ Write-Host "🧹 Limpando servicos e terminais antigos..." -ForegroundColor Yell
 Get-Process | Where-Object { $_.MainWindowTitle -like "*LINKB2B-*" } | Stop-Process -Force
 Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
-Get-Process chrome, msedge, headless_shell -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-Process headless_shell -ErrorAction SilentlyContinue | Stop-Process -Force
 
 Start-Sleep -Seconds 1
 

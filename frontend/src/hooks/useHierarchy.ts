@@ -560,7 +560,12 @@ export const useHierarchy = () => {
     const reconnectToActiveJob = useCallback(async (onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void) => {
         const jobDataStr = localStorage.getItem('active-discovery-job');
         if (!jobDataStr) return false;
-
+        
+        if (jobDataStr === "NaN" || jobDataStr === "undefined") {
+            localStorage.removeItem('active-discovery-job');
+            return false;
+        }
+        
         try {
             const jobData = JSON.parse(jobDataStr);
             const { job_id, brand, logo, domain } = jobData;

@@ -1,9 +1,9 @@
-import os
 import json
 import httpx
 import asyncio
 import time
 from typing import Dict, Union
+from core.config import settings
 
 # ============================================================
 # CIRCUIT BREAKER: Estado global de rate-limit do Gemini
@@ -50,8 +50,8 @@ def _reset_gemini_circuit():
 
 
 async def ask_gemini(prompt: str, json_mode: bool = False, max_retries: int = 2) -> Union[str, Dict]:
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    groq_key = os.getenv("GROQ_API_KEY")
+    gemini_key = settings.GEMINI_API_KEY
+    groq_key = settings.GROQ_API_KEY
     
     if not gemini_key and not groq_key:
         print("[AI Service] Nenhuma API key configurada (GEMINI_API_KEY / GROQ_API_KEY)!")

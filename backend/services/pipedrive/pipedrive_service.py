@@ -1,15 +1,14 @@
 import httpx
 from typing import List, Dict, Any, Optional
-import os
 from datetime import datetime, date, timedelta
-from dotenv import load_dotenv
 
-load_dotenv()
+from core.config import settings
+
 
 class PipedriveService:
     def __init__(self):
-        self.api_token = os.getenv("PIPEDRIVE_API_TOKEN")
-        self.user_id = 24921888 # ID João Luccas
+        self.api_token = settings.PIPEDRIVE_API_TOKEN
+        self.user_id = settings.PIPEDRIVE_USER_ID
         self.base_url = "https://api.pipedrive.com/v1"
 
     async def create_organization(self, data: dict):
@@ -18,7 +17,7 @@ class PipedriveService:
         payload = {
             "name": data.get("name"),
             "address": data.get("address"),
-            "c04f98a7a9762df2f8a42e5d7a641a0292723326": data.get("domain")
+            "website": data.get("domain")
         }
         try:
             async with httpx.AsyncClient() as client:
@@ -30,7 +29,71 @@ class PipedriveService:
                     return org_id
         except Exception as e:
             print(f"[Pipedrive Service] Erro ao criar empresa no Pipedrive: {e}")
+    async def create_activity(self, data: dict):
+        """Cria uma nova atividade no Pipedrive."""
+        url = f"{self.base_url}/activities?api_token={self.api_token}"
+        payload = {
+            "subject": data.get("subject", "Follow-up LINKB2B"),
+            "type": data.get("type", "task"),
+            "due_date": data.get("due_date", datetime.now().strftime("%Y-%m-%d")),
+            "note": data.get("note", ""),
+            "org_id": data.get("org_id"),
+            "deal_id": data.get("deal_id"),
+            "person_id": data.get("person_id"),
+            "user_id": self.user_id
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(url, json=payload)
+                res_data = resp.json()
+                if res_data.get("success"):
+                    act_id = res_data["data"]["id"]
+                    print(f"[Pipedrive Service] Success: Nova atividade criada: {act_id}")
+                    return act_id
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro ao criar atividade: {e}")
         return None
+
+    async def get_person_details(self, person_id: int):
+        """Busca detalhes completos de uma pessoa (email, fone)."""
+        url = f"{self.base_url}/persons/{person_id}?api_token={self.api_token}"
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    data = resp.json().get("data")
+                    return data
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro ao buscar pessoa {person_id}: {e}")
+        return None
+
+    async def update_activity(self, activity_id: int, data: dict):
+        """Atualiza uma atividade existente no Pipedrive."""
+        url = f"{self.base_url}/activities/{activity_id}?api_token={self.api_token}"
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.put(url, json=data)
+                res_data = resp.json()
+                if res_data.get("success"):
+                    print(f"[Pipedrive Service] Success: Atividade {activity_id} atualizada.")
+                    return True
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro ao atualizar atividade: {e}")
+        return False
+
+    async def delete_activity(self, activity_id: int):
+        """Remove uma atividade do Pipedrive."""
+        url = f"{self.base_url}/activities/{activity_id}?api_token={self.api_token}"
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.delete(url)
+                res_data = resp.json()
+                if res_data.get("success"):
+                    print(f"[Pipedrive Service] Atividade {activity_id} removida com sucesso.")
+                    return True
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro ao remover atividade: {e}")
+        return False
 
     async def update_organization(self, org_id: int, data: dict):
         """Atualiza Endereço, CNPJ e Domínio no Pipedrive e no Banco Local."""
@@ -43,7 +106,7 @@ class PipedriveService:
         url = f"{self.base_url}/organizations/{org_id}?api_token={self.api_token}"
         payload = {}
         if data.get("address"): payload["address"] = data.get("address")
-        if data.get("domain"): payload["c04f98a7a9762df2f8a42e5d7a641a0292723326"] = data.get("domain") # Sincroniza o domínio oficial
+        if data.get("domain"): payload["website"] = data.get("domain") # Sincroniza o domínio oficial
         if data.get("name"): payload["name"] = data.get("name")
         
         # Pipedrive não fará requisição sem payload
@@ -144,7 +207,7 @@ class PipedriveService:
                                     # print(f"[Pipedrive Sync] Atualizando: {name}")
                                     
                                 # Atualiza metadados apenas se vierem novos e válidos do Pipedrive
-                                p_domain = org.get("c04f98a7a9762df2f8a42e5d7a641a0292723326")
+                                p_domain = org.get("website")
                                 if p_domain and len(str(p_domain)) > 3: 
                                     db_org.domain = p_domain
                                 
@@ -479,12 +542,6 @@ class PipedriveService:
             
         return pipedrive_success
 
-        # Se falhou no Pipedrive por falta de permissão, mas limpou local, avisamos o chamador
-        if not pipedrive_success and error_code == "ERR_ORGANIZATION_MISSING_PERMISSIONS":
-            return "partial_success_permissions"
-            
-        return pipedrive_success
-
     async def get_organization_details(self, org_id: int, done: Optional[int] = None):
         """Busca o 'Raio-X' completo da empresa: Contatos, Tarefas, Negócios e Notas."""
         import asyncio
@@ -501,23 +558,62 @@ class PipedriveService:
             
             primary_deal_id = primary_deal.get("id") if primary_deal else None
 
-            # Filtro de status de atividade
-            done_param = f"&done={done}" if done is not None else ""
-
-            # 2. Prepara URLs filtradas por Usuário (ou gerais se não houver deal)
+            # Filtro de status de atividade (Se None, buscamos ambos para 'All')
+            done_values = [0, 1] if done is None else [done]
+            
+            # 2. Prepara URLs (Removido user_id para visibilidade total da organização)
             urls = {
-                "persons": f"{self.base_url}/organizations/{org_id}/persons?user_id={self.user_id}&api_token={self.api_token}",
-                "activities": f"{self.base_url}/organizations/{org_id}/activities?user_id={self.user_id}{done_param}&api_token={self.api_token}",
-                "notes": f"{self.base_url}/notes?org_id={org_id}&user_id={self.user_id}&api_token={self.api_token}",
+                "persons": f"{self.base_url}/organizations/{org_id}/persons?api_token={self.api_token}",
+                "notes": f"{self.base_url}/notes?org_id={org_id}&api_token={self.api_token}",
                 "updates": f"{self.base_url}/organizations/{org_id}/flow?api_token={self.api_token}"
             }
-
-
             
+            # Adiciona as atividades
+            for i, dv in enumerate(done_values):
+                urls[f"activities_{i}"] = f"{self.base_url}/organizations/{org_id}/activities?done={dv}&api_token={self.api_token}"
+
             tasks = {key: client.get(url) for key, url in urls.items()}
             responses = await asyncio.gather(*tasks.values())
-            results = {key: resp.json().get("data") or [] for key, resp in zip(tasks.keys(), responses)}
+            raw_results = {key: resp.json().get("data") or [] for key, resp in zip(tasks.keys(), responses)}
             
+            # Merge das fatias de atividades
+            merged_activities = []
+            for i in range(len(done_values)):
+                merged_activities.extend(raw_results.get(f"activities_{i}", []))
+            
+            results = {
+                "persons": raw_results["persons"],
+                "notes": raw_results["notes"],
+                "updates": raw_results["updates"],
+                "activities": merged_activities
+            }
+
+            # 🕵️ DESCOBERTA PROFUNDA DE CONTATOS (Garante que Bianca e outros sejam encontrados)
+            found_person_ids = set()
+            
+            def extract_pid(val):
+                if not val: return None
+                if isinstance(val, dict):
+                    return val.get("id") or val.get("value")
+                return val
+
+            for act in results["activities"]:
+                pid = extract_pid(act.get("person_id"))
+                if pid: found_person_ids.add(pid)
+            for deal in deals:
+                pid = extract_pid(deal.get("person_id"))
+                if pid: found_person_ids.add(pid)
+            
+            # Filtra IDs que já temos na lista primária para evitar requests duplicadas
+            existing_ids = {extract_pid(p.get("id")) for p in results["persons"] if p.get("id")}
+            missing_ids = [pid for pid in found_person_ids if pid and pid not in existing_ids]
+            
+            if missing_ids:
+                print(f"[Pipedrive Service] 🔍 Deep Discovery: Buscando mais {len(missing_ids)} contatos via IDs de atividades/deals...")
+                person_tasks = [self.get_person_details(pid) for pid in list(missing_ids)[:10]]
+                persons_found = await asyncio.gather(*person_tasks)
+                results["persons"].extend([p for p in persons_found if p])
+
             # 3. FILTRAGEM: Se temos um negócio principal, limpamos o ruído das outras atividades
             if primary_deal_id:
                 results["activities"] = [a for a in results["activities"] if a.get("deal_id") == primary_deal_id]
