@@ -1,10 +1,12 @@
-export const getProxiedUrl = (url: any) => {
-    if (!url) return undefined;
-    if (typeof url === 'string' && url.startsWith('http') && !url.includes('127.0.0.1:8000')) {
-        const API_BASE = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
-        return `${API_BASE}/api/v1/proxy/image?url=${encodeURIComponent(url)}`;
-    }
-    return url;
+import { buildProxyImageUrl } from '@/services/config';
+
+/**
+ * Wrapper legado — delega ao helper centralizado em services/config.
+ * Mantido para compatibilidade com componentes existentes.
+ */
+export const getProxiedUrl = (url: unknown): string | undefined => {
+    if (typeof url !== 'string') return undefined;
+    return buildProxyImageUrl(url);
 };
 
 export const getLinkedinAvatar = (linkedinUrl: string | null | undefined) => {

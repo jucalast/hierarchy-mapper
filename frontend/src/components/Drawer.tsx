@@ -1,27 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     ChevronRight,
     Search,
     X,
-    Building,
-    Loader2,
-    ChevronDown,
-    ChevronUp,
     Users,
-    Calendar,
     Briefcase,
-    MessageSquare,
     Clock,
-    UserCheck,
     DollarSign,
-    Target,
     Trash2,
-    MoreHorizontal
+    MoreHorizontal,
+    AlertTriangle,
 } from 'lucide-react';
 import styles from './NetworkGraph.module.css';
 import { HistoryTimeline } from './HistoryTimeline';
 import { ContactList } from './ContactList';
 import type { NotificationType } from './Notification';
+import { organizations as orgsApi } from '@/services/api';
+import { Avatar, Button, Modal, Spinner } from './ui';
 
 interface DrawerProps {
     showDrawer: boolean;
@@ -40,6 +35,29 @@ interface DrawerProps {
     addNotification?: (type: NotificationType, message: string) => void;
 }
 
+const LOCAL_CACHE_KEYS = (orgId: number) => [
+    `org-${orgId}-details`,
+    `org-${orgId}-logo`,
+    `org-${orgId}-hierarchy`,
+    `pipedrive-orgs-cache`,
+    `layout-cache-${orgId}`,
+    `edges-cache-${orgId}`,
+];
+
+function clearLocalOrgCaches(orgId: number) {
+    try {
+        LOCAL_CACHE_KEYS(orgId).forEach((key) => {
+            if (typeof window !== 'undefined' && window.localStorage.getItem(key)) {
+                window.localStorage.removeItem(key);
+            }
+        });
+    } catch {
+        /* ignore */
+    }
+}
+
+type ConfirmKind = 'reset' | 'delete' | null;
+
 export const Drawer: React.FC<DrawerProps> = ({
     showDrawer,
     setShowDrawer,
@@ -54,7 +72,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     activeJobId = null,
     graphEmployees = [],
     refreshDetailsTrigger = 0,
-    addNotification = () => {}
+    addNotification = () => {},
 }) => {
     const [expandedOrgId, setExpandedOrgId] = useState<number | null>(null);
     const [orgDetails, setOrgDetails] = useState<Record<number, any>>({});
@@ -63,6 +81,9 @@ export const Drawer: React.FC<DrawerProps> = ({
     const [editingNameOrgId, setEditingNameOrgId] = useState<number | null>(null);
     const [editingNameValue, setEditingNameValue] = useState<string>('');
     const [showOptionsDropdown, setShowOptionsDropdown] = useState<boolean>(false);
+    const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
+    const [confirmBusy, setConfirmBusy] = useState<boolean>(false);
+    const [scanningOrgId, setScanningOrgId] = useState<number | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -79,23 +100,21 @@ export const Drawer: React.FC<DrawerProps> = ({
         };
     }, [showOptionsDropdown]);
 
-    const fetchOrgDetails = async (orgId: number, force: boolean = false) => {
+    const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false) => {
         if (!force && orgDetails[orgId]) return; // Já carregado
 
         setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
         try {
-            const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const resp = await fetch(`${API_BASE}/api/v1/pipedrive/organizations/${orgId}/details`);
-            const data = await resp.json();
+            const data = await orgsApi.getOrganizationDetails(orgId);
             setOrgDetails(prev => ({ ...prev, [orgId]: data }));
         } catch (e: any) {
-            console.error("Erro ao carregar detalhes:", e.message || e);
+            console.error('Erro ao carregar detalhes:', e.message || e);
         } finally {
             setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
         }
-    };
+    }, [orgDetails]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (refreshDetailsTrigger > 0) {
             // Em nova varredura ou job explícito, zera estado local
             setOrgDetails({});
@@ -103,126 +122,77 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     }, [refreshDetailsTrigger]);
 
+    useEffect(() => {
+        if (activeJobId) {
+            try {
+                const jobStr = typeof window !== 'undefined' ? window.localStorage.getItem('active-discovery-job') : null;
+                if (jobStr) {
+                    const parsed = JSON.parse(jobStr);
+                    setScanningOrgId(parsed.orgId);
+                }
+            } catch {
+                setScanningOrgId(null);
+            }
+        } else {
+            setScanningOrgId(null);
+        }
+    }, [activeJobId]);
+
     const toggleExpand = (e: React.MouseEvent, orgId: number) => {
         e.stopPropagation();
         if (expandedOrgId === orgId) {
             setExpandedOrgId(null);
         } else {
             setExpandedOrgId(orgId);
-            fetchOrgDetails(orgId);
+            void fetchOrgDetails(orgId);
         }
     };
 
-    const handleResetOrgData = async (e: React.MouseEvent, orgId: number) => {
-        e.stopPropagation();
-        
-        if (!confirm("Tem certeza que quer resetar TODOS os dados salvos desta empresa? (Banco + Cache)")) {
-            return;
-        }
-        
+    const performReset = async (orgId: number) => {
+        setConfirmBusy(true);
         try {
-            const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const resp = await fetch(`${API_BASE}/api/v1/pipedrive/organizations/${orgId}/reset`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+            await orgsApi.resetOrganization(orgId);
+
+            clearLocalOrgCaches(orgId);
+            setOrgDetails(prev => {
+                const updated = { ...prev };
+                delete updated[orgId];
+                return updated;
             });
-            
-            if (resp.ok) {
-                const data = await resp.json();
-                console.log("[Drawer] Dados e cache resetados com sucesso:", data);
-                
-                // 🗑️ Limpar cache local (localStorage)
-                const cacheKeys = [
-                    `org-${orgId}-details`,
-                    `org-${orgId}-logo`,
-                    `org-${orgId}-hierarchy`,
-                    `pipedrive-orgs-cache`,
-                    `layout-cache-${orgId}`,
-                    `edges-cache-${orgId}`
-                ];
-                cacheKeys.forEach(key => {
-                    if (localStorage.getItem(key)) {
-                        localStorage.removeItem(key);
-                        console.log(`[LocalStorage] Removido: ${key}`);
-                    }
-                });
-                
-                // Atualizar a lista localmente removendo os dados
-                setOrgDetails(prev => {
-                    const updated = { ...prev };
-                    delete updated[orgId];
-                    return updated;
-                });
-                setExpandedOrgId(null);
-                
-                // 🔄 Chamar callback para resetar UI (FloatingToolbar, Grafo)
-                if (onOrgReset) {
-                    onOrgReset(orgId);
-                }
-                
-                addNotification('success', "Todos os dados e cache da empresa foram resetados!");
-            } else {
-                addNotification('error', "Erro ao resetar dados. Tente novamente.");
-            }
+            setExpandedOrgId(null);
+
+            if (onOrgReset) onOrgReset(orgId);
+            addNotification('success', 'Todos os dados e cache da empresa foram resetados!');
         } catch (e: any) {
-            console.error("Erro ao resetar:", e.message || e);
-            addNotification('error', "Erro ao resetar dados.");
+            console.error('Erro ao resetar:', e.message || e);
+            addNotification('error', 'Erro ao resetar dados.');
+        } finally {
+            setConfirmBusy(false);
+            setConfirmKind(null);
         }
     };
 
-    const handleDeleteOrg = async (e: React.MouseEvent, orgId: number) => {
-        e.stopPropagation();
-        
-        if (!confirm("Tem certeza CUIDADO ABSOLUTO que quer excluir DEFINITIVAMENTE esta empresa do Pipedrive e de todo o seu banco de dados?")) {
-            return;
-        }
-        
+    const performDelete = async (orgId: number) => {
+        setConfirmBusy(true);
         try {
-            const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const resp = await fetch(`${API_BASE}/api/v1/pipedrive/organizations/${orgId}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
+            await orgsApi.deleteOrganization(orgId);
+
+            clearLocalOrgCaches(orgId);
+            setOrgDetails(prev => {
+                const updated = { ...prev };
+                delete updated[orgId];
+                return updated;
             });
-            
-            if (resp.ok) {
-                const data = await resp.json();
-                console.log("[Drawer] Empresa excluída:", data);
-                
-                // Limpar cache local (localStorage)
-                const cacheKeys = [
-                    `org-${orgId}-details`,
-                    `org-${orgId}-logo`,
-                    `org-${orgId}-hierarchy`,
-                    `pipedrive-orgs-cache`,
-                    `layout-cache-${orgId}`,
-                    `edges-cache-${orgId}`
-                ];
-                cacheKeys.forEach(key => {
-                    if (localStorage.getItem(key)) localStorage.removeItem(key);
-                });
-                
-                // Atualizar a lista localmente removendo
-                setOrgDetails(prev => {
-                    const updated = { ...prev };
-                    delete updated[orgId];
-                    return updated;
-                });
-                setExpandedOrgId(null);
-                
-                // Chamar callback para resetar UI (FloatingToolbar, Grafo)
-                if (onOrgReset) {
-                    onOrgReset(orgId); // Reutilizamos a mesma trigger do reset
-                }
-                
-                if (addNotification) {
-                    addNotification('success', "Empresa foi apagada do CRM com sucesso!");
-                }
-            } else {
-                if (addNotification) addNotification('error', "Erro ao excluir empresa. Verifique o servidor.");
-            }
+            setExpandedOrgId(null);
+
+            if (onOrgReset) onOrgReset(orgId);
+            addNotification('success', 'Empresa foi apagada do CRM com sucesso!');
         } catch (e: any) {
-            console.error("Erro ao excluir:", e.message || e);
-            if (addNotification) addNotification('error', "Erro na comunicação ao excluir empresa.");
+            console.error('Erro ao excluir:', e.message || e);
+            addNotification('error', 'Erro ao excluir empresa.');
+        } finally {
+            setConfirmBusy(false);
+            setConfirmKind(null);
         }
     };
 
@@ -233,48 +203,31 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
 
         try {
-            const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const resp = await fetch(`${API_BASE}/api/v1/pipedrive/organizations/${orgId}/rename`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: editingNameValue.trim() })
+            await orgsApi.renameOrganization(orgId, editingNameValue.trim());
+
+            // Atualizar no local state (mutação controlada do array do pai)
+            const updatedOrg = filteredOrgs.find(o => Number(o.id) === orgId);
+            if (updatedOrg) {
+                updatedOrg.name = editingNameValue.trim();
+            }
+
+            setOrgDetails(prev => {
+                if (prev[orgId]) {
+                    return {
+                        ...prev,
+                        [orgId]: { ...prev[orgId], name: editingNameValue.trim() },
+                    };
+                }
+                return prev;
             });
 
-            if (resp.ok) {
-                const data = await resp.json();
-                console.log("[Drawer] Empresa renomeada:", data);
+            setEditingNameOrgId(null);
 
-                // Atualizar no local state
-                const updatedOrg = filteredOrgs.find(o => Number(o.id) === orgId);
-                if (updatedOrg) {
-                    updatedOrg.name = editingNameValue.trim();
-                }
-
-                // Atualizar orgDetails se estiver carregado
-                setOrgDetails(prev => {
-                    if (prev[orgId]) {
-                        return {
-                            ...prev,
-                            [orgId]: { ...prev[orgId], name: editingNameValue.trim() }
-                        };
-                    }
-                    return prev;
-                });
-
-                setEditingNameOrgId(null);
-                
-                // 📢 Notificar componente pai da mudança de nome
-                if (onOrgRenamed) {
-                    onOrgRenamed(orgId, editingNameValue.trim());
-                }
-                
-                addNotification('success', "Nome da empresa atualizado!");
-            } else {
-                addNotification('error', "Erro ao renomear empresa. Tente novamente.");
-            }
+            if (onOrgRenamed) onOrgRenamed(orgId, editingNameValue.trim());
+            addNotification('success', 'Nome da empresa atualizado!');
         } catch (e: any) {
-            console.error("Erro ao renomear:", e.message || e);
-            addNotification('error', "Erro ao renomear empresa.");
+            console.error('Erro ao renomear:', e.message || e);
+            addNotification('error', 'Erro ao renomear empresa.');
         }
     };
 
@@ -285,15 +238,6 @@ export const Drawer: React.FC<DrawerProps> = ({
 
     // Filtra a organização que está em foco
     const focusedOrg = expandedOrgId ? filteredOrgs.find(o => Number(o.id) === expandedOrgId) : null;
-    
-    // Identificar qual organização está escaneando/mapeando ativamente agora
-    let scanningOrgId: number | null = null;
-    if (activeJobId) {
-        try {
-            const jobStr = localStorage.getItem('active-discovery-job');
-            if (jobStr) scanningOrgId = JSON.parse(jobStr).orgId;
-        } catch (e: any) {}
-    }
 
     if (!showDrawer) return null;
 
@@ -306,34 +250,34 @@ export const Drawer: React.FC<DrawerProps> = ({
                             <X size={14} />
                             <span>Voltar para a lista</span>
                         </button>
-                        
+
                         <div className={styles.focusHeaderActions} ref={dropdownRef}>
-                            <button 
+                            <button
                                 onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
                                 className={styles.moreOptionsBtn}
                                 title="Mais opções"
                             >
                                 <MoreHorizontal size={20} />
                             </button>
-                            
+
                             {showOptionsDropdown && (
                                 <div className={styles.dropdownMenu}>
-                                    <button 
-                                        onClick={(e) => {
-                                            handleResetOrgData(e, expandedOrgId);
+                                    <button
+                                        onClick={() => {
                                             setShowOptionsDropdown(false);
-                                        }} 
+                                            setConfirmKind('reset');
+                                        }}
                                         className={styles.dropdownItem}
                                         style={{ color: '#f59e0b' }}
                                     >
                                         <Trash2 size={14} />
                                         <span>Resetar Cache</span>
                                     </button>
-                                    <button 
-                                        onClick={(e) => {
-                                            handleDeleteOrg(e, expandedOrgId);
+                                    <button
+                                        onClick={() => {
                                             setShowOptionsDropdown(false);
-                                        }} 
+                                            setConfirmKind('delete');
+                                        }}
                                         className={styles.dropdownItem}
                                         style={{ color: '#ef4444' }}
                                     >
@@ -366,18 +310,20 @@ export const Drawer: React.FC<DrawerProps> = ({
             <div className={styles.drawerList}>
                 {isLoading ? (
                     <div className={styles.drawerLoading}>
-                        <Loader2 size={32} className={styles.loadingAnim} />
+                        <Spinner size={32} />
                     </div>
                 ) : expandedOrgId && focusedOrg ? (
                     /* MODO FOCO TOTAL (UMA ÚNICA EMPRESA) */
                     <div className={styles.focusedOrgView}>
                         <div className={styles.focusedOrgHero}>
                             <div className={styles.focusedOrgLogoWrapper}>
-                                {focusedOrg.logo ? (
-                                    <img src={focusedOrg.logo} alt="" className={styles.focusedOrgLogo} />
-                                ) : (
-                                    <Building size={24} className={styles.orgIcon} />
-                                )}
+                                <Avatar
+                                    kind="company"
+                                    src={focusedOrg.logo}
+                                    name={focusedOrg.name}
+                                    data={focusedOrg}
+                                    size={48}
+                                />
                             </div>
                             <div className={styles.focusedOrgIdentity}>
                                 {editingNameOrgId === expandedOrgId ? (
@@ -409,7 +355,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                                     >
                                         {focusedOrg.name}
                                         {scanningOrgId === expandedOrgId && (
-                                            <Loader2 size={16} className={styles.loadingAnim} style={{ color: 'rgb(122, 139, 255)' }} />
+                                            <Spinner size={16} inline color="rgb(122, 139, 255)" />
                                         )}
                                     </h2>
                                 )}
@@ -419,7 +365,6 @@ export const Drawer: React.FC<DrawerProps> = ({
                                             {focusedOrg.address.toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}
                                         </span>
                                     )}
-
                                 </div>
                             </div>
                         </div>
@@ -427,7 +372,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         <div className={styles.detailsPane}>
                             {loadingDetails[expandedOrgId] ? (
                                 <div className={styles.detailsLoading}>
-                                    <Loader2 size={16} className={styles.loadingAnim} />
+                                    <Spinner size={16} inline />
                                     <span>Sincronizando...</span>
                                 </div>
                             ) : orgDetails[expandedOrgId] ? (
@@ -463,8 +408,8 @@ export const Drawer: React.FC<DrawerProps> = ({
                                         )}
 
                                         {activeTab === 'persons' && (
-                                            <ContactList 
-                                                persons={orgDetails[expandedOrgId].persons} 
+                                            <ContactList
+                                                persons={orgDetails[expandedOrgId].persons}
                                             />
                                         )}
 
@@ -502,12 +447,12 @@ export const Drawer: React.FC<DrawerProps> = ({
 
                         if (isSelected && graphEmployees.length > 0) {
                             const validEmps = graphEmployees.filter(emp =>
-                                emp.id !== "root_company" &&
-                                emp.department !== "Quadro Societário" &&
-                                emp.department !== "Quadro de Sócios (QSA)" &&
+                                emp.id !== 'root_company' &&
+                                emp.department !== 'Quadro Societário' &&
+                                emp.department !== 'Quadro de Sócios (QSA)' &&
                                 emp.level !== 6 &&
-                                !String(emp.id).startsWith("partner_") &&
-                                emp.role !== "Análise Humana"
+                                !String(emp.id).startsWith('partner_') &&
+                                emp.role !== 'Análise Humana'
                             );
 
                             const graphPics = validEmps
@@ -529,17 +474,19 @@ export const Drawer: React.FC<DrawerProps> = ({
                             >
                                 <div className={styles.orgMainInfo}>
                                     <div className={styles.orgLogoWrapper}>
-                                        {org.logo ? (
-                                            <img src={org.logo} alt="" className={styles.orgLogo} />
-                                        ) : (
-                                            <Building size={16} className={styles.orgIcon} />
-                                        )}
+                                        <Avatar
+                                            kind="company"
+                                            src={org.logo}
+                                            name={org.name}
+                                            data={org}
+                                            size={32}
+                                        />
                                     </div>
                                     <div className={styles.orgIdentity}>
                                         <span className={styles.orgName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             {org.name}
                                             {scanningOrgId === orgId && (
-                                                <Loader2 size={14} className={styles.loadingAnim} style={{ color: 'rgb(122, 139, 255)' }} />
+                                                <Spinner size={14} inline color="rgb(122, 139, 255)" />
                                             )}
                                         </span>
                                         {org.address && (
@@ -598,6 +545,64 @@ export const Drawer: React.FC<DrawerProps> = ({
                     })
                 )}
             </div>
+
+            {/* Modal de confirmação para resetar ou excluir */}
+            <Modal
+                isOpen={confirmKind !== null}
+                onClose={() => !confirmBusy && setConfirmKind(null)}
+                title={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <AlertTriangle
+                            size={18}
+                            color={confirmKind === 'delete' ? '#ef4444' : '#f59e0b'}
+                        />
+                        <span>
+                            {confirmKind === 'delete'
+                                ? 'Excluir empresa definitivamente'
+                                : 'Resetar dados da empresa'}
+                        </span>
+                    </div>
+                }
+                width={460}
+                closeOnOverlay={!confirmBusy}
+                closeOnEsc={!confirmBusy}
+                footer={
+                    <>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setConfirmKind(null)}
+                            disabled={confirmBusy}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant={confirmKind === 'delete' ? 'danger' : 'warning'}
+                            size="sm"
+                            loading={confirmBusy}
+                            onClick={() => {
+                                if (!expandedOrgId || !confirmKind) return;
+                                if (confirmKind === 'delete') void performDelete(expandedOrgId);
+                                else void performReset(expandedOrgId);
+                            }}
+                        >
+                            {confirmKind === 'delete' ? 'Excluir definitivamente' : 'Resetar tudo'}
+                        </Button>
+                    </>
+                }
+            >
+                {confirmKind === 'delete' ? (
+                    <p style={{ margin: 0, lineHeight: 1.5, color: '#d1d5db' }}>
+                        Esta ação <strong style={{ color: '#ef4444' }}>remove a empresa do Pipedrive</strong> e apaga
+                        todos os dados locais (hierarquia, cache, logos, layouts). Operação irreversível.
+                    </p>
+                ) : (
+                    <p style={{ margin: 0, lineHeight: 1.5, color: '#d1d5db' }}>
+                        Isso limpa o <strong>cache, hierarquia e layout</strong> salvos desta empresa, mantendo o
+                        registro no Pipedrive. O próximo mapeamento partirá do zero.
+                    </p>
+                )}
+            </Modal>
         </div>
     );
 };

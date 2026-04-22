@@ -7,6 +7,19 @@
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 export const API_V1_URL = `${API_BASE_URL}/api/v1`;
 
+/**
+ * Constrói URL do proxy de imagens do backend (evita CORS/hotlink).
+ * Retorna a URL intacta se já for local ou não for http.
+ */
+export function buildProxyImageUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  if (typeof url !== 'string') return undefined;
+  if (!url.startsWith('http')) return url;
+  // Já está proxificada ou já aponta para o próprio backend
+  if (url.includes('/proxy/image') || url.includes(API_BASE_URL)) return url;
+  return `${API_V1_URL}/proxy/image?url=${encodeURIComponent(url)}`;
+}
+
 // Configurações de retry
 export const RETRY_CONFIG = {
   maxRetries: 3,

@@ -4,7 +4,7 @@ Resolve organização, busca dados do Pipedrive, ContextService e OSINT.
 """
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func
+from sqlalchemy import func, select, or_, and_
 
 
 async def resolve_organization(
@@ -57,7 +57,6 @@ async def execute_osint_enrichment(
     """
     from services.context_service import ContextService
     from services.external.osint_service import osint_service
-    from sqlalchemy import select
     from models.employee import Employee
     
     target_person = intent_info.get("extracted_person_name")
@@ -431,7 +430,6 @@ async def fetch_contextual_data(
                                     if not candidate["email"] and not candidate["phone"]:
                                         try:
                                             from models.employee import Employee
-                                            from sqlalchemy import select, func, or_
                                             # Tenta achar por nome exato ou aproximação (Matheus Muniz vs Muniz, Matheus)
                                             search_name = e_name.replace(",", " ").strip()
                                             frags = [f.strip() for f in search_name.split() if len(f.strip()) > 2]
@@ -452,7 +450,6 @@ async def fetch_contextual_data(
                         if mentioned_names:
                             try:
                                 from models.employee import Employee
-                                from sqlalchemy import select, or_, and_
                                 for name in mentioned_names:
                                     # Limpeza: remove vírgulas e tenta fragmentos
                                     fragments = [f.strip() for f in name.replace(",", " ").split() if len(f.strip()) > 2]

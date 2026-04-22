@@ -210,9 +210,20 @@ class EmailClient:
         if self.use_outlook_app:
             try:
                 pythoncom.CoInitialize()
-                outlook_app = self._get_outlook_instance()
-                if not outlook_app: return []
+                outlook = self._get_outlook_instance()
+                if not outlook: return []
                 
+                namespace = outlook.GetNamespace("MAPI")
+                # Default to Inbox (6)
+                target_folder = namespace.GetDefaultFolder(6)
+                
+                if folder and folder.lower() != "inbox":
+                    try:
+                        # Tenta buscar a pasta pelo nome
+                        target_folder = target_folder.Parent.Folders.Item(folder)
+                    except:
+                        pass
+
                 messages = target_folder.Items
                 messages.Sort("[ReceivedTime]", True) # Mais novos primeiro
                 

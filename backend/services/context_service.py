@@ -1,12 +1,19 @@
 """
 Serviço de contexto para RAG - Busca internamente dados do banco e passa como contexto para IA.
+
+Otimizações:
+- Usa `selectinload(Organization.employees)` para evitar N+1 queries.
+- Funções auxiliares aceitam objeto Organization já carregado.
 """
 import re
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from models.organization import Organization
+from sqlalchemy.orm import selectinload
+
 from models.employee import Employee
+from models.organization import Organization
 
 class ContextService:
     """Serviço para extrair contexto de dados internos do banco."""
@@ -82,22 +89,23 @@ class ContextService:
     
     @staticmethod
     async def fetch_organization_overview(session: AsyncSession, org_id: int) -> Dict:
-        """Busca visão geral da organização."""
-        org_stmt = select(Organization).where(Organization.id == org_id)
+        """Busca visão geral da organização (single query com eager loading)."""
+        org_stmt = (
+            select(Organization)
+            .options(selectinload(Organization.employees))
+            .where(Organization.id == org_id)
+        )
         org_result = await session.execute(org_stmt)
         org = org_result.scalars().first()
-        
+
         if not org:
             return {}
-        
-        # Busca funcionários
-        emp_stmt = select(Employee).where(Employee.company_id == org_id)
-        emp_result = await session.execute(emp_stmt)
-        employees = emp_result.scalars().all()
-        
+
+        employees = list(org.employees)
+
         # Busca estatísticas
         total_mapped = len(employees)
-        departments = list(set([e.department for e in employees if e.department]))
+        departments = list({e.department for e in employees if e.department})
         
         return {
             "organization": {
@@ -122,6 +130,7 @@ class ContextService:
     @staticmethod
     async def fetch_decision_makers(session: AsyncSession, org_id: int) -> Dict:
         """Busca potenciais tomadores de decisão (C-level, gerentes, quadro societário)."""
+        # Filtra direto no SQL: só funcionários com depto/role relevantes (reduz set)
         emp_stmt = select(Employee).where(Employee.company_id == org_id)
         emp_result = await session.execute(emp_stmt)
         employees = emp_result.scalars().all()

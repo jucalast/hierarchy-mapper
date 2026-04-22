@@ -1,79 +1,32 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Send, UserCircle, MessageSquare, Plus, Smile, Mic, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, MessageSquare, Plus, Smile, Mic, AlertCircle } from 'lucide-react';
 import { Drawer } from '@/components/Drawer';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
+import { Button, EmptyState } from '@/components/ui';
+import { useOrganizations } from '@/hooks/useOrganizations';
 import styles from '@/components/NetworkGraph.module.css'; // reaproveitar grid
 
 export default function WhatsAppClone() {
-  const [chats, setChats] = useState([]);
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [messages, setMessages] = useState<{ id: string, text: string, sender: 'me' | 'them' }[]>([]);
   const [inputText, setInputText] = useState('');
-
-  // Estados Pipedrive para o Drawer original
-  const [pipedriveOrgs, setPipedriveOrgs] = useState<any[]>([]);
-  const [loadingOrgs, setLoadingOrgs] = useState(true);
-  const [errorOrgs, setErrorOrgs] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDrawer, setShowDrawer] = useState(true);
-  const [showChat, setShowChat] = useState(false);
 
-  // Busca dos orgs Pipedrive assim como no NetworkGraph
-  const fetchPipedriveOrgs = async () => {
-    if (pipedriveOrgs.length === 0) setLoadingOrgs(true);
-    setErrorOrgs(null);
-    try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-        fetch(`${API_URL}/api/v1/pipedrive_sync`, { method: 'POST' }).catch(() => {});
-        const orgsResp = await fetch(`${API_URL}/api/v1/pipedrive/organizations?_=${Date.now()}`);
-        if (!orgsResp.ok) {
-            if (pipedriveOrgs.length === 0) {
-              setPipedriveOrgs([]);
-              setErrorOrgs(`Backend respondeu com status ${orgsResp.status}`);
-            }
-            setLoadingOrgs(false);
-            return;
-        }
-        
-        // Proteção contra erro de parsing ou retorno HTML inesperado em erro 500 do servidor FastAPI ou Vite Proxy
-        const textData = await orgsResp.text();
-        try {
-            const data = JSON.parse(textData);
-            const list = Array.isArray(data) ? data : [];
-            setPipedriveOrgs(list);
-            setErrorOrgs(null);
-        } catch(parseErr: any) {
-            console.warn('Resposta não foi JSON válido:', textData.slice(0, 100));
-            if (pipedriveOrgs.length === 0) {
-              setPipedriveOrgs([]);
-              setErrorOrgs('Resposta do backend inválida');
-            }
-        }
-    } catch (e: any) {
-        console.warn('Erro na requisição das empresas:', e.message || e);
-        if (pipedriveOrgs.length === 0) {
-          setPipedriveOrgs([]);
-          setErrorOrgs(`Backend indisponível: ${e.message}. Certifique-se de que o servidor está rodando em http://127.0.0.1:8000`);
-        }
-    } finally {
-        setLoadingOrgs(false);
-    }
-  };
+  // Hook compartilhado: cache automático, background refresh, filtragem por nome/domínio.
+  const {
+    filtered: filteredOrgs,
+    loading: loadingOrgs,
+    error: orgsError,
+    refetch,
+  } = useOrganizations({ search: searchTerm });
 
-  useEffect(() => {
-    fetchPipedriveOrgs();
-  }, []);
-
-  const filteredOrgs = useMemo(() => {
-    return pipedriveOrgs.filter(org =>
-        org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (org.address && org.address.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [pipedriveOrgs, searchTerm]);
+  const errorOrgs = orgsError
+    ? `Backend indisponível: ${orgsError.message || orgsError}`
+    : null;
 
   // Handle para quando um negócio (Org) do drawer principal for selecionado
   const handleOrgClick = (org: any) => {
@@ -140,20 +93,14 @@ export default function WhatsAppClone() {
             <div style={{ flex: 1 }}>
               <strong>Erro ao carregar empresas:</strong> {errorOrgs}
             </div>
-            <button
-              onClick={() => fetchPipedriveOrgs()}
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: '#fca5a5',
-                padding: '4px 12px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.8rem'
-              }}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void refetch()}
+              style={{ color: '#fca5a5' }}
             >
               Tentar novamente
-            </button>
+            </Button>
           </div>
         )}
 
@@ -354,12 +301,12 @@ export default function WhatsAppClone() {
             </div>
           </>
         ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', background: 'var(--bg-color)' }}>
-            <MessageSquare size={64} style={{ marginBottom: '20px', opacity: 0.2 }} />
-            <h3 style={{ userSelect: 'none' }}>Selecione uma empresa do Drawer para iniciar um Contato</h3>
-            <p style={{ marginTop: '10px', maxWidth: '400px', textAlign: 'center', opacity: 0.7 }}>
-              Clique em um negócio na barra lateral para começar a redigir mensagens ou ver o histórico inteligente.
-            </p>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-color)' }}>
+            <EmptyState
+              icon={<MessageSquare size={40} />}
+              title="Selecione uma empresa do Drawer para iniciar um Contato"
+              description="Clique em um negócio na barra lateral para começar a redigir mensagens ou ver o histórico inteligente."
+            />
           </div>
         )}
       </main>

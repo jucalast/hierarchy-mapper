@@ -41,34 +41,42 @@ class AgentService:
                 else:
                     log_queue.put_nowait(msg)
 
-        async def add_thought(context_description: str):
-            """Gera um pensamento natural baseado no contexto atual SEM poluição de histórico."""
-            from services.ai.prompts import THOUGHT_SYSTEM_PROMPT
-            try:
-                await asyncio.sleep(0.5)
-                # Removemos o history para garantir que a IA foque nos FATOS ATUAIS injetados
-                thought = await ask_gemini(f"{THOUGHT_SYSTEM_PROMPT}\nAnálise Técnica: {context_description}", history=None)
-                log({"type": "thought", "content": thought or context_description})
-            except Exception as e:
-                log({"type": "thought", "content": context_description})
+        async def add_thought(context_description: Any, findings: dict = None):
+            """Gera um pensamento natural de forma mecânica para evitar rate limits."""
+            clean_thought = ""
+            
+            # Se for um dicionário (formato da nova IA de roteiro), humaniza a narrativa
+            if isinstance(context_description, dict):
+                fato = context_description.get('fato') or context_description.get('fact')
+                impl = context_description.get('implicacao_comercial') or context_description.get('implication')
+                val = context_description.get('o_que_vamos_validar') or context_description.get('next_step')
+                
+                parts = []
+                if fato: parts.append(str(fato))
+                if impl: parts.append(f"Isso sugere que {impl.lower() if isinstance(impl, str) else impl}")
+                if val: parts.append(f"Vou focar em {val.lower() if isinstance(val, str) else val}")
+                
+                clean_thought = ". ".join(parts)
+            else:
+                # Caso seja string, faz a limpeza padrão
+                desc_str = str(context_description) if context_description is not None else ""
+                clean_thought = desc_str.replace("ENCONTRADO: ", "Localizei: ")
+                clean_thought = clean_thought.replace("OBJETIVO ATUAL: ", "Meu objetivo agora é ")
+                clean_thought = clean_thought.split(". Analise como")[0]
+            
+            if clean_thought:
+                log({"type": "thought", "content": clean_thought, "icon": None})
 
-        log({"type": "status", "content": "Iniciando workflow...", "icon": "play"})
+        log({"type": "status", "content": "Iniciando workflow..."})
         
         # ═══════════════════════════════════════
-        # ESTÁGIO 1: Coleta e Streaming Imediato
+        # ESTÁGIO 1: Coleta de Dados
         # ═══════════════════════════════════════
-        # 1. Se já temos contexto, mostramos IMEDIATAMENTE (Sem latência)
         raw_context = initial_raw_context or {}
-        if raw_context:
-            pd_init = raw_context.get("pipedrive_details", {})
-            for d in pd_init.get("deals", []): log({"type": "data_found", "entity": "deal", "data": d})
-            for a in pd_init.get("activities", []): log({"type": "data_found", "entity": "activity", "data": a})
-            for n in pd_init.get("notes", []): log({"type": "data_found", "entity": "note", "data": n})
-
-        log({"type": "status", "content": "Coletando histórico...", "icon": "search"})
         
-        # 2. Se NÃO temos contexto, buscamos com retry
+        # 1. Se NÃO temos contexto, buscamos com retry
         if not raw_context:
+            log({"type": "status", "content": "Coletando histórico...", "icon": "search"})
             context_intent = initial_intent.copy()
             context_intent["activity_done_filter"] = None
             context_intent["activity_date_filter"] = "all"
@@ -82,11 +90,20 @@ class AgentService:
                 try:
                     raw_context = await fetch_contextual_data(context_intent, org_id, goal, session, selected_entities=selected_entities)
                     if raw_context.get("error"): raise Exception(raw_context["error"])
-                    # Stream imediato após busca
+                    
+                    # --- NOVIDADE: STREAMING IMEDIATO DE DESCOBERTA ---
                     pd_new = raw_context.get("pipedrive_details", {})
-                    for d in pd_new.get("deals", []): log({"type": "data_found", "entity": "deal", "data": d})
-                    for a in pd_new.get("activities", []): log({"type": "data_found", "entity": "activity", "data": a})
-                    for n in pd_new.get("notes", []): log({"type": "data_found", "entity": "note", "data": n})
+                    new_deals = pd_new.get("deals", [])
+                    new_activities = pd_new.get("activities", [])
+                    
+                    if new_deals:
+                        log({"type": "status", "content": "Negócio localizado!", "icon": "check"})
+                        for d in new_deals: log({"type": "data_found", "entity": "deal", "data": d})
+                    
+                    if new_activities:
+                        log({"type": "status", "content": f"Encontradas {len(new_activities)} atividades.", "icon": "list"})
+                        for a in new_activities[:3]: log({"type": "data_found", "entity": "activity", "data": a})
+                    
                     break 
                 except Exception as e:
                     await add_thought(f"Opa, tive um problema técnico: {str(e)}. Tentativa {attempt+1}/{max_retries}.")
@@ -100,53 +117,162 @@ class AgentService:
         pd_stats = raw_context.get("pipedrive_details", {})
         num_deals = len(pd_stats.get("deals", []))
         num_activities = len(pd_stats.get("activities", []))
+        notes = pd_stats.get("notes", [])
+        deals = pd_stats.get("deals", [])
+        activities = pd_stats.get("activities", [])
         
         contact_map = await AgentService._resolve_contact_map(raw_context, org_id, session)
         
-        # Recupera dados já buscados no Estágio 1
+        # Stream de contatos assim que resolvidos
+        if contact_map:
+            log({"type": "status", "content": "Contatos mapeados.", "icon": "people"})
+            for name, info in list(contact_map.items())[:2]:
+                 log({"type": "data_found", "entity": "contact", "data": info})
+
+        # Recupera dados de comunicação
         existing_emails = raw_context.get("email_result", {}).get("resultado", {}).get("messages_by_contact", [])
         existing_wa = raw_context.get("whatsapp_result", {}).get("resultado", {}).get("messages_by_contact", [])
         
-        # Mapeamento Robusto: Indexamos por Nome e por Email/Telefone para busca infalível
+        # Mapeamento de e-mails/wa... (mantém lógica de indexação)
         emails_by_contact = {}
         for item in existing_emails:
             threads = item.get("human_threads", [])
-            emails_by_contact[item["contact"].lower()] = threads
-            if item.get("email"):
-                emails_by_contact[item["email"].lower()] = threads
+            contact_name = (item.get("contact") or "").lower()
+            if contact_name: emails_by_contact[contact_name] = threads
+            contact_email = (item.get("email") or "").lower()
+            if contact_email: emails_by_contact[contact_email] = threads
             
         whatsapp_by_contact = {}
         for item in existing_wa:
             msgs = item.get("messages", [])
-            whatsapp_by_contact[item["contact"].lower()] = msgs
-            if item.get("phone"):
-                whatsapp_by_contact[item["phone"]] = msgs
+            contact_name = (item.get("contact") or "").lower()
+            if contact_name: whatsapp_by_contact[contact_name] = msgs
+            contact_phone = item.get("phone")
+            if contact_phone: whatsapp_by_contact[contact_phone] = msgs
 
-        # PENSAMENTO 1: Baseado no volume de dados reais
-        fact_summary = f"ID: {org_id} | Negócios: {num_deals} | Atividades: {num_activities} | Contatos: {list(contact_map.keys())}"
-        await add_thought(f"Fatos Pipedrive: {fact_summary}. Vou cruzar com {len(existing_emails)} threads de e-mail encontradas.")
+        # ═══════════════════════════════════════════════
+        # ESTÁGIO 3: Geração do Roteiro Narrativo (Estrategista de Vendas)
+        # ═══════════════════════════════════════════════
+        log({"type": "status", "content": "Gerando análise estratégica...", "icon": "auto_awesome"})
+        
+        # ... (restante da lógica do script_prompt e add_thought agora vem DEPOIS dos dados)
+        
+        org_name = raw_context.get("organization", {}).get("name", "Empresa")
+        deals = pd_stats.get("deals", [])
+        activities = pd_stats.get("activities", [])
+        notes = pd_stats.get("notes", [])
+        
+        # Dados granulares para embasamento real
+        deal_info = ", ".join([f"{d.get('title')} ({d.get('formatted_value')})" for d in deals[:2]])
+        activity_subjects = [a.get("subject") for a in activities[:3]]
+        last_note_snippet = notes[0].get("content", "")[:150].replace("\n", " ") if notes else "Sem notas"
+        
+        # Estatísticas de comunicação já mapeadas
+        num_emails = sum(len(threads) for threads in emails_by_contact.values())
+        num_wa = sum(len(msgs) for msgs in whatsapp_by_contact.values())
+        
+        script_prompt = f"""Você é um Analista de Dados de Vendas Sênior e Estrategista Comercial. 
+        Gere um roteiro de 'Pensamentos' detalhados (exatamente 3 linhas curtas por pensamento) ultra-embasados nos fatos abaixo.
+        
+        DADOS REAIS DO CASO:
+        - Objetivo do Usuário: {goal}
+        - Empresa: {org_name}
+        - Negócio/Valor: {deal_info if deal_info else 'Ainda sem valor definido'}
+        - Atividades Recentes: {', '.join(activity_subjects) if activity_subjects else 'Sem histórico'}
+        - Último Registro Manual (Nota): "{last_note_snippet}"
+        - Comunicações: {num_emails} threads de e-mail e {num_wa} conversas de WhatsApp.
+        - Contatos Principais: {', '.join(contact_map.keys())}
+
+        Instruções de Estilo:
+        1. Cada insight DEVE ter exatamente 3 linhas curtas de análise técnica.
+        2. Use fatos: cite valores, nomes de pessoas, ou trechos da nota.
+        3. Linha 1: Fato encontrado. Linha 2: Implicação comercial. Linha 3: O que vamos validar agora.
+        
+        Retorne APENAS um JSON:
+        {{
+            "intro": "Insight de 3 linhas sobre o Negócio e Valor",
+            "tasks_reaction": "Insight de 3 linhas sobre o Histórico de Atividades e Notas",
+            "finding_people": "Insight de 3 linhas sobre os Contatos e Canais de Comunicação",
+            "maturity_analysis": "Análise preditiva de 3 linhas para a estratégia final"
+        }}
+        """
+        
+        narrative_script = {}
+        try:
+            # Usa o Tier FAST para ser rápido e econômico
+            from services.ai.llm import LLMTier, ask_llm
+            script_res = await ask_llm(script_prompt, json_mode=True, tier=LLMTier.FAST)
+            narrative_script = script_res.json_data or {}
+        except:
+            log("IA ocupada, seguindo com análise técnica...")
+
+        # ═══════════════════════════════════════════════
+        # ESTÁGIO 3: Descoberta de Negócio e Tarefas (Narrativa Intercalada)
+        # ═══════════════════════════════════════════════
+        
+        # 1. BLOCO: Negócio e Valores
+        intro_text = narrative_script.get("intro", f"Vou analisar o contexto de '{goal}' no Pipedrive agora.")
+        await add_thought(intro_text)
+        await asyncio.sleep(0.8)
+        
+        for deal in deals:
+            log({"type": "data_found", "entity": "deal", "data": deal})
+
+        await asyncio.sleep(0.5)
+
+        # 2. BLOCO: Tarefas e Contexto (Reativo)
+        if activities:
+            tasks_text = narrative_script.get("tasks_reaction", "Analisando o padrão de atividades registradas.")
+            await add_thought(tasks_text)
+            await asyncio.sleep(0.8)
+            for act in activities[:5]:
+                log({"type": "data_found", "entity": "activity", "data": act})
+        
+        await asyncio.sleep(0.8)
+        
+        # 3. BLOCO: Pessoas e Comunicações
+        people_text = narrative_script.get("finding_people", "Mapeando os principais interlocutores e histórico de mensagens.")
+        await add_thought(people_text)
+        log({"type": "status", "content": "Cruzando histórico de comunicações...", "icon": "search"})
 
         # Marcar entidades selecionadas no mapa e logar
         selected_names = [e.get("name") for e in selected_entities]
         logged_count = 0
         
+        # Loga Contatos e Comunicações de forma intercalada
         for name, info in contact_map.items():
             name_key = name.lower()
-            email_key = info.get("email", "").lower()
+            email_key = (info.get("email") or "").lower()
             is_key_contact = name in selected_names or info.get("is_priority")
             
-            if is_key_contact or logged_count < 5:
+            if is_key_contact or logged_count < 3:
                 log({"type": "data_found", "entity": "contact", "data": info, "label": "Prioritário" if is_key_contact else None})
                 
-                # Busca e-mails: Tenta por Nome ou por Email (Lowercase)
+                # Busca e-mails e WhatsApp acoplados ao contato
                 person_emails = emails_by_contact.get(name_key) or emails_by_contact.get(email_key, [])
-                if person_emails:
-                    log({"type": "data_found", "entity": "email", "data": person_emails[0]})
-                
-                # Busca WhatsApp: Tenta por Nome ou por Telefone
                 person_wa = whatsapp_by_contact.get(name_key) or whatsapp_by_contact.get(info.get("phone"), [])
-                if person_wa:
-                    log({"type": "data_found", "entity": "whatsapp", "data": person_wa[0]})
+                
+                if person_emails or person_wa:
+                    await asyncio.sleep(0.5)
+                    await add_thought(f"Legal, vamos ver o que foi conversado com {name}...")
+                    
+                    if person_emails:
+                        # Envia o e-mail mais recente com o snippet/body para o componente de UI
+                        recent_email = person_emails[0]
+                        log({
+                            "type": "data_found", 
+                            "entity": "email", 
+                            "data": {
+                                "contact": {"name": name, "email": info.get("email")},
+                                "subject": recent_email.get("subject", "Sem Assunto"),
+                                "sent_message": recent_email.get("snippet") or recent_email.get("body") or "Sem conteúdo visual",
+                                "body_preview": recent_email.get("snippet") or recent_email.get("body") or "Sem conteúdo visual",
+                                "messages": person_emails[:3] # Thread completa opcional
+                            }
+                        })
+                    
+                    if person_wa:
+                        log({"type": "data_found", "entity": "whatsapp", "data": person_wa[0]})
                 
                 if not is_key_contact: logged_count += 1
         
@@ -157,18 +283,13 @@ class AgentService:
         raw_context["emails_by_contact"] = emails_by_contact
         raw_context["whatsapp_by_contact"] = whatsapp_by_contact
 
-        # PENSAMENTO 2: Estratégia baseada nos artefatos encontrados
-        comm_summary = []
-        for name, info in contact_map.items():
-            name_key = name.lower()
-            email_key = info.get("email", "").lower()
-            threads = emails_by_contact.get(name_key) or emails_by_contact.get(email_key, [])
-            if threads:
-                comm_summary.append(f"Card de E-mail enviado para {name}")
+        # PENSAMENTO 3: Análise de Maturidade e Próximos Passos
+        maturity_text = narrative_script.get("maturity_analysis", "Analisando maturidade das interações para definir estratégia.")
+        await add_thought(maturity_text)
         
-        fact_comm = " | ".join(comm_summary) if comm_summary else "NENHUMA INTERAÇÃO ENCONTRADA."
-        await add_thought(f"ANÁLISE DE HISTÓRICO: {fact_comm}. O conteúdo detalhado está nos cards acima. Minha análise estratégica é...")
-        
+        # Pausa para respiro de cota (Aumentado para resistência máxima)
+        await asyncio.sleep(2.5)
+
         log({"type": "status", "content": "Analisando maturidade...", "icon": "analytics"})
         deal_analysis = await AgentService._analyze_deal_state(raw_context)
         
@@ -176,6 +297,8 @@ class AgentService:
         # ESTÁGIO 4: Plano de Ação Estratégico
         # ═══════════════════════════════════════
         log("Gerando plano de ação multicanal...")
+        # Pausa para respiro de cota (Aumentado para resistência máxima)
+        await asyncio.sleep(2.5)
         plan_raw = await AgentService._create_logical_plan(goal, deal_analysis, raw_context, contact_map, selected_entities)
         
         # Normaliza
@@ -254,7 +377,8 @@ class AgentService:
                     "is_reply": action == "reply_email",
                     "original_subject": params.get("subject") if action == "reply_email" else None
                 })
-                log(f"⏳ Aguardando aprovação: {channel} para {contact_name}")
+                # Log único e final para a ação pendente (sem ícone de loading)
+                log({"type": "log", "content": f"⏳ Aguardando aprovação: {channel} para {contact_name}", "status": "success"})
                 
             # ── Ação que NÃO requer aprovação ──
             else:
@@ -264,7 +388,7 @@ class AgentService:
                 if action == "create_pipedrive_task" and result:
                     if isinstance(result, dict) and result.get("success"):
                         act_id = result.get("data", {}).get("id")
-                        log(f"✅ Atividade criada no Pipedrive (ID: {act_id})")
+                        log({"type": "log", "content": f"✅ Atividade criada no Pipedrive (ID: {act_id})", "status": "success"})
                         created_tasks.append({
                             "id": act_id,
                             "subject": params.get("subject"),
@@ -314,6 +438,13 @@ class AgentService:
         if created_tasks:
             full_response_parts.append("\n\n[[NEW_TASKS]]")
         
+        # Envia a resposta final para o stream antes do return
+        log({"type": "final_response", "content": "\n\n".join(full_response_parts)})
+        
+        # SINAL DE CONCLUSÃO TOTAL (Limpa todos os spinners residuais)
+        log({"type": "status", "content": "Concluído", "status": "done", "icon": "done_all"})
+        log({"type": "finish"})
+        
         return {
             "status": "completed",
             "full_response": "\n\n".join(full_response_parts),
@@ -340,7 +471,7 @@ class AgentService:
         
         # Filtro de Exclusividade: Se há pessoas selecionadas na UI, descarta as pessoas genéricas do Pipedrive
         if explicit_selected:
-            persons = [p for p in persons if any(p.get("name", "").lower() == e.get("name", "").lower() for e in explicit_selected)]
+            persons = [p for p in persons if any((p.get("name") or "").lower() == (e.get("name") or "").lower() for e in explicit_selected)]
             
         contact_map = {}
         wa_base = "http://localhost:8001/api/whatsapp"

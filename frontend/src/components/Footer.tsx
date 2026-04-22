@@ -1,30 +1,35 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Loader2, Database } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Database } from 'lucide-react';
 import styles from './Footer.module.css';
+import { communication } from '@/services/api';
+import { Spinner } from './ui';
 
 const Footer: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [contactCount, setContactCount] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkStatus = async () => {
       try {
-        const response = await fetch('http://localhost:8002/api/email/cache-status');
-        if (response.ok) {
-          const data = await response.json();
-          setIsSyncing(data.is_syncing);
-          setContactCount(data.count);
-        }
-      } catch (e) {
-        // Silencioso se o serviço estiver offline
+        const data = await communication.getEmailCacheStatus();
+        if (cancelled) return;
+        setIsSyncing(Boolean(data.is_syncing));
+        setContactCount(Number(data.count ?? 0));
+      } catch {
+        // Silencioso quando o serviço de email/cache estiver offline.
       }
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 5000); // Polling a cada 5s
-    return () => clearInterval(interval);
+    const interval = window.setInterval(checkStatus, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -35,11 +40,11 @@ const Footer: React.FC = () => {
           <span className={styles.separator}>•</span>
           <span className={styles.legal}>© 2026 INTELLIGENCE ECOSYSTEM</span>
         </div>
-        
+
         <div className={styles.section}>
           {isSyncing ? (
             <div className={styles.syncStatus}>
-              <Loader2 className={styles.spinner} size={11} />
+              <Spinner size={11} inline />
               <span>SYNCING OUTLOOK...</span>
             </div>
           ) : (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { ShieldCheck, Briefcase, User2 } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../utils/avatarUtils';
 
@@ -6,7 +6,7 @@ interface CompactEmployeeCardProps {
     data: any;
 }
 
-export const CompactEmployeeCard: React.FC<CompactEmployeeCardProps> = ({ data }) => {
+const CompactEmployeeCardBase: React.FC<CompactEmployeeCardProps> = ({ data }) => {
     const effectiveLevel = data.seniority !== undefined ? Number(data.seniority) : (data.level ?? 5);
     
     let seniorityLabel = "Professional";
@@ -124,3 +124,20 @@ export const CompactEmployeeCard: React.FC<CompactEmployeeCardProps> = ({ data }
         </div>
     );
 };
+
+export const CompactEmployeeCard = memo(
+    CompactEmployeeCardBase,
+    (prev, next) => {
+        const a = prev.data || {};
+        const b = next.data || {};
+        return (
+            a.id === b.id &&
+            a.name === b.name &&
+            a.role === b.role &&
+            a.seniority === b.seniority &&
+            a.level === b.level &&
+            a.headline === b.headline &&
+            a.profile_pic === b.profile_pic
+        );
+    },
+);

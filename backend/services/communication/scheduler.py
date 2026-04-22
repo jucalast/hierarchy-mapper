@@ -1,30 +1,111 @@
+"""
+Scheduler de background (APScheduler) para varreduras IMAP.
+
+Diferenças vs versão antiga:
+- A varredura IMAP (bloqueante) é executada em `asyncio.to_thread` para
+  NÃO travar o event loop principal do FastAPI/Uvicorn.
+- O scheduler é construído "lazy" no startup, permitindo que `main.py`
+  faça `await start_email_scheduler()` com o loop já rodando.
+- Intervalo e pasta configuráveis por settings (defaults mantidos).
+- Logging estruturado com correlation_id separado por ciclo.
+"""
+from __future__ import annotations
+
 import asyncio
+import uuid
+from typing import Optional
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+from core.config import settings
+from core.logging_config import get_logger, set_request_id
 from services.communication.email_client import EmailClient
-import os
 
-def check_inbox_sync():
-    """
-    Executa a verificação IMAP sincronamente, pois as libs imaplib são bloqueantes.
-    Usando executors do asyncio seria melhor, mas numa thread separada pelo APScheduler.
-    """
+log = get_logger(__name__)
+
+_scheduler: Optional[AsyncIOScheduler] = None
+
+
+def _check_inbox_blocking(folder: str) -> list[dict]:
+    """Executa a varredura IMAP. É BLOQUEANTE — roda em worker thread."""
     client = EmailClient()
-    print("[APScheduler] Varrendo pasta de Leads por novas respostas...")
-    
-    # 2. O Gargalo de Performance do IMAP (Resolvido pela pasta /Leads)
-    unreads = client.scan_inbound_replies(folder="Leads")
-    
+    return client.scan_inbound_replies(folder=folder) or []
+
+
+async def check_inbox_async() -> None:
+    """Job assíncrono do APScheduler — offload do IMAP para thread pool."""
+    cycle_id = uuid.uuid4().hex[:12]
+    set_request_id(f"imap-{cycle_id}")
+    folder = settings.email.scan_folder
+    log.info("scheduler.imap.start", folder=folder)
+    try:
+        unreads = await asyncio.to_thread(_check_inbox_blocking, folder)
+    except Exception as e:
+        log.exception("scheduler.imap.failed", error=str(e))
+        return
+
     if unreads:
-        print(f"[APScheduler] Encontramos {len(unreads)} respostas novas das empresas!")
+        log.info("scheduler.imap.found", count=len(unreads))
         for reply in unreads:
-            # Aqui vai chamar o FastAPI, ou salvar no Postgres/SQLite
-            print(f"-> Analisar intenção (Positiva/Negativa) de: {reply['sender']}")
+            log.info(
+                "scheduler.imap.reply",
+                sender=reply.get("sender"),
+                subject=(reply.get("subject") or "")[:120],
+            )
+    else:
+        log.debug("scheduler.imap.no_replies")
 
-scheduler = AsyncIOScheduler()
 
-def start_email_scheduler():
-    # O Background será orquestrado a cada 10 min
-    # 3. O Risco de "Queimar" o Domínio Principal (Atrasos nos disparos e coletas assíncronas espalhadas)
-    scheduler.add_job(check_inbox_sync, 'interval', minutes=10)
+def _get_scheduler() -> AsyncIOScheduler:
+    global _scheduler
+    if _scheduler is None:
+        _scheduler = AsyncIOScheduler()
+    return _scheduler
+
+
+async def start_email_scheduler() -> None:
+    """Inicia o scheduler (idempotente)."""
+    scheduler = _get_scheduler()
+    if scheduler.running:
+        log.debug("scheduler.already_running")
+        return
+
+    interval = max(1, settings.email.scan_interval_min)
+    # `check_inbox_async` é corrotina — APScheduler suporta awaitables no AsyncIOScheduler
+    scheduler.add_job(
+        check_inbox_async,
+        "interval",
+        minutes=interval,
+        id="imap_scan",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
     scheduler.start()
-    print("[APScheduler] Tarefa de IMAP configurada para rodar a cada 10 min.")
+    log.info("scheduler.started", minutes=interval, folder=settings.email.scan_folder)
+
+
+async def stop_email_scheduler() -> None:
+    """Para o scheduler de forma limpa (usado no shutdown do FastAPI)."""
+    global _scheduler
+    if _scheduler is None or not _scheduler.running:
+        return
+    try:
+        _scheduler.shutdown(wait=False)
+        log.info("scheduler.stopped")
+    except Exception as e:
+        log.warning("scheduler.stop_failed", error=str(e))
+    finally:
+        _scheduler = None
+
+
+# Compat: variável `scheduler` antiga ainda exportada para quem importar por nome
+scheduler = _get_scheduler()
+
+
+__all__ = [
+    "scheduler",
+    "start_email_scheduler",
+    "stop_email_scheduler",
+    "check_inbox_async",
+]

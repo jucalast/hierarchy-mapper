@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
-import { RotateCcw, Send, Mail, CheckCircle2, Eye, Calendar, User, Activity, AlertCircle } from 'lucide-react';
-import styles from '@/components/NetworkGraph.module.css';
+import { RotateCcw, Send, Mail, Eye, Calendar, User, Activity, AlertCircle } from 'lucide-react';
+import { communication } from '@/services/api';
+import { Button, EmptyState } from '@/components/ui';
 
 export default function EmailDashboard() {
   const [showChat, setShowChat] = useState(false);
@@ -19,15 +20,11 @@ export default function EmailDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/communication/metrics');
-      if (!res.ok) {
-        throw new Error(`Backend responded with status ${res.status}`);
-      }
-      const data = await res.json();
+      const data = await communication.getMetrics();
       setMetrics(data.data || []);
     } catch (err: any) {
       console.error('Erro ao buscar métricas:', err);
-      setError(`⚠️ Backend indisponível: ${err.message}. Certifique-se de que o servidor backend está rodando em http://127.0.0.1:8000`);
+      setError(`⚠️ Backend indisponível: ${err?.message || err}. Verifique se o serviço está rodando.`);
       setMetrics([]);
     } finally {
       setLoading(false);
@@ -46,24 +43,17 @@ export default function EmailDashboard() {
     setError(null);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/v1/communication/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to_email: composer.to,
-          subject: composer.subject,
-          body: composer.body
-        })
+      await communication.sendEmail({
+        to_email: composer.to,
+        subject: composer.subject,
+        body: composer.body,
       });
-      if (!res.ok) {
-        throw new Error(`Backend responded with status ${res.status}`);
-      }
       setComposer({ to: '', subject: '', body: '' });
       setTab('metrics');
       fetchMetrics();
     } catch (error: any) {
-      console.error("Erro ao enviar email", error);
-      setError(`Erro ao enviar: ${error.message}`);
+      console.error('Erro ao enviar email', error);
+      setError(`Erro ao enviar: ${error?.message || error}`);
     } finally {
       setSending(false);
     }
@@ -204,23 +194,15 @@ export default function EmailDashboard() {
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                      <button 
+                      <Button
                         type="submit"
-                        disabled={sending}
-                        style={{
-                          background: '#fff', color: '#000', border: 'none', borderRadius: '8px',
-                          padding: '12px 24px', fontSize: '0.95rem', fontWeight: 700, cursor: sending ? 'not-allowed' : 'pointer',
-                          display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.2s', opacity: sending ? 0.7 : 1
-                        }}
+                        size="lg"
+                        variant="primary"
+                        loading={sending}
+                        leftIcon={!sending ? <Send size={16} /> : undefined}
                       >
-                        {sending ? (
-                          <>Enviando... Aguardando Delay Humano</>
-                        ) : (
-                          <>
-                            <Send size={16} /> Disparar Oubound
-                          </>
-                        )}
-                      </button>
+                        {sending ? 'Enviando... Aguardando Delay Humano' : 'Disparar Outbound'}
+                      </Button>
                     </div>
                   </form>
                 </div>
@@ -229,20 +211,35 @@ export default function EmailDashboard() {
               <div style={{ maxWidth: '900px', margin: '40px auto', padding: '0 24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                   <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>Performance de Disparos</h1>
-                  <button 
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={fetchMetrics}
-                    style={{ background: 'transparent', color: 'rgba(255, 255, 255, 0.6)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}
+                    loading={loading}
+                    leftIcon={!loading ? <RotateCcw size={14} /> : undefined}
                   >
-                    <RotateCcw size={14} /> Sincronizar Logs
-                  </button>
+                    Sincronizar Logs
+                  </Button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {metrics.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '64px', background: '#131313', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                      <Activity size={48} style={{ color: 'rgba(255, 255, 255, 0.2)', marginBottom: '16px' }} />
-                      <h3 style={{ color: '#fff', marginBottom: '8px' }}>Nenhum e-mail disparado ainda</h3>
-                      <p style={{ color: 'rgba(255, 255, 255, 0.5)' }}>Use o Composer para enviar seu primeiro tiro B2B frio.</p>
+                    <div style={{ background: '#131313', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.05)', padding: '32px' }}>
+                      <EmptyState
+                        icon={<Activity size={40} />}
+                        title="Nenhum e-mail disparado ainda"
+                        description="Use o Composer para enviar seu primeiro tiro B2B frio."
+                        action={
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            leftIcon={<Mail size={14} />}
+                            onClick={() => setTab('compose')}
+                          >
+                            Ir para o Composer
+                          </Button>
+                        }
+                      />
                     </div>
                   ) : (
                     metrics.map((m) => (

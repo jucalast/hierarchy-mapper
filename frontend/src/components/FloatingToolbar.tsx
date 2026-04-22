@@ -18,6 +18,7 @@ import {
 
 
 import styles from './NetworkGraph.module.css';
+import { buildProxyImageUrl } from '@/services/config';
 
 interface FloatingToolbarProps {
     error: string | null;
@@ -132,7 +133,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                             <div className={styles.brandAvatarWrapper}>
                                 {opt.logo ? (
                                     <img
-                                        src={opt.logo.startsWith('http') ? (opt.logo.includes('proxy/image') ? opt.logo : `http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(opt.logo)}`) : opt.logo}
+                                        src={buildProxyImageUrl(opt.logo) || opt.logo}
                                         alt={opt.name}
                                         className={styles.brandAvatar}
                                         style={opt.type === 'person' ? { borderRadius: '50%' } : {}}
@@ -266,7 +267,7 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
                                     <div className={styles.brandAvatarWrapper}>
                                         {confirmedLogo ? (
                                             <img
-                                                src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(confirmedLogo)}`}
+                                                src={buildProxyImageUrl(confirmedLogo) || confirmedLogo}
                                                 className={styles.brandAvatar}
                                                 alt="Logo"
                                             />

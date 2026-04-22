@@ -66,7 +66,7 @@ def _extract_intent(data: dict) -> dict:
     # Garante que data_scope é sempre uma lista válida
     if not isinstance(raw_scope, list):
         raw_scope = []
-    valid_scopes = {"employees", "decision_makers", "persons", "deals", "activities", "notes", "today_tasks"}
+    valid_scopes = {"employees", "decision_makers", "persons", "deals", "activities", "notes", "today_tasks", "whatsapp", "emails"}
     data_scope = [s for s in raw_scope if s in valid_scopes]
     
     # Normalização do filtro de atividades

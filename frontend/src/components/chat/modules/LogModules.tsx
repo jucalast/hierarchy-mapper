@@ -51,14 +51,14 @@ export const WhatsAppLogCard = ({ data }: { data: any }) => (
 );
 
 export const DealLogCard = ({ data }: { data: any }) => (
-    <div className="flex items-center gap-3 my-3 ml-4 p-3 bg-gradient-to-r from-emerald-500/10 to-transparent rounded-xl border border-emerald-500/20 w-fit backdrop-blur-sm group hover:from-emerald-500/20 transition-all">
-        <div className="p-2 bg-emerald-500/20 rounded-lg shadow-inner">
-            <Building2 size={16} className="text-emerald-400" />
+    <div className="flex items-center gap-3 my-3 ml-4 p-3 bg-white/5 rounded-xl border border-white/10 w-fit backdrop-blur-sm group hover:bg-white/10 transition-all">
+        <div className="p-2 bg-white/10 rounded-lg shadow-inner group-hover:bg-white/20 transition-colors">
+            <Building2 size={16} className="text-white/70" />
         </div>
         <div className="flex flex-col">
             <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-white uppercase tracking-tight">{data.title}</span>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold">{data.stage_name}</span>
+                <span className="text-xs font-black text-white/90 uppercase tracking-tight">{data.title}</span>
+                <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-bold uppercase tracking-tighter border border-blue-500/30">{data.stage_name}</span>
             </div>
             <div className="text-[11px] text-gray-400 font-medium">
                 {data.formatted_value !== 'R$\xa00' ? data.formatted_value : 'Valor não definido'} • {data.status === 'open' ? 'Em aberto' : data.status}

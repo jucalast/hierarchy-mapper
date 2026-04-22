@@ -1,7 +1,11 @@
 import { useState, useCallback } from 'react';
-import { Edge, MarkerType } from 'reactflow';
-import { HierarchyEmployee } from '@/services/api';
-import { apiPost } from '@/services/config';
+import { Edge } from 'reactflow';
+import type { HierarchyEmployee } from '@/types';
+import {
+    hierarchy as hierarchyApi,
+    jobs as jobsApi,
+    organizations as orgsApi,
+} from '@/services/api';
 
 export const useHierarchy = () => {
     const [rawEmployees, setRawEmployees] = useState<HierarchyEmployee[]>([]);
@@ -33,39 +37,33 @@ export const useHierarchy = () => {
 
     const discoverBrand = async (searchCnpj: string, explicitDomain: string = "", force: boolean = true) => {
         setDiscovering(true);
-        setError(null); 
+        setError(null);
         setBrandOptions([]);
         const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
         // Pode buscar se tiver CNPJ OU se tiver Domínio Explicito
         if (!rawCnpj && !explicitDomain) return null;
 
         try {
-            const queryParams = new URLSearchParams();
-            queryParams.append("cnpj", rawCnpj);
-            if (explicitDomain) queryParams.append("domain", explicitDomain);
-            if (force) queryParams.append("force", "true");
+            const data = await hierarchyApi.discoverBrand({
+                cnpj: rawCnpj,
+                domain: explicitDomain || undefined,
+                force,
+            });
 
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/brand/discover?${queryParams.toString()}`);
-            const data = await response.json();
-            
-            if (!response.ok) {
-                if (data.detail && data.detail.includes("429")) {
-                    console.warn("BrasilAPI Rate Limit - Operando em modo de resiliência.");
-                    return null;
-                }
-                setError(data.detail || "Erro ao buscar marcas da empresa.");
-                return null;
-            }
-
-            const cleaned = (data.alternatives || []).map((opt: any) => ({
+            const cleaned = ((data as any).alternatives || []).map((opt: any) => ({
                 ...opt,
                 name: cleanName(opt.name)
             }));
             setBrandOptions(cleaned);
-            return data; 
+            return data;
         } catch (err: any) {
-            console.error(err.message || err);
-            setError("Falha na conexão com o servidor.");
+            const msg = err?.message || String(err);
+            if (msg.includes('429')) {
+                console.warn('BrasilAPI Rate Limit - Operando em modo de resiliência.');
+                return null;
+            }
+            console.error(msg);
+            setError(err?.detail || 'Erro ao buscar marcas da empresa.');
             return null;
         } finally {
             setDiscovering(false);
@@ -85,13 +83,13 @@ export const useHierarchy = () => {
         setStreamAbortController(controller);
 
         try {
-            const queryParams = new URLSearchParams();
-            queryParams.append("cnpj", rawCnpj);
-            if (explicitDomain) queryParams.append("domain", explicitDomain);
-            if (force) queryParams.append("force", "true");
-            queryParams.append("stream", "true"); // Ativa o modo streaming
+            const streamUrl = hierarchyApi.getDiscoverBrandStreamUrl({
+                cnpj: rawCnpj,
+                domain: explicitDomain || undefined,
+                force,
+            });
 
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/brand/discover?${queryParams.toString()}`, {
+            const response = await fetch(streamUrl, {
                 signal: controller.signal // Passa o sinal do AbortController
             });
             
@@ -223,12 +221,7 @@ export const useHierarchy = () => {
         setError("");
         console.log("[useHierarchy] Iniciando refinamento automático com Groq IA...");
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/v1/hierarchy/refine`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(employees)
-            });
-            const data = await response.json();
+            const data = await hierarchyApi.refineHierarchy(employees);
             if (data.nodes) {
                 const refreshedNodes = data.nodes.map((emp: any) => {
                     // Fallback de segurança: Se a IA desconectar alguém, reconecta na raiz
@@ -282,25 +275,17 @@ export const useHierarchy = () => {
         }
         
         try {
-            const resp = await fetch(`http://127.0.0.1:8000/api/v1/jobs/stop/${activeJobId}`, {
-                method: "POST"
-            });
-            const data = await resp.json();
-            
-            if (resp.ok) {
-                console.log("[Job API] Mapeamento abortado com sucesso.");
-                if (onNotification) {
-                    onNotification('error', "Mapeamento cancelado pelo usuário.");
-                }
-                setError(""); // Opcionalmente limpar erro se não quiser display duplicado
-            } else {
-                console.warn("[Job API] Erro ao tentar abortar o job:", data.message);
-                if (onNotification) {
-                    onNotification('error', "Erro ao cancelar o mapeamento.");
-                }
+            await jobsApi.cancelJob(activeJobId);
+            console.log('[Job API] Mapeamento abortado com sucesso.');
+            if (onNotification) {
+                onNotification('error', 'Mapeamento cancelado pelo usuário.');
             }
+            setError(''); // Opcionalmente limpar erro se não quiser display duplicado
         } catch (e) {
-            console.error("[Job API] Erro na requisição de cancelamento de job:", (e as any).message || e);
+            console.warn('[Job API] Erro ao tentar abortar o job:', (e as any).message || e);
+            if (onNotification) {
+                onNotification('error', 'Erro ao cancelar o mapeamento.');
+            }
         } finally {
             setLoading(false);
             localStorage.removeItem('active-discovery-job');
@@ -330,22 +315,19 @@ export const useHierarchy = () => {
         }
         
         const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
-        const queryParams = new URLSearchParams();
-        queryParams.append("company_name", confirmedBrand || "Empresa");
-        queryParams.append("cnpj", rawCnpj);
-        queryParams.append("domain", explicitDomain);
-        if (confirmedBrand) queryParams.append("confirmed_brand", confirmedBrand);
-        if (confirmedLogo) queryParams.append("confirmed_logo", confirmedLogo);
-        if (productFocus) queryParams.append("product_focus", productFocus);
-        if (areaFocus) queryParams.append("area_focus", areaFocus);
 
         try {
             // 1. Inicia o Job no Backend
-            const startResp = await fetch(`http://127.0.0.1:8000/api/v1/jobs/start-scan?${queryParams.toString()}`, {
-                method: 'POST'
+            const { job_id } = await jobsApi.startScan({
+                company_name: confirmedBrand || 'Empresa',
+                cnpj: rawCnpj,
+                domain: explicitDomain,
+                confirmed_brand: confirmedBrand,
+                confirmed_logo: confirmedLogo,
+                product_focus: productFocus,
+                area_focus: areaFocus,
             });
-            const { job_id, message } = await startResp.json();
-            
+
             if (!job_id) {
                 setError("Não foi possível iniciar o scan.");
                 setLoading(false);
@@ -388,7 +370,7 @@ export const useHierarchy = () => {
         initialEmployees?: HierarchyEmployee[]
     ) => {
         // 2. Conecta no WebSocket para monitorar o progresso
-        const wsUrl = `ws://127.0.0.1:8000/api/v1/jobs/ws/${job_id}`;
+        const wsUrl = jobsApi.getJobWebSocketUrl(job_id);
         const ws = new WebSocket(wsUrl);
         
         let currentEmployees: HierarchyEmployee[] = [];
@@ -571,8 +553,9 @@ export const useHierarchy = () => {
             const { job_id, brand, logo, domain } = jobData;
 
             // 🔍 VALIDAR: O job ainda existe no Redis/Backend?
-            const verifyResp = await fetch(`http://127.0.0.1:8000/api/v1/jobs/status/${job_id}`);
-            if (!verifyResp.ok) {
+            try {
+                await jobsApi.getJobStatus(job_id);
+            } catch {
                 console.warn(`[Reconnect] Job ${job_id} não existe mais no backend. Limpando cache.`);
                 localStorage.removeItem('active-discovery-job');
                 return false;
@@ -587,31 +570,28 @@ export const useHierarchy = () => {
             let existingEmployees: HierarchyEmployee[] = [];
             if (jobData.orgId) {
                 try {
-                    const resp = await fetch(`http://127.0.0.1:8000/api/v1/hierarchy/pipedrive/${jobData.orgId}`);
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        if (data && data.nodes && data.nodes.length > 0) {
-                            // Limpeza de URLs para não duplicar proxy
-                            existingEmployees = data.nodes.map((n: any) => {
-                                const cleanUrl = (url: string) => {
-                                    if (!url) return url;
-                                    if (url.includes('proxy/image?url=')) {
-                                        return decodeURIComponent(url.split('proxy/image?url=')[1]);
-                                    }
-                                    return url;
-                                };
-                                return {
-                                    ...n,
-                                    logo: cleanUrl(n.logo),
-                                    company_logo: cleanUrl(n.company_logo),
-                                    profile_pic: cleanUrl(n.profile_pic)
-                                };
-                            });
-                            console.log(`[Reconnect] Carregados ${existingEmployees.length} nós já existentes para ${brand}.`);
-                        }
+                    const data = await hierarchyApi.loadHierarchyByPipedrive(jobData.orgId);
+                    if (data && data.nodes && data.nodes.length > 0) {
+                        // Limpeza de URLs para não duplicar proxy
+                        existingEmployees = data.nodes.map((n: any) => {
+                            const cleanUrl = (url: string) => {
+                                if (!url) return url;
+                                if (url.includes('proxy/image?url=')) {
+                                    return decodeURIComponent(url.split('proxy/image?url=')[1]);
+                                }
+                                return url;
+                            };
+                            return {
+                                ...n,
+                                logo: cleanUrl(n.logo),
+                                company_logo: cleanUrl(n.company_logo),
+                                profile_pic: cleanUrl(n.profile_pic)
+                            };
+                        });
+                        console.log(`[Reconnect] Carregados ${existingEmployees.length} nós já existentes para ${brand}.`);
                     }
                 } catch (e) {
-                    console.warn("[Reconnect] Erro ao buscar hierarquia prévia antes de reconectar:", e);
+                    console.warn('[Reconnect] Erro ao buscar hierarquia prévia antes de reconectar:', e);
                 }
             }
 
@@ -641,24 +621,21 @@ export const useHierarchy = () => {
         setRawEmployees([]);
         setRawBackendEdges([]);
         try {
-            let url = isPipedriveId 
-                ? `http://127.0.0.1:8000/api/v1/hierarchy/pipedrive/${orgId}`
-                : `http://127.0.0.1:8000/api/v1/hierarchy/${orgId}`;
-                
-            let resp = await fetch(url);
-            let data = await resp.json();
-            
+            let data: any = isPipedriveId
+                ? await hierarchyApi.loadHierarchyByPipedrive(orgId)
+                : await hierarchyApi.loadHierarchyByLocalId(orgId);
+
             // 🔄 FALLBACK: Se tentou por Pipedrive e não achou nada, tenta pelo ID local
             // Isso resolve o caso de empresas criadas manualmente ou que perderam o vínculo.
-            if (isPipedriveId && (!data.nodes || data.nodes.length === 0)) {
+            if (isPipedriveId && (!data?.nodes || data.nodes.length === 0)) {
                 console.log(`[useHierarchy] Hierarquia não encontrada por Pipedrive ID ${orgId}. Tentando ID local...`);
-                const localUrl = `http://127.0.0.1:8000/api/v1/hierarchy/${orgId}`;
-                const localResp = await fetch(localUrl);
-                if (localResp.ok) {
-                    const localData = await localResp.json();
-                    if (localData.nodes && localData.nodes.length > 0) {
+                try {
+                    const localData = await hierarchyApi.loadHierarchyByLocalId(orgId);
+                    if (localData?.nodes && localData.nodes.length > 0) {
                         data = localData;
                     }
+                } catch {
+                    /* ignore fallback errors */
                 }
             }
             
@@ -721,17 +698,16 @@ export const useHierarchy = () => {
         setLoading(true);
         setError("");
         try {
-            const resp = await fetch(`http://127.0.0.1:8000/api/v1/pipedrive_smart_sync`, { method: 'POST' });
-            const data = await resp.json();
-            if (data.status === "success") {
-                console.log("[Pipedrive] Smart Sync concluído:", data.message);
+            const data = await orgsApi.triggerSmartSync();
+            if (data.status === 'success') {
+                console.log('[Pipedrive] Smart Sync concluído:', data.message);
                 return data;
             } else {
-                setError(data.message || "Erro no Smart Sync.");
+                setError(data.message || 'Erro no Smart Sync.');
             }
         } catch (e) {
-            console.error("Smart Sync error:", (e as any).message || e);
-            setError("Erro ao conectar com Pipedrive.");
+            console.error('Smart Sync error:', (e as any).message || e);
+            setError('Erro ao conectar com Pipedrive.');
         } finally {
             setLoading(false);
         }
@@ -739,15 +715,10 @@ export const useHierarchy = () => {
 
     const confirmIntelligence = useCallback(async (payload: { name: string, cnpj?: string, domain?: string, address?: string, pipedrive_id?: number, linkedin_url?: string, logo_url?: string, partners?: any[] }) => {
         try {
-            const resp = await fetch(`http://127.0.0.1:8000/api/v1/intelligence/confirm`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            return await resp.json();
+            return await hierarchyApi.confirmIntelligence(payload as any);
         } catch (e) {
-            console.error("Confirm intelligence error:", (e as any).message || e);
-            return { status: "error" };
+            console.error('Confirm intelligence error:', (e as any).message || e);
+            return { status: 'error' };
         }
     }, []);
 
@@ -760,10 +731,7 @@ export const useHierarchy = () => {
 
     const handleCandidateAction = async (employeeId: string, action: 'approve' | 'reject') => {
         try {
-            const data = await apiPost('/hierarchy/candidate-action', {
-                employee_id: employeeId, 
-                action 
-            });
+            const data = await hierarchyApi.candidateAction(employeeId, action);
 
             console.log(`[useHierarchy] Candidato ${action === 'approve' ? 'aprovado' : 'rejeitado'}:`, data);
 

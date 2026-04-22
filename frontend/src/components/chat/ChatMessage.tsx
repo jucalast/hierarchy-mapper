@@ -48,13 +48,9 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
         case 'thought':
             return (
                 <div className={styles.logLine} style={{ opacity: 1, margin: '12px 0 8px 0' }}>
-                    <div className="flex items-start gap-3 bg-gradient-to-r from-white/5 to-transparent p-3 rounded-2xl border-l-2 border-purple-500/50 backdrop-blur-sm">
-                        <div className="mt-1 bg-purple-500/20 p-1.5 rounded-lg shadow-lg">
-                            <GeminiIcon />
-                        </div>
+                    <div className="flex items-start gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
                         <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em]">Insights do Gemini</span>
-                            <span className="text-[13px] leading-relaxed text-gray-300 font-medium">
+                            <span className="text-[14px] leading-relaxed text-gray-300 font-medium">
                                 {content}
                             </span>
                         </div>
@@ -70,7 +66,7 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
             );
         case 'data_found':
             if (entity === 'contact') return <ContactGrid data={{ persons: [data] }} />;
-            if (entity === 'email') return <EmailThread data={{ messages: [data] }} />;
+            if (entity === 'email') return <EmailThread data={data} />;
             if (entity === 'whatsapp') return <WhatsAppThread data={{ whatsapp_result: { resultado: { messages: [data] } } }} onOpenWhatsApp={onOpenWhatsApp} />;
             if (entity === 'deal') return <DealLogCard data={data} />;
             if (entity === 'activity') return <TaskList data={{ activities: [data] }} />;
@@ -255,7 +251,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                             style={{ cursor: 'pointer', background: 'none', border: 'none', width: '100%', outline: 'none' }}
                         >
                             <div className="flex items-center gap-2">
-                                <GeminiIcon /> 
                                 <span>{isLogsExpanded ? 'Esconder Pensamento' : 'Ver Pensamento da IA'}</span>
                                 {message.thinkingTime && <span className={styles.thinkingTime}>({message.thinkingTime})</span>}
                             </div>
@@ -263,7 +258,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                         </button>
                         
                         {isLogsExpanded && (
-                            <div className={styles.streamingLogs}>
+                            <div className={styles.streamingLogs} style={{ paddingLeft: '24px' }}>
                                 {((currentLogs && currentLogs.length > 0) ? currentLogs : (message.logs || [])).map((log, i) => (
                                     <RichLogRenderer key={i} log={log} onOpenWhatsApp={onOpenWhatsApp} />
                                 ))}

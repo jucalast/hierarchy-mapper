@@ -1,8 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Smile, Mic, ArrowLeft, CheckCheck, User2, Loader2, Plus, Paperclip, MoreVertical, ExternalLink } from 'lucide-react';
-import styles from './NetworkGraph.module.css';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+    Send,
+    Smile,
+    Mic,
+    ArrowLeft,
+    CheckCheck,
+    User2,
+    Plus,
+    MoreVertical,
+} from 'lucide-react';
+import { communication } from '@/services/api';
+import { Spinner } from './ui';
 
 interface WhatsAppViewProps {
     chatName: string;
@@ -18,56 +28,54 @@ interface Message {
     timestamp?: number;
 }
 
+const formatTime = (tsSeconds?: number) => {
+    const date = tsSeconds ? new Date(tsSeconds * 1000) : new Date();
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
 export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, onBack }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const fetchHistory = async (isPolling = false) => {
+    const fetchHistory = useCallback(async (isPolling = false) => {
         if (!chatId) return;
         if (!isPolling) setLoading(true);
         try {
-            const response = await fetch(`http://localhost:8001/api/whatsapp/chats/${chatId}/messages?limit=100`);
-            if (response.ok) {
-                const data = await response.json();
-                const fetchedMessages: Message[] = (data.messages || []).map((m: any) => ({
-                    id: m.id,
-                    text: m.body,
-                    sender: m.fromMe ? 'me' : 'them',
-                    time: new Date(m.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    timestamp: m.timestamp
-                }));
-                
-                // Só atualiza o estado se houver mudança (comparando IDs das últimas mensagens)
-                setMessages(prev => {
-                    const lastPrevId = prev.length > 0 ? prev[prev.length - 1].id : null;
-                    const lastFetchedId = fetchedMessages.length > 0 ? fetchedMessages[fetchedMessages.length - 1].id : null;
-                    
-                    if (lastPrevId !== lastFetchedId || prev.length !== fetchedMessages.length) {
-                        fetchedMessages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-                        return fetchedMessages;
-                    }
-                    return prev;
-                });
-            }
+            const data = await communication.fetchWhatsAppHistory(chatId, 100);
+            const fetched: Message[] = (data.messages || []).map((m) => ({
+                id: m.id,
+                text: m.body,
+                sender: m.fromMe ? 'me' : 'them',
+                time: formatTime(m.timestamp),
+                timestamp: m.timestamp,
+            }));
+
+            setMessages((prev) => {
+                const lastPrevId = prev.length > 0 ? prev[prev.length - 1].id : null;
+                const lastFetchedId = fetched.length > 0 ? fetched[fetched.length - 1].id : null;
+                if (lastPrevId !== lastFetchedId || prev.length !== fetched.length) {
+                    fetched.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+                    return fetched;
+                }
+                return prev;
+            });
         } catch (error) {
-            console.error("Erro ao buscar histórico:", error);
+            // Polling silencioso — só logar quando for o load inicial.
+            if (!isPolling) console.error('Erro ao buscar histórico do WhatsApp:', error);
         } finally {
             if (!isPolling) setLoading(false);
         }
-    };
+    }, [chatId]);
 
     useEffect(() => {
-        fetchHistory();
-        
-        // Polling para "conversa ao vivo" a cada 5 segundos
-        const interval = setInterval(() => {
-            fetchHistory(true);
+        void fetchHistory(false);
+        const interval = window.setInterval(() => {
+            void fetchHistory(true);
         }, 5000);
-
-        return () => clearInterval(interval);
-    }, [chatId]);
+        return () => window.clearInterval(interval);
+    }, [fetchHistory]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,40 +83,31 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
 
     const handleSendMessage = async () => {
         if (!inputText.trim() || !chatId) return;
-        
+
         const text = inputText;
         setInputText('');
 
-        const now = new Date();
         const tempId = Date.now().toString();
-        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        setMessages(prev => [...prev, { 
-            id: tempId, 
-            text: text, 
-            sender: 'me', 
-            time: timeStr 
-        }]);
+        const optimistic: Message = {
+            id: tempId,
+            text,
+            sender: 'me',
+            time: formatTime(),
+        };
+        setMessages((prev) => [...prev, optimistic]);
 
         try {
-            await fetch(`http://localhost:8001/api/whatsapp/send`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    number: chatId,
-                    message: text
-                })
-            });
+            await communication.sendWhatsAppDirect(chatId, text);
         } catch (error) {
-            console.error("Erro no envio:", error);
+            console.error('Erro no envio de WhatsApp:', error);
         }
     };
 
     return (
-        <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            height: '100%', 
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
             position: 'relative',
             overflow: 'hidden',
         }}>
@@ -144,11 +143,11 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                     padding: '4px',
                     borderRadius: '50%',
                     transition: 'background 0.2s'
-                }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} 
+                }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                     <ArrowLeft size={20} />
                 </button>
-                
+
                 <div style={{
                     width: '36px',
                     height: '36px',
@@ -187,13 +186,13 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
             }}>
                 {loading && messages.length === 0 ? (
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#868686' }}>
-                        <Loader2 size={32} className={styles.spinner} />
+                        <Spinner size={32} />
                     </div>
                 ) : (
                     <>
-                        {messages.map((msg, i) => {
+                        {messages.map((msg) => {
                             const isMe = msg.sender === 'me';
-                            
+
                             return (
                                 <div
                                     key={msg.id}
@@ -214,7 +213,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                                     }}
                                 >
                                     <div style={{ paddingRight: '45px', overflowWrap: 'break-word' }}>{msg.text}</div>
-                                    <div style={{ 
+                                    <div style={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'flex-end',
@@ -259,7 +258,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                     backdropFilter: 'blur(12px)'
                 }}>
                     <div style={{ display: 'flex', gap: '8px', color: '#868686' }}>
-                        <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }} 
+                        <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }}
                             onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
                             onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                             <Smile size={22} />
@@ -270,9 +269,9 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                             <Plus size={22} />
                         </button>
                     </div>
-                    
-                    <div style={{ 
-                        flex: 1, 
+
+                    <div style={{
+                        flex: 1,
                         backgroundColor: 'transparent',
                         padding: '0 8px',
                         display: 'flex',
@@ -297,15 +296,15 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                             }}
                         />
                     </div>
-                    
+
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         {inputText.trim() ? (
-                            <button 
-                                onClick={handleSendMessage} 
-                                style={{ 
-                                    background: '#00a884', 
-                                    border: 'none', 
-                                    color: '#fff', 
+                            <button
+                                onClick={handleSendMessage}
+                                style={{
+                                    background: '#00a884',
+                                    border: 'none',
+                                    color: '#fff',
                                     cursor: 'pointer',
                                     width: '40px',
                                     height: '40px',

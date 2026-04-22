@@ -12,6 +12,7 @@ import { ChatMessage, RichLogRenderer, RichLogEntry } from './chat/ChatMessage';
 import { DebugPanel } from './chat/DebugPanel';
 
 import { useSpeechToText } from '../hooks/useSpeechToText';
+import { ai, communication } from '@/services/api';
 
 const GeminiIcon = () => (
     <img src="/gemini.png" alt="Gemini" width="16" height="16" className="shrink-0 object-contain" />
@@ -156,8 +157,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setCurrentLogs([]);
 
         try {
-            const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const response = await fetch(`${API_BASE}/api/v1/ai/chat`, {
+            const response = await fetch(ai.getChatStreamUrl(), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -237,28 +237,22 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     };
 
     const handleApproveAction = async (actionId: string) => {
-        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
         setApprovalStatuses(prev => ({ ...prev, [actionId]: 'approving' }));
         try {
-            const resp = await fetch(`${API_BASE}/api/v1/ai/agent-action`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action_id: actionId, approved: true })
-            });
-            setApprovalStatuses(prev => ({ ...prev, [actionId]: resp.ok ? 'approved' : 'pending' }));
-        } catch { setApprovalStatuses(prev => ({ ...prev, [actionId]: 'pending' })); }
+            await ai.agentAction({ action_id: actionId, approved: true });
+            setApprovalStatuses(prev => ({ ...prev, [actionId]: 'approved' }));
+        } catch {
+            setApprovalStatuses(prev => ({ ...prev, [actionId]: 'pending' }));
+        }
     };
 
     const handleRejectAction = async (actionId: string) => {
-        const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
         setApprovalStatuses(prev => ({ ...prev, [actionId]: 'rejected' }));
         try {
-            await fetch(`${API_BASE}/api/v1/ai/agent-action`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action_id: actionId, approved: false })
-            });
-        } catch { }
+            await ai.agentAction({ action_id: actionId, approved: false });
+        } catch {
+            /* silent */
+        }
     };
 
     const searchUniversal = async (query: string, category: string | null = null) => {
@@ -266,30 +260,24 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const searchId = ++lastSearchId.current;
         setIsSearching(true);
         try {
-            const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            // Chamada para o backend com suporte a tipo específico (whatsapp, email, etc.)
-            let url = `${API_BASE}/api/v1/search/universal?q=${encodeURIComponent(query)}`;
+            const data = await communication.universalSearch(query, category || undefined);
+            if (searchId !== lastSearchId.current) return;
+
+            let results = data.results || [];
+            // Filtro rigoroso no frontend baseado no gatilho utilizado (@contato ou @email)
             if (category) {
-                url += `&type=${category}`;
+                results = results.filter((item: any) => {
+                    if (category === 'whatsapp') return item.type === 'whatsapp';
+                    if (category === 'email') return item.type === 'email';
+                    return true;
+                });
             }
-            
-            const response = await fetch(url);
-            if (searchId === lastSearchId.current && response.ok) {
-                const data = await response.json();
-                let results = data.results || [];
-                
-                // Filtro rigoroso no frontend baseado no gatilho utilizado (@contato ou @email)
-                if (category) {
-                    results = results.filter((item: any) => {
-                        if (category === 'whatsapp') return item.type === 'whatsapp';
-                        if (category === 'email') return item.type === 'email';
-                        return true;
-                    });
-                }
-                
-                setCompanies(results);
-            }
-        } catch { } finally { if (searchId === lastSearchId.current) setIsSearching(false); }
+            setCompanies(results as CompanyResult[]);
+        } catch {
+            /* ignore — usuário pode estar digitando */
+        } finally {
+            if (searchId === lastSearchId.current) setIsSearching(false);
+        }
     };
 
     if (!showChat) return null;

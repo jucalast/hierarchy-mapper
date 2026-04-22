@@ -80,7 +80,7 @@ def complete_partial_emails(persons: List[Dict], internal_context: Dict[str, Any
     # Fallback: Se não tem domínio, mas tem nome da empresa, tenta construir um
     if not org_domain and org_info.get("name"):
         # Remove espaços e bota .com (tentativa desesperada)
-        clean_name = org_info.get("name").lower().replace(" ", "")
+        clean_name = (org_info.get("name") or "").lower().replace(" ", "")
         org_domain = f"{clean_name}.com"
 
     print(f"[AI Bypass] 🔍 Enriquecendo {len(persons)} funcionários. Domínio alvo: {org_domain}")

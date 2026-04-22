@@ -2,6 +2,7 @@ import React from 'react';
 import styles from './NetworkGraph.module.css';
 import { User, MapPin, Building2, Briefcase } from 'lucide-react';
 import { LinkedInIcon } from './icons/LinkedInIcon';
+import { buildProxyImageUrl } from '@/services/config';
 
 interface PersonaPreviewProps {
     data: any;
@@ -24,8 +25,8 @@ export function PersonaPreview({ data, position, companyLogo }: PersonaPreviewPr
                 <div className={styles.previewAvatarGroup}>
                     <div className={styles.previewAvatar}>
                         {data.profile_pic ? (
-                            <img 
-                                src={`http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(data.profile_pic)}`} 
+                            <img
+                                src={buildProxyImageUrl(data.profile_pic)}
                                 className="w-full h-full object-cover"
                                 onError={(e) => { (e.target as any).style.display = 'none'; }}
                                 alt=""
@@ -36,8 +37,8 @@ export function PersonaPreview({ data, position, companyLogo }: PersonaPreviewPr
                     </div>
                     {companyLogo && (
                         <div className={styles.previewCompanyLogo}>
-                            <img 
-                                src={companyLogo.startsWith('http') ? `http://127.0.0.1:8000/api/v1/proxy/image?url=${encodeURIComponent(companyLogo)}` : companyLogo}
+                            <img
+                                src={buildProxyImageUrl(companyLogo) || companyLogo}
                                 className="w-full h-full object-contain"
                                 alt=""
                             />

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { waitForBackend } from '@/services/config';
+import { waitForBackend, API_BASE_URL } from '@/services/config';
 
 interface BackendHealthProviderProps {
   children: React.ReactNode;
@@ -70,7 +70,7 @@ export default function BackendHealthProvider({
           <h2 style={styles.title}>Erro de Conexão</h2>
           <p style={styles.error}>{error}</p>
           <p style={styles.subtitle}>
-            Verifique se o backend está rodando em http://127.0.0.1:8000
+            Verifique se o backend está rodando em {API_BASE_URL}
           </p>
           <button
             onClick={() => window.location.reload()}

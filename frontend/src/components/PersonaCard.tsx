@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import styles from './NetworkGraph.module.css';
 import {
   MapPin,
@@ -13,7 +13,7 @@ import {
 
 import { getAvatarUrl, getCompanyLogoUrl, getProxiedUrl } from '../utils/avatarUtils';
 
-export function PersonaCard({ data, level, isNode = false }: { data: any, level?: number, isNode?: boolean }) {
+function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: number, isNode?: boolean }) {
   // Prioriza o nível vindo dos dados (backend) sobre o default do componente
   const effectiveLevel = data.seniority !== undefined ? Number(data.seniority) : (level ?? 5);
   
@@ -184,3 +184,25 @@ export function PersonaCard({ data, level, isNode = false }: { data: any, level?
     </div>
   );
 }
+
+export const PersonaCard = memo(
+  PersonaCardBase,
+  (prev, next) => {
+    if (prev.level !== next.level || prev.isNode !== next.isNode) return false;
+    const a = prev.data || {};
+    const b = next.data || {};
+    return (
+      a.id === b.id &&
+      a.name === b.name &&
+      a.role === b.role &&
+      a.seniority === b.seniority &&
+      a.department === b.department &&
+      a.matching_score === b.matching_score &&
+      a.evidence === b.evidence &&
+      a.profile_pic === b.profile_pic &&
+      a.headline === b.headline &&
+      a.email === b.email &&
+      a.phone === b.phone
+    );
+  },
+);

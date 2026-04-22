@@ -37,6 +37,7 @@ import { Drawer } from './Drawer';
 import { ChatPanel } from './ChatPanel';
 import { WhatsAppView } from './WhatsAppView';
 import { NotificationContainer, NotificationType } from './Notification';
+import { organizations as orgsApi, hierarchy as hierarchyApi } from '@/services/api';
 
 
 // --- SMART BACKGROUND COMPONENT ---
@@ -340,16 +341,14 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
     const handleUpdatePipedrive = async (orgId: number, data: any) => {
         try {
-            await fetch(`http://127.0.0.1:8000/api/v1/pipedrive/organizations/${orgId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    cnpj: data.cnpj,
-                    domain: data.domain,
-                    address: data.address
-                })
+            await orgsApi.updateOrganization(orgId, {
+                cnpj: data.cnpj,
+                domain: data.domain,
+                address: data.address,
             });
-        } catch (e: any) { console.error("Sync error:", (e as Error).message || e); }
+        } catch (e: any) {
+            console.error('Sync error:', (e as Error).message || e);
+        }
     };
 
     useEffect(() => {
@@ -478,32 +477,22 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         // Se já temos cache, não limpamos para não dar flicker na UI
         if (pipedriveOrgs.length === 0) setLoadingOrgs(true);
         try {
-            // Sincronização em background (Pipedrive -> DB Local)
-            fetch('http://127.0.0.1:8000/api/v1/pipedrive_sync', { method: 'POST' }).catch(() => { });
+            // Sincronização em background (Pipedrive -> DB Local) — fire & forget
+            orgsApi.triggerPipedriveSync().catch(() => { /* silent */ });
 
-            const orgsResp = await fetch(`http://127.0.0.1:8000/api/v1/pipedrive/organizations?_=${Date.now()}`);
-
-            // Check do status HTTP
-            if (!orgsResp.ok) {
-                console.warn(`[Pipedrive API] HTTP ${orgsResp.status}: ${orgsResp.statusText}`);
-                if (pipedriveOrgs.length === 0) setPipedriveOrgs([]);
-                setLoadingOrgs(false);
-                return;
-            }
-
-            const data = await orgsResp.json();
-            console.log("[Pipedrive API] Data Received:", data);
+            const data = await orgsApi.listOrganizations();
+            console.log('[Pipedrive API] Data Received:', data);
             const list = Array.isArray(data) ? data : [];
             setPipedriveOrgs(list);
 
             // Revalida o cache com a versão real do banco
             if (list.length > 0) {
-                localStorage.setItem("pipedrive-orgs-cache", JSON.stringify(list));
+                localStorage.setItem('pipedrive-orgs-cache', JSON.stringify(list));
             } else {
-                localStorage.removeItem("pipedrive-orgs-cache");
+                localStorage.removeItem('pipedrive-orgs-cache');
             }
         } catch (e: any) {
-            console.warn("[NetworkGraph] Erro ao carregar empresas do Pipedrive:", (e as Error).message || e);
+            console.warn('[NetworkGraph] Erro ao carregar empresas do Pipedrive:', (e as Error).message || e);
             if (pipedriveOrgs.length === 0) setPipedriveOrgs([]);
         } finally {
             setLoadingOrgs(false);
@@ -702,9 +691,11 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         setError(null);
         setEnrichingIds(prev => new Set(prev).add(999));
         try {
-            const query = `name=${encodeURIComponent(confirmedBrand.trim() || "Empresa")}&cnpj=${encodeURIComponent(cnpj)}`;
-            const resp = await fetch(`http://127.0.0.1:8000/api/v1/intelligence/enrich?${query}&force=true`);
-            const data = await resp.json();
+            const data = await hierarchyApi.enrichIntelligence({
+                name: confirmedBrand.trim() || 'Empresa',
+                cnpj,
+                force: true,
+            });
 
             if (data.success && data.main_option) {
                 const main = data.main_option;
@@ -719,7 +710,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 // o backend /enrich já criou auto no Pipedrive+DB.
                 // Precisamos apenas linkar a UI com o novo org criado.
                 if (!currentOrgId && cleanCnpj) {
-                    console.log("[NewCompany] Empresa nova detectada. Vinculando UI...");
+                    console.log('[NewCompany] Empresa nova detectada. Vinculando UI...');
                     try {
                         // Atualiza a marca se temos um nome oficial
                         if (officialName) setConfirmedBrand(officialName);
@@ -732,8 +723,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
                         // Busca a nova org na lista para vincular ao estado
                         const rawCnpjClean = cleanCnpj.replace(/\D/g, '');
-                        const orgsResp = await fetch(`http://127.0.0.1:8000/api/v1/pipedrive/organizations?_=${Date.now()}`);
-                        const orgsList = await orgsResp.json();
+                        const orgsList = await orgsApi.listOrganizations();
                         const newOrg = Array.isArray(orgsList)
                             ? orgsList.find((o: any) => o.cnpj && o.cnpj.replace(/\D/g, '') === rawCnpjClean)
                             : null;

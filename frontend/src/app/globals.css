@@ -99,3 +99,14 @@ input, button {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--sw-text-muted);
 }
+
+/* Animações globais usadas pelos primitivos UI (Spinner, LoadingSkeleton) */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
