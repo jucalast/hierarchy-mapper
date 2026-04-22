@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-    CheckCircle2, Loader2, ThumbsDown, Copy, RotateCcw, ThumbsUp, Building2, User2, MessageSquare, Mail, Check, ChevronDown, ChevronUp
+    CheckCircle2, Loader2, ThumbsDown, Copy, RotateCcw, ThumbsUp, Building2, User2, MessageSquare, Mail, Check, ChevronDown, ChevronUp, AlertCircle, Phone, Calendar
 } from 'lucide-react';
 import { Message, CompanyResult, ApprovalAction } from './ChatInterfaces';
 import { TaskList, ContactGrid, CompanyCard } from './modules/ContextModules';
@@ -10,14 +10,86 @@ import { DebugPanel } from './DebugPanel';
 import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
 import styles from '../ChatPanel.module.css';
 
+import { 
+    ContactLogCard, EmailLogCard, WhatsAppLogCard, DealLogCard, ActivityLogCard, NoteLogCard 
+} from './modules/LogModules';
+
+export interface RichLogEntry {
+    type?: 'log' | 'thought' | 'status' | 'data_found' | 'warning';
+    content?: string;
+    entity?: string;
+    data?: any;
+    icon?: string;
+    label?: string;
+}
+
 interface ChatMessageProps {
     message: Message;
-    currentLogs?: string[];
+    currentLogs?: (string | RichLogEntry)[];
     onApprove: (actionId: string) => void;
     onReject: (actionId: string) => void;
     onOpenWhatsApp?: (info: { name: string, id?: string }) => void;
     approvalStatuses?: Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>;
 }
+
+export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLogEntry, onOpenWhatsApp?: (info: { name: string, id?: string }) => void }) => {
+    // Caso seja string simples (retrocompatibilidade)
+    if (typeof log === 'string') {
+        return (
+            <div className={styles.logLine}>
+                <Loader2 size={12} className={styles.spinner} /> <span>{log}</span>
+            </div>
+        );
+    }
+
+    const { type, content, entity, data, icon, label } = log;
+
+    switch (type) {
+        case 'thought':
+            return (
+                <div className={styles.logLine} style={{ opacity: 1, margin: '12px 0 8px 0' }}>
+                    <div className="flex items-start gap-3 bg-gradient-to-r from-white/5 to-transparent p-3 rounded-2xl border-l-2 border-purple-500/50 backdrop-blur-sm">
+                        <div className="mt-1 bg-purple-500/20 p-1.5 rounded-lg shadow-lg">
+                            <GeminiIcon />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em]">Insights do Gemini</span>
+                            <span className="text-[13px] leading-relaxed text-gray-300 font-medium">
+                                {content}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            );
+        case 'status':
+            return (
+                <div className={styles.logLine}>
+                    {icon === 'play' ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Loader2 size={12} className={styles.spinner} />}
+                    <span style={{ fontWeight: 500 }}>{content}</span>
+                </div>
+            );
+        case 'data_found':
+            if (entity === 'contact') return <ContactGrid data={{ persons: [data] }} />;
+            if (entity === 'email') return <EmailThread data={{ messages: [data] }} />;
+            if (entity === 'whatsapp') return <WhatsAppThread data={{ whatsapp_result: { resultado: { messages: [data] } } }} onOpenWhatsApp={onOpenWhatsApp} />;
+            if (entity === 'deal') return <DealLogCard data={data} />;
+            if (entity === 'activity') return <TaskList data={{ activities: [data] }} />;
+            if (entity === 'note') return <NoteLogCard data={data} />;
+            return null;
+        case 'warning':
+            return (
+                <div className={styles.logLine} style={{ color: '#fbbf24' }}>
+                    <AlertCircle size={12} /> <span>{content}</span>
+                </div>
+            );
+        default:
+            return (
+                <div className={styles.logLine}>
+                    <Loader2 size={12} className={styles.spinner} /> <span>{content || JSON.stringify(log)}</span>
+                </div>
+            );
+    }
+};
 
 const AIAsterisk = () => (
     <img src="/gemini.png" alt="Gemini AI" width="22" height="22" className="shrink-0 mt-0.5 object-contain" />
@@ -193,9 +265,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                         {isLogsExpanded && (
                             <div className={styles.streamingLogs}>
                                 {((currentLogs && currentLogs.length > 0) ? currentLogs : (message.logs || [])).map((log, i) => (
-                                    <div key={i} className={styles.logLine}>
-                                        <Loader2 size={12} className={styles.spinner} /> <span>{log}</span>
-                                    </div>
+                                    <RichLogRenderer key={i} log={log} onOpenWhatsApp={onOpenWhatsApp} />
                                 ))}
                             </div>
                         )}

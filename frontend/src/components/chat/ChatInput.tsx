@@ -27,6 +27,8 @@ interface ChatInputProps {
     // Model props
     model: 'gemini' | 'groq';
     setModel: (model: 'gemini' | 'groq') => void;
+    // Cooldown props
+    pipedriveCooldown?: number;
     // Styling
     theme: string;
 }
@@ -37,6 +39,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     showAutocomplete, isSearching, searchingCategory, searchTerm, companies, selectSearchResult,
     isListening, startListening, stopListening,
     model, setModel,
+    pipedriveCooldown = 0,
     theme
 }) => {
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -273,6 +276,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             )}
                             <span>{model === 'gemini' ? 'Gemini' : 'Groq'}</span>
                         </button>
+                        {pipedriveCooldown > 0 && (
+                            <>
+                                <div className={styles.dividerSmall}>|</div>
+                                <div className={styles.cooldownBadge} title="Pipedrive em Cooldown (Aguardando reset de cota)">
+                                    <Zap size={12} className={styles.cooldownIcon} />
+                                    <span>
+                                        {Math.floor(pipedriveCooldown / 60)}:{String(pipedriveCooldown % 60).padStart(2, '0')}
+                                    </span>
+                                </div>
+                            </>
+                        )}
+
                         <div className={styles.dividerSmall}>|</div>
                         <button 
                             className={`${styles.iconBtn} ${isListening ? styles.micActive : ''}`}

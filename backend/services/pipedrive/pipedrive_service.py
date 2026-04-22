@@ -1,3 +1,5 @@
+import asyncio
+import time
 import httpx
 from typing import List, Dict, Any, Optional
 from datetime import datetime, date, timedelta
@@ -6,40 +8,77 @@ from core.config import settings
 
 
 class PipedriveService:
-    _stages_cache = {} # Cache de classe para estágios (compartilhado)
+    _stages_cache = {} 
+    _retry_after_until = 0 # Timestamp de quando o bloqueio acaba
+    _client = None
+    _semaphore = asyncio.Semaphore(10) # Limita concorrência global a 10 requests simultâneos
 
     def __init__(self):
         self.api_token = settings.PIPEDRIVE_API_TOKEN
         self.user_id = settings.PIPEDRIVE_USER_ID
         self.base_url = "https://api.pipedrive.com/v1"
 
-    async def sync_all_parallel(self):
-        """
-        Sincroniza organizações, pessoas e negócios em paralelo para poupar tempo.
-        """
-        print("[Pipedrive Service] 🔄 Iniciando sincronização massiva paralela...")
-        # Esta é uma implementação simplificada que foca em popular o banco local
-        # Para evitar estourar o limite, buscamos os 500 mais recentes
-        await self.list_organizations() 
-        print("[Pipedrive Service] ✅ Sincronização concluída.")
+    async def get_client(self):
+        if PipedriveService._client is None or PipedriveService._client.is_closed:
+            PipedriveService._client = httpx.AsyncClient(timeout=30.0)
+        return PipedriveService._client
+
+    def _update_retry_after(self, resp):
+        """Extrai o tempo de espera dos headers do Pipedrive se for 429."""
+        if resp and resp.status_code == 429:
+            retry_after = resp.headers.get("retry-after")
+            if retry_after:
+                try:
+                    PipedriveService._retry_after_until = time.time() + int(retry_after) + 0.5 # Margem de segurança
+                    print(f"[Pipedrive Service] ⏳ Bloqueio detectado! Retry-After: {retry_after}s")
+                except: pass
+
+    async def make_request(self, method: str, endpoint: str, **kwargs):
+        """Método centralizado para chamadas Pipedrive com monitoramento de cota e espera automática."""
+        url = f"{self.base_url}/{endpoint}"
+        connector = "&" if "?" in endpoint else "?"
+        url += f"{connector}api_token={self.api_token}"
+            
+        async with PipedriveService._semaphore:
+            # 1. Verifica se estamos em cooldown
+            wait_time = PipedriveService._retry_after_until - time.time()
+            if wait_time > 0:
+                print(f"[Pipedrive Service] 💤 Aguardando reset do Rate Limit ({int(wait_time)}s)...")
+                await asyncio.sleep(wait_time)
+
+            client = await self.get_client()
+            try:
+                resp = await client.request(method, url, **kwargs)
+                
+                # 2. Se deu 429, atualiza timer e tenta novamente UMA vez após o tempo
+                if resp.status_code == 429:
+                    self._update_retry_after(resp)
+                    wait_time = PipedriveService._retry_after_until - time.time()
+                    if wait_time > 0:
+                        await asyncio.sleep(wait_time)
+                        # Retry
+                        resp = await client.request(method, url, **kwargs)
+                
+                return resp
+            except Exception as e:
+                print(f"[Pipedrive Service] Erro na requisição {endpoint}: {e}")
+                return None
+
+    def get_retry_after_seconds(self) -> int:
+        """Retorna quantos segundos faltam para o reset do Pipedrive."""
+        remaining = int(PipedriveService._retry_after_until - time.time())
+        return max(0, remaining)
 
     async def get_all_stages(self):
         """Busca todos os estágios do pipeline com cache para poupar API."""
         if PipedriveService._stages_cache:
             return PipedriveService._stages_cache
             
-        url = f"{self.base_url}/stages?api_token={self.api_token}"
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(url)
-                if resp.status_code == 200:
-                    s_data = resp.json().get("data") or []
-                    PipedriveService._stages_cache = {s["id"]: s["name"] for s in s_data}
-                    return PipedriveService._stages_cache
-                else:
-                    print(f"[Pipedrive Service] Erro ao buscar estágios (Status: {resp.status_code})")
-        except Exception as e:
-            print(f"[Pipedrive Service] Erro de conexão ao buscar estágios: {e}")
+        resp = await self.make_request("GET", "stages")
+        if resp and resp.status_code == 200:
+            s_data = resp.json().get("data") or []
+            PipedriveService._stages_cache = {s["id"]: s["name"] for s in s_data}
+            return PipedriveService._stages_cache
         return {}
 
     async def create_organization(self, data: dict):

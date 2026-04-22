@@ -21,6 +21,37 @@ from services.ai.logger import dump_intelligence_context
 
 router = APIRouter()
 
+def clean_history(history: list) -> list:
+    """Remove logs e dados pesados do histórico para economizar tokens e evitar erros de limite de payload."""
+    if not history: return []
+    cleaned = []
+    # Pegamos apenas as últimas 5 mensagens para não estourar o contexto
+    for entry in history[-5:]:
+        # Garante que tratamos tanto dict quanto objeto Pydantic
+        is_pydantic = hasattr(entry, "dict")
+        h_dict = entry.dict() if is_pydantic else entry.copy()
+        
+        # Remove campos que poluem o contexto e aumentam o tamanho do request
+        if "logs" in h_dict: del h_dict["logs"]
+        if "debug" in h_dict: del h_dict["debug"]
+        
+        # No histórico, o 'data' de mensagens passadas do assistente é irrelevante e pesado
+        if h_dict.get("role") == "assistant" and "data" in h_dict:
+            del h_dict["data"]
+        
+        # Truncagem agressiva de conteúdo para caber em modelos menores (Groq Free Tier)
+        content = h_dict.get("content", "")
+        if content and len(content) > 1200:
+            h_dict["content"] = content[:1200] + "... [Conteúdo Truncado para Economia de Contexto]"
+
+        if "data" in h_dict: 
+            # Se o dado for muito grande (ex: lista de tarefas), remove ou resume
+            if isinstance(h_dict["data"], (list, dict)) and len(str(h_dict["data"])) > 300:
+                h_dict["data"] = {"summary": "Dados omitidos para preservar limite de tokens"}
+        
+        cleaned.append(h_dict)
+    return cleaned
+
 
 class AgentActionRequest(PydanticBaseModel):
     action_id: str
@@ -42,9 +73,12 @@ async def chat_with_ai(
         if not payload.message or not payload.message.strip():
             raise HTTPException(status_code=400, detail="Mensagem vazia")
 
+        # --- LIMPEZA DE HISTÓRICO ---
+        cleaned_history = clean_history(payload.history or [])
+
         # --- ESTÁGIO 1: Classificação de Intenção (Pipeline Routing) ---
-        print(f"[AI Pipeline] Estágio 1 - Analisando intenção do usuário com histórico de {len(payload.history or [])} mensagens...")
-        intent_info = await classify_user_intent(payload.message, payload.history)
+        print(f"[AI Pipeline] Estágio 1 - Analisando intenção do usuário com histórico de {len(cleaned_history)} mensagens...")
+        intent_info = await classify_user_intent(payload.message, cleaned_history)
         
         # HEURÍSTICA MECÂNICA: Se o usuário quer mandar email e a IA falhou em detectar o tipo
         if "email para" in payload.message.lower() or "mandar email" in payload.message.lower() or "enviar email" in payload.message.lower():
@@ -116,35 +150,52 @@ async def chat_with_ai(
 
         # --- BYPASS: Retorno direto sem IA (tarefas, contatos, WhatsApp, Email) ---
         bypass_response = try_bypass_response(intent_info, internal_context, whatsapp_result_context, email_result_context)
+        
+        # --- COOLDOWN PIPEDRIVE ---
+        from services.pipedrive.pipedrive_service import pipedrive_service
+        pd_cooldown = pipedrive_service.get_retry_after_seconds()
+
         if bypass_response:
+            if isinstance(bypass_response, dict):
+                bypass_response["pipedrive_cooldown"] = pd_cooldown
+            elif hasattr(bypass_response, "pipedrive_cooldown"):
+                bypass_response.pipedrive_cooldown = pd_cooldown
             return bypass_response
 
         # --- ESTÁGIO 2: Geração da Resposta com IA ---
         if query_type == "agent_workflow":
             async def agent_streamer():
                 try:
-                    # Executa o workflow em background para podermos capturar os logs
+                    # ...
                     log_queue = asyncio.Queue()
                     from services.ai.agent_service import AgentService
                     from core.database import async_session
                     
-                    # Usamos uma sessão dedicada para o agente não sofrer com sessões fechadas pelo FastAPI
                     async with async_session() as agent_session:
+                        # Passa o histórico limpo para o agente
                         task = asyncio.create_task(AgentService.run_workflow(
                             goal=payload.message, 
                             initial_intent=intent_info,
                             org_id=org_id,
                             selected_entities=selected_entities_dicts,
                             session=agent_session,
-                            log_queue=log_queue
+                            log_queue=log_queue,
+                            history=cleaned_history,
+                            initial_raw_context=internal_context
                         ))
                         
                         # Enquanto a tarefa roda, emitimos logs
                         while not task.done() or not log_queue.empty():
                             try:
                                 # Pequeno timeout para não travar
-                                log_msg = await asyncio.wait_for(log_queue.get(), timeout=0.1)
-                                yield json.dumps({"type": "log", "content": log_msg}) + "\n"
+                                log_data = await asyncio.wait_for(log_queue.get(), timeout=0.1)
+                                
+                                # Se log_data já for um dicionário (log rico), mesclamos o cooldown
+                                if isinstance(log_data, dict):
+                                    log_data["pipedrive_cooldown"] = pd_cooldown
+                                    yield json.dumps(log_data) + "\n"
+                                else:
+                                    yield json.dumps({"type": "log", "content": log_data, "pipedrive_cooldown": pd_cooldown}) + "\n"
                             except asyncio.TimeoutError:
                                 if task.done(): break
                                 continue
@@ -152,7 +203,7 @@ async def chat_with_ai(
                         agent_result = await task
                         pending = agent_result.get("pending_approvals", [])
                         if pending:
-                            yield json.dumps({"type": "pending_approvals", "actions": pending}) + "\n"
+                            yield json.dumps({"type": "pending_approvals", "actions": pending, "pipedrive_cooldown": pd_cooldown}) + "\n"
                     
                     # Formata a resposta final
                     full_response = agent_result.get("full_response", "Finalizado.")
@@ -161,6 +212,7 @@ async def chat_with_ai(
                         "type": "final",
                         "response": full_response,
                         "ui_module": "AgentWorkflow",
+                        "pipedrive_cooldown": pd_cooldown,
                         "data": {
                             "past_activities": agent_result.get("past_activities", []),
                             "new_activities": agent_result.get("new_activities", []),
@@ -173,11 +225,11 @@ async def chat_with_ai(
                     import traceback
                     traceback.print_exc()
                     yield json.dumps({"type": "log", "content": f"Erro crítico na orquestração: {str(e)}"}) + "\n"
-                    yield json.dumps({"type": "final", "response": f"Desculpe, a orquestração falhou: {str(e)}"}) + "\n"
+                    yield json.dumps({"type": "final", "response": f"Desculpe, a orquestração falhou: {str(e)}", "pipedrive_cooldown": pd_cooldown}) + "\n"
 
             return StreamingResponse(agent_streamer(), media_type="application/x-ndjson")
 
-        return await generate_ai_response(
+        final_resp = await generate_ai_response(
             message=payload.message,
             intent_info=intent_info,
             internal_context=internal_context,
@@ -185,6 +237,14 @@ async def chat_with_ai(
             context_override=payload.context
         )
         
+        # Injeta cooldown na resposta de IA normal
+        if hasattr(final_resp, "pipedrive_cooldown"):
+            final_resp.pipedrive_cooldown = pd_cooldown
+        elif isinstance(final_resp, dict):
+            final_resp["pipedrive_cooldown"] = pd_cooldown
+            
+        return final_resp
+
     except HTTPException:
         raise
     except Exception as e:

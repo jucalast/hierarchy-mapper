@@ -28,57 +28,148 @@ class AgentService:
     _pending_actions: Dict[str, dict] = {}
 
     @staticmethod
-    async def run_workflow(goal: str, initial_intent: dict, org_id: int, selected_entities: List[dict], session, log_queue: Optional[asyncio.Queue] = None):
+    async def run_workflow(goal: str, initial_intent: dict, org_id: int, selected_entities: List[dict], session, log_queue: Optional[asyncio.Queue] = None, history: Optional[List[dict]] = None, initial_raw_context: Optional[dict] = None):
         """
         Executa o workflow completo do agente autônomo.
         """
         def log(msg):
             print(f"[Agent] {msg}")
             if log_queue:
-                log_queue.put_nowait(msg)
+                # Se for string, envelopa em objeto de log básico
+                if isinstance(msg, str):
+                    log_queue.put_nowait({"type": "log", "content": msg})
+                else:
+                    log_queue.put_nowait(msg)
 
-        # Converte entidades Pydantic para dict se necessário para evitar AttributeError
-        selected_entities = [e.model_dump() if hasattr(e, "model_dump") else e for e in selected_entities]
+        async def add_thought(context_description: str):
+            """Gera um pensamento natural baseado no contexto atual SEM poluição de histórico."""
+            from services.ai.prompts import THOUGHT_SYSTEM_PROMPT
+            try:
+                await asyncio.sleep(0.5)
+                # Removemos o history para garantir que a IA foque nos FATOS ATUAIS injetados
+                thought = await ask_gemini(f"{THOUGHT_SYSTEM_PROMPT}\nAnálise Técnica: {context_description}", history=None)
+                log({"type": "thought", "content": thought or context_description})
+            except Exception as e:
+                log({"type": "thought", "content": context_description})
 
-        log(f"Iniciando workflow especializado: {goal}")
+        log({"type": "status", "content": "Iniciando workflow...", "icon": "play"})
         
         # ═══════════════════════════════════════
-        # ESTÁGIO 1: Coleta de Contexto Total
+        # ESTÁGIO 1: Coleta e Streaming Imediato
         # ═══════════════════════════════════════
-        context_intent = initial_intent.copy()
-        context_intent["activity_done_filter"] = None
-        context_intent["activity_date_filter"] = "all"
-        if "data_scope" not in context_intent: context_intent["data_scope"] = []
-        for scope in ["persons", "notes", "activities", "deals", "whatsapp", "emails"]:
-            if scope not in context_intent["data_scope"]:
-                context_intent["data_scope"].append(scope)
+        # 1. Se já temos contexto, mostramos IMEDIATAMENTE (Sem latência)
+        raw_context = initial_raw_context or {}
+        if raw_context:
+            pd_init = raw_context.get("pipedrive_details", {})
+            for d in pd_init.get("deals", []): log({"type": "data_found", "entity": "deal", "data": d})
+            for a in pd_init.get("activities", []): log({"type": "data_found", "entity": "activity", "data": a})
+            for n in pd_init.get("notes", []): log({"type": "data_found", "entity": "note", "data": n})
+
+        log({"type": "status", "content": "Coletando histórico...", "icon": "search"})
         
-        log("Coletando histórico completo (Contatos, Atividades, Notas, Negócios e Mensagens)...")
-        raw_context = await fetch_contextual_data(context_intent, org_id, goal, session, selected_entities=selected_entities)
+        # 2. Se NÃO temos contexto, buscamos com retry
+        if not raw_context:
+            context_intent = initial_intent.copy()
+            context_intent["activity_done_filter"] = None
+            context_intent["activity_date_filter"] = "all"
+            if "data_scope" not in context_intent: context_intent["data_scope"] = []
+            for scope in ["persons", "notes", "activities", "deals", "whatsapp", "emails"]:
+                if scope not in context_intent["data_scope"]:
+                    context_intent["data_scope"].append(scope)
+
+            max_retries = 2
+            for attempt in range(max_retries):
+                try:
+                    raw_context = await fetch_contextual_data(context_intent, org_id, goal, session, selected_entities=selected_entities)
+                    if raw_context.get("error"): raise Exception(raw_context["error"])
+                    # Stream imediato após busca
+                    pd_new = raw_context.get("pipedrive_details", {})
+                    for d in pd_new.get("deals", []): log({"type": "data_found", "entity": "deal", "data": d})
+                    for a in pd_new.get("activities", []): log({"type": "data_found", "entity": "activity", "data": a})
+                    for n in pd_new.get("notes", []): log({"type": "data_found", "entity": "note", "data": n})
+                    break 
+                except Exception as e:
+                    await add_thought(f"Opa, tive um problema técnico: {str(e)}. Tentativa {attempt+1}/{max_retries}.")
+                    if attempt == max_retries - 1:
+                        raw_context = {"error": str(e), "pipedrive_details": {}, "email_result": {}, "whatsapp_result": {}}
+                    await asyncio.sleep(1)
         
         # ═══════════════════════════════════════
-        # ESTÁGIO 2: Resolução de Contatos (Mapa de Alcance)
+        # ESTÁGIO 2: Resolução de Contatos e Comunicações (Otimizado)
         # ═══════════════════════════════════════
-        log("Identificando contatos e canais disponíveis...")
+        pd_stats = raw_context.get("pipedrive_details", {})
+        num_deals = len(pd_stats.get("deals", []))
+        num_activities = len(pd_stats.get("activities", []))
+        
         contact_map = await AgentService._resolve_contact_map(raw_context, org_id, session)
         
-        # Marcar entidades selecionadas no mapa
+        # Recupera dados já buscados no Estágio 1
+        existing_emails = raw_context.get("email_result", {}).get("resultado", {}).get("messages_by_contact", [])
+        existing_wa = raw_context.get("whatsapp_result", {}).get("resultado", {}).get("messages_by_contact", [])
+        
+        # Mapeamento Robusto: Indexamos por Nome e por Email/Telefone para busca infalível
+        emails_by_contact = {}
+        for item in existing_emails:
+            threads = item.get("human_threads", [])
+            emails_by_contact[item["contact"].lower()] = threads
+            if item.get("email"):
+                emails_by_contact[item["email"].lower()] = threads
+            
+        whatsapp_by_contact = {}
+        for item in existing_wa:
+            msgs = item.get("messages", [])
+            whatsapp_by_contact[item["contact"].lower()] = msgs
+            if item.get("phone"):
+                whatsapp_by_contact[item["phone"]] = msgs
+
+        # PENSAMENTO 1: Baseado no volume de dados reais
+        fact_summary = f"ID: {org_id} | Negócios: {num_deals} | Atividades: {num_activities} | Contatos: {list(contact_map.keys())}"
+        await add_thought(f"Fatos Pipedrive: {fact_summary}. Vou cruzar com {len(existing_emails)} threads de e-mail encontradas.")
+
+        # Marcar entidades selecionadas no mapa e logar
         selected_names = [e.get("name") for e in selected_entities]
+        logged_count = 0
+        
         for name, info in contact_map.items():
-            if name in selected_names:
-                info["is_priority"] = True
-                log(f"📍 Contato PRIORITÁRIO identificado: {name}")
+            name_key = name.lower()
+            email_key = info.get("email", "").lower()
+            is_key_contact = name in selected_names or info.get("is_priority")
+            
+            if is_key_contact or logged_count < 5:
+                log({"type": "data_found", "entity": "contact", "data": info, "label": "Prioritário" if is_key_contact else None})
+                
+                # Busca e-mails: Tenta por Nome ou por Email (Lowercase)
+                person_emails = emails_by_contact.get(name_key) or emails_by_contact.get(email_key, [])
+                if person_emails:
+                    log({"type": "data_found", "entity": "email", "data": person_emails[0]})
+                
+                # Busca WhatsApp: Tenta por Nome ou por Telefone
+                person_wa = whatsapp_by_contact.get(name_key) or whatsapp_by_contact.get(info.get("phone"), [])
+                if person_wa:
+                    log({"type": "data_found", "entity": "whatsapp", "data": person_wa[0]})
+                
+                if not is_key_contact: logged_count += 1
         
-        if contact_map:
-            contacts_summary = ", ".join([f"{c['name']} ({', '.join(c['channels'])})" for c in contact_map.values()])
-            log(f"Contatos mapeados: {contacts_summary}")
-        else:
-            log("AVISO: Nenhum contato com dados de comunicação identificado. O agente poderá sugerir ações de prospecção/coleta.")
+        if len(contact_map) > (logged_count + len(selected_names)):
+            log({"type": "log", "content": f"... e mais {len(contact_map) - logged_count - len(selected_names)} contatos mapeados."})
+
+        # Injeta no contexto para análise de maturidade
+        raw_context["emails_by_contact"] = emails_by_contact
+        raw_context["whatsapp_by_contact"] = whatsapp_by_contact
+
+        # PENSAMENTO 2: Estratégia baseada nos artefatos encontrados
+        comm_summary = []
+        for name, info in contact_map.items():
+            name_key = name.lower()
+            email_key = info.get("email", "").lower()
+            threads = emails_by_contact.get(name_key) or emails_by_contact.get(email_key, [])
+            if threads:
+                comm_summary.append(f"Card de E-mail enviado para {name}")
         
-        # ═══════════════════════════════════════
-        # ESTÁGIO 3: Análise de Cenário (Senior Sales Analysis)
-        # ═══════════════════════════════════════
-        log("Analisando maturidade do negócio com base no histórico...")
+        fact_comm = " | ".join(comm_summary) if comm_summary else "NENHUMA INTERAÇÃO ENCONTRADA."
+        await add_thought(f"ANÁLISE DE HISTÓRICO: {fact_comm}. O conteúdo detalhado está nos cards acima. Minha análise estratégica é...")
+        
+        log({"type": "status", "content": "Analisando maturidade...", "icon": "analytics"})
         deal_analysis = await AgentService._analyze_deal_state(raw_context)
         
         # ═══════════════════════════════════════
@@ -279,6 +370,9 @@ class AgentService:
                     if email:
                         channels.append("Email")
                     
+                    if not channels:
+                        continue # Pula contatos sem nenhuma forma de comunicação
+                    
                     contact_map[name] = {
                         "name": name,
                         "pipedrive_person_id": p.get("id"),
@@ -287,8 +381,24 @@ class AgentService:
                         "whatsapp_available": wa_available,
                         "email_available": bool(email),
                         "channels": channels,
-                        "source": "Pipedrive"
+                        "source": "Pipedrive",
+                        "last_email_id": None # Será preenchido abaixo
                     }
+            
+            # --- NOVIDADE: RESOLUÇÃO DE THREADS DE EMAIL ---
+            email_res = context.get("email_result", {})
+            email_groups = email_res.get("resultado", {}).get("messages_by_contact", [])
+            for group in email_groups:
+                c_name = group.get("contact")
+                if c_name in contact_map:
+                    human_msgs = group.get("human_threads", [])
+                    if human_msgs:
+                        # Pega o ID da mensagem mais recente para o 'Reply'
+                        # Assume-se que human_msgs está ordenado ou pegamos o primeiro
+                        last_msg = human_msgs[0] 
+                        contact_map[c_name]["last_email_id"] = last_msg.get("id")
+                        if "Email" not in contact_map[c_name]["channels"]:
+                             contact_map[c_name]["channels"].append("Email")
             
             # Adiciona os explícitos selecionados na UI se eles já não estiverem no mapa
             for exc in explicit_selected:
@@ -318,7 +428,18 @@ class AgentService:
                     stmt = select(Employee).where(Employee.company_id == org_id)
                     res = await session.execute(stmt)
                     local_employees = res.scalars().all()
+                    
+                    # Filtro de ruído: Ignorar departamentos internos óbvios que poluem o cenário de vendas
+                    internal_noise = ["pcp", "rh", "financeiro", "comercial", "adm", "nfe", "qualidade", "faturamento", "fabrica", "processos", "allcompany", "intranet"]
+                    internal_domains = ["jferres.com.br"] # Domínios da própria empresa
+                    
                     for emp in local_employees:
+                        emp_email = (emp.email or "").lower()
+                        is_noise = any(noise in emp_email or noise in emp.name.lower() for noise in internal_noise)
+                        is_internal_domain = any(dom in emp_email for dom in internal_domains)
+                        
+                        if is_noise or is_internal_domain: continue # Pula funcionários internos
+                        
                         if emp.name not in contact_map:
                             contact_map[emp.name] = {
                                 "name": emp.name,
@@ -510,6 +631,7 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
                 contacts_info += f"- {name}: {channels_str}"
                 if info.get("phone"): contacts_info += f" | Tel: {info['phone']}"
                 if info.get("email"): contacts_info += f" | Email: {info['email']}"
+                if info.get("last_email_id"): contacts_info += f" | email_entry_id: {info['last_email_id']}"
                 contacts_info += "\n"
         else:
             contacts_info = "CONTATOS: Nenhum contato com dados de comunicação encontrado no CRM.\n"

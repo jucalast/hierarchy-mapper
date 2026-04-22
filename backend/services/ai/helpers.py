@@ -41,6 +41,7 @@ class ChatResponse(BaseModel):
     ui_module: Optional[str] = None
     data: Optional[Dict[str, Any]] = None
     debug: Optional[Dict[str, Any]] = None
+    pipedrive_cooldown: Optional[int] = None # Tempo restante em segundos (Opcional)
 
 
 # ==========================================

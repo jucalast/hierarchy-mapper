@@ -22,8 +22,12 @@ async def classify_user_intent(message: str, history: Optional[List[MessageInput
         history_lines = []
         # Pega as últimas 6 mensagens de contexto para capturar referências a nomes
         for msg in history[-6:]:
-            role_br = "Usuário" if msg.role == "user" else "Assistente"
-            history_lines.append(f"{role_br}: {msg.content}")
+            # Suporte para dict ou objeto Pydantic
+            msg_role = msg.get("role") if isinstance(msg, dict) else msg.role
+            msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
+            
+            role_br = "Usuário" if msg_role == "user" else "Assistente"
+            history_lines.append(f"{role_br}: {msg_content}")
         history_str = "Histórico Recente da Conversa:\n" + "\n".join(history_lines)
     
     prompt = f"""{INTENT_CLASSIFIER_PROMPT}

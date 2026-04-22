@@ -8,7 +8,7 @@ import { Message, CompanyResult, ApprovalAction } from './chat/ChatInterfaces';
 // Sub-componentes Modularizados
 import { ChatHeader } from './chat/ChatHeader';
 import { ChatInput } from './chat/ChatInput';
-import { ChatMessage } from './chat/ChatMessage';
+import { ChatMessage, RichLogRenderer, RichLogEntry } from './chat/ChatMessage';
 import { DebugPanel } from './chat/DebugPanel';
 
 import { useSpeechToText } from '../hooks/useSpeechToText';
@@ -50,10 +50,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCompanies, setSelectedCompanies] = useState<CompanyResult[]>([]);
-    const [currentLogs, setCurrentLogs] = useState<string[]>([]);
+    const [currentLogs, setCurrentLogs] = useState<any[]>([]);
     const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>>({});
     const [model, setModel] = useState<'gemini' | 'groq'>('gemini');
     const [isThinkingExpanded, setIsThinkingExpanded] = useState(true);
+    const [pipedriveCooldown, setPipedriveCooldown] = useState<number>(0);
 
     // Estados de Autocomplete
     const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -80,6 +81,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     useEffect(() => {
         scrollToBottom();
     }, [messages, currentLogs]);
+
+    // Efeito de Contagem Regressiva para o Pipedrive
+    useEffect(() => {
+        if (pipedriveCooldown > 0) {
+            const timer = setInterval(() => {
+                setPipedriveCooldown(prev => Math.max(0, prev - 1));
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [pipedriveCooldown]);
 
     // Handlers
     const handleInputChange = (val: string) => {
@@ -165,7 +176,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
                     let buffer = '';
-                    const sessionLogs: string[] = [];
+                    const sessionLogs: any[] = [];
 
                     while (true) {
                         const { value, done } = await reader.read();
@@ -178,10 +189,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             if (!line.trim()) continue;
                             try {
                                 const chunk = JSON.parse(line);
-                                if (chunk.type === 'log') {
-                                    sessionLogs.push(chunk.content);
+                                if (chunk.type === 'log' || chunk.type === 'thought' || chunk.type === 'status' || chunk.type === 'data_found' || chunk.type === 'warning') {
+                                    sessionLogs.push(chunk);
                                     setCurrentLogs([...sessionLogs]);
+                                    if (chunk.pipedrive_cooldown) {
+                                        setPipedriveCooldown(chunk.pipedrive_cooldown);
+                                    }
                                 } else if (chunk.type === 'final') {
+                                    if (chunk.pipedrive_cooldown) {
+                                        setPipedriveCooldown(chunk.pipedrive_cooldown);
+                                    }
                                     const assistantMessage: Message = {
                                         id: (Date.now() + 1).toString(),
                                         role: 'assistant',
@@ -199,6 +216,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     }
                 } else {
                     const data = await response.json();
+                    if (data.pipedrive_cooldown) {
+                        setPipedriveCooldown(data.pipedrive_cooldown);
+                    }
                     setMessages(prev => [...prev, {
                         id: (Date.now() + 1).toString(),
                         role: 'assistant',
@@ -320,9 +340,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                         </div>
                                     ) : (
                                         currentLogs.map((log, i) => (
-                                            <div key={i} className={styles.logLine}>
-                                                <Loader2 size={12} className={styles.spinner} /> <span>{log}</span>
-                                            </div>
+                                            <RichLogRenderer key={i} log={log} onOpenWhatsApp={onOpenWhatsApp} />
                                         ))
                                     )}
                                 </div>
@@ -362,6 +380,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 startListening={startListening}
                 stopListening={stopListening}
                 theme={theme}
+                pipedriveCooldown={pipedriveCooldown}
             />
         </div>
     );

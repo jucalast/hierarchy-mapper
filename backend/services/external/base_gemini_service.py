@@ -49,7 +49,7 @@ def _reset_gemini_circuit():
     _gemini_consecutive_failures = 0
 
 
-async def ask_gemini(prompt: str, json_mode: bool = False, max_retries: int = 2) -> Union[str, Dict]:
+async def ask_gemini(prompt: str, json_mode: bool = False, max_retries: int = 2, history: list = None) -> Union[str, Dict]:
     gemini_key = settings.GEMINI_API_KEY
     groq_key = settings.GROQ_API_KEY
     
@@ -57,8 +57,23 @@ async def ask_gemini(prompt: str, json_mode: bool = False, max_retries: int = 2)
         print("[AI Service] Nenhuma API key configurada (GEMINI_API_KEY / GROQ_API_KEY)!")
         return {} if json_mode else ""
     
+    # --- FORMATAÇÃO DO HISTÓRICO PARA GEMINI ---
+    gemini_contents = []
+    if history:
+        for msg in history:
+            # Garante que tratamos tanto dict quanto objeto Pydantic
+            msg_role = msg.role if hasattr(msg, "role") else msg.get("role")
+            msg_content = msg.content if hasattr(msg, "content") else msg.get("content", "")
+            
+            role = "model" if msg_role == "assistant" else "user"
+            if msg_content:
+                gemini_contents.append({"role": role, "parts": [{"text": msg_content}]})
+    
+    # Adiciona a mensagem atual
+    gemini_contents.append({"role": "user", "parts": [{"text": prompt}]})
+
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
+        "contents": gemini_contents,
         "generationConfig": {
             "responseMimeType": "application/json" if json_mode else "text/plain",
             "temperature": 0.1
@@ -73,8 +88,7 @@ async def ask_gemini(prompt: str, json_mode: bool = False, max_retries: int = 2)
     
     groq_models = [
         "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
-        "mixtral-8x7b-32768"
+        "llama-3.1-8b-instant"
     ]
 
     async with httpx.AsyncClient(timeout=45.0) as client:
@@ -127,14 +141,29 @@ async def ask_gemini(prompt: str, json_mode: bool = False, max_retries: int = 2)
             print(f"[Groq Fallback] Acionando Groq como fallback...")
             groq_url = "https://api.groq.com/openai/v1/chat/completions"
             
+            # --- FORMATAÇÃO DO HISTÓRICO PARA GROQ ---
+            groq_messages = []
+            if history:
+                for msg in history:
+                    # Garante que tratamos tanto dict quanto objeto Pydantic
+                    msg_role = msg.role if hasattr(msg, "role") else msg.get("role")
+                    msg_content = msg.content if hasattr(msg, "content") else msg.get("content", "")
+                    
+                    # Groq usa 'assistant', não 'model'
+                    groq_messages.append({"role": msg_role, "content": msg_content})
+            
+            # Adiciona a mensagem atual
+            groq_messages.append({"role": "user", "content": prompt})
+
             for groq_model in groq_models:
                 groq_payload = {
                     "model": groq_model,
-                    "messages": [{"role": "user", "content": prompt}],
+                    "messages": groq_messages,
                     "temperature": 0.1
                 }
                 if json_mode:
                     groq_payload["response_format"] = {"type": "json_object"}
+                    # Insere o sistema no início
                     groq_payload["messages"].insert(0, {"role": "system", "content": "Você é uma IA analítica. Por favor, forneça a saída estritamente em um JSON válido."})
 
                 try:

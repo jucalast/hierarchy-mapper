@@ -8,7 +8,7 @@ export interface Message {
     selectedCompanies?: CompanyResult[];
     ui_module?: 'TaskList' | 'ContactGrid' | 'CompanyCard' | 'WhatsAppThread' | 'EmailThread' | 'AgentWorkflow' | null;
     data?: any;
-    logs?: string[];
+    logs?: any[];
     pending_approvals?: ApprovalAction[];
     debug?: {
         intent?: any;
