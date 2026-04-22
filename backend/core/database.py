@@ -82,7 +82,10 @@ async def init_db():
             "ALTER TABLE organizations ADD COLUMN is_excluded INTEGER DEFAULT 0",
             "ALTER TABLE employees ADD COLUMN temperature VARCHAR",
             "ALTER TABLE employees ADD COLUMN phone VARCHAR",
-            "ALTER TABLE employees ADD COLUMN whatsapp_number VARCHAR"
+            "ALTER TABLE employees ADD COLUMN whatsapp_number VARCHAR",
+            "ALTER TABLE organizations ADD COLUMN source VARCHAR DEFAULT 'pipedrive'",
+            "ALTER TABLE employees ADD COLUMN source VARCHAR DEFAULT 'pipedrive'",
+            "ALTER TABLE employees ADD COLUMN is_discovery INTEGER DEFAULT 0"
         ]:
             try:
                 await conn.execute(text(query))

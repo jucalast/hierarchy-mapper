@@ -17,6 +17,7 @@ from services.ai.action_executor import execute_whatsapp_action, execute_email_a
 from services.ai.data_fetcher import resolve_organization, fetch_contextual_data, execute_osint_enrichment
 from services.ai.bypass_handler import try_bypass_response
 from services.ai.response_generator import generate_ai_response
+from services.ai.logger import dump_intelligence_context
 
 router = APIRouter()
 
@@ -90,9 +91,16 @@ async def chat_with_ai(
             if osint_context:
                 internal_context.update(osint_context)
 
+        # Converte os modelos Pydantic da UI em dicts para não dar erro de serialização no Log
+        selected_entities_dicts = [c.dict() for c in (payload.selectedCompanies or [])]
+
         # --- BUSCA DE DADOS CONTEXTUAIS ---
-        fetched_data = await fetch_contextual_data(intent_info, org_id, payload.message, session)
+        fetched_data = await fetch_contextual_data(
+            intent_info, org_id, payload.message, session, 
+            selected_entities=selected_entities_dicts
+        )
         internal_context.update(fetched_data)
+        internal_context["selected_entities"] = selected_entities_dicts
 
         # Injeta resultados de ações no contexto
         if whatsapp_result_context:
@@ -102,6 +110,9 @@ async def chat_with_ai(
 
         data_scope = intent_info.get("data_scope", [])
         print(f"[AI Pipeline] Estágio 2 - Alimentando o modelo final com dados da query do tipo: {query_type} | scopes: {data_scope}...")
+
+        # --- LOG DE CONTEXTO BRUTO (Shadow Logger) ---
+        dump_intelligence_context(payload.message, intent_info, internal_context, org_id)
 
         # --- BYPASS: Retorno direto sem IA (tarefas, contatos, WhatsApp, Email) ---
         bypass_response = try_bypass_response(intent_info, internal_context, whatsapp_result_context, email_result_context)
@@ -115,31 +126,33 @@ async def chat_with_ai(
                     # Executa o workflow em background para podermos capturar os logs
                     log_queue = asyncio.Queue()
                     from services.ai.agent_service import AgentService
-                    task = asyncio.create_task(AgentService.run_workflow(
-                        goal=payload.message, 
-                        initial_intent=intent_info,
-                        org_id=org_id,
-                        selected_entities=payload.selectedCompanies or [],
-                        session=session,
-                        log_queue=log_queue
-                    ))
+                    from core.database import async_session
                     
-                    # Enquanto a tarefa roda, emitimos logs
-                    while not task.done() or not log_queue.empty():
-                        try:
-                            # Pequeno timeout para não travar
-                            log_msg = await asyncio.wait_for(log_queue.get(), timeout=0.1)
-                            yield json.dumps({"type": "log", "content": log_msg}) + "\n"
-                        except asyncio.TimeoutError:
-                            if task.done(): break
-                            continue
-                    
-                    agent_result = await task
-                    
-                    # Emite aprovações pendentes (se houver)
-                    pending = agent_result.get("pending_approvals", [])
-                    if pending:
-                        yield json.dumps({"type": "pending_approvals", "actions": pending}) + "\n"
+                    # Usamos uma sessão dedicada para o agente não sofrer com sessões fechadas pelo FastAPI
+                    async with async_session() as agent_session:
+                        task = asyncio.create_task(AgentService.run_workflow(
+                            goal=payload.message, 
+                            initial_intent=intent_info,
+                            org_id=org_id,
+                            selected_entities=selected_entities_dicts,
+                            session=agent_session,
+                            log_queue=log_queue
+                        ))
+                        
+                        # Enquanto a tarefa roda, emitimos logs
+                        while not task.done() or not log_queue.empty():
+                            try:
+                                # Pequeno timeout para não travar
+                                log_msg = await asyncio.wait_for(log_queue.get(), timeout=0.1)
+                                yield json.dumps({"type": "log", "content": log_msg}) + "\n"
+                            except asyncio.TimeoutError:
+                                if task.done(): break
+                                continue
+                        
+                        agent_result = await task
+                        pending = agent_result.get("pending_approvals", [])
+                        if pending:
+                            yield json.dumps({"type": "pending_approvals", "actions": pending}) + "\n"
                     
                     # Formata a resposta final
                     full_response = agent_result.get("full_response", "Finalizado.")

@@ -2,6 +2,8 @@
 # Use este quando quiser estabilidade em vez de dev automático
 
 $ErrorActionPreference = "SilentlyContinue"
+$OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding = New-Object System.Text.UTF8Encoding
+$env:PYTHONUTF8=1
 
 Write-Host "🚀 Iniciando Ambiente de Desenvolvimento LINKB2B (SEM AUTO-RELOAD)..." -ForegroundColor Green
 Write-Host ""
@@ -55,7 +57,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     Set-Location '$backendPath'
     Write-Host 'ℹ️ Backend iniciado. Pressione Ctrl+C para parar.' -ForegroundColor Yellow
     Write-Host 'Para mudanças automáticas, use: .\rodar_dev.ps1' -ForegroundColor Cyan
-    & '$pythonPath' -m uvicorn main:app --port 8000
+    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8000
 "
 
 # 4. Iniciar Worker (SEM watchfiles)
@@ -91,7 +93,7 @@ $emailPath = Join-Path $PSScriptRoot "backend\services\email-service"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Email'
     Set-Location '$emailPath'
-    & '$pythonPath' main.py
+    & '$pythonPath' -X utf8 main.py
 "
 
 Write-Host ""

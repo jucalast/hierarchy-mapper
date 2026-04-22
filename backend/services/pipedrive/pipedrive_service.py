@@ -40,7 +40,8 @@ class PipedriveService:
             "org_id": data.get("org_id"),
             "deal_id": data.get("deal_id"),
             "person_id": data.get("person_id"),
-            "user_id": self.user_id
+            "user_id": self.user_id,
+            "done": 1 if data.get("done") else 0
         }
         try:
             async with httpx.AsyncClient() as client:
@@ -139,6 +140,46 @@ class PipedriveService:
                     print(f"[Pipedrive Service] Banco Local atualizado via Confirmação Intelligence.")
         except Exception as e:
             print(f"[Pipedrive Service] Erro ao atualizar banco local: {e}")
+
+    async def update_person(self, person_id: int, data: dict):
+        """
+        Atualiza dados de uma pessoa no Pipedrive e no banco local.
+        """
+        from core.database import async_session
+        from models import Employee
+        from sqlalchemy import select
+
+        url = f"{self.base_url}/persons/{person_id}?api_token={self.api_token}"
+        
+        # 1. Update no Pipedrive
+        payload = {}
+        if data.get("phone"): 
+            payload["phone"] = [{"value": data["phone"], "primary": True}]
+        if data.get("email"): payload["email"] = [{"value": data["email"], "primary": True}]
+        if data.get("name"): payload["name"] = data["name"]
+        
+        pipedrive_success = False
+        if payload:
+            try:
+                async with httpx.AsyncClient() as client:
+                    resp = await client.put(url, json=payload)
+                    pipedrive_success = resp.status_code == 200
+            except Exception as e:
+                print(f"[Pipedrive Service] Erro ao atualizar pessoa no API: {e}")
+
+        # 2. Update Banco Local
+        try:
+            async with async_session() as session:
+                stmt = select(Employee).where(Employee.pipedrive_id == str(person_id))
+                res = await session.execute(stmt)
+                emp = res.scalars().first()
+                if emp:
+                    if data.get("phone"): emp.phone = data["phone"]
+                    if data.get("email"): emp.email = data["email"]
+                    if data.get("name"): emp.name = data["name"]
+                    await session.commit()
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro ao atualizar banco local (Person): {e}")
 
         return pipedrive_success
 
@@ -551,6 +592,23 @@ class PipedriveService:
             deals_data = deals_resp.json()
             deals = deals_data.get("data") or []
             
+            # --- MAPEAMENTO DE ESTÁGIOS (STAGE NAMES) ---
+            stages_map = {}
+            try:
+                # Busca etapas do pipeline para traduzir IDs em Nomes (Cache local por request)
+                stages_resp = await client.get(f"{self.base_url}/stages?api_token={self.api_token}")
+                if stages_resp.status_code == 200:
+                    s_data = stages_resp.json().get("data") or []
+                    stages_map = {s["id"]: s["name"] for s in s_data}
+            except Exception as e:
+                print(f"[Pipedrive Service] Erro ao mapear estágios: {e}")
+            
+            # Enriquece os deals com o nome da etapa e formata valor
+            for d in deals:
+                d["stage_name"] = stages_map.get(d.get("stage_id"), f"Estágio {d.get('stage_id')}")
+                # Garante que o valor seja legível
+                d["formatted_value"] = f"{d.get('currency', 'BRL')} {d.get('value', 0):,.2f}"
+
             # Identifica o Negócio Principal (Aberto preferencialmente, ou o mais recente)
             primary_deal = next((d for d in deals if d.get("status") == "open"), None)
             if not primary_deal and deals:
@@ -628,6 +686,51 @@ class PipedriveService:
                 "notes": results["notes"],
                 "updates": results["updates"]
             }
+
+    async def create_activity(self, data: dict):
+        """Cria uma atividade no Pipedrive."""
+        url = f"{self.base_url}/activities?api_token={self.api_token}"
+        # Garante que campos obrigatórios existem
+        if not data.get("user_id"): data["user_id"] = self.user_id
+        
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json=data)
+            return resp.json()
+
+    async def update_activity(self, activity_id: int, data: dict):
+        """Atualiza uma atividade existente."""
+        url = f"{self.base_url}/activities/{activity_id}?api_token={self.api_token}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.put(url, json=data)
+            return resp.json()
+
+    async def create_person(self, name: str, email: str = None, phone: str = None, org_id: int = None):
+        """Cria uma pessoa no Pipedrive e vincula à organização."""
+        url = f"{self.base_url}/persons?api_token={self.api_token}"
+        payload = {
+            "name": name,
+            "owner_id": self.user_id,
+            "org_id": org_id,
+            "email": [{"value": email, "primary": True}] if email else None,
+            "phone": [{"value": phone, "primary": True}] if phone else None
+        }
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json=payload)
+            return resp.json()
+
+    async def update_person(self, person_id: int, data: dict):
+        """Atualiza dados de uma pessoa."""
+        url = f"{self.base_url}/persons/{person_id}?api_token={self.api_token}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.put(url, json=data)
+            return resp.json()
+
+    async def update_deal(self, deal_id: int, data: dict):
+        """Atualiza um negócio (útil para vincular person_id post-sync)."""
+        url = f"{self.base_url}/deals/{deal_id}?api_token={self.api_token}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.put(url, json=data)
+            return resp.json()
 
 # Singleton
 pipedrive_service = PipedriveService()

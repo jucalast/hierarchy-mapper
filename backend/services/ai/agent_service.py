@@ -31,6 +31,9 @@ class AgentService:
             if log_queue:
                 log_queue.put_nowait(msg)
 
+        # Converte entidades Pydantic para dict se necessário para evitar AttributeError
+        selected_entities = [e.model_dump() if hasattr(e, "model_dump") else e for e in selected_entities]
+
         log(f"Iniciando workflow especializado: {goal}")
         
         # ═══════════════════════════════════════
@@ -45,7 +48,7 @@ class AgentService:
                 context_intent["data_scope"].append(scope)
         
         log("Coletando histórico completo (Contatos, Atividades, Notas, Negócios e Mensagens)...")
-        raw_context = await fetch_contextual_data(context_intent, org_id, goal, session)
+        raw_context = await fetch_contextual_data(context_intent, org_id, goal, session, selected_entities=selected_entities)
         
         # ═══════════════════════════════════════
         # ESTÁGIO 2: Resolução de Contatos (Mapa de Alcance)
@@ -202,7 +205,13 @@ class AgentService:
         pd_details = context.get("pipedrive_details", {})
         org_name = context.get("organization", {}).get("name", "")
         persons = pd_details.get("persons", []) if isinstance(pd_details, dict) else []
+        selected_entities = context.get("selected_entities", [])
+        explicit_selected = [e for e in selected_entities if (e.get("type") if isinstance(e, dict) else getattr(e, "type", None)) in ["email", "whatsapp", "person", "employee"]]
         
+        # Filtro de Exclusividade: Se há pessoas selecionadas na UI, descarta as pessoas genéricas do Pipedrive
+        if explicit_selected:
+            persons = [p for p in persons if any(p.get("name", "").lower() == e.get("name", "").lower() for e in explicit_selected)]
+            
         contact_map = {}
         wa_base = "http://localhost:8001/api/whatsapp"
         
@@ -241,8 +250,51 @@ class AgentService:
                         "channels": channels,
                         "source": "Pipedrive"
                     }
+            
+            # Adiciona os explícitos selecionados na UI se eles já não estiverem no mapa
+            for exc in explicit_selected:
+                name = exc.get("name")
+                if name and name not in contact_map:
+                    chans = []
+                    email = exc.get("email")
+                    if email: chans.append("Email")
+                    phone = exc.get("phone")
+                    if phone: chans.append("WhatsApp")
+                    
+                    contact_map[name] = {
+                        "name": name,
+                        "phone": phone,
+                        "email": email,
+                        "whatsapp_available": bool(phone),
+                        "email_available": bool(email),
+                        "channels": chans,
+                        "source": "Seleção Direta na Interface"
+                    }
 
-            # 2. Busca contatos no WhatsApp que combinem com o nome da empresa
+            # 2. PROATIVIDADE: Busca contatos no Banco Local (Hierarchy Mapper) que NÃO estão no Pipedrive (apenas se o usuário não afunilou)
+            if not explicit_selected:
+                try:
+                    from sqlalchemy import select
+                    from models.employee import Employee
+                    stmt = select(Employee).where(Employee.company_id == org_id)
+                    res = await session.execute(stmt)
+                    local_employees = res.scalars().all()
+                    for emp in local_employees:
+                        if emp.name not in contact_map:
+                            contact_map[emp.name] = {
+                                "name": emp.name,
+                                "phone": emp.whatsapp_number or emp.phone,
+                                "email": emp.email,
+                                "whatsapp_available": bool(emp.whatsapp_number),
+                                "email_available": bool(emp.email),
+                                "channels": [c for c in ["WhatsApp", "Email", "Telefone"] if (emp.whatsapp_number if c=="WhatsApp" else (emp.email if c=="Email" else emp.phone))],
+                                "source": f"Inteligência Local ({emp.department or 'Sem Dept'})",
+                                "is_new_prospect": True
+                            }
+                except Exception as e:
+                    print(f"[Agent] Erro ao buscar contatos locais: {e}")
+
+            # 3. Busca contatos no WhatsApp que combinem com o nome da empresa
             if org_name and len(org_name) > 2:
                 try:
                     search_resp = await client.get(f"{wa_base}/contacts/search?name={org_name}")
@@ -262,6 +314,16 @@ class AgentService:
         
         return contact_map
 
+    @staticmethod
+    def _get_business_protocol():
+        """Carrega as regras de negócio e persona da empresa."""
+        import os
+        path = os.path.join(os.getcwd(), "intelligence_config", "business_protocol.md")
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
+        return "Sem protocolo de negócio definido."
+
     # ═══════════════════════════════════════
     # ANÁLISE DE CENÁRIO
     # ═══════════════════════════════════════
@@ -271,8 +333,13 @@ class AgentService:
         pd_details = context.get("pipedrive_details", {})
         activities = pd_details.get("activities", [])
         notes = pd_details.get("notes", [])
+        deals = pd_details.get("deals", [])
         
-        history_summary = "Histórico de Atividades (INDEXADO):\n"
+        history_summary = "DADOS DO NEGÓCIO (PIPELINE):\n"
+        for d in deals[:3]:
+            history_summary += f"- Negócio: {d.get('title')} | Valor: {d.get('formatted_value')} | Estágio: {d.get('stage_name')} | Status: {d.get('status')}\n"
+        
+        history_summary += "\nHistórico de Atividades (INDEXADO):\n"
         for i, act in enumerate(activities[:15]):
             status = "CONCLUÍDA" if act.get("done") else "PENDENTE"
             history_summary += f"[{i+1}] {act.get('due_date')}: [{act.get('type')}] {act.get('subject')} ({status})\n"
@@ -295,27 +362,87 @@ class AgentService:
                     sender = "Eu" if m.get("fromMe") else "Contato"
                     history_summary += f"  {sender}: {m.get('body', '')[:150]}\n"
 
-        # Inclui snapshot de Emails
+        # Inclui snapshot de Emails com Filtro de Humanidade
         email_result = context.get("email_result", {})
-        email_messages = email_result.get("resultado", {}).get("messages_by_contact", [])
-        if email_messages:
-            history_summary += "\nÚltimas Trocas de Email:\n"
-            for group in email_messages[:2]:
-                history_summary += f"\nEmails com {group.get('contact')}:\n"
-                for m in group.get("messages", [])[:5]:
-                    date_val = m.get("date", "Data desconhecida")
-                    history_summary += f"  [{date_val}] {m.get('subject', 'Sem Assunto')}\n"
-                    history_summary += f"    Snippet: {m.get('snippet', '')[:400]}\n"
+        email_messages_groups = email_result.get("resultado", {}).get("messages_by_contact", [])
+        if email_messages_groups:
+            history_summary += "\nMonitoramento de Emails (Análise de Humanidade):\n"
+            for group in email_messages_groups[:3]:
+                history_summary += f"\nCanal Email: {group.get('contact')} ({group.get('email')})\n"
+                human_msgs = group.get("human_threads", [])
+                # Garante ordem cronológica (mais antigo primeiro para o fluxo de leitura)
+                try:
+                    human_msgs.sort(key=lambda x: x.get("date", ""))
+                except: pass
+                
+                auto_count = group.get("automated_count", 0)
+                
+                if human_msgs:
+                    history_summary += f"  - E-mails Humanos Detectados ({len(human_msgs)}):\n"
+                    for m in human_msgs[:8]:
+                        # Identifica se o remetente sou EU
+                        raw_sender = m.get("sender", "")
+                        is_me_sender = "/o=ExchangeLabs" in raw_sender or "joao.moura" in raw_sender.lower()
+                        lbl_from = "EU (João Luccas)" if is_me_sender else "CLIENTE"
+                        
+                        # Identifica se o destinatário sou EU
+                        raw_to = m.get("to", "")
+                        is_me_to = "joao.moura" in raw_to.lower() or "Joao" in raw_to or "João" in raw_to
+                        lbl_to = "EU (João Luccas)" if is_me_to else "CLIENTE"
+                        
+                        history_summary += f"    [{m.get('date')}] DE: {lbl_from} > PARA: {lbl_to} | {m.get('subject')} -> {m.get('body', '')[:600]}\n"
+                else:
+                    history_summary += "  - Nenhuma comunicação humana direta encontrada recentemente.\n"
+                
+                if auto_count > 0:
+                    history_summary += f"  - ⚠️ INFO: {auto_count} e-mails de automação (marketing/notificações) foram identificados e descartados da análise técnica, mas servem como prova de monitoramento.\n"
 
-        prompt = f"""Você é um Diretor de Vendas B2B Senior.
-Analise o histórico abaixo e apresente sua conclusão.
+        # Injeção de Status Calculado (Cross-channel)
+        calc_status = context.get("calculated_status", {})
+        if calc_status:
+            history_summary += f"\n📊 ANÁLISE DE TEMPO REAL (Métrica LINKB2B):\n"
+            history_summary += f"- {calc_status.get('summary')}\n"
+            if calc_status.get('is_critical'):
+                history_summary += f"- ⚠️ RISCO: O momentum está baixando (Silêncio > 10 dias).\n"
+        else:
+            # Fallback antigo se por algum motivo não calculou
+            all_dates = []
+            for act in activities:
+                if act.get("done") and act.get("due_date"):
+                    try: all_dates.append(datetime.strptime(act.get("due_date"), "%Y-%m-%d"))
+                    except: pass
+            if all_dates:
+                last_human_date = max(all_dates)
+                delta = (datetime.now() - last_human_date).days
+                history_summary += f"\n⏳ ALERTA DE CICLO (Pipedrive-only): Último registro há {delta} dias.\n"
 
-IMPORTANTE: 
-- Use o marcador `[[TASK:índice]]` (ex: [[TASK:1]]) para citar uma tarefa específica do histórico quando estiver explicando o que foi feito. Eu vou renderizar o card visual no lugar desse código.
-- Sua resposta deve ser direta, persuasiva e baseada em fatos.
-- Se houver mensagens de WhatsApp, inclua insights sobre o tom e urgência do cliente.
+        # NOVIDADE: Passo Intermediário de Arqueologia (Mapa de Resoluções)
+        # Analisamos as comunicações separadamente para extrair fatos antes da análise de vendas
+        resolution_map_prompt = f"""Analise este histórico de comunicações e identifique:
+1. O que o CLIENTE pediu/perguntou?
+2. O João (eu) já respondeu ou entregou o que foi pedido? Se sim, em qual data?
+3. Há alguma pendência REAL que ainda não foi respondida nas comunicações?
 
 HISTÓRICO:
+{history_summary}
+
+Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Pendente em Data]"
+"""
+        resolution_map = await ask_gemini(resolution_map_prompt)
+
+        prompt = f"""Você é um Diretor de Vendas B2B Senior seguindo este PROTOCOLO DE NEGÓCIO:
+{protocol}
+
+Sua missão é extrair o ESTADO REAL do negócio cruzando o CRM com o histórico de comunicações.
+
+DIRETRIZES DE PENSAMENTO:
+1. FOCO DUPLO (ARQUEOLOGIA + PAUTA):
+   - MODO ARQUEOLOGIA: Se algo foi resolvido nas conversas mas não está no CRM, relate como CONCLUÍDO na DATA REAL.
+   - MODO PAUTA (SCRIPTAGEM): Se houver tarefas 'PENDENTES' no CRM, identifique-as como o objetivo principal da próxima ação. Determine o que deve ser dito ou enviado para resolver essa pauta específica.
+2. MAPA DE RESOLUÇÃO (FATOS DESTILADOS): Analise "{resolution_map}" para confirmar o fluxo de entregas.
+3. GATILHOS DE NEGÓCIO: Identifique quem detém a próxima ação (João ou Cliente) e se há dependências (Ex: "Aguardando X para poder fazer Y").
+
+HISTÓRICO COMPLETO:
 {history_summary}
 """
         return await ask_gemini(prompt)
@@ -328,7 +455,15 @@ HISTÓRICO:
         """Passo 4: Define as ações concretas com inteligência multicanal."""
         pd_details = context.get("pipedrive_details", {})
         deals = pd_details.get("deals", [])
-        deals_info = "\n".join([f"- ID: {d.get('id')} | Título: {d.get('title')} | Status: {d.get('status')}" for d in deals])
+        deals_info = "\n".join([f"- ID: {d.get('id')} | Título: {d.get('title')} | Valor: {d.get('formatted_value')} | Estágio: {d.get('stage_name')} | Status: {d.get('status')}" for d in deals])
+
+        # Formata atividades JÁ EXISTENTES para evitar duplicidade
+        activities = pd_details.get("activities", [])
+        activities_info = "ATIVIDADES JÁ REGISTRADAS NO CRM (Não duplique estas):\n"
+        for act in activities[:15]:
+            status = "CONCLUÍDA" if act.get("done") else "PENDENTE"
+            activities_info += f"- [{status}] {act.get('subject')} ({act.get('due_date')})\n"
+        if not activities: activities_info += "- Nenhuma atividade registrada ainda.\n"
 
         # Formata mapa de contatos para a IA
         contacts_info = ""
@@ -343,7 +478,12 @@ HISTÓRICO:
         else:
             contacts_info = "CONTATOS: Nenhum contato com dados de comunicação encontrado no CRM.\n"
 
-        prompt = f"""Você é um Gerente de Vendas Senior. Seu papel é gerar um PLANO DE AÇÃO PRECISO para o vendedor.
+        protocol = AgentService._get_business_protocol()
+
+        prompt = f"""Você é um Gerente de Vendas Senior. Seu papel é gerar um PLANO DE AÇÃO PRECISO baseado no PROTOCOLO abaixo:
+{protocol}
+
+DATA ATUAL: {datetime.now().strftime("%d/%m/%Y")} (Assuma o ano {datetime.now().year} se a data extraída da conversa não tiver ano).
 
 ANÁLISE DE VENDAS:
 "{analysis}"
@@ -352,14 +492,15 @@ OBJETIVO: "{goal}"
 
 NEGÓCIOS (DEALS):
 {deals_info or "Nenhum negócio encontrado."}
-- Entidades Marcadas pelo Usuário (FOCO TOTAL): {", ".join([e.get('name', '') for e in selected_entities]) or "Nenhuma"}
+- Entidades Marcadas pelo Usuário (FOCO EXCLUSIVO): Você DEVE priorizar a criação de tarefas e o engajamento com estas pessoas especificamente: {", ".join([e.get('name', '') for e in selected_entities]) or "Nenhuma"}. NÃO direcione suas tarefas para pessoas que não foram marcadas pelo usuário a menos que elas sejam o único contato viável.
 
 {contacts_info}
+{activities_info}
 
 AÇÕES DISPONÍVEIS:
 1. "create_pipedrive_task" - Criar atividade no CRM (executa imediatamente, sem permissão)
-   Params: {{ "subject", "note", "type" (call/email/task/meeting), "deal_id", "days_delay" }}
-   IMPORTANTE: Use o "type" correto. Se for para mandar um email, use "email". Se for ligar, use "call".
+   Params: {{ "subject", "note", "type" (call/email/task/meeting), "deal_id", "due_date" (YYYY-MM-DD), "done" (boolean) }}
+   IMPORTANTE: Se você encontrar um WhatsApp anterior (ex: 'enviei o orçamento dia 15/04'), use a data exata em "due_date" e marque "done": true.
 
 2. "update_pipedrive_task" - Atualizar atividade existente no CRM (executa imediatamente)
    Params: {{ "activity_id", "subject", "note" }}
@@ -372,21 +513,29 @@ AÇÕES DISPONÍVEIS:
    Params: {{ "contact_name", "email", "subject", "body" }}
    ⚠️ Use SOMENTE se houver Email disponível no mapa de contatos.
 
-5. "generate_content" - Gerar texto de apoio ou um insight consultivo (sem ação externa). Use para informar ao usuário se algo está faltando.
+5. "update_pipedrive_person" - Atualizar dados de um contato (ex: telefone/whatsapp novo)
+   Params: {{ "person_id", "phone", "email", "name" }}
+   IMPORTANTE: Se você encontrar um WhatsApp por nome que NÃO bate com o número no CRM, use esta ação para sincronizar o Pipedrive.
+
+6. "sync_contact_to_pipedrive" - Criar/Vincular um contato local ao Pipedrive (executa imediatamente). 
+   Params: {{ "person_name", "email", "phone", "org_id", "deal_id" }}
+   ⚠️ USE ISSO sempre que um contato importante (ex: decisor mencionado ou identificado no Outlook) NÃO estiver no Pipedrive (identificado como 'Inteligência Local' no mapa).
+
+7. "generate_content" - Gerar texto de apoio ou um insight consultivo (sem ação externa). Use para informar ao usuário se algo está faltando.
    Params: {{ "content" }}
 
 DIRETRIZES DE CONSULTORIA SENIOR:
-- Se um contato essencial NÃO tem telefone ou email, a primeira ação deve ser "generate_content" avisando isso e sugerindo uma tarefa de "Pesquisar contato de X".
-- Não peça permissão para atualizar o Pipedrive.
+- ⚠️ PRIORIDADE DE PAUTA: Se uma atividade similar já existe em "ATIVIDADES JÁ REGISTRADAS" como 'PENDENTE', NÃO crie uma nova `create_pipedrive_task`. Em vez disso, proponha a AÇÃO (WhatsApp/Email) para resolvê-la.
+- ⚠️ PROTOCOLO DE ARQUEOLOGIA: Se encontrou evento concluído no passado SEM registro no CRM, crie com `done: true` na data original.
+- ⚠️ PROTOCOLO DE 'GANCHOS TÉCNICOS': Ao sugerir mensagens, você é OBRIGADO a resgatar termos técnicos, dores ou métricas do histórico (Ex: cubagem, amostragem, logística).
+- ⚠️ RIGOR DE EVIDÊNCIA: Proibido criar ações ou tarefas sem evidência textual explícita. Sem placeholders.
 - Peça permissão para TUDO que for enviado ao cliente (WhatsApp/Email).
-- Se houver contatos do WhatsApp que não estão no Pipedrive, sugira vinculá-los ou mandar mensagem por lá se parecer ser o canal preferido dele.
-- Seja ASSERTIVO. Se o negócio está parado faz tempo, sugira uma mensagem de "despedida/break-up" ou uma última tentativa agressiva.
 
 FORMATO DE RESPOSTA (JSON APENAS):
 {{
   "plan": [
     {{ "action": "create_pipedrive_task", "description": "Razão", "params": {{ ... }} }},
-    {{ "action": "send_whatsapp", "description": "Razão", "params": {{ "contact_name": "Bianca Lima", "phone": "5511...", "message": "Oi Bianca..." }} }}
+    {{ "action": "send_whatsapp", "description": "Razão", "params": {{ "contact_name": "Bianca Lima", "phone": "5511...", "message": "Oi Bianca, conforme nossa conversa sobre cubagem no dia X..." }} }}
   ]
 }}
 """
@@ -403,17 +552,46 @@ FORMATO DE RESPOSTA (JSON APENAS):
         
         if action == "create_pipedrive_task":
             target_org_id = context.get("organization", {}).get("pipedrive_id") or org_id
-            target_deal_id = params.get("deal_id")
             
-            due_date = (datetime.now() + timedelta(days=params.get("days_delay", 0))).strftime("%Y-%m-%d")
+            # Garante que o deal_id seja anexado (fallback para o negócio principal do contexto se a IA omitir)
+            target_deal_id = params.get("deal_id")
+            if not target_deal_id:
+                deals = context.get("pipedrive_details", {}).get("deals", [])
+                if deals:
+                    # Pega o primeiro negócio da lista (que já é filtrado pelo primary_deal na coleta de contexto)
+                    target_deal_id = deals[0].get("id")
+            
+            # Tenta resolver o person_id com base nos contatos do contexto se disponíveis
+            target_person_id = params.get("person_id")
+            if not target_person_id:
+                persons = context.get("pipedrive_details", {}).get("persons", [])
+                
+                # Procura se há um email selecionado na UI para tentar casar
+                selected_emails = [e.get("email") for e in context.get("selected_entities", []) if e.get("type") == "email" and e.get("email")]
+                
+                if selected_emails and persons:
+                    # Tenta match por email
+                    for p in persons:
+                        p_emails = p.get("email", [])
+                        if isinstance(p_emails, list):
+                            if any(pem.get("value") in selected_emails for pem in p_emails):
+                                target_person_id = p.get("id")
+                                break
+            
+            # Prioridade para due_date explícito (útil para arqueologia)
+            due_date = params.get("due_date")
+            if not due_date:
+                due_date = (datetime.now() + timedelta(days=params.get("days_delay", 0))).strftime("%Y-%m-%d")
             
             task_data = {
                 "org_id": target_org_id,
                 "deal_id": target_deal_id,
+                "person_id": target_person_id,
                 "subject": params.get("subject"),
                 "note": params.get("note"),
                 "due_date": due_date,
-                "type": params.get("type", "task")
+                "type": params.get("type", "task"),
+                "done": params.get("done", True) # Default to True for archaeology
             }
             return await pipedrive_service.create_activity(task_data)
 
@@ -423,6 +601,30 @@ FORMATO DE RESPOSTA (JSON APENAS):
             update_data = {k: v for k, v in params.items() if k != "activity_id"}
             return await pipedrive_service.update_activity(act_id, update_data)
             
+        if action == "update_pipedrive_person":
+            p_id = params.get("person_id")
+            if not p_id: return False
+            update_data = {k: v for k, v in params.items() if k != "person_id"}
+            return await pipedrive_service.update_person(p_id, update_data)
+
+        if action == "sync_contact_to_pipedrive":
+            # 1. Cria a pessoa
+            target_org_id = params.get("org_id") or context.get("organization", {}).get("pipedrive_id") or org_id
+            res = await pipedrive_service.create_person(
+                name=params.get("person_name"),
+                email=params.get("email"),
+                phone=params.get("phone"),
+                org_id=target_org_id
+            )
+            person_id = res.get("data", {}).get("id")
+            
+            # 2. Vincula ao negócio (deal) se possível
+            if person_id:
+                target_deal_id = params.get("deal_id") or context.get("pipedrive_details", {}).get("deals", [{}])[0].get("id")
+                if target_deal_id:
+                   await pipedrive_service.update_deal(target_deal_id, {"person_id": person_id})
+            return person_id
+
         elif action == "generate_content":
             return params.get("note") or params.get("content")
 

@@ -6,6 +6,7 @@ class Employee(Base):
     __tablename__ = "employees"
     
     id = Column(Integer, primary_key=True, index=True)
+    pipedrive_id = Column(String, unique=True, index=True, nullable=True) # ID do Pipedrive
     name = Column(String, index=True)
     role = Column(String)
     department = Column(String, index=True, nullable=True) # Ex: "Compras", "Quadro Societário"
@@ -24,4 +25,6 @@ class Employee(Base):
     evidence = Column(Text, nullable=True) # Veredito do Juiz Final
     education = Column(Text, nullable=True) # Formação acadêmica
     headline = Column(String, nullable=True) # Headline original do LinkedIn
+    is_discovery = Column(Integer, default=0) # 1 = Encontrado via varredura (Outlook/Wpp), 0 = Mapeado
+    source = Column(String, default="pipedrive") # Ex: pipedrive, outlook, whatsapp
     last_scanned = Column(DateTime(timezone=True), server_default=func.now())

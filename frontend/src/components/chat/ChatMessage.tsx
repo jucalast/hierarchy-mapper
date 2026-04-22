@@ -71,7 +71,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 const task = messageData?.new_activities?.[idx];
                 return task ? (
                     <div key={i} style={{ margin: '12px 0' }}>
-                        <div style={{ fontSize: '10px', color: '#5E6AD2', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 600 }}>Nova Atividade agendada</div>
+                        <div style={{ fontSize: '10px', color: task.done ? '#10B981' : '#5E6AD2', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
+                            {task.done ? 'Atividade Concluída' : 'Nova Atividade agendada'}
+                        </div>
                         <TaskList data={{ activities: [task] }} />
                     </div>
                 ) : null;
@@ -122,33 +124,41 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 {message.selectedCompanies && message.selectedCompanies.length > 0 && (
                     <div className={styles.userCompaniesContainer}>
                         {message.selectedCompanies.map((c) => (
-                            <div key={c.id} className={styles.inputContextPill}>
-                                {c.type === 'organization' ? (
-                                    getCompanyLogoUrl(c) ? (
-                                        <img 
-                                            src={getProxiedUrl(getCompanyLogoUrl(c))} 
-                                            alt={c.name} 
-                                            style={{ width: 28, height: 28, borderRadius: '4px', objectFit: 'contain' }} 
-                                        />
+                            <div key={c.id} className={styles.inputCompanyPill}>
+                                <div className={styles.pillIconArea}>
+                                    {c.type === 'organization' ? (
+                                        getCompanyLogoUrl(c) ? (
+                                            <img 
+                                                src={getProxiedUrl(getCompanyLogoUrl(c))} 
+                                                alt={c.name} 
+                                                className={styles.pillCompanyLogo} 
+                                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                            />
+                                        ) : (
+                                            <Building2 size={16} className="shrink-0 opacity-40" />
+                                        )
                                     ) : (
-                                        <Building2 size={20} className="shrink-0 opacity-40" />
-                                    )
-                                ) : (
-                                    getAvatarUrl(c) ? (
-                                        <img 
-                                            src={getProxiedUrl(getAvatarUrl(c))} 
-                                            alt={c.name} 
-                                            style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} 
-                                        />
-                                    ) : (
-                                        c.type === 'whatsapp' ? 
-                                            <img src="/wppicon.png" alt="W" style={{ width: 22, height: 22, objectFit: 'contain' }} /> : 
-                                            <img src="/outlook.png" alt="E" style={{ width: 22, height: 22, objectFit: 'contain' }} />
-                                    )
-                                )}
-                                <div>
-                                    <div className={styles.contextTitle}>{c.name}</div>
-                                    <div className={styles.contextSubtitle}>
+                                        getAvatarUrl(c) ? (
+                                            <img 
+                                                src={getProxiedUrl(getAvatarUrl(c))} 
+                                                alt={c.name} 
+                                                className={styles.pillCompanyLogo} 
+                                                style={{ borderRadius: '50%' }} 
+                                                onError={(e) => {
+                                                    e.currentTarget.src = c.type === 'whatsapp' ? '/wppicon.png' : '/outlook.png';
+                                                    e.currentTarget.style.objectFit = 'contain';
+                                                }}
+                                            />
+                                        ) : (
+                                            c.type === 'whatsapp' ? 
+                                                <img src="/wppicon.png" alt="W" style={{ width: 18, height: 18, objectFit: 'contain' }} /> : 
+                                                <img src="/outlook.png" alt="E" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                                        )
+                                    )}
+                                </div>
+                                <div className={styles.pillInfo}>
+                                    <div className={styles.pillName}>{c.name}</div>
+                                    <div className={styles.pillSubtext}>
                                         {c.type === 'organization' ? 'Empresa' : (c.phone || c.email || (c.type === 'whatsapp' ? 'WhatsApp' : 'E-mail'))}
                                     </div>
                                 </div>
@@ -163,6 +173,36 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
     return (
         <div className={styles.assistantMessageGroup}>
+            {/* Logs de Streaming e Históricos (Acordeon de Pensamento) - Movido para ANTES da resposta */}
+            {((currentLogs && currentLogs.length > 0) || (message.logs && message.logs.length > 0)) && (
+                <div className="px-4 mb-4 pl-12">
+                    <div className={styles.debugCard}>
+                        <button 
+                            className={styles.debugHeader}
+                            onClick={() => setIsLogsExpanded(!isLogsExpanded)}
+                            style={{ cursor: 'pointer', background: 'none', border: 'none', width: '100%', outline: 'none' }}
+                        >
+                            <div className="flex items-center gap-2">
+                                <GeminiIcon /> 
+                                <span>{isLogsExpanded ? 'Esconder Pensamento' : 'Ver Pensamento da IA'}</span>
+                                {message.thinkingTime && <span className={styles.thinkingTime}>({message.thinkingTime})</span>}
+                            </div>
+                            {isLogsExpanded ? <ChevronDown size={14} style={{ transform: isLogsExpanded ? 'none' : 'rotate(-90deg)', transition: 'transform 0.2s' }} /> : <ChevronDown size={14} style={{ transform: 'rotate(-90deg)', transition: 'transform 0.2s' }} />}
+                        </button>
+                        
+                        {isLogsExpanded && (
+                            <div className={styles.streamingLogs}>
+                                {((currentLogs && currentLogs.length > 0) ? currentLogs : (message.logs || [])).map((log, i) => (
+                                    <div key={i} className={styles.logLine}>
+                                        <Loader2 size={12} className={styles.spinner} /> <span>{log}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className={styles.aiMessageWrapper}>
                 <AIAsterisk />
                 <div className={styles.aiMessage}>
@@ -179,7 +219,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
             {/* Aprovações Pendentes */}
             {message.pending_approvals && message.pending_approvals.length > 0 && (
-                <div className="flex flex-col gap-3 px-4 mb-6 pl-12">
+                <div className="flex flex-col gap-3 px-4 mb-6">
                     {message.pending_approvals.map((act) => (
                         <ActionApproval 
                             key={act.action_id} 
@@ -192,35 +232,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 </div>
             )}
 
-            {/* Logs de Streaming e Históricos (Acordeon de Pensamento) */}
-            {((currentLogs && currentLogs.length > 0) || (message.logs && message.logs.length > 0)) && (
-                <div className="px-4 mb-4 pl-12">
-                    <div className={styles.debugCard}>
-                        <button 
-                            className={styles.debugHeader}
-                            onClick={() => setIsLogsExpanded(!isLogsExpanded)}
-                            style={{ cursor: 'pointer', background: 'none', border: 'none', width: '100%', outline: 'none' }}
-                        >
-                            <div className="flex items-center gap-2">
-                                <GeminiIcon /> 
-                                <span>{isLogsExpanded ? 'Esconder Pensamento' : 'Ver Pensamento da IA'}</span>
-                                {message.thinkingTime && <span className={styles.thinkingTime}>({message.thinkingTime})</span>}
-                            </div>
-                            {isLogsExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                        </button>
-                        
-                        {isLogsExpanded && (
-                            <div className={styles.streamingLogs}>
-                                {((currentLogs && currentLogs.length > 0) ? currentLogs : (message.logs || [])).map((log, i) => (
-                                    <div key={i} className={styles.logLine}>
-                                        <Loader2 size={12} className={styles.spinner} /> <span>{log}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+            {/* Ações da Mensagem (Feedback e Utilitários) */}
+            <div className={styles.messageActions}>
+                <div className={styles.actionGroup}>
+                    <button className={styles.actionBtn} title="Copiar resposta">
+                        <Copy size={14} />
+                    </button>
+                    <button className={styles.actionBtn} title="Gerar outra resposta">
+                        <RotateCcw size={14} />
+                    </button>
                 </div>
-            )}
+                <div className={styles.actionGroupDivider} />
+                <div className={styles.actionGroup}>
+                    <button className={styles.actionBtn} title="Resposta útil">
+                        <ThumbsUp size={14} />
+                    </button>
+                    <button className={styles.actionBtn} title="Não foi útil">
+                        <ThumbsDown size={14} />
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

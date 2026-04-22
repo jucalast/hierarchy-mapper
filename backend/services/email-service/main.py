@@ -31,7 +31,7 @@ async def startup_event():
     """
     if client.use_outlook_app:
         print("[Email Service] Sincronização inicial do Outlook...")
-        client._refresh_contacts_cache(force=True)
+        client._refresh_contacts_cache(force=False)
         
         # Configurar atualização periódica (a cada 10 min)
         scheduler = BackgroundScheduler()
@@ -73,12 +73,13 @@ async def get_folders():
 @app.get("/api/email/messages")
 async def get_messages(
     folder: str = "Inbox",
-    limit: int = 10
+    limit: int = 10,
+    q: Optional[str] = None
 ):
     """
     Busca mensagens de uma pasta específica.
     """
-    messages = client.get_messages_from(folder, limit)
+    messages = client.get_messages_from(folder, limit, query=q)
     return {"folder": folder, "count": len(messages), "messages": messages}
 
 @app.get("/api/email/unread")
@@ -111,6 +112,13 @@ async def search_contacts(
     results = client.search_contacts(q, limit)
     return {"results": results}
 
+@app.get("/api/email/contacts/all")
+async def get_all_contacts():
+    """
+    Retorna todos os contatos atualmente no cache do Outlook.
+    """
+    return {"results": EmailClient._contacts_cache}
+
 @app.get("/api/email/cache-status")
 async def cache_status():
     return {
@@ -124,5 +132,5 @@ async def cache_status():
 if __name__ == "__main__":
     import uvicorn
     PORT = int(os.getenv("EMAIL_PORT", 8002))
-    print(f"📧 Email Service (Outlook Magic) rodando na porta {PORT} para {DEFAULT_EMAIL}")
+    print(f"[Email Service] (Outlook Magic) rodando na porta {PORT} para {DEFAULT_EMAIL}")
     uvicorn.run(app, host="0.0.0.0", port=PORT)

@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, Request
+import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -39,6 +40,13 @@ async def startup_event():
         import traceback
         print(f"[Database] Erro Critico de Conexao no Neon DB: {str(e)}")
         traceback.print_exc()
+        
+    # Inicializa Sincronização em Background (Hub de Inteligência)
+    try:
+        from services.intelligence.sync_hub import SyncIntelligenceHub
+        asyncio.create_task(SyncIntelligenceHub().sync_all())
+    except Exception as e:
+        print(f"[SyncHub] Falha ao iniciar sincronizador: {e}")
 
 # Include Communication Router
 app.include_router(comm_router, prefix="/api/v1/communication", tags=["communication"])

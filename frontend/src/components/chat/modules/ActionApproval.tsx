@@ -1,8 +1,6 @@
 import React from 'react';
-import { 
-    MessageSquare, Mail, Send, XCircle, Loader2, ShieldCheck 
-} from 'lucide-react';
 import { ApprovalAction } from '../ChatInterfaces';
+import { WhatsAppThreadCard, EmailThreadCard } from './CommunicationModules';
 import styles from '../../ChatPanel.module.css';
 
 interface ActionApprovalProps {
@@ -16,75 +14,33 @@ export const ActionApproval: React.FC<ActionApprovalProps> = ({
     action, onApprove, onReject, status = 'pending' 
 }) => {
     const isWhatsApp = action.action_type === 'send_whatsapp';
-    const channelIcon = isWhatsApp ? <MessageSquare size={16} /> : <Mail size={16} />;
-    const channelColor = isWhatsApp ? '#25D366' : '#0078D4';
-    const channelLabel = isWhatsApp ? 'WhatsApp' : 'Email';
-    const contactDetail = isWhatsApp ? action.contact_phone : action.contact_email;
     
+    if (isWhatsApp) {
+        return (
+            <div className={styles.moduleContainer}>
+                <WhatsAppThreadCard
+                    type="whatsapp"
+                    contact={{ name: action.contact_name, phone: action.contact_phone }}
+                    sentMessage={action.message_preview}
+                    status={status}
+                    onApprove={() => onApprove(action.action_id)}
+                    onReject={() => onReject(action.action_id)}
+                />
+            </div>
+        );
+    }
+
     return (
-        <div className={styles.approvalCard} style={{ borderLeftColor: channelColor }}>
-            <div className={styles.approvalHeader}>
-                <div className={styles.approvalChannel} style={{ color: channelColor }}>
-                    {channelIcon}
-                    <span>{channelLabel} para {action.contact_name}</span>
-                </div>
-                {contactDetail && (
-                    <span className={styles.approvalContact}>{contactDetail}</span>
-                )}
-            </div>
-            
-            {action.subject && (
-                <div className={styles.approvalSubject}>
-                    <strong>Assunto:</strong> {action.subject}
-                </div>
-            )}
-            
-            <div className={styles.approvalPreview}>
-                {action.message_preview}
-            </div>
-            
-            <div className={styles.approvalReason}>
-                {action.description}
-            </div>
-            
-            <div className={styles.approvalActions}>
-                {status === 'pending' && (
-                    <>
-                        <button
-                            className={styles.approvalBtnApprove}
-                            onClick={() => onApprove(action.action_id)}
-                        >
-                            <Send size={14} />
-                            <span>Enviar</span>
-                        </button>
-                        <button
-                            className={styles.approvalBtnReject}
-                            onClick={() => onReject(action.action_id)}
-                        >
-                            <XCircle size={14} />
-                            <span>Cancelar</span>
-                        </button>
-                    </>
-                )}
-                {status === 'approving' && (
-                    <div className={styles.approvalStatus}>
-                        <Loader2 size={14} className={styles.spinner} />
-                        <span>Enviando...</span>
-                    </div>
-                )}
-                {status === 'approved' && (
-                    <div className={styles.approvalStatusSuccess}>
-                        <ShieldCheck size={14} />
-                        <span>Enviado com sucesso!</span>
-                    </div>
-                )}
-                {status === 'rejected' && (
-                    <div className={styles.approvalStatusRejected}>
-                        <XCircle size={14} />
-                        <span>Cancelado pelo usuário</span>
-                    </div>
-                )}
-            </div>
+        <div className={styles.moduleContainer}>
+            <EmailThreadCard
+                type="email"
+                contact={{ name: action.contact_name, email: action.contact_email }}
+                sentMessage={action.message_preview}
+                subject={action.subject}
+                status={status}
+                onApprove={() => onApprove(action.action_id)}
+                onReject={() => onReject(action.action_id)}
+            />
         </div>
     );
 };

@@ -618,6 +618,27 @@
 }
 
 /* === INPUT COMPANIES CONTAINER === */
+/* === USER MESSAGE COMPONENTS === */
+.userMessageWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-bottom: 32px;
+  max-width: 85%;
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.userCompaniesContainer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
 .inputCompaniesContainer {
   display: flex;
   flex-direction: row;
@@ -633,13 +654,14 @@
 .inputCompanyPill {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   background: #f8f9fa;
   border: 2px solid #e5e7eb;
-  padding: 5px 10px;
-  border-radius: 14px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  max-width: 220px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: #374151;
   animation: fadeIn 0.3s ease;
   transition: all 0.2s ease;
@@ -2389,3 +2411,253 @@
   border-radius: 4px;
   font-weight: 500;
 }
+
+/* === MESSAGE ACTIONS (HOVER) === */
+.messageActions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
+  margin-top: -4px;
+  margin-bottom: 12px;
+  padding-left: 48px;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.assistantMessageGroup:hover .messageActions {
+  opacity: 1;
+}
+
+.actionGroup {
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+}
+
+.actionGroupDivider {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 4px;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.actionBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+/* === NEW SELECTION PILL STYLES === */
+.pillIconArea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pillInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pillName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.chatPanel.dark .pillName {
+  color: #e4e4e7;
+}
+
+.pillSubtext {
+  font-size: 10px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.8;
+  margin-top: -1px;
+}
+
+.chatPanel.dark .pillSubtext {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+
+/* === APPROVAL INSIDE CARDS === */
+.approvalActionsInCard {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
+  margin-top: 4px;
+}
+
+.approvalStatusSmall {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.approvalStatusSmall.approved {
+  color: #10B981;
+}
+
+.approvalStatusSmall.rejected {
+  color: #EF4444;
+}
+
+.approvalStatusSmall.approving {
+  color: #5E6AD2;
+}
+
+.approvalBtnApprove {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--chat-brand-purple);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.approvalBtnApprove:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.approvalBtnReject {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #9ca3af;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.approvalBtnReject:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+
+/* === REFINEMENT OF APPROVAL BUTTONS === */
+.approvalActionsInCard {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.15); /* Fundo um pouco mais escuro para destacar do card */
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chatPanel.light .approvalActionsInCard {
+  background: rgba(0, 0, 0, 0.03);
+  border-top-color: rgba(0, 0, 0, 0.05);
+}
+
+.waPreviewCard .approvalBtnApprove {
+  background: #25D366; /* Verde WhatsApp */
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2);
+}
+
+.emailPreviewCard .approvalBtnApprove {
+  background: #0078D4; /* Azul Outlook */
+  box-shadow: 0 4px 12px rgba(0, 120, 212, 0.2);
+}
+
+.approvalBtnApprove {
+  flex: 1;
+  height: 36px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+ border: none;
+ color: white;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ gap: 8px;
+ cursor: pointer;
+ transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.approvalBtnApprove:hover {
+ transform: translateY(-2px);
+ filter: brightness(1.1);
+ box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+.approvalBtnReject {
+ height: 36px;
+ padding: 0 16px;
+ background: transparent;
+ border: 1.5px solid rgba(255, 255, 255, 0.1);
+ border-radius: 8px;
+ color: #9ca3af;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+ cursor: pointer;
+ transition: all 0.2s ease;
+ display: flex;
+ align-items: center;
+ gap: 6px;
+}
+
+.approvalBtnReject:hover {
+ background: rgba(239, 68, 68, 0.1);
+ color: #EF4444;
+ border-color: rgba(239, 68, 68, 0.2);
+}
+
+.approvalStatusSmall {
+ flex: 1;
+ justify-content: center;
+ background: rgba(255, 255, 255, 0.05);
+ border-radius: 8px;
+ height: 36px;
+}
+

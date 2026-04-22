@@ -65,35 +65,44 @@ const restartClient = async () => {
 
 let isReady = false;
 
+console.log('[WA Service] 🚀 Iniciando processo de autenticação e bot...');
 client.on('qr', (qr) => {
-    // Esse QR code aparece no terminal. Em produção tem que mandar pro Frontend ver via API.
+    console.log('[WA Service] ⚠️ QR Code recebido! Por favor, escaneie com o WhatsApp do celular:');
     qrcode.generate(qr, { small: true });
-    console.log('QR Code generated. Escaneie pelo WhatsApp do telefone.', qr);
 });
 
-client.on('ready', () => {
-    console.log('[WA Service] Cliente WhatsApp está logado e pronto!');
-    isReady = true;
+client.on('loading_screen', (percent, message) => {
+    console.log(`[WA Service] ⏳ Carregando: ${percent}% - ${message}`);
+});
+
+client.on('authenticated', () => {
+    console.log('[WA Service] ✅ Autenticado com sucesso!');
 });
 
 client.on('auth_failure', msg => {
-    console.error('[WA Service] FALHA DE AUTENTICAÇÃO:', msg);
+    console.error('[WA Service] ❌ FALHA DE AUTENTICAÇÃO:', msg);
     isReady = false;
 });
 
+client.on('ready', () => {
+    console.log('[WA Service] 🚀 Cliente WhatsApp está logado e pronto!');
+    isReady = true;
+});
+
 client.on('disconnected', (reason) => {
-    console.log('[WA Service] Cliente foi desconectado:', reason);
+    console.log('[WA Service] 🔌 Cliente foi desconectado:', reason);
     isReady = false;
-    // Tenta reinicializar após um tempo
     setTimeout(() => client.initialize(), 5000);
 });
 
 client.on('message', async msg => {
-    // Processamento de mensagem recebida
-    console.log(`Mensagem recebida de ${msg.from}: ${msg.body}`);
+    console.log(`[WA Service] 💬 Mensagem de ${msg.from}: ${msg.body.substring(0, 50)}${msg.body.length > 50 ? '...' : ''}`);
 });
 
-client.initialize();
+console.log('[WA Service] 🛠️ Inicializando o cliente (Pode demorar alguns segundos)...');
+client.initialize().catch(err => {
+    console.error('[WA Service] ❌ Erro fatal na inicialização:', err.message);
+});
 
 // Helper para atrasos
 const delay = ms => new Promise(res => setTimeout(res, ms));
@@ -240,7 +249,16 @@ app.get('/api/whatsapp/chats/by-number/:number/messages', async (req, res) => {
     let formattedNumber = `${rawNumber}@c.us`;
 
     try {
-        const chat = await client.getChatById(formattedNumber);
+        let chat;
+        try {
+            chat = await client.getChatById(formattedNumber);
+        } catch (e) {
+            console.warn(`[WA Service] getChatById falhou para ${formattedNumber}: ${e.message}. Tentando via lista de chats...`);
+            const chats = await client.getChats();
+            chat = chats.find(c => c.id._serialized === formattedNumber || c.id.user === rawNumber);
+            if (!chat) throw new Error("Não foi possível localizar o chat nem pela lista.");
+        }
+
         const messages = await chat.fetchMessages({ limit });
         
         const simplifiedMessages = messages.map(m => ({
@@ -257,8 +275,8 @@ app.get('/api/whatsapp/chats/by-number/:number/messages', async (req, res) => {
             messages: simplifiedMessages 
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: `Erro ao buscar mensagens para o número ${number}.` });
+        console.error("[WA Service] Erro crítico ao buscar mensagens por número:", error.message);
+        res.status(500).json({ error: `Erro ao buscar mensagens para o número ${number}: ${error.message}` });
     }
 });
 
@@ -591,20 +609,22 @@ app.get('/api/whatsapp/contacts/by-number/:number/profile-pic', async (req, res)
 app.get('/api/whatsapp/contacts/all', async (req, res) => {
     if (!isReady) return res.status(503).json({ error: 'WhatsApp indisponível ou não logado.' });
     
-    const { onlyMyContacts = true, limit = 100 } = req.query;
+    const { onlyMyContacts = true, limit = 5000 } = req.query;
 
     try {
+        console.log(`[WA Service] 📥 Requisição de sincronia total recebida. Buscando contatos (limite: ${limit})...`);
         const contacts = await contactService.listAllContacts(client, {
             onlyMyContacts: onlyMyContacts === 'true',
             limit: parseInt(limit)
         });
         
+        console.log(`[WA Service] ✅ Sincronia pronta: Enviando ${contacts.length} contatos para o Backend.`);
         res.json({
             count: contacts.length,
             contacts
         });
     } catch (error) {
-        console.error('Erro ao listar contatos:', error);
+        console.error('[WA Service] Erro ao listar contatos:', error);
         res.status(500).json({ error: error.message });
     }
 });

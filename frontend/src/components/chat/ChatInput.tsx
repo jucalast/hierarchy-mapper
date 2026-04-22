@@ -105,13 +105,43 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         <div className={styles.inputCompaniesContainer}>
                             {selectedCompanies.map((company) => (
                                 <div key={company.id} className={styles.inputCompanyPill}>
-                                    {company.type === 'organization' ? (
-                                        getCompanyLogoUrl(company) ? <img src={getProxiedUrl(getCompanyLogoUrl(company))} className={styles.pillCompanyLogo} /> : <OrgIcon />
-                                    ) : (
-                                        getAvatarUrl(company) ? <img src={getProxiedUrl(getAvatarUrl(company))} className={styles.pillCompanyLogo} style={{ borderRadius: '50%' }} /> : 
-                                        (company.type === 'whatsapp' ? <img src="/wppicon.png" alt="W" style={{ width: 22, height: 22, objectFit: 'contain' }} /> : <img src="/outlook.png" alt="E" style={{ width: 22, height: 22, objectFit: 'contain' }} />)
-                                    )}
-                                    <span className={styles.pillCompanyName}>{company.name}</span>
+                                    <div className={styles.pillIconArea}>
+                                        {company.type === 'organization' ? (
+                                            getCompanyLogoUrl(company) ? (
+                                                <img 
+                                                    src={getProxiedUrl(getCompanyLogoUrl(company))} 
+                                                    className={styles.pillCompanyLogo} 
+                                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                />
+                                            ) : <OrgIcon />
+                                        ) : (
+                                            getAvatarUrl(company) ? (
+                                                <img 
+                                                    src={getProxiedUrl(getAvatarUrl(company))} 
+                                                    className={styles.pillCompanyLogo} 
+                                                    style={{ borderRadius: '50%' }} 
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = company.type === 'whatsapp' ? '/wppicon.png' : '/outlook.png';
+                                                        e.currentTarget.style.objectFit = 'contain';
+                                                        e.currentTarget.style.padding = '2px';
+                                                    }}
+                                                />
+                                            ) : (
+                                                company.type === 'whatsapp' ? <img src="/wppicon.png" alt="W" style={{ width: 18, height: 18, objectFit: 'contain' }} /> : <img src="/outlook.png" alt="E" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                                            )
+                                        )}
+                                    </div>
+                                    <div className={styles.pillInfo}>
+                                        <span className={styles.pillName}>{company.name}</span>
+                                        <span className={styles.pillSubtext}>
+                                            {(() => {
+                                                if (company.type === 'organization') return 'empresa';
+                                                if (company.type === 'email') return company.email;
+                                                if (company.type === 'whatsapp') return (company as any).number || company.phone;
+                                                return company.type;
+                                            })()}
+                                        </span>
+                                    </div>
                                     <button
                                         className={styles.removePillBtn}
                                         onClick={() => setSelectedCompanies(selectedCompanies.filter(c => c.id !== company.id))}
@@ -195,6 +225,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                                                             src={getProxiedUrl(getAvatarUrl(item))} 
                                                             alt={item.name} 
                                                             style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} 
+                                                            onError={(e) => {
+                                                                e.currentTarget.src = item.type === 'whatsapp' ? '/wppicon.png' : '/outlook.png';
+                                                                e.currentTarget.style.objectFit = 'contain';
+                                                                e.currentTarget.style.padding = '4px';
+                                                            }}
                                                         />
                                                     ) : (
                                                         item.type === 'whatsapp' ? 
@@ -205,7 +240,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                                             </div>
                                             <div className={styles.itemInfo}>
                                                 <div className={styles.itemName}>{item.name}</div>
-                                                <div className={styles.itemSub}>{item.domain || item.type}</div>
+                                                <div className={styles.itemType}>
+                                                    {(() => {
+                                                        if (item.type === 'organization') return item.domain || 'empresa';
+                                                        if (item.type === 'email') return (item.email && item.email !== item.name) ? item.email : 'email';
+                                                        if (item.type === 'whatsapp') {
+                                                            const contact = (item as any).number || item.phone;
+                                                            return (contact && contact !== item.name) ? contact : 'whatsapp';
+                                                        }
+                                                        return item.type;
+                                                    })()}
+                                                </div>
                                             </div>
                                         </button>
                                     ))}

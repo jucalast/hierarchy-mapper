@@ -43,8 +43,8 @@ const calculateSimilarity = (str1, str2) => {
     // Prioridade altíssima para prefixos exatos
     if (s1.startsWith(s2)) return 0.95;
     
-    // Contém a string
-    if (s1.includes(s2)) return 0.9;
+    // Contém a string (Inclusão simples) - Subimos para 0.85 para garantir que apareça
+    if (s1.includes(s2) || s2.includes(s1)) return 0.85;
     
     // Fallback para Levenshtein
     const longer = s1.length > s2.length ? s1 : s2;
@@ -56,7 +56,14 @@ const calculateSimilarity = (str1, str2) => {
     if (s2.length <= 2) return 0;
 
     const editDistance = getEditDistance(longer, shorter);
-    return (longer.length - editDistance) / longer.length;
+    const score = (longer.length - editDistance) / longer.length;
+    
+    // Log para ajuste fino (apenas se for razoavelmente parecido)
+    if (score > 0.3) {
+        console.log(`[WA Search] Similarity "${s1}" vs "${s2}": ${score.toFixed(2)}`);
+    }
+    
+    return score;
 };
 
 /**
@@ -94,7 +101,7 @@ const getEditDistance = (s1, s2) => {
 const searchContactsByName = async (client, searchName, options = {}) => {
     const {
         exactMatch = false,
-        minSimilarity = 0.6,
+        minSimilarity = 0.4,
         limit = 20
     } = options;
 
@@ -268,36 +275,53 @@ const findContactByNumber = async (client, number) => {
  */
 const listAllContacts = async (client, options = {}) => {
     const {
-        limit = 100,
-        onlyMyContacts = true
+        limit = 5000,
+        onlyMyContacts = false
     } = options;
 
     try {
-        let contacts = await client.getContacts();
+        console.log(`[WA ContactService] Listando todos os contatos (Somente agenda: ${onlyMyContacts})...`);
         
-        let filtered = contacts.filter(c => c && c.id && c.id._serialized);
+        // Busca contatos e chats em paralelo para maior abrangência
+        const [contacts, chats] = await Promise.all([
+            client.getContacts().catch(() => []),
+            client.getChats().catch(() => [])
+        ]);
         
-        if (onlyMyContacts) {
-            filtered = filtered.filter(c => c.isMyContact);
+        const combinedMap = new Map();
+        
+        // Processa Contatos da Agenda
+        contacts.forEach(c => {
+            if (c && c.id && c.id._serialized) {
+                if (onlyMyContacts && !c.isMyContact) return;
+                combinedMap.set(c.id._serialized, {
+                    id: c.id._serialized,
+                    name: c.name || c.pushname || c.id.user,
+                    number: c.id.user,
+                    isBusiness: !!c.isBusiness,
+                    isMyContact: !!c.isMyContact
+                });
+            }
+        });
+        
+        // Adiciona Chats (contatos recentes que podem não estar na agenda)
+        if (!onlyMyContacts) {
+            chats.forEach(c => {
+                if (c && c.id && c.id._serialized && !c.isGroup && !combinedMap.has(c.id._serialized)) {
+                    combinedMap.set(c.id._serialized, {
+                        id: c.id._serialized,
+                        name: c.name || c.id.user,
+                        number: c.id.user,
+                        isBusiness: !!c.isBusiness,
+                        isMyContact: false
+                    });
+                }
+            });
         }
         
-        return filtered
-            .slice(0, limit)
-            .map(contact => {
-                try {
-                    if (!contact || !contact.id || !contact.id._serialized) return null;
-                    return {
-                        id: contact.id._serialized,
-                        name: contact.name || contact.displayName || (contact.id ? contact.id.user : "Contato"),
-                        number: contact.id ? contact.id.user : "",
-                        isBusiness: !!contact.isBusiness,
-                        isMyContact: !!contact.isMyContact
-                    };
-                } catch (e) {
-                    return null;
-                }
-            })
-            .filter(c => c !== null);
+        const results = Array.from(combinedMap.values()).slice(0, limit);
+        console.log(`[WA ContactService] Total de contatos únicos encontrados: ${results.length}`);
+        return results;
     } catch (error) {
         throw new Error(`Erro ao listar contatos: ${error.message}`);
     }

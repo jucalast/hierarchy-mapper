@@ -32,9 +32,10 @@ export const getAvatarUrl = (data: any) => {
                      data.linkedin_metadata?.profile_image ||
                      getLinkedinAvatar(data.linkedin);
     
-    if (!avatarUrl && data.email) {
-        return `https://unavatar.io/${data.email}`;
-    }
+    // Comentado para evitar buscar imagens genéricas que muitas vezes falham
+    // if (!avatarUrl && data.email) {
+    //     return `https://unavatar.io/${data.email}`;
+    // }
     
     return avatarUrl;
 };

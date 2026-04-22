@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from core.database import get_db
-from models import Organization
+from models import Organization, Employee
 
 router = APIRouter()
 
@@ -93,37 +93,52 @@ async def universal_search(
             } for o in orgs]
         tasks.append(fetch_orgs())
 
-    # Busca WhatsApp
-    if do_wa:
-        async def fetch_wa():
+    # Busca Contatos (WhatsApp e Email) - UNIFICADO NO BANCO LOCAL
+    if do_wa or do_email:
+        async def fetch_contacts():
             try:
-                async with httpx.AsyncClient(timeout=5.0) as client:
-                    resp = await client.get("http://localhost:8001/api/whatsapp/contacts/search", params={"name": q})
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        wa_res = data.get("contacts", []) or data.get("results", [])
-                        return [{"id": c.get("id"), "name": c.get("name"), "type": "whatsapp", "number": c.get("number")} for c in wa_res[:10 if final_type else 5]]
-            except: return []
-            return []
-        tasks.append(fetch_wa())
+                # Busca por nome, e-mail ou telefone de forma insensível a maiúsculas
+                stmt = select(Employee).where(
+                    or_(
+                        func.lower(Employee.name).like(func.lower(search_term)),
+                        func.lower(Employee.email).like(func.lower(search_term)) if Employee.email else False,
+                        Employee.whatsapp_number.like(search_term) if Employee.whatsapp_number else False,
+                        Employee.phone.like(search_term) if Employee.phone else False
+                    )
+                ).limit(15 if final_type else 8)
+                
+                res = await db.execute(stmt)
+                employees = res.scalars().all()
+                
+                res_list = []
+                for c in employees:
+                    # Determina o tipo baseado nos dados disponíveis e na fonte
+                    c_type = "whatsapp" if (c.whatsapp_number or c.source == "whatsapp") else "email"
+                    
+                    # Se filtramos por um tipo específico (@whatsapp ou @email), respeitamos
+                    if final_type == "whatsapp" and c_type != "whatsapp": continue
+                    if final_type == "email" and c_type != "email": continue
+                    
+                    res_list.append({
+                        "id": c.whatsapp_number or c.email or c.pipedrive_id or str(c.id),
+                        "name": c.name,
+                        "type": c_type,
+                        "email": c.email,
+                        "phone": c.whatsapp_number or c.phone,
+                        "role": c.role,
+                        "department": c.department,
+                        "company_id": c.company_id,
+                        "source": c.source or "local"
+                    })
+                return res_list
+            except Exception as e:
+                print(f"[Search API] Erro ao buscar contatos no DB: {e}")
+                return []
+        tasks.append(fetch_contacts())
 
-    # Busca Email
-    if do_email:
-        async def fetch_mail():
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    params = {"q": q, "limit": 10 if final_type else 5}
-                    resp = await client.get("http://localhost:8002/api/email/search", params=params)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        return [{"id": c.get("email"), "name": c.get("name"), "type": "email", "email": c.get("email")} for c in data.get("results", [])]
-            except: return []
-            return []
-        tasks.append(fetch_mail())
-
-    # Agrega tudo
+    # Agregado de resultados com metadados completos
     all_results = await asyncio.gather(*tasks)
     for res_list in all_results:
         results.extend(res_list)
 
-    return {"results": results, "total": len(results)}
+    return {"results": results, "count": len(results), "type": final_type}

@@ -150,18 +150,6 @@ class EmailClient:
                 outlook_app = self._get_outlook_instance()
                 if not outlook_app: return []
                 
-                outlook = outlook_app.GetNamespace("MAPI")
-                # Tenta pegar a pasta pelo nome
-                inbox = outlook.GetDefaultFolder(6) # 6 = olFolderInbox
-                
-                # Se a pasta não for a Inbox padrão, tenta buscar pelo nome
-                target_folder = inbox
-                if folder.lower() != "inbox":
-                    try:
-                        target_folder = inbox.Folders.Item(folder)
-                    except:
-                        print(f"[EmailClient] Folder '{folder}' not found, using default Inbox")
-
                 messages = target_folder.Items
                 messages.Sort("[ReceivedTime]", True) # Mais novos primeiro
                 
@@ -171,11 +159,11 @@ class EmailClient:
                     if count >= max_results: break
                     if msg.UnRead:
                         replies.append({
-                            "sender": msg.SenderEmailAddress,
+                            "sender": msg.SenderEmailAddress if hasattr(msg, 'SenderEmailAddress') else str(msg.Sender),
+                            "to": msg.To,
                             "subject": msg.Subject,
-                            "body": msg.Body,
                             "date": str(msg.ReceivedTime),
-                            "messageId": msg.EntryID
+                            "body": getattr(msg, 'Body', '')[:1000]
                         })
                         count += 1
                 
@@ -401,9 +389,10 @@ class EmailClient:
             print(f"[EmailClient] ERROR (List Folders): {e}")
             return []
 
-    def get_messages_from(self, folder_path: str = "Inbox", limit: int = 20) -> List[Dict]:
+    def get_messages_from(self, folder_path: str = "Inbox", limit: int = 20, query: Optional[str] = None) -> List[Dict]:
         """
-        Busca mensagens de qualquer pasta pelo caminho (ex: 'NomeDaConta / Inbox').
+        Busca mensagens de pacotes ou de conversas.
+        Se folder_path for 'Conversations', busca na Inbox e nos Enviados.
         """
         if self.use_outlook_app:
             try:
@@ -412,25 +401,219 @@ class EmailClient:
                 if not outlook_app: return []
                 
                 outlook = outlook_app.GetNamespace("MAPI")
-                target_folder = None
-                if " / " in folder_path:
-                    root_name, folder_name = folder_path.split(" / ", 1)
-                    target_folder = outlook.Folders.Item(root_name).Folders.Item(folder_name)
-                else:
-                    target_folder = outlook.GetDefaultFolder(6).Folders.Item(folder_path) if folder_path.lower() != "inbox" else outlook.GetDefaultFolder(6)
+                
+                # Tenta encontrar a conta JFERRES e mapear Inbox/Sent
+                inbox = None
+                sent = None
+                try:
+                    for store in outlook.Stores:
+                        if "joao.moura" in store.DisplayName.lower():
+                            root = store.GetRootFolder()
+                            for f in root.Folders:
+                                fname = f.Name.lower()
+                                if fname == "caixa de entrada" or fname == "inbox":
+                                    inbox = f
+                                elif fname == "itens enviados" or fname == "sent items" or fname == "sent":
+                                    sent = f
+                            break
+                except: pass
+                
+                # Fallbacks caso não encontre a Store específica
+                if not inbox: inbox = outlook.GetDefaultFolder(6)
+                if not sent: sent = outlook.GetDefaultFolder(5)
 
-                messages = target_folder.Items
-                messages.Sort("[ReceivedTime]", True)
+                if query:
+                    query = self._normalize_str(query)
+                
+                folders_to_scan = []
+                
+                # Normalização de nomes
+                fp_lower = folder_path.lower()
+                is_inbox = fp_lower == "inbox" or fp_lower == "caixa de entrada"
+                is_sent = fp_lower == "sent" or fp_lower == "itens enviados" or fp_lower == "sent items"
+                is_conv = fp_lower == "conversations"
+
+                if is_conv:
+                    folders_to_scan = [inbox, sent]
+                    # --- AUTO-DESCOBERTA DE PASTAS DE CLIENTES ---
+                    if query and len(query) > 3:
+                        def find_matching_folders(root_folder, q):
+                            matches = []
+                            try:
+                                for f in root_folder.Folders:
+                                    if q in f.Name.lower():
+                                        matches.append(f)
+                                    matches.extend(find_matching_folders(f, q))
+                            except: pass
+                            return matches
+                        
+                        # Extração de palavras-chave robusta (ex: matheus.muniz@knorr-bremse.com -> ['matheus', 'muniz', 'knorr', 'bremse'])
+                        delimiters = [".", "@", "-", "_", " "]
+                        temp_query = query.lower()
+                        for d in delimiters:
+                            temp_query = temp_query.replace(d, " ")
+                        
+                        skip_words = {"com", "br", "net", "org", "gov", "gmail", "outlook", "hotmail", "jferres", "linkb2b"}
+                        kw = [k for k in temp_query.split() if len(k) > 3 and k not in skip_words]
+                        
+                        if kw:
+                            # Tenta descobrir pastas usando as palavras-chave fortes
+                            for word in kw:
+                                print(f"[EmailClient] Buscando pastas relacionadas a '{word}'...")
+                                client_folders = find_matching_folders(inbox.Parent, word)
+                                for cf in client_folders:
+                                    if cf not in folders_to_scan:
+                                        print(f"[EmailClient] Auto-descoberta: Incluindo pasta '{cf.Name}'")
+                                        folders_to_scan.append(cf)
+                elif " / " in folder_path:
+                    # Suporte para caminho direto: "Pastas / Subpasta"
+                    try:
+                        parts = [p.strip() for p in folder_path.split("/")]
+                        curr = inbox.Parent
+                        for p in parts:
+                            curr = curr.Folders.Item(p)
+                        folders_to_scan.append(curr)
+                    except:
+                        folders_to_scan.append(inbox)
+                else:
+                    target = inbox if is_inbox else (sent if is_sent else None)
+                    if not target:
+                        try: target = inbox.Folders.Item(folder_path)
+                        except: target = inbox
+                    folders_to_scan.append(target)
+
+                all_items = []
+                # Para evitar escaneamento lento, pegamos no máximo as 400 mais recentes de cada pasta
+                scan_depth = 400 if query else limit
+                
+                for f_root in folders_to_scan:
+                    folders_to_process = [f_root]
+                    # Adiciona subpastas de 1º nível para não perder e-mails movidos por regras
+                    try:
+                        for sub in f_root.Folders:
+                            folders_to_process.append(sub)
+                    except: pass
+                    
+                    for f in folders_to_process:
+                        try:
+                            items = f.Items
+                            items.Sort("[ReceivedTime]", True)
+                            f_count = items.Count
+                            # Pega as N mais recentes de cada (sub)pasta
+                            for i in range(1, min(scan_depth, f_count) + 1):
+                                try:
+                                    all_items.append(items.Item(i))
+                                except:
+                                    pass
+                        except: pass
+                
+                # Ordernar todos os itens localmente por tempo recebido (descendente)
+                # O COM timestamp pode não suportar sorting do python diretamente, então convertemos para string caso falhe
+                try:
+                    all_items.sort(key=lambda x: str(getattr(x, 'ReceivedTime', '')), reverse=True)
+                except:
+                    pass
                 
                 results = []
-                for i in range(1, min(limit, messages.Count) + 1):
-                    msg = messages.Item(i)
-                    results.append({
-                        "sender": getattr(msg, 'SenderEmailAddress', 'Unknown'),
-                        "subject": msg.Subject,
-                        "date": str(msg.ReceivedTime),
-                        "body": msg.Body[:500] + "..." # Resumo
-                    })
+                found = 0
+                
+                for msg in all_items:
+                    if found >= limit: break
+                    try:
+                        if query:
+                            s_name = self._normalize_str(getattr(msg, 'SenderName', ''))
+                            s_email_raw = getattr(msg, 'SenderEmailAddress', '')
+                            s_email = self._normalize_str(s_email_raw)
+                            r_names_to = self._normalize_str(getattr(msg, 'To', ''))
+                            
+                            # Match simplificado
+                            match = (query in s_name or query in s_email or query in r_names_to)
+                            
+                            # Se não deu match e o remetente parece ser Exchange (/o=...)
+                            if not match and "/o=" in s_email_raw.lower():
+                                try:
+                                    sender = msg.Sender
+                                    ae = sender.AddressEntry
+                                    s_smtp = ""
+                                    if ae.Type == "SMTP": s_smtp = ae.Address
+                                    else:
+                                        eu = ae.GetExchangeUser()
+                                        s_smtp = eu.PrimarySmtpAddress if eu else ae.Address
+                                    
+                                    if query in self._normalize_str(s_smtp):
+                                        match = True
+                                except:
+                                    pass
+                            
+                            # Match profundo: checar cada recipiente via SMTP se não deu match simples
+                            if not match:
+                                try:
+                                    recipients = msg.Recipients
+                                    for i in range(1, recipients.Count + 1):
+                                        rec = recipients.Item(i)
+                                        rec_name = self._normalize_str(getattr(rec, 'Name', ''))
+                                        rec_addr = ""
+                                        try:
+                                            ae = rec.AddressEntry
+                                            if ae.Type == "SMTP": rec_addr = ae.Address
+                                            else:
+                                                eu = ae.GetExchangeUser()
+                                                rec_addr = eu.PrimarySmtpAddress if eu else ae.Address
+                                        except:
+                                            rec_addr = getattr(rec, 'Address', '')
+                                        
+                                        rec_addr_norm = self._normalize_str(rec_addr)
+                                        if query in rec_name or query in rec_addr_norm:
+                                            match = True
+                                            break
+                                except:
+                                    pass
+
+                            if not match:
+                                continue
+
+                        # Tenta obter o SMTP real para o display da IA
+                        display_sender = s_email_raw
+                        if "/o=" in s_email_raw.lower():
+                            try:
+                                ae = msg.Sender.AddressEntry
+                                if ae.Type == "SMTP": display_sender = ae.Address
+                                else:
+                                    eu = ae.GetExchangeUser()
+                                    display_sender = eu.PrimarySmtpAddress if eu else ae.Address
+                            except: pass
+
+                        # Resolve todos os destinatários para SMTP REAL
+                        resolved_to = []
+                        try:
+                            recipients = msg.Recipients
+                            for i in range(1, recipients.Count + 1):
+                                r = recipients.Item(i)
+                                r_smtp = ""
+                                try:
+                                    ae = r.AddressEntry
+                                    if ae.Type == "SMTP": r_smtp = ae.Address
+                                    else:
+                                        eu = ae.GetExchangeUser()
+                                        r_smtp = eu.PrimarySmtpAddress if eu else ae.Address
+                                except:
+                                    r_smtp = getattr(r, 'Address', '')
+                                
+                                if r_smtp: resolved_to.append(r_smtp)
+                                else: resolved_to.append(r.Name) # Fallback para o nome
+                        except:
+                            resolved_to = [getattr(msg, 'To', 'Unknown')]
+
+                        results.append({
+                            "sender": display_sender,
+                            "to": "; ".join(resolved_to),
+                            "subject": getattr(msg, 'Subject', ''),
+                            "date": str(getattr(msg, 'ReceivedTime', '')),
+                            "body": getattr(msg, 'Body', '')[:1000]
+                        })
+                        found += 1
+                    except Exception as e:
+                        pass
                 return results
             except Exception as e:
                 print(f"[EmailClient] ERROR (Get Messages from {folder_path}): {e}")

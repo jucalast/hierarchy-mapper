@@ -15,6 +15,12 @@ from pydantic import BaseModel
 class CompanyInfo(BaseModel):
     id: Union[int, str]
     name: str
+    type: Optional[str] = None
+    email: Optional[Any] = None
+    phone: Optional[Any] = None
+    role: Optional[str] = None
+    department: Optional[str] = None
+    source: Optional[str] = None
 
 
 class MessageInput(BaseModel):
@@ -281,10 +287,10 @@ def format_context_for_prompt(context_dict: dict) -> str:
             if by_contact:
                 for contact_group in by_contact:
                     lines.append(f"\nEmails trocados com {contact_group.get('contact')} ({contact_group.get('email')}):")
-                    for m in contact_group.get('messages', [])[:5]:
+                    for m in contact_group.get('messages', [])[:10]:
                         subject = m.get("subject") or "(Sem assunto)"
                         date = m.get("date") or ""
-                        body = m.get("body", "")[:300]
+                        body = m.get("body", "")[:1500]
                         lines.append(f"  - Assunto: {subject} | Data: {date}")
                         lines.append(f"    Snippet: {body}...")
             
@@ -297,11 +303,11 @@ def format_context_for_prompt(context_dict: dict) -> str:
                         lines.append(f"- {f}")
                 elif action == "get_messages" or action == "get_unread":
                     lines.append(f"\nMENSAGENS NA PASTA '{em.get('folder', 'Inbox')}':")
-                    for m in (result_data.get("messages") or []):
+                    for m in (result_data.get("messages") or [])[:10]:
                         sender = m.get("sender") or "Desconhecido"
                         subject = m.get("subject") or "(Sem assunto)"
                         date = m.get("date") or ""
-                        body = m.get("body", "")[:200]
+                        body = m.get("body", "")[:1500]
                         lines.append(f"- De: {sender} | Assunto: {subject} | Data: {date}")
                         lines.append(f"  Snippet: {body}...")
                 elif action == "send_email":
