@@ -63,6 +63,24 @@ async def send_email(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/email/reply")
+async def reply_email(
+    entry_id: str = Body(..., embed=True),
+    body: str = Body(..., embed=True),
+    reply_all: bool = Body(True, embed=True)
+):
+    """
+    Responde a um email existente (Thread) usando o EntryID do Outlook.
+    """
+    try:
+        success = client.reply_to_email(entry_id, body, reply_all)
+        if success:
+            return {"success": True, "entry_id": entry_id}
+        else:
+            raise HTTPException(status_code=500, detail="Erro ao responder email.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/email/folders")
 async def get_folders():
     """
@@ -118,6 +136,14 @@ async def get_all_contacts():
     Retorna todos os contatos atualmente no cache do Outlook.
     """
     return {"results": EmailClient._contacts_cache}
+
+@app.get("/api/email/signature")
+async def get_signature():
+    """
+    Retorna a assinatura padrão do Outlook.
+    """
+    sig = client.get_default_signature()
+    return {"signature": sig}
 
 @app.get("/api/email/cache-status")
 async def cache_status():

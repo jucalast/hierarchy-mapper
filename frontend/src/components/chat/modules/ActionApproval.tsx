@@ -37,6 +37,8 @@ export const ActionApproval: React.FC<ActionApprovalProps> = ({
                 contact={{ name: action.contact_name, email: action.contact_email }}
                 sentMessage={action.message_preview}
                 subject={action.subject}
+                isReply={action.is_reply}
+                originalSubject={action.original_subject}
                 status={status}
                 onApprove={() => onApprove(action.action_id)}
                 onReject={() => onReject(action.action_id)}

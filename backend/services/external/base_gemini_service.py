@@ -66,9 +66,9 @@ async def ask_gemini(prompt: str, json_mode: bool = False, max_retries: int = 2)
     }
     
     models_to_try = [
-        ("gemini-3-flash-preview", f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={gemini_key}"),
-        ("gemini-3.1-flash-lite-preview", f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key={gemini_key}"),
-        ("gemini-2.5-flash-native-audio-latest", f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-native-audio-latest:generateContent?key={gemini_key}")
+        ("gemini-flash-latest", f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={gemini_key}"),
+        ("gemini-2.5-flash", f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"),
+        ("gemini-3-flash-preview", f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={gemini_key}")
     ]
     
     groq_models = [
@@ -82,45 +82,43 @@ async def ask_gemini(prompt: str, json_mode: bool = False, max_retries: int = 2)
         # Loop 1: Gemini (somente se circuit breaker permite)
         # ============================================
         if gemini_key and _is_gemini_available():
-            for attempt in range(max_retries):
-                for model_name, url in models_to_try:
-                    try:
-                        resp = await client.post(url, json=payload)
+            gemini_failed_all = True
+            for model_name, url in models_to_try:
+                try:
+                    resp = await client.post(url, json=payload)
+                    
+                    if resp.status_code == 200:
+                        _reset_gemini_circuit()
+                        gemini_failed_all = False
+                        data = resp.json()
+                        text_content = data['candidates'][0]['content']['parts'][0]['text']
+                        if json_mode:
+                            try:
+                                return json.loads(text_content)
+                            except json.JSONDecodeError:
+                                return {"response": text_content}
+                        return text_content
                         
-                        if resp.status_code == 200:
-                            _reset_gemini_circuit()
-                            data = resp.json()
-                            text_content = data['candidates'][0]['content']['parts'][0]['text']
-                            if json_mode:
-                                try:
-                                    return json.loads(text_content)
-                                except json.JSONDecodeError:
-                                    return {"response": text_content}
-                            return text_content
-                            
-                        elif resp.status_code == 429:
-                            print(f"[Gemini API] Rate Limit (429) em {model_name}.")
-                            # Rate limit! Ativa circuit breaker e pula TODOS os modelos Gemini
-                            _trip_gemini_circuit()
-                            # Sai dos dois loops de uma vez
-                            break
-                            
-                        elif resp.status_code in [503, 404]:
-                            print(f"[Gemini API Aviso] Erro {resp.status_code} em {model_name}. Tentando próximo modelo...")
-                            continue
-                            
-                        else:
-                            print(f"[Gemini API Erro] {model_name} retornou {resp.status_code}: {resp.text[:200]}")
-                            continue
-                            
-                    except Exception as e:
-                        print(f"[Gemini Falha de Conexão] {model_name}: {str(e)}")
+                    elif resp.status_code == 429:
+                        print(f"[Gemini API] Rate Limit (429) em {model_name}. Tentando próximo...")
+                        await asyncio.sleep(1) # Pequeno fôlego
                         continue
-                else:
-                    # O loop interno de modelos completou sem break, tenta próxima attempt
+                        
+                    elif resp.status_code in [503, 404]:
+                        print(f"[Gemini API Aviso] Erro {resp.status_code} em {model_name}. Tentando próximo...")
+                        continue
+                        
+                    else:
+                        print(f"[Gemini API Erro] {model_name} retornou {resp.status_code}: {resp.text[:200]}")
+                        continue
+                        
+                except Exception as e:
+                    print(f"[Gemini Falha de Conexão] {model_name}: {str(e)}")
                     continue
-                # Se saímos do loop interno via break (429), sai do loop externo também
-                break
+            
+            # Se chegamos aqui e nenhum Gemini funcionou
+            if gemini_failed_all:
+                _trip_gemini_circuit()
         
         # ============================================
         # Loop 2: Groq Fallback

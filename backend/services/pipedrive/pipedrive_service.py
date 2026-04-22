@@ -6,10 +6,41 @@ from core.config import settings
 
 
 class PipedriveService:
+    _stages_cache = {} # Cache de classe para estágios (compartilhado)
+
     def __init__(self):
         self.api_token = settings.PIPEDRIVE_API_TOKEN
         self.user_id = settings.PIPEDRIVE_USER_ID
         self.base_url = "https://api.pipedrive.com/v1"
+
+    async def sync_all_parallel(self):
+        """
+        Sincroniza organizações, pessoas e negócios em paralelo para poupar tempo.
+        """
+        print("[Pipedrive Service] 🔄 Iniciando sincronização massiva paralela...")
+        # Esta é uma implementação simplificada que foca em popular o banco local
+        # Para evitar estourar o limite, buscamos os 500 mais recentes
+        await self.list_organizations() 
+        print("[Pipedrive Service] ✅ Sincronização concluída.")
+
+    async def get_all_stages(self):
+        """Busca todos os estágios do pipeline com cache para poupar API."""
+        if PipedriveService._stages_cache:
+            return PipedriveService._stages_cache
+            
+        url = f"{self.base_url}/stages?api_token={self.api_token}"
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url)
+                if resp.status_code == 200:
+                    s_data = resp.json().get("data") or []
+                    PipedriveService._stages_cache = {s["id"]: s["name"] for s in s_data}
+                    return PipedriveService._stages_cache
+                else:
+                    print(f"[Pipedrive Service] Erro ao buscar estágios (Status: {resp.status_code})")
+        except Exception as e:
+            print(f"[Pipedrive Service] Erro de conexão ao buscar estágios: {e}")
+        return {}
 
     async def create_organization(self, data: dict):
         """Cria uma nova organização no Pipedrive e retorna o ID."""
@@ -29,32 +60,6 @@ class PipedriveService:
                     return org_id
         except Exception as e:
             print(f"[Pipedrive Service] Erro ao criar empresa no Pipedrive: {e}")
-    async def create_activity(self, data: dict):
-        """Cria uma nova atividade no Pipedrive."""
-        url = f"{self.base_url}/activities?api_token={self.api_token}"
-        payload = {
-            "subject": data.get("subject", "Follow-up LINKB2B"),
-            "type": data.get("type", "task"),
-            "due_date": data.get("due_date", datetime.now().strftime("%Y-%m-%d")),
-            "note": data.get("note", ""),
-            "org_id": data.get("org_id"),
-            "deal_id": data.get("deal_id"),
-            "person_id": data.get("person_id"),
-            "user_id": self.user_id,
-            "done": 1 if data.get("done") else 0
-        }
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(url, json=payload)
-                res_data = resp.json()
-                if res_data.get("success"):
-                    act_id = res_data["data"]["id"]
-                    print(f"[Pipedrive Service] Success: Nova atividade criada: {act_id}")
-                    return act_id
-        except Exception as e:
-            print(f"[Pipedrive Service] Erro ao criar atividade: {e}")
-        return None
-
     async def get_person_details(self, person_id: int):
         """Busca detalhes completos de uma pessoa (email, fone)."""
         url = f"{self.base_url}/persons/{person_id}?api_token={self.api_token}"
@@ -592,16 +597,18 @@ class PipedriveService:
             deals_data = deals_resp.json()
             deals = deals_data.get("data") or []
             
-            # --- MAPEAMENTO DE ESTÁGIOS (STAGE NAMES) ---
-            stages_map = {}
-            try:
-                # Busca etapas do pipeline para traduzir IDs em Nomes (Cache local por request)
-                stages_resp = await client.get(f"{self.base_url}/stages?api_token={self.api_token}")
-                if stages_resp.status_code == 200:
-                    s_data = stages_resp.json().get("data") or []
-                    stages_map = {s["id"]: s["name"] for s in s_data}
-            except Exception as e:
-                print(f"[Pipedrive Service] Erro ao mapear estágios: {e}")
+            # --- MAPEAMENTO DE ESTÁGIOS (STAGE NAMES) com Cache ---
+            if not PipedriveService._stages_cache:
+                try:
+                    stages_resp = await client.get(f"{self.base_url}/stages?api_token={self.api_token}")
+                    if stages_resp.status_code == 200:
+                        s_data = stages_resp.json().get("data") or []
+                        PipedriveService._stages_cache = {s["id"]: s["name"] for s in s_data}
+                        print(f"[Pipedrive Service] 🗄️ Cache de estágios populado ({len(s_data)} itens).")
+                except Exception as e:
+                    print(f"[Pipedrive Service] Erro ao mapear estágios: {e}")
+            
+            stages_map = PipedriveService._stages_cache
             
             # Enriquece os deals com o nome da etapa e formata valor
             for d in deals:

@@ -2023,14 +2023,12 @@
 }
 
 .emailBodyText {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #374151;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .chatPanel.dark .emailBodyText {
@@ -2661,3 +2659,61 @@
  height: 36px;
 }
 
+
+/* === ACTIVE THINKING CONTAINER === */
+.activeThinkingContainer {
+  margin: 8px 0;
+  padding: 0;
+  animation: fadeIn 0.3s ease;
+}
+
+.activeThinkingContainer :global(.debugPanel) {
+    margin-bottom: 0 !important;
+}
+
+.logLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  animation: fadeIn 0.3s ease;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.chatPanel.dark .logLine {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+
+.replyBadge {
+  background: rgba(94, 106, 210, 0.15);
+  color: #5E6AD2;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin-right: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.originalSubjectLabel {
+  font-size: 10px;
+  color: #9ca3af;
+  font-style: italic;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.chatPanel.dark .originalSubjectLabel {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

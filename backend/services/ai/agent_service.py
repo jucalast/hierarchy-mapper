@@ -7,6 +7,12 @@ from typing import List, Dict, Any, Optional
 from services.external.base_gemini_service import ask_gemini
 from services.pipedrive.pipedrive_service import pipedrive_service
 from services.ai.data_fetcher import fetch_contextual_data
+from services.ai.prompts import (
+    WORKFLOW_ANALYSIS_PROMPT, 
+    WORKFLOW_PLANNER_PROMPT, 
+    EMAIL_WRITER_PROMPT, 
+    FINAL_RESPONSE_PROMPT
+)
 
 # Ações que REQUEREM aprovação do usuário antes de executar
 ACTIONS_REQUIRING_APPROVAL = {"send_whatsapp", "send_email"}
@@ -121,11 +127,28 @@ class AgentService:
                 }
                 AgentService._pending_actions[action_id] = pending_action
                 
-                # Monta preview para o frontend
-                channel = "WhatsApp" if action == "send_whatsapp" else "Email"
-                contact_name = params.get("contact_name", "Contato")
-                message_preview = params.get("message") or params.get("body") or params.get("note") or ""
+                # --- NOVIDADE: EMBELEZAMENTO DE E-MAIL ---
+                if action in ["send_email", "reply_email"]:
+                    log(f"Refinando redação do e-mail para torná-lo mais profissional...")
+                    params["body"] = await AgentService._beautify_email(
+                        params, 
+                        raw_context.get("organization", {}).get("name", "Empresa"),
+                        original_history=raw_context
+                    )
                 
+                channel = "WhatsApp" if action == "send_whatsapp" else "Email"
+                
+                # Inferência inteligente de nome do contato
+                contact_name = params.get("contact_name")
+                if not contact_name:
+                    pd_p = raw_context.get("pipedrive_details", {}).get("persons", [])
+                    if pd_p:
+                        contact_name = pd_p[0].get("name")
+                    else:
+                        contact_name = raw_context.get("organization", {}).get("name", "Contato")
+                
+                params["contact_name"] = contact_name
+
                 pending_approvals.append({
                     "action_id": action_id,
                     "action_type": action,
@@ -134,8 +157,11 @@ class AgentService:
                     "contact_phone": params.get("phone"),
                     "contact_email": params.get("email"),
                     "subject": params.get("subject"),
-                    "message_preview": message_preview,
-                    "description": desc
+                    "message_preview": params.get("body") or params.get("message") or "",
+                    "description": desc,
+                    "email_entry_id": params.get("email_entry_id"),
+                    "is_reply": action == "reply_email",
+                    "original_subject": params.get("subject") if action == "reply_email" else None
                 })
                 log(f"⏳ Aguardando aprovação: {channel} para {contact_name}")
                 
@@ -145,44 +171,57 @@ class AgentService:
                 result = await AgentService._execute_real_action(step, raw_context, initial_intent, org_id)
                 
                 if action == "create_pipedrive_task" and result:
-                    log(f"✅ Atividade criada no Pipedrive (ID: {result})")
-                    created_tasks.append({
-                        "id": result,
-                        "subject": params.get("subject"),
-                        "note": params.get("note"),
-                        "due_date": (datetime.now() + timedelta(days=params.get("days_delay", 0))).strftime("%Y-%m-%d"),
-                        "type": params.get("type", "task"),
-                        "done": False
-                    })
+                    if isinstance(result, dict) and result.get("success"):
+                        act_id = result.get("data", {}).get("id")
+                        log(f"✅ Atividade criada no Pipedrive (ID: {act_id})")
+                        created_tasks.append({
+                            "id": act_id,
+                            "subject": params.get("subject"),
+                            "note": params.get("note"),
+                            "due_date": (datetime.now() + timedelta(days=params.get("days_delay", 0))).strftime("%Y-%m-%d"),
+                            "type": params.get("type", "task"),
+                            "done": False
+                        })
+                        execution_results.append({"description": desc, "status": "success"})
+                    else:
+                        err = result.get("error") if isinstance(result, dict) else "Erro desconhecido"
+                        log(f"❌ Falha ao criar atividade no Pipedrive: {err}")
+                        execution_results.append({"description": desc, "status": "failed", "error": err})
                 elif action == "update_pipedrive_task" and result:
                     log(f"✅ Atividade atualizada no Pipedrive")
-
-                execution_results.append({
-                    "description": desc,
-                    "action": action,
-                    "status": "success" if result else "failed",
-                    "details": result
-                })
+                    execution_results.append({"description": desc, "status": "success"})
+                else:
+                    execution_results.append({
+                        "description": desc,
+                        "action": action,
+                        "status": "success" if result else "failed",
+                        "details": result
+                    })
             
         # ═══════════════════════════════════════
-        # ESTÁGIO 6: Briefing Final
+        # ESTÁGIO 6: Briefing Executivo
         # ═══════════════════════════════════════
-        final_summary = await AgentService._generate_final_briefing(goal, execution_results, pending_approvals)
+        channels_checked = []
+        if raw_context.get("whatsapp_result"): channels_checked.append("WhatsApp")
+        if raw_context.get("email_result"): channels_checked.append("Email")
+        if raw_context.get("pipedrive_details"): channels_checked.append("Pipedrive")
         
-        # Estruturamos a resposta
-        analysis_part = deal_analysis
-        if "[[TASK:" not in analysis_part:
-            analysis_part += "\n\n[[PAST_TASKS]]"
-            
-        summary_part = final_summary
-        if "[[NEW_TASK:" not in summary_part:
-            summary_part += "\n\n[[NEW_TASKS]]"
-
+        exec_context = (
+            f"Canais Verificados: {', '.join(channels_checked)}\n"
+            f"Contexto do Negócio: {deal_analysis}\n"
+            f"Resultados Imediatos: {json.dumps(execution_results)}\n"
+            f"Aprovações Pendentes: {len(pending_approvals)} ação(ões)."
+        )
+        
+        executive_summary = await ask_gemini(FINAL_RESPONSE_PROMPT.format(context=exec_context))
+        
         full_response_parts = [
-            analysis_part,
-            "### Próximo Passo Definido",
-            summary_part
+            executive_summary
         ]
+        
+        # Se houver novas tarefas, anexamos o marcador de lista
+        if created_tasks:
+            full_response_parts.append("\n\n[[NEW_TASKS]]")
         
         return {
             "status": "completed",
@@ -339,6 +378,12 @@ class AgentService:
         for d in deals[:3]:
             history_summary += f"- Negócio: {d.get('title')} | Valor: {d.get('formatted_value')} | Estágio: {d.get('stage_name')} | Status: {d.get('status')}\n"
         
+        deals_in_stage = context.get("deals_in_stage", [])
+        if deals_in_stage:
+            history_summary += "\nNEGÓCIOS NA ETAPA SOLICITADA (PROCESSAMENTO EM LOTE):\n"
+            for d in deals_in_stage:
+                history_summary += f"- {d.get('org_name')} (Deal ID: {d.get('id')}) | Contato: {d.get('person_name')} | Valor: {d.get('value')}\n"
+        
         history_summary += "\nHistórico de Atividades (INDEXADO):\n"
         for i, act in enumerate(activities[:15]):
             status = "CONCLUÍDA" if act.get("done") else "PENDENTE"
@@ -430,21 +475,12 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
 """
         resolution_map = await ask_gemini(resolution_map_prompt)
 
-        prompt = f"""Você é um Diretor de Vendas B2B Senior seguindo este PROTOCOLO DE NEGÓCIO:
-{protocol}
-
-Sua missão é extrair o ESTADO REAL do negócio cruzando o CRM com o histórico de comunicações.
-
-DIRETRIZES DE PENSAMENTO:
-1. FOCO DUPLO (ARQUEOLOGIA + PAUTA):
-   - MODO ARQUEOLOGIA: Se algo foi resolvido nas conversas mas não está no CRM, relate como CONCLUÍDO na DATA REAL.
-   - MODO PAUTA (SCRIPTAGEM): Se houver tarefas 'PENDENTES' no CRM, identifique-as como o objetivo principal da próxima ação. Determine o que deve ser dito ou enviado para resolver essa pauta específica.
-2. MAPA DE RESOLUÇÃO (FATOS DESTILADOS): Analise "{resolution_map}" para confirmar o fluxo de entregas.
-3. GATILHOS DE NEGÓCIO: Identifique quem detém a próxima ação (João ou Cliente) e se há dependências (Ex: "Aguardando X para poder fazer Y").
-
-HISTÓRICO COMPLETO:
-{history_summary}
-"""
+        protocol = AgentService._get_business_protocol()
+        prompt = WORKFLOW_ANALYSIS_PROMPT.format(
+            protocol=protocol,
+            resolution_map=resolution_map,
+            history_summary=history_summary
+        )
         return await ask_gemini(prompt)
 
     # ═══════════════════════════════════════
@@ -479,66 +515,17 @@ HISTÓRICO COMPLETO:
             contacts_info = "CONTATOS: Nenhum contato com dados de comunicação encontrado no CRM.\n"
 
         protocol = AgentService._get_business_protocol()
-
-        prompt = f"""Você é um Gerente de Vendas Senior. Seu papel é gerar um PLANO DE AÇÃO PRECISO baseado no PROTOCOLO abaixo:
-{protocol}
-
-DATA ATUAL: {datetime.now().strftime("%d/%m/%Y")} (Assuma o ano {datetime.now().year} se a data extraída da conversa não tiver ano).
-
-ANÁLISE DE VENDAS:
-"{analysis}"
-
-OBJETIVO: "{goal}"
-
-NEGÓCIOS (DEALS):
-{deals_info or "Nenhum negócio encontrado."}
-- Entidades Marcadas pelo Usuário (FOCO EXCLUSIVO): Você DEVE priorizar a criação de tarefas e o engajamento com estas pessoas especificamente: {", ".join([e.get('name', '') for e in selected_entities]) or "Nenhuma"}. NÃO direcione suas tarefas para pessoas que não foram marcadas pelo usuário a menos que elas sejam o único contato viável.
-
-{contacts_info}
-{activities_info}
-
-AÇÕES DISPONÍVEIS:
-1. "create_pipedrive_task" - Criar atividade no CRM (executa imediatamente, sem permissão)
-   Params: {{ "subject", "note", "type" (call/email/task/meeting), "deal_id", "due_date" (YYYY-MM-DD), "done" (boolean) }}
-   IMPORTANTE: Se você encontrar um WhatsApp anterior (ex: 'enviei o orçamento dia 15/04'), use a data exata em "due_date" e marque "done": true.
-
-2. "update_pipedrive_task" - Atualizar atividade existente no CRM (executa imediatamente)
-   Params: {{ "activity_id", "subject", "note" }}
-
-3. "send_whatsapp" - Enviar mensagem WhatsApp ao contato (REQUER APROVAÇÃO do usuário)
-   Params: {{ "contact_name", "phone", "message" }}
-   ⚠️ Use SOMENTE se houver WhatsApp disponível no mapa de contatos.
-
-4. "send_email" - Enviar email ao contato (REQUER APROVAÇÃO do usuário)
-   Params: {{ "contact_name", "email", "subject", "body" }}
-   ⚠️ Use SOMENTE se houver Email disponível no mapa de contatos.
-
-5. "update_pipedrive_person" - Atualizar dados de um contato (ex: telefone/whatsapp novo)
-   Params: {{ "person_id", "phone", "email", "name" }}
-   IMPORTANTE: Se você encontrar um WhatsApp por nome que NÃO bate com o número no CRM, use esta ação para sincronizar o Pipedrive.
-
-6. "sync_contact_to_pipedrive" - Criar/Vincular um contato local ao Pipedrive (executa imediatamente). 
-   Params: {{ "person_name", "email", "phone", "org_id", "deal_id" }}
-   ⚠️ USE ISSO sempre que um contato importante (ex: decisor mencionado ou identificado no Outlook) NÃO estiver no Pipedrive (identificado como 'Inteligência Local' no mapa).
-
-7. "generate_content" - Gerar texto de apoio ou um insight consultivo (sem ação externa). Use para informar ao usuário se algo está faltando.
-   Params: {{ "content" }}
-
-DIRETRIZES DE CONSULTORIA SENIOR:
-- ⚠️ PRIORIDADE DE PAUTA: Se uma atividade similar já existe em "ATIVIDADES JÁ REGISTRADAS" como 'PENDENTE', NÃO crie uma nova `create_pipedrive_task`. Em vez disso, proponha a AÇÃO (WhatsApp/Email) para resolvê-la.
-- ⚠️ PROTOCOLO DE ARQUEOLOGIA: Se encontrou evento concluído no passado SEM registro no CRM, crie com `done: true` na data original.
-- ⚠️ PROTOCOLO DE 'GANCHOS TÉCNICOS': Ao sugerir mensagens, você é OBRIGADO a resgatar termos técnicos, dores ou métricas do histórico (Ex: cubagem, amostragem, logística).
-- ⚠️ RIGOR DE EVIDÊNCIA: Proibido criar ações ou tarefas sem evidência textual explícita. Sem placeholders.
-- Peça permissão para TUDO que for enviado ao cliente (WhatsApp/Email).
-
-FORMATO DE RESPOSTA (JSON APENAS):
-{{
-  "plan": [
-    {{ "action": "create_pipedrive_task", "description": "Razão", "params": {{ ... }} }},
-    {{ "action": "send_whatsapp", "description": "Razão", "params": {{ "contact_name": "Bianca Lima", "phone": "5511...", "message": "Oi Bianca, conforme nossa conversa sobre cubagem no dia X..." }} }}
-  ]
-}}
-"""
+        today_str = datetime.now().strftime("%d/%m/%Y")
+        
+        prompt = WORKFLOW_PLANNER_PROMPT.format(
+            protocol=protocol,
+            today=today_str,
+            analysis=analysis,
+            goal=goal,
+            deals_info=deals_info or "Nenhum negócio encontrado.",
+            contacts_info=contacts_info,
+            activities_info=activities_info
+        )
         return await ask_gemini(prompt, json_mode=True)
 
     # ═══════════════════════════════════════
@@ -583,11 +570,22 @@ FORMATO DE RESPOSTA (JSON APENAS):
             if not due_date:
                 due_date = (datetime.now() + timedelta(days=params.get("days_delay", 0))).strftime("%Y-%m-%d")
             
+            # --- NOVIDADE: VERIFICAÇÃO DE DUPLICIDADE ---
+            existing_activities = context.get("pipedrive_details", {}).get("activities", [])
+            subject = params.get("subject", "")
+            
+            # Se já existe uma tarefa idêntica PENDENTE para o mesmo Deal, ignoramos a criação
+            for act in existing_activities:
+                if not act.get("done") and act.get("deal_id") == target_deal_id:
+                    if act.get("subject", "").lower() == subject.lower():
+                        print(f"[Agent] 🛡️ Ignorando criação de tarefa duplicada: {subject}")
+                        return f"EXISTING_TASK_{act.get('id')}"
+
             task_data = {
                 "org_id": target_org_id,
                 "deal_id": target_deal_id,
                 "person_id": target_person_id,
-                "subject": params.get("subject"),
+                "subject": subject,
                 "note": params.get("note"),
                 "due_date": due_date,
                 "type": params.get("type", "task"),
@@ -644,10 +642,10 @@ FORMATO DE RESPOSTA (JSON APENAS):
         params = pending["params"]
         
         try:
+            # --- WHATSAPP ---
             if action == "send_whatsapp":
                 phone = params.get("phone", "")
                 message = params.get("message", "")
-                
                 clean_num = phone.replace("+", "").replace("-", "").replace(" ", "")
                 if len(clean_num) <= 11 and not clean_num.startswith("55"):
                     clean_num = f"55{clean_num}"
@@ -658,16 +656,10 @@ FORMATO DE RESPOSTA (JSON APENAS):
                         json={"number": clean_num, "message": message}
                     )
                     if resp.status_code == 200:
-                        print(f"[Agent] ✅ WhatsApp enviado para {params.get('contact_name')} ({clean_num})")
-                        return {
-                            "status": "success",
-                            "channel": "WhatsApp",
-                            "contact_name": params.get("contact_name"),
-                            "message": message
-                        }
-                    else:
-                        return {"status": "error", "message": f"Erro ao enviar WhatsApp: {resp.status_code}"}
+                        return {"status": "success", "channel": "WhatsApp", "contact_name": params.get("contact_name"), "message": message}
+                    return {"status": "error", "message": f"Erro ao enviar WhatsApp: {resp.status_code}"}
             
+            # --- EMAIL NOVO ---
             elif action == "send_email":
                 email_to = params.get("email", "")
                 subject = params.get("subject", "Contato Comercial")
@@ -679,15 +671,23 @@ FORMATO DE RESPOSTA (JSON APENAS):
                         json={"to": email_to, "subject": subject, "body": body}
                     )
                     if resp.status_code == 200:
-                        print(f"[Agent] ✅ Email enviado para {params.get('contact_name')} ({email_to})")
-                        return {
-                            "status": "success",
-                            "channel": "Email",
-                            "contact_name": params.get("contact_name"),
-                            "subject": subject
-                        }
-                    else:
-                        return {"status": "error", "message": f"Erro ao enviar Email: {resp.status_code}"}
+                        return {"status": "success", "channel": "Email", "contact_name": params.get("contact_name"), "subject": subject}
+                    return {"status": "error", "message": f"Erro ao enviar Email: {resp.status_code}"}
+
+            # --- RESPOSTA DE EMAIL (THREAD) ---
+            elif action == "reply_email":
+                entry_id = params.get("email_entry_id")
+                body = params.get("body", "")
+                
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    # Rota do microserviço definida para responder thread
+                    resp = await client.post(
+                        "http://localhost:8002/api/email/reply",
+                        json={"entry_id": entry_id, "body": body, "reply_all": True}
+                    )
+                    if resp.status_code == 200:
+                        return {"status": "success", "channel": "Email (Thread)", "contact_name": params.get("contact_name", "Contato")}
+                    return {"status": "error", "message": f"Erro ao responder email: {resp.status_code}"}
             
             return {"status": "error", "message": f"Ação '{action}' não reconhecida."}
         
@@ -696,40 +696,59 @@ FORMATO DE RESPOSTA (JSON APENAS):
             return {"status": "error", "message": str(e)}
 
     @staticmethod
+    async def _beautify_email(params: dict, company_name: str, original_history: dict) -> str:
+        """
+        Usa o EMAIL_WRITER_PROMPT para transformar um rascunho em um e-mail profissional.
+        """
+        contact_name = params.get("contact_name", "Contato")
+        subject = params.get("subject", "Assunto")
+        
+        try:
+            # Instrução extra para evitar redundância de "Atenciosamente"
+            prompt = EMAIL_WRITER_PROMPT.format(
+                contact_name=contact_name,
+                company_name=company_name,
+                subject=subject,
+                body_hint=params.get("body") or params.get("message") or ""
+            )
+            # Adicionamos um reforço sistêmico para não assinar
+            prompt += "\n\nIMPORTANTE: Não inclua saudações finais como 'Atenciosamente' ou 'Obrigado', pois uma assinatura profissional será inserida automaticamente."
+            
+            refined_body = await ask_gemini(prompt)
+            
+            # Limpeza final (Fallback de segurança para placeholders de todos os tipos)
+            if refined_body:
+                to_replace = [
+                    ("{contact_name}", contact_name), ("{{contact_name}}", contact_name), ("[contact_name]", contact_name),
+                    ("{company_name}", company_name), ("{{company_name}}", company_name), ("[company_name]", company_name),
+                    ("{subject}", subject), ("{{subject}}", subject), ("[subject]", subject)
+                ]
+                for key, val in to_replace:
+                    refined_body = refined_body.replace(key, val)
+                
+                refined_body = refined_body.strip().strip('"')
+
+            # Tenta pegar a ASSINATURA REAL para o preview
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    resp = await client.get("http://localhost:8002/api/email/signature")
+                    if resp.status_code == 200:
+                        signature = resp.json().get("signature", "")
+                        if signature:
+                            # Adicionamos um marcador invisível para o EmailClient saber que já tem assinatura
+                            return f"{refined_body}<br><br><!-- SIGNATURE_START -->{signature}<!-- SIGNATURE_END -->"
+            except:
+                pass
+
+            return refined_body or params.get("body") or ""
+        except Exception as e:
+            print(f"[Agent] Erro ao embelezar e-mail: {e}")
+            return params.get("body") or ""
+
+    @staticmethod
     async def reject_action(action_id: str) -> dict:
         """Remove uma ação pendente (rejeitada pelo usuário)."""
         pending = AgentService._pending_actions.pop(action_id, None)
         if pending:
-            print(f"[Agent] ❌ Ação rejeitada pelo usuário: {pending.get('description')}")
             return {"status": "rejected", "description": pending.get("description")}
         return {"status": "not_found"}
-
-    # ═══════════════════════════════════════
-    # BRIEFING FINAL
-    # ═══════════════════════════════════════
-    @staticmethod
-    async def _generate_final_briefing(goal: str, results: list, pending_approvals: list):
-        """Resumo executivo para o chat."""
-        successful_tasks = [r for r in results if r.get("status") == "success" and r.get("action") == "create_pipedrive_task"]
-        
-        pending_desc = ""
-        if pending_approvals:
-            pending_desc = f"\n\nAÇÕES AGUARDANDO SUA APROVAÇÃO ({len(pending_approvals)}):\n"
-            for pa in pending_approvals:
-                pending_desc += f"- {pa['channel']} para {pa['contact_name']}: {pa['description']}\n"
-        
-        prompt = f"""Você é o Diretor de Vendas. O plano "{goal}" foi processado.
-Sua missão é explicar o que foi feito de forma direta e profissional.
-
-DADOS DA EXECUÇÃO:
-- Tarefas criadas no CRM: {len(successful_tasks)}
-- Ações aguardando aprovação do usuário: {len(pending_approvals)}
-{pending_desc}
-
-REGRAS DE FORMATAÇÃO:
-1. Use `[[NEW_TASK:1]]`, `[[NEW_TASK:2]]`, etc. para inserir os CARDS das novas tarefas.
-2. Se há ações pendentes de aprovação, mencione que elas precisam da confirmação do usuário para serem executadas.
-3. NÃO diga que "ações falharam" ou cite termos técnicos como JSON, ID ou 'params'.
-4. Seja direto e mostre valor. Máximo 3 parágrafos.
-"""
-        return await ask_gemini(prompt)

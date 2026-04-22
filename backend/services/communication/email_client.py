@@ -102,7 +102,18 @@ class EmailClient:
                 mail = outlook.CreateItem(0) # 0 = olMailItem
                 mail.To = to_email
                 mail.Subject = subject
-                mail.HTMLBody = final_body
+                
+                # Mágica para pegar a ASSINATURA OFICIAL do Outlook:
+                # Se o corpo JÁ contém a assinatura (marcada pelo Agente), não duplicamos.
+                if "<!-- SIGNATURE_START -->" in final_body:
+                    # Removemos apenas os comentários de marcação antes de enviar
+                    mail.HTMLBody = final_body.replace("<!-- SIGNATURE_START -->", "").replace("<!-- SIGNATURE_END -->", "")
+                else:
+                    # Caso contrário, força o Outlook a inserir a assinatura padrão
+                    mail.Display()
+                    time.sleep(0.5)
+                    signature_html = mail.HTMLBody
+                    mail.HTMLBody = final_body + signature_html
                 
                 if request_read_receipt:
                     mail.ReadReceiptRequested = True
@@ -140,6 +151,58 @@ class EmailClient:
                 print(f"[EmailClient] ERROR (SMTP): {e}")
                 return False
 
+    def reply_to_email(self, entry_id: str, html_body: str, reply_all: bool = True):
+        """
+        Responde a um e-mail específico mantendo a Thread (In-Reply-To).
+        """
+        if not self.use_outlook_app:
+            print("[EmailClient] Resposta encadeada (Reply) só é suportada via Outlook Desk.")
+            return False
+
+        try:
+            pythoncom.CoInitialize()
+            outlook = self._get_outlook_instance()
+            if not outlook: return False
+
+            # Localiza a mensagem original
+            try:
+                namespace = outlook.GetNamespace("MAPI")
+                original_msg = namespace.GetItemFromID(entry_id)
+            except Exception as e:
+                print(f"[EmailClient] Erro ao localizar mensagem original ID {entry_id[:10]}...: {e}")
+                return False
+
+            # Cria a resposta (Reply ou ReplyAll)
+            if reply_all:
+                reply_msg = original_msg.ReplyAll()
+            else:
+                reply_msg = original_msg.Reply()
+
+            # Se o corpo veio com assinatura para o preview, removemos aqui pois o
+            # reply_msg.HTMLBody JÁ contém a assinatura oficial do Outlook.
+            clean_body = html_body
+            if "<!-- SIGNATURE_START -->" in clean_body:
+                import re
+                clean_body = re.sub(r"<!-- SIGNATURE_START -->.*?<!-- SIGNATURE_END -->", "", clean_body, flags=re.DOTALL)
+                clean_body = clean_body.strip()
+
+            # Injeta o nosso corpo HTML no topo (o Outlook já colocou a assinatura e histórico abaixo)
+            reply_msg.HTMLBody = clean_body + "<br><br>" + reply_msg.HTMLBody
+            
+            # Tenta forçar a conta correta se especificado
+            if self.email_address:
+                for account in outlook.Session.Accounts:
+                    if account.SmtpAddress.lower() == self.email_address.lower():
+                        reply_msg._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
+                        break
+
+            reply_msg.Send()
+            print(f"[EmailClient] SUCCESS: Resposta (Thread) enviada via Outlook App para o ID {entry_id[:10]}...")
+            return True
+        except Exception as e:
+            print(f"[EmailClient] ERROR (Reply Outlook): {e}")
+            return False
+
     def scan_inbound_replies(self, folder: str = "INBOX", max_results: int = 10) -> List[Dict]:
         """
         Varre emails usando Outlook App ou IMAP.
@@ -159,6 +222,9 @@ class EmailClient:
                     if count >= max_results: break
                     if msg.UnRead:
                         replies.append({
+                            "entryId": getattr(msg, 'EntryID', ""),
+                            "conversationId": getattr(msg, 'ConversationID', ""),
+                            "messageId": getattr(msg, 'MessageID', ""),
                             "sender": msg.SenderEmailAddress if hasattr(msg, 'SenderEmailAddress') else str(msg.Sender),
                             "to": msg.To,
                             "subject": msg.Subject,
@@ -605,6 +671,9 @@ class EmailClient:
                             resolved_to = [getattr(msg, 'To', 'Unknown')]
 
                         results.append({
+                            "entryId": getattr(msg, 'EntryID', ""),
+                            "conversationId": getattr(msg, 'ConversationID', ""),
+                            "messageId": getattr(msg, 'MessageID', ""),
                             "sender": display_sender,
                             "to": "; ".join(resolved_to),
                             "subject": getattr(msg, 'Subject', ''),
@@ -618,6 +687,67 @@ class EmailClient:
             except Exception as e:
                 print(f"[EmailClient] ERROR (Get Messages from {folder_path}): {e}")
         return []
+
+    def get_default_signature(self) -> str:
+        """
+        Cria um rascunho dummy apenas para capturar a assinatura padrão do usuário.
+        """
+        if not self.use_outlook_app: return ""
+        try:
+            pythoncom.CoInitialize()
+            outlook = self._get_outlook_instance()
+            if not outlook: return ""
+            dummy = outlook.CreateItem(0)
+            
+            # O Outlook precisa ser exibido ou "inspecionado" para inserir a assinatura
+            dummy.Display()
+            
+            # Pequeno delay humano para o Outlook renderizar a assinatura no HTMLBody
+            import time
+            time.sleep(0.6)
+            
+            sig_html = dummy.HTMLBody
+            
+            # 1. Extrair apenas o conteúdo interno do <body> para evitar nesting de tags <html> no preview
+            import re
+            body_match = re.search(r"<body[^>]*>(.*?)</body>", sig_html, re.IGNORECASE | re.DOTALL)
+            if body_match:
+                sig_html = body_match.group(1)
+            
+            # 2. Limpeza: Remover parágrafos vazios que o Outlook insere no topo do rascunho
+            sig_html = re.sub(r"^(\s*<p[^>]*>(&nbsp;|\s)*</p>\s*)*", "", sig_html, flags=re.IGNORECASE)
+            
+            # 3. Mágica de Imagens: Converter caminhos locais (file:///) para Base64
+            # Isso permite que as imagens da assinatura apareçam no preview do navegador
+            def _base64_replacer(match):
+                full_tag = match.group(0)
+                quote = match.group(1)
+                img_path = match.group(2)
+                
+                if img_path.startswith("file:///"):
+                    local_path = img_path.replace("file:///", "").replace("/", "\\")
+                    # Em alguns casos o Outlook usa escapes de URL
+                    import urllib.parse
+                    local_path = urllib.parse.unquote(local_path)
+                    
+                    if os.path.exists(local_path):
+                        try:
+                            import base64
+                            with open(local_path, "rb") as f:
+                                b64 = base64.b64encode(f.read()).decode()
+                            ext = local_path.split(".")[-1].lower()
+                            mime = f"image/{ext}" if ext in ["png", "jpg", "jpeg", "gif"] else "image/png"
+                            return f'src="data:{mime};base64,{b64}"'
+                        except: pass
+                return full_tag
+
+            sig_html = re.sub(r'src=(["\'])(.*?)\1', _base64_replacer, sig_html)
+
+            dummy.Close(1) # clDiscard (Não salvar rascunho)
+            return sig_html
+        except Exception as e:
+            print(f"[EmailClient] Erro ao capturar assinatura para preview: {e}")
+            return ""
 
     def mark_as_read(self, entry_id: str):
         """

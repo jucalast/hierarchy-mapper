@@ -146,9 +146,10 @@ async def fetch_contextual_data(
             "pipedrive_tasks": ["today_tasks"],
             "company_info": [],
             "general": [],
-            "whatsapp": []
+            "whatsapp": [],
+            "agent_workflow": ["deals", "activities", "today_tasks", "persons", "notes"]
         }
-        data_scope = scope_defaults.get(query_type, [])
+        data_scope = scope_defaults.get(query_type, ["deals", "activities", "today_tasks", "persons", "notes"])
     
     # Adiciona whatsapp/emails se o usuário mencionou palavras chave ou entidades
     if any(k in message.lower() for k in ["whats", "conversa", "histórico", "email"]):
@@ -176,6 +177,70 @@ async def fetch_contextual_data(
                 pipedrive_org_id = org_data.get("pipedrive_id")
         except Exception as e:
             print(f"[AI Chat] Erro ao buscar overview da empresa: {e}")
+
+    # --- BUSCA POR ETAPA DO PIPELINE (Se identificada) ---
+    stage_name = intent_info.get("extracted_deal_stage")
+    if stage_name and not org_id:
+        print(f"[AI Pipeline] 📊 Buscando negócios na etapa: {stage_name}...")
+        try:
+            from services.pipedrive.pipedrive_service import pipedrive_service
+            import httpx
+            async with httpx.AsyncClient() as client:
+                    # 1. Busca todos os estágios do pipeline (Com Cache)
+                    all_stages_map = await pipedrive_service.get_all_stages()
+                    
+                    # Converte o mapa {id: name} para o formato de busca se necessário, ou busca direto
+                    target_stage_id = None
+                    target_stage_name = None
+                    
+                    for s_id, s_name in all_stages_map.items():
+                        if stage_name.lower() in s_name.lower():
+                            target_stage_id = s_id
+                            target_stage_name = s_name
+                            break
+                    
+                    if target_stage_id:
+                        stage_id = target_stage_id
+                        print(f"[AI Pipeline]   ✅ Etapa encontrada: {target_stage_name} (ID: {stage_id})")
+                        
+                        # Se o usuário NÃO especificou data (está 'today' por padrão do classificador), 
+                        # mas pediu uma etapa, mudamos para 'all' para ser mais útil (vê a pauta toda).
+                        # Se ele disse "hoje", "dia", etc., nós respeitamos o filtro de data.
+                        msg_lower = message.lower()
+                        time_keywords = ["hoje", "amanhã", "atrasada", "proxima", "próxima", "dia", "do dia", "atual"]
+                        has_time_mention = any(kw in msg_lower for kw in time_keywords)
+
+                        if intent_info.get("activity_date_filter") == "today" and not has_time_mention:
+                            # Se pediu etapa mas não citou tempo, expandimos para 'all' (visão do pipeline)
+                            intent_info["activity_date_filter"] = "all"
+                        elif intent_info.get("activity_date_filter") == "all" and has_time_mention:
+                            # Reforço dinâmico: se a IA mandou 'all' mas o usuário citou tempo na mensagem:
+                            if any(k in msg_lower for k in ["hoje", "dia", "atual"]):
+                                intent_info["activity_date_filter"] = "today"
+                            elif any(k in msg_lower for k in ["amanhã", "amanha"]):
+                                intent_info["activity_date_filter"] = "tomorrow"
+                            elif any(k in msg_lower for k in ["atrasada", "vencida"]):
+                                intent_info["activity_date_filter"] = "overdue"
+                            elif any(k in msg_lower for k in ["proxima", "próxima", "futura"]):
+                                intent_info["activity_date_filter"] = "future"
+                        
+                        # 2. Busca deals naquele estágio
+                        deals_resp = await client.get(f"{pipedrive_service.base_url}/deals?stage_id={stage_id}&status=open&limit=500&api_token={pipedrive_service.api_token}")
+                        if deals_resp.status_code == 200:
+                            deals_in_stage = deals_resp.json().get("data") or []
+                            internal_context["deals_in_stage"] = [
+                                {
+                                    "id": d.get("id"),
+                                    "title": d.get("title"),
+                                    "org_name": d.get("org_name"),
+                                    "org_id": d.get("org_id"),
+                                    "person_name": d.get("person_name"),
+                                    "value": d.get("formatted_value")
+                                } for d in deals_in_stage[:500] 
+                            ]
+                            print(f"[AI Pipeline]   🎯 Encontrados {len(deals_in_stage)} negócios nesta etapa.")
+        except Exception as e:
+            print(f"[AI Pipeline] ⚠️ Erro ao buscar negócios por etapa: {e}")
 
     # --- BUSCA DE TAREFAS (Com filtro inteligente de empresa se houver) ---
     if "today_tasks" in data_scope or ("activities" in data_scope and query_type == "pipedrive_tasks"):
@@ -526,11 +591,9 @@ async def fetch_contextual_data(
             
         except Exception as e:
             print(f"[AI Chat] Erro crítico ao buscar contexto: {e}")
-            # Não limpa o contexto aqui, deixa retornar o que já coletou antecipadamente
-
             
-        internal_context["selected_entities"] = selected_entities
-        return internal_context
+    internal_context["selected_entities"] = selected_entities
+    return internal_context
 
 
 async def _fetch_tasks(intent_info: dict, internal_context: dict, pipedrive_org_id, message: str):
@@ -562,101 +625,148 @@ async def _fetch_tasks(intent_info: dict, internal_context: dict, pipedrive_org_
         if has_my_filter:
             is_global_request = False
         
-        # Filtro de status de atividade (detectado pela IA no Estágio 1)
-        done_filter = intent_info.get("activity_done_filter")
-        done_values = [0, 1] if done_filter is None else [done_filter]
-        
         all_activities = []
         async with httpx.AsyncClient() as pd_client:
-            for dv in done_values:
-                params = [f"api_token={pipedrive_service.api_token}"]
-                if not is_global_request:
-                    params.append(f"user_id={pipedrive_service.user_id}")
-                params.append(f"done={dv}")
-                
-                query_string = "&".join(params)
+            # PRIORIDADE 1: Buscar a agenda do PRÓPRIO usuário (Sem limite de 500 escondendo as dele)
+            # Isso garante que a Trimplas apareça se estiver no nome dele.
+            user_agenda_url = f"{pipedrive_service.base_url}/activities?user_id={pipedrive_service.user_id}&done=0&limit=500&api_token={pipedrive_service.api_token}"
+            r_agenda = await pd_client.get(user_agenda_url)
+            if r_agenda.status_code == 200:
+                all_activities.extend(r_agenda.json().get("data") or [])
+                print(f"[AI Pipeline] 📅 Agenda: Coletadas {len(all_activities)} tarefas diretas de João Luccas.")
 
-                # 1. Se temos empresa específica, usamos o endpoint de ORGANIZATIONS 
-                if pipedrive_org_id:
-                    url_fetch = f"{pipedrive_service.base_url}/organizations/{pipedrive_org_id}/activities?{query_string}"
-                # 2. Caso contrário, buscador global (Agenda)
-                else:
-                    url_fetch = f"{pipedrive_service.base_url}/activities?{query_string}"
+            # PRIORIDADE 2: Buscar tarefas ligadas aos negócios da etapa (Se houver etapa)
+            deals_in_stage = internal_context.get("deals_in_stage", [])
+            if deals_in_stage:
+                import asyncio
+                async def fetch_deal_acts(deal_id):
+                    # Usamos user_id=0 aqui para pegar tarefas de outros se estiverem no negócio da etapa
+                    d_url = f"{pipedrive_service.base_url}/deals/{deal_id}/activities?done=0&limit=50&api_token={pipedrive_service.api_token}"
+                    r = await pd_client.get(d_url)
+                    return r.json().get("data") or [] if r.status_code == 200 else []
                 
-                resp = await pd_client.get(url_fetch)
-                data = resp.json()
-                if data and data.get("success"):
-                    all_activities.extend(data.get("data") or [])
+                # Pegamos os primeiros 100 negócios da etapa para não estourar rate limit
+                tasks = [fetch_deal_acts(d["id"]) for d in deals_in_stage[:100]]
+                results = await asyncio.gather(*tasks)
+                for res in results:
+                    all_activities.extend(res)
+                
+            # PRIORIDADE 3: Busca por Organização (Se houver empresa específica)
+            elif pipedrive_org_id:
+                org_url = f"{pipedrive_service.base_url}/organizations/{pipedrive_org_id}/activities?done=0&api_token={pipedrive_service.api_token}"
+                r_org = await pd_client.get(org_url)
+                if r_org.status_code == 200:
+                    all_activities.extend(r_org.json().get("data") or [])
         
-        if all_activities:
+            if all_activities:
+                # --- FILTRAGEM GLOBAL: Somente tarefas vinculadas a NEGÓCIOS (Deals) ---
+                initial_count = len(all_activities)
+                deal_only_activities = []
+                for act in all_activities:
+                    d_id_raw = act.get("deal_id")
+                    if d_id_raw:
+                        d_val = d_id_raw.get("value") if isinstance(d_id_raw, dict) else d_id_raw
+                        if d_val:
+                            deal_only_activities.append(act)
                 
+                all_activities = deal_only_activities
+                if len(all_activities) < initial_count:
+                    print(f"[AI Pipeline] 🛡️ Filtro Global: Removidas {initial_count - len(all_activities)} tarefas que não estavam vinculadas a nenhum negócio.")
+                # 2.5 Filtragem por ETAPA (Se solicitada)
+                deals_in_stage = internal_context.get("deals_in_stage", [])
+                if deals_in_stage:
+                    stage_deal_ids = {d.get("id") for d in deals_in_stage}
+                    
+                    # Extração segura de Org IDs (Pipedrive pode retornar int ou dict)
+                    stage_org_ids = set()
+                    for d in deals_in_stage:
+                        oid = d.get("org_id")
+                        if isinstance(oid, dict):
+                            stage_org_ids.add(oid.get("value"))
+                        elif oid:
+                            stage_org_ids.add(oid)
+                    
+                    safe_activities = []
+                    for act in all_activities:
+                        a_deal = act.get("deal_id")
+                        a_deal_id = a_deal.get("value") if isinstance(a_deal, dict) else a_deal
+                        
+                        # FILTRO CRÍTICO: Só queremos tarefas ligadas a NEGÓCIOS (Deals)
+                        if a_deal_id and a_deal_id in stage_deal_ids:
+                            safe_activities.append(act)
+                            
+                    all_activities = safe_activities
+                    print(f"[AI Pipeline] 📊 Filtro de Etapa: Mantive {len(all_activities)} tarefas vinculadas a NEGÓCIOS da etapa solicitada.")
+
                 # 3. Filtragem Manual de Segurança (Python-side) e Filtro de Negócios Perdidos
                 if not is_global_request:
-                    all_activities = [
-                        act for act in all_activities 
-                        if str(act.get("user_id")) == str(pipedrive_service.user_id) or 
-                           str(act.get("assigned_to_user_id")) == str(pipedrive_service.user_id)
-                    ]
-
-                # --- FILTRAGEM DE NEGÓCIOS (Perdidos ou de Terceiros) ---
-                try:
-                    deal_ids_in_tasks = {act.get("deal_id") for act in all_activities if act.get("deal_id")}
+                    user_filtered = []
+                    target_id = str(pipedrive_service.user_id)
+                    for act in all_activities:
+                        u1 = act.get("user_id") or {}
+                        u1_id = str(u1.get("value") if isinstance(u1, dict) else u1)
+                        u1_name = str(u1.get("name", "")).lower() if isinstance(u1, dict) else ""
+                        
+                        u2 = act.get("assigned_to_user_id") or {}
+                        u2_id = str(u2.get("value") if isinstance(u2, dict) else u2)
+                        u2_name = str(u2.get("name", "")).lower() if isinstance(u2, dict) else ""
+                        
+                        # Debug logging
+                        if "trimplas" in str(act.get("deal_id", "")).lower():
+                             print(f"[DEBUG] Trimplas task found. ids: {u1_id}, {u2_id} | names: {u1_name}, {u2_name} | target: {target_id}")
+                        
+                        # Verifica por ID ou por Nome (Backup de segurança)
+                        is_me = (u1_id == target_id or u2_id == target_id or 
+                                 "joao" in u1_name or "luccas" in u1_name or
+                                 "joao" in u2_name or "luccas" in u2_name)
+                        
+                        if is_me:
+                            user_filtered.append(act)
+                        else:
+                            # Log para entender quem está furando o filtro
+                            pass
                     
-                    if deal_ids_in_tasks:
-                        # Busca os deals específicos do usuário e abertos/vencidos
-                        # para garantir que não vamos pegar histórico do deal de OUTRA PESSOA
-                        deals_status_filter = f"&user_id={pipedrive_service.user_id}" if not is_global_request else ""
-                        
-                        valid_deal_ids = set()
-                        for status in ["open", "won"]:
-                            d_url = f"{pipedrive_service.base_url}/deals?status={status}{deals_status_filter}&limit=500&api_token={pipedrive_service.api_token}"
-                            d_resp = await pd_client.get(d_url)
-                            d_data = d_resp.json()
-                            if d_data.get("success") and d_data.get("data"):
-                                for d in d_data["data"]:
-                                    valid_deal_ids.add(d["id"])
-                        
-                        prev_count = len(all_activities)
-                        # Só aceita a atividade se não tiver negócio atrelado OU se tiver, o negócio for do usuário (e não perdido)
-                        all_activities = [
-                            act for act in all_activities 
-                            if not act.get("deal_id") or act.get("deal_id") in valid_deal_ids
-                        ]
-                        removed = prev_count - len(all_activities)
-                        if removed > 0:
-                            print(f"[AI Pipeline] 🛡️ Filtro Pipedrive: Removidas {removed} tarefas de negócios PERDIDOS ou de OUTRAS PESSOAS.")
-                except Exception as e:
-                    print(f"[AI Pipeline] ⚠️ Erro ao filtrar negócios: {e}")
-                
-                # 4. Filtragem por Data (Python-side)
+                    if len(all_activities) != len(user_filtered):
+                        # --- FILTRAGEM DE NEGÓCIOS (Perdidos ou de Terceiros) ---
+                        # Removido filtro redundante que re-validava o status 'open' individualmente.
+                        # Já garantimos que são negócios abertos no filtro de ETAPA inicial.
+                        pass
+                    
+                    all_activities = user_filtered
+                    
+                # --- FINALIZAÇÃO: Limpeza e Formato Final ---
+                tasks_to_return = []
                 date_filter = intent_info.get("activity_date_filter", "today")
                 
-                # Se temos empresa específica, o padrão de data é 'all' se não especificado
-                if pipedrive_org_id and not any(kw in msg_lower for kw in ["hoje", "amanhã", "atrasada", "proxima", "próxima"]):
-                    date_filter = "all"
-                
-                tasks_to_return = []
-                today_date = date.today()
-                tomorrow_date = today_date + timedelta(days=1)
-                
-                for act in all_activities:
-                    due = act.get("due_date")
-                    if not due:
-                        if date_filter == "all": tasks_to_return.append(act)
-                        continue
+                if all_activities:
+                    today_date = date.today()
+                    tomorrow_date = today_date + timedelta(days=1)
                     
-                    due_date = date.fromisoformat(due)
-                    
-                    if date_filter == "today" and due_date == today_date:
-                        tasks_to_return.append(act)
-                    elif date_filter == "tomorrow" and due_date == tomorrow_date:
-                        tasks_to_return.append(act)
-                    elif date_filter == "overdue" and due_date < today_date:
-                        tasks_to_return.append(act)
-                    elif date_filter == "future" and due_date >= today_date:
-                        tasks_to_return.append(act)
-                    elif date_filter == "all":
-                        tasks_to_return.append(act)
+                    for act in all_activities:
+                        due = act.get("due_date")
+                        if not due:
+                            if date_filter == "all": tasks_to_return.append(act)
+                            continue
+                        
+                        due_date = date.fromisoformat(due)
+                        
+                        # DEBUG PROOF
+                        print(f"[DEBUG] Processing Task SUBJECT: {act.get('subject')} | DUE: {due_date} | TODAY: {today_date} | TYPE: {type(due_date)} vs {type(today_date)}")
+                        
+                        # FILTRO RÍGIDO: Apenas hoje
+                        if date_filter == "today" and due_date == today_date:
+                            tasks_to_return.append(act)
+                        elif date_filter == "tomorrow" and due_date == tomorrow_date:
+                            tasks_to_return.append(act)
+                        elif date_filter == "overdue" and due_date < today_date:
+                            tasks_to_return.append(act)
+                        elif date_filter == "future" and due_date >= today_date:
+                            tasks_to_return.append(act)
+                        elif date_filter == "all":
+                            tasks_to_return.append(act)
+                        elif not date_filter: 
+                            # Se não houver filtro, mas houver etapa, retornamos tudo daquela etapa
+                            tasks_to_return.append(act)
                 
                 filter_msg = f"({date_filter})"
                 if pipedrive_org_id:

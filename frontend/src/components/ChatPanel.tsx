@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
 import styles from './ChatPanel.module.css';
 
 // Novas interfaces compartilhadas
@@ -12,6 +12,10 @@ import { ChatMessage } from './chat/ChatMessage';
 import { DebugPanel } from './chat/DebugPanel';
 
 import { useSpeechToText } from '../hooks/useSpeechToText';
+
+const GeminiIcon = () => (
+    <img src="/gemini.png" alt="Gemini" width="16" height="16" className="shrink-0 object-contain" />
+);
 
 interface ChatPanelProps {
     showChat: boolean;
@@ -49,6 +53,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [currentLogs, setCurrentLogs] = useState<string[]>([]);
     const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>>({});
     const [model, setModel] = useState<'gemini' | 'groq'>('gemini');
+    const [isThinkingExpanded, setIsThinkingExpanded] = useState(true);
 
     // Estados de Autocomplete
     const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -67,8 +72,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
     }, [transcript]);
 
-    useEffect(() => {
+    // Função para rolar até o fim
+    const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
     }, [messages, currentLogs]);
 
     // Handlers
@@ -273,7 +283,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     <ChatMessage 
                         key={message.id} 
                         message={message} 
-                        currentLogs={message.role === 'assistant' && isLoading ? currentLogs : undefined}
                         onApprove={handleApproveAction}
                         onReject={handleRejectAction}
                         onOpenWhatsApp={onOpenWhatsApp}
@@ -281,10 +290,44 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     />
                 ))}
                 
-                {isLoading && currentLogs.length === 0 && (
-                    <div className={styles.logLine} style={{ padding: '0 16px' }}>
-                        <Loader2 size={14} className={styles.spinner} color="#9ca3af" />
-                        <span>Iniciando pipeline...</span>
+                {/* Container de Pensamentos Ativos (Acordeon idêntico ao ChatMessage) */}
+                {isLoading && (
+                    <div className={styles.activeThinkingContainer} style={{ padding: '0 16px', marginBottom: '20px' }}>
+                        <div className={styles.debugCard}>
+                            <button 
+                                className={styles.debugHeader}
+                                onClick={() => setIsThinkingExpanded(!isThinkingExpanded)}
+                                style={{ cursor: 'pointer', background: 'none', border: 'none', width: '100%', outline: 'none' }}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <GeminiIcon /> 
+                                    <span>{isThinkingExpanded ? 'Esconder Pensamento' : 'Ver Pensamento da IA'}</span>
+                                </div>
+                                <ChevronDown 
+                                    size={14} 
+                                    style={{ 
+                                        transform: isThinkingExpanded ? 'none' : 'rotate(-90deg)', 
+                                        transition: 'transform 0.2s' 
+                                    }} 
+                                />
+                            </button>
+                            
+                            {isThinkingExpanded && (
+                                <div className={styles.streamingLogs}>
+                                    {currentLogs.length === 0 ? (
+                                        <div className={styles.logLine}>
+                                            <Loader2 size={12} className={styles.spinner} /> <span>Iniciando pipeline...</span>
+                                        </div>
+                                    ) : (
+                                        currentLogs.map((log, i) => (
+                                            <div key={i} className={styles.logLine}>
+                                                <Loader2 size={12} className={styles.spinner} /> <span>{log}</span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
                 

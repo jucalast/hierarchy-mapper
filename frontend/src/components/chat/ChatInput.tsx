@@ -59,7 +59,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }, [inputValue]);
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey && !showAutocomplete) {
+        if (e.key === 'Enter' && !e.shiftKey && !showAutocomplete && !isLoading) {
             e.preventDefault();
             if (inputValue.trim() || selectedCompanies.length > 0) {
                 onSend(inputValue, selectedCompanies);
@@ -168,7 +168,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             onKeyDown={handleKeyPress}
                             placeholder="Digite @ para buscar uma empresa..."
                             className={styles.inputField}
-                            disabled={isLoading}
                             rows={1}
                             spellCheck={false}
                             autoCorrect="off"

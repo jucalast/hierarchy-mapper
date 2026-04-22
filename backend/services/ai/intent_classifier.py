@@ -15,6 +15,8 @@ async def classify_user_intent(message: str, history: Optional[List[MessageInput
     """
     from services.external.base_gemini_service import ask_gemini
     
+    from services.ai.prompts import INTENT_CLASSIFIER_PROMPT
+    
     history_str = ""
     if history and len(history) > 0:
         history_lines = []
@@ -24,76 +26,23 @@ async def classify_user_intent(message: str, history: Optional[List[MessageInput
             history_lines.append(f"{role_br}: {msg.content}")
         history_str = "Histórico Recente da Conversa:\n" + "\n".join(history_lines)
     
-    prompt = f"""Você é o Roteador de Intenções de um sistema corporativo B2B integrado ao Pipedrive e WhatsApp.
-Sua função é analisar o comando do usuário e determinar a intenção e extrair entidades, considerando o histórico para resolver pronomes ou referências vagas.
+    prompt = f"""{INTENT_CLASSIFIER_PROMPT}
 
 {history_str}
 
 Mensagem atual do usuário: "{message}"
-
-REGRAS DE RESOLUÇÃO DE CONTEXTO:
-1. Se o usuário diz "dela", "dele", "com ele", "a conversa", olhe no HISTÓRICO acima para ver qual pessoa ou empresa foi mencionada por último.
-2. Se o usuário perguntou "o que tem na conversa dela?" e o histórico menciona "Momo", você deve extrair "Momo" como extracted_person_name e definir query_type como "whatsapp" e whatsapp_action como "get_messages".
-
-Categorias (query_type):
-- "email": O usuário quer interagir com o EMAIL (enviar email, escrever um email, mandar um email, ler emails, ver pastas, buscar mensagens do Outlook).
-- "contacts": O usuário focou em PESSOAS para obter informações (quem são, cargos, quem trabalha lá, listagem de equipe). 
-- "enrichment": O usuário quer ENCONTRAR O CONTATO (OSINT/LinkedIn).
-- "pipedrive_tasks": O usuário quer apenas LISTAR as tarefas (o que tem para fazer, o que já foi feito, ver a agenda).
-- "agent_workflow": O usuário quer uma ANALISE seguida de uma AÇÃO ou SUGESTÃO de próximo passo ("analise o histórico e crie o próximo passo", "o que eu devo fazer agora com essa empresa?", "cuida disso para mim", "realize o fluxo"). Se houver verbos como "analisar", "criar próximo passo", "gerar sugestão", use este tipo.
-- "general": Conversa fiada ou assuntos que não encaixam
-
-AÇÕES WHATSAPP (whatsapp_action):
-- "send_message": Enviar uma nova mensagem
-- "get_chats": Listar conversas recentes
-- "get_messages": Ler histórico de mensagens de um chat/contato
-- "search_contacts": Buscar um contato específico
-
-AÇÕES EMAIL (email_action):
-- "send_email": Enviar um novo e-mail
-- "get_unread": Buscar e-mails não lidos
-- "get_messages": Listar mensagens de uma pasta específica
-- "list_folders": Listar pastas da conta
-
-Retorne APENAS um JSON válido neste formato (sem backticks):
-{{
-    "query_type": "contacts" | "company_info" | "pipedrive_info" | "pipedrive_tasks" | "whatsapp" | "email" | "enrichment" | "agent_workflow" | "general",
-    "data_scope": ["employees", "deals", "activities", "today_tasks", "emails", ...],
-    "activity_done_filter": 0 | 1 | null, 
-    "activity_date_filter": "today" | "tomorrow" | "overdue" | "future" | "all" | null,
-    "extracted_company_name": "Nome da empresa identificado ou inferido ou null",
-    "extracted_person_name": "Nome da pessoa identificado ou inferido ou null",
-    "extracted_person_hint": "Dica sobre a pessoa ou null",
-    "whatsapp_action": "send_message" | "get_chats" | "get_messages" | "search_contacts" | null,
-    "whatsapp_message": "Mensagem para enviar ou null",
-    "whatsapp_chat_id": "ID técnico real (ex: '5511... @c.us' ou '... @lid'). NUNCA use o nome da pessoa/empresa aqui. Se não souber o ID técnico, deixe null.",
-    "email_action": "send_email" | "get_unread" | "get_messages" | "list_folders" | null,
-    "email_to": "Email do destinatário ou null",
-    "email_subject": "Assunto do e-mail ou null",
-    "email_body": "Corpo do e-mail ou null",
-    "email_folder": "Pasta (ex: Inbox, Sent, Leads) ou null"
-}}
-
-REGRAS PARA activity_done_filter:
-- Use 0 para "a fazer", "pendentes", "próximas", "agendadas", "em aberto".
-- Use 1 para "concluídas", "feitas", "realizadas", "terminadas".
-- Use null para "todas", "feitas e não feitas", "tudo o que tem", "histórico completo", "tudo da empresa", "geral".
-
-REGRAS PARA activity_date_filter:
-- "today": apenas de hoje.
-- "tomorrow": apenas de amanhã.
-- "overdue": apenas as atrasadas.
-- "future": próximas tarefas (hoje e futuro).
-- "all": sem filtro de data (todo o histórico). Use "all" se o usuário pedir "todas", "tudo", "do começo ao fim".
 """
     try:
         response = await ask_gemini(prompt, json_mode=True)
+        print(f"[AI Pipeline] Resposta bruta do Classificador: {response}")
         
         if isinstance(response, dict):
+            response["_original_message"] = message
             return _extract_intent(response)
         elif isinstance(response, str):
             try:
                 parsed = json.loads(response)
+                parsed["_original_message"] = message
                 return _extract_intent(parsed)
             except:
                 pass
@@ -126,13 +75,14 @@ def _extract_intent(data: dict) -> dict:
     if date_filter not in ["today", "tomorrow", "overdue", "future", "all"]:
         date_filter = "today"
     
-    return {
+    result = {
         "query_type": data.get("query_type", "general"),
         "data_scope": data_scope,
         "activity_done_filter": done_filter,
         "activity_date_filter": date_filter,
         "extracted_company_name": data.get("extracted_company_name"),
         "extracted_person_name": data.get("extracted_person_name"),
+        "extracted_deal_stage": data.get("extracted_deal_stage"),
         "extracted_person_hint": data.get("extracted_person_hint"),
         "whatsapp_action": data.get("whatsapp_action"),
         "whatsapp_number": data.get("whatsapp_number"),
@@ -144,3 +94,14 @@ def _extract_intent(data: dict) -> dict:
         "email_body": data.get("email_body"),
         "email_folder": data.get("email_folder")
     }
+
+    # --- FALLBACK MECÂNICO PARA ETAPA (Regex de segurança) ---
+    # Se a IA falhou mas a mensagem tem "estágio X" ou "etapa X"
+    if not result["extracted_deal_stage"]:
+        import re
+        stage_match = re.search(r'(?:estágio|etapa|fase|funil)\s+([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+)*)', data.get("_original_message", ""), re.IGNORECASE)
+        if stage_match:
+            result["extracted_deal_stage"] = stage_match.group(1).strip()
+            print(f"[AI Pipeline] 🛡️ Etapa extraída via Regex Fallback: {result['extracted_deal_stage']}")
+
+    return result

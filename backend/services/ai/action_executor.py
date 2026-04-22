@@ -293,6 +293,32 @@ async def execute_email_action(intent_info: dict) -> Optional[Dict[str, Any]]:
                         "email_action": action
                     }
             
+            elif action == "reply_email":
+                entry_id = intent_info.get("email_entry_id")
+                body = intent_info.get("email_body")
+                
+                if entry_id and body:
+                    resp = await client_http.post(f"{email_base}/reply", json={
+                        "entry_id": entry_id, "body": body, "reply_all": True
+                    })
+                    res_data = resp.json()
+                    email_result_context = {
+                        "email_action": "reply_email",
+                        "status": resp.status_code,
+                        "entry_id": entry_id,
+                        "to": intent_info.get("email_to") or "Contato",
+                        "subject": intent_info.get("email_subject") or "Resposta",
+                        "sent_message": body,
+                        "contact": {"id": intent_info.get("email_to"), "email": intent_info.get("email_to"), "name": intent_info.get("extracted_person_name") or "Contato"},
+                        "resultado": res_data
+                    }
+                    print(f"[AI Chat] ✅ Resposta (Reply) enviada para EntryID: {entry_id[:10]}...")
+                else:
+                    email_result_context = {
+                        "error": "EntryID ou corpo da resposta ausente.", 
+                        "email_action": action
+                    }
+            
             elif action == "list_folders":
                 resp = await client_http.get(f"{email_base}/folders")
                 email_result_context = {"email_action": action, "status": resp.status_code, "folders": resp.json().get("folders", [])}

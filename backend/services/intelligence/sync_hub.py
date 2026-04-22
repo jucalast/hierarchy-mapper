@@ -46,14 +46,24 @@ class SyncIntelligenceHub:
             try:
                 print("[SyncHub] 🔄 Verificando estado da inteligência local...")
                 
-                # 1. Pipedrive
+                # 1. Pipedrive (Com Cooldown de 1 hora para evitar loop de cota)
                 try:
+                    current_time = time.time()
+                    last_pd_sync = getattr(self, "_last_pd_sync", 0)
+                    
                     async with async_session() as session:
                         res = await session.execute(select(func.count()).select_from(Organization))
                         org_count = res.scalar()
-                        if force or org_count < 1:
-                            print("[SyncHub] Sincronizando Pipedrive...")
+                        
+                        # Só sincroniza se:
+                        # - Forçado OU
+                        # - Banco vazio E passou mais de 1 hora desde a última tentativa
+                        if force or (org_count < 1 and (current_time - last_pd_sync) > 3600):
+                            print("[SyncHub] Sincronizando Pipedrive (Carga inicial)...")
                             await self.pipedrive_svc.sync_all_parallel()
+                            self._last_pd_sync = current_time
+                        elif org_count < 1:
+                            print(f"[SyncHub] Pipedrive vazio, mas aguardando cooldown de cota (Próxima tentativa em {int(3600 - (current_time - last_pd_sync))}s)")
                 except Exception as e:
                     print(f"[SyncHub] ❌ Erro Pipedrive: {e}")
                     

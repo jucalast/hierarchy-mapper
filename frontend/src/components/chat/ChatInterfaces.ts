@@ -39,4 +39,6 @@ export interface ApprovalAction {
     subject?: string;
     message_preview: string;
     description: string;
+    is_reply?: boolean;
+    original_subject?: string;
 }

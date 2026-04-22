@@ -14,6 +14,8 @@ interface ThreadCardProps {
     onApprove?: () => void;
     onReject?: () => void;
     onOpenExternal?: () => void;
+    isReply?: boolean;
+    originalSubject?: string;
 }
 
 export const WhatsAppThreadCard: React.FC<ThreadCardProps> = ({ 
@@ -43,7 +45,7 @@ export const WhatsAppThreadCard: React.FC<ThreadCardProps> = ({
                 </div>
             </div>
             <div className={styles.waPreviewBubble}>
-                <div className={styles.waPreviewText}>{sentMessage}</div>
+                <div className={styles.waPreviewText} dangerouslySetInnerHTML={{ __html: sentMessage }} />
                 <div className={styles.waPreviewTime}>
                     {time}
                     <div className={styles.waChecks} style={{ color: status === 'approved' ? '#34B7F1' : '#9ca3af' }}>
@@ -79,7 +81,7 @@ export const WhatsAppThreadCard: React.FC<ThreadCardProps> = ({
 };
 
 export const EmailThreadCard: React.FC<ThreadCardProps> = ({ 
-    contact, sentMessage, subject, status, onApprove, onReject, onOpenExternal 
+    contact, sentMessage, subject, status, onApprove, onReject, onOpenExternal, isReply, originalSubject 
 }) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const isPending = status === 'pending';
@@ -95,14 +97,22 @@ export const EmailThreadCard: React.FC<ThreadCardProps> = ({
                 </div>
                 <div className={styles.emailPreviewInfo}>
                     <div className={styles.emailPreviewRecipient}>{contact.name || contact.email || 'Destinatário'}</div>
-                    <div className={styles.emailPreviewSnippet}>{subject || 'Sem Assunto'}</div>
+                    <div className={styles.emailPreviewSnippet}>
+                        {isReply && <span className={styles.replyBadge}>RE:</span>}
+                        {subject || 'Sem Assunto'}
+                    </div>
+                    {isReply && originalSubject && (
+                        <div className={styles.originalSubjectLabel}>
+                            em resposta a: {originalSubject}
+                        </div>
+                    )}
                 </div>
                 <div className={styles.emailExternalIcon} onClick={onOpenExternal}>
                     <ExternalLink size={14} />
                 </div>
             </div>
             <div className={styles.emailPreviewBody}>
-                <div className={styles.emailBodyText}>{sentMessage}</div>
+                <div className={styles.emailBodyText} dangerouslySetInnerHTML={{ __html: sentMessage }} />
                 <div className={styles.emailPreviewMeta}>
                     <div className={styles.emailSentStatus}>
                         <CheckCheck size={14} />
