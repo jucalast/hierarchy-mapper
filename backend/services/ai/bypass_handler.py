@@ -70,8 +70,15 @@ def _bypass_tasks_or_contacts(query_t: str, intent_info: dict, internal_context:
     org_name = internal_context.get("organization", {}).get("name")
     
     if query_t == "pipedrive_tasks":
-        target_text = f" da {org_name}" if org_name else " agendadas"
-        response_msg = f"Aqui estão as tarefas{target_text} no Pipedrive:"
+        tasks = internal_context.get("today_tasks", []) or internal_context.get("activities", [])
+        count = len(tasks)
+        target_text = f" da {org_name}" if org_name else ""
+        
+        if count > 0:
+            response_msg = f"Localizei {count} tarefas{target_text} no Pipedrive:"
+        else:
+            response_msg = f"Não encontrei tarefas pendentes{target_text} no Pipedrive."
+            
         u_mod = "TaskList"
     else:
         target_text = f" da {org_name}" if org_name else ""

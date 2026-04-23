@@ -1285,6 +1285,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                             setShowChat={handleSetShowChat}
                             selectedOrgId={currentOrgId}
                             selectedOrgName={confirmedBrand}
+                            selectedOrgLogo={confirmedLogo}
                             theme={theme}
                             onToggleTheme={toggleTheme}
                             onOpenWhatsApp={(info) => {

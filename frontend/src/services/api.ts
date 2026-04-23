@@ -19,5 +19,6 @@ export {
   jobs,
   communication,
   health,
+  conversations,
 } from './api/index';
 export type { RequestOptions } from './api/index';

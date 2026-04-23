@@ -12,5 +12,6 @@ import * as hierarchy from './hierarchy';
 import * as jobs from './jobs';
 import * as communication from './communication';
 import * as health from './health';
+import * as conversations from './conversations';
 
-export { ai, organizations, hierarchy, jobs, communication, health };
+export { ai, organizations, hierarchy, jobs, communication, health, conversations };

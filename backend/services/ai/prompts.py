@@ -121,6 +121,8 @@ OBJETIVO DO USUÁRIO: "{goal}"
 CONTEXTO DE CONVERSA (HISTÓRICO):
 {history}
 
+{activity_context}
+
 NEGÓCIOS (DEALS): {deals_info}
 CONTATOS DISPONÍVEIS: {contacts_info}
 ATIVIDADES JÁ REGISTRADAS: {activities_info}

@@ -3,7 +3,7 @@
 :root {
   /* DARK MODE (Console / Obsidian Style) - DEFAULT */
   --sw-bg: #0c0d0e;
-  --sw-sidebar: #131415;
+  --sw-sidebar: #131313;
   --sw-surface-base: #1a1b1e;
   --sw-surface-raised: #25262b;
   --sw-surface-overlay: rgba(13, 13, 13, 0.95);

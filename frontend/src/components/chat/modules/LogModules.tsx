@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    User2, Building2, MessageSquare, ArrowUpRight, ArrowDownLeft, ArrowRight
+    User2, Building2, MessageSquare, ArrowUpRight, ArrowDownLeft, ArrowRight, Phone, Mail, Calendar, CheckCircle2, Clock
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -166,10 +166,119 @@ export const NoteLogCard = ({ data }: { data: any }) => (
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Legado — ActivityLogCard mantido para retrocompatibilidade
-// (RichLogRenderer agora usa TimelineEventRow diretamente)
+// ActivityLogCard
+// Pill de atividade/tarefa usada no painel de pensamento.
 // ─────────────────────────────────────────────────────────────────────────────
 export const ActivityLogCard = ({ data }: { data: any }) => {
-    // redirect para quem ainda importar diretamente
-    return null;
+    const isDone = data.done === true || data.done === 1;
+    
+    const getIcon = (type: string) => {
+        switch (type) {
+            case 'call': return <Phone size={13} />;
+            case 'meeting': return <Calendar size={13} />;
+            case 'email': return <Mail size={13} />;
+            default: return <CheckCircle2 size={13} />;
+        }
+    };
+
+    return (
+        <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            margin: '6px 0 6px 16px', padding: '8px 12px',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(8px)',
+            transition: 'all 0.2s ease',
+            maxWidth: '340px',
+        }}>
+            <div style={{
+                padding: '6px', borderRadius: '8px',
+                background: isDone ? 'rgba(16,185,129,0.15)' : 'rgba(94,106,210,0.15)',
+                flexShrink: 0,
+            }}>
+                <span style={{ color: isDone ? '#10B981' : '#818cf8' }}>
+                    {getIcon(data.type)}
+                </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                <span style={{
+                    fontSize: '12px', fontWeight: 600,
+                    color: 'rgba(255,255,255,0.9)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>{data.subject || 'Tarefa'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={10} style={{ color: 'rgba(255,255,255,0.4)' }} />
+                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                        {data.due_date || 'Sem data'}
+                    </span>
+                    {data.person_name && (
+                        <>
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>•</span>
+                            <span style={{ fontSize: '10px', color: 'rgba(139,92,246,0.6)', fontWeight: 600 }}>{data.person_name}</span>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {isDone && (
+                <div style={{ 
+                    marginLeft: '4px', padding: '2px 6px', borderRadius: '6px', 
+                    background: 'rgba(16,185,129,0.1)', color: '#10B981', 
+                    fontSize: '9px', fontWeight: 800, textTransform: 'uppercase' 
+                }}>
+                    Ok
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EmailLogCard
+// Pill de email usada no painel de pensamento.
+// ─────────────────────────────────────────────────────────────────────────────
+export const EmailLogCard = ({ data }: { data: any }) => {
+    const emailResult = data?.email_result || data || {};
+    const subject = emailResult.subject || "Sem Assunto";
+    const contact = emailResult.contact || emailResult.resolved_contact || { name: emailResult.to, email: emailResult.to };
+
+    return (
+        <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            margin: '6px 0 6px 16px', padding: '8px 12px',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(8px)',
+            transition: 'all 0.2s ease',
+            maxWidth: '340px',
+        }}>
+            <div style={{
+                padding: '4px', borderRadius: '8px',
+                background: 'rgba(255,255,255,0.05)',
+                flexShrink: 0,
+            }}>
+                <img src="/outlook.png" width="16" height="16" alt="Email" style={{ objectFit: 'contain' }} />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                <span style={{
+                    fontSize: '12px', fontWeight: 600,
+                    color: 'rgba(255,255,255,0.9)',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>{subject}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '10px', color: 'rgba(96,165,250,0.7)', fontWeight: 600 }}>{contact.name || contact.email}</span>
+                    {emailResult.date && (
+                        <>
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>•</span>
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>{emailResult.date}</span>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 };

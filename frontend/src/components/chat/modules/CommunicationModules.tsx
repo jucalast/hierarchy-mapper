@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    MessageSquare, Mail, ExternalLink, CheckCheck, User2, Reply, Send, XCircle, Loader2, ShieldCheck
+    MessageSquare, Mail, ExternalLink, CheckCheck, User2, Reply, Send, XCircle, Loader2, ShieldCheck, CornerDownLeft
 } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../../../utils/avatarUtils';
 import styles from '../../ChatPanel.module.css';
@@ -25,7 +25,7 @@ export const WhatsAppThreadCard: React.FC<ThreadCardProps> = ({
     const isPending = status === 'pending';
 
     return (
-        <div className={styles.waPreviewCard} style={{ margin: status ? '8px 0' : '0' }}>
+        <div className={`${styles.waPreviewCard} ${styles.glassModuleCard}`} style={{ margin: status ? '8px 0' : '0' }}>
             <div className={styles.waPreviewHeader}>
                 <div className={styles.waAvatarSmall}>
                     {contact?.profilePicture ? (
@@ -80,14 +80,33 @@ export const WhatsAppThreadCard: React.FC<ThreadCardProps> = ({
     );
 };
 
-export const EmailThreadCard: React.FC<ThreadCardProps> = ({ 
-    contact, sentMessage, subject, status, onApprove, onReject, onOpenExternal, isReply, originalSubject 
+export const EmailThreadCard: React.FC<ThreadCardProps> = ({
+    contact, sentMessage, subject, status, onApprove, onReject, onOpenExternal, isReply, originalSubject
 }) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const isPending = status === 'pending';
 
     return (
         <div className={styles.emailPreviewCard} style={{ margin: status ? '8px 0' : '0' }}>
+            {/* Faixa de contexto — aparece apenas em replies de thread */}
+            {isReply && originalSubject && (
+                <div style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '5px 14px',
+                    background: 'rgba(255,255,255,0.03)',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    fontSize: '10px',
+                    color: 'rgba(255,255,255,0.35)',
+                }}>
+                    <CornerDownLeft size={10} style={{ flexShrink: 0, opacity: 0.5 }} />
+                    <span style={{ fontWeight: 700, color: 'rgba(255,255,255,0.45)', marginRight: '2px' }}>thread:</span>
+                    <span style={{
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        fontStyle: 'italic', maxWidth: '240px',
+                    }}>{originalSubject}</span>
+                </div>
+            )}
+
             <div className={styles.emailPreviewHeader}>
                 <div className={styles.emailAvatarSmall}>
                     <img src="/outlook.png" alt="E" style={{ width: 28, height: 28, objectFit: 'contain' }} />
@@ -101,22 +120,18 @@ export const EmailThreadCard: React.FC<ThreadCardProps> = ({
                         {isReply && <span className={styles.replyBadge}>RE:</span>}
                         {subject || 'Sem Assunto'}
                     </div>
-                    {isReply && originalSubject && (
-                        <div className={styles.originalSubjectLabel}>
-                            em resposta a: {originalSubject}
-                        </div>
-                    )}
                 </div>
                 <div className={styles.emailExternalIcon} onClick={onOpenExternal}>
                     <ExternalLink size={14} />
                 </div>
             </div>
+
             <div className={styles.emailPreviewBody}>
                 <div className={styles.emailBodyText} dangerouslySetInnerHTML={{ __html: sentMessage }} />
                 <div className={styles.emailPreviewMeta}>
                     <div className={styles.emailSentStatus}>
                         <CheckCheck size={14} />
-                        <span>{status === 'approved' ? 'Enviado via Outlook' : 'Rascunho via Outlook'}</span>
+                        <span>{status === 'approved' ? 'Enviado via Outlook' : isReply ? 'Resposta via Outlook' : 'Rascunho via Outlook'}</span>
                     </div>
                     <div className={styles.emailTime}>{time}</div>
                 </div>
@@ -127,7 +142,10 @@ export const EmailThreadCard: React.FC<ThreadCardProps> = ({
                         {isPending ? (
                             <>
                                 <button className={styles.approvalBtnApprove} onClick={onApprove}>
-                                    <Send size={14} /> <span>Enviar Email</span>
+                                    {isReply
+                                        ? <><CornerDownLeft size={14} /> <span>Responder Thread</span></>
+                                        : <><Send size={14} /> <span>Enviar Email</span></>
+                                    }
                                 </button>
                                 <button className={styles.approvalBtnReject} onClick={onReject}>
                                     <XCircle size={14} /> <span>Cancelar</span>

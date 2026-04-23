@@ -76,7 +76,6 @@ class AgentService:
         
         # 1. Se NÃO temos contexto, buscamos com retry
         if not raw_context:
-            log({"type": "status", "content": "Coletando histórico...", "icon": "search"})
             context_intent = initial_intent.copy()
             context_intent["activity_done_filter"] = None
             context_intent["activity_date_filter"] = "all"
@@ -91,29 +90,11 @@ class AgentService:
                     raw_context = await fetch_contextual_data(context_intent, org_id, goal, session, selected_entities=selected_entities)
                     if raw_context.get("error"): raise Exception(raw_context["error"])
                     
-                    # --- NOVIDADE: STREAMING IMEDIATO DE DESCOBERTA ---
-                    org_data = raw_context.get("organization")
-                    if org_data:
-                        log({"type": "data_found", "entity": "deal", "data": {"title": org_data.get("name"), "stage_name": "Empresa Identificada", "status": "open", "formatted_value": org_data.get("domain", "")}})
-                        await asyncio.sleep(0.5)
-
                     pd_new = raw_context.get("pipedrive_details", {})
                     new_deals = pd_new.get("deals", [])
                     new_activities = pd_new.get("activities", [])
-                    
-                    if new_deals:
-                        log({"type": "status", "content": "Negócio localizado!", "icon": "check"})
-                        for d in new_deals: 
-                            log({"type": "data_found", "entity": "deal", "data": d})
-                            await asyncio.sleep(0.4)
-                    
-                    if new_activities:
-                        log({"type": "status", "content": f"Encontradas {len(new_activities)} atividades.", "icon": "list"})
-                        for a in new_activities[:3]: 
-                            log({"type": "data_found", "entity": "activity", "data": a})
-                            await asyncio.sleep(0.3)
-                    
-                    break 
+
+                    break
                 except Exception as e:
                     await add_thought(f"Opa, tive um problema técnico: {str(e)}. Tentativa {attempt+1}/{max_retries}.")
                     if attempt == max_retries - 1:
@@ -132,11 +113,6 @@ class AgentService:
         
         contact_map = await AgentService._resolve_contact_map(raw_context, org_id, session)
         
-        # Stream de contatos assim que resolvidos
-        if contact_map:
-            log({"type": "status", "content": "Contatos mapeados.", "icon": "people"})
-            for name, info in list(contact_map.items())[:2]:
-                 log({"type": "data_found", "entity": "contact", "data": info})
 
         # Recupera dados de comunicação
         existing_emails = raw_context.get("email_result", {}).get("resultado", {}).get("messages_by_contact", [])
@@ -338,9 +314,41 @@ Retorne JSON:
 
         # Pausa reduzida para performance
         await asyncio.sleep(1.0)
-        
+
+        # ─── Contexto de Atividades Recentes (para injeção no planner) ────────
+        activity_context_str = ""
+        if session and org_id:
+            try:
+                from api.v1.endpoints.conversations import get_recent_activities_context
+                recent_acts = await get_recent_activities_context(session, org_id, limit=8)
+                if recent_acts:
+                    lines = ["HISTÓRICO DE AÇÕES JÁ REALIZADAS PELO AGENTE:"]
+                    for act in recent_acts:
+                        p = act.payload or {}
+                        ts = act.created_at.strftime("%d/%m %H:%M") if act.created_at else ""
+                        if act.activity_type == "email_sent":
+                            lines.append(f"- [{ts}] Email enviado para {p.get('to_name','?')} | Assunto: {p.get('subject','?')} | Status: {act.status}")
+                        elif act.activity_type in ("email_reply_sent",):
+                            lines.append(f"- [{ts}] Resposta de email enviada para {p.get('to_name','?')} | Re: {p.get('subject','?')}")
+                        elif act.activity_type == "whatsapp_sent":
+                            lines.append(f"- [{ts}] WhatsApp enviado para {p.get('to_name','?')}: {p.get('message_preview','')[:60]}")
+                        elif act.activity_type == "stage_changed":
+                            lines.append(f"- [{ts}] Estágio alterado: {p.get('from_stage','?')} → {p.get('to_stage','?')}")
+                        elif act.activity_type == "email_reply_received":
+                            lines.append(f"- [{ts}] ✅ Resposta recebida de {p.get('from_name','?')} | Re: {p.get('subject','?')}")
+                        else:
+                            lines.append(f"- [{ts}] {act.activity_type}: {str(p)[:80]}")
+                    # Emails aguardando resposta
+                    pending_emails = [a for a in recent_acts if a.status == "awaiting_reply"]
+                    if pending_emails:
+                        lines.append(f"\n⚠️ {len(pending_emails)} email(s) aguardando resposta — considere follow-up antes de reenviar.")
+                    activity_context_str = "\n".join(lines)
+                    log({"type": "status", "content": "Consultando histórico de interações...", "icon": "history"})
+            except Exception as act_err:
+                print(f"[Agent] ⚠️ Falha ao carregar ActivityLog: {act_err}")
+
         try:
-            plan_raw = await AgentService._create_logical_plan(goal, deal_analysis, raw_context, contact_map, selected_entities, history=history)
+            plan_raw = await AgentService._create_logical_plan(goal, deal_analysis, raw_context, contact_map, selected_entities, history=history, activity_context=activity_context_str)
             
             # Normalização robusta de JSON/Plan
             if not plan_raw:
@@ -404,6 +412,26 @@ Retorne JSON:
 
             # --- FLUXO DE APROVAÇÃO (Comunicações) ---
             if action in ["send_email", "reply_email", "send_whatsapp"]:
+
+                # REPLY-FIRST FALLBACK: se a IA gerou 'reply_email' mas esqueceu o email_entry_id,
+                # resolvemos aqui a partir do contact_map antes de mostrar o card.
+                if action == "reply_email" and not params.get("email_entry_id"):
+                    for _name, _info in contact_map.items():
+                        if _info.get("last_email_id") and (
+                            _name.lower() == contact_name.lower()
+                            or (params.get("email", "") and _info.get("email", "").lower() == params.get("email", "").lower())
+                        ):
+                            params["email_entry_id"] = _info["last_email_id"]
+                            if not params.get("subject"):
+                                params["subject"] = _info.get("last_email_subject", "")
+                            print(f"[Agent] ↩️ email_entry_id resolvido via fallback para '{_name}': {params['email_entry_id'][:30]}...")
+                            break
+                    # Se ainda não encontrou, degrada para send_email com log de aviso
+                    if not params.get("email_entry_id"):
+                        action = "send_email"
+                        step["action"] = "send_email"
+                        log({"type": "log", "content": "⚠️ Thread não encontrado — enviando como novo e-mail.", "status": "warning"})
+
                 log({"type": "log", "content": f"📝 Sugestão de {channel} preparada para {contact_name}...", "status": "pending"})
 
                 # Refinamento de IA para o corpo da mensagem
@@ -428,10 +456,36 @@ Retorne JSON:
                 # Gera action_id único e armazena no dicionário de ações pendentes
                 import uuid
                 action_id = str(uuid.uuid4())
+                # org_id extraído do contexto para uso no ActivityLog
+                _org_id = None
+                if raw_context:
+                    _org_id = (raw_context.get("organization") or {}).get("id") or (raw_context.get("org") or {}).get("id")
                 AgentService._pending_actions[action_id] = {
                     "action": action,
                     "params": params,
+                    "org_id": _org_id,
+                    # Campos extras para ActivityLog (preenchidos logo abaixo junto ao pending_approvals)
+                    "action_type": action,
+                    "channel": channel,
+                    "contact_name": contact_name,
+                    "contact_email": params.get("email"),
+                    "contact_phone": params.get("phone"),
+                    "subject": params.get("subject"),
+                    "message_preview": params.get("body", params.get("message", "")),
+                    "is_reply": action == "reply_email",
+                    "email_entry_id": params.get("email_entry_id"),
+                    "description": desc,
                 }
+
+                # Resolve subject original do thread para o card de reply
+                original_subject = None
+                if action == "reply_email":
+                    for _name, _info in contact_map.items():
+                        if _info.get("last_email_id") == params.get("email_entry_id"):
+                            original_subject = _info.get("last_email_subject") or params.get("subject")
+                            break
+                    if not original_subject:
+                        original_subject = params.get("subject", "")
 
                 # Monta payload com todos os campos que o frontend espera
                 pending_approvals.append({
@@ -443,12 +497,22 @@ Retorne JSON:
                     "channel": channel,
                     "contact_name": contact_name,
                     "contact_email": params.get("email"),
+                    "contact_phone": params.get("phone"),
                     "subject": params.get("subject"),
-                    "message_preview": params.get("body", ""),
+                    "message_preview": params.get("body", params.get("message", "")),
                     "is_reply": action == "reply_email",
-                    "original_subject": params.get("subject") if action == "reply_email" else None,
+                    "original_subject": original_subject,
+                    "email_entry_id": params.get("email_entry_id"),
                 })
                 continue # Pula execução direta
+
+            # --- VALIDAÇÃO DE ESTÁGIO ANTES DE EXECUTAR ---
+            if action == "update_pipedrive_deal" and params.get("stage_id"):
+                stage_blocked = await AgentService._validate_stage_advancement(
+                    params, raw_context, log
+                )
+                if stage_blocked:
+                    continue  # Pula a execução desta ação
 
             # --- EXECUÇÃO AUTÔNOMA (CRUD / Sistema) ---
             log(f"Executando: {desc}")
@@ -458,7 +522,7 @@ Retorne JSON:
                 print(f"[Agent] ❌ Erro Crítico ao executar {action}: {e}")
                 log(f"❌ Falha técnica ao executar {desc}: {str(e)}")
                 result = None
-            
+
             # Tratamento de log de sucesso/erro
             if action == "update_pipedrive_deal" and result:
                 if isinstance(result, dict) and result.get("success"):
@@ -618,10 +682,16 @@ Retorne JSON:
                 if c_name in contact_map:
                     human_msgs = group.get("human_threads", [])
                     if human_msgs:
-                        # Pega o ID da mensagem mais recente para o 'Reply'
-                        # Assume-se que human_msgs está ordenado ou pegamos o primeiro
-                        last_msg = human_msgs[0] 
-                        contact_map[c_name]["last_email_id"] = last_msg.get("id")
+                        # Pega o entryId da mensagem mais recente para o 'Reply'
+                        # O campo correto é 'entryId' (Exchange EWS), não 'id'
+                        last_msg = human_msgs[0]
+                        entry_id = (
+                            last_msg.get("entryId")
+                            or last_msg.get("entry_id")
+                            or last_msg.get("id")
+                        )
+                        contact_map[c_name]["last_email_id"] = entry_id
+                        contact_map[c_name]["last_email_subject"] = last_msg.get("subject", "")
                         if "Email" not in contact_map[c_name]["channels"]:
                              contact_map[c_name]["channels"].append("Email")
             
@@ -652,8 +722,10 @@ Retorne JSON:
                     from models.employee import Employee
                     from models.organization import Organization
 
-                    # org_id é o ID do Pipedrive — precisamos do ID local da tabela organizations
-                    local_org_stmt = select(Organization).where(Organization.pipedrive_id == org_id)
+                    # org_id pode ser ID do Pipedrive ou Local
+                    local_org_stmt = select(Organization).where(
+                        (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
+                    )
                     local_org_res = await session.execute(local_org_stmt)
                     local_org = local_org_res.scalar_one_or_none()
 
@@ -853,11 +925,11 @@ Retorne JSON:
     # PLANO DE AÇÃO ESTRATÉGICO
     # ═══════════════════════════════════════
     @staticmethod
-    async def _create_logical_plan(goal: str, analysis: str, context: dict, contact_map: dict, selected_entities: List[dict], history: List[dict] = None):
+    async def _create_logical_plan(goal: str, analysis: str, context: dict, contact_map: dict, selected_entities: List[dict], history: List[dict] = None, activity_context: str = ""):
         """Passo 4: Define as ações concretas com inteligência multicanal."""
         pd_details = context.get("pipedrive_details", {})
         deals = pd_details.get("deals", [])
-        
+
         # Otimiza lista de deals para o prompt
         deals_info = "\n".join([f"- ID: {d.get('id')} | Título: {d.get('title')} | Valor: {d.get('formatted_value')} | Fase Atual: {d.get('stage_name')}" for d in deals[:3]])
 
@@ -871,15 +943,25 @@ Retorne JSON:
             # 2 mensagens, 120 chars cada — suficiente para resolver referências (era 3 × 200)
             history_str = "\n".join([f"{h.get('role')}: {h.get('content','')[:120]}" for h in history[-2:]])
 
-        # Formata mapa de contatos compacto
-        contacts_info = "CONTATOS: " + ", ".join([f"{n} ({'/'.join(info['channels'])})" for n, info in list(contact_map.items())[:5]])
+        # Formata mapa de contatos compacto — inclui email_entry_id para REPLY-FIRST
+        def _fmt_contact(n, info):
+            channels = "/".join(info.get("channels", []))
+            entry_id = info.get("last_email_id")
+            subject = info.get("last_email_subject", "")
+            if entry_id:
+                return f"{n} ({channels}, email_entry_id={entry_id}, last_subject='{subject[:40]}')"
+            return f"{n} ({channels})"
+        contacts_info = "CONTATOS: " + ", ".join([_fmt_contact(n, info) for n, info in list(contact_map.items())[:5]])
 
         protocol = AgentService._get_business_protocol()
         today_str = datetime.now().strftime("%d/%m/%Y")
-        
+
         # Trunca o texto de análise: o LLM às vezes gera respostas longas (800+ tokens).
         # O planejador precisa do diagnóstico, não da redação completa.
         analysis_compact = (analysis or "")[:700]
+
+        # Trunca o histórico de atividades para não exceder o limite de tokens
+        activity_context_compact = (activity_context or "")[:500]
 
         prompt = WORKFLOW_PLANNER_PROMPT.format(
             protocol=protocol,
@@ -889,9 +971,93 @@ Retorne JSON:
             deals_info=deals_info or "Nenhum negócio encontrado.",
             contacts_info=contacts_info,
             activities_info=activities_info,
-            history=history_str
+            history=history_str,
+            activity_context=activity_context_compact,
         )
         return await ask_gemini(prompt, json_mode=True)
+
+    # ═══════════════════════════════════════
+    # VALIDAÇÃO DE ESTÁGIO
+    # ═══════════════════════════════════════
+    @staticmethod
+    async def _validate_stage_advancement(params: dict, context: dict, log_fn) -> bool:
+        """
+        Valida se o avanço de estágio é legítimo.
+        Retorna True se a ação foi BLOQUEADA (e deve ser pulada).
+        Emite feedback visual via log_fn com tipo 'stage_blocked' ou 'stage_ok'.
+        """
+        from services.pipedrive.pipedrive_service import pipedrive_service
+
+        new_stage_id = int(params.get("stage_id", 0))
+        if not new_stage_id:
+            return False
+
+        # Pega o estágio atual do deal no contexto
+        deals = context.get("pipedrive_details", {}).get("deals", [])
+        current_deal = next((d for d in deals if str(d.get("id")) == str(params.get("deal_id", ""))), deals[0] if deals else {})
+        current_stage_id = current_deal.get("stage_id", 0)
+        current_stage_order = current_deal.get("stage_order_nr", 0)
+        current_stage_name = current_deal.get("stage_name", f"ID {current_stage_id}")
+
+        # Nada a validar se não mudou
+        if current_stage_id == new_stage_id:
+            return False
+
+        try:
+            stages_full = await pipedrive_service.get_all_stages_full()
+        except Exception:
+            stages_full = {}
+
+        new_stage_info = stages_full.get(new_stage_id, {})
+        new_stage_order = new_stage_info.get("order_nr", 0)
+        new_stage_name = new_stage_info.get("name", f"ID {new_stage_id}")
+
+        # Valida: estágio existe no Pipedrive?
+        if stages_full and new_stage_id not in stages_full:
+            log_fn({
+                "type": "stage_blocked",
+                "reason": "invalid_stage",
+                "message": f"Estágio ID {new_stage_id} não existe no pipeline. Avanço cancelado.",
+                "current_stage": current_stage_name,
+                "proposed_stage": f"ID {new_stage_id} (desconhecido)",
+            })
+            print(f"[Agent] 🚫 Estágio inválido: {new_stage_id} não existe no pipeline.")
+            return True
+
+        # Valida: regressão de estágio?
+        if new_stage_order < current_stage_order:
+            log_fn({
+                "type": "stage_blocked",
+                "reason": "regression",
+                "message": f"Regressão de estágio bloqueada: '{current_stage_name}' → '{new_stage_name}'. O negócio não pode retroceder.",
+                "current_stage": current_stage_name,
+                "proposed_stage": new_stage_name,
+            })
+            print(f"[Agent] 🚫 Regressão bloqueada: {current_stage_name} (ord={current_stage_order}) → {new_stage_name} (ord={new_stage_order})")
+            return True
+
+        # Valida: salto de mais de 2 estágios?
+        stage_delta = new_stage_order - current_stage_order
+        if stage_delta > 2:
+            log_fn({
+                "type": "stage_blocked",
+                "reason": "skip",
+                "message": f"Salto de {stage_delta} estágios bloqueado: '{current_stage_name}' → '{new_stage_name}'. Avance um estágio por vez.",
+                "current_stage": current_stage_name,
+                "proposed_stage": new_stage_name,
+                "delta": stage_delta,
+            })
+            print(f"[Agent] 🚫 Salto bloqueado: delta={stage_delta} estágios")
+            return True
+
+        # Tudo certo — emite confirmação visual
+        log_fn({
+            "type": "stage_ok",
+            "message": f"Avançando negócio: '{current_stage_name}' → '{new_stage_name}'",
+            "current_stage": current_stage_name,
+            "proposed_stage": new_stage_name,
+        })
+        return False
 
     # ═══════════════════════════════════════
     # EXECUTOR DE AÇÕES

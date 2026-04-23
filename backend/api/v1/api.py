@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.v1.endpoints import proxy, hierarchy, brand, pipedrive, intelligence, jobs, ai, organizations, search
+from api.v1.endpoints import proxy, hierarchy, brand, pipedrive, intelligence, jobs, ai, organizations, search, conversations
 
 api_router = APIRouter()
 
@@ -35,3 +35,6 @@ api_router.include_router(intelligence.router, prefix="/intelligence", tags=["in
 
 # Search endpoints: /api/v1/search/*
 api_router.include_router(search.router, prefix="/search", tags=["search"])
+
+# Conversations endpoints: /api/v1/conversations/*
+api_router.include_router(conversations.router, prefix="/conversations", tags=["conversations"])

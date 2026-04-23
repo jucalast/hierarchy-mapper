@@ -662,7 +662,8 @@ async def _fetch_tasks(intent_info: dict, internal_context: dict, pipedrive_org_
     from datetime import date, timedelta
     
     date_f = intent_info.get("activity_date_filter", "today")
-    filter_msg = f"para Empresa ID {pipedrive_org_id}" if pipedrive_org_id else "Global"
+    target_company = intent_info.get("extracted_company_name")
+    filter_msg = f"para Empresa ID {pipedrive_org_id}" if pipedrive_org_id else (f"para '{target_company}'" if target_company else "Global")
     print(f"[AI Pipeline] 📅 Buscando tarefas ({date_f}) {filter_msg}...")
     
     try:
@@ -738,6 +739,21 @@ async def _fetch_tasks(intent_info: dict, internal_context: dict, pipedrive_org_
                     unique_activities.append(act)
             all_activities = unique_activities
             print(f"[AI Pipeline] 📅 Total de {len(all_activities)} tarefas únicas consolidadas.")
+
+        # --- FILTRAGEM POR ORGANIZAÇÃO (Foco Contextual) ---
+        if not is_global_request:
+            if pipedrive_org_id:
+                print(f"[AI Pipeline] 🛡️ Filtrando por Organização ID: {pipedrive_org_id}")
+                all_activities = [
+                    a for a in all_activities
+                    if str(a.get("org_id").get("value") if isinstance(a.get("org_id"), dict) else a.get("org_id")) == str(pipedrive_org_id)
+                ]
+            elif target_company and target_company.lower() not in ["null", "none"]:
+                print(f"[AI Pipeline] 🛡️ Filtrando por Nome da Organização: {target_company}")
+                all_activities = [
+                    a for a in all_activities
+                    if target_company.lower() in str(a.get("org_name", "")).lower()
+                ]
         
         tasks_to_return = []
         

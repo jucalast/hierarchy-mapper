@@ -61,7 +61,7 @@ async def get_db():
 async def init_db():
     """Cria as tabelas se não existirem e garante migrações de colunas."""
     # Import models here to ensure they are registered with Base.metadata
-    from models import Organization, Employee
+    from models import Organization, Employee, ConversationThread, ConversationMessage, ActivityLog
     
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

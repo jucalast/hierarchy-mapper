@@ -89,11 +89,11 @@ class ContextService:
     
     @staticmethod
     async def fetch_organization_overview(session: AsyncSession, org_id: int) -> Dict:
-        """Busca visão geral da organização (single query com eager loading)."""
+        """Busca visão geral da organização (Tenta por ID local e ID Pipedrive)."""
         org_stmt = (
             select(Organization)
             .options(selectinload(Organization.employees))
-            .where(Organization.id == org_id)
+            .where((Organization.id == org_id) | (Organization.pipedrive_id == org_id))
         )
         org_result = await session.execute(org_stmt)
         org = org_result.scalars().first()
@@ -131,7 +131,14 @@ class ContextService:
     async def fetch_decision_makers(session: AsyncSession, org_id: int) -> Dict:
         """Busca potenciais tomadores de decisão (C-level, gerentes, quadro societário)."""
         # Filtra direto no SQL: só funcionários com depto/role relevantes (reduz set)
-        emp_stmt = select(Employee).where(Employee.company_id == org_id)
+        # Tenta resolver ID Local ou Pipedrive
+        emp_stmt = select(Employee).where(
+            Employee.company_id.in_(
+                select(Organization.id).where(
+                    (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
+                )
+            )
+        )
         emp_result = await session.execute(emp_stmt)
         employees = emp_result.scalars().all()
         
@@ -181,7 +188,13 @@ class ContextService:
     @staticmethod
     async def fetch_employees_by_department(session: AsyncSession, org_id: int, department: str = None) -> Dict:
         """Busca funcionários por departamento."""
-        query = select(Employee).where(Employee.company_id == org_id)
+        query = select(Employee).where(
+            Employee.company_id.in_(
+                select(Organization.id).where(
+                    (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
+                )
+            )
+        )
         
         if department:
             query = query.where(func.lower(Employee.department).like(f"%{department.lower()}%"))
@@ -274,8 +287,14 @@ class ContextService:
         import asyncio
         
         try:
-            # Buscar empregados da organização com contato
-            stmt = select(Employee).where(Employee.company_id == org_id).limit(limit)
+            # Buscar empregados da organização (Tenta por ID local e ID Pipedrive)
+            stmt = select(Employee).where(
+                Employee.company_id.in_(
+                    select(Organization.id).where(
+                        (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
+                    )
+                )
+            ).limit(limit)
             result = await session.execute(stmt)
             employees = result.scalars().all()
             

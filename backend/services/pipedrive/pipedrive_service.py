@@ -207,22 +207,31 @@ class PipedriveService:
     # ---------------------------------------------------------------------
 
     async def get_all_stages(self) -> Dict[int, str]:
-        cached = self._stages_cache_store.get("all")
-        if isinstance(cached, dict) and cached:
-            PipedriveService._stages_cache = cached
-            return cached
+        """Retorna mapeamento {stage_id: stage_name} (retrocompatível)."""
+        full = await self.get_all_stages_full()
+        return {sid: info["name"] for sid, info in full.items()}
 
-        if PipedriveService._stages_cache:
-            # Seed legacy cache
-            self._stages_cache_store.set("all", PipedriveService._stages_cache)
-            return PipedriveService._stages_cache
+    async def get_all_stages_full(self) -> Dict[int, dict]:
+        """Retorna mapeamento {stage_id: {name, order_nr, pipeline_id}} com cache TTL."""
+        cache_key = "all_full"
+        cached = self._stages_cache_store.get(cache_key)
+        if isinstance(cached, dict) and cached:
+            return cached
 
         resp = await self._request("GET", "stages")
         if resp is not None and resp.status_code == 200:
             s_data = resp.json().get("data") or []
-            mapping = {s["id"]: s["name"] for s in s_data}
-            PipedriveService._stages_cache = mapping
-            self._stages_cache_store.set("all", mapping)
+            mapping: Dict[int, dict] = {
+                s["id"]: {
+                    "name": s.get("name", ""),
+                    "order_nr": s.get("order_nr", 0),
+                    "pipeline_id": s.get("pipeline_id", 1),
+                }
+                for s in s_data
+            }
+            self._stages_cache_store.set(cache_key, mapping)
+            # Mantém cache legado sincronizado
+            PipedriveService._stages_cache = {sid: info["name"] for sid, info in mapping.items()}
             return mapping
         return {}
 

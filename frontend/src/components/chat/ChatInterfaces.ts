@@ -41,4 +41,5 @@ export interface ApprovalAction {
     description: string;
     is_reply?: boolean;
     original_subject?: string;
+    email_entry_id?: string;  // ID do thread Exchange para reply_email
 }

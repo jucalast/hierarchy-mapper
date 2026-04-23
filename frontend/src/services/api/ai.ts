@@ -15,6 +15,7 @@ export function getChatStreamUrl(): string {
 export interface AgentActionPayload {
   action_id: string;
   approved: boolean;
+  thread_id?: string | null;
 }
 
 export function agentAction(payload: AgentActionPayload) {

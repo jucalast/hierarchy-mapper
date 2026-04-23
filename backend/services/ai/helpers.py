@@ -34,6 +34,7 @@ class ChatMessage(BaseModel):
     selectedCompanies: Optional[List[CompanyInfo]] = None
     context: Optional[str] = "hierarchy_analysis"
     history: Optional[List[MessageInput]] = []
+    thread_id: Optional[str] = None   # persistência: ID da thread ativa
 
 
 class ChatResponse(BaseModel):

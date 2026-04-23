@@ -14,6 +14,7 @@ import {
 import styles from './NetworkGraph.module.css';
 import { HistoryTimeline } from './HistoryTimeline';
 import { ContactList } from './ContactList';
+import { OrgListItem } from './OrgListItem';
 import type { NotificationType } from './Notification';
 import { organizations as orgsApi } from '@/services/api';
 import { Avatar, Button, Modal, Spinner } from './ui';
@@ -465,83 +466,16 @@ export const Drawer: React.FC<DrawerProps> = ({
                         }
 
                         return (
-                            <div
-                                key={org.local_id || org.id}
-                                className={`${styles.orgItem} ${isSelected ? styles.selectedOrgItem : ''}`}
-                                onClick={() => {
-                                    onOrgClick(org);
-                                }}
-                            >
-                                <div className={styles.orgMainInfo}>
-                                    <div className={styles.orgLogoWrapper}>
-                                        <Avatar
-                                            kind="company"
-                                            src={org.logo}
-                                            name={org.name}
-                                            data={org}
-                                            size={32}
-                                            noInitialFallback={displayCount === 0}
-                                        />
-                                    </div>
-                                    <div className={styles.orgIdentity}>
-                                        <span className={styles.orgName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            {org.name}
-                                            {scanningOrgId === orgId && (
-                                                <Spinner size={14} inline color="rgb(122, 139, 255)" />
-                                            )}
-                                        </span>
-                                        {org.address && (
-                                            <div className={styles.orgAddress}>
-                                                {org.address.toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <button
-                                        className={styles.expandToggle}
-                                        onClick={(e) => toggleExpand(e, orgId)}
-                                        title="Expandir"
-                                    >
-                                        <ChevronRight size={16} />
-                                    </button>
-                                </div>
-
-                                <div className={styles.orgFooter}>
-                                    <div className={styles.employeeStack}>
-                                        {(displayCount > 0 || isSelected) ? (
-                                            <>
-                                                <div style={{ display: 'flex', alignItems: 'center', marginRight: '8px' }}>
-                                                    {displayPics.length > 0 ? (
-                                                        displayPics.slice(0, 3).map((pic: string, i: number) => (
-                                                            <img
-                                                                key={i}
-                                                                src={pic}
-                                                                alt=""
-                                                                className={styles.stackedAvatar}
-                                                                style={{ zIndex: 3 - i }}
-                                                            />
-                                                        ))
-                                                    ) : (
-                                                        [0, 1, 2].map((i) => (
-                                                            <div key={i} className={styles.stackedAvatar} style={{
-                                                                background: i === 0 ? '#2a2a2a' : i === 1 ? '#333' : '#1a1a1a',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                zIndex: 3 - i
-                                                            }}>
-                                                                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
-                                                            </div>
-                                                        ))
-                                                    )}
-                                                </div>
-                                                <span className={styles.empCountBadge}>
-                                                    {displayCount || 'Pronta para'} {displayCount === 1 ? 'funcionário' : 'mapeamento'}
-                                                </span>
-                                            </>
-                                        ) : null}
-                                    </div>
-                                </div>
-                            </div>
+                            <OrgListItem
+                                key={orgId}
+                                org={org}
+                                isSelected={isSelected}
+                                onClick={onOrgClick}
+                                onToggleExpand={toggleExpand}
+                                displayCount={displayCount}
+                                displayPics={displayPics}
+                                scanningOrgId={scanningOrgId}
+                            />
                         );
                     })
                 )}

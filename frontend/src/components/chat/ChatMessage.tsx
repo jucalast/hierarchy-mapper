@@ -1,28 +1,35 @@
 import React, { useState } from 'react';
 import {
     CheckCircle2, Loader2, ThumbsDown, Copy, RotateCcw, ThumbsUp, Building2, User2, MessageSquare, Mail, Check, ChevronDown, ChevronUp, AlertCircle, Phone, Calendar,
-    Search, List, Users, Sparkles
+    Search, List, Users, Sparkles, ChevronRight, ShieldAlert, ArrowRight, ShieldCheck
 } from 'lucide-react';
 import { Message, CompanyResult, ApprovalAction } from './ChatInterfaces';
-import { TaskList, ContactGrid, CompanyCard } from './modules/ContextModules';
+import { TaskList, ContactGrid, CompanyCard, ContactPill } from './modules/ContextModules';
 import { WhatsAppThread, EmailThread } from './modules/CommunicationModules';
 import { ActionApproval } from './modules/ActionApproval';
 import { DebugPanel } from './DebugPanel';
 import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
 import styles from '../ChatPanel.module.css';
 import { TimelineEventRow, TimelineEvent } from '../TimelineEventRow';
+import { CompactEmployeeCard } from '../CompactEmployeeCard';
 
 import {
-    ContactLogCard, DealLogCard, NoteLogCard
+    ContactLogCard, DealLogCard, NoteLogCard, ActivityLogCard, EmailLogCard
 } from './modules/LogModules';
 
 export interface RichLogEntry {
-    type?: 'log' | 'thought' | 'status' | 'data_found' | 'warning';
+    type?: 'log' | 'thought' | 'status' | 'data_found' | 'warning' | 'stage_blocked' | 'stage_ok';
     content?: string;
     entity?: string;
     data?: any;
     icon?: string;
     label?: string;
+    // stage events
+    message?: string;
+    reason?: string;
+    current_stage?: string;
+    proposed_stage?: string;
+    delta?: number;
 }
 
 interface ChatMessageProps {
@@ -36,34 +43,34 @@ interface ChatMessageProps {
 
 // Mapa de ícones de status — cobre todos os valores enviados pelo backend
 const STATUS_ICON_MAP: Record<string, React.ReactNode> = {
-    'check':       <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />,
-    'done_all':    <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />,
-    'play':        <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />,
-    'search':      <Search      size={12} className="text-blue-400/80 shrink-0" />,
-    'list':        <List        size={12} className="text-blue-400/80 shrink-0" />,
-    'people':      <Users       size={12} className="text-purple-400/80 shrink-0" />,
-    'auto_awesome':<Sparkles    size={12} className="text-amber-400/80 shrink-0" />,
+    'check': <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />,
+    'done_all': <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />,
+    'play': <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />,
+    'search': <Search size={12} className="text-blue-400/80 shrink-0" />,
+    'list': <List size={12} className="text-blue-400/80 shrink-0" />,
+    'people': <Users size={12} className="text-purple-400/80 shrink-0" />,
+    'auto_awesome': <Sparkles size={12} className="text-amber-400/80 shrink-0" />,
 };
 
 // Converte activity do Pipedrive → TimelineEvent para reutilizar TimelineEventRow
 const activityToEvent = (data: any): TimelineEvent => {
     const getIcon = (type: string) => {
-        if (type === 'call')  return <Phone size={14} />;
-        if (type === 'email') return <Mail  size={14} />;
+        if (type === 'call') return <Phone size={14} />;
+        if (type === 'email') return <Mail size={14} />;
         return <Calendar size={14} />;
     };
     return {
-        id:           data.id || Math.random(),
-        type:         'activity',
-        timestamp:    data.due_date || '',
-        title:        data.subject || 'Tarefa',
-        user:         data.owner_name,
-        contact:      data.person_name,
-        company:      data.org_name,
-        content:      data.note_clean || data.note,
-        done:         data.done === true || data.done === 1,
+        id: data.id || Math.random(),
+        type: 'activity',
+        timestamp: data.due_date || '',
+        title: data.subject || 'Tarefa',
+        user: data.owner_name,
+        contact: data.person_name,
+        company: data.org_name,
+        content: data.note_clean || data.note,
+        done: data.done === true || data.done === 1,
         activityType: data.type,
-        icon:         getIcon(data.type),
+        icon: getIcon(data.type),
     };
 };
 
@@ -80,21 +87,12 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
 
     switch (type) {
 
-        // ── PENSAMENTO ──────────────────────────────────────────────────────
+        // ── PENSAMENTO ───────────────────────────────────────────────────────
         case 'thought':
             return (
-                <div className={styles.logLine} style={{ opacity: 1, margin: '8px 0' }}>
-                    <div style={{
-                        display: 'flex', alignItems: 'flex-start', gap: '10px',
-                        background: 'rgba(255,255,255,0.04)', padding: '12px 14px',
-                        borderRadius: '14px', border: '1px solid rgba(255,255,255,0.07)',
-                        borderLeft: '3px solid rgba(251,191,36,0.35)',
-                        backdropFilter: 'blur(8px)', width: '100%',
-                    }}>
-                        <Sparkles size={12} style={{ color: 'rgba(251,191,36,0.5)', marginTop: '2px', flexShrink: 0 }} />
-                        <span style={{ fontSize: '13px', lineHeight: '1.6', color: 'rgba(255,255,255,0.75)', fontWeight: 400 }}>
-                            {content}
-                        </span>
+                <div className={styles.thoughtBlock}>
+                    <div className={styles.thoughtContent}>
+                        {content}
                     </div>
                 </div>
             );
@@ -112,48 +110,119 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
 
         // ── DADOS ENCONTRADOS ────────────────────────────────────────────────
         case 'data_found':
-            // Contato — pill enriquecida
-            if (entity === 'contact') return <ContactLogCard data={data} label={label} />;
+            // Contato — MODULARIZADO: Pílula (estilo input)
+            if (entity === 'contact') return <ContactPill data={data} />;
 
-            // Email — card completo do CommunicationModules (já reutilizado)
-            if (entity === 'email') return <EmailThread data={data} />;
+            // Email — Thread Completa (Arqueologia)
+            if (entity === 'email') {
+                const threadData = data.email_result || data;
+                return <EmailThread data={threadData} />;
+            }
 
-            // WhatsApp — thread do CommunicationModules (já reutilizado)
-            if (entity === 'whatsapp') return (
-                <WhatsAppThread
-                    data={{ whatsapp_result: { resultado: { messages: [data] } } }}
-                    onOpenWhatsApp={onOpenWhatsApp}
-                />
-            );
+            // WhatsApp — Thread Completa
+            if (entity === 'whatsapp') return <WhatsAppThread data={data} onOpenWhatsApp={onOpenWhatsApp} />;
 
-            // Negócio
-            if (entity === 'deal') return <DealLogCard data={data} />;
+            // Negócio/Empresa — RESTAURADO: CompanyCard rico (Igual ao Drawer)
+            if (entity === 'deal' || entity === 'organization') return <CompanyCard data={data} />;
 
-            // ★ Atividade → TimelineEventRow (mesmo componente do painel de agenda)
-            if (entity === 'activity') return (
-                <div style={{ marginLeft: '16px', marginTop: '4px', marginBottom: '4px' }}>
-                    <TimelineEventRow event={activityToEvent(data)} isLast={true} hasBackground={true} />
-                </div>
-            );
+            // ★ Atividade → RESTAURADO: TimelineEventRow (Visualização completa de tarefa)
+            if (entity === 'activity') {
+                const isDone = data.done === true || data.done === 1;
+                const getIcon = (type: string) => {
+                    switch (type) {
+                        case 'call': return <Phone size={14} />;
+                        case 'meeting': return <Calendar size={14} />;
+                        case 'email': return <Mail size={14} />;
+                        default: return <Check size={14} />;
+                    }
+                };
+
+                const event: TimelineEvent = {
+                    id: data.id,
+                    type: 'activity',
+                    title: data.subject || 'Tarefa',
+                    timestamp: data.due_date || 'Sem data',
+                    done: isDone,
+                    activityType: data.type,
+                    icon: getIcon(data.type),
+                    contact: data.person_name,
+                    company: data.org_name
+                };
+                return (
+                    <div style={{ marginLeft: '16px', marginTop: '6px', marginBottom: '6px' }}>
+                        <TimelineEventRow event={event} isLast={true} hasBackground={true} />
+                    </div>
+                );
+            }
 
             // Nota
             if (entity === 'note') return <NoteLogCard data={data} />;
 
             return null;
 
-        // ── AVISO ────────────────────────────────────────────────────────────
+        // ── AVISO GENÉRICO ───────────────────────────────────────────────────
         case 'warning':
             return (
-                <div className={styles.logLine} style={{ color: '#fbbf24' }}>
-                    <AlertCircle size={12} className="shrink-0" /> <span>{content}</span>
+                <div className={styles.logLine} style={{ color: '#f59e0b', gap: '8px' }}>
+                    <AlertCircle size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                    <span style={{ fontWeight: 500 }}>{content || log.message}</span>
                 </div>
             );
+
+        // ── ESTÁGIO BLOQUEADO ────────────────────────────────────────────────
+        case 'stage_blocked': {
+            const reason = log.reason;
+            const reasonLabel =
+                reason === 'regression' ? 'Regressão bloqueada' :
+                reason === 'skip' ? `Salto de ${log.delta} estágios bloqueado` :
+                reason === 'invalid_stage' ? 'Estágio inválido' : 'Bloqueado';
+            return (
+                <div className={styles.stageBlocked}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <ShieldAlert size={13} style={{ color: '#ef4444', flexShrink: 0 }} />
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            {reasonLabel}
+                        </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--chat-text-secondary)' }}>
+                        <span style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                            {log.current_stage}
+                        </span>
+                        <ArrowRight size={11} style={{ color: '#6b7280', flexShrink: 0 }} />
+                        <span style={{ background: 'rgba(239,68,68,0.12)', color: '#fca5a5', padding: '2px 8px', borderRadius: '6px', fontWeight: 600, textDecoration: 'line-through', opacity: 0.7 }}>
+                            {log.proposed_stage}
+                        </span>
+                    </div>
+                    <span style={{ fontSize: '11px', color: 'var(--chat-text-muted)', fontStyle: 'italic' }}>
+                        {log.message}
+                    </span>
+                </div>
+            );
+        }
+
+        // ── ESTÁGIO AVANÇANDO (OK) ───────────────────────────────────────────
+        case 'stage_ok': {
+            return (
+                <div className={styles.stageOk}>
+                    <ShieldCheck size={13} style={{ color: '#10b981', flexShrink: 0 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                        <span style={{ background: 'rgba(16,185,129,0.1)', color: '#6ee7b7', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                            {log.current_stage}
+                        </span>
+                        <ArrowRight size={11} style={{ color: '#10b981', flexShrink: 0 }} />
+                        <span style={{ background: 'rgba(16,185,129,0.1)', color: '#6ee7b7', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                            {log.proposed_stage}
+                        </span>
+                    </div>
+                </div>
+            );
+        }
 
         // ── LOG DE EXECUÇÃO (default) ─────────────────────────────────────
         default: {
             const text = content || (typeof log === 'object' ? JSON.stringify(log) : '');
             const isSuccess = /^[🚀✅]/.test(text);
-            const isError   = /^❌/.test(text);
+            const isError = /^❌/.test(text);
             const isPending = /^[📝🧪]/.test(text);
             return (
                 <div className={styles.logLine} style={{
@@ -162,8 +231,8 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
                     {isSuccess
                         ? <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
                         : isError
-                        ? <AlertCircle  size={12} className="text-red-400 shrink-0" />
-                        : <Loader2 size={12} className={styles.spinner} />}
+                            ? <AlertCircle size={12} className="text-red-400 shrink-0" />
+                            : <Loader2 size={12} className={styles.spinner} />}
                     <span>{text}</span>
                 </div>
             );
@@ -172,31 +241,13 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
 };
 
 const AIAsterisk = () => (
-    <img src="/gemini.png" alt="Gemini AI" width="22" height="22" className="shrink-0 mt-0.5 object-contain" />
+    <img src="/gemini.png" alt="Gemini AI" width="16" height="16" className="shrink-0 object-contain" />
 );
 
-const SourceIcon = () => (
-    <div className="w-[18px] h-[18px] bg-[#5E6AD2] rounded-[4px] border border-white flex items-center justify-center shadow-sm relative -ml-1.5 first:ml-0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-2.5 h-2.5">
-            <line x1="8" y1="6" x2="21" y2="6"></line>
-            <line x1="8" y1="12" x2="21" y2="12"></line>
-            <line x1="8" y1="18" x2="21" y2="18"></line>
-            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-            <line x1="3" y1="18" x2="3.01" y2="18"></line>
-        </svg>
-    </div>
-);
-
-const GeminiIcon = () => (
-    <img src="/gemini.png" alt="Gemini" width="16" height="16" className="shrink-0 object-contain" />
-);
-
-export const ChatMessage: React.FC<ChatMessageProps> = ({ 
+export const ChatMessage: React.FC<ChatMessageProps> = ({
     message, currentLogs, onApprove, onReject, onOpenWhatsApp, approvalStatuses
 }) => {
     const isUser = message.role === 'user';
-    const [isLogsExpanded, setIsLogsExpanded] = useState(message.role === 'assistant' && !message.content); // Expandido por padrão se estiver rodando
 
     const renderHighlightedText = (text: string, keyPrefix: string) => {
         const parts = text.split(/(@\w*)/g);
@@ -280,10 +331,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                                 <div className={styles.pillIconArea}>
                                     {c.type === 'organization' ? (
                                         getCompanyLogoUrl(c) ? (
-                                            <img 
-                                                src={getProxiedUrl(getCompanyLogoUrl(c))} 
-                                                alt={c.name} 
-                                                className={styles.pillCompanyLogo} 
+                                            <img
+                                                src={getProxiedUrl(getCompanyLogoUrl(c))}
+                                                alt={c.name}
+                                                className={styles.pillCompanyLogo}
                                                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                             />
                                         ) : (
@@ -291,19 +342,19 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                                         )
                                     ) : (
                                         getAvatarUrl(c) ? (
-                                            <img 
-                                                src={getProxiedUrl(getAvatarUrl(c))} 
-                                                alt={c.name} 
-                                                className={styles.pillCompanyLogo} 
-                                                style={{ borderRadius: '50%' }} 
+                                            <img
+                                                src={getProxiedUrl(getAvatarUrl(c))}
+                                                alt={c.name}
+                                                className={styles.pillCompanyLogo}
+                                                style={{ borderRadius: '50%' }}
                                                 onError={(e) => {
                                                     e.currentTarget.src = c.type === 'whatsapp' ? '/wppicon.png' : '/outlook.png';
                                                     e.currentTarget.style.objectFit = 'contain';
                                                 }}
                                             />
                                         ) : (
-                                            c.type === 'whatsapp' ? 
-                                                <img src="/wppicon.png" alt="W" style={{ width: 18, height: 18, objectFit: 'contain' }} /> : 
+                                            c.type === 'whatsapp' ?
+                                                <img src="/wppicon.png" alt="W" style={{ width: 18, height: 18, objectFit: 'contain' }} /> :
                                                 <img src="/outlook.png" alt="E" style={{ width: 18, height: 18, objectFit: 'contain' }} />
                                         )
                                     )}
@@ -325,35 +376,32 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
     return (
         <div className={styles.assistantMessageGroup}>
-            {/* Logs de Streaming e Históricos (Acordeon de Pensamento) - Movido para ANTES da resposta */}
+            {/* Logs de Streaming e Históricos (Renderizados diretamente) */}
             {((currentLogs && currentLogs.length > 0) || (message.logs && message.logs.length > 0)) && (
-                <div className="px-4 mb-4 pl-12">
-                    <div className={styles.debugCard}>
-                        <button 
-                            className={styles.debugHeader}
-                            onClick={() => setIsLogsExpanded(!isLogsExpanded)}
-                            style={{ cursor: 'pointer', background: 'none', border: 'none', width: '100%', outline: 'none' }}
-                        >
-                            <div className="flex items-center gap-2">
-                                <span>{isLogsExpanded ? 'Esconder Pensamento' : 'Ver Pensamento da IA'}</span>
-                                {message.thinkingTime && <span className={styles.thinkingTime}>({message.thinkingTime})</span>}
-                            </div>
-                            {isLogsExpanded ? <ChevronDown size={14} style={{ transform: isLogsExpanded ? 'none' : 'rotate(-90deg)', transition: 'transform 0.2s' }} /> : <ChevronDown size={14} style={{ transform: 'rotate(-90deg)', transition: 'transform 0.2s' }} />}
-                        </button>
+                <div className="px-4 mb-4" style={{ marginLeft: '40px' }}>
+                    <details className={styles.debugSection} style={{ border: 'none', background: 'transparent' }}>
+                        <summary className={styles.debugSummary}>
+                            <span>Agente está pensando...</span>
+                            <ChevronRight size={12} className={styles.chevron} />
+                        </summary>
                         
-                        {isLogsExpanded && (
-                            <div className={styles.streamingLogs} style={{ paddingLeft: '24px' }}>
-                                {((currentLogs && currentLogs.length > 0) ? currentLogs : (message.logs || [])).map((log, i) => (
-                                    <RichLogRenderer key={`msg-log-${log.stage ?? ''}-${log.type ?? ''}-${i}`} log={log} onOpenWhatsApp={onOpenWhatsApp} />
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                        <div className={styles.streamingLogs} style={{ paddingLeft: '0', maxHeight: 'none', overflow: 'visible' }}>
+                            {(currentLogs || message.logs || []).map((log, i) => (
+                                <RichLogRenderer 
+                                    key={`log-${i}`} 
+                                    log={log} 
+                                    onOpenWhatsApp={onOpenWhatsApp} 
+                                />
+                            ))}
+                        </div>
+                    </details>
                 </div>
             )}
 
             <div className={styles.aiMessageWrapper}>
-                <AIAsterisk />
+                <div className={styles.aiMessageIconArea}>
+                    <AIAsterisk />
+                </div>
                 <div className={styles.aiMessage}>
                     {renderMarkdown(message.content, message.data)}
                 </div>
@@ -370,10 +418,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             {message.pending_approvals && message.pending_approvals.length > 0 && (
                 <div className="flex flex-col gap-3 px-4 mb-6">
                     {message.pending_approvals.map((act) => (
-                        <ActionApproval 
-                            key={act.action_id} 
-                            action={act} 
-                            onApprove={onApprove} 
+                        <ActionApproval
+                            key={act.action_id}
+                            action={act}
+                            onApprove={onApprove}
                             onReject={onReject}
                             status={approvalStatuses?.[act.action_id]}
                         />
