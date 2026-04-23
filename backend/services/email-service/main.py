@@ -27,14 +27,15 @@ client = EmailClient(email_address=DEFAULT_EMAIL, use_outlook_app=True)
 @app.on_event("startup")
 async def startup_event():
     """
-    Configura sincronização em background e faz o primeiro fetch.
+    Configura sincronização em background e faz o primeiro fetch sem bloquear o startup.
     """
     if client.use_outlook_app:
-        print("[Email Service] Sincronização inicial do Outlook...")
-        client._refresh_contacts_cache(force=False)
+        print("[Email Service] Agendando sincronização inicial do Outlook...")
         
         # Configurar atualização periódica (a cada 10 min)
         scheduler = BackgroundScheduler()
+        # A primeira execução será em background para não travar o loop do FastAPI
+        scheduler.add_job(client._refresh_contacts_cache, 'date', run_date=None, args=[False])
         scheduler.add_job(client._refresh_contacts_cache, 'interval', minutes=10, args=[True])
         scheduler.start()
         print("[Email Service] Sincronizador em background ativado (10 min).")

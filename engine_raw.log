@@ -889,3 +889,177 @@ DATA: 2026-04-17 15:38:34
 🔍 NOVA CONSULTA: Knorr Bremse Category Manager Brasil linkedin
 ==============================
 
+
+================================================================================
+SESSÃO: DVA | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-22 21:19:16
+================================================================================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Bianca Lima
+🔗 LINKEDIN: https://linkedin.com/in/pd_2089
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Bianca Lima - Contato Dva
+   ∟ [SEARCH SNIPPET] BODY: Email: bianca.lima@dva.com | Telefone: (19) 9 9821 8650 | Pipedrive ID: 2089
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 
+      ∟ BIO/DESCRIPTION: N/A
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Dva Comprador Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Fernando Fernandes
+🔗 LINKEDIN: https://br.linkedin.com/in/fernando-fernandes-49679745
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Fernando Fernandes - General Manager DVA Brasil | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Fernando Fernandes no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: dva group
+      ∟ BIO/DESCRIPTION: Experiência: DVA Group · Formação acadêmica: Faculdades Metropolitanas Unidas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Fernando Fernandes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Luca Trovó
+🔗 LINKEDIN: https://br.linkedin.com/in/luca-trovó-379977307
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Luca Trovó - DVA Brasil | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Luca Trovó no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: dva brasil
+      ∟ BIO/DESCRIPTION: Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150 · 32 conexões no LinkedIn. Veja o perfil de Luca Trovó no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+[FILTRO MECÂNICO] CANDIDATO: João Aleixo
+LINK: https://br.linkedin.com/in/aleixo
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Eduardo Camelo
+🔗 LINKEDIN: https://br.linkedin.com/in/eduardo-marques-compras
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Eduardo Camelo - Comprador Pleno l Negociação com ...
+   ∟ [SEARCH SNIPPET] BODY: We cannot provide a description for this page right now
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cobra brasil
+      ∟ BIO/DESCRIPTION: Comprador com experiência no setor de energia desde 2012, atuando em projetos de… · Experiência: Cobra Brasil · Formação acadêmica: Faculdade UniBF · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Eduardo Camelo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: N/D
+      ∟ RELEVANTE PARA O FOCO: NÃO
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ❌ REJEITADO
+      ∟ CARGO FINAL: N/D
+      ∟ SCORE DE MATCHING: 0%
+      ∟ EVIDÊNCIA DO JUIZ: REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Dva Compradora Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Bianca Lima
+🔗 LINKEDIN: https://br.linkedin.com/in/biancadelimasilva
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Bianca Lima - Assistente de Compras | Supply Chain | Logística - LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Assistente de Compras | Supply Chain | Logística | Redução de Custos · Experiência: DVA Brasil · Formação acadêmica: UniMax - Centro Universitário Max ...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: dva brasil
+      ∟ BIO/DESCRIPTION: Experiência: DVA Brasil · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: 13330-005 · 220 conexões no LinkedIn. Veja o perfil de Bianca Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Supply Chain
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————

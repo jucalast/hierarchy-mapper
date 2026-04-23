@@ -55,9 +55,9 @@ class CircuitBreaker:
     """
 
     name: str
-    cooldown_base_sec: int = 60
-    cooldown_max_sec: int = 300
-    max_consecutive_failures: int = 5  # só registro; não fecha cooldown
+    cooldown_base_sec: int = 15  # Reduzido de 60 para 15 para recuperação mais rápida
+    cooldown_max_sec: int = 120  # Reduzido de 300 para 120
+    max_consecutive_failures: int = 8  # Aumentado de 5 para 8 para ser mais tolerante
 
     consecutive_failures: int = 0
     open_until: float = 0.0

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { 
-    CheckCircle2, Loader2, ThumbsDown, Copy, RotateCcw, ThumbsUp, Building2, User2, MessageSquare, Mail, Check, ChevronDown, ChevronUp, AlertCircle, Phone, Calendar
+import {
+    CheckCircle2, Loader2, ThumbsDown, Copy, RotateCcw, ThumbsUp, Building2, User2, MessageSquare, Mail, Check, ChevronDown, ChevronUp, AlertCircle, Phone, Calendar,
+    Search, List, Users, Sparkles
 } from 'lucide-react';
 import { Message, CompanyResult, ApprovalAction } from './ChatInterfaces';
 import { TaskList, ContactGrid, CompanyCard } from './modules/ContextModules';
@@ -9,9 +10,10 @@ import { ActionApproval } from './modules/ActionApproval';
 import { DebugPanel } from './DebugPanel';
 import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
 import styles from '../ChatPanel.module.css';
+import { TimelineEventRow, TimelineEvent } from '../TimelineEventRow';
 
-import { 
-    ContactLogCard, EmailLogCard, WhatsAppLogCard, DealLogCard, ActivityLogCard, NoteLogCard 
+import {
+    ContactLogCard, DealLogCard, NoteLogCard
 } from './modules/LogModules';
 
 export interface RichLogEntry {
@@ -32,8 +34,40 @@ interface ChatMessageProps {
     approvalStatuses?: Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>;
 }
 
+// Mapa de ícones de status — cobre todos os valores enviados pelo backend
+const STATUS_ICON_MAP: Record<string, React.ReactNode> = {
+    'check':       <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />,
+    'done_all':    <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />,
+    'play':        <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />,
+    'search':      <Search      size={12} className="text-blue-400/80 shrink-0" />,
+    'list':        <List        size={12} className="text-blue-400/80 shrink-0" />,
+    'people':      <Users       size={12} className="text-purple-400/80 shrink-0" />,
+    'auto_awesome':<Sparkles    size={12} className="text-amber-400/80 shrink-0" />,
+};
+
+// Converte activity do Pipedrive → TimelineEvent para reutilizar TimelineEventRow
+const activityToEvent = (data: any): TimelineEvent => {
+    const getIcon = (type: string) => {
+        if (type === 'call')  return <Phone size={14} />;
+        if (type === 'email') return <Mail  size={14} />;
+        return <Calendar size={14} />;
+    };
+    return {
+        id:           data.id || Math.random(),
+        type:         'activity',
+        timestamp:    data.due_date || '',
+        title:        data.subject || 'Tarefa',
+        user:         data.owner_name,
+        contact:      data.person_name,
+        company:      data.org_name,
+        content:      data.note_clean || data.note,
+        done:         data.done === true || data.done === 1,
+        activityType: data.type,
+        icon:         getIcon(data.type),
+    };
+};
+
 export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLogEntry, onOpenWhatsApp?: (info: { name: string, id?: string }) => void }) => {
-    // Caso seja string simples (retrocompatibilidade)
     if (typeof log === 'string') {
         return (
             <div className={styles.logLine}>
@@ -45,45 +79,95 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
     const { type, content, entity, data, icon, label } = log;
 
     switch (type) {
+
+        // ── PENSAMENTO ──────────────────────────────────────────────────────
         case 'thought':
             return (
-                <div className={styles.logLine} style={{ opacity: 1, margin: '12px 0 8px 0' }}>
-                    <div className="flex items-start gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-sm">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[14px] leading-relaxed text-gray-300 font-medium">
-                                {content}
-                            </span>
-                        </div>
+                <div className={styles.logLine} style={{ opacity: 1, margin: '8px 0' }}>
+                    <div style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '10px',
+                        background: 'rgba(255,255,255,0.04)', padding: '12px 14px',
+                        borderRadius: '14px', border: '1px solid rgba(255,255,255,0.07)',
+                        borderLeft: '3px solid rgba(251,191,36,0.35)',
+                        backdropFilter: 'blur(8px)', width: '100%',
+                    }}>
+                        <Sparkles size={12} style={{ color: 'rgba(251,191,36,0.5)', marginTop: '2px', flexShrink: 0 }} />
+                        <span style={{ fontSize: '13px', lineHeight: '1.6', color: 'rgba(255,255,255,0.75)', fontWeight: 400 }}>
+                            {content}
+                        </span>
                     </div>
                 </div>
             );
-        case 'status':
+
+        // ── STATUS ──────────────────────────────────────────────────────────
+        case 'status': {
+            const isDone = icon === 'check' || icon === 'done_all' || icon === 'play';
             return (
                 <div className={styles.logLine}>
-                    {icon === 'play' ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Loader2 size={12} className={styles.spinner} />}
-                    <span style={{ fontWeight: 500 }}>{content}</span>
+                    {STATUS_ICON_MAP[icon ?? ''] ?? <Loader2 size={12} className={styles.spinner} />}
+                    <span style={{ fontWeight: 500, color: isDone ? '#10B981' : undefined }}>{content}</span>
                 </div>
             );
+        }
+
+        // ── DADOS ENCONTRADOS ────────────────────────────────────────────────
         case 'data_found':
-            if (entity === 'contact') return <ContactGrid data={{ persons: [data] }} />;
+            // Contato — pill enriquecida
+            if (entity === 'contact') return <ContactLogCard data={data} label={label} />;
+
+            // Email — card completo do CommunicationModules (já reutilizado)
             if (entity === 'email') return <EmailThread data={data} />;
-            if (entity === 'whatsapp') return <WhatsAppThread data={{ whatsapp_result: { resultado: { messages: [data] } } }} onOpenWhatsApp={onOpenWhatsApp} />;
+
+            // WhatsApp — thread do CommunicationModules (já reutilizado)
+            if (entity === 'whatsapp') return (
+                <WhatsAppThread
+                    data={{ whatsapp_result: { resultado: { messages: [data] } } }}
+                    onOpenWhatsApp={onOpenWhatsApp}
+                />
+            );
+
+            // Negócio
             if (entity === 'deal') return <DealLogCard data={data} />;
-            if (entity === 'activity') return <TaskList data={{ activities: [data] }} />;
+
+            // ★ Atividade → TimelineEventRow (mesmo componente do painel de agenda)
+            if (entity === 'activity') return (
+                <div style={{ marginLeft: '16px', marginTop: '4px', marginBottom: '4px' }}>
+                    <TimelineEventRow event={activityToEvent(data)} isLast={true} hasBackground={true} />
+                </div>
+            );
+
+            // Nota
             if (entity === 'note') return <NoteLogCard data={data} />;
+
             return null;
+
+        // ── AVISO ────────────────────────────────────────────────────────────
         case 'warning':
             return (
                 <div className={styles.logLine} style={{ color: '#fbbf24' }}>
-                    <AlertCircle size={12} /> <span>{content}</span>
+                    <AlertCircle size={12} className="shrink-0" /> <span>{content}</span>
                 </div>
             );
-        default:
+
+        // ── LOG DE EXECUÇÃO (default) ─────────────────────────────────────
+        default: {
+            const text = content || (typeof log === 'object' ? JSON.stringify(log) : '');
+            const isSuccess = /^[🚀✅]/.test(text);
+            const isError   = /^❌/.test(text);
+            const isPending = /^[📝🧪]/.test(text);
             return (
-                <div className={styles.logLine}>
-                    <Loader2 size={12} className={styles.spinner} /> <span>{content || JSON.stringify(log)}</span>
+                <div className={styles.logLine} style={{
+                    color: isSuccess ? '#10B981' : isError ? '#ef4444' : isPending ? '#5E6AD2' : undefined
+                }}>
+                    {isSuccess
+                        ? <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
+                        : isError
+                        ? <AlertCircle  size={12} className="text-red-400 shrink-0" />
+                        : <Loader2 size={12} className={styles.spinner} />}
+                    <span>{text}</span>
                 </div>
             );
+        }
     }
 };
 
@@ -114,11 +198,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     const isUser = message.role === 'user';
     const [isLogsExpanded, setIsLogsExpanded] = useState(message.role === 'assistant' && !message.content); // Expandido por padrão se estiver rodando
 
-    const renderHighlightedText = (text: string) => {
+    const renderHighlightedText = (text: string, keyPrefix: string) => {
         const parts = text.split(/(@\w*)/g);
         return parts.map((part, i) => {
             if (part.startsWith('@')) {
-                return <span key={i} className={styles.highlightPurple}>{part}</span>;
+                return <span key={`${keyPrefix}-high-${i}`} className={styles.highlightPurple}>{part}</span>;
             }
             return part;
         });
@@ -126,32 +210,32 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
     const renderInlineMarkdown = (text: string, messageData?: any) => {
         const parts = text.split(/(\[\[(?:TASK|NEW_TASK):\d+\]\])/g);
-        return parts.map((part, i) => {
+        return parts.flatMap((part, i) => {
             if (part.startsWith('[[TASK:')) {
                 const match = part.match(/\[\[TASK:(\d+)\]\]/);
                 const idx = match ? parseInt(match[1]) - 1 : -1;
                 const task = messageData?.past_activities?.[idx];
-                return task ? <div key={i} style={{ margin: '12px 0' }}><TaskList data={{ activities: [task] }} /></div> : null;
+                return task ? [<div key={`task-${i}`} style={{ margin: '12px 0' }}><TaskList data={{ activities: [task] }} /></div>] : [];
             }
             if (part.startsWith('[[NEW_TASK:')) {
                 const match = part.match(/\[\[NEW_TASK:(\d+)\]\]/);
                 const idx = match ? parseInt(match[1]) - 1 : -1;
                 const task = messageData?.new_activities?.[idx];
-                return task ? (
-                    <div key={i} style={{ margin: '12px 0' }}>
+                return task ? [
+                    <div key={`newtask-${i}`} style={{ margin: '12px 0' }}>
                         <div style={{ fontSize: '10px', color: task.done ? '#10B981' : '#5E6AD2', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 600 }}>
                             {task.done ? 'Atividade Concluída' : 'Nova Atividade agendada'}
                         </div>
                         <TaskList data={{ activities: [task] }} />
                     </div>
-                ) : null;
+                ] : [];
             }
             const boldParts = part.split(/(\*\*.*?\*\*)/g);
-            return boldParts.map((bPart, bi) => {
+            return boldParts.flatMap((bPart, bi) => {
                 if (bPart.startsWith('**') && bPart.endsWith('**')) {
-                    return <strong key={`${i}-${bi}`} style={{ fontWeight: 700 }}>{bPart.slice(2, -2)}</strong>;
+                    return [<strong key={`bold-${i}-${bi}`} style={{ fontWeight: 700 }}>{bPart.slice(2, -2)}</strong>];
                 }
-                return renderHighlightedText(bPart);
+                return renderHighlightedText(bPart, `${i}-${bi}`);
             });
         });
     };
@@ -260,7 +344,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                         {isLogsExpanded && (
                             <div className={styles.streamingLogs} style={{ paddingLeft: '24px' }}>
                                 {((currentLogs && currentLogs.length > 0) ? currentLogs : (message.logs || [])).map((log, i) => (
-                                    <RichLogRenderer key={i} log={log} onOpenWhatsApp={onOpenWhatsApp} />
+                                    <RichLogRenderer key={`msg-log-${log.stage ?? ''}-${log.type ?? ''}-${i}`} log={log} onOpenWhatsApp={onOpenWhatsApp} />
                                 ))}
                             </div>
                         )}

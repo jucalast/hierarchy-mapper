@@ -22,6 +22,7 @@ Ou com histórico:
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any, Iterable, List, Optional, Union
 
 from core.cache import cache_key_for, get_cache
@@ -40,6 +41,15 @@ from services.ai.llm.gemini_provider import GeminiProvider
 from services.ai.llm.groq_provider import GroqProvider
 
 log = get_logger(__name__)
+
+# ---------------------------------------------------------------------------
+# Throttler global — serializa chamadas LLM para não explodir o rate limit
+# ---------------------------------------------------------------------------
+# Permite no máximo 1 chamada LLM simultânea no sistema inteiro.
+# Garante também um intervalo mínimo de 1.2s entre chamadas consecutivas.
+_llm_semaphore = asyncio.Semaphore(1)
+_last_llm_call_time: float = 0.0
+_MIN_CALL_GAP_SEC: float = 1.2  # Intervalo mínimo entre chamadas (ajuste conforme cota)
 
 
 # ---------------------------------------------------------------------------
@@ -156,50 +166,53 @@ class LLMRouter:
         any_available = False
         last_error: Optional[str] = None
 
-        for provider in providers:
-            if not provider.available:
-                log.debug(
-                    "llm.provider.unavailable",
-                    provider=provider.name,
-                )
-                continue
-            any_available = True
-            
-            # Retry loop interno para o provedor atual (especialmente para 429)
-            max_provider_retries = 3
-            for attempt in range(1, max_provider_retries + 1):
-                try:
-                    result = await provider.complete(
-                        messages,
-                        json_mode=json_mode,
-                        temperature=temp,
-                        tier=tier,
-                    )
-                    if cache_enabled and key:
-                        self._cache.set(key, result)
-                    return result
-                except LLMError as e:
-                    last_error = f"{provider.name}: {e}"
-                    
-                    # Se for erro de cota (429), fazemos um backoff progressivo antes de trocar de provedor
-                    if "rate_limit" in str(e).lower() or "429" in str(e).lower():
-                        if attempt < max_provider_retries:
-                            wait_time = 2.0 * attempt + (0.5 * attempt) # Backoff progressivo
-                            log.warning("llm.provider.rate_limit_retry", 
-                                        provider=provider.name, attempt=attempt, wait_sec=wait_time)
-                            await asyncio.sleep(wait_time)
-                            continue
-                    
-                    log.warning(
-                        "llm.provider.failed",
-                        provider=provider.name,
-                        error=str(e)[:200],
-                    )
-                    break # Passa para o próximo provider se falha não for retryable
-                except Exception as e:
-                    last_error = f"{provider.name}: {type(e).__name__}: {e}"
-                    log.exception("llm.provider.unexpected", provider=provider.name)
-                    break
+        # Throttle global: serializa chamadas LLM e garante gap mínimo entre elas.
+        # Isso evita disparar múltiplas chamadas simultâneas que explodem o rate limit
+        # das APIs gratuitas (Gemini free: ~15 req/min, Groq free: ainda mais restrito).
+        global _last_llm_call_time
+        async with _llm_semaphore:
+            now = time.monotonic()
+            gap = _MIN_CALL_GAP_SEC - (now - _last_llm_call_time)
+            if gap > 0:
+                log.debug("llm.throttle.wait", gap_ms=round(gap * 1000))
+                await asyncio.sleep(gap)
+            _last_llm_call_time = time.monotonic()
+
+            for provider in providers:
+                if not provider.available:
+                    log.debug("llm.provider.unavailable", provider=provider.name)
+                    continue
+                any_available = True
+
+                # Retry loop para o provedor atual (backoff progressivo em 429)
+                max_provider_retries = 3
+                for attempt in range(1, max_provider_retries + 1):
+                    try:
+                        result = await provider.complete(
+                            messages,
+                            json_mode=json_mode,
+                            temperature=temp,
+                            tier=tier,
+                        )
+                        if cache_enabled and key:
+                            self._cache.set(key, result)
+                        return result
+                    except LLMError as e:
+                        last_error = f"{provider.name}: {e}"
+                        if "rate_limit" in str(e).lower() or "429" in str(e).lower():
+                            if attempt < max_provider_retries:
+                                wait_time = 2.5 * attempt
+                                log.warning("llm.provider.rate_limit_retry",
+                                            provider=provider.name, attempt=attempt, wait_sec=wait_time)
+                                await asyncio.sleep(wait_time)
+                                continue
+                        log.warning("llm.provider.failed",
+                                    provider=provider.name, error=str(e)[:200])
+                        break
+                    except Exception as e:
+                        last_error = f"{provider.name}: {type(e).__name__}: {e}"
+                        log.exception("llm.provider.unexpected", provider=provider.name)
+                        break
 
         if not any_available:
             raise NoProviderAvailableError(

@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
     };
 
     checkStatus();
-    const interval = window.setInterval(checkStatus, 5000);
+    const interval = window.setInterval(checkStatus, 60000); // Reduzido de 5s → 60s: status raramente muda
     return () => {
       cancelled = true;
       window.clearInterval(interval);

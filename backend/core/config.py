@@ -60,7 +60,7 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
 
         # Seleção de providers (ordem de preferência)
         primary_provider: str = "gemini"
-        fallback_chain: str = "gemini,groq"  # CSV, ordem real de tentativa
+        fallback_chain: str = "gemini,groq,claude"  # Claude entra quando Gemini+Groq estão rate-limited
 
         # Timeouts por tier (sobrescreve default quando LLM é chamado)
         timeout_fast_sec: float = 15.0        # intent classification, tarefas leves
@@ -68,9 +68,9 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         timeout_deep_sec: float = 90.0        # agent workflow, análises longas
 
         # Circuit breaker (por provedor)
-        cooldown_base_sec: int = 60
-        cooldown_max_sec: int = 300
-        max_consecutive_failures_before_reset: int = 5
+        cooldown_base_sec: int = 15  # Reduzido de 60 para 15
+        cooldown_max_sec: int = 120  # Reduzido de 300 para 120
+        max_consecutive_failures_before_reset: int = 8  # Aumentado de 5 para 8
 
         # Cache de respostas idempotentes
         response_cache_enabled: bool = True
@@ -84,8 +84,9 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
 
         # Modelos (ordem dentro de cada provider)
         gemini_models: str = (
-            "gemini-flash-latest,"
-            "gemini-3-flash-preview"
+            "gemini-2.0-flash,"
+            "gemini-2.0-flash-lite,"
+            "gemini-flash-latest"
         )
         groq_models: str = (
             "llama-3.3-70b-versatile,"
@@ -309,14 +310,14 @@ else:
         )
         ai = _Namespace(
             primary_provider="gemini",
-            fallback_chain="gemini,groq",
+            fallback_chain="gemini,groq,claude",
             timeout_fast_sec=15.0, timeout_standard_sec=45.0, timeout_deep_sec=90.0,
-            cooldown_base_sec=60, cooldown_max_sec=300,
-            max_consecutive_failures_before_reset=5,
+            cooldown_base_sec=15, cooldown_max_sec=120,
+            max_consecutive_failures_before_reset=8,
             response_cache_enabled=True, response_cache_ttl_sec=600,
             response_cache_max_entries=1024,
             history_max_messages=6, history_truncate_chars=1200, history_data_max_chars=300,
-            gemini_models="gemini-flash-latest,gemini-3-flash-preview",
+            gemini_models="gemini-2.0-flash,gemini-2.0-flash-lite,gemini-flash-latest",
             groq_models="llama-3.3-70b-versatile,llama-3.1-8b-instant",
             claude_models="claude-sonnet-4-5,claude-3-5-haiku-latest",
             temperature_default=0.1,

@@ -34,6 +34,17 @@
   --chat-radius-sm: 6px;
   --chat-radius-md: 12px;
   --chat-radius-lg: 18px;
+
+  /* Spacing Scale */
+  --space-4:  4px;
+  --space-8:  8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+
+  /* Touch / Interactive Element Height */
+  --touch-target: 40px;
 }
 
 [data-theme='dark'] {

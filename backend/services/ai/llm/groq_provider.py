@@ -4,7 +4,6 @@ Fallback interno entre os modelos listados em settings.ai_groq_models_list.
 """
 from __future__ import annotations
 
-import asyncio
 import json
 import time
 from typing import List, Optional
@@ -172,35 +171,18 @@ class GroqProvider(LLMProvider):
                 llm_requests_total.labels(
                     provider=self.name, model=model, outcome="rate_limited"
                 ).inc()
-                log.warning("llm.groq.rate_limit", model=model)
-                
-                if timeout > 10:
-                    await asyncio.sleep(2.0)
+                # Respeita o header Retry-After se presente, senão passa pro próximo modelo
+                retry_after = resp.headers.get("retry-after") or resp.headers.get("x-ratelimit-reset-requests")
+                if retry_after:
                     try:
-                        resp = await client.post(_GROQ_URL, json=payload, headers=headers, timeout=timeout)
-                        if resp.status_code == 200:
-                            # Re-processa sucesso
-                            data = resp.json()
-                            text_content = data["choices"][0]["message"]["content"]
-                            json_data = None
-                            if json_mode:
-                                try:
-                                    cleaned = text_content.strip()
-                                    if cleaned.startswith("```"):
-                                        cleaned = cleaned.split("```", 2)[-1].lstrip("json").strip()
-                                        cleaned = cleaned.rsplit("```", 1)[0].strip()
-                                    json_data = json.loads(cleaned)
-                                except:
-                                    json_data = {"response": text_content}
-                            return LLMResult(text=text_content, json_data=json_data, provider=self.name, model=model, latency_sec=latency)
-                        else:
-                            last_error = f"rate_limited_retry_failed_on_{model}"
-                            continue
-                    except Exception as e:
-                        last_error = f"retry_error_on_{model}: {str(e)}"
-                        continue
+                        wait = float(retry_after)
+                        log.warning("llm.groq.rate_limit", model=model, retry_after_sec=wait)
+                    except (ValueError, TypeError):
+                        pass
                 else:
-                    continue
+                    log.warning("llm.groq.rate_limit", model=model)
+                # Não tenta o mesmo modelo de novo — passa direto pro próximo (router faz o retry externo)
+                continue
 
             last_error = f"{resp.status_code}_on_{model}: {resp.text[:200]}"
             llm_requests_total.labels(

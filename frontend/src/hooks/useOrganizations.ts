@@ -51,6 +51,7 @@ export function useOrganizations(options: UseOrganizationsOptions = {}) {
 
   const [orgs, setOrgs] = useState<OrganizationSummary[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const mountedRef = useRef(true);
 
@@ -87,6 +88,7 @@ export function useOrganizations(options: UseOrganizationsOptions = {}) {
   }, [orgs.length, triggerSync]);
 
   useEffect(() => {
+    setIsHydrated(true);
     const cached = readCache();
     if (cached.length > 0) {
       setOrgs(cached);
@@ -128,5 +130,13 @@ export function useOrganizations(options: UseOrganizationsOptions = {}) {
     });
   }, []);
 
-  return { orgs, filtered, loading, error, refetch, updateOrg, removeOrg };
+  return {
+    orgs,
+    filtered,
+    loading: !isHydrated || loading,
+    error,
+    refetch,
+    updateOrg,
+    removeOrg,
+  };
 }

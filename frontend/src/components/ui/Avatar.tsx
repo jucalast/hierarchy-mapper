@@ -38,7 +38,10 @@ export interface AvatarProps {
   /** Estilo inline extra */
   style?: React.CSSProperties;
   /** alt text acessível */
+  /** alt text acessível */
   alt?: string;
+  /** Não mostrar iniciais (ui-avatars) se não houver imagem */
+  noInitialFallback?: boolean;
 }
 
 const SIZE_MAP: Record<Exclude<AvatarSize, number>, number> = {
@@ -67,6 +70,7 @@ function AvatarBase({
   className,
   style,
   alt,
+  noInitialFallback = false,
 }: AvatarProps) {
   const pxSize = resolveSize(size);
   const defaultFit: 'cover' | 'contain' = fit || (kind === 'company' ? 'contain' : 'cover');
@@ -99,7 +103,8 @@ function AvatarBase({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    backgroundColor: kind === 'company' ? '#fff' : '#dfe5e7',
+    backgroundColor: (kind === 'company' && !noInitialFallback) ? '#fff' : 'rgba(255, 255, 255, 0.05)',
+    position: 'relative',
     ...style,
   };
 
@@ -107,13 +112,35 @@ function AvatarBase({
 
   return (
     <span className={className} style={baseStyle} aria-label={alt || resolvedName}>
-      {showPlaceholder ? (
+      {/* Ícone absoluto como último fallback se ambas imagens falharem */}
+      {showPlaceholder && (
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'rgba(255, 255, 255, 0.15)',
+            pointerEvents: 'none',
+          }}
+        >
+          {kind === 'company' ? (
+            <Building2 size={pxSize * 0.5} />
+          ) : (
+            <User2 size={pxSize * 0.5} />
+          )}
+        </span>
+      )}
+
+      {(showPlaceholder && !noInitialFallback) ? (
         <img
           src={fallback}
           alt={alt || resolvedName}
           width={pxSize}
           height={pxSize}
-          style={{ width: '100%', height: '100%', objectFit: defaultFit }}
+          style={{ width: '100%', height: '100%', objectFit: defaultFit, position: 'relative', zIndex: 1 }}
           loading="lazy"
           decoding="async"
           onError={(e) => {
@@ -122,7 +149,7 @@ function AvatarBase({
             tgt.style.display = 'none';
           }}
         />
-      ) : (
+      ) : !showPlaceholder ? (
         <img
           src={proxiedUrl}
           alt={alt || resolvedName}
@@ -133,25 +160,14 @@ function AvatarBase({
             height: '100%',
             objectFit: defaultFit,
             background: kind === 'company' ? '#fff' : undefined,
+            position: 'relative',
+            zIndex: 1
           }}
           loading="lazy"
           decoding="async"
           onError={() => setImgError(true)}
         />
-      )}
-      {/* Ícone absoluto como último fallback se ambas imagens falharem */}
-      {showPlaceholder && (
-        <span
-          aria-hidden
-          style={{
-            position: 'absolute',
-            color: '#868686',
-            pointerEvents: 'none',
-          }}
-        >
-          {kind === 'company' ? <Building2 size={pxSize * 0.5} /> : <User2 size={pxSize * 0.5} />}
-        </span>
-      )}
+      ) : null}
     </span>
   );
 }

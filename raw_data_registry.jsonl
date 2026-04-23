@@ -1204,3 +1204,169 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-22T21:19:59.031902",
+    "candidate": "Bianca Lima",
+    "linkedin": "https://linkedin.com/in/pd_2089",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bianca Lima - Contato Dva",
+            "body": "Email: bianca.lima@dva.com | Telefone: (19) 9 9821 8650 | Pipedrive ID: 2089"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://linkedin.com/in/pd_2089",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-22T21:20:42.030090",
+    "candidate": "Fernando Fernandes",
+    "linkedin": "https://br.linkedin.com/in/fernando-fernandes-49679745",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fernando Fernandes - General Manager DVA Brasil | LinkedIn",
+            "body": "Veja o perfil de Fernando Fernandes no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "dva group",
+            "bio": "Experiência: DVA Group · Formação acadêmica: Faculdades Metropolitanas Unidas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Fernando Fernandes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/fernando-fernandes-49679745",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-22T21:21:25.078086",
+    "candidate": "Luca Trovó",
+    "linkedin": "https://br.linkedin.com/in/luca-trovó-379977307",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luca Trovó - DVA Brasil | LinkedIn",
+            "body": "Veja o perfil de Luca Trovó no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "dva brasil",
+            "bio": "Experiência: DVA Brasil · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: 13090-150 · 32 conexões no LinkedIn. Veja o perfil de Luca Trovó no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/luca-trovó-379977307",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-22T21:21:34.080212",
+    "candidate": "Eduardo Camelo",
+    "linkedin": "https://br.linkedin.com/in/eduardo-marques-compras",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Eduardo Camelo - Comprador Pleno l Negociação com ...",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "cobra brasil",
+            "bio": "Comprador com experiência no setor de energia desde 2012, atuando em projetos de… · Experiência: Cobra Brasil · Formação acadêmica: Faculdade UniBF · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Eduardo Camelo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-22T21:22:43.602745",
+    "candidate": "Bianca Lima",
+    "linkedin": "https://br.linkedin.com/in/biancadelimasilva",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bianca Lima - Assistente de Compras | Supply Chain | Logística - LinkedIn",
+            "body": "Assistente de Compras | Supply Chain | Logística | Redução de Custos · Experiência: DVA Brasil · Formação acadêmica: UniMax - Centro Universitário Max ..."
+        },
+        "osint_metadata": {
+            "role": "dva brasil",
+            "bio": "Experiência: DVA Brasil · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: 13330-005 · 220 conexões no LinkedIn. Veja o perfil de Bianca Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/biancadelimasilva",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Supply Chain",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------

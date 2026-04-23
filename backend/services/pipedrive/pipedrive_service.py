@@ -230,6 +230,24 @@ class PipedriveService:
     # CRUD — Organizations
     # ---------------------------------------------------------------------
 
+    async def search_organization(self, term: str) -> List[dict]:
+        """Busca organização por nome no Pipedrive (via /itemSearch ou /organizations/search)."""
+        resp = await self._request(
+            "GET",
+            "organizations/search",
+            params={"term": term, "limit": 10},
+        )
+        if resp is not None and resp.status_code == 200:
+            try:
+                data = resp.json()
+                if data.get("success"):
+                    # O endpoint /search retorna os itens dentro de 'data' -> 'items'
+                    items = data.get("data", {}).get("items") or []
+                    return [i.get("item") for i in items if i.get("item")]
+            except Exception as e:
+                log.warning("pipedrive.org.search_failed", error=str(e))
+        return []
+
     async def create_organization(self, data: dict) -> Optional[int]:
         payload = {
             "name": data.get("name"),
@@ -934,8 +952,17 @@ class PipedriveService:
         if resp is None:
             return {"success": False}
         try:
-            return resp.json()
-        except Exception:
+            res_json = resp.json()
+            if not res_json.get("success"):
+                log.warning(
+                    "pipedrive.activity.create_failed_api",
+                    error=res_json.get("error"),
+                    error_info=res_json.get("error_info"),
+                    payload=data
+                )
+            return res_json
+        except Exception as e:
+            log.warning("pipedrive.activity.create_parse_failed", error=str(e))
             return {"success": False}
 
     async def create_person(

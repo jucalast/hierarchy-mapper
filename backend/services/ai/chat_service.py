@@ -58,18 +58,25 @@ def clean_history(history: list, max_msgs: int = 5, max_len: int = 1200) -> list
         is_pydantic = hasattr(entry, "dict")
         h_dict = entry.dict() if is_pydantic else entry.copy()
 
+        # Preserva um resumo dos dados para resolução de contexto (ex: "tarefa 4")
+        if h_dict.get("role") == "assistant" and "data" in h_dict:
+            data = h_dict["data"]
+            if isinstance(data, list):
+                # Mantém apenas o básico para o LLM "enxergar" o que foi mostrado
+                h_dict["data_summary"] = [
+                    f"{i+1}. {item.get('title') or item.get('subject') or item.get('name') or 'Item'}"
+                    for i, item in enumerate(data[:15])
+                ]
+            elif isinstance(data, dict):
+                h_dict["data_summary"] = data.get("title") or data.get("name") or str(data)[:100]
+            
+        h_dict.pop("data", None)
         h_dict.pop("logs", None)
         h_dict.pop("debug", None)
-        if h_dict.get("role") == "assistant" and "data" in h_dict:
-            del h_dict["data"]
 
         content = h_dict.get("content", "")
         if content and len(content) > max_len:
             h_dict["content"] = content[:max_len] + "... [Conteúdo Truncado]"
-
-        if "data" in h_dict:
-            if isinstance(h_dict["data"], (list, dict)) and len(str(h_dict["data"])) > 300:
-                h_dict["data"] = {"summary": "Dados omitidos para preservar limite de tokens"}
 
         cleaned.append(h_dict)
     return cleaned
@@ -368,12 +375,18 @@ class ChatOrchestrator:
                 payload.message,
                 session,
                 selected_entities=[c.dict() for c in (payload.selectedCompanies or [])],
-                whatsapp_result=whatsapp_result,
-                email_result=email_result,
             )
         )
 
-        dump_intelligence_context(payload.message, internal_context)
+        if whatsapp_result:
+            internal_context["whatsapp_result"] = whatsapp_result
+        if email_result:
+            internal_context["email_result"] = email_result
+
+        try:
+            dump_intelligence_context(payload.message, intent_info, internal_context, org_id)
+        except Exception as e:
+            log.warning("chat.shadow_log_failed", error=str(e))
 
         return _Pipeline(
             payload=payload,

@@ -27,7 +27,14 @@ async def classify_user_intent(message: str, history: Optional[List[MessageInput
             msg_content = msg.get("content", "") if isinstance(msg, dict) else msg.content
             
             role_br = "Usuário" if msg_role == "user" else "Assistente"
-            history_lines.append(f"{role_br}: {msg_content}")
+            line = f"{role_br}: {msg_content}"
+            
+            # Inclui resumo de dados para resolução de referências (ex: tarefa 4)
+            msg_summary = msg.get("data_summary") if isinstance(msg, dict) else getattr(msg, "data_summary", None)
+            if msg_summary:
+                line += f" [Dados exibidos: {msg_summary}]"
+                
+            history_lines.append(line)
         history_str = "Histórico Recente da Conversa:\n" + "\n".join(history_lines)
     
     prompt = f"""{INTENT_CLASSIFIER_PROMPT}

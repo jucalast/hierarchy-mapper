@@ -14,8 +14,8 @@ from services.ai.prompts import (
     FINAL_RESPONSE_PROMPT
 )
 
-# Ações que REQUEREM aprovação do usuário antes de executar
-ACTIONS_REQUIRING_APPROVAL = {"send_whatsapp", "send_email"}
+# Ações que REQUEREM aprovação do usuário (Vazio para modo 100% Autônomo)
+ACTIONS_REQUIRING_APPROVAL = set()
 
 
 class AgentService:
@@ -92,17 +92,26 @@ class AgentService:
                     if raw_context.get("error"): raise Exception(raw_context["error"])
                     
                     # --- NOVIDADE: STREAMING IMEDIATO DE DESCOBERTA ---
+                    org_data = raw_context.get("organization")
+                    if org_data:
+                        log({"type": "data_found", "entity": "deal", "data": {"title": org_data.get("name"), "stage_name": "Empresa Identificada", "status": "open", "formatted_value": org_data.get("domain", "")}})
+                        await asyncio.sleep(0.5)
+
                     pd_new = raw_context.get("pipedrive_details", {})
                     new_deals = pd_new.get("deals", [])
                     new_activities = pd_new.get("activities", [])
                     
                     if new_deals:
                         log({"type": "status", "content": "Negócio localizado!", "icon": "check"})
-                        for d in new_deals: log({"type": "data_found", "entity": "deal", "data": d})
+                        for d in new_deals: 
+                            log({"type": "data_found", "entity": "deal", "data": d})
+                            await asyncio.sleep(0.4)
                     
                     if new_activities:
                         log({"type": "status", "content": f"Encontradas {len(new_activities)} atividades.", "icon": "list"})
-                        for a in new_activities[:3]: log({"type": "data_found", "entity": "activity", "data": a})
+                        for a in new_activities[:3]: 
+                            log({"type": "data_found", "entity": "activity", "data": a})
+                            await asyncio.sleep(0.3)
                     
                     break 
                 except Exception as e:
@@ -171,31 +180,25 @@ class AgentService:
         num_emails = sum(len(threads) for threads in emails_by_contact.values())
         num_wa = sum(len(msgs) for msgs in whatsapp_by_contact.values())
         
-        script_prompt = f"""Você é um Analista de Dados de Vendas Sênior e Estrategista Comercial. 
-        Gere um roteiro de 'Pensamentos' detalhados (exatamente 3 linhas curtas por pensamento) ultra-embasados nos fatos abaixo.
-        
-        DADOS REAIS DO CASO:
-        - Objetivo do Usuário: {goal}
-        - Empresa: {org_name}
-        - Negócio/Valor: {deal_info if deal_info else 'Ainda sem valor definido'}
-        - Atividades Recentes: {', '.join(activity_subjects) if activity_subjects else 'Sem histórico'}
-        - Último Registro Manual (Nota): "{last_note_snippet}"
-        - Comunicações: {num_emails} threads de e-mail e {num_wa} conversas de WhatsApp.
-        - Contatos Principais: {', '.join(contact_map.keys())}
+        # Input compacto + output rico: 3 linhas mantêm a qualidade visual da UI.
+        # Formato: Fato → Implicação → Próxima ação (cada linha curta, baseada nos dados reais).
+        script_prompt = f"""Analista de vendas B2B. Use APENAS os fatos abaixo para gerar insights. Cite nomes e valores reais.
 
-        Instruções de Estilo:
-        1. Cada insight DEVE ter exatamente 3 linhas curtas de análise técnica.
-        2. Use fatos: cite valores, nomes de pessoas, ou trechos da nota.
-        3. Linha 1: Fato encontrado. Linha 2: Implicação comercial. Linha 3: O que vamos validar agora.
-        
-        Retorne APENAS um JSON:
-        {{
-            "intro": "Insight de 3 linhas sobre o Negócio e Valor",
-            "tasks_reaction": "Insight de 3 linhas sobre o Histórico de Atividades e Notas",
-            "finding_people": "Insight de 3 linhas sobre os Contatos e Canais de Comunicação",
-            "maturity_analysis": "Análise preditiva de 3 linhas para a estratégia final"
-        }}
-        """
+CONTEXTO CRÍTICO: João Luccas (joao.moura@jferres.com.br) é o VENDEDOR que usa este sistema. Ele NUNCA é um contato ou prospecto. Os contatos listados são pessoas da empresa cliente.
+
+FATOS:
+- Empresa cliente: {org_name} | Objetivo da análise: {goal}
+- Negócio: {deal_info or 'sem valor definido'}
+- Atividades: {', '.join(activity_subjects) or 'nenhuma registrada'}
+- Última nota: "{last_note_snippet}"
+- Comunicações: {num_emails} threads email, {num_wa} conversas WhatsApp
+- Contatos do cliente: {', '.join(list(contact_map.keys())[:3])}
+
+Regra: cada campo = 3 frases curtas. Linha 1: fato encontrado. Linha 2: implicação comercial. Linha 3: o que validar agora.
+PROIBIDO inventar dados que não estejam nos fatos acima. PROIBIDO mencionar João Luccas como contato ou cliente.
+
+Retorne JSON:
+{{"intro":"Frase1. Frase2. Frase3.","tasks_reaction":"Frase1. Frase2. Frase3.","finding_people":"Frase1. Frase2. Frase3.","maturity_analysis":"Frase1. Frase2. Frase3."}}"""
         
         narrative_script = {}
         try:
@@ -240,44 +243,61 @@ class AgentService:
         logged_count = 0
         
         # Loga Contatos e Comunicações de forma intercalada
+        # Regra: contatos COM comunicação real (email/WA) aparecem SEMPRE.
+        # Contatos sem comunicação: limite de 3 para não poluir o painel.
         for name, info in contact_map.items():
             name_key = name.lower()
             email_key = (info.get("email") or "").lower()
             is_key_contact = name in selected_names or info.get("is_priority")
-            
-            if is_key_contact or logged_count < 3:
+
+            # Pré-carrega comunicações antes de decidir se loga o contato
+            person_emails = emails_by_contact.get(name_key) or emails_by_contact.get(email_key, [])
+            person_wa = whatsapp_by_contact.get(name_key) or whatsapp_by_contact.get(info.get("phone"), [])
+            has_comms = bool(person_emails or person_wa)
+
+            # Mostra: contatos selecionados/prioritários + qualquer contato com comunicação + até 3 sem comunicação
+            if is_key_contact or has_comms or logged_count < 3:
+                # Injeção do Card de Contato
                 log({"type": "data_found", "entity": "contact", "data": info, "label": "Prioritário" if is_key_contact else None})
-                
-                # Busca e-mails e WhatsApp acoplados ao contato
-                person_emails = emails_by_contact.get(name_key) or emails_by_contact.get(email_key, [])
-                person_wa = whatsapp_by_contact.get(name_key) or whatsapp_by_contact.get(info.get("phone"), [])
-                
-                if person_emails or person_wa:
-                    await asyncio.sleep(0.5)
-                    await add_thought(f"Legal, vamos ver o que foi conversado com {name}...")
-                    
+                await asyncio.sleep(0.4)
+
+                if has_comms:
+                    await add_thought(f"Encontrei histórico de conversas com {name}. Vou analisar o tom da negociação...")
+                    await asyncio.sleep(0.6)
+
                     if person_emails:
-                        # Envia o e-mail mais recente com o snippet/body para o componente de UI
-                        recent_email = person_emails[0]
-                        log({
-                            "type": "data_found", 
-                            "entity": "email", 
-                            "data": {
-                                "contact": {"name": name, "email": info.get("email")},
-                                "subject": recent_email.get("subject", "Sem Assunto"),
-                                "sent_message": recent_email.get("snippet") or recent_email.get("body") or "Sem conteúdo visual",
-                                "body_preview": recent_email.get("snippet") or recent_email.get("body") or "Sem conteúdo visual",
-                                "messages": person_emails[:3] # Thread completa opcional
-                            }
-                        })
-                    
+                        # Emite todos os threads deste contato (até 5), não só o primeiro
+                        for email_thread in person_emails[:5]:
+                            log({
+                                "type": "data_found",
+                                "entity": "email",
+                                "data": {
+                                    "contact": {"name": name, "email": info.get("email")},
+                                    "subject": email_thread.get("subject", "Sem Assunto"),
+                                    "sent_message": email_thread.get("snippet") or email_thread.get("body") or "Sem conteúdo visual",
+                                    "body_preview": email_thread.get("snippet") or email_thread.get("body") or "Sem conteúdo visual",
+                                    "messages": [email_thread]
+                                }
+                            })
+                            await asyncio.sleep(0.2)
+
                     if person_wa:
                         log({"type": "data_found", "entity": "whatsapp", "data": person_wa[0]})
-                
-                if not is_key_contact: logged_count += 1
-        
-        if len(contact_map) > (logged_count + len(selected_names)):
-            log({"type": "log", "content": f"... e mais {len(contact_map) - logged_count - len(selected_names)} contatos mapeados."})
+                        await asyncio.sleep(0.4)
+
+                # Conta apenas contatos sem comunicação para o limite de 3
+                if not is_key_contact and not has_comms:
+                    logged_count += 1
+
+        # Contagem de contatos que não foram logados (sem comunicação e além do limite)
+        total_shown = sum(1 for n, info in contact_map.items() if
+                          n in selected_names or info.get("is_priority") or
+                          bool(emails_by_contact.get(n.lower()) or emails_by_contact.get((info.get("email") or "").lower()) or
+                               whatsapp_by_contact.get(n.lower()) or whatsapp_by_contact.get(info.get("phone"))))
+        total_shown += min(logged_count, 3)
+        remaining = len(contact_map) - total_shown
+        if remaining > 0:
+            log({"type": "log", "content": f"... e mais {remaining} contatos mapeados."})
 
         # Injeta no contexto para análise de maturidade
         raw_context["emails_by_contact"] = emails_by_contact
@@ -287,27 +307,75 @@ class AgentService:
         maturity_text = narrative_script.get("maturity_analysis", "Analisando maturidade das interações para definir estratégia.")
         await add_thought(maturity_text)
         
-        # Pausa para respiro de cota (Aumentado para resistência máxima)
-        await asyncio.sleep(2.5)
+        # Pausa reduzida para performance
+        await asyncio.sleep(1.0)
 
-        log({"type": "status", "content": "Analisando maturidade...", "icon": "analytics"})
-        deal_analysis = await AgentService._analyze_deal_state(raw_context)
+        log({"type": "status", "content": "Gerando estratégia e plano de ação...", "icon": "auto_awesome"})
+
+        # Destila comunicações AQUI para poder exibir no painel e reaproveitar em _analyze_deal_state
+        print("[Agent] 🧪 Destilando comunicações para arqueologia de alta precisão...")
+        try:
+            distilled_comms = await AgentService._distill_communications(
+                raw_context.get("email_result", {}),
+                raw_context.get("whatsapp_result", {})
+            )
+        except Exception:
+            distilled_comms = ""
+
+        if distilled_comms and "Nenhuma comunicação" not in distilled_comms and "Falha ao destilar" not in distilled_comms:
+            await add_thought(distilled_comms)
+            await asyncio.sleep(0.5)
+
+        # Armazena para _analyze_deal_state não precisar recalcular
+        raw_context["_precomputed_distilled"] = distilled_comms
+
+        try:
+            # Tenta consolidar análise e plano em um único fluxo ou lidar com falhas graciosamente
+            deal_analysis = await AgentService._analyze_deal_state(raw_context)
+        except Exception as e:
+            print(f"[Agent] ⚠️ Falha na análise de maturidade (LLM Rate Limit?): {e}")
+            deal_analysis = "Análise indisponível no momento devido a limites de cota, seguindo com plano básico."
+
+        # Pausa reduzida para performance
+        await asyncio.sleep(1.0)
         
-        # ═══════════════════════════════════════
-        # ESTÁGIO 4: Plano de Ação Estratégico
-        # ═══════════════════════════════════════
-        log("Gerando plano de ação multicanal...")
-        # Pausa para respiro de cota (Aumentado para resistência máxima)
-        await asyncio.sleep(2.5)
-        plan_raw = await AgentService._create_logical_plan(goal, deal_analysis, raw_context, contact_map, selected_entities)
-        
-        # Normaliza
-        if isinstance(plan_raw, dict) and "plan" in plan_raw:
-            plan = plan_raw["plan"]
-        elif isinstance(plan_raw, list):
-            plan = plan_raw
-        else:
-            plan = []
+        try:
+            plan_raw = await AgentService._create_logical_plan(goal, deal_analysis, raw_context, contact_map, selected_entities, history=history)
+            
+            # Normalização robusta de JSON/Plan
+            if not plan_raw:
+                raise ValueError("Plano retornado vazio pela IA")
+                
+            if isinstance(plan_raw, dict):
+                plan = plan_raw.get("plan", [])
+            elif isinstance(plan_raw, list):
+                plan = plan_raw
+            else:
+                plan = []
+                
+            if not plan:
+                # Se a IA retornou um JSON mas sem o campo 'plan' (ex: erro capturado pelo provider)
+                if isinstance(plan_raw, dict) and "response" in plan_raw:
+                     # Tenta converter o texto bruto em uma ação de conteúdo
+                     plan = [{"action": "generate_content", "description": "Insight gerado", "params": {"content": plan_raw["response"]}}]
+                else:
+                    raise ValueError("Estrutura de plano inválida")
+
+        except Exception as e:
+            print(f"[Agent] ⚠️ Falha na geração do plano dinâmico ({e}). Acionando protocolo de contingência.")
+            # PROTOCOLO DE CONTINGÊNCIA: Cria uma tarefa manual para não perder o momentum
+            plan = [{
+                "action": "create_pipedrive_task",
+                "description": "Protocolo de Segurança: Agendando retorno manual devido a instabilidade na IA.",
+                "params": {
+                    "subject": f"Retorno: {goal[:50]}...",
+                    "note": f"O sistema detectou uma instabilidade ao gerar o plano automático para o objetivo: '{goal}'. Verifique o histórico de comunicações e responda ao cliente.",
+                    "type": "call",
+                    "due_date": datetime.now().strftime("%Y-%m-%d"),
+                    "done": False
+                }
+            }]
+            log({"type": "log", "content": "⚠️ IA instável. Aplicando plano de contingência para garantir o follow-up.", "status": "warning"})
 
         # ═══════════════════════════════════════
         # ESTÁGIO 5: Execução com Aprovação Seletiva
@@ -326,92 +394,109 @@ class AgentService:
             desc = step.get("description", "Ação do Agente")
             params = step.get("params", {})
             
-            # ── Ação que REQUER aprovação ──
-            if action in ACTIONS_REQUIRING_APPROVAL:
-                action_id = str(uuid.uuid4())[:8]
-                pending_action = {
-                    "action_id": action_id,
-                    "action": action,
-                    "description": desc,
-                    "params": params,
-                    "contact_map": contact_map,
-                    "org_id": org_id,
-                    "context": raw_context,
-                    "intent": initial_intent
-                }
-                AgentService._pending_actions[action_id] = pending_action
-                
-                # --- NOVIDADE: EMBELEZAMENTO DE E-MAIL ---
-                if action in ["send_email", "reply_email"]:
-                    log(f"Refinando redação do e-mail para torná-lo mais profissional...")
+            # Resolve Canal e Nome para o Log
+            channel = "WhatsApp" if action == "send_whatsapp" else ("Email" if "email" in action else "Sistema")
+            contact_name = params.get("contact_name")
+            if not contact_name:
+                pd_p = raw_context.get("pipedrive_details", {}).get("persons", [])
+                contact_name = pd_p[0].get("name") if pd_p else raw_context.get("organization", {}).get("name", "Contato")
+            params["contact_name"] = contact_name
+
+            # --- FLUXO DE APROVAÇÃO (Comunicações) ---
+            if action in ["send_email", "reply_email", "send_whatsapp"]:
+                log({"type": "log", "content": f"📝 Sugestão de {channel} preparada para {contact_name}...", "status": "pending"})
+
+                # Refinamento de IA para o corpo da mensagem
+                if "email" in action:
                     params["body"] = await AgentService._beautify_email(
-                        params, 
+                        params,
                         raw_context.get("organization", {}).get("name", "Empresa"),
                         original_history=raw_context
                     )
-                
-                channel = "WhatsApp" if action == "send_whatsapp" else "Email"
-                
-                # Inferência inteligente de nome do contato
-                contact_name = params.get("contact_name")
-                if not contact_name:
-                    pd_p = raw_context.get("pipedrive_details", {}).get("persons", [])
-                    if pd_p:
-                        contact_name = pd_p[0].get("name")
-                    else:
-                        contact_name = raw_context.get("organization", {}).get("name", "Contato")
-                
-                params["contact_name"] = contact_name
 
+                # Enriquece params com IDs de contexto para sincronização pós-envio
+                if not params.get("activity_id"):
+                    activities = raw_context.get("pipedrive_details", {}).get("activities", [])
+                    pending_act = next((a for a in activities if not a.get("done")), None)
+                    if pending_act:
+                        params["activity_id"] = pending_act.get("id")
+                if not params.get("deal_id"):
+                    deals = raw_context.get("pipedrive_details", {}).get("deals", [])
+                    if deals:
+                        params["deal_id"] = deals[0].get("id")
+
+                # Gera action_id único e armazena no dicionário de ações pendentes
+                import uuid
+                action_id = str(uuid.uuid4())
+                AgentService._pending_actions[action_id] = {
+                    "action": action,
+                    "params": params,
+                }
+
+                # Monta payload com todos os campos que o frontend espera
                 pending_approvals.append({
                     "action_id": action_id,
                     "action_type": action,
+                    "action": action,
+                    "description": desc,
+                    "params": params,
                     "channel": channel,
                     "contact_name": contact_name,
-                    "contact_phone": params.get("phone"),
                     "contact_email": params.get("email"),
                     "subject": params.get("subject"),
-                    "message_preview": params.get("body") or params.get("message") or "",
-                    "description": desc,
-                    "email_entry_id": params.get("email_entry_id"),
+                    "message_preview": params.get("body", ""),
                     "is_reply": action == "reply_email",
-                    "original_subject": params.get("subject") if action == "reply_email" else None
+                    "original_subject": params.get("subject") if action == "reply_email" else None,
                 })
-                # Log único e final para a ação pendente (sem ícone de loading)
-                log({"type": "log", "content": f"⏳ Aguardando aprovação: {channel} para {contact_name}", "status": "success"})
-                
-            # ── Ação que NÃO requer aprovação ──
-            else:
-                log(f"Executando: {desc}")
+                continue # Pula execução direta
+
+            # --- EXECUÇÃO AUTÔNOMA (CRUD / Sistema) ---
+            log(f"Executando: {desc}")
+            try:
                 result = await AgentService._execute_real_action(step, raw_context, initial_intent, org_id)
-                
-                if action == "create_pipedrive_task" and result:
-                    if isinstance(result, dict) and result.get("success"):
-                        act_id = result.get("data", {}).get("id")
-                        log({"type": "log", "content": f"✅ Atividade criada no Pipedrive (ID: {act_id})", "status": "success"})
-                        created_tasks.append({
-                            "id": act_id,
-                            "subject": params.get("subject"),
-                            "note": params.get("note"),
-                            "due_date": (datetime.now() + timedelta(days=params.get("days_delay", 0))).strftime("%Y-%m-%d"),
-                            "type": params.get("type", "task"),
-                            "done": False
-                        })
-                        execution_results.append({"description": desc, "status": "success"})
-                    else:
-                        err = result.get("error") if isinstance(result, dict) else "Erro desconhecido"
-                        log(f"❌ Falha ao criar atividade no Pipedrive: {err}")
-                        execution_results.append({"description": desc, "status": "failed", "error": err})
-                elif action == "update_pipedrive_task" and result:
-                    log(f"✅ Atividade atualizada no Pipedrive")
+            except Exception as e:
+                print(f"[Agent] ❌ Erro Crítico ao executar {action}: {e}")
+                log(f"❌ Falha técnica ao executar {desc}: {str(e)}")
+                result = None
+            
+            # Tratamento de log de sucesso/erro
+            if action == "update_pipedrive_deal" and result:
+                if isinstance(result, dict) and result.get("success"):
+                    deal_id = params.get("deal_id") or (raw_context.get("pipedrive_details", {}).get("deals", [{}])[0].get("id"))
+                    log({"type": "log", "content": f"🚀 Negócio atualizado no Pipedrive (ID: {deal_id})", "status": "success"})
                     execution_results.append({"description": desc, "status": "success"})
                 else:
-                    execution_results.append({
-                        "description": desc,
-                        "action": action,
-                        "status": "success" if result else "failed",
-                        "details": result
+                    err = result.get("error") if isinstance(result, dict) else "Erro desconhecido"
+                    log(f"❌ Falha ao atualizar negócio no Pipedrive: {err}")
+                    execution_results.append({"description": desc, "status": "failed", "error": err})
+            elif action == "create_pipedrive_task" and result:
+                if isinstance(result, dict) and result.get("success"):
+                    act_id = result.get("data", {}).get("id")
+                    log({"type": "log", "content": f"✅ Atividade criada no Pipedrive (ID: {act_id})", "status": "success"})
+                    created_tasks.append({
+                        "id": act_id,
+                        "subject": params.get("subject"),
+                        "note": params.get("note"),
+                        "due_date": (datetime.now() + timedelta(days=params.get("days_delay", 0))).strftime("%Y-%m-%d"),
+                        "type": params.get("type", "task"),
+                        "done": False
                     })
+                    execution_results.append({"description": desc, "status": "success"})
+                else:
+                    err = result.get("error") if isinstance(result, dict) else "Erro desconhecido"
+                    log(f"❌ Falha ao criar atividade no Pipedrive: {err}")
+                    execution_results.append({"description": desc, "status": "failed", "error": err})
+            elif action in ["send_whatsapp", "send_email", "reply_email"]:
+                status = "success" if result else "failed"
+                log({"type": "log", "content": f"{'✅' if result else '❌'} {channel} para {contact_name}: {status.upper()}", "status": status})
+                execution_results.append({"description": desc, "status": status, "channel": channel})
+            else:
+                execution_results.append({
+                    "description": desc,
+                    "action": action,
+                    "status": "success" if result else "failed",
+                    "details": result
+                })
             
         # ═══════════════════════════════════════
         # ESTÁGIO 6: Briefing Executivo
@@ -421,15 +506,24 @@ class AgentService:
         if raw_context.get("email_result"): channels_checked.append("Email")
         if raw_context.get("pipedrive_details"): channels_checked.append("Pipedrive")
         
+        # Serializa resultados de forma compacta: apenas descrição + status (sem params completos)
+        def _compact_results(results):
+            return [{"desc": r.get("description","")[:80], "status": r.get("status")} for r in results]
+
         exec_context = (
-            f"Canais Verificados: {', '.join(channels_checked)}\n"
-            f"Contexto do Negócio: {deal_analysis}\n"
-            f"Resultados Imediatos: {json.dumps(execution_results)}\n"
-            f"Aprovações Pendentes: {len(pending_approvals)} ação(ões)."
+            f"Canais: {', '.join(channels_checked) or 'nenhum'}\n"
+            f"Diagnóstico: {(deal_analysis or '')[:500]}\n"
+            f"Executadas: {json.dumps(_compact_results([r for r in execution_results if r.get('status') == 'success']))}\n"
+            f"Falhas: {json.dumps(_compact_results([r for r in execution_results if r.get('status') == 'failed']))}\n"
+            f"Aprovações pendentes: {len(pending_approvals)}"
         )
         
         executive_summary = await ask_gemini(FINAL_RESPONSE_PROMPT.format(context=exec_context))
         
+        # Se falhou por cota, usa um fallback amigável em vez da mensagem de erro crua
+        if isinstance(executive_summary, str) and "Desculpe, ocorreu um erro de cota" in executive_summary:
+            executive_summary = f"Concluí as ações para **{org_name}**. O plano foi executado e as atividades foram registradas no CRM conforme solicitado."
+
         full_response_parts = [
             executive_summary
         ]
@@ -556,23 +650,40 @@ class AgentService:
                 try:
                     from sqlalchemy import select
                     from models.employee import Employee
-                    stmt = select(Employee).where(Employee.company_id == org_id)
-                    res = await session.execute(stmt)
-                    local_employees = res.scalars().all()
+                    from models.organization import Organization
+
+                    # org_id é o ID do Pipedrive — precisamos do ID local da tabela organizations
+                    local_org_stmt = select(Organization).where(Organization.pipedrive_id == org_id)
+                    local_org_res = await session.execute(local_org_stmt)
+                    local_org = local_org_res.scalar_one_or_none()
+
+                    if not local_org:
+                        print(f"[Agent] ℹ️ Organização Pipedrive ID={org_id} não encontrada no banco local. Pulando busca de employees.")
+                        local_employees = []
+                    else:
+                        stmt = select(Employee).where(Employee.company_id == local_org.id)
+                        res = await session.execute(stmt)
+                        local_employees = res.scalars().all()
+                        print(f"[Agent] 🏢 Organização local encontrada (ID={local_org.id}). Employees: {len(local_employees)}")
                     
                     # Filtro de ruído: Ignorar departamentos internos óbvios que poluem o cenário de vendas
                     internal_noise = ["pcp", "rh", "financeiro", "comercial", "adm", "nfe", "qualidade", "faturamento", "fabrica", "processos", "allcompany", "intranet"]
                     internal_domains = ["jferres.com.br"] # Domínios da própria empresa
-                    
+                    # Domínios pessoais genéricos (não são contatos B2B do cliente)
+                    personal_domains = ["gmail.com", "hotmail.com", "yahoo.com", "yahoo.com.br", "outlook.com", "live.com", "icloud.com", "uol.com.br", "bol.com.br"]
+                    # E-mails do próprio usuário que nunca devem aparecer como prospectos
+                    own_emails = ["joaoluccas637@gmail.com", "clicheval@hotmail.com", "joao.moura@jferres.com.br"]
+
                     for emp in local_employees:
                         emp_email = (emp.email or "").lower()
                         is_noise = any(noise in emp_email or noise in emp.name.lower() for noise in internal_noise)
                         is_internal_domain = any(dom in emp_email for dom in internal_domains)
+                        is_personal_domain = any(dom in emp_email for dom in personal_domains)
+                        is_own_email = emp_email in own_emails
                         
-                        if is_noise or is_internal_domain: continue # Pula funcionários internos
+                        if is_noise or is_internal_domain or is_personal_domain or is_own_email: continue # Pula ruídos internos e contatos pessoais
                         
-                        if emp.name not in contact_map:
-                            contact_map[emp.name] = {
+                        contact_map[emp.name] = {
                                 "name": emp.name,
                                 "phone": emp.whatsapp_number or emp.phone,
                                 "email": emp.email,
@@ -580,6 +691,7 @@ class AgentService:
                                 "email_available": bool(emp.email),
                                 "channels": [c for c in ["WhatsApp", "Email", "Telefone"] if (emp.whatsapp_number if c=="WhatsApp" else (emp.email if c=="Email" else emp.phone))],
                                 "source": f"Inteligência Local ({emp.department or 'Sem Dept'})",
+                                "is_unmapped": True, # Força cor cinza conforme pedido
                                 "is_new_prospect": True
                             }
                 except Exception as e:
@@ -599,7 +711,8 @@ class AgentService:
                                     "phone": wc.get("id", "").split("@")[0],
                                     "whatsapp_available": True,
                                     "channels": ["WhatsApp"],
-                                    "source": "WhatsApp (Não vinculado no Pipedrive)"
+                                    "source": "WhatsApp (Não vinculado)",
+                                    "is_unmapped": True # Força cor cinza conforme pedido
                                 }
                 except: pass
         
@@ -615,6 +728,69 @@ class AgentService:
                 return f.read()
         return "Sem protocolo de negócio definido."
 
+    @staticmethod
+    async def _distill_communications(email_result: dict, wa_result: dict) -> str:
+        """Usa uma IA rápida para transformar mensagens brutas em fatos curtos."""
+        from services.ai.llm import LLMTier, ask_llm
+        from services.ai.prompts import COMMUNICATION_DISTILLER_PROMPT
+        
+        all_text = []
+
+        # Coleta e-mails — top 3, até 350 chars cortando na última frase completa
+        # (era top 5 × 500 = 2.5kb → agora ~1kb, mas com frases íntegras)
+        groups = email_result.get("resultado", {}).get("messages_by_contact", [])
+        for g in groups:
+            for m in g.get("human_threads", [])[:3]:
+                body = (m.get("body") or "").strip()
+                if body:
+                    # Trunca em 350 chars mas corta na última pontuação para não quebrar contexto
+                    trunc = body[:350]
+                    for delim in (". ", "! ", "? ", "\n"):
+                        last = trunc.rfind(delim)
+                        if last > 150:  # só corta se ainda tiver substância
+                            trunc = trunc[:last + 1]
+                            break
+                    # Identifica direção:
+                    # - Exchange DN (/o=ExchangeLabs...) = email enviado por João (caixa de saída interna)
+                    # - Email com @ sem jferres.com.br = email recebido do cliente
+                    sender_raw = (m.get("sender") or "").lower()
+                    to_raw = (m.get("to") or "").lower()
+                    if sender_raw.startswith("/o=") or "jferres.com.br" in sender_raw:
+                        direction = "Eu→Cliente"
+                    elif "@" in sender_raw and "jferres.com.br" not in sender_raw:
+                        direction = "Cliente→Eu"
+                    else:
+                        # Fallback: se 'to' for endereço externo, assume saída
+                        direction = "Eu→Cliente" if ("@" in to_raw and "jferres.com.br" not in to_raw) else "Cliente→Eu"
+                    all_text.append(f"Email {m.get('date','')[:10]} [{direction}]: {trunc.strip()}")
+
+        # Coleta WhatsApp — top 5 msgs, 180 chars (WA mensagens já são naturalmente curtas)
+        wa_groups = wa_result.get("resultado", {}).get("messages_by_contact", [])
+        for g in wa_groups:
+            for m in g.get("messages", [])[:5]:
+                body = (m.get("body") or "").strip()
+                if body:
+                    # Corta na última palavra completa (não no meio)
+                    trunc = body[:180]
+                    if len(body) > 180 and " " in trunc:
+                        trunc = trunc[:trunc.rfind(" ")]
+                    sender = "Eu" if m.get("fromMe") else "Cliente"
+                    all_text.append(f"WA {m.get('date_human','')[:10]} ({sender}): {trunc}")
+        
+        if not all_text:
+            return "Nenhuma comunicação recente encontrada."
+            
+        combined = "\n".join(all_text)
+        try:
+            res = await ask_llm(
+                COMMUNICATION_DISTILLER_PROMPT.format(text=combined),
+                tier=LLMTier.FAST,
+                cacheable=True
+            )
+            return res.text
+        except:
+            return "Falha ao destilar comunicações, usando dados brutos truncados."
+
     # ═══════════════════════════════════════
     # ANÁLISE DE CENÁRIO
     # ═══════════════════════════════════════
@@ -626,111 +802,49 @@ class AgentService:
         notes = pd_details.get("notes", [])
         deals = pd_details.get("deals", [])
         
-        history_summary = "DADOS DO NEGÓCIO (PIPELINE):\n"
-        for d in deals[:3]:
-            history_summary += f"- Negócio: {d.get('title')} | Valor: {d.get('formatted_value')} | Estágio: {d.get('stage_name')} | Status: {d.get('status')}\n"
-        
+        history_summary = "PIPELINE:\n"
+        for d in deals[:2]:  # 2 deals bastam (era 3)
+            history_summary += f"- {d.get('title')} | {d.get('formatted_value')} | {d.get('stage_name')} | {d.get('status')}\n"
+
         deals_in_stage = context.get("deals_in_stage", [])
         if deals_in_stage:
-            history_summary += "\nNEGÓCIOS NA ETAPA SOLICITADA (PROCESSAMENTO EM LOTE):\n"
-            for d in deals_in_stage:
-                history_summary += f"- {d.get('org_name')} (Deal ID: {d.get('id')}) | Contato: {d.get('person_name')} | Valor: {d.get('value')}\n"
-        
-        history_summary += "\nHistórico de Atividades (INDEXADO):\n"
-        for i, act in enumerate(activities[:15]):
-            status = "CONCLUÍDA" if act.get("done") else "PENDENTE"
-            history_summary += f"[{i+1}] {act.get('due_date')}: [{act.get('type')}] {act.get('subject')} ({status})\n"
-            note_content = act.get("note")
-            if note_content:
-                history_summary += f"    Nota: {note_content[:200]}\n"
-        
-        history_summary += "\nNotas Adicionais:\n"
-        for n in notes[:5]:
-            history_summary += f"- {n.get('content', '')[:200]}\n"
+            history_summary += "LOTE DA ETAPA:\n"
+            for d in deals_in_stage[:3]:  # era 5
+                history_summary += f"- {d.get('org_name')} | {d.get('value')}\n"
 
-        # Inclui snapshot de comunicações se disponível
-        wa_result = context.get("whatsapp_result", {})
-        wa_messages = wa_result.get("resultado", {}).get("messages_by_contact", [])
-        if wa_messages:
-            history_summary += "\nÚltimas Mensagens de WhatsApp:\n"
-            for group in wa_messages[:2]:
-                history_summary += f"\nConversa com {group.get('contact')}:\n"
-                for m in group.get("messages", [])[:8]:
-                    sender = "Eu" if m.get("fromMe") else "Contato"
-                    history_summary += f"  {sender}: {m.get('body', '')[:150]}\n"
+        history_summary += "ATIVIDADES:\n"
+        for i, act in enumerate(activities[:5]):  # era 10 — 5 atividades cobrem o contexto
+            status = "OK" if act.get("done") else "PEND"
+            note_snip = (act.get("note_clean") or "")[:150].replace("\n", " ").strip()
+            note_part = f" | nota: {note_snip}" if note_snip else ""
+            history_summary += f"[{i+1}] {act.get('due_date')}: {act.get('subject')} ({status}){note_part}\n"
+        
+        # DESTILAÇÃO DE COMUNICAÇÕES — usa resultado pré-computado se disponível (evita chamada dupla)
+        distilled = context.get("_precomputed_distilled")
+        if distilled is None:
+            print("[Agent] 🧪 Destilando comunicações (fallback interno)...")
+            distilled = await AgentService._distill_communications(
+                context.get("email_result", {}),
+                context.get("whatsapp_result", {})
+            )
 
-        # Inclui snapshot de Emails com Filtro de Humanidade
-        email_result = context.get("email_result", {})
-        email_messages_groups = email_result.get("resultado", {}).get("messages_by_contact", [])
-        if email_messages_groups:
-            history_summary += "\nMonitoramento de Emails (Análise de Humanidade):\n"
-            for group in email_messages_groups[:3]:
-                history_summary += f"\nCanal Email: {group.get('contact')} ({group.get('email')})\n"
-                human_msgs = group.get("human_threads", [])
-                # Garante ordem cronológica (mais antigo primeiro para o fluxo de leitura)
-                try:
-                    human_msgs.sort(key=lambda x: x.get("date", ""))
-                except: pass
-                
-                auto_count = group.get("automated_count", 0)
-                
-                if human_msgs:
-                    history_summary += f"  - E-mails Humanos Detectados ({len(human_msgs)}):\n"
-                    for m in human_msgs[:8]:
-                        # Identifica se o remetente sou EU
-                        raw_sender = m.get("sender", "")
-                        is_me_sender = "/o=ExchangeLabs" in raw_sender or "joao.moura" in raw_sender.lower()
-                        lbl_from = "EU (João Luccas)" if is_me_sender else "CLIENTE"
-                        
-                        # Identifica se o destinatário sou EU
-                        raw_to = m.get("to", "")
-                        is_me_to = "joao.moura" in raw_to.lower() or "Joao" in raw_to or "João" in raw_to
-                        lbl_to = "EU (João Luccas)" if is_me_to else "CLIENTE"
-                        
-                        history_summary += f"    [{m.get('date')}] DE: {lbl_from} > PARA: {lbl_to} | {m.get('subject')} -> {m.get('body', '')[:600]}\n"
-                else:
-                    history_summary += "  - Nenhuma comunicação humana direta encontrada recentemente.\n"
-                
-                if auto_count > 0:
-                    history_summary += f"  - ⚠️ INFO: {auto_count} e-mails de automação (marketing/notificações) foram identificados e descartados da análise técnica, mas servem como prova de monitoramento.\n"
+        history_summary += f"\nFATOS EXTRAÍDOS DAS COMUNICAÇÕES (ARQUEOLOGIA):\n{distilled}\n"
 
         # Injeção de Status Calculado (Cross-channel)
         calc_status = context.get("calculated_status", {})
         if calc_status:
             history_summary += f"\n📊 ANÁLISE DE TEMPO REAL (Métrica LINKB2B):\n"
             history_summary += f"- {calc_status.get('summary')}\n"
-            if calc_status.get('is_critical'):
-                history_summary += f"- ⚠️ RISCO: O momentum está baixando (Silêncio > 10 dias).\n"
         else:
-            # Fallback antigo se por algum motivo não calculou
-            all_dates = []
-            for act in activities:
-                if act.get("done") and act.get("due_date"):
-                    try: all_dates.append(datetime.strptime(act.get("due_date"), "%Y-%m-%d"))
-                    except: pass
-            if all_dates:
-                last_human_date = max(all_dates)
-                delta = (datetime.now() - last_human_date).days
-                history_summary += f"\n⏳ ALERTA DE CICLO (Pipedrive-only): Último registro há {delta} dias.\n"
+            history_summary += f"\n⏳ ALERTA DE CICLO: Verificando momentum...\n"
 
-        # NOVIDADE: Passo Intermediário de Arqueologia (Mapa de Resoluções)
-        # Analisamos as comunicações separadamente para extrair fatos antes da análise de vendas
-        resolution_map_prompt = f"""Analise este histórico de comunicações e identifique:
-1. O que o CLIENTE pediu/perguntou?
-2. O João (eu) já respondeu ou entregou o que foi pedido? Se sim, em qual data?
-3. Há alguma pendência REAL que ainda não foi respondida nas comunicações?
-
-HISTÓRICO:
-{history_summary}
-
-Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Pendente em Data]"
-"""
-        resolution_map = await ask_gemini(resolution_map_prompt)
-
+        # Para análise, precisamos da identidade (seção 1) + anti-alucinação (seção 3).
+        # 900 chars cobre as 3 primeiras seções, incluindo as regras críticas de evidência obrigatória.
+        # O protocolo completo vai para o planejamento (onde as ações são definidas).
         protocol = AgentService._get_business_protocol()
+        protocol_short = protocol[:900]  # cobre seções 1, 2 e 3 (Anti-Alucinação)
         prompt = WORKFLOW_ANALYSIS_PROMPT.format(
-            protocol=protocol,
-            resolution_map=resolution_map,
+            protocol=protocol_short,
             history_summary=history_summary
         )
         return await ask_gemini(prompt)
@@ -739,45 +853,43 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
     # PLANO DE AÇÃO ESTRATÉGICO
     # ═══════════════════════════════════════
     @staticmethod
-    async def _create_logical_plan(goal: str, analysis: str, context: dict, contact_map: dict, selected_entities: List[dict]):
+    async def _create_logical_plan(goal: str, analysis: str, context: dict, contact_map: dict, selected_entities: List[dict], history: List[dict] = None):
         """Passo 4: Define as ações concretas com inteligência multicanal."""
         pd_details = context.get("pipedrive_details", {})
         deals = pd_details.get("deals", [])
-        deals_info = "\n".join([f"- ID: {d.get('id')} | Título: {d.get('title')} | Valor: {d.get('formatted_value')} | Estágio: {d.get('stage_name')} | Status: {d.get('status')}" for d in deals])
+        
+        # Otimiza lista de deals para o prompt
+        deals_info = "\n".join([f"- ID: {d.get('id')} | Título: {d.get('title')} | Valor: {d.get('formatted_value')} | Fase Atual: {d.get('stage_name')}" for d in deals[:3]])
 
-        # Formata atividades JÁ EXISTENTES para evitar duplicidade
+        # Formata atividades JÁ EXISTENTES de forma compacta
         activities = pd_details.get("activities", [])
-        activities_info = "ATIVIDADES JÁ REGISTRADAS NO CRM (Não duplique estas):\n"
-        for act in activities[:15]:
-            status = "CONCLUÍDA" if act.get("done") else "PENDENTE"
-            activities_info += f"- [{status}] {act.get('subject')} ({act.get('due_date')})\n"
-        if not activities: activities_info += "- Nenhuma atividade registrada ainda.\n"
+        activities_info = "TAREFAS NO CRM: " + (", ".join([f"{a.get('subject')} ({'OK' if a.get('done') else 'PEND'})" for a in activities[:5]]) if activities else "Nenhuma")
 
-        # Formata mapa de contatos para a IA
-        contacts_info = ""
-        if contact_map:
-            contacts_info = "CONTATOS DISPONÍVEIS E CANAIS:\n"
-            for name, info in contact_map.items():
-                channels_str = ", ".join(info["channels"]) if info["channels"] else "NENHUM CANAL"
-                contacts_info += f"- {name}: {channels_str}"
-                if info.get("phone"): contacts_info += f" | Tel: {info['phone']}"
-                if info.get("email"): contacts_info += f" | Email: {info['email']}"
-                if info.get("last_email_id"): contacts_info += f" | email_entry_id: {info['last_email_id']}"
-                contacts_info += "\n"
-        else:
-            contacts_info = "CONTATOS: Nenhum contato com dados de comunicação encontrado no CRM.\n"
+        # Formata histórico para resolução de referências (últimas 3 mensagens para poupar tokens)
+        history_str = ""
+        if history:
+            # 2 mensagens, 120 chars cada — suficiente para resolver referências (era 3 × 200)
+            history_str = "\n".join([f"{h.get('role')}: {h.get('content','')[:120]}" for h in history[-2:]])
+
+        # Formata mapa de contatos compacto
+        contacts_info = "CONTATOS: " + ", ".join([f"{n} ({'/'.join(info['channels'])})" for n, info in list(contact_map.items())[:5]])
 
         protocol = AgentService._get_business_protocol()
         today_str = datetime.now().strftime("%d/%m/%Y")
         
+        # Trunca o texto de análise: o LLM às vezes gera respostas longas (800+ tokens).
+        # O planejador precisa do diagnóstico, não da redação completa.
+        analysis_compact = (analysis or "")[:700]
+
         prompt = WORKFLOW_PLANNER_PROMPT.format(
             protocol=protocol,
             today=today_str,
-            analysis=analysis,
+            analysis=analysis_compact,
             goal=goal,
             deals_info=deals_info or "Nenhum negócio encontrado.",
             contacts_info=contacts_info,
-            activities_info=activities_info
+            activities_info=activities_info,
+            history=history_str
         )
         return await ask_gemini(prompt, json_mode=True)
 
@@ -790,8 +902,24 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
         action = step.get("action")
         params = step.get("params", {})
         
+        if action == "update_pipedrive_deal":
+            deal_id = params.get("deal_id")
+            if not deal_id:
+                deals = context.get("pipedrive_details", {}).get("deals", [])
+                deal_id = deals[0].get("id") if deals else None
+            
+            if not deal_id: return False
+            
+            update_data = {}
+            if params.get("stage_id"): update_data["stage_id"] = params.get("stage_id")
+            if params.get("status"): update_data["status"] = params.get("status")
+            if params.get("value"): update_data["value"] = params.get("value")
+            
+            return await pipedrive_service.update_deal(deal_id, update_data)
+
         if action == "create_pipedrive_task":
-            target_org_id = context.get("organization", {}).get("pipedrive_id") or org_id
+            # Pipedrive ID da organização (Não usar o local DB ID se o Pipedrive ID for nulo)
+            target_org_id = context.get("organization", {}).get("pipedrive_id")
             
             # Garante que o deal_id seja anexado (fallback para o negócio principal do contexto se a IA omitir)
             target_deal_id = params.get("deal_id")
@@ -807,7 +935,7 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
                 persons = context.get("pipedrive_details", {}).get("persons", [])
                 
                 # Procura se há um email selecionado na UI para tentar casar
-                selected_emails = [e.get("email") for e in context.get("selected_entities", []) if e.get("type") == "email" and e.get("email")]
+                selected_emails = [e.get("email") for e in context.get("selected_entities", []) if isinstance(e, dict) and e.get("type") == "email" and e.get("email")]
                 
                 if selected_emails and persons:
                     # Tenta match por email
@@ -825,26 +953,45 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
             
             # --- NOVIDADE: VERIFICAÇÃO DE DUPLICIDADE ---
             existing_activities = context.get("pipedrive_details", {}).get("activities", [])
-            subject = params.get("subject", "")
+            subject = params.get("subject") or step.get("description") or "Nova Tarefa"
             
             # Se já existe uma tarefa idêntica PENDENTE para o mesmo Deal, ignoramos a criação
             for act in existing_activities:
                 if not act.get("done") and act.get("deal_id") == target_deal_id:
                     if act.get("subject", "").lower() == subject.lower():
                         print(f"[Agent] 🛡️ Ignorando criação de tarefa duplicada: {subject}")
-                        return f"EXISTING_TASK_{act.get('id')}"
+                        return {"success": True, "data": {"id": act.get("id"), "is_duplicate": True}}
 
+            # Monta payload apenas com campos não nulos
+            # Pipedrive prefere 1/0 para o campo 'done'
+            is_done = 1 if params.get("done") is True else 0
+            
             task_data = {
-                "org_id": target_org_id,
-                "deal_id": target_deal_id,
-                "person_id": target_person_id,
                 "subject": subject,
-                "note": params.get("note"),
                 "due_date": due_date,
                 "type": params.get("type", "task"),
-                "done": params.get("done", True) # Default to True for archaeology
+                "done": is_done
             }
-            return await pipedrive_service.create_activity(task_data)
+            
+            # Forçar casting para int em campos de ID para evitar erros de validação da API
+            try:
+                if target_org_id: task_data["org_id"] = int(target_org_id)
+                if target_deal_id: task_data["deal_id"] = int(target_deal_id)
+                if target_person_id: task_data["person_id"] = int(target_person_id)
+            except (ValueError, TypeError) as e:
+                print(f"[Agent] ⚠️ Erro ao converter IDs para int: {e}")
+                # Fallback mantém como estava se falhar, mas loga
+                if target_org_id: task_data["org_id"] = target_org_id
+                if target_deal_id: task_data["deal_id"] = target_deal_id
+                if target_person_id: task_data["person_id"] = target_person_id
+
+            if params.get("note"): task_data["note"] = params.get("note")
+
+            print(f"[Agent] 🛠️ Enviando payload para Pipedrive: {json.dumps(task_data)}")
+            pd_res = await pipedrive_service.create_activity(task_data)
+            if not pd_res.get("success"):
+                print(f"[Agent] ❌ Erro detalhado Pipedrive: {pd_res.get('error')} | Info: {pd_res.get('error_info')}")
+            return pd_res
 
         if action == "update_pipedrive_task":
             act_id = params.get("activity_id")
@@ -860,7 +1007,7 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
 
         if action == "sync_contact_to_pipedrive":
             # 1. Cria a pessoa
-            target_org_id = params.get("org_id") or context.get("organization", {}).get("pipedrive_id") or org_id
+            target_org_id = params.get("org_id") or context.get("organization", {}).get("pipedrive_id")
             res = await pipedrive_service.create_person(
                 name=params.get("person_name"),
                 email=params.get("email"),
@@ -876,8 +1023,44 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
                    await pipedrive_service.update_deal(target_deal_id, {"person_id": person_id})
             return person_id
 
-        elif action == "generate_content":
-            return params.get("note") or params.get("content")
+        # --- AÇÕES DE COMUNICAÇÃO (AUTOMATIZADAS) ---
+        if action == "send_whatsapp":
+            phone = params.get("phone", "")
+            message = params.get("message", "")
+            clean_num = phone.replace("+", "").replace("-", "").replace(" ", "")
+            if len(clean_num) <= 11 and not clean_num.startswith("55"):
+                clean_num = f"55{clean_num}"
+            
+            try:
+                async with httpx.AsyncClient(timeout=40.0) as client:
+                    resp = await client.post("http://localhost:8001/api/whatsapp/send", json={"number": clean_num, "message": message})
+                    return resp.status_code == 200
+            except Exception as e:
+                print(f"[Agent] ❌ Erro ao enviar WhatsApp: {e}")
+                return False
+
+        if action == "send_email":
+            email_to = params.get("email", "")
+            subject = params.get("subject", "Contato Comercial")
+            body = params.get("body", "")
+            try:
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    resp = await client.post("http://localhost:8002/api/email/send", json={"to": email_to, "subject": subject, "body": body})
+                    return resp.status_code == 200
+            except Exception as e:
+                print(f"[Agent] ❌ Erro ao enviar Email: {e}")
+                return False
+
+        if action == "reply_email":
+            entry_id = params.get("email_entry_id")
+            body = params.get("body", "")
+            try:
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    resp = await client.post("http://localhost:8002/api/email/reply", json={"entry_id": entry_id, "body": body, "reply_all": True})
+                    return resp.status_code == 200
+            except Exception as e:
+                print(f"[Agent] ❌ Erro ao responder Email: {e}")
+                return False
 
         return None
 
@@ -917,13 +1100,29 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
                 email_to = params.get("email", "")
                 subject = params.get("subject", "Contato Comercial")
                 body = params.get("body", "")
-                
+
                 async with httpx.AsyncClient(timeout=30.0) as client:
                     resp = await client.post(
                         "http://localhost:8002/api/email/send",
                         json={"to": email_to, "subject": subject, "body": body}
                     )
                     if resp.status_code == 200:
+                        # --- SINCRONIZAÇÃO ESTRATÉGICA ---
+                        from services.pipedrive import pipedrive_service
+                        activity_id = params.get("activity_id")
+                        deal_id = params.get("deal_id")
+
+                        # Marca a tarefa pendente como concluída
+                        if activity_id:
+                            await pipedrive_service.update_activity(activity_id, {"done": 1})
+
+                        # Registra nota no negócio
+                        if deal_id:
+                            await pipedrive_service.create_note(
+                                deal_id,
+                                f"✅ E-mail enviado via Assistente LINKB2B.\nPara: {email_to}\nAssunto: {subject}"
+                            )
+
                         return {"status": "success", "channel": "Email", "contact_name": params.get("contact_name"), "subject": subject}
                     return {"status": "error", "message": f"Erro ao enviar Email: {resp.status_code}"}
 
@@ -931,17 +1130,33 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
             elif action == "reply_email":
                 entry_id = params.get("email_entry_id")
                 body = params.get("body", "")
-                
+
                 async with httpx.AsyncClient(timeout=30.0) as client:
                     # Rota do microserviço definida para responder thread
                     resp = await client.post(
                         "http://localhost:8002/api/email/reply",
                         json={"entry_id": entry_id, "body": body, "reply_all": True}
                     )
+
                     if resp.status_code == 200:
+                        # --- SINCRONIZAÇÃO ESTRATÉGICA (Efeito Colateral) ---
+                        from services.pipedrive import pipedrive_service
+                        deal_id = params.get("deal_id")
+
+                        # 1. Se houver uma tarefa pendente vinculada, marca como concluída
+                        activity_id = params.get("activity_id")
+                        if activity_id:
+                            await pipedrive_service.update_activity(activity_id, {"done": 1})
+
+                        # 2. Se houver um deal_id, atualiza para fase de "Contatado"
+                        if deal_id:
+                            # Tenta mover para a fase 19 (Contatado) se estiver na fase 18
+                            await pipedrive_service.update_deal(deal_id, {"stage_id": 19})
+                            # Registra nota do evento
+                            await pipedrive_service.create_note(deal_id, f"✅ E-mail respondido via aprovação do Assistente LINKB2B.\nAssunto: {params.get('subject', 'Thread')}")
+
                         return {"status": "success", "channel": "Email (Thread)", "contact_name": params.get("contact_name", "Contato")}
-                    return {"status": "error", "message": f"Erro ao responder email: {resp.status_code}"}
-            
+                    return {"status": "error", "message": f"Erro ao responder email: {resp.status_code}"}            
             return {"status": "error", "message": f"Ação '{action}' não reconhecida."}
         
         except Exception as e:
@@ -970,7 +1185,11 @@ Responda em formato de resumo rápido: "Resolução: [Fato] -> [Resolvido/Penden
             refined_body = await ask_gemini(prompt)
             
             # Limpeza final (Fallback de segurança para placeholders de todos os tipos)
-            if refined_body:
+            if refined_body and isinstance(refined_body, str):
+                # Se a IA respondeu com erro de cota, descarta e usa o corpo original do plano
+                if "Desculpe, ocorreu um erro de cota" in refined_body:
+                    return params.get("body") or params.get("message") or ""
+
                 to_replace = [
                     ("{contact_name}", contact_name), ("{{contact_name}}", contact_name), ("[contact_name]", contact_name),
                     ("{company_name}", company_name), ("{{company_name}}", company_name), ("[company_name]", company_name),

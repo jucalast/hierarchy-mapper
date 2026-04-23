@@ -47,8 +47,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  padding-bottom: 8px;
+  padding: var(--space-16);
+  padding-bottom: var(--space-8);
+  min-height: var(--touch-target);
   z-index: 10;
   background: var(--chat-glass-bg);
   backdrop-filter: var(--chat-glass-blur);
@@ -77,7 +78,7 @@
 .headerActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-8);
 }
 
 .themeToggle {
@@ -85,8 +86,10 @@
   border: none;
   color: #9ca3af;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
+  padding: var(--space-8);
+  border-radius: var(--chat-radius-sm);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -112,8 +115,10 @@
   border: none;
   color: #9ca3af;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
+  padding: var(--space-8);
+  border-radius: var(--chat-radius-sm);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -140,7 +145,7 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px;
+  padding: var(--space-16);
   padding-bottom: 180px;
   /* Espaço para o input absoluto */
   scrollbar-width: thin;
@@ -177,18 +182,18 @@
 .contextPill {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-8);
   background: #f5f5f5;
   border: 2px solid rgba(229, 231, 235, 0.6);
-  border-radius: 12px;
-  padding: 12px;
-  padding-right: 12px;
+  border-radius: var(--chat-radius-md);
+  padding: var(--space-8) var(--space-12);
+  min-height: var(--touch-target);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  margin-bottom: 12px;
-  margin-top: 8px;
+  margin-bottom: var(--space-8);
+  margin-top: var(--space-8);
   width: fit-content;
   margin-left: auto;
-  margin-right: 16px;
+  margin-right: var(--space-16);
   animation: fadeIn 0.3s ease;
   transition: all 0.3s ease;
 }
@@ -245,7 +250,8 @@
 .userMessage {
   background: var(--chat-user-msg-bg);
   color: var(--chat-user-msg-text);
-  padding: 10px 16px;
+  padding: var(--space-8) var(--space-16);
+  min-height: var(--touch-target);
   border-radius: var(--chat-radius-lg);
   border-top-right-radius: 4px;
   font-size: 14.5px;
@@ -255,7 +261,9 @@
   word-wrap: break-word;
   line-height: 1.4;
   transition: all 0.3s ease;
-  margin-right: 16px;
+  margin-right: var(--space-16);
+  display: flex;
+  align-items: center;
 }
 
 .chatPanel.light .userMessage {
@@ -272,9 +280,9 @@
 /* === AI MESSAGES === */
 .aiMessageWrapper {
   display: flex;
-  gap: 14px;
-  padding: 0 16px;
-  margin-bottom: 12px;
+  gap: var(--space-8);
+  padding: 0 var(--space-16);
+  margin-bottom: var(--space-8);
   animation: fadeIn 0.3s ease;
 }
 
@@ -313,7 +321,7 @@
 
 /* === AI METADATA (Thinking Time & Sources) === */
 .aiMetadata {
-  margin: 0 16px 0 32px;
+  margin: 0 var(--space-16) 0 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -396,10 +404,10 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 16px;
-  padding-left: 48px;
+  padding: 0 var(--space-16);
+  padding-left: 40px;
   color: #9ca3af;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-16);
   animation: fadeIn 0.3s ease;
 }
 
@@ -490,7 +498,7 @@
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 12px 16px 16px;
+  padding: var(--space-8) var(--space-16) var(--space-16);
   pointer-events: none;
   z-index: 20;
   transition: all 0.3s ease;
@@ -505,8 +513,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px;
+  gap: var(--space-4);
+  padding: var(--space-8);
   background: #13131390;
   backdrop-filter: blur(16px) saturate(180%);
   border: 2px solid var(--chat-glass-border);
@@ -535,12 +543,12 @@
 .inputContextPill {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-8);
   background: #f8f9fa;
   border: 2px solid #f3f4f6;
-  border-radius: 12px;
-  padding: 12px;
-  padding-right: 8px;
+  border-radius: var(--chat-radius-md);
+  padding: var(--space-8) var(--space-8) var(--space-8) var(--space-12);
+  min-height: var(--touch-target);
   width: fit-content;
   transition: all 0.3s ease;
 }
@@ -596,11 +604,10 @@
 
 /* === DEBUG PANEL (AI LOGS) === */
 .debugPanel {
-  margin: 0 16px 20px 48px;
+  margin: 0 var(--space-16) var(--space-16) 40px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  /* Reduzido */
+  gap: var(--space-8);
   animation: fadeIn 0.3s ease;
   background: transparent !important;
   border: none !important;
@@ -643,10 +650,9 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 0;
-  margin-bottom: 4px;
-  /* Added back slightly */
+  gap: var(--space-8);
+  padding: var(--space-4) 0;
+  margin-bottom: var(--space-8);
   max-height: 80px;
   overflow-y: auto;
 }
@@ -654,11 +660,12 @@
 .inputCompanyPill {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-8);
   background: #f8f9fa;
   border: 2px solid #e5e7eb;
-  padding: 6px 12px;
-  border-radius: 12px;
+  padding: 0 var(--space-12);
+  height: var(--touch-target);
+  border-radius: var(--chat-radius-md);
   max-width: 220px;
   font-size: 12px;
   font-weight: 600;
@@ -811,8 +818,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px;
-  padding-top: 8px;
+  margin-top: var(--space-4);
+  padding-top: var(--space-8);
+  min-height: var(--touch-target);
 }
 
 .inputLeftButtons {
@@ -824,14 +832,15 @@
 .modelBtn {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-8);
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.1px;
   color: var(--chat-text-secondary);
   background: transparent;
   border: 2px solid var(--chat-border-color);
-  padding: 6px 14px;
+  padding: 0 var(--space-12);
+  height: var(--touch-target);
   border-radius: var(--chat-radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -899,8 +908,9 @@
 }
 
 .sendBtn {
-  padding: 8px;
-  border-radius: 12px;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: var(--chat-radius-md);
   background: var(--chat-bg-primary);
   color: var(--chat-text-primary);
   border: 2px solid var(--chat-border-color);
@@ -909,6 +919,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .sendBtn:hover:not(:disabled) {
@@ -1249,10 +1260,10 @@
 
 /* === DEBUG PANEL (AI LOGS & ORCHESTRATION) === */
 .debugPanel {
-  margin: 4px 16px 16px 48px;
+  margin: var(--space-4) var(--space-16) var(--space-16) 40px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--space-8);
   animation: fadeIn 0.3s ease;
 }
 
@@ -1273,7 +1284,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: var(--space-8) var(--space-12);
+  min-height: var(--touch-target);
   color: rgba(255, 255, 255, 0.7);
   font-size: 13px;
   font-weight: 500;
@@ -1325,7 +1337,7 @@
 
 /* === MODULE CONTAINERS === */
 .moduleContainer {
-  margin-top: 12px;
+  margin-top: var(--space-8);
   border: none;
   border-radius: 0;
   overflow: hidden;
@@ -1341,8 +1353,9 @@
 .moduleHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 0;
+  gap: var(--space-8);
+  padding: var(--space-8) 0;
+  min-height: var(--touch-target);
   background: transparent;
   border-bottom: none;
   font-size: 11px;
@@ -2106,14 +2119,14 @@
 .streamingLogs {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 8px 4px;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-4);
 }
 
 .logLine {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-8);
   color: #9ca3af;
   font-size: 12px;
   line-height: 1.4;
@@ -2177,9 +2190,9 @@
 .approvalCardsContainer {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 16px;
-  padding: 0 4px;
+  gap: var(--space-8);
+  margin-top: var(--space-16);
+  padding: 0 var(--space-4);
 }
 
 .approvalCard {
@@ -2581,11 +2594,11 @@
 /* === REFINEMENT OF APPROVAL BUTTONS === */
 .approvalActionsInCard {
   display: flex;
-  gap: 10px;
-  padding: 10px 14px;
-  background: rgba(0, 0, 0, 0.15); /* Fundo um pouco mais escuro para destacar do card */
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  gap: var(--space-8);
+  padding: var(--space-8) var(--space-16);
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom-left-radius: var(--chat-radius-md);
+  border-bottom-right-radius: var(--chat-radius-md);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -2606,20 +2619,20 @@
 
 .approvalBtnApprove {
   flex: 1;
-  height: 36px;
-  border-radius: 8px;
+  height: var(--touch-target);
+  border-radius: var(--chat-radius-sm);
   font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: -0.2px;
- border: none;
- color: white;
- display: flex;
- align-items: center;
- justify-content: center;
- gap: 8px;
- cursor: pointer;
- transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .approvalBtnApprove:hover {

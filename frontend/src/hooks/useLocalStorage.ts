@@ -5,25 +5,29 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useLocalStorage<T>(key: string, initial: T) {
   const initialRef = useRef(initial);
-  const [value, setValue] = useState<T>(() => {
-    if (typeof window === 'undefined') return initial;
-    try {
-      const raw = window.localStorage.getItem(key);
-      if (raw === null || raw === 'undefined' || raw === 'NaN') return initial;
-      return JSON.parse(raw) as T;
-    } catch {
-      return initial;
-    }
-  });
+  const [value, setValue] = useState<T>(initial);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    setIsHydrated(true);
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw !== null && raw !== 'undefined' && raw !== 'NaN') {
+        setValue(JSON.parse(raw) as T);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [key]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch {
       /* quota, serialização, etc */
     }
-  }, [key, value]);
+  }, [key, value, isHydrated]);
 
   const remove = useCallback(() => {
     try {

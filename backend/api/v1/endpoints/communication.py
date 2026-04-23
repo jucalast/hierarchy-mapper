@@ -3,10 +3,18 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 import sqlite3
+import time
 import uuid
 import asyncio
-
+from sqlalchemy.future import select
+from sqlalchemy import func
+from core.database import async_session
+from models.employee import Employee
 from services.communication.email_client import EmailClient
+
+# Cache simples em memória para status de sincronização (evita query a cada 5s)
+_cache_status: dict = {}
+_CACHE_TTL_SEC = 30  # Revalida a cada 30 segundos
 
 router = APIRouter()
 
@@ -93,3 +101,47 @@ async def track_email_open(id: str, request: Request):
             f.write(b'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;')
             
     return FileResponse(pixel_path, media_type="image/gif")
+
+@router.get("/email/cache-status")
+async def get_email_cache_status():
+    """Retorna o estado da sincronização de e-mails (Outlook).
+    Resultado cacheado por 30s para evitar query ao banco a cada polling do frontend.
+    """
+    cache_key = "email_cache_status"
+    entry = _cache_status.get(cache_key)
+    if entry and (time.time() - entry["ts"]) < _CACHE_TTL_SEC:
+        return entry["data"]
+
+    try:
+        async with async_session() as session:
+            stmt = select(func.count()).select_from(Employee).where(Employee.source == "outlook")
+            res = await session.execute(stmt)
+            count = res.scalar() or 0
+            result = {"is_syncing": False, "count": count}
+    except Exception as e:
+        result = {"is_syncing": False, "count": 0, "error": str(e)}
+
+    _cache_status[cache_key] = {"data": result, "ts": time.time()}
+    return result
+
+@router.get("/whatsapp/cache-status")
+async def get_whatsapp_cache_status():
+    """Retorna o estado da sincronização de contatos do WhatsApp.
+    Resultado cacheado por 30s para evitar query ao banco a cada polling do frontend.
+    """
+    cache_key = "whatsapp_cache_status"
+    entry = _cache_status.get(cache_key)
+    if entry and (time.time() - entry["ts"]) < _CACHE_TTL_SEC:
+        return entry["data"]
+
+    try:
+        async with async_session() as session:
+            stmt = select(func.count()).select_from(Employee).where(Employee.source == "whatsapp")
+            res = await session.execute(stmt)
+            count = res.scalar() or 0
+            result = {"is_syncing": False, "count": count}
+    except Exception as e:
+        result = {"is_syncing": False, "count": 0, "error": str(e)}
+
+    _cache_status[cache_key] = {"data": result, "ts": time.time()}
+    return result

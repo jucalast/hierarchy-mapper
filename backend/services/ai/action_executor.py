@@ -219,18 +219,8 @@ async def _execute_get_messages(client, wa_base, intent_info, chat_id, whatsapp_
             resp = await client.get(f"{wa_base}/chats/by-number/{num_str}/messages?limit=30")
             res_data = resp.json()
             
-            # FALLBACK: Se não encontrou por número, tenta buscar pelo NOME se disponível
-            if (not res_data or not res_data.get("messages")) and intent_info.get("extracted_person_name"):
-                search_name = intent_info.get("extracted_person_name")
-                print(f"[AI Chat] 🔍 Fallback: Buscando conversa pelo nome: {search_name}")
-                search_resp = await client.get(f"{wa_base}/chats/search?name={search_name}&limit=1")
-                if search_resp.status_code == 200:
-                    chats = search_resp.json().get("chats", [])
-                    if chats:
-                        chat_id = chats[0].get("id")
-                        print(f"[AI Chat]   ✅ Chat encontrado por nome: {chat_id}. Buscando mensagens...")
-                        resp = await client.get(f"{wa_base}/chats/{chat_id}/messages?limit=30")
-                        res_data = resp.json()
+            # FALLBACK POR NOME: desabilitado — gerava falsos positivos ao trazer conversas
+            # de contatos não relacionados ao cliente pesquisado. Sem número não há conversa.
 
             if whatsapp_result_context:
                 whatsapp_result_context.update({"whatsapp_action": action, "status": resp.status_code, "resultado": res_data})

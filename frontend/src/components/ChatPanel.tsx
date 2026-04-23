@@ -328,7 +328,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                         </div>
                                     ) : (
                                         currentLogs.map((log, i) => (
-                                            <RichLogRenderer key={i} log={log} onOpenWhatsApp={onOpenWhatsApp} />
+                                            <RichLogRenderer key={`log-${log.stage ?? ''}-${log.type ?? ''}-${i}`} log={log} onOpenWhatsApp={onOpenWhatsApp} />
                                         ))
                                     )}
                                 </div>

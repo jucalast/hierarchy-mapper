@@ -47,18 +47,21 @@ class EmailClient:
         elif not self.password:
             print("[EmailClient] Warning: EMAIL_PASSWORD não configurado para uso de SMTP")
 
-    def _get_outlook_instance(self):
+    def _get_outlook_instance(self, force_new=False):
         """
         Tenta pegar uma instância já aberta do Outlook ou cria uma nova de forma silenciosa.
         """
         if not HAS_PYWIN32: return None
         
         try:
-            # Tenta pegar instância já aberta (evita disparar lembretes se já estiver aberto)
-            try:
-                outlook = win32com.client.GetActiveObject("Outlook.Application")
-            except:
-                # Se não houver, cria uma nova
+            outlook = None
+            if not force_new:
+                try:
+                    outlook = win32com.client.GetActiveObject("Outlook.Application")
+                except:
+                    pass
+            
+            if not outlook:
                 outlook = win32com.client.Dispatch("Outlook.Application")
             
             # Tenta forçar silêncio no Logon
@@ -74,6 +77,19 @@ class EmailClient:
         except Exception as e:
             print(f"[EmailClient] Erro ao obter instância do Outlook: {e}")
             return None
+
+    def _handle_com_error(self, e, context_msg):
+        """
+        Trata erros comuns de COM, como o servidor RPC indisponível.
+        Retorna True se deve tentar novamente.
+        """
+        err_msg = str(e)
+        # Erro RPC (-2147023174 ou 0x800706BA)
+        if "-2147023174" in err_msg or "0x800706BA" in err_msg or "RPC" in err_msg:
+            print(f"[EmailClient] RPC Error detected in {context_msg}. Forçando nova instância...")
+            return True
+        print(f"[EmailClient] ERROR ({context_msg}): {e}")
+        return False
 
     def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False):
         """
@@ -94,43 +110,53 @@ class EmailClient:
             final_body = html_body + pixel_html
 
         if self.use_outlook_app:
-            try:
-                pythoncom.CoInitialize()
-                outlook = self._get_outlook_instance()
-                if not outlook: raise Exception("Não foi possível conectar ao Outlook")
-                
-                mail = outlook.CreateItem(0) # 0 = olMailItem
-                mail.To = to_email
-                mail.Subject = subject
-                
-                # Mágica para pegar a ASSINATURA OFICIAL do Outlook:
-                # Se o corpo JÁ contém a assinatura (marcada pelo Agente), não duplicamos.
-                if "<!-- SIGNATURE_START -->" in final_body:
-                    # Removemos apenas os comentários de marcação antes de enviar
-                    mail.HTMLBody = final_body.replace("<!-- SIGNATURE_START -->", "").replace("<!-- SIGNATURE_END -->", "")
-                else:
-                    # Caso contrário, força o Outlook a inserir a assinatura padrão
-                    mail.Display()
-                    time.sleep(0.5)
-                    signature_html = mail.HTMLBody
-                    mail.HTMLBody = final_body + signature_html
-                
-                if request_read_receipt:
-                    mail.ReadReceiptRequested = True
-                
-                # Selecionar conta correta
-                if self.email_address:
-                    for account in outlook.Session.Accounts:
-                        if account.SmtpAddress.lower() == self.email_address.lower():
-                            mail._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
-                            break
-                
-                mail.Send()
-                print(f"[EmailClient] SUCCESS: E-mail enviado via Outlook App para {to_email}")
-                return True
-            except Exception as e:
-                print(f"[EmailClient] ERROR (Outlook App): {e}")
-                return False
+            for attempt in range(2):
+                try:
+                    pythoncom.CoInitialize()
+                    outlook = self._get_outlook_instance(force_new=(attempt > 0))
+                    if not outlook: raise Exception("Não foi possível conectar ao Outlook")
+                    
+                    mail = outlook.CreateItem(0) # 0 = olMailItem
+                    mail.To = to_email
+                    mail.Subject = subject
+                    
+                    # Mágica para pegar a ASSINATURA OFICIAL do Outlook:
+                    # Se o corpo JÁ contém a assinatura (marcada pelo Agente), não duplicamos.
+                    if "<!-- SIGNATURE_START -->" in final_body:
+                        # Removemos apenas os comentários de marcação antes de enviar
+                        mail.HTMLBody = final_body.replace("<!-- SIGNATURE_START -->", "").replace("<!-- SIGNATURE_END -->", "")
+                    else:
+                        # Tenta usar cache para evitar Display() que é LENTO e bloqueante
+                        if not EmailClient._signature_cache:
+                            print("[EmailClient] Buscando assinatura padrão do Outlook (primeira vez)...")
+                            EmailClient._signature_cache = self.get_default_signature()
+                        
+                        if EmailClient._signature_cache:
+                            mail.HTMLBody = final_body + "<br><br>" + EmailClient._signature_cache
+                        else:
+                            # Fallback (apenas se o cache falhar miseravelmente)
+                            mail.Display()
+                            time.sleep(0.5)
+                            signature_html = mail.HTMLBody
+                            mail.HTMLBody = final_body + signature_html
+                    
+                    if request_read_receipt:
+                        mail.ReadReceiptRequested = True
+                    
+                    # Selecionar conta correta
+                    if self.email_address:
+                        for account in outlook.Session.Accounts:
+                            if account.SmtpAddress.lower() == self.email_address.lower():
+                                mail._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
+                                break
+                    
+                    mail.Send()
+                    print(f"[EmailClient] SUCCESS: E-mail enviado via Outlook App para {to_email}")
+                    return True
+                except Exception as e:
+                    if attempt == 0 and self._handle_com_error(e, "Outlook App Send"):
+                        continue
+                    return False
         else:
             # Fallback SMTP
             msg = MIMEMultipart()
@@ -159,96 +185,106 @@ class EmailClient:
             print("[EmailClient] Resposta encadeada (Reply) só é suportada via Outlook Desk.")
             return False
 
-        try:
-            pythoncom.CoInitialize()
-            outlook = self._get_outlook_instance()
-            if not outlook: return False
-
-            # Localiza a mensagem original
+        for attempt in range(2):
             try:
-                namespace = outlook.GetNamespace("MAPI")
-                original_msg = namespace.GetItemFromID(entry_id)
+                pythoncom.CoInitialize()
+                outlook = self._get_outlook_instance(force_new=(attempt > 0))
+                if not outlook: return False
+
+                # Localiza a mensagem original
+                try:
+                    namespace = outlook.GetNamespace("MAPI")
+                    original_msg = namespace.GetItemFromID(entry_id)
+                except Exception as e:
+                    print(f"[EmailClient] Erro ao localizar mensagem original ID {entry_id[:10]}...: {e}")
+                    return False
+
+                # Cria a resposta (Reply ou ReplyAll)
+                if reply_all:
+                    reply_msg = original_msg.ReplyAll()
+                else:
+                    reply_msg = original_msg.Reply()
+
+                # Se o corpo veio com assinatura para o preview, removemos aqui pois o
+                # reply_msg.HTMLBody JÁ contém a assinatura oficial do Outlook.
+                clean_body = html_body
+                if "<!-- SIGNATURE_START -->" in clean_body:
+                    import re
+                    clean_body = re.sub(r"<!-- SIGNATURE_START -->.*?<!-- SIGNATURE_END -->", "", clean_body, flags=re.DOTALL)
+                    clean_body = clean_body.strip()
+
+                # Injeta o nosso corpo HTML no topo (o Outlook já colocou a assinatura e histórico abaixo)
+                reply_msg.HTMLBody = clean_body + "<br><br>" + reply_msg.HTMLBody
+                
+                # Tenta forçar a conta correta se especificado
+                if self.email_address:
+                    for account in outlook.Session.Accounts:
+                        if account.SmtpAddress.lower() == self.email_address.lower():
+                            reply_msg._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
+                            break
+
+                reply_msg.Send()
+                print(f"[EmailClient] SUCCESS: Resposta (Thread) enviada via Outlook App para o ID {entry_id[:10]}...")
+                return True
             except Exception as e:
-                print(f"[EmailClient] Erro ao localizar mensagem original ID {entry_id[:10]}...: {e}")
+                if attempt == 0 and self._handle_com_error(e, "Reply Outlook"):
+                    continue
                 return False
-
-            # Cria a resposta (Reply ou ReplyAll)
-            if reply_all:
-                reply_msg = original_msg.ReplyAll()
-            else:
-                reply_msg = original_msg.Reply()
-
-            # Se o corpo veio com assinatura para o preview, removemos aqui pois o
-            # reply_msg.HTMLBody JÁ contém a assinatura oficial do Outlook.
-            clean_body = html_body
-            if "<!-- SIGNATURE_START -->" in clean_body:
-                import re
-                clean_body = re.sub(r"<!-- SIGNATURE_START -->.*?<!-- SIGNATURE_END -->", "", clean_body, flags=re.DOTALL)
-                clean_body = clean_body.strip()
-
-            # Injeta o nosso corpo HTML no topo (o Outlook já colocou a assinatura e histórico abaixo)
-            reply_msg.HTMLBody = clean_body + "<br><br>" + reply_msg.HTMLBody
-            
-            # Tenta forçar a conta correta se especificado
-            if self.email_address:
-                for account in outlook.Session.Accounts:
-                    if account.SmtpAddress.lower() == self.email_address.lower():
-                        reply_msg._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
-                        break
-
-            reply_msg.Send()
-            print(f"[EmailClient] SUCCESS: Resposta (Thread) enviada via Outlook App para o ID {entry_id[:10]}...")
-            return True
-        except Exception as e:
-            print(f"[EmailClient] ERROR (Reply Outlook): {e}")
-            return False
 
     def scan_inbound_replies(self, folder: str = "INBOX", max_results: int = 10) -> List[Dict]:
         """
         Varre emails usando Outlook App ou IMAP.
         """
         if self.use_outlook_app:
-            try:
-                pythoncom.CoInitialize()
-                outlook = self._get_outlook_instance()
-                if not outlook: return []
-                
-                namespace = outlook.GetNamespace("MAPI")
-                # Default to Inbox (6)
-                target_folder = namespace.GetDefaultFolder(6)
-                
-                if folder and folder.lower() != "inbox":
-                    try:
-                        # Tenta buscar a pasta pelo nome
-                        target_folder = target_folder.Parent.Folders.Item(folder)
-                    except:
-                        pass
+            for attempt in range(2):
+                try:
+                    pythoncom.CoInitialize()
+                    outlook_app = self._get_outlook_instance(force_new=(attempt > 0))
+                    if not outlook_app: return []
+                    
+                    namespace = outlook_app.GetNamespace("MAPI")
+                    # Default to Inbox (6)
+                    target_folder = namespace.GetDefaultFolder(6)
+                    
+                    if folder and folder.lower() != "inbox":
+                        try:
+                            # Tenta buscar a pasta pelo nome
+                            target_folder = target_folder.Parent.Folders.Item(folder)
+                        except:
+                            pass
 
-                messages = target_folder.Items
-                messages.Sort("[ReceivedTime]", True) # Mais novos primeiro
-                
-                replies = []
-                count = 0
-                for msg in messages:
-                    if count >= max_results: break
-                    if msg.UnRead:
-                        replies.append({
-                            "entryId": getattr(msg, 'EntryID', ""),
-                            "conversationId": getattr(msg, 'ConversationID', ""),
-                            "messageId": getattr(msg, 'MessageID', ""),
-                            "sender": msg.SenderEmailAddress if hasattr(msg, 'SenderEmailAddress') else str(msg.Sender),
-                            "to": msg.To,
-                            "subject": msg.Subject,
-                            "date": str(msg.ReceivedTime),
-                            "body": getattr(msg, 'Body', '')[:1000]
-                        })
-                        count += 1
-                
-                print(f"[EmailClient] SUCCESS: Found {len(replies)} unread messages via Outlook App.")
-                return replies
-            except Exception as e:
-                print(f"[EmailClient] ERROR (Outlook App Scan): {e}")
-                return []
+                    messages = target_folder.Items
+                    try:
+                        messages.Sort("[ReceivedTime]", True) # Mais novos primeiro
+                    except:
+                        try: messages.Sort("[CreationTime]", True)
+                        except: pass
+                    
+                    replies = []
+                    count = 0
+                    for msg in messages:
+                        if count >= max_results: break
+                        try:
+                            if getattr(msg, 'UnRead', False):
+                                replies.append({
+                                    "entryId": getattr(msg, 'EntryID', ""),
+                                    "conversationId": getattr(msg, 'ConversationID', ""),
+                                    "messageId": getattr(msg, 'MessageID', ""),
+                                    "sender": msg.SenderEmailAddress if hasattr(msg, 'SenderEmailAddress') else str(getattr(msg, 'Sender', 'Unknown')),
+                                    "to": getattr(msg, 'To', ""),
+                                    "subject": getattr(msg, 'Subject', ""),
+                                    "date": str(getattr(msg, 'ReceivedTime', '')),
+                                    "body": getattr(msg, 'Body', '')[:1000]
+                                })
+                                count += 1
+                        except: continue
+                    
+                    print(f"[EmailClient] SUCCESS: Found {len(replies)} unread messages via Outlook App.")
+                    return replies
+                except Exception as e:
+                    if attempt == 0 and self._handle_com_error(e, "Outlook App Scan"):
+                        continue
+                    return []
         else:
             # Fallback IMAP (exige senha)
             try:
@@ -286,6 +322,7 @@ class EmailClient:
             except Exception as e:
                 print(f"[EmailClient] ERROR (IMAP Scan): {e}")
                 return []
+
     def _normalize_str(self, s: str) -> str:
         import unicodedata
         if not s: return ""
@@ -299,6 +336,7 @@ class EmailClient:
     _cache_timestamp = 0
     _is_syncing = False # Flag para indicar se está sincronizando no momento
     _CACHE_TTL = 300 # 5 minutos
+    _signature_cache = None # Cache para a assinatura HTML
 
     def _refresh_contacts_cache(self, force=False):
         """
@@ -365,7 +403,11 @@ class EmailClient:
             try:
                 sent_folder = outlook.GetDefaultFolder(5)
                 sent_items = sent_folder.Items
-                sent_items.Sort("[ReceivedTime]", True)
+                try:
+                    sent_items.Sort("[ReceivedTime]", True)
+                except:
+                    try: sent_items.Sort("[CreationTime]", True)
+                    except: pass
                 max_scan = min(150, sent_items.Count)
                 for i in range(1, max_scan + 1):
                     try:
@@ -472,231 +514,207 @@ class EmailClient:
         Se folder_path for 'Conversations', busca na Inbox e nos Enviados.
         """
         if self.use_outlook_app:
-            try:
-                pythoncom.CoInitialize()
-                outlook_app = self._get_outlook_instance()
-                if not outlook_app: return []
-                
-                outlook = outlook_app.GetNamespace("MAPI")
-                
-                # Tenta encontrar a conta JFERRES e mapear Inbox/Sent
-                inbox = None
-                sent = None
+            for attempt in range(2):
                 try:
-                    for store in outlook.Stores:
-                        if "joao.moura" in store.DisplayName.lower():
-                            root = store.GetRootFolder()
-                            for f in root.Folders:
-                                fname = f.Name.lower()
-                                if fname == "caixa de entrada" or fname == "inbox":
-                                    inbox = f
-                                elif fname == "itens enviados" or fname == "sent items" or fname == "sent":
-                                    sent = f
-                            break
-                except: pass
-                
-                # Fallbacks caso não encontre a Store específica
-                if not inbox: inbox = outlook.GetDefaultFolder(6)
-                if not sent: sent = outlook.GetDefaultFolder(5)
-
-                if query:
-                    query = self._normalize_str(query)
-                
-                folders_to_scan = []
-                
-                # Normalização de nomes
-                fp_lower = folder_path.lower()
-                is_inbox = fp_lower == "inbox" or fp_lower == "caixa de entrada"
-                is_sent = fp_lower == "sent" or fp_lower == "itens enviados" or fp_lower == "sent items"
-                is_conv = fp_lower == "conversations"
-
-                if is_conv:
-                    folders_to_scan = [inbox, sent]
-                    # --- AUTO-DESCOBERTA DE PASTAS DE CLIENTES ---
-                    if query and len(query) > 3:
-                        def find_matching_folders(root_folder, q):
-                            matches = []
-                            try:
-                                for f in root_folder.Folders:
-                                    if q in f.Name.lower():
-                                        matches.append(f)
-                                    matches.extend(find_matching_folders(f, q))
-                            except: pass
-                            return matches
-                        
-                        # Extração de palavras-chave robusta (ex: matheus.muniz@knorr-bremse.com -> ['matheus', 'muniz', 'knorr', 'bremse'])
-                        delimiters = [".", "@", "-", "_", " "]
-                        temp_query = query.lower()
-                        for d in delimiters:
-                            temp_query = temp_query.replace(d, " ")
-                        
-                        skip_words = {"com", "br", "net", "org", "gov", "gmail", "outlook", "hotmail", "jferres", "linkb2b"}
-                        kw = [k for k in temp_query.split() if len(k) > 3 and k not in skip_words]
-                        
-                        if kw:
-                            # Tenta descobrir pastas usando as palavras-chave fortes
-                            for word in kw:
-                                print(f"[EmailClient] Buscando pastas relacionadas a '{word}'...")
-                                client_folders = find_matching_folders(inbox.Parent, word)
-                                for cf in client_folders:
-                                    if cf not in folders_to_scan:
-                                        print(f"[EmailClient] Auto-descoberta: Incluindo pasta '{cf.Name}'")
-                                        folders_to_scan.append(cf)
-                elif " / " in folder_path:
-                    # Suporte para caminho direto: "Pastas / Subpasta"
+                    pythoncom.CoInitialize()
+                    outlook_app = self._get_outlook_instance(force_new=(attempt > 0))
+                    if not outlook_app: return []
+                    
+                    outlook = outlook_app.GetNamespace("MAPI")
+                    
+                    # Tenta encontrar a conta JFERRES e mapear Inbox/Sent
+                    inbox = None
+                    sent = None
                     try:
-                        parts = [p.strip() for p in folder_path.split("/")]
-                        curr = inbox.Parent
-                        for p in parts:
-                            curr = curr.Folders.Item(p)
-                        folders_to_scan.append(curr)
-                    except:
-                        folders_to_scan.append(inbox)
-                else:
-                    target = inbox if is_inbox else (sent if is_sent else None)
-                    if not target:
-                        try: target = inbox.Folders.Item(folder_path)
-                        except: target = inbox
-                    folders_to_scan.append(target)
-
-                all_items = []
-                # Para evitar escaneamento lento, pegamos no máximo as 400 mais recentes de cada pasta
-                scan_depth = 400 if query else limit
-                
-                for f_root in folders_to_scan:
-                    folders_to_process = [f_root]
-                    # Adiciona subpastas de 1º nível para não perder e-mails movidos por regras
-                    try:
-                        for sub in f_root.Folders:
-                            folders_to_process.append(sub)
+                        for store in outlook.Stores:
+                            if "joao.moura" in store.DisplayName.lower():
+                                root = store.GetRootFolder()
+                                for f in root.Folders:
+                                    fname = f.Name.lower()
+                                    if fname == "caixa de entrada" or fname == "inbox":
+                                        inbox = f
+                                    elif fname == "itens enviados" or fname == "sent items" or fname == "sent":
+                                        sent = f
+                                break
                     except: pass
                     
-                    for f in folders_to_process:
+                    # Fallbacks caso não encontre a Store específica
+                    if not inbox: inbox = outlook.GetDefaultFolder(6)
+                    if not sent: sent = outlook.GetDefaultFolder(5)
+
+                    if query:
+                        query = self._normalize_str(query)
+                    
+                    folders_to_scan = []
+                    
+                    # Normalização de nomes
+                    fp_lower = folder_path.lower()
+                    is_inbox = fp_lower == "inbox" or fp_lower == "caixa de entrada"
+                    is_sent = fp_lower == "sent" or fp_lower == "itens enviados" or fp_lower == "sent items"
+                    is_conv = fp_lower == "conversations"
+
+                    def get_all_folders_recursive(root):
+                        all_f = []
                         try:
-                            items = f.Items
-                            items.Sort("[ReceivedTime]", True)
-                            f_count = items.Count
-                            # Pega as N mais recentes de cada (sub)pasta
-                            for i in range(1, min(scan_depth, f_count) + 1):
-                                try:
-                                    all_items.append(items.Item(i))
-                                except:
-                                    pass
+                            # Filtro: Apenas pastas que podem conter emails (olMailItem=0, olPostItem=6)
+                            # Se for o root (Store), ele pode não ter DefaultItemType, então incluímos.
+                            if not hasattr(root, 'DefaultItemType') or root.DefaultItemType in [0, 6]:
+                                all_f.append(root)
+                        except:
+                            all_f.append(root)
+                            
+                        try:
+                            for sub in root.Folders:
+                                all_f.extend(get_all_folders_recursive(sub))
                         except: pass
-                
-                # Ordernar todos os itens localmente por tempo recebido (descendente)
-                # O COM timestamp pode não suportar sorting do python diretamente, então convertemos para string caso falhe
-                try:
-                    all_items.sort(key=lambda x: str(getattr(x, 'ReceivedTime', '')), reverse=True)
-                except:
-                    pass
-                
-                results = []
-                found = 0
-                
-                for msg in all_items:
-                    if found >= limit: break
-                    try:
-                        if query:
-                            s_name = self._normalize_str(getattr(msg, 'SenderName', ''))
-                            s_email_raw = getattr(msg, 'SenderEmailAddress', '')
-                            s_email = self._normalize_str(s_email_raw)
-                            r_names_to = self._normalize_str(getattr(msg, 'To', ''))
-                            
-                            # Match simplificado
-                            match = (query in s_name or query in s_email or query in r_names_to)
-                            
-                            # Se não deu match e o remetente parece ser Exchange (/o=...)
-                            if not match and "/o=" in s_email_raw.lower():
-                                try:
-                                    sender = msg.Sender
-                                    ae = sender.AddressEntry
-                                    s_smtp = ""
-                                    if ae.Type == "SMTP": s_smtp = ae.Address
-                                    else:
-                                        eu = ae.GetExchangeUser()
-                                        s_smtp = eu.PrimarySmtpAddress if eu else ae.Address
-                                    
-                                    if query in self._normalize_str(s_smtp):
-                                        match = True
-                                except:
-                                    pass
-                            
-                            # Match profundo: checar cada recipiente via SMTP se não deu match simples
-                            if not match:
-                                try:
-                                    recipients = msg.Recipients
-                                    for i in range(1, recipients.Count + 1):
-                                        rec = recipients.Item(i)
-                                        rec_name = self._normalize_str(getattr(rec, 'Name', ''))
-                                        rec_addr = ""
-                                        try:
-                                            ae = rec.AddressEntry
-                                            if ae.Type == "SMTP": rec_addr = ae.Address
-                                            else:
-                                                eu = ae.GetExchangeUser()
-                                                rec_addr = eu.PrimarySmtpAddress if eu else ae.Address
-                                        except:
-                                            rec_addr = getattr(rec, 'Address', '')
-                                        
-                                        rec_addr_norm = self._normalize_str(rec_addr)
-                                        if query in rec_name or query in rec_addr_norm:
-                                            match = True
-                                            break
-                                except:
-                                    pass
+                        return all_f
 
-                            if not match:
-                                continue
+                    if is_conv:
+                        # Busca em TODAS as pastas da conta principal
+                        if inbox:
+                            print(f"[EmailClient] Iniciando varredura recursiva de todas as pastas para: {query}")
+                            folders_to_scan = get_all_folders_recursive(inbox.Parent)
+                        else:
+                            folders_to_scan = [inbox, sent]
+                    elif " / " in folder_path:                        # Suporte para caminho direto: "Pastas / Subpasta"
+                        try:
+                            parts = [p.strip() for p in folder_path.split("/")]
+                            curr = inbox.Parent
+                            for p in parts:
+                                curr = curr.Folders.Item(p)
+                            folders_to_scan.append(curr)
+                        except:
+                            folders_to_scan.append(inbox)
+                    else:
+                        target = inbox if is_inbox else (sent if is_sent else None)
+                        if not target:
+                            try: target = inbox.Folders.Item(folder_path)
+                            except: target = inbox
+                        folders_to_scan.append(target)
 
-                        # Tenta obter o SMTP real para o display da IA
-                        display_sender = s_email_raw
-                        if "/o=" in s_email_raw.lower():
+                    all_items = []
+                    
+                    # OTIMIZAÇÃO: Filtro nativo do Outlook (Restrict) em vez de loop manual
+                    # Isso reduz drasticamente o tempo de resposta e evita ReadTimeout
+                    filter_str = ""
+                    if query:
+                        q_clean = query.replace("'", "''") # Escape single quotes
+                        # Busca por Email do Remetente, Nome do Remetente ou Destinatário
+                        # Usamos o prefixo CI (Case Insensitive) no JET ou filtros DASL
+                        # O filtro JET básico é mais compatível:
+                        filter_str = (
+                            f"@SQL=\"urn:schemas:httpmail:fromemail\" LIKE '%{q_clean}%' "
+                            f"OR \"urn:schemas:httpmail:fromname\" LIKE '%{q_clean}%' "
+                            f"OR \"urn:schemas:httpmail:displayto\" LIKE '%{q_clean}%' "
+                            f"OR \"urn:schemas:httpmail:displaycc\" LIKE '%{q_clean}%' "
+                            f"OR \"urn:schemas:httpmail:subject\" LIKE '%{q_clean}%' "
+                        )
+                    
+                    # Evitar duplicidade se folders_to_scan já for recursivo
+                    unique_folders = folders_to_scan
+                    if not is_conv:
+                        # Para pastas únicas, incluímos os subdiretórios imediatos por padrão
+                        unique_folders = []
+                        for f_root in folders_to_scan:
+                            unique_folders.append(f_root)
                             try:
-                                ae = msg.Sender.AddressEntry
-                                if ae.Type == "SMTP": display_sender = ae.Address
-                                else:
-                                    eu = ae.GetExchangeUser()
-                                    display_sender = eu.PrimarySmtpAddress if eu else ae.Address
+                                for sub in f_root.Folders:
+                                    unique_folders.append(sub)
                             except: pass
 
-                        # Resolve todos os destinatários para SMTP REAL
-                        resolved_to = []
+                    for f in unique_folders:
                         try:
-                            recipients = msg.Recipients
-                            for i in range(1, recipients.Count + 1):
-                                r = recipients.Item(i)
-                                r_smtp = ""
+                            # Pula pastas que sabemos que não tem ReceivedTime (Contatos=2, Calendário=1, etc)
+                            if hasattr(f, 'DefaultItemType') and f.DefaultItemType not in [0, 6]:
+                                continue
+                                
+                            items = f.Items
+                            if filter_str:
+                                # Filtro DASL é muito mais rápido que loop
                                 try:
-                                    ae = r.AddressEntry
-                                    if ae.Type == "SMTP": r_smtp = ae.Address
+                                    items = items.Restrict(filter_str)
+                                except: pass
+                            
+                            try:
+                                items.Sort("[ReceivedTime]", True)
+                            except:
+                                try: items.Sort("[CreationTime]", True)
+                                except: pass
+                            
+                            # Pega apenas os necessários do topo filtrado
+                            f_count = items.Count
+                            for i in range(1, min(limit, f_count) + 1):
+                                try:
+                                    all_items.append(items.Item(i))
+                                except: pass
+                        except Exception as fe:
+                            # Ignora erro silenciosamente se for apenas falta de propriedade
+                            if "ReceivedTime" not in str(fe):
+                                print(f"[EmailClient] Erro ao filtrar pasta {getattr(f, 'Name', 'Unknown')}: {fe}")
+                    
+                    # Ordernar todos os itens localmente por tempo recebido (descendente)
+                    try:
+                        all_items.sort(key=lambda x: str(getattr(x, 'ReceivedTime', '')), reverse=True)
+                    except: pass
+                    
+                    results = []
+                    found = 0
+                    
+                    # Agora o loop é apenas sobre os resultados já pré-filtrados pelo Outlook
+                    for msg in all_items:
+                        if found >= limit: break
+                        try:
+                            # Tenta obter o SMTP real para o display da IA
+                            s_email_raw = getattr(msg, 'SenderEmailAddress', '')
+                            display_sender = s_email_raw
+                            if "/o=" in s_email_raw.lower():
+                                try:
+                                    ae = msg.Sender.AddressEntry
+                                    if ae.Type == "SMTP": display_sender = ae.Address
                                     else:
                                         eu = ae.GetExchangeUser()
-                                        r_smtp = eu.PrimarySmtpAddress if eu else ae.Address
-                                except:
-                                    r_smtp = getattr(r, 'Address', '')
-                                
-                                if r_smtp: resolved_to.append(r_smtp)
-                                else: resolved_to.append(r.Name) # Fallback para o nome
-                        except:
-                            resolved_to = [getattr(msg, 'To', 'Unknown')]
+                                        display_sender = eu.PrimarySmtpAddress if eu else ae.Address
+                                except: pass
 
-                        results.append({
-                            "entryId": getattr(msg, 'EntryID', ""),
-                            "conversationId": getattr(msg, 'ConversationID', ""),
-                            "messageId": getattr(msg, 'MessageID', ""),
-                            "sender": display_sender,
-                            "to": "; ".join(resolved_to),
-                            "subject": getattr(msg, 'Subject', ''),
-                            "date": str(getattr(msg, 'ReceivedTime', '')),
-                            "body": getattr(msg, 'Body', '')[:1000]
-                        })
-                        found += 1
-                    except Exception as e:
-                        pass
-                return results
-            except Exception as e:
-                print(f"[EmailClient] ERROR (Get Messages from {folder_path}): {e}")
+                            # Resolve todos os destinatários para SMTP REAL
+                            resolved_to = []
+                            try:
+                                recipients = msg.Recipients
+                                for i in range(1, recipients.Count + 1):
+                                    r = recipients.Item(i)
+                                    r_smtp = ""
+                                    try:
+                                        ae = r.AddressEntry
+                                        if ae.Type == "SMTP": r_smtp = ae.Address
+                                        else:
+                                            eu = ae.GetExchangeUser()
+                                            r_smtp = eu.PrimarySmtpAddress if eu else ae.Address
+                                    except:
+                                        r_smtp = getattr(r, 'Address', '')
+                                    
+                                    if r_smtp: resolved_to.append(r_smtp)
+                                    else: resolved_to.append(r.Name)
+                            except:
+                                resolved_to = [getattr(msg, 'To', 'Unknown')]
+
+                            results.append({
+                                "entryId": getattr(msg, 'EntryID', ""),
+                                "conversationId": getattr(msg, 'ConversationID', ""),
+                                "messageId": getattr(msg, 'MessageID', ""),
+                                "sender": display_sender,
+                                "to": "; ".join(resolved_to),
+                                "subject": getattr(msg, 'Subject', ''),
+                                "date": str(getattr(msg, 'ReceivedTime', '')),
+                                "body": getattr(msg, 'Body', '')[:1000]
+                            })
+                            found += 1
+                        except Exception as e:
+                            pass
+                    return results
+                except Exception as e:
+                    if attempt == 0 and self._handle_com_error(e, f"Get Messages from {folder_path}"):
+                        continue
+                    print(f"[EmailClient] ERROR (Get Messages from {folder_path}): {e}")
         return []
 
     def get_default_signature(self) -> str:
@@ -704,6 +722,11 @@ class EmailClient:
         Cria um rascunho dummy apenas para capturar a assinatura padrão do usuário.
         """
         if not self.use_outlook_app: return ""
+        
+        # Tenta retornar do cache primeiro
+        if EmailClient._signature_cache:
+            return EmailClient._signature_cache
+
         try:
             pythoncom.CoInitialize()
             outlook = self._get_outlook_instance()
@@ -755,6 +778,10 @@ class EmailClient:
             sig_html = re.sub(r'src=(["\'])(.*?)\1', _base64_replacer, sig_html)
 
             dummy.Close(1) # clDiscard (Não salvar rascunho)
+            
+            # Salva no cache
+            EmailClient._signature_cache = sig_html
+            
             return sig_html
         except Exception as e:
             print(f"[EmailClient] Erro ao capturar assinatura para preview: {e}")

@@ -480,6 +480,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                                             name={org.name}
                                             data={org}
                                             size={32}
+                                            noInitialFallback={displayCount === 0}
                                         />
                                     </div>
                                     <div className={styles.orgIdentity}>
