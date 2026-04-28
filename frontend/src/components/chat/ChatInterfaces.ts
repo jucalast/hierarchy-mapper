@@ -1,3 +1,9 @@
+export interface SuggestedAction {
+    label: string;   // texto do chip: "Cobrar pedido do Gabriel"
+    prompt: string;  // mensagem enviada ao clicar: "Execute a cobrança..."
+    icon?: string;   // 'task' | 'sync' | 'whatsapp' | 'email' | 'pipeline'
+}
+
 export interface Message {
     id: string;
     role: 'user' | 'assistant';
@@ -6,10 +12,11 @@ export interface Message {
     sources?: number;
     thinkingTime?: string;
     selectedCompanies?: CompanyResult[];
-    ui_module?: 'TaskList' | 'ContactGrid' | 'CompanyCard' | 'WhatsAppThread' | 'EmailThread' | 'AgentWorkflow' | null;
+    ui_module?: 'TaskList' | 'ContactGrid' | 'CompanyCard' | 'WhatsAppThread' | 'EmailThread' | 'AgentWorkflow' | 'DealStatus' | null;
     data?: any;
     logs?: any[];
     pending_approvals?: ApprovalAction[];
+    suggested_actions?: SuggestedAction[];
     debug?: {
         intent?: any;
         data_scope?: string[];

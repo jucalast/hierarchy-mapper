@@ -46,7 +46,8 @@ async def resolve_organization(
     selected_companies: list,
     extracted_name: Optional[str],
     message: str,
-    session: AsyncSession
+    session: AsyncSession,
+    log_queue: Optional[asyncio.Queue] = None
 ) -> Optional[int]:
     """
     Resolve o org_id a partir das fontes disponíveis:
@@ -56,15 +57,21 @@ async def resolve_organization(
     """
     from services.context_service import ContextService
     
+    def log_ev(msg, type="thought"):
+        print(f"[AI Chat] {msg}")
+        if log_queue:
+            try: log_queue.put_nowait({"type": type, "content": msg})
+            except: pass
+
     org_id = payload_org_id
     
     # Se temos uma empresa explícita na UI, usamos ela
     if selected_companies and len(selected_companies) > 0:
         org_id = selected_companies[0].id
-        print(f"[AI Chat] Usando empresa da UI: {selected_companies[0].name} (ID: {org_id})")
+        log_ev(f"Usando empresa da UI: {selected_companies[0].name}")
     # Se não temos orgId das props UI, mas a IA extraiu do texto e não havia orgId
     elif not org_id and extracted_name:
-        print(f"[AI Chat] Buscando empresa inferida pela IA: {extracted_name}")
+        log_ev(f"Buscando empresa inferida pela IA: {extracted_name}")
         org_data_resolved = await ContextService.fetch_organization_by_name(session, extracted_name)
         if org_data_resolved:
             org_id = org_data_resolved.id
@@ -72,16 +79,15 @@ async def resolve_organization(
             # NOVIDADE: Se não achou no banco local, tenta buscar direto no Pipedrive
             try:
                 from services.pipedrive.pipedrive_service import pipedrive_service
-                print(f"[AI Chat] 🔍 Empresa '{extracted_name}' não encontrada localmente. Buscando no Pipedrive...")
+                log_ev(f"Empresa '{extracted_name}' não encontrada localmente. Buscando no Pipedrive...")
                 pd_orgs = await pipedrive_service.search_organization(extracted_name)
                 if pd_orgs:
-                    # Se achou no Pipedrive, usamos o ID de lá para a busca contextual
-                    # Nota: O org_id retornado aqui será None (pois não está no banco local), 
-                    # mas o fetch_contextual_data precisa de uma forma de saber que tem um Pipedrive ID.
-                    # Vamos retornar um "ID Virtual" ou lidar com isso no fetch.
-                    pass 
+                    # Se achou no Pipedrive, o org_id continuará sendo None aqui (pois não está no banco local),
+                    # mas o ContextService (ou o fetch posterior) pode usar o nome.
+                    # No momento, o fetch_contextual_data trata o target_company se org_id for None.
+                    pass
             except Exception as e:
-                print(f"[AI Chat] Erro ao buscar empresa no Pipedrive: {e}")
+                log_ev(f"Erro ao buscar empresa no Pipedrive: {e}", type="log")
             
     # Se ainda não temos org_id, tentamos último recurso (Regex antigo)
     if not org_id:
@@ -97,7 +103,8 @@ async def resolve_organization(
 async def execute_osint_enrichment(
     intent_info: dict,
     org_id: Optional[int],
-    session: AsyncSession
+    session: AsyncSession,
+    log_queue: Optional[asyncio.Queue] = None
 ) -> Optional[Dict[str, Any]]:
     """
     Executa enriquecimento OSINT para um lead específico.
@@ -125,14 +132,20 @@ async def execute_osint_enrichment(
             target_domain = org_obj.get("domain")
             target_cnpj = org_obj.get("cnpj")
         
-        print(f"[AI Chat] Executando Enriquecimento OSINT para {target_person} na {target_company} (Domain: {target_domain}, CNPJ: {target_cnpj})...")
+        def log_ev(msg, type="thought"):
+            print(f"[AI Chat] {msg}")
+            if log_queue:
+                try: log_queue.put_nowait({"type": type, "content": msg})
+                except: pass
+
+        log_ev(f"Executando Enriquecimento OSINT para {target_person} na {target_company}...")
         osint_data = await osint_service.enrich_lead(target_person, target_company, domain=target_domain, cnpj=target_cnpj)
         if osint_data and "error" not in osint_data:
             osint_context = {
                 "osint_result": osint_data,
                 "status": "success"
             }
-            print(f"[AI Chat] ✅ Enriquecimento concluído: {osint_data.get('whatsapp', {}).get('numero')}")
+            log_ev(f"Enriquecimento concluído: {osint_data.get('whatsapp', {}).get('numero')}")
             
             # Salva os dados enriquecidos localmente para consultas futuras
             try:
@@ -183,7 +196,8 @@ async def fetch_contextual_data(
     from datetime import date, timedelta
     
     internal_context = {
-        "selected_entities": selected_entities or []
+        "selected_entities": selected_entities or [],
+        "_org_id": org_id,  # Campo canônico para lookup de cache sem ambiguidade
     }
     query_type = intent_info.get("query_type", "general")
     data_scope = intent_info.get("data_scope", [])
@@ -199,16 +213,43 @@ async def fetch_contextual_data(
             "general": [],
             "whatsapp": ["whatsapp"],
             "emails": ["emails"],
+            "deal_status": ["deals", "activities", "persons", "notes", "emails", "whatsapp"],
             "agent_workflow": ["deals", "activities", "persons", "notes", "emails", "whatsapp"]
         }
         data_scope = scope_defaults.get(query_type, ["deals", "activities", "persons", "notes", "emails", "whatsapp"])
-    
-    # GARANTIA: Se for agent_workflow, OBRIGAR e-mails e whatsapp se não estiverem presentes
-    if query_type == "agent_workflow":
+
+    # GARANTIA: Se for agent_workflow ou deal_status, OBRIGAR e-mails e whatsapp
+    if query_type in ("agent_workflow", "deal_status"):
         if "emails" not in data_scope: data_scope.append("emails")
         if "whatsapp" not in data_scope: data_scope.append("whatsapp")
     
-    print(f"[AI Pipeline] Escopos de dados selecionados: {data_scope}")
+    log_queue = kwargs.get("log_queue")
+    
+    def log_ev(msg, type="thought"):
+        if log_queue:
+            try:
+                # Mapeamento para tipos que o frontend espera (AgentService parity)
+                if type == "data_found_deal":
+                    log_queue.put_nowait({"type": "data_found", "entity": "deal", "data": msg})
+                elif type == "data_found_activity":
+                    log_queue.put_nowait({"type": "data_found", "entity": "activity", "data": msg})
+                elif type == "data_found_contact":
+                    log_queue.put_nowait({"type": "data_found", "entity": "contact", "data": msg})
+                elif type == "data_found_whatsapp":
+                    log_queue.put_nowait({"type": "data_found", "entity": "whatsapp", "data": msg})
+                elif type == "data_found_email":
+                    log_queue.put_nowait({"type": "data_found", "entity": "email", "data": msg})
+                else:
+                    log_queue.put_nowait({"type": type, "content": str(msg)})
+            except Exception: pass
+        
+        # Mantém log no terminal para debug
+        if isinstance(msg, (dict, list)):
+            print(f"[AI Pipeline] {type}: {str(msg)[:100]}...")
+        else:
+            print(f"[AI Pipeline] {msg}")
+
+    log_ev(f"Escopos de dados selecionados: {data_scope}")
 
     # --- BUSCA DE DADOS DA EMPRESA (Se identificada) ---
     pipedrive_org_id = None
@@ -222,29 +263,35 @@ async def fetch_contextual_data(
             if org_data:
                 # NOVIDADE: Se a organização não tem Pipedrive ID, tentamos descobrir por nome
                 if not org_data.get("pipedrive_id"):
-                    print(f"[AI Pipeline] 🔍 Empresa '{org_data.get('name')}' sem Pipedrive ID. Tentando descoberta...")
+                    log_ev(f"Empresa '{org_data.get('name')}' sem Pipedrive ID. Tentando descoberta...")
                     try:
                         from services.pipedrive.pipedrive_service import pipedrive_service
                         pd_orgs = await pipedrive_service.search_organization(org_data.get('name'))
                         if pd_orgs:
                             discovered_id = pd_orgs[0].get("id")
                             org_data["pipedrive_id"] = discovered_id
-                            print(f"[AI Pipeline]   ✅ Pipedrive ID descoberto: {discovered_id}")
+                            log_ev(f"Pipedrive ID descoberto: {discovered_id}")
                     except Exception as discovery_err:
-                        print(f"[AI Pipeline]   ⚠️ Falha na descoberta de Pipedrive ID: {discovery_err}")
+                        log_ev(f"Falha na descoberta de Pipedrive ID: {discovery_err}", type="log")
 
                 internal_context["organization"] = {
                     "name": org_data.get("name"),
                     "cnpj": org_data.get("cnpj"),
                     "domain": org_data.get("domain"),
-                    "pipedrive_id": org_data.get("pipedrive_id")
+                    "pipedrive_id": org_data.get("pipedrive_id"),
+                    "address": org_data.get("address"),
+                    "logo_url": org_data.get("logo_url") or org_data.get("logo"),
+                    "employees_count": org_data.get("employees_count", 0),
+                    "employees": org_data.get("employees", [])
                 }
                 pipedrive_org_id = org_data.get("pipedrive_id")
         except Exception as e:
             print(f"[AI Chat] Erro ao buscar overview da empresa: {e}")
+            import traceback
+            traceback.print_exc()
     elif target_company and target_company.lower() not in ["null", "none"]:
         # NOVIDADE: Lead que não está no banco local mas foi identificado pelo nome
-        print(f"[AI Pipeline] 🔍 Empresa '{target_company}' não encontrada localmente. Buscando no Pipedrive...")
+        log_ev(f"Empresa '{target_company}' não encontrada localmente. Buscando no Pipedrive...")
         try:
             from services.pipedrive.pipedrive_service import pipedrive_service
             pd_orgs = await pipedrive_service.search_organization(target_company)
@@ -256,14 +303,14 @@ async def fetch_contextual_data(
                     "pipedrive_id": pipedrive_org_id,
                     "is_virtual": True  # Indica que não está no banco local ainda
                 }
-                print(f"[AI Pipeline]   ✅ Empresa encontrada no Pipedrive: {org_match.get('name')} (ID: {pipedrive_org_id})")
+                log_ev(f"Empresa encontrada no Pipedrive: {org_match.get('name')} (ID: {pipedrive_org_id})")
         except Exception as e:
-            print(f"[AI Pipeline]   ⚠️ Erro na busca direta Pipedrive: {e}")
+            log_ev(f"Erro na busca direta Pipedrive: {e}", type="log")
 
     # --- BUSCA POR ETAPA DO PIPELINE (Se identificada) ---
     stage_name = intent_info.get("extracted_deal_stage")
     if stage_name and not org_id:
-        print(f"[AI Pipeline] 📊 Buscando negócios na etapa: {stage_name}...")
+        log_ev(f"Buscando negócios na etapa: {stage_name}...")
         try:
             from services.pipedrive.pipedrive_service import pipedrive_service
             import httpx
@@ -283,7 +330,7 @@ async def fetch_contextual_data(
                     
                     if target_stage_id:
                         stage_id = target_stage_id
-                        print(f"[AI Pipeline]   ✅ Etapa encontrada: {target_stage_name} (ID: {stage_id})")
+                        log_ev(f"Etapa encontrada: {target_stage_name} (ID: {stage_id})")
                         
                         # Se o usuário NÃO especificou data (está 'today' por padrão do classificador), 
                         # mas pediu uma etapa, mudamos para 'all' para ser mais útil (vê a pauta toda).
@@ -314,7 +361,7 @@ async def fetch_contextual_data(
                             # --- NOVIDADE: FILTRO DE FOCO (Evita processamento em lote indesejado) ---
                             target_company = intent_info.get("extracted_company_name")
                             if target_company and target_company.lower() not in ["null", "none"]:
-                                print(f"[AI Pipeline]   🎯 Aplicando filtro de foco: {target_company}")
+                                log_ev(f"Aplicando filtro de foco: {target_company}")
                                 # Filtra a lista de deals para manter apenas os que batem com o nome da empresa
                                 filtered_deals = [
                                     d for d in deals_in_stage 
@@ -322,7 +369,7 @@ async def fetch_contextual_data(
                                 ]
                                 if filtered_deals:
                                     deals_in_stage = filtered_deals
-                                    print(f"[AI Pipeline]   ✅ Foco reduzido para {len(deals_in_stage)} negócios da {target_company}.")
+                                    log_ev(f"Foco reduzido para {len(deals_in_stage)} negócios da {target_company}.")
                             
                             internal_context["deals_in_stage"] = [
                                 {
@@ -334,9 +381,9 @@ async def fetch_contextual_data(
                                     "value": d.get("formatted_value")
                                 } for d in deals_in_stage[:500] 
                             ]
-                            print(f"[AI Pipeline]   🎯 Total de {len(deals_in_stage)} negócios injetados no contexto.")
+                            log_ev(f"Total de {len(deals_in_stage)} negócios injetados no contexto.")
         except Exception as e:
-            print(f"[AI Pipeline] ⚠️ Erro ao buscar negócios por etapa: {e}")
+            log_ev(f"Erro ao buscar negócios por etapa: {e}", type="log")
 
     # --- BUSCA DE TAREFAS (Com filtro inteligente de empresa se houver) ---
     if "today_tasks" in data_scope or ("activities" in data_scope and query_type == "pipedrive_tasks"):
@@ -379,7 +426,7 @@ async def fetch_contextual_data(
     # 2. Dados do Pipedrive (Requer apenas pipedrive_org_id)
     pipedrive_scopes = [s for s in data_scope if s in ("persons", "deals", "activities", "notes")]
     if pipedrive_scopes and pipedrive_org_id:
-        print(f"[AI Pipeline] 🔗 Buscando Pipedrive [{', '.join(pipedrive_scopes)}]...")
+        log_ev(f"Buscando Pipedrive [{', '.join(pipedrive_scopes)}]...")
         try:
             from services.pipedrive.pipedrive_service import pipedrive_service
             # Passa o filtro de 'concluídas' se a IA detectou que o usuário as quer
@@ -403,16 +450,35 @@ async def fetch_contextual_data(
                     if notes: filtered_pd["notes"] = notes
                 
                 if filtered_pd:
-                    print(f"[AI Pipeline] ✅ Pipedrive: Coletados {len(filtered_pd.get('activities', []))} atividades, {len(filtered_pd.get('deals', []))} negócios e {len(filtered_pd.get('persons', []))} contatos.")
+                    log_ev(f"Pipedrive: Coletados {len(filtered_pd.get('activities', []))} atividades, {len(filtered_pd.get('deals', []))} negócios e {len(filtered_pd.get('persons', []))} contatos.")
                     internal_context["pipedrive_details"] = filtered_pd
+                    
+                    # EMISSÃO VISUAL: Deixa o usuário ver os cards enquanto a IA processa
+                    for d in filtered_pd.get("deals", []):
+                        log_ev(d, type="data_found_deal")
+                    for a in filtered_pd.get("activities", []):
+                        log_ev(a, type="data_found_activity")
+                    
+                    def _clean_person(p: dict) -> dict:
+                        """Limpa campos de contato (arrays de objetos -> strings) para o frontend."""
+                        cp = p.copy()
+                        # Pipedrive retorna phone/email como [{value, label, primary}, ...]
+                        for field in ["phone", "email"]:
+                            val = cp.get(field)
+                            if isinstance(val, list) and len(val) > 0:
+                                cp[field] = val[0].get("value") if isinstance(val[0], dict) else val[0]
+                        return cp
+
+                    for p in filtered_pd.get("persons", []):
+                        log_ev(_clean_person(p), type="data_found_contact")
+
                     # Se for busca de tarefas, garante que fiquem no top-level para o TaskList bypass
                     if "activities" in filtered_pd and query_type == "pipedrive_tasks":
                         internal_context["activities"] = filtered_pd["activities"]
             else:
                 internal_context["pipedrive_details"] = pd_details or {"error": "Sem dados"}
         except Exception as e:
-            print(f"[AI Chat] Erro ao buscar dados do Pipedrive: {e}")
-            internal_context["pipedrive_details"] = {"error": str(e)}
+            log_ev(f"Erro ao buscar dados do Pipedrive: {e}", type="log")
 
     # ============================
     # SCOPE: Communications (WhatsApp & Email)
@@ -428,7 +494,7 @@ async def fetch_contextual_data(
         mentioned_names = [n.strip().lower() for n in mentioned_names]
         
         if persons or selected_entities or mentioned_names:
-            print(f"[AI Pipeline] 💬 Identificados contatos para busca de comunicações.")
+            log_ev("Identificados contatos para busca de comunicações.")
             from services.ai.action_executor import _execute_get_messages, execute_email_action
             import httpx
             
@@ -531,23 +597,139 @@ async def fetch_contextual_data(
                     wa_tasks = []
                     for p in final_candidates[:5]:
                         phone_list = p.get("phone", [])
-                        if isinstance(phone_list, list) and len(phone_list) > 0:
-                            phone = phone_list[0].get("value")
-                            if phone: wa_tasks.append((p.get("name"), phone))
+                        if isinstance(phone_list, list):
+                            for ph_item in phone_list:
+                                phone = ph_item.get("value")
+                                if phone: 
+                                    # Evita duplicar se o mesmo número aparecer em campos diferentes
+                                    if not any(t[1] == phone for t in wa_tasks):
+                                        wa_tasks.append((p.get("name"), phone))
                     
                     if wa_tasks:
-                        print(f"[AI Pipeline]   - Buscando WhatsApp para {len(wa_tasks)} contatos em paralelo...")
+                        log_ev(f"Buscando WhatsApp para {len(wa_tasks)} contatos em paralelo...")
+                        def _preprocess_wa_message(msg: dict) -> Optional[dict]:
+                            """Processa mensagem: limpa base64 e rotula mídias sem texto."""
+                            body = msg.get("body") or msg.get("caption") or ""
+                            msg_type = (msg.get("type") or "chat").lower()
+                            
+                            # Se o corpo for muito grande e sem espaços, provavelmente é lixo binário/base64
+                            if len(body) > 120 and " " not in body and not any(c in body for c in [".", "!", "?", ",", "\n", ":"]):
+                                msg["body"] = "[Conteúdo Binário Truncado]"
+                                return msg
+                                
+                            # Se for uma mídia/mensagem especial sem texto, injetamos um rótulo para a IA saber o que é
+                            if not body or len(body.strip()) < 1:
+                                type_labels = {
+                                    "image": "[Imagem]",
+                                    "video": "[Vídeo]",
+                                    "audio": "[Áudio]",
+                                    "ptt": "[Mensagem de Voz]",
+                                    "sticker": "[Sticker]",
+                                    "document": "[Documento/Arquivo]",
+                                    "vcard": "[Contato/VCard]",
+                                    "location": "[Localização]",
+                                    "call_log": "[Registro de Chamada]",
+                                    "revoked": "[Mensagem Apagada]",
+                                    "e2e_notification": "[Notificação de Criptografia]",
+                                    "e2e_encryption": "[Notificação de Criptografia]"
+                                }
+                                # Se não é um 'chat' normal e está vazio, rotulamos pelo tipo
+                                if msg_type != "chat":
+                                    msg["body"] = type_labels.get(msg_type, f"[Interação: {msg_type.capitalize()}]")
+                                    return msg
+                                else:
+                                    # Se for um chat normal (texto) e está vazio, descartamos
+                                    return None
+                                    
+                            return msg
+
                         async def fetch_wa(name, num):
                             try:
-                                res = await _execute_get_messages(client, wa_base, {"whatsapp_number": num, "extracted_person_name": name}, None, None)
+                                res = await _execute_get_messages(client, wa_base, {"whatsapp_number": num, "extracted_person_name": name, "limit": 50}, None, None)
                                 if res and "resultado" in res:
                                     msgs = res["resultado"].get("messages", [])
                                     if msgs:
                                         from datetime import datetime
+                                        processed_msgs = []
                                         for m in msgs:
-                                            try: m["date_human"] = datetime.fromtimestamp(m.get("timestamp", 0)).strftime("%d/%m/%Y %H:%M")
-                                            except: pass
-                                        return {"contact": name, "messages": msgs}
+                                            p = _preprocess_wa_message(m)
+                                            if p: processed_msgs.append(p)
+
+                                        # Verifica se as mensagens processadas são válidas (não apenas notificações de sistema)
+                                        # Conta apenas mensagens de texto ou mídia, ignora e2e_notification
+                                        valid_msgs = [m for m in processed_msgs if not m.get("body", "").startswith("[Notificação")]
+
+                                        if not valid_msgs:
+                                            print(f"[AI Pipeline]     ⚠️ WA ({name}): {len(msgs)} msgs recebidas, mas apenas notificações de sistema. Tentando busca por nome...")
+                                            # Usa fallback por nome se só encontrou notificações
+                                        elif not processed_msgs:
+                                            print(f"[AI Pipeline]     ⚠️ WA ({name}): {len(msgs)} msgs recebidas, mas nenhuma processável.")
+                                            return None
+                                        else:
+                                            for m in processed_msgs:
+                                                try: m["date_human"] = datetime.fromtimestamp(m.get("timestamp", 0)).strftime("%d/%m/%Y %H:%M")
+                                                except: pass
+                                            return {"contact": name, "messages": processed_msgs}
+
+                                # FALLBACK: Se não encontrou mensagens ou apenas notificações, tenta buscar por nome
+                                print(f"[AI Pipeline]     🔍 Nenhuma mensagem válida por número para {name}, tentando busca por nome...")
+                                # Busca todos os chats e filtra por nome no backend
+                                all_chats_resp = await client.get(f"{wa_base}/chats")
+                                print(f"[AI Pipeline]     📡 GET /chats → status={all_chats_resp.status_code}")
+                                if all_chats_resp.status_code == 200:
+                                    chats_json = all_chats_resp.json()
+                                    # A API pode retornar {"chats": [...]} ou {"result": [...]} ou direto uma lista
+                                    if isinstance(chats_json, list):
+                                        all_chats = chats_json
+                                    else:
+                                        all_chats = (chats_json.get("chats")
+                                                     or chats_json.get("result")
+                                                     or chats_json.get("data")
+                                                     or [])
+                                    print(f"[AI Pipeline]     📋 Total de chats recebidos: {len(all_chats)}")
+                                    if all_chats:
+                                        # Mostra amostra dos primeiros chats para diagnóstico
+                                        for c in all_chats[:3]:
+                                            print(f"[AI Pipeline]       chat amostra: name={c.get('name')!r} id={c.get('id')!r}")
+                                    # Filtra chats que contêm o nome do contato
+                                    search_term = name.lower()
+                                    def _chat_id_str(c) -> str:
+                                        cid = c.get("id", "")
+                                        if isinstance(cid, dict):
+                                            return cid.get("_serialized", "") or cid.get("user", "")
+                                        return str(cid) if cid else ""
+                                    matching_chats = [c for c in all_chats if search_term in (c.get("name", "") or _chat_id_str(c)).lower()]
+                                    print(f"[AI Pipeline]     🔎 Buscando '{search_term}' → {len(matching_chats)} chats encontrados")
+                                    if matching_chats:
+                                        best_chat = matching_chats[0]
+                                        raw_id = best_chat.get("id")
+                                        if isinstance(raw_id, dict):
+                                            chat_id = raw_id.get("_serialized", "") or raw_id.get("user", "")
+                                        else:
+                                            chat_id = str(raw_id) if raw_id else ""
+                                        print(f"[AI Pipeline]     ✅ Encontrado chat por nome: {best_chat.get('name')} (ID: {chat_id})")
+                                        # Busca mensagens pelo chat_id
+                                        msg_resp = await client.get(f"{wa_base}/chats/{chat_id}/messages?limit=50")
+                                        print(f"[AI Pipeline]     📨 GET /chats/{chat_id}/messages → status={msg_resp.status_code}")
+                                        if msg_resp.status_code == 200:
+                                            all_msgs = msg_resp.json().get("messages", [])
+                                            print(f"[AI Pipeline]     📩 Mensagens brutas recebidas: {len(all_msgs)}")
+                                            if all_msgs:
+                                                from datetime import datetime
+                                                processed_msgs = []
+                                                for m in all_msgs:
+                                                    p = _preprocess_wa_message(m)
+                                                    if p: processed_msgs.append(p)
+
+                                                if processed_msgs:
+                                                    for m in processed_msgs:
+                                                        try: m["date_human"] = datetime.fromtimestamp(m.get("timestamp", 0)).strftime("%d/%m/%Y %H:%M")
+                                                        except: pass
+                                                    return {"contact": best_chat.get("name"), "messages": processed_msgs}
+                                    else:
+                                        print(f"[AI Pipeline]     ⚠️  Nenhum chat com '{search_term}' na lista de {len(all_chats)} chats")
+                                else:
+                                    print(f"[AI Pipeline]     ❌ /chats retornou erro: {all_chats_resp.text[:200]}")
                             except Exception as e_wa:
                                 import traceback
                                 print(f"[AI Pipeline]     ❌ Erro Crítico no WhatsApp ({name}):\n{traceback.format_exc()}")
@@ -557,6 +739,14 @@ async def fetch_contextual_data(
                         wa_history = [r for r in wa_results if r]
                         if wa_history:
                             internal_context["whatsapp_result"] = {"resultado": {"messages_by_contact": wa_history}}
+                            # EMISSÃO VISUAL: WhatsApp Thread
+                            for res in wa_history:
+                                log_ev({
+                                    "whatsapp_result": {
+                                        "resultado": { "messages": res.get("messages", []) },
+                                        "contact": { "name": res.get("contact"), "phone": res.get("phone") }
+                                    }
+                                }, type="data_found_whatsapp")
 
                 # 2. Emails (Paralelizado)
                 if "emails" in data_scope:
@@ -565,16 +755,19 @@ async def fetch_contextual_data(
                     email_tasks = []
                     for p in final_candidates[:5]:
                         email_list = p.get("email", [])
-                        if isinstance(email_list, list) and len(email_list) > 0:
-                            email = email_list[0].get("value")
-                            if email: email_tasks.append((p.get("name"), email))
+                        if isinstance(email_list, list):
+                            for em_item in email_list:
+                                email_addr = em_item.get("value")
+                                if email_addr: 
+                                    if not any(t[1] == email_addr for t in email_tasks):
+                                        email_tasks.append((p.get("name"), email_addr))
                     
                     if email_tasks:
-                        print(f"[AI Pipeline]   - Buscando Emails para {len(email_tasks)} contatos em paralelo...")
+                        log_ev(f"Buscando Emails para {len(email_tasks)} contatos em paralelo...")
                         async def fetch_email(name, addr):
                             try:
-                                # Aumentado para 45s para lidar com varreduras profundas no Outlook via COM
-                                e_res = await client.get(f"{email_base}/messages?folder=Conversations&limit=30&q={addr}", timeout=45.0)
+                                # Aumentado para 60s para lidar com varreduras profundas no Outlook via COM (evita ReadTimeout)
+                                e_res = await client.get(f"{email_base}/messages?folder=Conversations&limit=30&q={addr}", timeout=60.0)
                                 if e_res.status_code == 200:
                                     all_e_msgs = e_res.json().get("messages", [])
                                     h_emails, a_emails = [], []
@@ -596,6 +789,15 @@ async def fetch_contextual_data(
                         email_history = [r for r in results if r]
                         if email_history:
                             internal_context["email_result"] = {"resultado": {"messages_by_contact": email_history}}
+                            # EMISSÃO VISUAL: Email Threads
+                            for res in email_history:
+                                for thread in res.get("human_threads", [])[:3]:
+                                    log_ev({
+                                        "contact": {"name": res.get("contact"), "email": res.get("email")},
+                                        "subject": thread.get("subject", "Sem Assunto"),
+                                        "sent_message": thread.get("snippet") or thread.get("body"),
+                                        "messages": [thread]
+                                    }, type="data_found_email")
                                 
     # --- CONSOLIDAÇÃO DE LINHA DO TEMPO (Cálculo de Silêncio Real) ---
     try:
@@ -648,7 +850,7 @@ async def fetch_contextual_data(
                 "is_critical": delta_days > 10,
                 "summary": f"O último contato humano REAL foi em {last_human_interaction.strftime('%d/%m/%Y')} ({delta_days} dias atrás)."
             }
-            print(f"[AI Pipeline] 📊 Métrica consolidada: {delta_days} dias de silêncio.")
+            log_ev(f"Métrica consolidada: {delta_days} dias de silêncio.")
     except Exception as e_metric:
         print(f"[AI Pipeline] ⚠️ Erro ao calcular métricas de silêncio: {e_metric}")
 
@@ -844,7 +1046,6 @@ async def _fetch_tasks(intent_info: dict, internal_context: dict, pipedrive_org_
                     
                     due_date = date.fromisoformat(due)
                     
-                    # FILTRO RÍGIDO: Apenas hoje
                     if date_filter == "today" and due_date == today_date:
                         tasks_to_return.append(act)
                     elif date_filter == "tomorrow" and due_date == tomorrow_date:
@@ -855,8 +1056,7 @@ async def _fetch_tasks(intent_info: dict, internal_context: dict, pipedrive_org_
                         tasks_to_return.append(act)
                     elif date_filter == "all":
                         tasks_to_return.append(act)
-                    elif not date_filter: 
-                        # Se não houver filtro, mas houver etapa, retornamos tudo daquela etapa
+                    elif not date_filter:
                         tasks_to_return.append(act)
         
         internal_context["today_tasks"] = tasks_to_return
@@ -867,6 +1067,7 @@ async def _fetch_tasks(intent_info: dict, internal_context: dict, pipedrive_org_
         
         print(f"[AI Pipeline] Encontradas {len(tasks_to_return)} tarefas {filter_msg}.")
 
-    except Exception as e:
-        print(f"[AI Chat] Erro ao buscar tarefas: {e}")
+    except Exception as e_tasks:
+        print(f"[AI Pipeline] \u26a0\ufe0f Erro ao buscar tarefas: {e_tasks}")
 
+    return internal_context

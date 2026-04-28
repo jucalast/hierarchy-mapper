@@ -37,7 +37,7 @@ import { Drawer } from './Drawer';
 import { ChatPanel } from './ChatPanel';
 import { WhatsAppView } from './WhatsAppView';
 import { NotificationContainer, NotificationType } from './Notification';
-import { organizations as orgsApi, hierarchy as hierarchyApi } from '@/services/api';
+import { organizations as orgsApi, hierarchy as hierarchyApi, api } from '@/services/api';
 
 
 // --- SMART BACKGROUND COMPONENT ---
@@ -290,6 +290,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     const [pipedriveOrgs, setPipedriveOrgs] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loadingOrgs, setLoadingOrgs] = useState(true);
+    const [taskSummary, setTaskSummary] = useState<Record<number, { next_due_date: string; overdue_count: number; pending_count: number }>>({});
 
 
     // 💾 PERSISTENCE FOR DRAWER AND CHAT
@@ -333,11 +334,31 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     };
 
     const filteredOrgs = useMemo(() => {
-        return pipedriveOrgs.filter(org =>
-            org.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            org.domain?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [pipedriveOrgs, searchTerm]);
+        const today = new Date().toISOString().slice(0, 10);
+        return pipedriveOrgs
+            .filter(org =>
+                org.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                org.domain?.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+            .map(org => ({
+                ...org,
+                _taskSummary: taskSummary[Number(org.id)] || null,
+            }))
+            .sort((a, b) => {
+                const ta = a._taskSummary;
+                const tb = b._taskSummary;
+                // Sem tarefas vai pro final
+                if (!ta && !tb) return 0;
+                if (!ta) return 1;
+                if (!tb) return -1;
+                // Atrasadas primeiro
+                const aOverdue = ta.overdue_count > 0;
+                const bOverdue = tb.overdue_count > 0;
+                if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+                // Depois por data mais próxima
+                return ta.next_due_date.localeCompare(tb.next_due_date);
+            });
+    }, [pipedriveOrgs, searchTerm, taskSummary]);
 
     const handleUpdatePipedrive = async (orgId: number, data: any) => {
         try {
@@ -473,6 +494,22 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
     /* === REMOVIDO loop checkActiveJobForOrg pois está nativamente dentro do handleOrgClick gora === */
 
+    const fetchTaskSummary = async () => {
+        try {
+            const items = await api.get<Array<{
+                org_id: number;
+                next_due_date: string;
+                overdue_count: number;
+                pending_count: number;
+            }>>('/pipedrive/activities/pending-summary');
+            if (Array.isArray(items)) {
+                const map: Record<number, typeof items[0]> = {};
+                items.forEach(i => { map[i.org_id] = i; });
+                setTaskSummary(map);
+            }
+        } catch { /* silent — não bloqueia a UI */ }
+    };
+
     const fetchPipedriveOrgs = async () => {
         // Se já temos cache, não limpamos para não dar flicker na UI
         if (pipedriveOrgs.length === 0) setLoadingOrgs(true);
@@ -484,6 +521,8 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             console.log('[Pipedrive API] Data Received:', data);
             const list = Array.isArray(data) ? data : [];
             setPipedriveOrgs(list);
+            // Busca resumo de tarefas em paralelo
+            fetchTaskSummary();
 
             // Revalida o cache com a versão real do banco
             if (list.length > 0) {
@@ -1078,6 +1117,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 onOrgRenamed={handleOrgRenamed}
                 isLoading={loadingOrgs}
                 selectedOrgId={currentOrgId}
+                selectedOrgLogo={confirmedLogo}
                 activeJobId={activeJobId}
                 graphEmployees={rawEmployees}
                 refreshDetailsTrigger={refreshDrawerTrigger}

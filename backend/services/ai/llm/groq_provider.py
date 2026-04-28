@@ -66,6 +66,7 @@ class GroqProvider(LLMProvider):
         temperature: float = 0.1,
         timeout_sec: Optional[float] = None,
         tier: LLMTier = LLMTier.STANDARD,
+        preferred_model: Optional[str] = None,
     ) -> LLMResult:
         key = settings.GROQ_API_KEY
         if not key:
@@ -92,7 +93,19 @@ class GroqProvider(LLMProvider):
 
         timeout = timeout_sec or _timeout_for(tier)
         client = get_http_client()
-        models = settings.ai_groq_models_list or ["llama-3.3-70b-versatile"]
+        
+        # Seleção de modelos inteligente por Tier e Preferência
+        all_models = settings.ai_groq_models_list or ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+        
+        if preferred_model and preferred_model in all_models:
+            # Coloca o preferido no topo
+            models = [preferred_model] + [m for m in all_models if m != preferred_model]
+        elif tier == LLMTier.FAST:
+            # Para tarefas rápidas, prioriza modelos 8b
+            models = [m for m in all_models if "8b" in m] + [m for m in all_models if "8b" not in m]
+        else:
+            models = all_models
+            
         headers = {
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",

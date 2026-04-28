@@ -85,6 +85,7 @@ class ClaudeProvider(LLMProvider):
         temperature: float = 0.1,
         timeout_sec: Optional[float] = None,
         tier: LLMTier = LLMTier.STANDARD,
+        preferred_model: Optional[str] = None,
     ) -> LLMResult:
         key = settings.ANTHROPIC_API_KEY
         if not key:
@@ -109,7 +110,13 @@ class ClaudeProvider(LLMProvider):
 
         timeout = timeout_sec or _timeout_for(tier)
         client = get_http_client()
-        models = settings.ai_claude_models_list or ["claude-sonnet-4-5"]
+        
+        # Seleção de modelos inteligente por Preferência
+        all_models = settings.ai_claude_models_list or ["claude-sonnet-4-5", "claude-3-5-haiku-latest"]
+        if preferred_model and preferred_model in all_models:
+            models = [preferred_model] + [m for m in all_models if m != preferred_model]
+        else:
+            models = all_models
         headers = {
             "x-api-key": key,
             "anthropic-version": _ANTHROPIC_VERSION,
@@ -163,12 +170,30 @@ class ClaudeProvider(LLMProvider):
                 if json_mode:
                     try:
                         cleaned = text_content.strip()
-                        if cleaned.startswith("```"):
-                            cleaned = cleaned.split("```", 2)[-1].lstrip("json").strip()
-                            cleaned = cleaned.rsplit("```", 1)[0].strip()
+                        # Remove blocos de código markdown (```json ... ``` ou ``` ...)
+                        if "```" in cleaned:
+                            import re as _re
+                            match = _re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, _re.DOTALL)
+                            if match:
+                                cleaned = match.group(1)
+                            else:
+                                # Fallback: tenta pegar entre a primeira { e a última }
+                                match = _re.search(r"(\{.*\})", cleaned, _re.DOTALL)
+                                if match:
+                                    cleaned = match.group(1)
+                        
                         json_data = json.loads(cleaned)
                     except json.JSONDecodeError:
-                        json_data = {"response": text_content}
+                        # Se falhou mas o texto parece JSON, tenta uma última limpeza
+                        try:
+                            import re as _re
+                            match = _re.search(r"(\{.*\})", text_content, _re.DOTALL)
+                            if match:
+                                json_data = json.loads(match.group(1))
+                            else:
+                                json_data = {"response": text_content}
+                        except:
+                            json_data = {"response": text_content}
 
                 usage = data.get("usage") or {}
                 self._breaker.record_success()

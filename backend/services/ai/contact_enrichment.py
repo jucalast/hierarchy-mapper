@@ -3,6 +3,9 @@ Enriquecimento e processamento de contatos para o módulo ContactGrid.
 Achata listas, mapeia senioridade e completa emails parciais.
 """
 from typing import Dict, Any, List
+from core.logging_config import get_logger
+
+log = get_logger(__name__)
 
 
 def enrich_contacts_for_grid(internal_context: Dict[str, Any]) -> List[Dict]:
@@ -83,7 +86,7 @@ def complete_partial_emails(persons: List[Dict], internal_context: Dict[str, Any
         clean_name = (org_info.get("name") or "").lower().replace(" ", "")
         org_domain = f"{clean_name}.com"
 
-    print(f"[AI Bypass] 🔍 Enriquecendo {len(persons)} funcionários. Domínio alvo: {org_domain}")
+    log.debug("enrichment.start", persons=len(persons), domain=org_domain)
 
     for p in persons:
         if not isinstance(p, dict): continue
@@ -92,7 +95,7 @@ def complete_partial_emails(persons: List[Dict], internal_context: Dict[str, Any
         email = p.get("email") or p.get("emailProvavel")
         if email and email.endswith("@") and org_domain:
             p["email"] = f"{email}{org_domain}"
-            print(f"[AI Bypass] ✅ E-mail completado: {p['email']}")
+            log.debug("enrichment.email_completed", email=p['email'])
         
         # 2. Injeção de dados extras (OSINT fallback)
         if "osint_result" in internal_context:

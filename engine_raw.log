@@ -1069,3 +1069,426 @@ SESSÃO: WALSYWA | LOCAL: BRASIL | FOCO: COMPRAS
 DATA: 2026-04-23 10:13:28
 ================================================================================
 
+
+================================================================================
+SESSÃO: WALSYWA | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-23 10:23:47
+================================================================================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Gabriel
+🔗 LINKEDIN: https://linkedin.com/in/pd_2229
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gabriel - Contato Walsywa
+   ∟ [SEARCH SNIPPET] BODY: Email: compras@walsywa.com.br | Telefone: 11949582391 | Pipedrive ID: 2229
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 
+      ∟ BIO/DESCRIPTION: N/A
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Comprador Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Gustavo Demetino
+🔗 LINKEDIN: https://br.linkedin.com/in/gustavo-demetino-ab9775219
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gustavo Demetino - Auxiliar de compras na empresa ... - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Auxiliar de compras na empresa walsywa indústria e comercio de produtos metalúrgicos · Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: walsywa industria e comercio de produtos metalurgicos
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões no LinkedIn. Veja o perfil de Gustavo Demetino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Auxiliar De Compras Na Empresa ...
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+[FILTRO MECÂNICO] CANDIDATO: Marcos Santos
+LINK: https://www.linkedin.com/in/marcos-santos-62215394
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Jorge Camilo Trabulsi
+🔗 LINKEDIN: https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Jorge Camilo Trabulsi - Walsywa | LinkedIn Home - Walsywa John Kennedy - Gerente Nacional de Vendas - LinkedIn Brasil Auxiliar Administrativo de Compras e ... - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Jorge... Walsywa specialists develop exclusive articles on Fastening for Civil Construction and share them here with you, to make your work even more efficient. Here you will also find the latest company news. Veja o perfil de John Kennedy no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Anunciada 21:19:53. INSPIRE REFERÊNCIA, SEJA A REFERÊNCIA!A Walsywa é referência e a maior empresa de fixação para… - veja esta vaga e outras semelhantes no LinkedIn .
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Jorge Camilo Trabulsi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Gerente Nacional De Vendas
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+[FILTRO MECÂNICO] CANDIDATO: John Kennedy
+LINK: https://br.linkedin.com/in/john-kennedy-0a17597b
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Wagner
+🔗 LINKEDIN: https://br.linkedin.com/in/wagner-walsywa-2211bb93
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Wagner Walsywa - Walsywa e alge | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Wagner Walsywa no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: walsywa e alge
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa e alge · Localidade: São Paulo · 22 conexões no LinkedIn. Veja o perfil de Wagner Walsywa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Compradora Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Alan Santos
+🔗 LINKEDIN: https://br.linkedin.com/in/alan-santos-51a2a655
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Alan Santos - Walsywa | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: · Experiência: Walsywa · Formação acadêmica: Faculdade Gama e Souza · Localidade: Rio de Janeiro · 203 conexões no LinkedIn . Veja o perfil de Alan Santos no LinkedIn , uma comunidade...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Profissional da área comercial com mais de 15 anos de experiência, atuando em empresas de… · Experiência: Walsywa · Formação acadêmica: Faculdade Gama e Souza · Localidade: Rio de Janeiro · 203 conexões no LinkedIn. Veja o perfil de Alan Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Walsywa Procurement Brasil linkedin
+==============================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Fabrizio E.
+🔗 LINKEDIN: https://br.linkedin.com/in/fabrizioeizo
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Gerente de Engenharia e Suprimentos - LinkedIn Brasil 19 vagas de Walsywa em: Brasil - LinkedIn Brasil John Kennedy - Gerente Nacional de Vendas - LinkedIn Brasil
+   ∟ [SEARCH SNIPPET] BODY: Veja o perfil de Fabrizio E. no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. 19 principais vagas de Walsywa hoje em Brasil . Aproveite sua rede profissional e seja contratado. Novas vagas de Walsywa adicionadas diariamente. Veja o perfil de John Kennedy no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Fabrizio E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Linkedin Brasil John Kennedy
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Fabrizio E.
+🔗 LINKEDIN: https://br.linkedin.com/in/fabrizioeizo/en
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Fabrizio E. - Engineering & Procurement Manager - Walsywa
+   ∟ [SEARCH SNIPPET] BODY: We cannot provide a description for this page right now
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Experience: Walsywa · Education: Insper · Location: Jundiaí · 500+ connections on LinkedIn. View Fabrizio E.’s profile on LinkedIn, a professional community of 1 billion members.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Engineering & Procurement Manager
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+================================================================================
+SESSÃO: AXT TERMINAIS ELÉTRICOS | LOCAL: BRASIL | FOCO: COMPRAS
+DATA: 2026-04-24 08:07:03
+================================================================================
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Helena Santana
+🔗 LINKEDIN: https://linkedin.com/in/pd_1002
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Helena Santana - Contato Axt Terminais Elétricos
+   ∟ [SEARCH SNIPPET] BODY: Email: helena.santana@axt.com.br | Telefone: (11) 3090-5790 | Pipedrive ID: 1002
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: 
+      ∟ BIO/DESCRIPTION: N/A
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+==============================
+🔍 NOVA CONSULTA: Axt Terminais Elétricos Comprador Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: Unknown
+LINK: https://br.linkedin.com/in/axt-terminais-elétricos-05a770211
+MOTIVO: 🚫 Nome inválido ou coincidente com a marca
+--------------------------------------------------
+
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Daniella Nascimento
+🔗 LINKEDIN: https://br.linkedin.com/in/daniella-nascimento-319114a9
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Daniella Nascimento - AXT Terminais Elétricos | LinkedIn Pedro Novais - AXT Terminais Elétricos | LinkedIn Renata Sein - AXT Terminais Elétricos | LinkedIn Marcelo Muritiba posted on LinkedIn Marcelo Muritiba - AXT Terminais Elétricos | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies do LinkedIn . · Experiência: AXT Terminais Elétricos · Formação acadêmica: Universidade Anhanguera São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn . Veja o perfil de Pedro Novais no... Sobre Profissional com experiência nas áreas de Compras , Supply Chain, Comércio Exterior e… A AXT conta com uma linha de terminais completa e sistema de estoque ampliado, garantindo disponibilidade para sua compra . Experiência: AXT Terminais Elétricos · Localidade: Itu · 272 conexões no LinkedIn . Veja o perfil de Marcelo Muritiba no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: dorja industria e comercio de equipamentos medicos
+      ∟ BIO/DESCRIPTION: Com mais de seis anos de experiência na área de compras, trago um histórico de… · Experiência: Dorja Industria E Comercio De Equipamentos Medicos · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Itu · + de 500 conexões no LinkedIn. Veja o perfil de Daniella Nascimento no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Pedro Novais
+🔗 LINKEDIN: https://br.linkedin.com/in/pedrobnovais
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Pedro Novais - AXT Terminais Elétricos | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: · Experiência: AXT Terminais Elétricos · Formação acadêmica: Universidade Anhanguera São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn . Veja o perfil de Pedro Novais no...
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Profissional da área comercial com experiência em vendas técnicas e consultivas, atuando… · Experiência: AXT Terminais Elétricos · Formação acadêmica: Universidade Anhanguera São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Pedro Novais no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+
+················································································
+🔍 [ANÁLISE DE PERFIL] CANDIDATO: Renata Sein
+🔗 LINKEDIN: https://br.linkedin.com/in/renata-sein
+················································································
+
+📦 FASE 4: CANDIDATE PROCESSOR (DADOS BRUTOS)
+   ∟ [SEARCH SNIPPET] TITLE: Renata Sein - AXT Terminais Elétricos | LinkedIn Marcelo Muritiba posted on LinkedIn Marcelo Muritiba - AXT Terminais Elétricos | LinkedIn
+   ∟ [SEARCH SNIPPET] BODY: Sobre Profissional com experiência nas áreas de Compras , Supply Chain, Comércio Exterior e… A AXT conta com uma linha de terminais completa e sistema de estoque ampliado, garantindo disponibilidade para sua compra . Experiência: AXT Terminais Elétricos · Localidade: Itu · 272 conexões no LinkedIn . Veja o perfil de Marcelo Muritiba no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.
+   ∟ [THE ORG CHECK]: ❌ NÃO CONSTA
+   ∟ [METADATA ENRICHMENT] (PREVIEW SILENCIOSO):
+      ∟ ROLE DETECTED: cargo não identificado nos metadados
+      ∟ BIO/DESCRIPTION: Profissional com experiência nas áreas de Compras, Supply Chain, Comércio Exterior e… · Experiência: AXT Terminais Elétricos · Formação acadêmica: UniSant'Anna · Localidade: Indaiatuba · 202 conexões no LinkedIn. Veja o perfil de Renata Sein no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.
+
+🧠 FASE 5: PIPELINE DE INTELIGÊNCIA IA (4 ESTÁGIOS)
+   🎯 [ESTÁGIO 1: SNIPER] (HIGIENIZAÇÃO):
+      ∟ FALHA NA HIGIENIZAÇÃO
+   🕵️ [ESTÁGIO 2: DETETIVE] (EXTRAÇÃO DE FATOS):
+      ∟ SEM FATOS EXTRAÍDOS
+   👔 [ESTÁGIO 3: ESPECIALISTA RH] (REFINO TÉCNICO):
+      ∟ DEPARTAMENTO SUGERIDO: COMPRAS
+      ∟ RELEVANTE PARA O FOCO: SIM
+   ⚖️ [ESTÁGIO 4: JUIZ FINAL] (VEREDITO):
+      ∟ RESULTADO: ✅ APROVADO
+      ∟ CARGO FINAL: Colaborador
+      ∟ SCORE DE MATCHING: 50%
+      ∟ EVIDÊNCIA DO JUIZ: APROVADO VIA REPESCAGEM: None
+
+🔄 [AUTO-REPESCAGEM] Ativada (Investigação Profunda realizada).
+
+——————————————————————————————————————————————————
+[FILTRO MECÂNICO] CANDIDATO: Marcelo Muritiba
+LINK: https://br.linkedin.com/in/marcelo-muritiba-534a3355
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+[FILTRO MECÂNICO] CANDIDATO: Alessandro Russano
+LINK: https://www.linkedin.com/in/alessandrorussano
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+
+
+==============================
+🔍 NOVA CONSULTA: Axt Terminais Elétricos Compradora Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: Unknown
+LINK: https://www.linkedin.com/in/axt-terminais-elétricos-05a770211
+MOTIVO: 🚫 Nome inválido ou coincidente com a marca
+--------------------------------------------------
+
+
+==============================
+🔍 NOVA CONSULTA: Axt Terminais Elétricos Procurement Brasil linkedin
+==============================
+
+
+==============================
+🔍 NOVA CONSULTA: Axt Terminais Elétricos Strategic Sourcing Brasil linkedin
+==============================
+
+[FILTRO MECÂNICO] CANDIDATO: Bento Santos
+LINK: https://br.linkedin.com/in/bento-santos
+MOTIVO: 🚫 REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)
+--------------------------------------------------
+

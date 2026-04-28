@@ -110,14 +110,13 @@
 
 .cardWithBg {
     background: transparent;
-    border: 1px solid rgba(150, 150, 150, 0.15);
-    border-radius: 12px;
+    
     padding: 12px 14px;
     margin-bottom: 8px;
 }
 
 .cardWithBg:hover {
-    border-color: rgba(150, 150, 150, 0.3);
+    border-color: rgba(150, 150, 150, 0.15);
 }
 
 .eventHeader {

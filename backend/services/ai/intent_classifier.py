@@ -4,7 +4,10 @@ Analisa a mensagem do usuário e determina o tipo de query, ações e escopos de
 """
 import json
 from typing import Optional, List
+from core.logging_config import get_logger
 from services.ai.helpers import MessageInput
+
+log = get_logger(__name__)
 
 
 async def classify_user_intent(message: str, history: Optional[List[MessageInput]] = None) -> dict:
@@ -13,8 +16,7 @@ async def classify_user_intent(message: str, history: Optional[List[MessageInput
     Usa a IA para classificar a intenção, os parâmetros da busca e o ESCOPO GRANULAR de dados
     antes de dar a resposta. O data_scope define quais fatias de dados buscar.
     """
-    from services.external.base_gemini_service import ask_gemini
-    
+    from services.ai.llm import LLMTier, ask_llm
     from services.ai.prompts import INTENT_CLASSIFIER_PROMPT
     
     history_str = ""
@@ -44,21 +46,24 @@ async def classify_user_intent(message: str, history: Optional[List[MessageInput
 Mensagem atual do usuário: "{message}"
 """
     try:
-        response = await ask_gemini(prompt, json_mode=True)
-        print(f"[AI Pipeline] Resposta bruta do Classificador: {response}")
+        # Usa ask_llm (router) para respeitar preferred_model do request atual
+        llm_res = await ask_llm(prompt, json_mode=True, tier=LLMTier.FAST, cacheable=True)
+        response = llm_res.json_data if llm_res.json_data is not None else {}
         
         if isinstance(response, dict):
+            log.debug("intent.raw_response", response=str(response)[:200] if response else None)
             response["_original_message"] = message
             return _extract_intent(response)
         elif isinstance(response, str):
             try:
                 parsed = json.loads(response)
+                log.debug("intent.raw_response", response=str(parsed)[:200] if parsed else None)
                 parsed["_original_message"] = message
                 return _extract_intent(parsed)
             except:
                 pass
     except Exception as e:
-        print(f"[AI Pipeline] Erro na classificação de intenção via Gemini: {e}")
+        log.warning("intent.classification_error", error=str(e))
         
     return {
         "query_type": "general", "data_scope": [], "activity_done_filter": 0,
@@ -113,6 +118,6 @@ def _extract_intent(data: dict) -> dict:
         stage_match = re.search(r'(?:estágio|etapa|fase|funil)\s+([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+)*)', data.get("_original_message", ""), re.IGNORECASE)
         if stage_match:
             result["extracted_deal_stage"] = stage_match.group(1).strip()
-            print(f"[AI Pipeline] 🛡️ Etapa extraída via Regex Fallback: {result['extracted_deal_stage']}")
+            log.debug("intent.stage_regex_fallback", stage=result['extracted_deal_stage'])
 
     return result

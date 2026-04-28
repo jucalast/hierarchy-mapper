@@ -65,6 +65,7 @@ class LLMProvider(Protocol):
         temperature: float = 0.1,
         timeout_sec: Optional[float] = None,
         tier: LLMTier = LLMTier.STANDARD,
+        preferred_model: Optional[str] = None,
     ) -> LLMResult:  # pragma: no cover
         """Executa a chamada. Lança LLMError em falhas."""
         ...

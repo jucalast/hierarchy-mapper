@@ -4,6 +4,7 @@ import styles from './ChatPanel.module.css';
 
 import { Message, CompanyResult } from './chat/ChatInterfaces';
 import { ChatInput } from './chat/ChatInput';
+import { AIModel, ModelSelector } from './chat/ModelSelector';
 import { ChatMessage, RichLogRenderer } from './chat/ChatMessage';
 import { ActivitySidebar } from './chat/ActivitySidebar';
 import { ThreadList } from './chat/ThreadList';
@@ -54,7 +55,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [selectedCompanies, setSelectedCompanies] = useState<CompanyResult[]>([]);
     const [currentLogs, setCurrentLogs] = useState<any[]>([]);
     const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>>({});
-    const [model, setModel] = useState<'gemini' | 'groq'>('gemini');
+    const [model, setModel] = useState<AIModel>(() => {
+        const saved = localStorage.getItem('ai_preferred_model');
+        return (saved as AIModel) || 'claude';
+    });
+    const [strictMode, setStrictMode] = useState<boolean>(() => {
+        const saved = localStorage.getItem('ai_strict_mode');
+        return saved === 'true';
+    });
     const [pipedriveCooldown, setPipedriveCooldown] = useState<number>(0);
 
     // ─── Activity sidebar ────────────────────────────────────
@@ -90,6 +98,26 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
     }, [pipedriveCooldown]);
 
+    // ─── AI Model Preference Persistence ─────────────────────
+    useEffect(() => {
+        // Sincroniza a escolha do usuário com o backend para que
+        // tarefas de background (triggers) também usem este modelo.
+        const syncPreference = async () => {
+            try {
+                await ai.updatePreference(model, strictMode);
+                // Salva no localStorage como backup
+                localStorage.setItem('ai_preferred_model', model);
+                localStorage.setItem('ai_strict_mode', String(strictMode));
+            } catch (err) {
+                console.warn('[ChatPanel] Erro ao sincronizar preferência:', err);
+                // Salva no localStorage mesmo se falhar no backend
+                localStorage.setItem('ai_preferred_model', model);
+                localStorage.setItem('ai_strict_mode', String(strictMode));
+            }
+        };
+        void syncPreference();
+    }, [model, strictMode]);
+
     // ─── Load threads and activities ────────────────────────
     const loadThreads = useCallback(async () => {
         setIsLoadingThreads(true);
@@ -113,9 +141,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setView('list');
         setActiveThread(null);
         setMessages([]);
-        setActivities([]);
-        setThreads([]);
-
+        // Sempre carrega threads, mesmo que orgId seja nulo (orgId=0 no backend pega tudo)
         void loadThreads();
     }, [selectedOrgId, loadThreads]);
 
@@ -178,23 +204,31 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setMessages([]);
         setCurrentLogs([]);
         // Refresh thread list to show updated message counts
-        if (selectedOrgId) {
-            void loadThreads();
-        }
+        void loadThreads();
     };
 
     // ─── Delete thread ───────────────────────────────────────
     const confirmDeleteThread = async () => {
         if (!threadToDelete) return;
+        const targetId = threadToDelete.id;
         try {
-            await conversations.deleteThread(threadToDelete.id);
-            setThreads(prev => prev.filter(t => t.id !== threadToDelete.id));
-            if (activeThread?.id === threadToDelete.id) {
+            await conversations.deleteThread(targetId);
+            setThreads(prev => prev.filter(t => t.id !== targetId));
+            if (activeThread?.id === targetId) {
                 handleBackToList();
             }
+        } catch (err: any) {
+            // Se for 404, já foi deletada, então removemos da UI também
+            if (err.status === 404) {
+                setThreads(prev => prev.filter(t => t.id !== targetId));
+                if (activeThread?.id === targetId) {
+                    handleBackToList();
+                }
+            } else {
+                console.error('[ChatPanel] Erro ao deletar thread:', err);
+            }
+        } finally {
             setThreadToDelete(null);
-        } catch (err) {
-            console.error('[ChatPanel] Erro ao deletar thread:', err);
         }
     };
 
@@ -222,23 +256,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         } catch { return null; }
     };
 
-    // ─── Send message ────────────────────────────────────────
-    const handleSendMessage = async (text: string, companiesSelected: CompanyResult[]) => {
-        if (!text.trim() && companiesSelected.length === 0) return;
-
-        const threadId = await ensureThread();
-
-        const userMsg: Message = {
-            id: Date.now().toString(),
-            role: 'user',
-            content: text,
-            timestamp: new Date(),
-            selectedCompanies: companiesSelected.length > 0 ? [...companiesSelected] : undefined,
-        };
-
-        setMessages(prev => [...prev, userMsg]);
-        setInputValue('');
-        setSelectedCompanies([]);
+    // ─── Core Chat Workflow ──────────────────────────────────
+    const executeChatWorkflow = async (
+        text: string,
+        companiesSelected: CompanyResult[],
+        threadId: string,
+        historyForApi: { role: string, content: string }[],
+        isSuggestedAction: boolean = false
+    ) => {
         setIsLoading(true);
         setCurrentLogs([]);
 
@@ -247,13 +272,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    message: userMsg.content,
+                    message: text,
                     orgId: selectedOrgId,
                     selectedCompanies: companiesSelected,
                     context: 'hierarchy_analysis',
                     model,
                     thread_id: threadId,
-                    history: messages.slice(-6).map(m => ({ role: m.role, content: m.content })),
+                    history: historyForApi,
+                    suggested_action: isSuggestedAction,
                 }),
             });
 
@@ -291,6 +317,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                         data: chunk.data,
                                         logs: [...sessionLogs],
                                         pending_approvals: chunk.data?.pending_approvals || [],
+                                        suggested_actions: chunk.data?.suggested_actions || [],
                                     }]);
                                     // Refresh thread title/count silently
                                     if (selectedOrgId) {
@@ -314,10 +341,72 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 }
             }
         } catch (error) {
-            console.error('Erro ao enviar mensagem:', error);
+            console.error('Erro ao executar workflow:', error);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // ─── Send message ────────────────────────────────────────
+    const handleSendMessage = async (text: string, companiesSelected: CompanyResult[], isSuggestedAction: boolean = false) => {
+        if (!text.trim() && companiesSelected.length === 0) return;
+
+        const threadId = await ensureThread();
+        if (!threadId) return;
+
+        const userMsg: Message = {
+            id: Date.now().toString(),
+            role: 'user',
+            content: text,
+            timestamp: new Date(),
+            selectedCompanies: companiesSelected.length > 0 ? [...companiesSelected] : undefined,
+        };
+
+        const historyForApi = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
+
+        setMessages(prev => [...prev, userMsg]);
+        setInputValue('');
+        setSelectedCompanies([]);
+
+        await executeChatWorkflow(text, companiesSelected, threadId, historyForApi, isSuggestedAction);
+    };
+
+    // ─── Regenerate response ─────────────────────────────────
+    const handleRegenerate = async (fromMessageId?: string) => {
+        if (isLoading) return;
+
+        let lastUserMsg;
+        let lastUserMsgIndex;
+
+        if (fromMessageId) {
+            const msgIndex = messages.findIndex(m => m.id === fromMessageId);
+            if (msgIndex === -1) return;
+            
+            const priorUserMessages = messages.slice(0, msgIndex).filter(m => m.role === 'user');
+            if (priorUserMessages.length === 0) return;
+            
+            lastUserMsg = priorUserMessages[priorUserMessages.length - 1];
+            lastUserMsgIndex = messages.indexOf(lastUserMsg);
+        } else {
+            const userMessages = messages.filter(m => m.role === 'user');
+            if (userMessages.length === 0) return;
+            lastUserMsg = userMessages[userMessages.length - 1];
+            lastUserMsgIndex = messages.lastIndexOf(lastUserMsg);
+        }
+
+        const threadId = await ensureThread();
+        if (!threadId) return;
+
+        // Mantém apenas até a última mensagem do usuário (remove a resposta da IA anterior)
+        const newHistory = messages.slice(0, lastUserMsgIndex + 1);
+        
+        // Envia histórico incluindo a última mensagem do assistente para detecção de regeneração no backend
+        // Isso permite que o backend identifique que é uma regeneração e delete a resposta anterior
+        const messagesIncludingLastAssistant = messages.slice(0, lastUserMsgIndex + 2);
+        const historyForApi = messagesIncludingLastAssistant.slice(-6).map(m => ({ role: m.role, content: m.content }));
+        
+        setMessages(newHistory);
+        await executeChatWorkflow(lastUserMsg.content, lastUserMsg.selectedCompanies || [], threadId, historyForApi);
     };
 
     // ─── Approve / Reject ────────────────────────────────────
@@ -477,6 +566,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             onReject={handleRejectAction}
                             onOpenWhatsApp={onOpenWhatsApp}
                             approvalStatuses={approvalStatuses}
+                            onRegenerate={handleRegenerate}
+                            onSuggestedAction={(prompt) => handleSendMessage(prompt, [], true)}
+                            model={model}
                         />
                     ))}
 
@@ -511,6 +603,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 setSelectedCompanies={setSelectedCompanies}
                 model={model}
                 setModel={setModel}
+                strictMode={strictMode}
+                setStrictMode={setStrictMode}
                 showAutocomplete={showAutocomplete}
                 isSearching={isSearching}
                 searchingCategory={searchingCategory}

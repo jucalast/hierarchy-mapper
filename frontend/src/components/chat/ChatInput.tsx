@@ -1,10 +1,11 @@
 import React, { useRef, useEffect } from 'react';
-import { 
-    X, Loader2, MessageSquare, Mail, Building2, Mic, MicOff, Wand2, ArrowUp, Sparkles, Zap 
+import {
+    X, Loader2, Building2, Mic, MicOff, ArrowUp, Zap
 } from 'lucide-react';
 import { CompanyResult } from './ChatInterfaces';
 import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
 import styles from '../ChatPanel.module.css';
+import { ModelSelector, AIModel } from './ModelSelector';
 
 interface ChatInputProps {
     inputValue: string;
@@ -25,8 +26,10 @@ interface ChatInputProps {
     startListening: () => void;
     stopListening: () => void;
     // Model props
-    model: 'gemini' | 'groq';
-    setModel: (model: 'gemini' | 'groq') => void;
+    model: AIModel;
+    setModel: (model: AIModel) => void;
+    strictMode?: boolean;
+    setStrictMode?: (strict: boolean) => void;
     // Cooldown props
     pipedriveCooldown?: number;
     // Styling
@@ -39,6 +42,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     showAutocomplete, isSearching, searchingCategory, searchTerm, companies, selectSearchResult,
     isListening, startListening, stopListening,
     model, setModel,
+    strictMode = false,
+    setStrictMode,
     pipedriveCooldown = 0,
     theme
 }) => {
@@ -74,19 +79,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         if (!text) return text;
         
         // Criar um regex dinâmico com os nomes das empresas selecionadas (se houver)
-        // Isso garante que apenas o nome exato seja destacado em roxo
         let entityRegexPart = "";
         if (selectedCompanies.length > 0) {
             const escapedNames = selectedCompanies
                 .map(c => c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
                 .join('|');
-            // Priorizamos a entidade completa antes do @ genérico
             entityRegexPart = `@(?:${escapedNames})|`;
         }
 
-        // Regex final: busca nomes selecionados OU @ seguido de caracteres (incluindo acentos)
-        // Usamos [A-Za-z\u00C0-\u00FF] para suportar acentos como em @João
-        const finalRegex = new RegExp(`(${entityRegexPart}@[A-Za-z\\u00C0-\\u00FF0-9]*)`, 'g');
+        // Regex final: busca nomes selecionados OU @ seguido de caracteres compostos
+        // Usamos [A-Za-z\u00C0-\u017F\s\-&] para suportar espaços, acentos, hífens e ampersands
+        const finalRegex = new RegExp(`(${entityRegexPart}@[A-Za-z\\u00C0-\\u017F0-9\\s\\-&]+?)(?=\\s*[.,;!?(){}\\[\\]<>]|\\s+@|$)`, 'g');
         const parts = text.split(finalRegex);
         
         return parts.map((part, i) => {
@@ -260,51 +263,49 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             )}
                         </div>
                     )}
-                </div>
 
-                <div className={styles.inputBottom}>
-                    <div className={styles.inputLeftButtons}>
-                        <button
-                            className={styles.modelBtn}
-                            onClick={() => setModel(model === 'gemini' ? 'groq' : 'gemini')}
-                            title="Alternar entre Gemini e Groq (mais rápido)"
-                        >
-                            {model === 'gemini' ? (
-                                <img src="/gemini.png" alt="Gemini" className={styles.modelIcon} />
-                            ) : (
-                                <Zap size={14} />
+                    <div className={styles.inputBottom}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <ModelSelector
+                                model={model}
+                                setModel={setModel}
+                                strictMode={strictMode}
+                                setStrictMode={setStrictMode}
+                                theme={theme}
+                            />
+                            {pipedriveCooldown > 0 && (
+                                <>
+                                    <div className={styles.dividerSmall}>|</div>
+                                    <div className={styles.cooldownBadge} title="Pipedrive em Cooldown (Aguardando reset de cota)">
+                                        <Zap size={12} className={styles.cooldownIcon} />
+                                        <span>
+                                            {Math.floor(pipedriveCooldown / 60)}:{String(pipedriveCooldown % 60).padStart(2, '0')}
+                                        </span>
+                                    </div>
+                                </>
                             )}
-                            <span>{model === 'gemini' ? 'Gemini' : 'Groq'}</span>
-                        </button>
-                        {pipedriveCooldown > 0 && (
-                            <>
-                                <div className={styles.dividerSmall}>|</div>
-                                <div className={styles.cooldownBadge} title="Pipedrive em Cooldown (Aguardando reset de cota)">
-                                    <Zap size={12} className={styles.cooldownIcon} />
-                                    <span>
-                                        {Math.floor(pipedriveCooldown / 60)}:{String(pipedriveCooldown % 60).padStart(2, '0')}
-                                    </span>
-                                </div>
-                            </>
-                        )}
 
-                        <div className={styles.dividerSmall}>|</div>
-                        <button 
-                            className={`${styles.iconBtn} ${isListening ? styles.micActive : ''}`}
-                            onClick={isListening ? stopListening : startListening}
-                            title={isListening ? "Parar Gravação" : "Enviar por Voz"}
+                            <div className={styles.dividerSmall}>|</div>
+                            <button
+                                className={`${styles.voiceBtn} ${isListening ? styles.micActive : ''}`}
+                                onClick={isListening ? stopListening : startListening}
+                                title={isListening ? "Parar Gravação" : "Enviar por Voz"}
+                            >
+                                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                                <span className={styles.voiceBtnLabel}>
+                                    {isListening ? 'Gravando' : 'Voz'}
+                                </span>
+                            </button>
+                        </div>
+
+                        <button
+                            className={`${styles.sendBtn} ${(!isLoading && (inputValue.trim() || selectedCompanies.length > 0)) ? styles.active : ''}`}
+                            disabled={isLoading || (!inputValue.trim() && selectedCompanies.length === 0)}
+                            onClick={() => onSend(inputValue, selectedCompanies)}
                         >
-                            {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                            {isLoading ? <Loader2 size={18} className={styles.spinner} /> : <ArrowUp size={18} />}
                         </button>
                     </div>
-                    
-                    <button 
-                        className={`${styles.sendBtn} ${(!isLoading && (inputValue.trim() || selectedCompanies.length > 0)) ? styles.active : ''}`} 
-                        disabled={isLoading || (!inputValue.trim() && selectedCompanies.length === 0)}
-                        onClick={() => onSend(inputValue, selectedCompanies)}
-                    >
-                        {isLoading ? <Loader2 size={18} className={styles.spinner} /> : <ArrowUp size={18} />}
-                    </button>
                 </div>
             </div>
         </div>

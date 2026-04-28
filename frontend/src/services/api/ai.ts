@@ -21,3 +21,17 @@ export interface AgentActionPayload {
 export function agentAction(payload: AgentActionPayload) {
   return api.post<Record<string, unknown>>('/ai/agent-action', payload);
 }
+
+export interface PreferenceResponse {
+  status: string;
+  preferred_model: string;
+  strict_mode: boolean;
+}
+
+export function updatePreference(model: string, strictMode: boolean = false) {
+  return api.post<PreferenceResponse>('/ai/preference', { model, strict_mode: strictMode });
+}
+
+export function getPreference() {
+  return api.get<{ preferred_model: string; strict_mode: boolean }>('/ai/preference');
+}

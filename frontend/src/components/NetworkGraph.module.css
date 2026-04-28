@@ -1267,6 +1267,11 @@
     box-shadow: inset 3px 0 0 0 var(--sw-primary);
 }
 
+.orgItem.noHover:hover {
+    background: transparent;
+    box-shadow: none;
+}
+
 .orgMainInfo {
     display: flex;
     align-items: center;

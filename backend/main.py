@@ -91,6 +91,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning("sync_hub.start_failed", error=str(e))
 
+    # Trigger Service — monitora respostas de clientes (email + WhatsApp)
+    try:
+        from services.ai.trigger_service import TriggerService
+        _trigger_svc = TriggerService()
+        trigger_task = asyncio.create_task(
+            _trigger_svc.start_polling(), name="trigger_service"
+        )
+        _background_tasks.add(trigger_task)
+        trigger_task.add_done_callback(_background_tasks.discard)
+        log.info("trigger_service.started")
+    except Exception as e:
+        log.warning("trigger_service.start_failed", error=str(e))
+
     try:
         yield
     finally:

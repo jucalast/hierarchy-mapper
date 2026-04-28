@@ -3,8 +3,11 @@ Lógica de Bypass — retorna dados brutos ao frontend sem passar pela IA (Está
 quando a intenção é clara o suficiente (tarefas, contatos, WhatsApp, Email).
 """
 from typing import Optional, Dict, Any
+from core.logging_config import get_logger
 from services.ai.helpers import ChatResponse
 from services.ai.contact_enrichment import enrich_contacts_for_grid, complete_partial_emails
+
+log = get_logger(__name__)
 
 
 def try_bypass_response(
@@ -35,7 +38,7 @@ def try_bypass_response(
     
     if is_wa_send:
         if wa_ctx.get("status") == 200:
-            print("[AI Pipeline] ⚡ Bypass WhatsApp acionado (Sucesso).")
+            log.info("bypass.whatsapp_activated")
             return ChatResponse(
                 response=f"Sua mensagem para {wa_ctx.get('contact', {}).get('name', 'o contato')} foi enviada!",
                 ui_module="WhatsAppThread",
@@ -51,7 +54,7 @@ def try_bypass_response(
     
     if is_email_send:
         if email_ctx.get("status") == 200:
-            print("[AI Pipeline] ⚡ Bypass Email acionado (Sucesso).")
+            log.info("bypass.email_activated")
             return ChatResponse(
                 response=f"Seu e-mail para {email_ctx.get('to')} foi enviado com sucesso via Outlook!",
                 ui_module="EmailThread",
@@ -60,7 +63,7 @@ def try_bypass_response(
             )
         else:
             # Se deu erro, deixa seguir para o Estágio 2 onde a IA vai explicar o erro.
-            print(f"[AI Pipeline] ⚠️ Falha no envio de e-mail detectada (Status {email_ctx.get('status')}). Seguindo para explicação da IA.")
+            log.warning("bypass.email_send_failed", status=email_ctx.get("status"))
 
     return None
 
@@ -97,7 +100,7 @@ def _bypass_tasks_or_contacts(query_t: str, intent_info: dict, internal_context:
         response_msg = f"Localizei {count} funcionários mapeados{target_text}:" if count > 0 else f"Não encontrei funcionários mapeados{target_text}."
         u_mod = "ContactGrid"
 
-    print(f"[AI Pipeline] ⚡ Bypass de IA ativado para {query_t}. Retornando dados brutos.")
+    log.info("bypass.ai_bypass", query_type=query_t)
     return ChatResponse(
         response=response_msg,
         ui_module=u_mod,

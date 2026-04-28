@@ -73,7 +73,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
         void fetchHistory(false);
         const interval = window.setInterval(() => {
             void fetchHistory(true);
-        }, 15000); // Reduzido de 5s → 15s: polling de mensagens WhatsApp
+        }, 5000); // 5s: polling de mensagens WhatsApp
         return () => window.clearInterval(interval);
     }, [fetchHistory]);
 

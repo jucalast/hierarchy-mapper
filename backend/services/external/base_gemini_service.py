@@ -58,6 +58,7 @@ async def ask_gemini(
     json_mode: bool = False,
     max_retries: int = 2,  # mantido por compat; o router já gerencia retries
     history: List[Any] | None = None,
+    tier: LLMTier = LLMTier.STANDARD,
 ) -> Union[str, Dict[str, Any]]:
     """
     Entrada legada. Delega ao LLM Router.
@@ -67,11 +68,13 @@ async def ask_gemini(
         - str caso contrário
     """
     try:
+        # ask_llm já lê o preferred_model do ContextVar do request atual,
+        # então mesmo chamadas legadas via ask_gemini respeitam a preferência do usuário.
         result = await ask_llm(
             prompt=prompt,
             history=history,
             json_mode=json_mode,
-            tier=LLMTier.STANDARD,
+            tier=tier,
         )
     except NoProviderAvailableError as e:
         log.warning("ask_gemini.no_provider", error=str(e))

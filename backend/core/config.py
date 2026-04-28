@@ -59,8 +59,8 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         model_config = SettingsConfigDict(env_prefix="AI_", extra="ignore")
 
         # Seleção de providers (ordem de preferência)
-        primary_provider: str = "gemini"
-        fallback_chain: str = "gemini,groq,claude"  # Claude entra quando Gemini+Groq estão rate-limited
+        primary_provider: str = "claude"
+        fallback_chain: str = "claude,gemini,groq"  # Claude agora é o principal brain
 
         # Timeouts por tier (sobrescreve default quando LLM é chamado)
         timeout_fast_sec: float = 15.0        # intent classification, tarefas leves
@@ -83,10 +83,11 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         history_data_max_chars: int = 300
 
         # Modelos (ordem dentro de cada provider)
+        # gemini-2.5-pro: 100 RPD | gemini-2.5-flash: 250 RPD | gemini-2.5-flash-lite: 1000 RPD
         gemini_models: str = (
-            "gemini-2.0-flash,"
-            "gemini-2.0-flash-lite,"
-            "gemini-flash-latest"
+            "gemini-2.5-pro,"
+            "gemini-2.5-flash,"
+            "gemini-2.5-flash-lite"
         )
         groq_models: str = (
             "llama-3.3-70b-versatile,"
@@ -166,7 +167,7 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         # --- AI / LLM ---
         GEMINI_API_KEY: str = Field(default="")
         GROQ_API_KEY: str = Field(default="")
-        ANTHROPIC_API_KEY: str = Field(default="")  # preparado para Claude
+        ANTHROPIC_API_KEY: str = Field(default="")
 
         # --- Pipedrive ---
         PIPEDRIVE_API_TOKEN: str = Field(default="")
@@ -317,7 +318,7 @@ else:
             response_cache_enabled=True, response_cache_ttl_sec=600,
             response_cache_max_entries=1024,
             history_max_messages=6, history_truncate_chars=1200, history_data_max_chars=300,
-            gemini_models="gemini-2.0-flash,gemini-2.0-flash-lite,gemini-flash-latest",
+            gemini_models="gemini-2.5-pro,gemini-2.5-flash,gemini-2.5-flash-lite",
             groq_models="llama-3.3-70b-versatile,llama-3.1-8b-instant",
             claude_models="claude-sonnet-4-5,claude-3-5-haiku-latest",
             temperature_default=0.1,

@@ -89,12 +89,11 @@ async def list_threads(
     session: AsyncSession = Depends(get_db),
 ):
     """Retorna threads da empresa ordenadas pela mais recente."""
-    result = await session.execute(
-        select(ConversationThread)
-        .where(ConversationThread.org_id == org_id)
-        .order_by(ConversationThread.updated_at.desc())
-        .limit(limit)
-    )
+    q = select(ConversationThread).order_by(ConversationThread.updated_at.desc()).limit(limit)
+    if org_id > 0:
+        q = q.where(ConversationThread.org_id == org_id)
+        
+    result = await session.execute(q)
     return result.scalars().all()
 
 
@@ -164,12 +163,9 @@ async def list_activities(
     session: AsyncSession = Depends(get_db),
 ):
     """Retorna timeline de atividades da empresa, mais recentes primeiro."""
-    q = (
-        select(ActivityLog)
-        .where(ActivityLog.org_id == org_id)
-        .order_by(ActivityLog.created_at.desc())
-        .limit(limit)
-    )
+    q = select(ActivityLog).order_by(ActivityLog.created_at.desc()).limit(limit)
+    if org_id > 0:
+        q = q.where(ActivityLog.org_id == org_id)
     if activity_type:
         q = q.where(ActivityLog.activity_type == activity_type)
 
@@ -181,6 +177,109 @@ async def list_activities(
 # Helpers usados pelos outros endpoints/services
 # ─────────────────────────────────────────────
 
+async def delete_last_assistant_message(
+    session: AsyncSession,
+    thread_id: str
+) -> bool:
+    """Remove a última mensagem do assistente na thread (usado para regeneração)."""
+    q = (
+        select(ConversationMessage)
+        .where(ConversationMessage.thread_id == thread_id)
+        .where(ConversationMessage.role == "assistant")
+        .order_by(ConversationMessage.timestamp.desc())
+        .limit(1)
+    )
+    result = await session.execute(q)
+    msg = result.scalar_one_or_none()
+    if msg:
+        await session.delete(msg)
+        # Ajustar contador da thread
+        await session.execute(
+            update(ConversationThread)
+            .where(ConversationThread.id == thread_id)
+            .values(
+                message_count=ConversationThread.message_count - 1,
+            )
+        )
+        await session.commit()
+        log.info("conversation.message.deleted_for_regeneration", thread_id=thread_id, message_id=msg.id)
+        return True
+    return False
+
+
+async def get_thread_cached_context(
+    session: AsyncSession,
+    thread_id: str,
+    org_id: Optional[int] = None,
+    max_age_minutes: int = 30,
+) -> Optional[dict]:
+    """
+    Recupera o contexto salvo da última mensagem do assistente na thread.
+    Usado para evitar re-buscar todos os dados quando a conversa continua.
+    
+    Retorna o internal_context salvo se:
+    - Há uma mensagem de assistant recente na thread
+    - O contexto tem menos de max_age_minutos
+    - O org_id bate (se fornecido)
+    """
+    try:
+        from datetime import datetime, timedelta
+        from sqlalchemy import select, desc
+        
+        cutoff = datetime.utcnow() - timedelta(minutes=max_age_minutes)
+        
+        # Busca a última mensagem do assistente com data não nulo
+        result = await session.execute(
+            select(ConversationMessage)
+            .where(
+                ConversationMessage.thread_id == thread_id,
+                ConversationMessage.role == "assistant",
+                ConversationMessage.data.isnot(None),
+                ConversationMessage.timestamp >= cutoff
+            )
+            .order_by(desc(ConversationMessage.timestamp))
+            .limit(1)
+        )
+        last_msg = result.scalar_one_or_none()
+        
+        if not last_msg:
+            return None
+            
+        # Extrai o internal_context do campo data
+        msg_data = last_msg.data or {}
+        cached_context = msg_data.get("_internal_context")
+        
+        if not cached_context:
+            return None
+            
+        # Verifica se o org_id bate (se fornecido)
+        # O dict de organização pode ter "id", "pipedrive_id" ou "_org_id" dependendo da origem
+        if org_id:
+            org_dict = cached_context.get("organization", {})
+            context_org_id = (
+                cached_context.get("_org_id")      # campo canônico adicionado na v2
+                or org_dict.get("id")               # legacy
+                or org_dict.get("pipedrive_id")     # formato atual do data_fetcher
+                or org_dict.get("local_id")
+            )
+            # Compara como int para evitar falha por tipo (str vs int)
+            try:
+                match = int(context_org_id) == int(org_id)
+            except (TypeError, ValueError):
+                match = False
+            if not match:
+                log.debug("chat.context_cache.org_mismatch",
+                          context_org_id=context_org_id, payload_org_id=org_id)
+                return None
+                
+        log.info("chat.context_cache.hit", thread_id=thread_id)
+        return cached_context
+        
+    except Exception as e:
+        log.warning("chat.context_cache.error", error=str(e))
+        return None
+
+
 async def save_message(
     session: AsyncSession,
     thread_id: str,
@@ -190,14 +289,21 @@ async def save_message(
     data: Optional[dict] = None,
     logs: Optional[list] = None,
     sources: Optional[int] = None,
+    internal_context: Optional[dict] = None,
 ) -> ConversationMessage:
     """Salva uma mensagem e atualiza os contadores da thread."""
+    # Se houver internal_context, salva no data para reuso futuro
+    final_data = data or {}
+    if internal_context and role == "assistant":
+        # Cria uma cópia para não modificar o dict original
+        final_data = {**final_data, "_internal_context": internal_context}
+    
     msg = ConversationMessage(
         thread_id=thread_id,
         role=role,
         content=content,
         ui_module=ui_module,
-        data=data,
+        data=final_data,
         logs=logs,
         sources=sources,
     )
@@ -252,10 +358,9 @@ async def get_recent_activities_context(
     limit: int = 10,
 ) -> List[ActivityLog]:
     """Busca atividades recentes para injeção no prompt do agente."""
-    result = await session.execute(
-        select(ActivityLog)
-        .where(ActivityLog.org_id == org_id)
-        .order_by(ActivityLog.created_at.desc())
-        .limit(limit)
-    )
+    q = select(ActivityLog).order_by(ActivityLog.created_at.desc()).limit(limit)
+    if org_id > 0:
+        q = q.where(ActivityLog.org_id == org_id)
+        
+    result = await session.execute(q)
     return result.scalars().all()

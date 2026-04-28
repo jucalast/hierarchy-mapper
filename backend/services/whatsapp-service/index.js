@@ -16,20 +16,22 @@ app.use(express.json());
 const fs = require('fs');
 const path = require('path');
 const lockfilePath = path.join(__dirname, '.wwebjs_auth', 'session', 'lockfile');
+const sessionPath = path.join(__dirname, '.wwebjs_auth', 'session');
+
 if (fs.existsSync(lockfilePath)) {
     try {
-        console.log('[WA Service] Removendo lockfile órfão...');
+        console.log('[WA Service] 🧹 Removendo lockfile órfão para liberar a sessão...');
         fs.unlinkSync(lockfilePath);
     } catch (e) {
-        console.error('[WA Service] Falha ao remover lockfile:', e.message);
+        console.warn('[WA Service] ⚠️ Não foi possível remover o lockfile (pode estar em uso por outro processo):', e.message);
     }
 }
 
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: 'new',
-        executablePath: process.env.CHROME_PATH || undefined,
+        headless: false, // Abrir janela visível para depuração
+        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -39,40 +41,99 @@ const client = new Client({
             '--disable-gpu',
             '--disable-extensions',
             '--disable-features=IsolateOrigins,site-per-process',
-            '--window-size=1280,720'
-        ]
-    },
-    webVersionCache: {
-        type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
+            '--window-size=1280,720',
+            '--disable-web-security',
+            '--no-default-browser-check',
+            '--disable-software-rasterizer',
+            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+        ],
+        timeout: 90000 // Aumentar timeout para 90s
     }
 });
 
 // Contador de falhas fatais para auto-restart
 let fatalErrorCount = 0;
 const MAX_FATAL_ERRORS = 3;
+let isRestarting = false;
+
+/**
+ * Detects if an error is a fatal Puppeteer/Chrome frame error that requires restart.
+ * Covers: detached Frame, Execution context destroyed, Protocol error, 't' crash.
+ */
+const isFatalPuppeteerError = (error) => {
+    if (!error) return false;
+    const msg = typeof error === 'string' ? error : (error.message || '');
+    return (
+        msg === 't' ||
+        msg.includes('detached Frame') ||
+        msg.includes('Execution context was destroyed') ||
+        msg.includes('Session closed') ||
+        msg.includes('Protocol error') ||
+        msg.includes('Target closed') ||
+        msg.includes('frame was detached') ||
+        msg.includes('Cannot find context') ||
+        msg.includes('Navigating frame was detached')
+    );
+};
+
+/**
+ * Increments the fatal error counter and triggers restart if threshold is reached.
+ * Returns true if a restart was triggered.
+ */
+const trackFatalError = (error) => {
+    if (!isFatalPuppeteerError(error)) return false;
+    fatalErrorCount++;
+    console.warn(`[WA Service] ⚠️ Erro fatal de Puppeteer detectado (${fatalErrorCount}/${MAX_FATAL_ERRORS}): ${error.message || error}`);
+    if (fatalErrorCount >= MAX_FATAL_ERRORS) {
+        restartClient();
+        return true;
+    }
+    return false;
+};
 
 const restartClient = async () => {
-    console.log('[WA Service] Reiniciando cliente devido a falhas excessivas...');
+    if (isRestarting) {
+        console.log('[WA Service] ⏳ Restart já em andamento, ignorando...');
+        return;
+    }
+    isRestarting = true;
+    console.log('[WA Service] 🔄 Reiniciando cliente devido a falhas excessivas...');
     isReady = false;
     fatalErrorCount = 0;
+    
+    // Invalidate contact cache since the frame is gone
+    try {
+        const cs = require('./contactService');
+        if (cs._invalidateCache) cs._invalidateCache();
+    } catch (e) {}
+    
     try {
         await client.destroy();
-    } catch (e) {}
-    await delay(2000);
-    client.initialize();
+    } catch (e) {
+        console.warn('[WA Service] ⚠️ Erro ao destruir cliente:', e.message);
+    }
+    await delay(3000);
+    try {
+        await client.initialize();
+        console.log('[WA Service] ✅ Cliente reinicializado com sucesso.');
+    } catch (err) {
+        console.error('[WA Service] ❌ Erro no re-init:', err);
+    } finally {
+        isRestarting = false;
+    }
 };
 
 let isReady = false;
 
 console.log('[WA Service] 🚀 Iniciando processo de autenticação e bot...');
+
 client.on('qr', (qr) => {
     console.log('[WA Service] ⚠️ QR Code recebido! Por favor, escaneie com o WhatsApp do celular:');
     qrcode.generate(qr, { small: true });
 });
 
 client.on('loading_screen', (percent, message) => {
-    console.log(`[WA Service] ⏳ Carregando: ${percent}% - ${message}`);
+    console.log(`[WA Service] ⏳ Carregando WhatsApp Web: ${percent}% - ${message}`);
 });
 
 client.on('authenticated', () => {
@@ -81,27 +142,53 @@ client.on('authenticated', () => {
 
 client.on('auth_failure', msg => {
     console.error('[WA Service] ❌ FALHA DE AUTENTICAÇÃO:', msg);
+    console.error('[WA Service] DICA: Tente apagar a pasta .wwebjs_auth se o erro persistir.');
     isReady = false;
 });
 
 client.on('ready', () => {
     console.log('[WA Service] 🚀 Cliente WhatsApp está logado e pronto!');
     isReady = true;
+    fatalErrorCount = 0; // Reset on successful ready
+    isRestarting = false;
+    
+    // Attach page-level crash listener to detect detached frames proactively
+    try {
+        const page = client.pupPage;
+        if (page) {
+            page.on('error', (err) => {
+                console.error('[WA Service] 💥 Puppeteer page crash:', err.message);
+                trackFatalError(err);
+            });
+            page.on('close', () => {
+                console.error('[WA Service] 💥 Puppeteer page was closed unexpectedly!');
+                isReady = false;
+                restartClient();
+            });
+        }
+    } catch (e) {
+        console.warn('[WA Service] ⚠️ Não foi possível anexar listener de crash na page:', e.message);
+    }
 });
 
 client.on('disconnected', (reason) => {
     console.log('[WA Service] 🔌 Cliente foi desconectado:', reason);
     isReady = false;
-    setTimeout(() => client.initialize(), 5000);
+    if (!isRestarting) {
+        setTimeout(() => client.initialize().catch(err => console.error('[WA Service] ❌ Erro no re-init após desconexão:', err)), 5000);
+    }
 });
 
 client.on('message', async msg => {
     console.log(`[WA Service] 💬 Mensagem de ${msg.from}: ${msg.body.substring(0, 50)}${msg.body.length > 50 ? '...' : ''}`);
 });
 
-console.log('[WA Service] 🛠️ Inicializando o cliente (Pode demorar alguns segundos)...');
-client.initialize().catch(err => {
-    console.error('[WA Service] ❌ Erro fatal na inicialização:', err.message);
+console.log('[WA Service] 🛠️ Inicializando o cliente Puppeteer...');
+client.initialize().then(() => {
+    console.log('[WA Service] ⚙️ Comando de inicialização aceito. Aguardando eventos de login...');
+}).catch(err => {
+    console.error('[WA Service] ❌ Erro fatal na inicialização:', err);
+    console.error('[WA Service] DICA: Verifique se o Chrome está instalado em C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe');
 });
 
 // Helper para atrasos
@@ -139,11 +226,8 @@ app.post('/api/whatsapp/send', async (req, res) => {
             } catch (regError) {
                 console.error(`[WA Service] Erro ao verificar registro para ${formattedNumber}: ${regError.message}`);
                 
-                // Detecta erro de contexto do Puppeteer (t: t)
-                if (regError.message === 't' || regError.message.includes('Execution context was destroyed')) {
-                    fatalErrorCount++;
-                    if (fatalErrorCount >= MAX_FATAL_ERRORS) restartClient();
-                }
+                // Detecta erros fatais de Puppeteer (detached frame, context destroyed, etc.)
+                trackFatalError(regError);
 
                 // Se falhar o check, assumimos true e deixamos o envio tentar (mais resiliente a erros 't: t')
                 isRegistered = true;
@@ -189,10 +273,7 @@ app.post('/api/whatsapp/send', async (req, res) => {
             }
         } catch (e) {
             console.log(`[WA Service] Chat ${formattedNumber} não encontrado no cache ou erro Puppeteer: ${e.message}`);
-            if (e.message === 't') {
-                fatalErrorCount++;
-                if (fatalErrorCount >= MAX_FATAL_ERRORS) restartClient();
-            }
+            trackFatalError(e);
         }
 
         await client.sendMessage(formattedNumber, message);
@@ -202,13 +283,22 @@ app.post('/api/whatsapp/send', async (req, res) => {
     } catch (err) {
         console.error('[WA Service] Erro no envio:', err.message);
         
-        if (err.message === 't' || err.message.includes('navigating')) {
-            fatalErrorCount++;
-            if (fatalErrorCount >= MAX_FATAL_ERRORS) restartClient();
-        }
+        trackFatalError(err);
 
         res.status(500).json({ error: 'Falha no envio da mensagem.', details: err.message });
     }
+});
+
+// Endpoint de Status e Saúde
+app.get('/api/whatsapp/status', (req, res) => {
+    res.json({
+        isReady,
+        authenticated: client.info ? true : false,
+        pushname: client.info ? client.info.pushname : null,
+        wid: client.info ? client.info.wid : null,
+        platform: process.platform,
+        fatalErrors: fatalErrorCount
+    });
 });
 
 // Endpoint para buscar chats por nome (fuzzy search)
@@ -240,27 +330,73 @@ app.get('/api/whatsapp/chats/search', async (req, res) => {
 
 // Endpoint para buscar histórico de mensagens de uma conversa dado o número de telefone
 app.get('/api/whatsapp/chats/by-number/:number/messages', async (req, res) => {
-    if (!isReady) return res.status(503).json({ error: 'WhatsApp indisponível ou não logado.' });
-    
+    // Aceita requisições se estiver autenticado, não apenas se isReady for true
+    // isReady pode demorar a ficar true após reload, mas authenticated indica que está funcionando
+    if (!isReady && !client.info) return res.status(503).json({ error: 'WhatsApp indisponível ou não logado.' });
+
     const { number } = req.params;
     const limit = parseInt(req.query.limit) || 30;
 
     let rawNumber = number.replace(/\D/g, '');
-    let formattedNumber = `${rawNumber}@c.us`;
+
+    // Normalização Brasil (Garante prefixo 55 se faltar)
+    if (rawNumber.length === 10 || rawNumber.length === 11) {
+        if (!rawNumber.startsWith('55')) rawNumber = `55${rawNumber}`;
+    }
 
     try {
         let chat;
+        let resolvedId = null;
+
+        // 1. Tenta resolver ID oficial via getNumberId (resolve @c.us, @lid e 9º dígito)
         try {
-            chat = await client.getChatById(formattedNumber);
+            const info = await client.getNumberId(rawNumber);
+            if (info) {
+                resolvedId = info._serialized;
+            } else if (rawNumber.startsWith('55')) {
+                // Tenta alternar 9º dígito se o primeiro falhou
+                let altNumber;
+                if (rawNumber.length === 13) altNumber = `55${rawNumber.substring(4)}`; // Remove o 9
+                else if (rawNumber.length === 12) altNumber = `55${rawNumber.substring(2,4)}9${rawNumber.substring(4)}`; // Adiciona o 9
+
+                if (altNumber) {
+                    const altInfo = await client.getNumberId(altNumber);
+                    if (altInfo) resolvedId = altInfo._serialized;
+                }
+            }
         } catch (e) {
-            console.warn(`[WA Service] getChatById falhou para ${formattedNumber}: ${e.message}. Tentando via lista de chats...`);
+            console.warn(`[WA Service] getNumberId falhou para ${rawNumber}:`, e.message);
+        }
+
+        // 2. Tenta buscar o chat pelo ID resolvido
+        if (resolvedId) {
+            try {
+                chat = await client.getChatById(resolvedId);
+            } catch (e) {}
+        }
+
+        // 3. Fallback: Busca manual na lista de chats ativos (mais resiliente)
+        if (!chat) {
+            console.log(`[WA Service] ID oficial não resolvido. Buscando manual na lista de chats para: ${rawNumber}`);
             const chats = await client.getChats();
-            chat = chats.find(c => c.id._serialized === formattedNumber || c.id.user === rawNumber);
-            if (!chat) throw new Error("Não foi possível localizar o chat nem pela lista.");
+            const candidates = [rawNumber];
+            if (rawNumber.startsWith('55')) {
+                if (rawNumber.length === 13) candidates.push(`55${rawNumber.substring(4)}`);
+                else if (rawNumber.length === 12) candidates.push(`55${rawNumber.substring(2,4)}9${rawNumber.substring(4)}`);
+            }
+
+            chat = chats.find(c => {
+                const user = c.id.user;
+                return candidates.some(cand => user === cand || user.includes(cand) || cand.includes(user));
+            });
+        }
+
+        if (!chat) {
+            return res.status(404).json({ error: `Conversa não encontrada para o número ${number}` });
         }
 
         const messages = await chat.fetchMessages({ limit });
-        
+
         const simplifiedMessages = messages.map(m => ({
             id: m.id._serialized,
             fromMe: m.fromMe,
@@ -269,10 +405,10 @@ app.get('/api/whatsapp/chats/by-number/:number/messages', async (req, res) => {
             timestamp: m.timestamp,
             hasMedia: m.hasMedia
         }));
-        
-        res.json({ 
-            number: formattedNumber,
-            messages: simplifiedMessages 
+
+        res.json({
+            number: chat.id._serialized,
+            messages: simplifiedMessages
         });
     } catch (error) {
         console.error("[WA Service] Erro crítico ao buscar mensagens por número:", error.message);
@@ -282,8 +418,9 @@ app.get('/api/whatsapp/chats/by-number/:number/messages', async (req, res) => {
 
 // Endpoint p/ conversas (exemplo do Drawer)
 app.get('/api/whatsapp/chats', async (req, res) => {
-    if (!isReady) return res.status(503).json({ error: 'WhatsApp indisponível ou não logado.' });
-    
+    // Aceita requisições se estiver autenticado, não apenas se isReady for true
+    if (!isReady && !client.info) return res.status(503).json({ error: 'WhatsApp indisponível ou não logado.' });
+
     try {
         const chats = await client.getChats();
         const simplifiedChats = chats.map(c => ({
@@ -292,9 +429,17 @@ app.get('/api/whatsapp/chats', async (req, res) => {
             unreadCount: c.unreadCount,
             timestamp: c.timestamp
         }));
+        fatalErrorCount = 0; // Reset on success
         res.json({ chats: simplifiedChats });
     } catch (error) {
-        res.status(500).json({ error: 'Erro ao buscar conversas.' });
+        console.error('[WA Service] Erro ao buscar conversas:', error.message);
+        const triggered = trackFatalError(error);
+        const statusCode = isFatalPuppeteerError(error) ? 503 : 500;
+        res.status(statusCode).json({ 
+            error: 'Erro ao buscar conversas.',
+            recoverable: triggered,
+            details: error.message
+        });
     }
 });
 
@@ -302,7 +447,8 @@ app.get('/api/whatsapp/chats', async (req, res) => {
 
 // Endpoint para buscar histórico de mensagens de uma conversa
 app.get('/api/whatsapp/chats/:chatId/messages', async (req, res) => {
-    if (!isReady) return res.status(503).json({ error: 'WhatsApp indisponível ou não logado.' });
+    // Aceita requisições se estiver autenticado, não apenas se isReady for true
+    if (!isReady && !client.info) return res.status(503).json({ error: 'WhatsApp indisponível ou não logado.' });
     
     let { chatId } = req.params;
     const limit = parseInt(req.query.limit) || 50;
@@ -319,18 +465,14 @@ app.get('/api/whatsapp/chats/:chatId/messages', async (req, res) => {
             fatalErrorCount = 0;
         } catch (e) {
             console.warn(`[WA Service] Falha na primeira tentativa de getChatById(${chatId}):`, e.message);
-            
-            if (e.message === 't') {
-                fatalErrorCount++;
-                if (fatalErrorCount >= MAX_FATAL_ERRORS) restartClient();
-            }
+            trackFatalError(e);
 
             // Se falhou e termina em @lid ou @c.us, tenta extrair apenas os números e buscar novamente
             const cleanNumber = chatId.replace('@c.us', '').replace('@lid', '').replace('@g.us', '').replace('@', '');
             if (cleanNumber && cleanNumber.length > 5 && !isNaN(cleanNumber) && !cleanNumber.includes('..')) {
                 chat = await client.getChatById(`${cleanNumber}@c.us`);
             } else {
-                throw new Error(e.message === 't' ? 'Erro de comunicação com o WhatsApp (Puppeteer Crash)' : `ID de conversa inválido: ${chatId}`);
+                throw new Error(isFatalPuppeteerError(e) ? 'Erro de comunicação com o WhatsApp (Puppeteer Crash - reiniciando...)' : `ID de conversa inválido: ${chatId}`);
             }
         }
 

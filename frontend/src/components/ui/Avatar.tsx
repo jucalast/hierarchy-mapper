@@ -90,6 +90,11 @@ function AvatarBase({
 
   const [imgError, setImgError] = useState(false);
 
+  // Reset error state when URL changes
+  React.useEffect(() => {
+    setImgError(false);
+  }, [proxiedUrl]);
+
   const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
     resolvedName,
   )}&background=${fallbackBg}&color=${fallbackColor}&bold=true&rounded=true&size=128`;

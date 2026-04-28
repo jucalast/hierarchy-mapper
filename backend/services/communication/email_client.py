@@ -134,11 +134,10 @@ class EmailClient:
                         if EmailClient._signature_cache:
                             mail.HTMLBody = final_body + "<br><br>" + EmailClient._signature_cache
                         else:
-                            # Fallback (apenas se o cache falhar miseravelmente)
-                            mail.Display()
-                            time.sleep(0.5)
-                            signature_html = mail.HTMLBody
-                            mail.HTMLBody = final_body + signature_html
+                            # 🛑 SEGURANÇA: Não usamos .Display() em background para evitar popups.
+                            # Se não tem assinatura em cache, envia apenas o corpo.
+                            print("[EmailClient] ⚠️ Assinatura não encontrada em cache. Enviando sem assinatura para evitar popup.")
+                            mail.HTMLBody = final_body
                     
                     if request_read_receipt:
                         mail.ReadReceiptRequested = True
@@ -599,16 +598,24 @@ class EmailClient:
                     filter_str = ""
                     if query:
                         q_clean = query.replace("'", "''") # Escape single quotes
-                        # Busca por Email do Remetente, Nome do Remetente ou Destinatário
-                        # Usamos o prefixo CI (Case Insensitive) no JET ou filtros DASL
-                        # O filtro JET básico é mais compatível:
-                        filter_str = (
-                            f"@SQL=\"urn:schemas:httpmail:fromemail\" LIKE '%{q_clean}%' "
-                            f"OR \"urn:schemas:httpmail:fromname\" LIKE '%{q_clean}%' "
-                            f"OR \"urn:schemas:httpmail:displayto\" LIKE '%{q_clean}%' "
-                            f"OR \"urn:schemas:httpmail:displaycc\" LIKE '%{q_clean}%' "
-                            f"OR \"urn:schemas:httpmail:subject\" LIKE '%{q_clean}%' "
-                        )
+                        
+                        # Se a query parece um e-mail, focamos no campo de e-mail e display names
+                        # Se não, buscamos em tudo.
+                        if "@" in q_clean:
+                            filter_str = (
+                                f"@SQL=(\"urn:schemas:httpmail:fromemail\" LIKE '%{q_clean}%' "
+                                f"OR \"urn:schemas:httpmail:displayto\" LIKE '%{q_clean}%' "
+                                f"OR \"urn:schemas:httpmail:displaycc\" LIKE '%{q_clean}%' "
+                                f"OR \"urn:schemas:httpmail:textdescription\" LIKE '%{q_clean}%')"
+                            )
+                        else:
+                            # Busca por Nome do Remetente ou Destinatário ou Assunto
+                            filter_str = (
+                                f"@SQL=(\"urn:schemas:httpmail:fromname\" LIKE '%{q_clean}%' "
+                                f"OR \"urn:schemas:httpmail:displayto\" LIKE '%{q_clean}%' "
+                                f"OR \"urn:schemas:httpmail:displaycc\" LIKE '%{q_clean}%' "
+                                f"OR \"urn:schemas:httpmail:subject\" LIKE '%{q_clean}%')"
+                            )
                     
                     # Evitar duplicidade se folders_to_scan já for recursivo
                     unique_folders = folders_to_scan

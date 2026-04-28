@@ -30,6 +30,7 @@ interface DrawerProps {
     onOrgRenamed?: (orgId: number, newName: string) => void;
     isLoading?: boolean;
     selectedOrgId?: number | null;
+    selectedOrgLogo?: string;
     activeJobId?: string | null;
     graphEmployees?: any[];
     refreshDetailsTrigger?: number; // Para forçar a recarga dos detalhes
@@ -70,6 +71,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     onOrgRenamed,
     isLoading = false,
     selectedOrgId = null,
+    selectedOrgLogo = '',
     activeJobId = null,
     graphEmployees = [],
     refreshDetailsTrigger = 0,
@@ -320,7 +322,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                             <div className={styles.focusedOrgLogoWrapper}>
                                 <Avatar
                                     kind="company"
-                                    src={focusedOrg.logo}
+                                    src={focusedOrg.logo || (Number(focusedOrg.id) === selectedOrgId || Number(focusedOrg.local_id) === selectedOrgId ? selectedOrgLogo : undefined)}
                                     name={focusedOrg.name}
                                     data={focusedOrg}
                                     size={48}
@@ -465,10 +467,15 @@ export const Drawer: React.FC<DrawerProps> = ({
                             displayCount = validEmps.length;
                         }
 
+                        // Se o org está selecionado e não tem logo próprio, usa o confirmedLogo do estado
+                        const orgWithLogo = isSelected && !org.logo && selectedOrgLogo
+                            ? { ...org, logo: selectedOrgLogo }
+                            : org;
+
                         return (
                             <OrgListItem
                                 key={orgId}
-                                org={org}
+                                org={orgWithLogo}
                                 isSelected={isSelected}
                                 onClick={onOrgClick}
                                 onToggleExpand={toggleExpand}

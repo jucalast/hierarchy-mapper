@@ -395,6 +395,17 @@ const getProfilePic = async (client, contactId) => {
     }
 };
 
+/**
+ * Invalidates the contact cache (called on client restart).
+ */
+const _invalidateCache = () => {
+    contactsCache.all = [];
+    contactsCache.chats = [];
+    contactsCache.lastUpdate = 0;
+    contactsCache.isUpdating = false;
+    console.log('[WA ContactService] 🧹 Cache invalidado por restart do cliente.');
+};
+
 module.exports = {
     searchContactsByName,
     findContactByExactName,
@@ -403,5 +414,6 @@ module.exports = {
     searchChatsByName,
     getProfilePic,
     normalizeString,
-    calculateSimilarity
+    calculateSimilarity,
+    _invalidateCache
 };

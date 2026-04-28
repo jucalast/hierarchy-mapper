@@ -25,6 +25,26 @@ class AgentActionRequest(PydanticBaseModel):
     thread_id: Optional[str] = None   # para registrar ActivityLog na thread certa
 
 
+class PreferenceRequest(PydanticBaseModel):
+    model: str
+    strict_mode: Optional[bool] = False  # Se True, força o modelo com retry agressivo (sem fallback)
+
+
+@router.post("/preference")
+async def update_ai_preference(payload: PreferenceRequest):
+    """Atualiza o modelo de IA preferido globalmente."""
+    from services.ai.llm.router import set_preferred_model
+    set_preferred_model(payload.model, strict_mode=payload.strict_mode or False)
+    return {"status": "ok", "preferred_model": payload.model, "strict_mode": payload.strict_mode or False}
+
+
+@router.get("/preference")
+async def get_ai_preference():
+    """Retorna o modelo de IA preferido atualmente."""
+    from services.ai.llm.router import get_preferred_model, get_strict_mode_preference
+    return {"preferred_model": get_preferred_model(), "strict_mode": get_strict_mode_preference()}
+
+
 @router.post("/chat")
 async def chat_with_ai(
     payload: ChatMessage,
@@ -39,29 +59,33 @@ async def chat_with_ai(
         result = await ChatOrchestrator.handle(payload, session)
 
         # ── Persistência de mensagens ──────────────────────────────
-        thread_id = getattr(payload, "thread_id", None)
-        if thread_id:
-            from api.v1.endpoints.conversations import save_message
-            # Salva a mensagem do usuário
-            await save_message(
-                session=session,
-                thread_id=thread_id,
-                role="user",
-                content=payload.message,
-            )
-            # Salva a resposta do assistente
-            resp_content = result.get("response", "") if isinstance(result, dict) else getattr(result, "response", "")
-            ui_module    = result.get("ui_module") if isinstance(result, dict) else getattr(result, "ui_module", None)
-            data         = result.get("data") if isinstance(result, dict) else getattr(result, "data", None)
+        # Se for stream (Agente), a persistência já foi feita dentro do streamer.
+        # Caso contrário, salvamos aqui.
+        from fastapi.responses import StreamingResponse
+        if not isinstance(result, StreamingResponse):
+            thread_id = getattr(payload, "thread_id", None)
+            if thread_id:
+                from api.v1.endpoints.conversations import save_message
+                # Salva a mensagem do usuário
+                await save_message(
+                    session=session,
+                    thread_id=thread_id,
+                    role="user",
+                    content=payload.message,
+                )
+                # Salva a resposta do assistente
+                resp_content = result.get("response", "") if isinstance(result, dict) else getattr(result, "response", "")
+                ui_module    = result.get("ui_module") if isinstance(result, dict) else getattr(result, "ui_module", None)
+                data         = result.get("data") if isinstance(result, dict) else getattr(result, "data", None)
 
-            await save_message(
-                session=session,
-                thread_id=thread_id,
-                role="assistant",
-                content=resp_content,
-                ui_module=ui_module,
-                data=data,
-            )
+                await save_message(
+                    session=session,
+                    thread_id=thread_id,
+                    role="assistant",
+                    content=resp_content,
+                    ui_module=ui_module,
+                    data=data,
+                )
 
         return result
     except HTTPException:
@@ -142,7 +166,15 @@ async def _log_approved_action(
             "to_phone": pending.get("contact_phone", ""),
             "message_preview": preview,
         }
-        ext_ref = None
+        await log_activity(
+            session=session,
+            org_id=org_id,
+            activity_type=atype,
+            payload=payload,
+            thread_id=thread_id,
+            status="completed",
+        )
+        return
 
     elif channel == "email" or action_type in ("send_email", "reply_email", "email"):
         atype = "email_reply_sent" if is_reply else "email_sent"
@@ -154,7 +186,6 @@ async def _log_approved_action(
             "is_reply": is_reply,
         }
         ext_ref = entry_id
-
         # Status especial: email enviado fica "aguardando resposta"
         status = "awaiting_reply" if not is_reply else "completed"
         await log_activity(
@@ -175,23 +206,29 @@ async def _log_approved_action(
             "to_stage": pending.get("to_stage", subject),
             "deal_title": pending.get("description", ""),
         }
-        ext_ref = None
+        await log_activity(
+            session=session,
+            org_id=org_id,
+            activity_type=atype,
+            payload=payload,
+            thread_id=thread_id,
+            status="completed",
+        )
+        return
 
     else:
         # Ação genérica — registra como tipo literal
         atype = action_type or "unknown"
         payload = {"description": pending.get("description", ""), "preview": preview}
-        ext_ref = None
-
-    await log_activity(
-        session=session,
-        org_id=org_id,
-        activity_type=atype,
-        payload=payload,
-        thread_id=thread_id,
-        status="completed",
-        external_ref=ext_ref,
-    )
+        await log_activity(
+            session=session,
+            org_id=org_id,
+            activity_type=atype,
+            payload=payload,
+            thread_id=thread_id,
+            status="completed",
+        )
+        return
 
 
 async def _log_rejected_action(

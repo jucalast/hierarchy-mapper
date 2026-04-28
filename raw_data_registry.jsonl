@@ -1370,3 +1370,377 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-23T10:24:21.649149",
+    "candidate": "Gabriel",
+    "linkedin": "https://linkedin.com/in/pd_2229",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gabriel - Contato Walsywa",
+            "body": "Email: compras@walsywa.com.br | Telefone: 11949582391 | Pipedrive ID: 2229"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://linkedin.com/in/pd_2229",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-23T10:25:09.933622",
+    "candidate": "Gustavo Demetino",
+    "linkedin": "https://br.linkedin.com/in/gustavo-demetino-ab9775219",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Demetino - Auxiliar de compras na empresa ... - LinkedIn Brasil",
+            "body": "Auxiliar de compras na empresa walsywa indústria e comercio de produtos metalúrgicos · Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões..."
+        },
+        "osint_metadata": {
+            "role": "walsywa industria e comercio de produtos metalurgicos",
+            "bio": "Experiência: Walsywa Industria E Comercio De Produtos Metalurgicos · Localidade: Jundiaí · 58 conexões no LinkedIn. Veja o perfil de Gustavo Demetino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/gustavo-demetino-ab9775219",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Auxiliar De Compras Na Empresa ...",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-23T10:25:38.471188",
+    "candidate": "Jorge Camilo Trabulsi",
+    "linkedin": "https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jorge Camilo Trabulsi - Walsywa | LinkedIn Home - Walsywa John Kennedy - Gerente Nacional de Vendas - LinkedIn Brasil Auxiliar Administrativo de Compras e ... - LinkedIn Brasil",
+            "body": "Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Jorge... Walsywa specialists develop exclusive articles on Fastening for Civil Construction and share them here with you, to make your work even more efficient. Here you will also find the latest company news. Veja o perfil de John Kennedy no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Anunciada 21:19:53. INSPIRE REFERÊNCIA, SEJA A REFERÊNCIA!A Walsywa é referência e a maior empresa de fixação para… - veja esta vaga e outras semelhantes no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Trabalho na área de vendas há 15 anos. Ampla experiência em relacionamento com clientes… · Experiência: Walsywa · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Jorge Camilo Trabulsi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/jorge-camilo-trabulsi-72a35416",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Gerente Nacional De Vendas",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-23T10:26:11.170344",
+    "candidate": "Wagner",
+    "linkedin": "https://br.linkedin.com/in/wagner-walsywa-2211bb93",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Wagner Walsywa - Walsywa e alge | LinkedIn",
+            "body": "Veja o perfil de Wagner Walsywa no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "walsywa e alge",
+            "bio": "Experiência: Walsywa e alge · Localidade: São Paulo · 22 conexões no LinkedIn. Veja o perfil de Wagner Walsywa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/wagner-walsywa-2211bb93",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-23T10:27:23.251740",
+    "candidate": "Alan Santos",
+    "linkedin": "https://br.linkedin.com/in/alan-santos-51a2a655",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alan Santos - Walsywa | LinkedIn",
+            "body": "· Experiência: Walsywa · Formação acadêmica: Faculdade Gama e Souza · Localidade: Rio de Janeiro · 203 conexões no LinkedIn . Veja o perfil de Alan Santos no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Profissional da área comercial com mais de 15 anos de experiência, atuando em empresas de… · Experiência: Walsywa · Formação acadêmica: Faculdade Gama e Souza · Localidade: Rio de Janeiro · 203 conexões no LinkedIn. Veja o perfil de Alan Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/alan-santos-51a2a655",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-23T10:28:37.972720",
+    "candidate": "Fabrizio E.",
+    "linkedin": "https://br.linkedin.com/in/fabrizioeizo",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gerente de Engenharia e Suprimentos - LinkedIn Brasil 19 vagas de Walsywa em: Brasil - LinkedIn Brasil John Kennedy - Gerente Nacional de Vendas - LinkedIn Brasil",
+            "body": "Veja o perfil de Fabrizio E. no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. 19 principais vagas de Walsywa hoje em Brasil . Aproveite sua rede profissional e seja contratado. Novas vagas de Walsywa adicionadas diariamente. Veja o perfil de John Kennedy no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Walsywa · Formação acadêmica: Insper · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Fabrizio E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/fabrizioeizo",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Linkedin Brasil John Kennedy",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-23T10:29:01.165348",
+    "candidate": "Fabrizio E.",
+    "linkedin": "https://br.linkedin.com/in/fabrizioeizo/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fabrizio E. - Engineering & Procurement Manager - Walsywa",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experience: Walsywa · Education: Insper · Location: Jundiaí · 500+ connections on LinkedIn. View Fabrizio E.’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/fabrizioeizo/en",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Engineering & Procurement Manager",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-24T08:07:36.277666",
+    "candidate": "Helena Santana",
+    "linkedin": "https://linkedin.com/in/pd_1002",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Helena Santana - Contato Axt Terminais Elétricos",
+            "body": "Email: helena.santana@axt.com.br | Telefone: (11) 3090-5790 | Pipedrive ID: 1002"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://linkedin.com/in/pd_1002",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-24T08:08:23.958670",
+    "candidate": "Daniella Nascimento",
+    "linkedin": "https://br.linkedin.com/in/daniella-nascimento-319114a9",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Daniella Nascimento - AXT Terminais Elétricos | LinkedIn Pedro Novais - AXT Terminais Elétricos | LinkedIn Renata Sein - AXT Terminais Elétricos | LinkedIn Marcelo Muritiba posted on LinkedIn Marcelo Muritiba - AXT Terminais Elétricos | LinkedIn",
+            "body": "Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies do LinkedIn . · Experiência: AXT Terminais Elétricos · Formação acadêmica: Universidade Anhanguera São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn . Veja o perfil de Pedro Novais no... Sobre Profissional com experiência nas áreas de Compras , Supply Chain, Comércio Exterior e… A AXT conta com uma linha de terminais completa e sistema de estoque ampliado, garantindo disponibilidade para sua compra . Experiência: AXT Terminais Elétricos · Localidade: Itu · 272 conexões no LinkedIn . Veja o perfil de Marcelo Muritiba no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "dorja industria e comercio de equipamentos medicos",
+            "bio": "Com mais de seis anos de experiência na área de compras, trago um histórico de… · Experiência: Dorja Industria E Comercio De Equipamentos Medicos · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Itu · + de 500 conexões no LinkedIn. Veja o perfil de Daniella Nascimento no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/daniella-nascimento-319114a9",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-24T08:08:50.316427",
+    "candidate": "Pedro Novais",
+    "linkedin": "https://br.linkedin.com/in/pedrobnovais",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Pedro Novais - AXT Terminais Elétricos | LinkedIn",
+            "body": "· Experiência: AXT Terminais Elétricos · Formação acadêmica: Universidade Anhanguera São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn . Veja o perfil de Pedro Novais no..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Profissional da área comercial com experiência em vendas técnicas e consultivas, atuando… · Experiência: AXT Terminais Elétricos · Formação acadêmica: Universidade Anhanguera São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Pedro Novais no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/pedrobnovais",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-24T08:09:19.916366",
+    "candidate": "Renata Sein",
+    "linkedin": "https://br.linkedin.com/in/renata-sein",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Renata Sein - AXT Terminais Elétricos | LinkedIn Marcelo Muritiba posted on LinkedIn Marcelo Muritiba - AXT Terminais Elétricos | LinkedIn",
+            "body": "Sobre Profissional com experiência nas áreas de Compras , Supply Chain, Comércio Exterior e… A AXT conta com uma linha de terminais completa e sistema de estoque ampliado, garantindo disponibilidade para sua compra . Experiência: AXT Terminais Elétricos · Localidade: Itu · 272 conexões no LinkedIn . Veja o perfil de Marcelo Muritiba no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Profissional com experiência nas áreas de Compras, Supply Chain, Comércio Exterior e… · Experiência: AXT Terminais Elétricos · Formação acadêmica: UniSant'Anna · Localidade: Indaiatuba · 202 conexões no LinkedIn. Veja o perfil de Renata Sein no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/renata-sein",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------

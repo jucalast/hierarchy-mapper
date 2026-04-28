@@ -21,7 +21,10 @@ from services.ai.llm.base import (
     LLMError,
     NoProviderAvailableError,
 )
-from services.ai.llm.router import ask_llm, LLMRouter, get_router
+from services.ai.llm.router import (
+    ask_llm, LLMRouter, get_router,
+    set_preferred_model, get_preferred_model, get_strict_mode_preference
+)
 
 __all__ = [
     "LLMMessage",
@@ -33,4 +36,7 @@ __all__ = [
     "ask_llm",
     "LLMRouter",
     "get_router",
+    "set_preferred_model",
+    "get_preferred_model",
+    "get_strict_mode_preference",
 ]

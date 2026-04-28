@@ -116,7 +116,11 @@ def _configure_structlog(log_level: int, json_mode: bool) -> None:
         stream=sys.stdout,
     )
     # Silenciar loggers muito verbosos
-    for noisy in ("httpx", "httpcore", "urllib3", "asyncio"):
+    for noisy in (
+        "httpx", "httpcore", "urllib3", "asyncio",
+        "sqlalchemy.engine", "sqlalchemy.pool", "sqlalchemy.orm",
+        "aiohttp", "multipart",
+    ):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
@@ -221,6 +225,16 @@ class RequestIDMiddleware:
       4. Ecoa o header na resposta.
     """
 
+    # Paths that are called very frequently and produce log noise — logged at DEBUG only
+    _SILENT_PATHS: tuple[str, ...] = (
+        "/proxy/image",
+        "/proxy/",
+        "/health",
+        "/healthz",
+        "/favicon.ico",
+        "/email-cache-status",
+    )
+
     def __init__(self, app, header_name: str = "X-Request-ID",
                  slow_threshold_sec: float = 2.0):
         self.app = app
@@ -257,14 +271,24 @@ class RequestIDMiddleware:
             await self.app(scope, receive, send_wrapper)
         finally:
             duration = time.perf_counter() - start
-            log_fn = self._log.info
-            if duration >= self.slow_threshold:
-                log_fn = self._log.warning
-            log_fn(
-                "http.finished",
-                method=method,
-                path=path,
-                status=status_holder["code"],
-                duration_ms=round(duration * 1000, 2),
-            )
+
+            # Suppress info-level logging for chatty low-value endpoints
+            is_silent = any(path.startswith(p) for p in self._SILENT_PATHS)
+            if is_silent:
+                self._log.debug(
+                    "http.finished",
+                    method=method,
+                    path=path,
+                    status=status_holder["code"],
+                    duration_ms=round(duration * 1000, 2),
+                )
+            else:
+                log_fn = self._log.warning if duration >= self.slow_threshold else self._log.info
+                log_fn(
+                    "http.finished",
+                    method=method,
+                    path=path,
+                    status=status_holder["code"],
+                    duration_ms=round(duration * 1000, 2),
+                )
             _request_id_ctx.reset(token)

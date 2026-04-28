@@ -32,6 +32,66 @@ async def get_pipedrive_organizations():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.get("/pipedrive/activities/pending-summary")
+async def get_pending_activities_summary():
+    """
+    Retorna um resumo leve de tarefas pendentes por empresa.
+    Usado pelo drawer para ordenar e exibir urgência.
+    Formato: [{org_id, org_name, next_due_date, overdue_count, pending_count}]
+    """
+    try:
+        from datetime import date
+        today = date.today().isoformat()
+
+        # Busca até 500 atividades pendentes do usuário logado
+        r = await pipedrive_service.make_request(
+            "GET", f"activities?user_id={pipedrive_service.user_id}&done=0&limit=500"
+        )
+        if not r or r.status_code != 200:
+            return []
+
+        activities = r.json().get("data") or []
+
+        # Agrupa por org_id
+        org_map: dict = {}
+        for act in activities:
+            due = act.get("due_date")
+            if not due:
+                continue
+
+            # Extrai org_id com segurança
+            raw_org = act.get("org_id")
+            if isinstance(raw_org, dict):
+                org_id = raw_org.get("value")
+                org_name = raw_org.get("name", "")
+            else:
+                org_id = raw_org
+                org_name = act.get("org_name", "")
+
+            if not org_id:
+                continue
+
+            if org_id not in org_map:
+                org_map[org_id] = {
+                    "org_id": org_id,
+                    "org_name": org_name,
+                    "next_due_date": due,
+                    "overdue_count": 0,
+                    "pending_count": 0,
+                }
+
+            entry = org_map[org_id]
+            entry["pending_count"] += 1
+            if due < today:
+                entry["overdue_count"] += 1
+            if due < entry["next_due_date"]:
+                entry["next_due_date"] = due
+
+        return list(org_map.values())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.put("/pipedrive/organizations/{org_id}")
 async def update_pipedrive_org(org_id: int, payload: Dict[str, Any]):
     """Atualiza dados reais no Pipedrive (CNPJ, Domínio, Endereço etc)."""
@@ -151,55 +211,8 @@ async def delete_pipedrive_org(org_id: int):
         elif status == "partial_success_permissions":
             return {
                 "status": "partial_success", 
-                "message": "Empresa removida do Mapeador, mas você não tem permissão para excluí-la do Pipedrive."
+                "message": "Empresa removida do Mapeador, mas você não tem permissão para excluí-la do Pipedrive.",
             }
-        else:
-            return {"status": "error", "message": "Erro ao processar exclusão no Pipedrive."}
-    except HTTPException:
-        raise
+        return {"status": status}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/pipedrive/organizations/{org_id}/rename")
-async def rename_org(org_id: int, payload: Dict[str, Any], db: AsyncSession = Depends(get_db)):
-    """Renomeia uma empresa tanto no Pipedrive quanto no banco local."""
-    try:
-        from models.organization import Organization
-        from sqlalchemy import select
-        
-        new_name = payload.get("name", "").strip()
-        
-        if not new_name:
-            raise HTTPException(status_code=400, detail="Nome não pode estar vazio.")
-        
-        # Buscar organização no banco
-        result = await db.execute(
-            select(Organization).where(Organization.pipedrive_id == org_id)
-        )
-        org = result.scalar()
-        
-        if not org:
-            raise HTTPException(status_code=404, detail=f"Organização {org_id} não encontrada.")
-        
-        # Atualizar nome no Pipedrive via API
-        try:
-            await pipedrive_service.update_organization(org_id, {"name": new_name})
-            print(f"[Rename] Empresa {org_id} renomeada para '{new_name}' no Pipedrive")
-        except Exception as e:
-            print(f"[Rename] ⚠️ Aviso ao atualizar Pipedrive: {e}")
-        
-        # Atualizar nome no banco local
-        org.name = new_name
-        await db.commit()
-        
-        return {
-            "status": "success",
-            "message": f"Empresa renomeada com sucesso para '{new_name}'.",
-            "organization_id": org_id,
-            "new_name": new_name
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

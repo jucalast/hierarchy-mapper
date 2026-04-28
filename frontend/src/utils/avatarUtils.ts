@@ -43,11 +43,15 @@ export const getAvatarUrl = (data: any) => {
 };
 
 export const getCompanyLogoUrl = (data: any) => {
+    if (!data) return null;
+
     const getCompanyLogoFallback = () => {
-        const domain = data.domain || data.company_domain;
+        const domain = data.domain || data.company_domain || data.org_id?.domain || data.organization?.domain;
         if (domain) return `https://unavatar.io/${domain}`;
-        if (data.email && data.email.includes('@')) {
-            const parts = data.email.split('@');
+        
+        const email = data.email || data.org_id?.email || data.organization?.email;
+        if (email && email.includes('@')) {
+            const parts = email.split('@');
             const domainFromEmail = parts[parts.length - 1];
             const excluded = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com'];
             if (!excluded.includes(domainFromEmail.toLowerCase())) {
@@ -57,11 +61,18 @@ export const getCompanyLogoUrl = (data: any) => {
         return null;
     };
 
+    // Tentar encontrar o logo em diversas variações de nomes de campos e níveis de aninhamento
     const logoUrl = data.confirmedLogo || 
                     data.logo_url ||
                     data.company_logo || 
                     data.logo || 
+                    data.organization_logo ||
+                    data.brand_logo ||
                     data.company_image ||
+                    data.org_id?.logo ||
+                    data.org_id?.logo_url ||
+                    data.organization?.logo ||
+                    data.organization?.logo_url ||
                     getCompanyLogoFallback();
     
     return logoUrl;

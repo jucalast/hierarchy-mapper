@@ -35,6 +35,8 @@ class ChatMessage(BaseModel):
     context: Optional[str] = "hierarchy_analysis"
     history: Optional[List[MessageInput]] = []
     thread_id: Optional[str] = None   # persistência: ID da thread ativa
+    model: Optional[str] = None       # modelo preferido: 'gemini' | 'groq' | 'claude'
+    suggested_action: Optional[bool] = False  # True quando vem de chip de ação sugerida → força agent_workflow
 
 
 class ChatResponse(BaseModel):
@@ -289,11 +291,23 @@ def format_context_for_prompt(context_dict: dict) -> str:
             if by_contact:
                 for contact_group in by_contact:
                     lines.append(f"\nEmails trocados com {contact_group.get('contact')} ({contact_group.get('email')}):")
-                    for m in contact_group.get('messages', [])[:10]:
+                    # Unificamos threads humanas e automáticas para o contexto da IA
+                    h_threads = contact_group.get('human_threads', [])
+                    a_threads = contact_group.get('automated_threads', [])
+                    
+                    if not h_threads and not a_threads:
+                        lines.append("  (Nenhuma mensagem de texto real encontrada)")
+                        continue
+
+                    # Priorizamos as 10 mais recentes (humanas primeiro)
+                    all_threads = [(m, "HUMAN") for m in h_threads] + [(m, "AUTO") for m in a_threads]
+                    
+                    for m, m_type in all_threads[:15]:
                         subject = m.get("subject") or "(Sem assunto)"
                         date = m.get("date") or ""
-                        body = m.get("body", "")[:1500]
-                        lines.append(f"  - Assunto: {subject} | Data: {date}")
+                        body = (m.get("body") or "")[:1000]
+                        sender_label = f"[{m_type}] " if m_type == "AUTO" else ""
+                        lines.append(f"  - {sender_label}Assunto: {subject} | Data: {date}")
                         lines.append(f"    Snippet: {body}...")
             
             # --- MODALIDADE 2: Emails genéricos de pasta ---

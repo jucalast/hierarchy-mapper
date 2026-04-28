@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import {
     CheckCircle2, Loader2, ThumbsDown, Copy, RotateCcw, ThumbsUp, Building2, User2, MessageSquare, Mail, Check, ChevronDown, ChevronUp, AlertCircle, Phone, Calendar,
-    Search, List, Users, Sparkles, ChevronRight, ShieldAlert, ArrowRight, ShieldCheck
+    Search, List, Users, Sparkles, ChevronRight, ShieldAlert, ArrowRight, ShieldCheck,
+    RefreshCw, MessageCircle, GitBranch, ClipboardCheck, Zap
 } from 'lucide-react';
-import { Message, CompanyResult, ApprovalAction } from './ChatInterfaces';
+import { Message, CompanyResult, ApprovalAction, SuggestedAction } from './ChatInterfaces';
+import { AIModel } from './ModelSelector';
 import { TaskList, ContactGrid, CompanyCard, ContactPill } from './modules/ContextModules';
 import { WhatsAppThread, EmailThread } from './modules/CommunicationModules';
 import { ActionApproval } from './modules/ActionApproval';
@@ -17,8 +19,78 @@ import {
     ContactLogCard, DealLogCard, NoteLogCard, ActivityLogCard, EmailLogCard
 } from './modules/LogModules';
 
+// ── Mapa de ícones das ações sugeridas ──────────────────────────────────────
+const ACTION_ICON_MAP: Record<string, React.ReactNode> = {
+    task:     <ClipboardCheck size={13} />,
+    sync:     <RefreshCw size={13} />,
+    whatsapp: <MessageCircle size={13} />,
+    email:    <Mail size={13} />,
+    pipeline: <GitBranch size={13} />,
+    default:  <Zap size={13} />,
+};
+
+// ── Chips de ações sugeridas ─────────────────────────────────────────────────
+const SuggestedActionChips = ({
+    actions,
+    onAction,
+}: {
+    actions: SuggestedAction[];
+    onAction: (prompt: string) => void;
+}) => {
+    if (!actions || actions.length === 0) return null;
+    return (
+        <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '8px',
+            padding: '4px 16px 12px 16px',
+        }}>
+            {actions.map((action, i) => (
+                <button
+                    key={i}
+                    onClick={() => onAction(action.prompt)}
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: 'var(--chat-text-secondary)',
+                        background: 'var(--chat-bg-secondary)',
+                        border: '1px solid var(--chat-border-color)',
+                        borderRadius: '20px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        lineHeight: 1.3,
+                        textAlign: 'left',
+                    }}
+                    onMouseEnter={e => {
+                        const el = e.currentTarget;
+                        el.style.color = 'var(--chat-text-primary)';
+                        el.style.borderColor = 'rgba(94,106,210,0.6)';
+                        el.style.background = 'rgba(94,106,210,0.08)';
+                    }}
+                    onMouseLeave={e => {
+                        const el = e.currentTarget;
+                        el.style.color = 'var(--chat-text-secondary)';
+                        el.style.borderColor = 'var(--chat-border-color)';
+                        el.style.background = 'var(--chat-bg-secondary)';
+                    }}
+                    title={action.prompt}
+                >
+                    <span style={{ opacity: 0.7, flexShrink: 0 }}>
+                        {ACTION_ICON_MAP[action.icon || 'default']}
+                    </span>
+                    {action.label}
+                </button>
+            ))}
+        </div>
+    );
+};
+
 export interface RichLogEntry {
-    type?: 'log' | 'thought' | 'status' | 'data_found' | 'warning' | 'stage_blocked' | 'stage_ok';
+    type?: 'log' | 'thought' | 'status' | 'data_found' | 'warning' | 'stage_blocked' | 'stage_ok' | 'suggest_mapping';
     content?: string;
     entity?: string;
     data?: any;
@@ -30,6 +102,8 @@ export interface RichLogEntry {
     current_stage?: string;
     proposed_stage?: string;
     delta?: number;
+    // cold lead mapping suggestion
+    org_name?: string;
 }
 
 interface ChatMessageProps {
@@ -39,6 +113,9 @@ interface ChatMessageProps {
     onReject: (actionId: string) => void;
     onOpenWhatsApp?: (info: { name: string, id?: string }) => void;
     approvalStatuses?: Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>;
+    onRegenerate?: (messageId?: string) => void;
+    onSuggestedAction?: (prompt: string) => void;
+    model: AIModel;
 }
 
 // Mapa de ícones de status — cobre todos os valores enviados pelo backend
@@ -123,7 +200,8 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
             if (entity === 'whatsapp') return <WhatsAppThread data={data} onOpenWhatsApp={onOpenWhatsApp} />;
 
             // Negócio/Empresa — RESTAURADO: CompanyCard rico (Igual ao Drawer)
-            if (entity === 'deal' || entity === 'organization') return <CompanyCard data={data} />;
+            // Só renderiza CompanyCard para entidade 'organization' para evitar duplicação
+            if (entity === 'organization') return <CompanyCard data={data} />;
 
             // ★ Atividade → RESTAURADO: TimelineEventRow (Visualização completa de tarefa)
             if (entity === 'activity') {
@@ -149,8 +227,57 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
                     company: data.org_name
                 };
                 return (
-                    <div style={{ marginLeft: '16px', marginTop: '6px', marginBottom: '6px' }}>
+                    <div className={styles.moduleContainer}>
                         <TimelineEventRow event={event} isLast={true} hasBackground={true} />
+                    </div>
+                );
+            }
+
+            // ★ Grupo de Atividades → Timeline com linhas de conexão
+            if (entity === 'activities_group') {
+                const activities = Array.isArray(data) ? data : [];
+                const sortedActivities = activities.sort((a, b) => {
+                    const dateA = new Date(a.due_date || 0).getTime();
+                    const dateB = new Date(b.due_date || 0).getTime();
+                    return dateA - dateB; // Ordem cronológica (mais antiga primeiro)
+                });
+
+                return (
+                    <div className={styles.moduleContainer}>
+                        <div className={styles.activitiesTimeline}>
+                            {sortedActivities.map((activity, idx) => {
+                                const isDone = activity.done === true || activity.done === 1;
+                                const getIcon = (type: string) => {
+                                    switch (type) {
+                                        case 'call': return <Phone size={14} />;
+                                        case 'meeting': return <Calendar size={14} />;
+                                        case 'email': return <Mail size={14} />;
+                                        default: return <Check size={14} />;
+                                    }
+                                };
+
+                                const event: TimelineEvent = {
+                                    id: activity.id,
+                                    type: 'activity',
+                                    title: activity.subject || 'Tarefa',
+                                    timestamp: activity.due_date || 'Sem data',
+                                    done: isDone,
+                                    activityType: activity.type,
+                                    icon: getIcon(activity.type),
+                                    contact: activity.person_name,
+                                    company: activity.org_name
+                                };
+
+                                return (
+                                    <TimelineEventRow 
+                                        key={activity.id} 
+                                        event={event} 
+                                        isLast={idx === sortedActivities.length - 1} 
+                                        hasBackground={true} 
+                                    />
+                                );
+                            })}
+                        </div>
                     </div>
                 );
             }
@@ -163,8 +290,8 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
         // ── AVISO GENÉRICO ───────────────────────────────────────────────────
         case 'warning':
             return (
-                <div className={styles.logLine} style={{ color: '#f59e0b', gap: '8px' }}>
-                    <AlertCircle size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                <div className={styles.warningLog}>
+                    <AlertCircle size={12} className="shrink-0" />
                     <span style={{ fontWeight: 500 }}>{content || log.message}</span>
                 </div>
             );
@@ -218,6 +345,36 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
             );
         }
 
+        // ── LEAD FRIO — SUGESTÃO DE MAPEAMENTO ──────────────────────────────
+        case 'suggest_mapping': {
+            const orgNameDisplay = log.org_name || 'esta empresa';
+            return (
+                <div className={styles.suggestMappingCard}>
+                    {/* Header */}
+                    <div className={styles.suggestMappingHeader}>
+                        <span className={styles.suggestMappingIcon}>🧊</span>
+                        <span className={styles.suggestMappingLabel}>
+                            Lead Frio — Sem Histórico
+                        </span>
+                    </div>
+
+                    {/* Body */}
+                    <div className={styles.suggestMappingBody}>
+                        {log.message || `Nenhum contato ou comunicação encontrada para ${orgNameDisplay}.`}
+                    </div>
+
+                    {/* CTA */}
+                    <div className={styles.suggestMappingCTA}>
+                        <Search size={13} className={styles.suggestMappingCTAIcon} />
+                        <span className={styles.suggestMappingCTAText}>
+                            Execute o <strong>Mapeamento de Hierarquia</strong> para {orgNameDisplay} para identificar compradores e iniciar a prospecção.
+                        </span>
+                        <ChevronRight size={13} className={styles.suggestMappingCTAIcon} />
+                    </div>
+                </div>
+            );
+        }
+
         // ── LOG DE EXECUÇÃO (default) ─────────────────────────────────────
         default: {
             const text = content || (typeof log === 'object' ? JSON.stringify(log) : '');
@@ -240,17 +397,34 @@ export const RichLogRenderer = ({ log, onOpenWhatsApp }: { log: string | RichLog
     }
 };
 
-const AIAsterisk = () => (
-    <img src="/gemini.png" alt="Gemini AI" width="16" height="16" className="shrink-0 object-contain" />
+const MODEL_LOGO_MAP: Record<AIModel, string> = {
+    claude: '/claude.png',
+    gemini: '/gemini.png',
+    groq: '/groq llama.svg',
+};
+
+const AIAsterisk = ({ model }: { model: AIModel }) => (
+    <img 
+        src={MODEL_LOGO_MAP[model]} 
+        alt={`${model} AI`} 
+        width="16" 
+        height="16" 
+        className="shrink-0 object-contain"
+        style={{ 
+            filter: model === 'groq' ? 'brightness(0) invert(1)' : 'none'
+        }}
+    />
 );
 
 export const ChatMessage: React.FC<ChatMessageProps> = ({
-    message, currentLogs, onApprove, onReject, onOpenWhatsApp, approvalStatuses
+    message, currentLogs, onApprove, onReject, onOpenWhatsApp, approvalStatuses, onRegenerate, onSuggestedAction, model = 'claude'
 }) => {
     const isUser = message.role === 'user';
 
     const renderHighlightedText = (text: string, keyPrefix: string) => {
-        const parts = text.split(/(@\w*)/g);
+        // Regex aprimorado: @ seguido de letras, números, espaços, hífens e acentos.
+        // Para assim que encontrar pontuação comum, outra menção (@) ou fim da string.
+        const parts = text.split(/(@[a-zA-Z0-9\u00C0-\u017F\s\-&]+?)(?=\s*[.,;!?(){}\[\]<>]|\s+@|$)/g);
         return parts.map((part, i) => {
             if (part.startsWith('@')) {
                 return <span key={`${keyPrefix}-high-${i}`} className={styles.highlightPurple}>{part}</span>;
@@ -378,7 +552,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         <div className={styles.assistantMessageGroup}>
             {/* Logs de Streaming e Históricos (Renderizados diretamente) */}
             {((currentLogs && currentLogs.length > 0) || (message.logs && message.logs.length > 0)) && (
-                <div className="px-4 mb-4" style={{ marginLeft: '40px' }}>
+                <div className="px-4 mb-4" >
                     <details className={styles.debugSection} style={{ border: 'none', background: 'transparent' }}>
                         <summary className={styles.debugSummary}>
                             <span>Agente está pensando...</span>
@@ -400,7 +574,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
             <div className={styles.aiMessageWrapper}>
                 <div className={styles.aiMessageIconArea}>
-                    <AIAsterisk />
+                    <AIAsterisk model={model} />
                 </div>
                 <div className={styles.aiMessage}>
                     {renderMarkdown(message.content, message.data)}
@@ -429,13 +603,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 </div>
             )}
 
+            {/* Ações Sugeridas (DealStatus) */}
+            {message.ui_module === 'DealStatus' && onSuggestedAction && (
+                <SuggestedActionChips
+                    actions={message.suggested_actions || message.data?.suggested_actions || []}
+                    onAction={onSuggestedAction}
+                />
+            )}
+
             {/* Ações da Mensagem (Feedback e Utilitários) */}
             <div className={styles.messageActions}>
                 <div className={styles.actionGroup}>
-                    <button className={styles.actionBtn} title="Copiar resposta">
+                    <button className={styles.actionBtn} title="Copiar resposta" onClick={() => {
+                        navigator.clipboard.writeText(message.content);
+                    }}>
                         <Copy size={14} />
                     </button>
-                    <button className={styles.actionBtn} title="Gerar outra resposta">
+                    <button className={styles.actionBtn} title="Gerar outra resposta" onClick={() => onRegenerate?.(message.id)}>
                         <RotateCcw size={14} />
                     </button>
                 </div>

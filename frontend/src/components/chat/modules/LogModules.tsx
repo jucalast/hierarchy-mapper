@@ -2,6 +2,7 @@ import React from 'react';
 import {
     User2, Building2, MessageSquare, ArrowUpRight, ArrowDownLeft, ArrowRight, Phone, Mail, Calendar, CheckCircle2, Clock
 } from 'lucide-react';
+import styles from '../../ChatPanel.module.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ContactLogCard
@@ -12,16 +13,9 @@ export const ContactLogCard = ({ data, label }: { data: any; label?: string }) =
     const isUnmapped = data.is_unmapped || data.source?.includes("Não vinculado");
 
     return (
-        <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            margin: '6px 0 6px 16px', padding: '8px 12px',
-            borderRadius: '12px',
-            border: `1px solid ${isUnmapped ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)'}`,
-            background: isUnmapped ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.05)',
-            backdropFilter: 'blur(8px)',
+        <div className={styles.logCard} style={{
             filter: isUnmapped ? 'grayscale(80%)' : 'none',
             opacity: isUnmapped ? 0.65 : 1,
-            transition: 'all 0.2s ease',
             maxWidth: '340px',
         }}>
             {/* Avatar / ícone */}
@@ -37,16 +31,16 @@ export const ContactLogCard = ({ data, label }: { data: any; label?: string }) =
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
                 <span style={{
                     fontSize: '12px', fontWeight: 600,
-                    color: isUnmapped ? '#6b7280' : 'rgba(255,255,255,0.9)',
+                    color: isUnmapped ? '#6b7280' : 'var(--chat-text-primary)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>{data.name}</span>
                 {data.email && (
-                    <span style={{ fontSize: '10px', color: 'rgba(96,165,250,0.7)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--chat-accent-color)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', opacity: 0.8 }}>
                         {data.email}
                     </span>
                 )}
                 {data.source && !data.email && (
-                    <span style={{ fontSize: '9px', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <span style={{ fontSize: '9px', color: 'var(--chat-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                         {data.source}
                     </span>
                 )}
@@ -54,7 +48,7 @@ export const ContactLogCard = ({ data, label }: { data: any; label?: string }) =
 
             {/* Canais disponíveis */}
             {data.channels && data.channels.length > 0 && (
-                <div style={{ display: 'flex', gap: '4px', marginLeft: '4px', borderLeft: '1px solid rgba(255,255,255,0.08)', paddingLeft: '8px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: '4px', marginLeft: '4px', borderLeft: '1px solid var(--chat-border-weak)', paddingLeft: '8px', flexShrink: 0 }}>
                     {data.channels.includes('WhatsApp') && (
                         <img src="/wppicon.png" width="13" height="13" alt="WhatsApp"
                             style={{ filter: isUnmapped ? 'grayscale(1) opacity(0.5)' : 'none', transition: 'filter 0.2s' }} />
@@ -71,8 +65,8 @@ export const ContactLogCard = ({ data, label }: { data: any; label?: string }) =
                 <span style={{
                     fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
                     padding: '2px 6px', borderRadius: '999px',
-                    background: 'rgba(16,185,129,0.15)', color: '#34d399',
-                    border: '1px solid rgba(16,185,129,0.25)', flexShrink: 0,
+                    background: 'var(--chat-accent-soft)', color: 'var(--chat-accent-color)',
+                    border: '1px solid var(--chat-accent-soft)', flexShrink: 0,
                 }}>{label}</span>
             )}
         </div>
@@ -89,18 +83,10 @@ export const DealLogCard = ({ data }: { data: any }) => {
     const stageName = data.stage_name || 'Sem etapa';
 
     return (
-        <div style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            margin: '8px 0 8px 16px', padding: '10px 14px',
-            background: 'rgba(255,255,255,0.04)', borderRadius: '14px',
-            border: '1px solid rgba(255,255,255,0.08)',
-            backdropFilter: 'blur(8px)',
-            width: 'fit-content', maxWidth: '340px',
-            transition: 'background 0.2s',
-        }}>
+        <div className={styles.logCard} style={{ maxWidth: '340px' }}>
             {/* Ícone */}
-            <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', flexShrink: 0 }}>
-                <Building2 size={15} style={{ color: 'rgba(255,255,255,0.6)' }} />
+            <div style={{ padding: '8px', borderRadius: '10px', background: 'var(--chat-bg-tertiary)', flexShrink: 0 }}>
+                <Building2 size={15} style={{ color: 'var(--chat-text-muted)' }} />
             </div>
 
             {/* Info */}
@@ -108,27 +94,27 @@ export const DealLogCard = ({ data }: { data: any }) => {
                 {/* Título + etapa */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{
-                        fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.9)',
+                        fontSize: '12px', fontWeight: 700, color: 'var(--chat-text-primary)',
                         textTransform: 'uppercase', letterSpacing: '0.03em',
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>{data.title || data.org_name}</span>
                     <span style={{
                         fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px',
-                        background: 'rgba(94,106,210,0.2)', color: '#818cf8',
-                        border: '1px solid rgba(94,106,210,0.3)',
+                        background: 'var(--chat-accent-soft)', color: 'var(--chat-accent-color)',
+                        border: '1px solid var(--chat-accent-soft)',
                         flexShrink: 0,
                     }}>{stageName}</span>
                 </div>
 
                 {/* Valor + status */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 500 }}>
+                    <span style={{ fontSize: '11px', color: 'var(--chat-text-secondary)', fontWeight: 500 }}>
                         {hasValue ? data.formatted_value : 'Sem valor definido'}
                     </span>
-                    <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: '#4b5563', flexShrink: 0 }} />
+                    <span style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'var(--chat-border-weak)', flexShrink: 0 }} />
                     <span style={{
                         fontSize: '10px', fontWeight: 600,
-                        color: isOpen ? '#34d399' : '#9ca3af',
+                        color: isOpen ? '#10B981' : 'var(--chat-text-muted)',
                     }}>{isOpen ? 'Em aberto' : data.status}</span>
                 </div>
             </div>
@@ -141,13 +127,12 @@ export const DealLogCard = ({ data }: { data: any }) => {
 // Card de nota interna com destaque âmbar.
 // ─────────────────────────────────────────────────────────────────────────────
 export const NoteLogCard = ({ data }: { data: any }) => (
-    <div style={{
-        display: 'flex', flexDirection: 'column', gap: '6px',
-        margin: '6px 0 6px 16px', padding: '10px 14px',
-        background: 'rgba(245,158,11,0.05)', borderRadius: '12px',
-        border: '1px solid rgba(245,158,11,0.12)',
+    <div className={styles.logCard} style={{
+        flexDirection: 'column', gap: '6px',
+        background: 'rgba(245,158,11,0.05)',
         borderLeft: '3px solid rgba(245,158,11,0.4)',
         maxWidth: '320px',
+        alignItems: 'flex-start'
     }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <MessageSquare size={11} style={{ color: 'rgba(251,191,36,0.7)' }} />
@@ -156,7 +141,7 @@ export const NoteLogCard = ({ data }: { data: any }) => (
             </span>
         </div>
         <div style={{
-            fontSize: '11px', color: '#d1d5db', lineHeight: '1.5',
+            fontSize: '11px', color: 'var(--chat-text-secondary)', lineHeight: '1.5',
             display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
             overflow: 'hidden', fontStyle: 'italic',
         }}>
@@ -182,22 +167,13 @@ export const ActivityLogCard = ({ data }: { data: any }) => {
     };
 
     return (
-        <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            margin: '6px 0 6px 16px', padding: '8px 12px',
-            borderRadius: '12px',
-            border: '1px solid rgba(255,255,255,0.08)',
-            background: 'rgba(255,255,255,0.04)',
-            backdropFilter: 'blur(8px)',
-            transition: 'all 0.2s ease',
-            maxWidth: '340px',
-        }}>
+        <div className={styles.logCard} style={{ maxWidth: '340px' }}>
             <div style={{
                 padding: '6px', borderRadius: '8px',
-                background: isDone ? 'rgba(16,185,129,0.15)' : 'rgba(94,106,210,0.15)',
+                background: isDone ? 'rgba(16,185,129,0.15)' : 'var(--chat-accent-soft)',
                 flexShrink: 0,
             }}>
-                <span style={{ color: isDone ? '#10B981' : '#818cf8' }}>
+                <span style={{ color: isDone ? '#10B981' : 'var(--chat-accent-color)' }}>
                     {getIcon(data.type)}
                 </span>
             </div>
@@ -205,18 +181,18 @@ export const ActivityLogCard = ({ data }: { data: any }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
                 <span style={{
                     fontSize: '12px', fontWeight: 600,
-                    color: 'rgba(255,255,255,0.9)',
+                    color: 'var(--chat-text-primary)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>{data.subject || 'Tarefa'}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Clock size={10} style={{ color: 'rgba(255,255,255,0.4)' }} />
-                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                    <Clock size={10} style={{ color: 'var(--chat-text-muted)' }} />
+                    <span style={{ fontSize: '10px', color: 'var(--chat-text-muted)', fontWeight: 500 }}>
                         {data.due_date || 'Sem data'}
                     </span>
                     {data.person_name && (
                         <>
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>•</span>
-                            <span style={{ fontSize: '10px', color: 'rgba(139,92,246,0.6)', fontWeight: 600 }}>{data.person_name}</span>
+                            <span style={{ fontSize: '10px', color: 'var(--chat-border-weak)' }}>•</span>
+                            <span style={{ fontSize: '10px', color: 'var(--chat-accent-color)', fontWeight: 600, opacity: 0.8 }}>{data.person_name}</span>
                         </>
                     )}
                 </div>
@@ -245,19 +221,10 @@ export const EmailLogCard = ({ data }: { data: any }) => {
     const contact = emailResult.contact || emailResult.resolved_contact || { name: emailResult.to, email: emailResult.to };
 
     return (
-        <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '8px',
-            margin: '6px 0 6px 16px', padding: '8px 12px',
-            borderRadius: '12px',
-            border: '1px solid rgba(255,255,255,0.08)',
-            background: 'rgba(255,255,255,0.04)',
-            backdropFilter: 'blur(8px)',
-            transition: 'all 0.2s ease',
-            maxWidth: '340px',
-        }}>
+        <div className={styles.logCard} style={{ maxWidth: '340px' }}>
             <div style={{
                 padding: '4px', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.05)',
+                background: 'var(--chat-bg-tertiary)',
                 flexShrink: 0,
             }}>
                 <img src="/outlook.png" width="16" height="16" alt="Email" style={{ objectFit: 'contain' }} />
@@ -266,15 +233,15 @@ export const EmailLogCard = ({ data }: { data: any }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
                 <span style={{
                     fontSize: '12px', fontWeight: 600,
-                    color: 'rgba(255,255,255,0.9)',
+                    color: 'var(--chat-text-primary)',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>{subject}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ fontSize: '10px', color: 'rgba(96,165,250,0.7)', fontWeight: 600 }}>{contact.name || contact.email}</span>
+                    <span style={{ fontSize: '10px', color: 'var(--chat-accent-color)', fontWeight: 600, opacity: 0.8 }}>{contact.name || contact.email}</span>
                     {emailResult.date && (
                         <>
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.2)' }}>•</span>
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>{emailResult.date}</span>
+                            <span style={{ fontSize: '10px', color: 'var(--chat-border-weak)' }}>•</span>
+                            <span style={{ fontSize: '10px', color: 'var(--chat-text-muted)' }}>{emailResult.date}</span>
                         </>
                     )}
                 </div>

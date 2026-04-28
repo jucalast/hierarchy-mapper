@@ -107,6 +107,21 @@ class ContextService:
         total_mapped = len(employees)
         departments = list({e.department for e in employees if e.department})
         
+        # Prepara dados dos funcionários com fotos para o frontend
+        employees_data = []
+        try:
+            for emp in employees:
+                employees_data.append({
+                    "id": emp.id,
+                    "name": emp.name,
+                    "profile_pic": emp.profile_pic,
+                    "role": emp.role,
+                    "department": emp.department
+                })
+        except Exception as e:
+            print(f"[ContextService] Erro ao processar funcionários: {e}")
+            # Continua sem os dados de funcionários se houver erro
+        
         return {
             "organization": {
                 "id": org.id,
@@ -118,7 +133,10 @@ class ContextService:
                 "category": org.category,
                 "product_focus": org.product_focus,
                 "linkedin_url": org.linkedin_url,
-                "description": org.description
+                "description": org.description,
+                "logo": org.logo_url,
+                "employees_count": total_mapped,
+                "employees": employees_data
             },
             "statistics": {
                 "total_employees_mapped": total_mapped,

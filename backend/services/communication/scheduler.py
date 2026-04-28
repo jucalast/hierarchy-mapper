@@ -34,6 +34,15 @@ def _check_inbox_blocking(folder: str) -> list[dict]:
 
 async def check_inbox_async() -> None:
     """Job assíncrono do APScheduler — offload do IMAP para thread pool."""
+    # Respeita o mesmo horário de silêncio do TriggerService
+    try:
+        from services.ai.trigger_service import is_quiet_hours, _service_paused
+        if _service_paused or is_quiet_hours():
+            log.debug("scheduler.imap.skipped_quiet_or_paused")
+            return
+    except Exception:
+        pass
+
     cycle_id = uuid.uuid4().hex[:12]
     set_request_id(f"imap-{cycle_id}")
     folder = settings.email.scan_folder

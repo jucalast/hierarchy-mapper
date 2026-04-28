@@ -1,7 +1,14 @@
 import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, AlertTriangle } from 'lucide-react';
 import { Avatar, Spinner } from './ui';
+import { getProxiedUrl } from '../utils/avatarUtils';
 import styles from './NetworkGraph.module.css';
+
+interface TaskSummary {
+    next_due_date: string;
+    overdue_count: number;
+    pending_count: number;
+}
 
 interface OrgListItemProps {
     org: any;
@@ -14,6 +21,17 @@ interface OrgListItemProps {
     showExpandToggle?: boolean;
     className?: string;
     style?: React.CSSProperties;
+}
+
+function formatDueDate(dateStr: string): string {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dateStr + 'T00:00:00');
+    const diff = Math.round((due.getTime() - today.getTime()) / 86400000);
+    if (diff < 0) return `${Math.abs(diff)}d atrasada`;
+    if (diff === 0) return 'hoje';
+    if (diff === 1) return 'amanhã';
+    return `em ${diff}d`;
 }
 
 export const OrgListItem: React.FC<OrgListItemProps> = ({
@@ -29,6 +47,11 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
     style
 }) => {
     const orgId = org.id || org.pipedrive_id;
+    const taskSummary: TaskSummary | null = org._taskSummary || null;
+    const isOverdue = taskSummary ? taskSummary.overdue_count > 0 : false;
+    const isToday = taskSummary && !isOverdue
+        ? taskSummary.next_due_date === new Date().toISOString().slice(0, 10)
+        : false;
 
     // Calcular dados internos se não fornecidos
     const displayCount = propDisplayCount !== undefined ? propDisplayCount : (org.employees_count || org.employee_count || org.mapped_count || 0);
@@ -44,13 +67,21 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
         <div
             className={`${styles.orgItem} ${isSelected ? styles.selectedOrgItem : ''} ${className}`}
             onClick={() => onClick?.(org)}
-            style={{ cursor: onClick ? 'pointer' : 'default', ...style }}
+            style={{
+                cursor: onClick ? 'pointer' : 'default',
+                boxShadow: isOverdue
+                    ? 'inset 3px 0 0 0 #ef4444'
+                    : isToday
+                        ? 'inset 3px 0 0 0 #22c55e'
+                        : undefined,
+                ...style
+            }}
         >
             <div className={styles.orgMainInfo}>
                 <div className={styles.orgLogoWrapper}>
                     <Avatar
                         kind="company"
-                        src={org.logo || org.organization_logo}
+                        src={org.logo || org.organization_logo || org.logo_url || org.company_logo}
                         name={org.name || org.title || org.label || org.org_name || 'Empresa'}
                         data={org}
                         size={32}
@@ -90,7 +121,7 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                     displayPics.slice(0, 3).map((pic: string, i: number) => (
                                         <img
                                             key={i}
-                                            src={pic}
+                                            src={getProxiedUrl(pic)}
                                             alt=""
                                             className={styles.stackedAvatar}
                                             style={{ zIndex: 3 - i }}
@@ -116,6 +147,35 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                         </>
                     ) : null}
                 </div>
+
+                {/* Badge de urgência de tarefas */}
+                {taskSummary && (
+                    <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
+                        {isOverdue ? (
+                            <span style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: 18, height: 18,
+                                color: '#ef4444',
+                                background: 'rgba(239,68,68,0.12)',
+                                border: '1px solid rgba(239,68,68,0.25)',
+                                borderRadius: 5,
+                            }}>
+                                <AlertTriangle size={10} />
+                            </span>
+                        ) : isToday ? (
+                            <span style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                width: 18, height: 18,
+                                color: '#22c55e',
+                                background: 'rgba(34,197,94,0.12)',
+                                border: '1px solid rgba(34,197,94,0.25)',
+                                borderRadius: 5,
+                            }}>
+                                <ChevronRight size={12} />
+                            </span>
+                        ) : null}
+                    </div>
+                )}
             </div>
         </div>
     );

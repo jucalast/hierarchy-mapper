@@ -35,7 +35,7 @@ export const TaskList: React.FC<{ data: any }> = ({ data }) => {
     };
 
     return (
-        <div className={styles.taskList} style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div className={styles.taskList}>
             {tasks.slice(0, 15).map((task: any, i: number) => {
                 const event = activityToEvent(task);
                 const nextTask = tasks[i + 1];
@@ -54,7 +54,7 @@ export const TaskList: React.FC<{ data: any }> = ({ data }) => {
                 const isLastInBlock = i === Math.min(tasks.length, 15) - 1 || !currentDealId || currentDealId !== nextDealId;
 
                 return (
-                    <div key={event.id} style={{ marginLeft: '16px' }}>
+                    <div key={event.id}>
                         <TimelineEventRow 
                             event={event} 
                             isLast={isLastInBlock} 
@@ -64,7 +64,7 @@ export const TaskList: React.FC<{ data: any }> = ({ data }) => {
                 );
             })}
             {tasks.length > 15 && (
-                <div style={{ fontSize: '11px', color: '#9ca3af', textAlign: 'center', marginTop: '8px', fontStyle: 'italic', opacity: 0.8 }}>
+                <div className={styles.emptyModule} style={{ textAlign: 'center', marginTop: '8px' }}>
                     Exibindo 15 de {tasks.length} tarefas. Use o Pipedrive para ver a lista completa.
                 </div>
             )}
@@ -100,7 +100,7 @@ export const ContactGrid: React.FC<{ data: any }> = ({ data }) => {
 
     return (
         <div className={styles.moduleContainer}>
-            <div className={styles.contactGrid} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className={styles.contactGrid}>
                 {contacts.map((c: any, i: number) => (
                     <CompactEmployeeCard key={i} data={c} />
                 ))}
@@ -114,13 +114,38 @@ export const CompanyCard: React.FC<{ data: any }> = ({ data }) => {
     const org = data?.organization || data?.org_id || data?.org || data?.company || (data?.id && data?.name ? data : null);
     if (!org) return null;
 
-    // OrgListItem agora lida com a extração de displayCount e displayPics internamente
+    // Normalizar o logo: busca em todas as variações de campo que a IA pode enviar
+    const resolvedLogo =
+        org.logo ||
+        org.confirmedLogo ||
+        org.logo_url ||
+        org.company_logo ||
+        org.organization_logo ||
+        org.brand_logo ||
+        org.company_image ||
+        org.linkedin_metadata?.logo ||
+        (org.domain ? `https://unavatar.io/${org.domain}` : null) ||
+        null;
+
+    const normalizedOrg = resolvedLogo ? { ...org, logo: resolvedLogo } : org;
+
+    // Extrair dados de employees se disponíveis
+    const displayCount = org.employees_count || org.employee_count || org.mapped_count || 0;
+    const displayPics = (org.employees || org.decision_makers || [])
+        .map((dm: any) => dm.profile_pic || dm.avatar)
+        .filter(Boolean) || [];
+
+    // Renderizar OrgListItem diretamente sem wrapper nem className extra
+    // Adiciona classe noHover para remover borda no hover no chat
+    // Passa isSelected={true} para forçar exibição do footer de employees
     return (
         <OrgListItem
-            org={org}
+            org={normalizedOrg}
             showExpandToggle={false}
-            className=""
-            style={{ padding: '8px 0', border: 'none', boxShadow: 'none' }}
+            className="noHover"
+            displayCount={displayCount}
+            displayPics={displayPics}
+            isSelected={true}
         />
     );
 };
@@ -129,7 +154,20 @@ export const ContactPill: React.FC<{ data: any }> = ({ data }) => {
     if (!data) return null;
     
     const name = data.name || data.name_clean || 'Contato';
-    const subtext = data.email || data.phone || data.department || 'Mapeado';
+    
+    // Extração segura de subtexto (Pipedrive pode retornar arrays de objetos)
+    const getSafeValue = (val: any) => {
+        if (!val) return null;
+        if (typeof val === 'string') return val;
+        if (Array.isArray(val) && val.length > 0) {
+            const first = val[0];
+            return typeof first === 'object' ? first.value : first;
+        }
+        if (typeof val === 'object') return val.value || JSON.stringify(val);
+        return String(val);
+    };
+
+    const subtext = getSafeValue(data.email) || getSafeValue(data.phone) || data.department || 'Mapeado';
     
     // Identificação de canal prioritário
     const channels = data.channels || [];
@@ -143,19 +181,19 @@ export const ContactPill: React.FC<{ data: any }> = ({ data }) => {
     const showEmail = isEmailPrimary;
 
     return (
-        <div className={`${styles.inputCompanyPill} ${styles.glassModuleCard}`} style={{ margin: '4px 0', cursor: 'default' }}>
-            <div className={styles.pillIconArea} style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className={`${styles.inputCompanyPill} ${styles.glassModuleCard}`} style={{ cursor: 'default' }}>
+            <div className={styles.pillIconArea}>
                 {showEmail ? (
-                    <img src="/outlook.png" alt="E" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                    <img src="/outlook.png" alt="E" className={styles.pillCompanyLogo} style={{ background: 'transparent' }} />
                 ) : showWhatsApp ? (
-                    <img src="/wppicon.png" alt="W" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                    <img src="/wppicon.png" alt="W" className={styles.pillCompanyLogo} style={{ background: 'transparent' }} />
                 ) : (
                     <User2 size={14} color="#94a3b8" />
                 )}
             </div>
-            <div className={styles.pillInfo} style={{ marginLeft: '8px' }}>
-                <span className={styles.pillName} style={{ fontSize: '13px', fontWeight: '600' }}>{name}</span>
-                <span className={styles.pillSubtext} style={{ fontSize: '11px', opacity: 0.7 }}>{subtext}</span>
+            <div className={styles.pillInfo}>
+                <span className={styles.pillName}>{name}</span>
+                <span className={styles.pillSubtext}>{subtext}</span>
             </div>
         </div>
     );
