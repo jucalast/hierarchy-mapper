@@ -87,9 +87,42 @@ async def discover_employees_stream(
     selected_terms = LOGISTICS_KEYWORDS if area_focus == "logistica" else PURCHASING_KEYWORDS
     base_queries = []
     
-    # Gera as queries (Marca simplificada e sem aspas rígidas para maior alcance)
+    # ==== REGRA DE NEGÓCIO: PRIORIZAR SÓCIOS DO CNPJ ====
+    # 1. Busca os sócios que já estão no banco (vindos do QSA/CNPJ)
+    qsa_partners = []
+    async with async_session() as session:
+        stmt = select(Employee).where(Employee.company_id == db_org_id, Employee.department == "Quadro de Sócios (QSA)")
+        res = await session.execute(stmt)
+        qsa_partners = res.scalars().all()
+
+    # 2. Envia os sócios do QSA imediatamente para o front-end (mesmo sem LinkedIn)
+    if qsa_partners:
+        print(f"[B2B Engine] {len(qsa_partners)} sócios encontrados no CNPJ. Enviando para o front...")
+        nodes_qsa = []
+        for p in qsa_partners:
+            nodes_qsa.append({
+                "id": p.id,
+                "name": p.name,
+                "role": p.role or "Sócio",
+                "department": "Quadro de Sócios (QSA)",
+                "level": 6,
+                "linkedin": p.linkedin_url,
+                "source": "CNPJ/QSA"
+            })
+            # Cria query específica para o nome do sócio
+            base_queries.append(f'{p.name} {clean_brand} {search_location} linkedin')
+        
+        yield nodes_qsa
+
+    # 3. Adiciona termos genéricos de sócios como fallback (apenas os principais)
+    partner_terms = ["Sócio", "Fundador", "Owner"]
+    for p_term in partner_terms:
+        query = f'{clean_brand} {p_term} {search_location} linkedin'
+        if query not in base_queries:
+            base_queries.append(query)
+        
+    # 4. Gera as queries operacionais depois dos sócios
     for term in selected_terms:
-        # Usamos apenas a marca limpa, sem aspas forçadas na frente
         base_queries.append(f'{clean_brand} {term} {search_location} linkedin')
     
     if product_focus:
@@ -227,16 +260,28 @@ async def discover_employees_stream(
             # 1. Persistência do Nó Principal (se existir e for válido)
             if node_data:
                 async with async_session() as session:
+                    # Tenta match por LinkedIn primeiro
                     stmt_emp = select(Employee).where(Employee.linkedin_url == node_data["linkedin"])
                     res_emp = await session.execute(stmt_emp)
                     existing_emp = res_emp.scalars().first()
+                    
+                    # Se não achou por LinkedIn, tenta match por NOME para sócios do QSA que já estão no banco
+                    if not existing_emp:
+                        stmt_name = select(Employee).where(
+                            Employee.name == node_data["name"], 
+                            Employee.company_id == db_org_id
+                        )
+                        res_name = await session.execute(stmt_name)
+                        existing_emp = res_name.scalars().first()
 
                     if existing_emp:
+                        # Atualiza dados (Enriquecimento)
                         existing_emp.name = node_data["name"]
                         existing_emp.role = node_data["role"]
                         existing_emp.department = node_data["department"]
                         existing_emp.seniority = node_data["level"]
                         existing_emp.company_id = db_org_id
+                        existing_emp.linkedin_url = node_data["linkedin"] # Preenche o LinkedIn se não tinha
                         existing_emp.profile_pic = node_data.get("avatar")
                         existing_emp.location = node_data.get("location")
                         existing_emp.description = node_data.get("observations")

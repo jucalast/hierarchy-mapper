@@ -43,7 +43,9 @@ async def search_organizations(
                 "id": org.id,
                 "name": org.name,
                 "domain": org.domain or None,
-                "logo_url": org.logo_url or None
+                "logo_url": org.logo_url or None,
+                "icp_score": org.icp_score,
+                "icp_tier": org.icp_tier
             }
             for org in organizations
         ]
@@ -78,7 +80,9 @@ async def get_organization(
             "cnpj": org.cnpj,
             "logo_url": org.logo_url,
             "linkedin_url": org.linkedin_url,
-            "address": org.address
+            "address": org.address,
+            "icp_score": org.icp_score,
+            "icp_tier": org.icp_tier
         }
     
     except Exception as e:

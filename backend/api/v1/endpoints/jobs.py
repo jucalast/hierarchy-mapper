@@ -38,6 +38,8 @@ async def job_websocket(websocket: WebSocket, job_id: str):
                     msg_obj = json.loads(data)
                     if msg_obj.get('type') == 'done':
                         print(f"[WS] Job {job_id} finished, closing connection.")
+                        import asyncio
+                        await asyncio.sleep(0.5) # Dá tempo pro Uvicorn fazer flush no socket
                         break
                 except:
                     pass
@@ -49,7 +51,7 @@ async def job_websocket(websocket: WebSocket, job_id: str):
 @router.post("/start-scan")
 async def start_scan(
     company_name: str,
-    domain: str,
+    domain: Optional[str] = None,
     cnpj: Optional[str] = None,
     confirmed_brand: Optional[str] = None,
     confirmed_logo: Optional[str] = None,

@@ -58,6 +58,9 @@ async def lifespan(app: FastAPI):
         has_gemini=settings.has_gemini,
         has_groq=settings.has_groq,
         has_claude=settings.has_claude,
+        has_sambanova=settings.has_sambanova,
+        has_cerebras=settings.has_cerebras,
+        has_deepseek=settings.has_deepseek,
     )
 
     # HTTP client compartilhado
@@ -103,6 +106,18 @@ async def lifespan(app: FastAPI):
         log.info("trigger_service.started")
     except Exception as e:
         log.warning("trigger_service.start_failed", error=str(e))
+
+    # LLM Proactive Preemptive Healthcheck task
+    try:
+        from services.ai.llm.router import run_llm_preemptive_healthcheck
+        healthcheck_task = asyncio.create_task(
+            run_llm_preemptive_healthcheck(), name="llm_preemptive_healthcheck"
+        )
+        _background_tasks.add(healthcheck_task)
+        healthcheck_task.add_done_callback(_background_tasks.discard)
+        log.info("llm_healthcheck_task.started")
+    except Exception as e:
+        log.warning("llm_healthcheck_task.start_failed", error=str(e))
 
     try:
         yield

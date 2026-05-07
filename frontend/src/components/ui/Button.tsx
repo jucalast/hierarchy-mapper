@@ -39,7 +39,7 @@ const VARIANT_STYLE: Record<ButtonVariant, React.CSSProperties> = {
     border: '1px solid #dc2626',
   },
   success: {
-    background: '#00a884',
+    background: '#34d17c',
     color: '#fff',
     border: '1px solid #099272',
   },

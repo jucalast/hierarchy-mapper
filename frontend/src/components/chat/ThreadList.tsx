@@ -1,11 +1,12 @@
 import React from 'react';
-import { Plus, MessageSquare, Loader2, Clock, Trash2 } from 'lucide-react';
+import { Plus, MessageSquare, Loader2, Clock, Trash2, PanelRightClose } from 'lucide-react';
 import { Avatar } from '../ui';
 import type { ThreadOut } from '@/services/api/conversations';
 import styles from '../ChatPanel.module.css';
 
 interface ThreadListProps {
     orgName: string;
+    onCloseChat?: () => void;
     threads: ThreadOut[];
     isLoading: boolean;
     onSelectThread: (thread: ThreadOut) => void;
@@ -36,6 +37,7 @@ function formatDate(isoStr: string | null): string {
 
 export const ThreadList: React.FC<ThreadListProps> = ({
     orgName,
+    onCloseChat,
     threads,
     isLoading,
     onSelectThread,
@@ -54,6 +56,8 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                         src={selectedOrgLogo}
                         name={orgName}
                         size={32}
+                        noInitialFallback={true}
+                        style={{ border: '3px solid #272727ff' }}
                     />
                 </div>
                 <div className={styles.tlHeaderInfo}>

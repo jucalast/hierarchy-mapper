@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel as PydanticBaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -45,6 +45,13 @@ async def get_ai_preference():
     return {"preferred_model": get_preferred_model(), "strict_mode": get_strict_mode_preference()}
 
 
+@router.get("/quotas")
+async def get_live_quotas():
+    """Retorna os limites de cota em tempo real (0-100%) para todos os provedores."""
+    from services.ai.llm.quota_manager import get_quota_manager
+    return get_quota_manager().get_summary()
+
+
 @router.post("/chat")
 async def chat_with_ai(
     payload: ChatMessage,
@@ -74,9 +81,11 @@ async def chat_with_ai(
                     content=payload.message,
                 )
                 # Salva a resposta do assistente
-                resp_content = result.get("response", "") if isinstance(result, dict) else getattr(result, "response", "")
-                ui_module    = result.get("ui_module") if isinstance(result, dict) else getattr(result, "ui_module", None)
-                data         = result.get("data") if isinstance(result, dict) else getattr(result, "data", None)
+                resp_content     = result.get("response", "") if isinstance(result, dict) else getattr(result, "response", "")
+                ui_module        = result.get("ui_module") if isinstance(result, dict) else getattr(result, "ui_module", None)
+                data             = result.get("data") if isinstance(result, dict) else getattr(result, "data", None)
+                logs             = result.get("logs") if isinstance(result, dict) else getattr(result, "logs", None)
+                internal_context = result.get("_internal_context") if isinstance(result, dict) else getattr(result, "_internal_context", None)
 
                 await save_message(
                     session=session,
@@ -85,6 +94,8 @@ async def chat_with_ai(
                     content=resp_content,
                     ui_module=ui_module,
                     data=data,
+                    logs=logs,
+                    internal_context=internal_context,
                 )
 
         return result
@@ -95,6 +106,44 @@ async def chat_with_ai(
         raise HTTPException(
             status_code=500, detail=f"Erro ao processar mensagem: {e}"
         )
+
+
+@router.post("/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...)):
+    """
+    Transcreve áudio via Groq Whisper (whisper-large-v3-turbo).
+    Aceita webm, ogg, mp4, wav, m4a — qualquer formato que o MediaRecorder produza.
+    """
+    from core.config import settings
+    from core.http_client import get_http_client
+
+    if not settings.GROQ_API_KEY:
+        raise HTTPException(status_code=503, detail="GROQ_API_KEY não configurada")
+
+    audio_bytes = await audio.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Arquivo de áudio vazio")
+
+    filename = audio.filename or "audio.webm"
+    content_type = audio.content_type or "audio/webm"
+
+    client = get_http_client()
+    try:
+        resp = await client.post(
+            "https://api.groq.com/openai/v1/audio/transcriptions",
+            headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
+            files={"file": (filename, audio_bytes, content_type)},
+            data={"model": "whisper-large-v3-turbo", "language": "pt", "response_format": "json"},
+            timeout=30.0,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Erro ao chamar Groq Whisper: {e}")
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Groq Whisper retornou {resp.status_code}: {resp.text[:200]}")
+
+    transcript = resp.json().get("text", "").strip()
+    return {"transcript": transcript}
 
 
 @router.post("/agent-action")

@@ -141,6 +141,45 @@ class GeminiProvider(LLMProvider):
             # Fallback de emergência: qualquer modelo conhecido
             models = list(DAILY_LIMITS.keys())
 
+        # Estima tokens do request atual para ordenação adaptativa de tamanho
+        from services.ai.llm.router import _estimate_tokens, get_model_size, get_model_context_limit
+        est_tokens = _estimate_tokens(messages)
+        
+        # Filtra e ordena modelos com base no tamanho do contexto
+        valid_models = []
+        for model in models:
+            ctx_limit = get_model_context_limit(model)
+            if est_tokens > ctx_limit:
+                log.warning("llm.gemini.context_limit_skipped", model=model, estimated=est_tokens, limit=ctx_limit)
+                continue
+            valid_models.append(model)
+            
+        if not valid_models:
+            valid_models = models # fallback
+            
+        # Ordenação inteligente de tamanho:
+        # Se est_tokens é pequeno (<15k), prioriza Size 1 (flash-lite) -> Size 2 (flash) -> Size 3 (pro)
+        # Se est_tokens é médio (15k-100k), prioriza Size 2 (flash) -> Size 1 (flash-lite) -> Size 3 (pro)
+        # Se est_tokens é grande (>100k), prioriza Size 3 (pro) -> Size 2 (flash) -> Size 1 (flash-lite)
+        def _gemini_size_sort_key(m: str) -> int:
+            sz = get_model_size(m)
+            if est_tokens < 15_000:
+                return sz
+            elif est_tokens < 100_000:
+                if sz == 2: return 0
+                if sz == 1: return 1
+                return 2
+            else:
+                return -sz
+                
+        if preferred_model and preferred_model in valid_models:
+            other_models = [m for m in valid_models if m != preferred_model]
+            other_models.sort(key=_gemini_size_sort_key)
+            models = [preferred_model] + other_models
+        else:
+            valid_models.sort(key=_gemini_size_sort_key)
+            models = valid_models
+
         last_error: Optional[str] = None
         rate_limited_models: list[str] = []   # 429 de RPM (temporário)
         quota_exhausted_models: list[str] = []  # 429 de RPD (diário)
@@ -213,9 +252,8 @@ class GeminiProvider(LLMProvider):
                 # Tenta distinguir RPM (temporário) de RPD (diário esgotado)
                 body_text = resp.text[:500].lower()
                 is_daily_exhausted = (
-                    "quota" in body_text
-                    or "daily" in body_text
-                    or "resource_exhausted" in body_text
+                    "daily" in body_text
+                    or "daily limit" in body_text
                     or quota.is_exhausted(model)
                 )
 
@@ -237,12 +275,22 @@ class GeminiProvider(LLMProvider):
                 # Tenta próximo modelo da lista
                 continue
 
-            elif resp.status_code in (503, 404):
+            elif resp.status_code in (404, 403):
                 last_error = f"{resp.status_code}_on_{model}"
                 llm_requests_total.labels(
                     provider=self.name, model=model, outcome="unavailable"
                 ).inc()
-                log.warning("llm.gemini.unavailable", model=model, status=resp.status_code)
+                log.warning("llm.gemini.model_not_found_or_forbidden", model=model, status=resp.status_code)
+                # Pula este modelo permanentemente neste request e tenta o próximo
+                continue
+
+            elif resp.status_code == 503:
+                last_error = f"503_on_{model}"
+                llm_requests_total.labels(
+                    provider=self.name, model=model, outcome="unavailable"
+                ).inc()
+                log.warning("llm.gemini.service_unavailable", model=model)
+                continue
 
             else:
                 last_error = f"{resp.status_code}_on_{model}: {resp.text[:200]}"
@@ -267,7 +315,7 @@ class GeminiProvider(LLMProvider):
             raise GeminiDailyQuotaExhaustedError(summary)
 
         # Se a maioria das falhas foi por cota diária (mas não todas)
-        if len(quota_exhausted_models) >= len(models) - len(rate_limited_models):
+        if quota_exhausted_models and len(quota_exhausted_models) >= len(models) - len(rate_limited_models):
             log.error("llm.gemini.quota_exhausted_for_tier",
                       tier=tier.value, exhausted=quota_exhausted_models, summary=summary)
             raise GeminiDailyQuotaExhaustedError(summary)

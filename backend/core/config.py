@@ -44,7 +44,12 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
 
     class HTTPConfig(BaseSettings):
         """Cliente HTTP único (httpx.AsyncClient) compartilhado no app."""
-        model_config = SettingsConfigDict(env_prefix="HTTP_", extra="ignore")
+        model_config = SettingsConfigDict(
+            env_prefix="HTTP_",
+            env_file=".env",
+            env_file_encoding="utf-8",
+            extra="ignore",
+        )
 
         default_timeout: float = 30.0
         connect_timeout: float = 5.0
@@ -56,7 +61,12 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
 
     class AIConfig(BaseSettings):
         """Configuração da camada de IA (providers, circuit breaker, cache)."""
-        model_config = SettingsConfigDict(env_prefix="AI_", extra="ignore")
+        model_config = SettingsConfigDict(
+            env_prefix="AI_",
+            env_file=".env",
+            env_file_encoding="utf-8",
+            extra="ignore",
+        )
 
         # Seleção de providers (ordem de preferência)
         primary_provider: str = "claude"
@@ -83,23 +93,36 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         history_data_max_chars: int = 300
 
         # Modelos (ordem dentro de cada provider)
-        # gemini-2.5-pro: 100 RPD | gemini-2.5-flash: 250 RPD | gemini-2.5-flash-lite: 1000 RPD
+        # gemini-1.5-pro: 100 RPD | gemini-1.5-flash: 250 RPD | gemini-2.0-flash-exp: 1000 RPD
         gemini_models: str = (
-            "gemini-2.5-pro,"
-            "gemini-2.5-flash,"
-            "gemini-2.5-flash-lite"
+            "gemini-2.0-flash-exp,"
+            "gemini-1.5-flash,"
+            "gemini-flash-latest"
         )
         groq_models: str = (
             "llama-3.3-70b-versatile,"
-            "llama-3.1-8b-instant"
+            "llama-3.1-8b-instant,"
+            "meta-llama/llama-4-scout-17b-16e-instruct,"
+            "qwen/qwen3-32b,"
+            "llama-3.2-11b-vision-preview,"
+            "groq/compound"
         )
-        claude_models: str = "claude-sonnet-4-5,claude-3-5-haiku-latest"
+        claude_models: str = "claude-3-5-sonnet-latest,claude-3-5-haiku-latest"
+        sambanova_models: str = "Meta-Llama-3.3-70B-Instruct,Llama-4-Scout-17B-16E-Instruct"
+        deepseek_models: str = "deepseek-chat"
+        cerebras_models: str = "gpt-oss-120b,zai-glm-4.7,qwen-3-235b-instruct,llama3.1-8b,llama-3.3-70b"
+        ollama_models: str = "qwen2.5:3b"
 
         # Temperatura default
         temperature_default: float = 0.1
 
     class DatabaseConfig(BaseSettings):
-        model_config = SettingsConfigDict(env_prefix="DB_", extra="ignore")
+        model_config = SettingsConfigDict(
+            env_prefix="DB_",
+            env_file=".env",
+            env_file_encoding="utf-8",
+            extra="ignore",
+        )
 
         echo: bool = False
         pool_size: int = 10
@@ -109,7 +132,12 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         statement_timeout_sec: int = 30
 
     class PipedriveConfig(BaseSettings):
-        model_config = SettingsConfigDict(env_prefix="PIPEDRIVE_", extra="ignore")
+        model_config = SettingsConfigDict(
+            env_prefix="PIPEDRIVE_",
+            env_file=".env",
+            env_file_encoding="utf-8",
+            extra="ignore",
+        )
 
         concurrency_limit: int = 10
         request_timeout_sec: float = 30.0
@@ -117,14 +145,24 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         cache_stages_ttl_sec: int = 3600
 
     class EmailConfig(BaseSettings):
-        model_config = SettingsConfigDict(env_prefix="EMAIL_SCAN_", extra="ignore")
+        model_config = SettingsConfigDict(
+            env_prefix="EMAIL_SCAN_",
+            env_file=".env",
+            env_file_encoding="utf-8",
+            extra="ignore",
+        )
 
         scan_interval_min: int = 10
         scan_folder: str = "Leads"
         imap_timeout_sec: float = 30.0
 
     class ObservabilityConfig(BaseSettings):
-        model_config = SettingsConfigDict(env_prefix="OBS_", extra="ignore")
+        model_config = SettingsConfigDict(
+            env_prefix="OBS_",
+            env_file=".env",
+            env_file_encoding="utf-8",
+            extra="ignore",
+        )
 
         log_level: str = "INFO"
         log_json: bool = False        # True em produção; colorido em dev
@@ -133,7 +171,12 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         slow_request_threshold_sec: float = 2.0
 
     class CORSConfig(BaseSettings):
-        model_config = SettingsConfigDict(env_prefix="CORS_", extra="ignore")
+        model_config = SettingsConfigDict(
+            env_prefix="CORS_",
+            env_file=".env",
+            env_file_encoding="utf-8",
+            extra="ignore",
+        )
 
         # CSV de origens; "*" permite todas (use com cautela em prod)
         allow_origins: str = "*"
@@ -168,6 +211,9 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         GEMINI_API_KEY: str = Field(default="")
         GROQ_API_KEY: str = Field(default="")
         ANTHROPIC_API_KEY: str = Field(default="")
+        SAMBANOVA_API_KEY: str = Field(default="")
+        DEEPSEEK_API_KEY: str = Field(default="")
+        CEREBRAS_API_KEY: str = Field(default="")
 
         # --- Pipedrive ---
         PIPEDRIVE_API_TOKEN: str = Field(default="")
@@ -183,6 +229,7 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         EMAIL_PASSWORD: str = Field(default="")
         EMAIL_PORT: int = Field(default=8002)
         API_BASE_URL: str = Field(default="http://localhost:8000")
+        OLLAMA_API_BASE: str = Field(default="http://localhost:11434/v1/chat/completions")
 
         # --- WhatsApp ---
         WHATSAPP_SERVICE_URL: str = Field(default="http://localhost:8001/api/whatsapp")
@@ -236,6 +283,22 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
             return [m.strip() for m in self.ai.claude_models.split(",") if m.strip()]
 
         @property
+        def ai_sambanova_models_list(self) -> list[str]:
+            return [m.strip() for m in self.ai.sambanova_models.split(",") if m.strip()]
+
+        @property
+        def ai_deepseek_models_list(self) -> list[str]:
+            return [m.strip() for m in self.ai.deepseek_models.split(",") if m.strip()]
+
+        @property
+        def ai_cerebras_models_list(self) -> list[str]:
+            return [m.strip() for m in self.ai.cerebras_models.split(",") if m.strip()]
+
+        @property
+        def ai_ollama_models_list(self) -> list[str]:
+            return [m.strip() for m in self.ai.ollama_models.split(",") if m.strip()]
+
+        @property
         def has_gemini(self) -> bool:
             return bool(self.GEMINI_API_KEY)
 
@@ -248,8 +311,24 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
             return bool(self.ANTHROPIC_API_KEY)
 
         @property
+        def has_sambanova(self) -> bool:
+            return bool(self.SAMBANOVA_API_KEY)
+
+        @property
+        def has_cerebras(self) -> bool:
+            return bool(self.CEREBRAS_API_KEY)
+
+        @property
+        def has_deepseek(self) -> bool:
+            return bool(self.DEEPSEEK_API_KEY)
+
+        @property
+        def has_ollama(self) -> bool:
+            return True  # Ollama is local, doesn't need key
+
+        @property
         def any_llm_available(self) -> bool:
-            return self.has_gemini or self.has_groq or self.has_claude
+            return self.has_gemini or self.has_groq or self.has_claude or self.has_sambanova or self.has_cerebras or self.has_deepseek or self.has_ollama
 
         @field_validator("environment")
         @classmethod
@@ -274,6 +353,9 @@ else:
         GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
         GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
         ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+        SAMBANOVA_API_KEY: str = os.getenv("SAMBANOVA_API_KEY", "")
+        DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
+        CEREBRAS_API_KEY: str = os.getenv("CEREBRAS_API_KEY", "")
 
         PIPEDRIVE_API_TOKEN: str = os.getenv("PIPEDRIVE_API_TOKEN", "")
         PIPEDRIVE_USER_ID: int = int(os.getenv("PIPEDRIVE_USER_ID", 24921888))
@@ -321,6 +403,9 @@ else:
             gemini_models="gemini-2.5-pro,gemini-2.5-flash,gemini-2.5-flash-lite",
             groq_models="llama-3.3-70b-versatile,llama-3.1-8b-instant",
             claude_models="claude-sonnet-4-5,claude-3-5-haiku-latest",
+            sambanova_models="Meta-Llama-3.3-70B-Instruct,Llama-4-Scout-17B-16E-Instruct",
+            deepseek_models="deepseek-chat",
+            cerebras_models="gpt-oss-120b,zai-glm-4.7,qwen-3-235b-instruct,llama-3.3-70b,llama3.1-8b",
             temperature_default=0.1,
         )
         db = _Namespace(
@@ -372,6 +457,18 @@ else:
             return [m.strip() for m in self.ai.claude_models.split(",") if m.strip()]
 
         @property
+        def ai_sambanova_models_list(self) -> list:
+            return [m.strip() for m in self.ai.sambanova_models.split(",") if m.strip()]
+
+        @property
+        def ai_deepseek_models_list(self) -> list:
+            return [m.strip() for m in self.ai.deepseek_models.split(",") if m.strip()]
+
+        @property
+        def ai_cerebras_models_list(self) -> list:
+            return [m.strip() for m in self.ai.cerebras_models.split(",") if m.strip()]
+
+        @property
         def has_gemini(self) -> bool:
             return bool(self.GEMINI_API_KEY)
 
@@ -384,8 +481,32 @@ else:
             return bool(self.ANTHROPIC_API_KEY)
 
         @property
+        def has_sambanova(self) -> bool:
+            return bool(self.SAMBANOVA_API_KEY)
+
+        @property
+        def has_cerebras(self) -> bool:
+            return bool(self.CEREBRAS_API_KEY)
+
+        @property
+        def has_deepseek(self) -> bool:
+            return bool(self.DEEPSEEK_API_KEY)
+
+        @property
+        def has_ollama(self) -> bool:
+            return True
+
+        @property
         def any_llm_available(self) -> bool:
-            return self.has_gemini or self.has_groq or self.has_claude
+            return (
+                self.has_gemini
+                or self.has_groq
+                or self.has_claude
+                or self.has_sambanova
+                or self.has_cerebras
+                or self.has_deepseek
+                or self.has_ollama
+            )
 
     Settings = _FlatSettings  # type: ignore[assignment,misc]
 

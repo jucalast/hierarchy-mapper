@@ -302,7 +302,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                             <button
                                 onClick={handleSendMessage}
                                 style={{
-                                    background: '#00a884',
+                                    background: '#34d17c',
                                     border: 'none',
                                     color: '#fff',
                                     cursor: 'pointer',
@@ -313,7 +313,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     transition: 'all 0.2s ease',
-                                    boxShadow: '0 4px 12px rgba(0, 168, 132, 0.3)'
+                                    boxShadow: '0 4px 12px rgba(52, 209, 124, 0.3)'
                                 }}
                                 onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
                                 onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}

@@ -119,7 +119,8 @@ def _configure_structlog(log_level: int, json_mode: bool) -> None:
     for noisy in (
         "httpx", "httpcore", "urllib3", "asyncio",
         "sqlalchemy.engine", "sqlalchemy.pool", "sqlalchemy.orm",
-        "aiohttp", "multipart",
+        "aiohttp", "multipart", "uvicorn.access", "uvicorn.error",
+        "apscheduler",
     ):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
@@ -162,7 +163,7 @@ def _configure_stdlib(log_level: int, json_mode: bool) -> None:
     root.handlers = [handler]
     root.setLevel(log_level)
 
-    for noisy in ("httpx", "httpcore", "urllib3", "asyncio"):
+    for noisy in ("httpx", "httpcore", "urllib3", "asyncio", "uvicorn.access", "uvicorn.error", "apscheduler"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
@@ -227,12 +228,20 @@ class RequestIDMiddleware:
 
     # Paths that are called very frequently and produce log noise — logged at DEBUG only
     _SILENT_PATHS: tuple[str, ...] = (
-        "/proxy/image",
         "/proxy/",
         "/health",
-        "/healthz",
+        "/ready",
+        "/metrics",
         "/favicon.ico",
-        "/email-cache-status",
+        "/cache-status",
+        "/triggers",
+        "/pending-summary",
+        "/ai/preference",
+        "/activities",
+        "/organizations",
+        "/pipedrive_sync",
+        "/hierarchy/",
+        "/conversations",
     )
 
     def __init__(self, app, header_name: str = "X-Request-ID",
@@ -271,24 +280,28 @@ class RequestIDMiddleware:
             await self.app(scope, receive, send_wrapper)
         finally:
             duration = time.perf_counter() - start
+            status_code = status_holder["code"]
 
-            # Suppress info-level logging for chatty low-value endpoints
-            is_silent = any(path.startswith(p) for p in self._SILENT_PATHS)
-            if is_silent:
-                self._log.debug(
-                    "http.finished",
-                    method=method,
-                    path=path,
-                    status=status_holder["code"],
-                    duration_ms=round(duration * 1000, 2),
-                )
+            # Determine log level:
+            # 1. Error or Slow -> WARNING
+            # 2. Frequent/Silent Path -> DEBUG
+            # 3. Normal Path -> INFO
+            is_slow = duration >= self.slow_threshold
+            is_error = status_code >= 400
+            is_silent_path = any(p in path for p in self._SILENT_PATHS)
+
+            if is_error or is_slow:
+                log_fn = self._log.warning
+            elif is_silent_path:
+                log_fn = self._log.debug
             else:
-                log_fn = self._log.warning if duration >= self.slow_threshold else self._log.info
-                log_fn(
-                    "http.finished",
-                    method=method,
-                    path=path,
-                    status=status_holder["code"],
-                    duration_ms=round(duration * 1000, 2),
-                )
+                log_fn = self._log.info
+
+            log_fn(
+                "http.finished",
+                method=method,
+                path=path,
+                status=status_code,
+                duration_ms=round(duration * 1000, 2),
+            )
             _request_id_ctx.reset(token)

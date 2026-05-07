@@ -12,6 +12,16 @@ export function getChatStreamUrl(): string {
   return `${API_V1_URL}/ai/chat`;
 }
 
+/** URL do endpoint de streaming do agente V2. */
+export function getV2ChatStreamUrl(): string {
+  return `${API_V1_URL}/ai/v2/chat`;
+}
+
+/** URL do endpoint de confirmação de ação do agente V2. */
+export function getV2ConfirmStreamUrl(): string {
+  return `${API_V1_URL}/ai/v2/confirm`;
+}
+
 export interface AgentActionPayload {
   action_id: string;
   approved: boolean;
@@ -35,3 +45,18 @@ export function updatePreference(model: string, strictMode: boolean = false) {
 export function getPreference() {
   return api.get<{ preferred_model: string; strict_mode: boolean }>('/ai/preference');
 }
+
+export function getQuotas() {
+  return api.get<Record<string, Record<string, {
+    limit: number;
+    remaining: number;
+    used: number;
+    pct: number;
+    tokens_limit?: number;
+    tokens_remaining?: number;
+    tokens_pct?: number;
+    status: string;
+    updated_at: number;
+  }>>>('/ai/quotas');
+}
+

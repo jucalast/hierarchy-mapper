@@ -8,7 +8,7 @@ const securityHeaders = [
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=()',
+    value: 'camera=(), microphone=(self), geolocation=()',
   },
 ];
 
@@ -59,27 +59,32 @@ const nextConfig: NextConfig = {
 
   // Cabeçalhos globais de segurança e cache
   async headers() {
+    const isDev = process.env.NODE_ENV !== 'production';
     return [
       {
         source: '/:path*',
         headers: securityHeaders,
       },
-      {
-        // Static assets: cache agressivo + immutable
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
+      // Em dev: sem cache nos chunks JS para hot-reload funcionar corretamente
+      ...(isDev ? [] : [
+        {
+          source: '/_next/static/:path*',
+          headers: [
+            {
+              key: 'Cache-Control',
+              value: 'public, max-age=31536000, immutable',
+            },
+          ],
+        },
+      ]),
       {
         source: '/(.*\\.(?:png|jpg|jpeg|webp|avif|svg|ico|woff2|woff|ttf))',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=2592000, stale-while-revalidate=86400',
+            value: isDev
+              ? 'no-cache, no-store'
+              : 'public, max-age=2592000, stale-while-revalidate=86400',
           },
         ],
       },

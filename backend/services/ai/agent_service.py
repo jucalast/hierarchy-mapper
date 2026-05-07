@@ -31,6 +31,7 @@ ACTIONS_REQUIRING_APPROVAL = {"send_email", "reply_email", "send_whatsapp"}
 class PipelineContext:
     # ── Estágio 1: Dados coletados (Pipedrive + comunicações) ─────────────────
     org_name: str = ""
+    org_id: Optional[int] = None
     organization: Dict = field(default_factory=dict)
     deals: List[dict] = field(default_factory=list)
     activities: List[dict] = field(default_factory=list)
@@ -69,6 +70,7 @@ class PipelineContext:
         pd = raw.get("pipedrive_details", {})
         return cls(
             org_name=raw.get("organization", {}).get("name", ""),
+            org_id=raw.get("_org_id") or raw.get("organization", {}).get("id") or raw.get("organization", {}).get("pipedrive_id"),
             organization=raw.get("organization", {}),
             deals=pd.get("deals", []),
             activities=pd.get("activities", []),
@@ -299,7 +301,7 @@ Retorne JSON:
             try:
                 # Usa o Tier FAST para ser rápido e econômico
                 from services.ai.llm import LLMTier, ask_llm
-                script_res = await ask_llm(script_prompt, json_mode=True, tier=LLMTier.FAST, cacheable=True)
+                script_res = await ask_llm(script_prompt, json_mode=True, tier=LLMTier.FAST, cacheable=False)
                 narrative_script = script_res.json_data or {}
             except:
                 emit("IA ocupada, seguindo com análise técnica...")
@@ -308,7 +310,7 @@ Retorne JSON:
         # ESTÁGIO 3: Descoberta de Negócio e Tarefas (Narrativa Intercalada)
         # ═══════════════════════════════════════════════
         
-        # Se usando contexto cacheado, mostra resumo rápido em vez de todos os cards
+        # Se usando contexto cacheado, mostra resumo rápido mas ainda emite os cards
         if using_cached_context:
             emit({"type": "status", "content": "Continuando conversa... (dados carregados da sessão anterior)", "icon": "cached"})
             org_name_cache = raw_context.get("organization", {}).get("name", "Empresa")
@@ -320,26 +322,28 @@ Retorne JSON:
             intro_text = narrative_script.get("intro", f"Vou analisar o contexto de '{goal}' no Pipedrive agora.")
             await add_thought(intro_text)
             await asyncio.sleep(0.8)
-            
-            for deal in deals:
-                emit({"type": "data_found", "entity": "deal", "data": deal})
+        
+        # Sempre emite os cards de deals (independente de cache)
+        for deal in deals:
+            emit({"type": "data_found", "entity": "deal", "data": deal})
 
-            await asyncio.sleep(0.5)
+        await asyncio.sleep(0.5)
 
-            # 2. BLOCO: Tarefas e Contexto (Reativo)
-            if activities:
+        # 2. BLOCO: Tarefas e Contexto (Reativo)
+        if activities:
+            if not using_cached_context:
                 tasks_text = narrative_script.get("tasks_reaction", "Analisando o padrão de atividades registradas.")
                 await add_thought(tasks_text)
                 await asyncio.sleep(0.8)
-                for act in activities[:5]:
-                    emit({"type": "data_found", "entity": "activity", "data": act})
-            
-            await asyncio.sleep(0.8)
-            
-            # 3. BLOCO: Pessoas e Comunicações
-            people_text = narrative_script.get("finding_people", "Mapeando os principais interlocutores e histórico de mensagens.")
-            await add_thought(people_text)
-            emit({"type": "status", "content": "Cruzando histórico de comunicações...", "icon": "search"})
+            for act in activities[:5]:
+                emit({"type": "data_found", "entity": "activity", "data": act})
+        
+        await asyncio.sleep(0.8)
+        
+        # 3. BLOCO: Pessoas e Comunicações
+        people_text = narrative_script.get("finding_people", "Mapeando os principais interlocutores e histórico de mensagens.")
+        await add_thought(people_text)
+        emit({"type": "status", "content": "Cruzando histórico de comunicações...", "icon": "search"})
 
         # ── DETECÇÃO DE LEAD FRIO ───────────────────────────────────────────
         # Roda APÓS a coleta de dados, ANTES de exibir contatos ao usuário.
@@ -800,7 +804,9 @@ Retorne JSON:
             f"Detalhes pendentes: {'; '.join(pending_desc) or 'nenhum'}"
         )
         
-        executive_summary = await ask_gemini(FINAL_RESPONSE_PROMPT.format(context=exec_context))
+        from services.ai.llm import ask_llm, LLMTier
+        res = await ask_llm(FINAL_RESPONSE_PROMPT.format(context=exec_context), tier=LLMTier.STANDARD)
+        executive_summary = res.text
         
         # Se falhou por cota, usa um fallback amigável em vez da mensagem de erro crua
         if isinstance(executive_summary, str) and "Desculpe, ocorreu um erro de cota" in executive_summary:
@@ -1226,7 +1232,7 @@ Retorne JSON:
             ctx.deal_state = "Análise indisponível, seguindo com plano baseado nos dados do CRM."
 
     @staticmethod
-    async def _distill_communications(email_result: dict, wa_result: dict) -> str:
+    async def _distill_communications(email_result: dict, wa_result: dict, org_id=None) -> str:
         """Usa uma IA rápida para transformar mensagens brutas em fatos curtos."""
         from services.ai.llm import LLMTier, ask_llm
         from services.ai.prompts import COMMUNICATION_DISTILLER_PROMPT
@@ -1282,7 +1288,8 @@ Retorne JSON:
             res = await ask_llm(
                 COMMUNICATION_DISTILLER_PROMPT.format(text=combined),
                 tier=LLMTier.FAST,
-                cacheable=True
+                cacheable=org_id is not None,
+                cache_prefix=f"org:{org_id}" if org_id is not None else None,
             )
             return res.text
         except:
@@ -1323,7 +1330,8 @@ Retorne JSON:
             log.debug("agent.distill_fallback_start")
             distilled = await AgentService._distill_communications(
                 context.get("email_result", {}),
-                context.get("whatsapp_result", {})
+                context.get("whatsapp_result", {}),
+                org_id=context.get("org_id"),
             )
 
         history_summary += f"\n=== ARQUEOLOGIA DE COMUNICAÇÕES (HISTÓRICO DE CHAT) ===\n{distilled}\n"
@@ -1357,12 +1365,15 @@ Retorne JSON:
             protocol=protocol_short,
             history_summary=history_summary
         )
-        # Usa ask_llm (cacheable=True) em vez de ask_gemini para aproveitar o cache da sessão
+        org_id = context.get("org_id")
         try:
-            res = await ask_llm(prompt, tier=LLMTier.STANDARD, cacheable=True)
+            res = await ask_llm(
+                prompt, tier=LLMTier.STANDARD,
+                cacheable=org_id is not None,
+                cache_prefix=f"org:{org_id}" if org_id else None,
+            )
             return res.text
         except Exception:
-            # Fallback para ask_gemini legado se o router falhar
             return await ask_gemini(prompt)
 
     # ═══════════════════════════════════════
@@ -1466,7 +1477,15 @@ Retorne JSON:
             cold_context=cold_context_str,
             facts=facts_str,
         )
-        return await ask_gemini(prompt, json_mode=True)
+        from services.ai.llm import ask_llm, LLMTier
+        res = await ask_llm(
+            prompt, 
+            json_mode=True, 
+            tier=LLMTier.DEEP,
+            cacheable=True,
+            cache_prefix=f"org:{ctx.org_id}" if ctx.org_id else None
+        )
+        return res.json_data or {}
 
     # ═══════════════════════════════════════
     # VALIDAÇÃO DE ESTÁGIO
@@ -1957,7 +1976,8 @@ Retorne JSON:
             # Tenta pegar a destilação que já foi feita para a análise (arqueologia)
             history_distilled = await AgentService._distill_communications(
                 original_history.get("email_result", {}),
-                original_history.get("whatsapp_result", {})
+                original_history.get("whatsapp_result", {}),
+                org_id=original_history.get("org_id"),
             )
         except: pass
 
@@ -1973,7 +1993,9 @@ Retorne JSON:
             # Adicionamos um reforço sistêmico para não assinar
             prompt += "\n\nIMPORTANTE: Não inclua saudações finais como 'Atenciosamente' ou 'Obrigado', pois uma assinatura profissional será inserida automaticamente."
 
-            refined_body = await ask_gemini(prompt)
+            from services.ai.llm import ask_llm, LLMTier
+            res = await ask_llm(prompt, tier=LLMTier.STANDARD)
+            refined_body = res.text
 
             # Limpeza final (Fallback de segurança para placeholders de todos os tipos)
             if refined_body and isinstance(refined_body, str):
@@ -2015,14 +2037,15 @@ Retorne JSON:
         """
         contact_name = params.get("contact_name", "Contato")
         body_hint = params.get("message") or params.get("body") or ""
-        
+
         # Extrai histórico destilado para o contexto do redator
         history_distilled = ""
         try:
             # Tenta pegar a destilação que já foi feita para a análise (arqueologia)
             history_distilled = await AgentService._distill_communications(
                 original_history.get("email_result", {}),
-                original_history.get("whatsapp_result", {})
+                original_history.get("whatsapp_result", {}),
+                org_id=original_history.get("org_id"),
             )
         except: pass
 
@@ -2033,7 +2056,9 @@ Retorne JSON:
                 body_hint=body_hint,
                 history=history_distilled or "Sem histórico recente."
             )
-            refined = await ask_gemini(prompt)
+            from services.ai.llm import ask_llm, LLMTier
+            res = await ask_llm(prompt, tier=LLMTier.FAST)
+            refined = res.text
             if refined and isinstance(refined, str):
                 if "Desculpe, ocorreu um erro de cota" in refined:
                     return body_hint

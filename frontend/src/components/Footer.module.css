@@ -8,7 +8,7 @@
   background: #131313;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.3);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Nexa', var(--font-primary);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -37,7 +37,7 @@
 
 .brand {
   color: rgba(255, 255, 255, 0.45);
-  font-weight: 800;
+  font-weight: 500;
   letter-spacing: 0.12em;
 }
 
@@ -50,7 +50,7 @@
   align-items: center;
   gap: 8px;
   color: #5E6AD2;
-  font-weight: 800;
+  font-weight: 500;
   animation: glow 2s infinite alternate;
 }
 

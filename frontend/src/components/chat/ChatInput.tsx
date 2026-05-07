@@ -1,11 +1,13 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
-    X, Loader2, Building2, Mic, MicOff, ArrowUp, Zap
+    X, Loader2, Building2, Mic, ArrowUp, Zap
 } from 'lucide-react';
 import { CompanyResult } from './ChatInterfaces';
 import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
 import styles from '../ChatPanel.module.css';
 import { ModelSelector, AIModel } from './ModelSelector';
+import { ModelActivityBar, ModelActivityEvent, getNoticeStyle } from './ModelActivityBar';
+import { AudioWaveform } from './AudioWaveform';
 
 interface ChatInputProps {
     inputValue: string;
@@ -23,33 +25,51 @@ interface ChatInputProps {
     selectSearchResult: (company: CompanyResult) => void;
     // Speech props
     isListening: boolean;
+    isTranscribing?: boolean;
     startListening: () => void;
     stopListening: () => void;
+    voiceError?: string | null;
+    voiceSupported?: boolean;
+    analyserNode?: React.MutableRefObject<AnalyserNode | null>;
     // Model props
     model: AIModel;
     setModel: (model: AIModel) => void;
     strictMode?: boolean;
     setStrictMode?: (strict: boolean) => void;
+    liveModel?: AIModel | null;
+    modelActivity?: ModelActivityEvent[];
+    isStreamingActivity?: boolean;
     // Cooldown props
     pipedriveCooldown?: number;
+    // Agent mode
+    agentMode?: 'v1' | 'v2';
+    setAgentMode?: (mode: 'v1' | 'v2') => void;
     // Styling
     theme: string;
+    onStop?: () => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
     inputValue, setInputValue, isLoading, onSend,
     selectedCompanies, setSelectedCompanies,
     showAutocomplete, isSearching, searchingCategory, searchTerm, companies, selectSearchResult,
-    isListening, startListening, stopListening,
+    isListening, isTranscribing = false, startListening, stopListening, voiceError, voiceSupported = true, analyserNode,
     model, setModel,
     strictMode = false,
     setStrictMode,
+    liveModel,
+    modelActivity = [],
+    isStreamingActivity = false,
     pipedriveCooldown = 0,
-    theme
+    agentMode = 'v1',
+    setAgentMode,
+    theme,
+    onStop
 }) => {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const highlighterRef = useRef<HTMLDivElement>(null);
     const autocompleteRef = useRef<HTMLDivElement>(null);
+    const [isStopHovered, setIsStopHovered] = useState(false);
 
     // Sincronizar scroll do highlighter com o textarea
     const handleScroll = () => {
@@ -103,9 +123,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
     const OrgIcon = () => <Building2 size={16} className="shrink-0 opacity-40" />;
 
+    const notice = getNoticeStyle(modelActivity || []);
+
     return (
         <div className={styles.inputContainer}>
-            <div className={styles.inputBox}>
+            <div style={notice ? {
+                border: `1px solid ${notice.border}`,
+                background: notice.bg,
+                borderRadius: 16,
+            } : {}}>
+                {notice && <ModelActivityBar events={modelActivity || []} />}
+                <div className={styles.inputBox}>
                 <div className={styles.inputFieldWrapper}>
                     {selectedCompanies.length > 0 && (
                         <div className={styles.inputCompaniesContainer}>
@@ -265,48 +293,138 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     )}
 
                     <div className={styles.inputBottom}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <ModelSelector
-                                model={model}
-                                setModel={setModel}
-                                strictMode={strictMode}
-                                setStrictMode={setStrictMode}
-                                theme={theme}
-                            />
-                            {pipedriveCooldown > 0 && (
-                                <>
-                                    <div className={styles.dividerSmall}>|</div>
-                                    <div className={styles.cooldownBadge} title="Pipedrive em Cooldown (Aguardando reset de cota)">
-                                        <Zap size={12} className={styles.cooldownIcon} />
-                                        <span>
-                                            {Math.floor(pipedriveCooldown / 60)}:{String(pipedriveCooldown % 60).padStart(2, '0')}
-                                        </span>
+                        {isListening ? (
+                            /* ── Modo gravação: ondas + botão stop ── */
+                            <div className={styles.recordingBar}>
+                                <span className={styles.recordingDot} />
+                                {analyserNode && (
+                                    <AudioWaveform analyserNode={analyserNode} isActive={isListening} />
+                                )}
+                                <button
+                                    className={styles.stopRecordingBtn}
+                                    onClick={stopListening}
+                                    title="Parar gravação"
+                                />
+                            </div>
+                        ) : (
+                            /* ── Modo normal ── */
+                            <div className={styles.inputLeftControls}>
+                                {setAgentMode && (
+                                    <div className={styles.agentModeToggle}>
+                                        {(['v1', 'v2'] as const).map(mode => (
+                                            <button
+                                                key={mode}
+                                                onClick={() => setAgentMode(mode)}
+                                                title={mode === 'v1' ? 'Modo padrão' : 'Agente autônomo com ferramentas'}
+                                                className={`${styles.agentModeButton} ${agentMode === mode ? styles.agentModeButtonActive : ''} ${mode === 'v2' && agentMode === 'v2' ? 'agentModeV2' : ''}`}
+                                            >
+                                                {mode.toUpperCase()}
+                                            </button>
+                                        ))}
                                     </div>
-                                </>
-                            )}
-
-                            <div className={styles.dividerSmall}>|</div>
-                            <button
-                                className={`${styles.voiceBtn} ${isListening ? styles.micActive : ''}`}
-                                onClick={isListening ? stopListening : startListening}
-                                title={isListening ? "Parar Gravação" : "Enviar por Voz"}
-                            >
-                                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-                                <span className={styles.voiceBtnLabel}>
-                                    {isListening ? 'Gravando' : 'Voz'}
-                                </span>
-                            </button>
-                        </div>
+                                )}
+                                <div className={styles.dividerSmall}>|</div>
+                                <ModelSelector
+                                    model={model}
+                                    setModel={setModel}
+                                    strictMode={strictMode}
+                                    setStrictMode={setStrictMode}
+                                    theme={theme}
+                                    liveModel={liveModel}
+                                />
+                                {pipedriveCooldown > 0 && (
+                                    <>
+                                        <div className={styles.dividerSmall}>|</div>
+                                        <div className={styles.cooldownBadge} title="Pipedrive em Cooldown (Aguardando reset de cota)">
+                                            <Zap size={12} className={styles.cooldownIcon} />
+                                            <span>
+                                                {Math.floor(pipedriveCooldown / 60)}:{String(pipedriveCooldown % 60).padStart(2, '0')}
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
+                                <div className={styles.dividerSmall}>|</div>
+                                <button
+                                    className={styles.voiceBtn}
+                                    onClick={startListening}
+                                    disabled={!voiceSupported || isTranscribing}
+                                    title={
+                                        !voiceSupported
+                                            ? 'Captura de áudio não suportada neste navegador'
+                                            : isTranscribing
+                                            ? 'Transcrevendo...'
+                                            : 'Enviar por voz'
+                                    }
+                                >
+                                    {isTranscribing
+                                        ? <Loader2 size={16} className={styles.spinner} />
+                                        : <Mic size={16} />
+                                    }
+                                    <span className={styles.voiceBtnLabel}>
+                                        {isTranscribing ? 'Transcrevendo' : 'Voz'}
+                                    </span>
+                                </button>
+                            </div>
+                        )}
 
                         <button
                             className={`${styles.sendBtn} ${(!isLoading && (inputValue.trim() || selectedCompanies.length > 0)) ? styles.active : ''}`}
-                            disabled={isLoading || (!inputValue.trim() && selectedCompanies.length === 0)}
-                            onClick={() => onSend(inputValue, selectedCompanies)}
+                            onMouseEnter={() => { if (isLoading) setIsStopHovered(true); }}
+                            onMouseLeave={() => { setIsStopHovered(false); }}
+                            style={isLoading ? {
+                                background: isStopHovered ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)',
+                                color: '#ef4444',
+                                opacity: 1,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                transform: isStopHovered ? 'scale(1.08)' : 'scale(1.05)',
+                                border: 'none',
+                                boxShadow: 'none'
+                            } : {}}
+                            disabled={!isLoading && !inputValue.trim() && selectedCompanies.length === 0}
+                            onClick={() => {
+                                if (isLoading) {
+                                    if (onStop) onStop();
+                                } else {
+                                    onSend(inputValue, selectedCompanies);
+                                }
+                            }}
+                            title={isLoading ? "Parar resposta da IA" : "Enviar mensagem"}
+                            type="button"
                         >
-                            {isLoading ? <Loader2 size={18} className={styles.spinner} /> : <ArrowUp size={18} />}
+                            {isLoading ? (
+                                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18 }}>
+                                    {/* Um ícone de Stop Quadrado clássico preenchido (tamanho aumentado para 18) */}
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                        <rect x="4" y="4" width="16" height="16" rx="2.5" />
+                                    </svg>
+                                </span>
+                            ) : (
+                                <ArrowUp size={18} />
+                            )}
                         </button>
                     </div>
+                    {voiceError && (
+                        voiceError === 'blocked' ? (
+                            <div className={styles.voiceErrorHint}>
+                                <span>
+                                    Microfone bloqueado.{' '}
+                                    <strong>Clique no cadeado</strong> na barra de endereço
+                                    → Microfone → <strong>Permitir</strong> → recarregue.
+                                </span>
+                                <button
+                                    className={styles.voiceRetryBtn}
+                                    onClick={startListening}
+                                >
+                                    Tentar novamente
+                                </button>
+                            </div>
+                        ) : (
+                            <div className={styles.voiceErrorHint}>{voiceError}</div>
+                        )
+                    )}
                 </div>
+            </div>
             </div>
         </div>
     );

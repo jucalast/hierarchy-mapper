@@ -2,23 +2,25 @@ import os
 import time
 import random
 from typing import List, Dict, Optional
+from core.logging_config import get_logger
+
+log = get_logger(__name__)
+
+import re
+import unicodedata
+import smtplib
+import imaplib
+import email
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Tenta importar win32com para a "mágica" do Windows/Outlook
 try:
     import win32com.client
     import pythoncom
-    import re
-    import unicodedata
     HAS_PYWIN32 = True
 except ImportError:
     HAS_PYWIN32 = False
-    import re
-    import unicodedata
-    import smtplib
-    import imaplib
-    import email
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
 
 class EmailClient:
     """
@@ -32,12 +34,13 @@ class EmailClient:
     IMAP_PORT = 993
     
     def __init__(self, email_address=None, password=None, use_outlook_app=True):
-        self.email_address = email_address or os.getenv("EMAIL_USER") or "joao.moura@jferres.com.br"
-        self.password = password or os.getenv("EMAIL_PASSWORD")
+        from core.config import settings
+        self.email_address = email_address or settings.EMAIL_USER
+        self.password = password or settings.EMAIL_PASSWORD
         self.use_outlook_app = use_outlook_app and HAS_PYWIN32
         
         if self.use_outlook_app:
-            print("[EmailClient] Usando integração direta com Outlook Desktop (Mágica)")
+            log.info("email.outlook.initialized")
             # Tenta inicializar uma vez para garantir que o COM está ok
             try:
                 pythoncom.CoInitialize()
@@ -45,7 +48,7 @@ class EmailClient:
             except:
                 pass
         elif not self.password:
-            print("[EmailClient] Warning: EMAIL_PASSWORD não configurado para uso de SMTP")
+            log.warning("email.smtp.password_missing")
 
     def _get_outlook_instance(self, force_new=False):
         """
@@ -86,9 +89,9 @@ class EmailClient:
         err_msg = str(e)
         # Erro RPC (-2147023174 ou 0x800706BA)
         if "-2147023174" in err_msg or "0x800706BA" in err_msg or "RPC" in err_msg:
-            print(f"[EmailClient] RPC Error detected in {context_msg}. Forçando nova instância...")
+            log.warning("email.outlook.rpc_error", context=context_msg)
             return True
-        print(f"[EmailClient] ERROR ({context_msg}): {e}")
+        log.error("email.outlook.error", context=context_msg, error=e)
         return False
 
     def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False):
@@ -128,7 +131,7 @@ class EmailClient:
                     else:
                         # Tenta usar cache para evitar Display() que é LENTO e bloqueante
                         if not EmailClient._signature_cache:
-                            print("[EmailClient] Buscando assinatura padrão do Outlook (primeira vez)...")
+                            log.debug("email.outlook.signature_fetch")
                             EmailClient._signature_cache = self.get_default_signature()
                         
                         if EmailClient._signature_cache:
@@ -136,7 +139,7 @@ class EmailClient:
                         else:
                             # 🛑 SEGURANÇA: Não usamos .Display() em background para evitar popups.
                             # Se não tem assinatura em cache, envia apenas o corpo.
-                            print("[EmailClient] ⚠️ Assinatura não encontrada em cache. Enviando sem assinatura para evitar popup.")
+                            log.warning("email.outlook.signature_not_found")
                             mail.HTMLBody = final_body
                     
                     if request_read_receipt:
@@ -150,7 +153,7 @@ class EmailClient:
                                 break
                     
                     mail.Send()
-                    print(f"[EmailClient] SUCCESS: E-mail enviado via Outlook App para {to_email}")
+                    log.info("email.sent.success", provider="outlook", to=to_email)
                     return True
                 except Exception as e:
                     if attempt == 0 and self._handle_com_error(e, "Outlook App Send"):
@@ -158,6 +161,9 @@ class EmailClient:
                     return False
         else:
             # Fallback SMTP
+            if not self.password:
+                log.error("email.smtp.password_missing_for_send")
+                return False
             msg = MIMEMultipart()
             msg['From'] = self.email_address
             msg['To'] = to_email
@@ -170,10 +176,10 @@ class EmailClient:
                 server.login(self.email_address, self.password)
                 server.send_message(msg)
                 server.quit()
-                print(f"[EmailClient] SUCCESS: E-mail enviado via SMTP para {to_email}")
+                log.info("email.sent.success", provider="smtp", to=to_email)
                 return True
             except Exception as e:
-                print(f"[EmailClient] ERROR (SMTP): {e}")
+                log.error("email.sent.error", provider="smtp", error=e)
                 return False
 
     def reply_to_email(self, entry_id: str, html_body: str, reply_all: bool = True):
@@ -181,7 +187,7 @@ class EmailClient:
         Responde a um e-mail específico mantendo a Thread (In-Reply-To).
         """
         if not self.use_outlook_app:
-            print("[EmailClient] Resposta encadeada (Reply) só é suportada via Outlook Desk.")
+            log.warning("email.reply.outlook_only")
             return False
 
         for attempt in range(2):
@@ -195,7 +201,7 @@ class EmailClient:
                     namespace = outlook.GetNamespace("MAPI")
                     original_msg = namespace.GetItemFromID(entry_id)
                 except Exception as e:
-                    print(f"[EmailClient] Erro ao localizar mensagem original ID {entry_id[:10]}...: {e}")
+                    log.error("email.outlook.item_not_found", entry_id=entry_id[:10], error=e)
                     return False
 
                 # Cria a resposta (Reply ou ReplyAll)
@@ -223,7 +229,7 @@ class EmailClient:
                             break
 
                 reply_msg.Send()
-                print(f"[EmailClient] SUCCESS: Resposta (Thread) enviada via Outlook App para o ID {entry_id[:10]}...")
+                log.info("email.reply.success", entry_id=entry_id[:10])
                 return True
             except Exception as e:
                 if attempt == 0 and self._handle_com_error(e, "Reply Outlook"):
@@ -278,7 +284,7 @@ class EmailClient:
                                 count += 1
                         except: continue
                     
-                    print(f"[EmailClient] SUCCESS: Found {len(replies)} unread messages via Outlook App.")
+                    log.debug("email.scan.success", count=len(replies))
                     return replies
                 except Exception as e:
                     if attempt == 0 and self._handle_com_error(e, "Outlook App Scan"):
@@ -286,6 +292,8 @@ class EmailClient:
                     return []
         else:
             # Fallback IMAP (exige senha)
+            if not self.password:
+                return []
             try:
                 mail = imaplib.IMAP4_SSL(self.IMAP_SERVER)
                 mail.login(self.email_address, self.password)
@@ -319,7 +327,7 @@ class EmailClient:
                 mail.logout()
                 return replies
             except Exception as e:
-                print(f"[EmailClient] ERROR (IMAP Scan): {e}")
+                log.error("email.imap.scan_error", error=e)
                 return []
 
     def _normalize_str(self, s: str) -> str:
@@ -355,7 +363,7 @@ class EmailClient:
             new_cache = []
             
             # Lista prioritária de AddressLists
-            print("[EmailClient] Atualizando cache de contatos do Outlook...")
+            log.debug("email.outlook.contacts_refresh")
             priority_names = ["global", "users", "usuarios", "contatos", "contacts"]
             ordered_lists = sorted(
                 outlook.AddressLists, 
@@ -437,10 +445,10 @@ class EmailClient:
             
             EmailClient._contacts_cache = new_cache
             EmailClient._cache_timestamp = current_time
-            print(f"[EmailClient] Cache atualizado com sucesso: {len(EmailClient._contacts_cache)} contatos.")
+            log.info("email.outlook.cache_updated", count=len(EmailClient._contacts_cache))
         except Exception as e:
             import traceback
-            print(f"[EmailClient] Erro crítico ao atualizar cache: {e}")
+            log.error("email.outlook.cache_error", error=e)
             traceback.print_exc()
         finally:
             EmailClient._is_syncing = False # Finaliza sincronização
@@ -457,7 +465,7 @@ class EmailClient:
         clean_query_compact = clean_query.replace(" ", "")
         query_tokens = clean_query.split()
         
-        print(f"[EmailClient] Buscando por '{query}' (norm: '{clean_query}'). Cache: {len(EmailClient._contacts_cache)} itens.")
+        log.debug("email.contacts.search", query=query, cache_size=len(EmailClient._contacts_cache))
         
         for c in EmailClient._contacts_cache:
             if len(results) >= limit: break
@@ -475,7 +483,7 @@ class EmailClient:
             match_compact = clean_query_compact in fullname_compact or clean_query_compact in email_compact
             
             if match_direct or match_tokens or match_compact:
-                print(f"[EmailClient] Conexão encontrada: {c['name']} ({c['email']})")
+                log.debug("email.contacts.match", name=c['name'], email=c['email'])
                 results.append({
                     "name": c['name'],
                     "email": c['email'],
@@ -504,7 +512,7 @@ class EmailClient:
                     folders.append(f"{root.Name} / {f.Name}")
             return folders
         except Exception as e:
-            print(f"[EmailClient] ERROR (List Folders): {e}")
+            log.error("email.outlook.list_folders_error", error=e)
             return []
 
     def get_messages_from(self, folder_path: str = "Inbox", limit: int = 20, query: Optional[str] = None) -> List[Dict]:
@@ -571,7 +579,7 @@ class EmailClient:
                     if is_conv:
                         # Busca em TODAS as pastas da conta principal
                         if inbox:
-                            print(f"[EmailClient] Iniciando varredura recursiva de todas as pastas para: {query}")
+                            log.debug("email.outlook.recursive_scan", query=query)
                             folders_to_scan = get_all_folders_recursive(inbox.Parent)
                         else:
                             folders_to_scan = [inbox, sent]
@@ -599,22 +607,22 @@ class EmailClient:
                     if query:
                         q_clean = query.replace("'", "''") # Escape single quotes
                         
-                        # Se a query parece um e-mail, focamos no campo de e-mail e display names
-                        # Se não, buscamos em tudo.
+                        # Usamos MAPI Property Tags para maior compatibilidade no Restrict
+                        # 0x0065001F = SenderEmailAddress, 0x0E04001F = DisplayTo, 0x0E03001F = DisplayCc, 0x0037001F = Subject, 0x1000001F = Body
                         if "@" in q_clean:
                             filter_str = (
-                                f"@SQL=(\"urn:schemas:httpmail:fromemail\" LIKE '%{q_clean}%' "
-                                f"OR \"urn:schemas:httpmail:displayto\" LIKE '%{q_clean}%' "
-                                f"OR \"urn:schemas:httpmail:displaycc\" LIKE '%{q_clean}%' "
-                                f"OR \"urn:schemas:httpmail:textdescription\" LIKE '%{q_clean}%')"
+                                f"@SQL=(\"http://schemas.microsoft.com/mapi/proptag/0x0065001F\" LIKE '%{q_clean}%' "
+                                f"OR \"http://schemas.microsoft.com/mapi/proptag/0x0E04001F\" LIKE '%{q_clean}%' "
+                                f"OR \"http://schemas.microsoft.com/mapi/proptag/0x0E03001F\" LIKE '%{q_clean}%' "
+                                f"OR \"http://schemas.microsoft.com/mapi/proptag/0x1000001F\" LIKE '%{q_clean}%' "
+                                f"OR \"http://schemas.microsoft.com/mapi/proptag/0x0E02001F\" LIKE '%{q_clean}%')" # BCC
                             )
                         else:
-                            # Busca por Nome do Remetente ou Destinatário ou Assunto
                             filter_str = (
-                                f"@SQL=(\"urn:schemas:httpmail:fromname\" LIKE '%{q_clean}%' "
-                                f"OR \"urn:schemas:httpmail:displayto\" LIKE '%{q_clean}%' "
-                                f"OR \"urn:schemas:httpmail:displaycc\" LIKE '%{q_clean}%' "
-                                f"OR \"urn:schemas:httpmail:subject\" LIKE '%{q_clean}%')"
+                                f"@SQL=(\"http://schemas.microsoft.com/mapi/proptag/0x0042001F\" LIKE '%{q_clean}%' " # SenderName
+                                f"OR \"http://schemas.microsoft.com/mapi/proptag/0x0E04001F\" LIKE '%{q_clean}%' "
+                                f"OR \"http://schemas.microsoft.com/mapi/proptag/0x0E03001F\" LIKE '%{q_clean}%' "
+                                f"OR \"http://schemas.microsoft.com/mapi/proptag/0x0037001F\" LIKE '%{q_clean}%')"
                             )
                     
                     # Evitar duplicidade se folders_to_scan já for recursivo
@@ -640,7 +648,14 @@ class EmailClient:
                                 # Filtro DASL é muito mais rápido que loop
                                 try:
                                     items = items.Restrict(filter_str)
-                                except: pass
+                                except Exception as e:
+                                    log.debug("email.outlook.restrict_failed", error=e)
+                                    # Fallback para busca mais simples
+                                    try:
+                                        simple_filter = f"@SQL=(\"urn:schemas:httpmail:textdescription\" LIKE '%{q_clean}%')"
+                                        items = items.Restrict(simple_filter)
+                                    except:
+                                        pass
                             
                             try:
                                 items.Sort("[ReceivedTime]", True)
@@ -668,6 +683,9 @@ class EmailClient:
                     found = 0
                     
                     # Agora o loop é apenas sobre os resultados já pré-filtrados pelo Outlook
+                    # Faremos também um filtro local para garantir a precisão, já que o Restrict pode falhar ou ser permissivo.
+                    q_lower = query.lower() if query else ""
+                    
                     for msg in all_items:
                         if found >= limit: break
                         try:
@@ -704,15 +722,30 @@ class EmailClient:
                             except:
                                 resolved_to = [getattr(msg, 'To', 'Unknown')]
 
+                            to_str = "; ".join(resolved_to)
+                            subj_str = getattr(msg, 'Subject', '')
+                            body_str = getattr(msg, 'Body', '')
+                            
+                            # Filtro Local de Segurança:
+                            if q_lower:
+                                # Debug logging
+                                match_sender = q_lower in display_sender.lower()
+                                match_to = q_lower in to_str.lower()
+                                match_subj = q_lower in subj_str.lower()
+                                match_body = q_lower in body_str.lower()
+                                
+                                if not (match_sender or match_to or match_subj or match_body):
+                                    continue # Pula se não bateu
+                                    
                             results.append({
                                 "entryId": getattr(msg, 'EntryID', ""),
                                 "conversationId": getattr(msg, 'ConversationID', ""),
                                 "messageId": getattr(msg, 'MessageID', ""),
                                 "sender": display_sender,
-                                "to": "; ".join(resolved_to),
-                                "subject": getattr(msg, 'Subject', ''),
+                                "to": to_str,
+                                "subject": subj_str,
                                 "date": str(getattr(msg, 'ReceivedTime', '')),
-                                "body": getattr(msg, 'Body', '')[:1000]
+                                "body": body_str[:1000]
                             })
                             found += 1
                         except Exception as e:
@@ -721,7 +754,7 @@ class EmailClient:
                 except Exception as e:
                     if attempt == 0 and self._handle_com_error(e, f"Get Messages from {folder_path}"):
                         continue
-                    print(f"[EmailClient] ERROR (Get Messages from {folder_path}): {e}")
+                    log.error("email.outlook.get_messages_error", folder=folder_path, error=e)
         return []
 
     def get_default_signature(self) -> str:

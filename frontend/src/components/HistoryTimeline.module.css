@@ -19,8 +19,8 @@
     border: none;
     padding: 8px 0;
     border-radius: 0;
-    font-size: 0.72rem;
-    font-weight: 700;
+    font-size: var(--font-xs);
+    font-weight: 500;
     color: rgba(255, 255, 255, 0.3);
     cursor: pointer;
     transition: all 0.2s;
@@ -55,7 +55,7 @@
     padding: 40px 0;
     text-align: center;
     color: rgba(255, 255, 255, 0.2);
-    font-size: 0.8rem;
+    font-size: var(--font-sm);
     font-style: italic;
 }
 
@@ -140,13 +140,13 @@
 }
 
 .eventTitle {
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-size: var(--font-sm);
+    font-weight: 500;
     color: rgba(255, 255, 255, 0.85);
 }
 
 .moreOptions {
-    font-size: 0.8rem;
+    font-size: var(--font-sm);
     color: rgba(255, 255, 255, 0.1);
     cursor: pointer;
 }
@@ -156,7 +156,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
-    font-size: 0.7rem;
+    font-size: var(--font-xs);
     color: rgba(255, 255, 255, 0.25);
     margin-bottom: 16px;
     /* Permite quebra de linha em metadados muito longos */
@@ -176,7 +176,7 @@
 }
 
 .eventSubtext {
-    font-size: 0.75rem;
+    font-size: var(--font-xs);
     color: #2dd4bf;
     padding: 6px 0;
     margin-top: 4px;
@@ -280,7 +280,7 @@
 }
 
 .alertHeader .alertTitle {
-    font-size: 0.75rem;
+    font-size: var(--font-xs);
     font-weight: 500;
     color: rgb(122, 139, 255);
     flex: 1;
@@ -288,14 +288,14 @@
 }
 
 .alertTime {
-    font-size: 0.7rem;
+    font-size: var(--font-xs);
     color: rgb(122, 139, 255);
     opacity: 0.5;
     white-space: nowrap;
 }
 
 .alertSubtext {
-    font-size: 0.72rem;
+    font-size: var(--font-xs);
     color: rgb(122, 139, 255);
     opacity: 0.6;
     margin-left: 0;

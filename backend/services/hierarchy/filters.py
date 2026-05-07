@@ -108,16 +108,57 @@ def apply_strict_filters(name: str, title: str, snippet: str, core_company: str,
     # 🕵️ 4. FILTRAGEM POR RELEVÂNCIA (Whitelist vs Blacklist)
     # Se houver uma palavra de ALTO VALOR (Compras, Suprimentos, Sourcing), ignoramos as negativas e passamos para IA.
     # Adicionado variações para capturar posts informativos (como o da Kamila)
-    positive_keywords = ["buyer", "comprador", "compras", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic", "logistic", "logistica", "pcp", "expedicao", "estoque", "warehouse", "comercio", "trade", "negociacao", "operacoes", "diretor", "gerente", "manager", "head"]
+    positive_keywords = [
+        # --- COMPRAS / PROCUREMENT / SOURCING ---
+        "buyer", "comprador", "compradora", "compras", "purchasing", "suprimentos", "suprimento", 
+        "supply", "procurement", "sourcing", "strategic", "strategic sourcing", "indirect procurement", 
+        "direct procurement", "category manager", "capex buyer", "opex buyer", "insumos", 
+        "negociador", "cotacao", "fornecedores", "fornecedor", "contratos", "commodity", "commodities",
+        "purchasing agent", "purchasing analyst", "procurement specialist", "procurement officer",
+        "global sourcing", "supply management", "supply manager",
+        
+        # --- LOGÍSTICA / SUPPLY CHAIN ---
+        "logistic", "logistica", "supply chain", "cadeia de suprimentos", "warehouse", "almoxarifado", 
+        "almoxarife", "estoque", "conferente", "expedicao", "planejamento", "pcp", "ppcp", 
+        "distribuicao", "transportes", "transporte", "frota", "roteirizacao", "armazem", "inventario", 
+        "armazenagem", "recebimento", "demand planning", "demand planner", "inventory", "distribution",
+        "shipping", "receiving", "freight", "wms", "tms", "fulfillment", "materials planner",
+        
+        # --- COMÉRCIO EXTERIOR (COMEX) ---
+        "comex", "comercio exterior", "importacao", "exportacao", "desembaraco", "despachante", 
+        "import", "export", "trade", "customs", "international trade",
+        
+        # --- OPERAÇÕES & NEGOCIAÇÃO ---
+        "negociacao", "operacoes", "operations", "operacional", "fluxo de materiais",
+        
+        # --- EXECUTIVE / LIDERANÇA / C-LEVEL ---
+        "diretor", "diretora", "director", "gerente", "manager", "head", "coordenador", 
+        "coordenadora", "coordinator", "supervisor", "supervisora", "lider", "líder", "leader", 
+        "chefe", "chefia", "chief", "gestor", "gestora", "socio", "sócio", "partner", "fundador", 
+        "fundadora", "founder", "co-founder", "cofounder", "co-fundador", "owner", "proprietario", 
+        "proprietaria", "board", "c-level", "cpo", "csco", "coo", "ceo", "president", "presidente", 
+        "vice president", "vp", "managing director", "general manager"
+    ]
     has_positive = any(pk in context_clean for pk in positive_keywords)
     
     if has_positive:
-        # Se tem algo positivo (cargo ou departamento), deixamos a IA decidir
+        # Se tem algo positivo (cargo, departamento ou liderança), deixamos a IA decidir
         return True
 
     # Só aplicamos o bloqueio de negativas se NÃO houver nenhuma palavra positiva forte
     normalized_negatives = [normalize_str(nk) for nk in negative_keywords]
-    if any(nk in context_clean for nk in normalized_negatives):
+    
+    # 🛡️ EVITAR FALSOS NEGATIVOS COM O NOME DA EMPRESA:
+    # Se uma palavra negativa (ex: "sistemas" em "Ápice Sistemas de Energia") fizer parte do nome da própria empresa/marca,
+    # nós removemos essa palavra das negativas ativas para evitar rejeitar todos os funcionários da empresa.
+    brand_words = set()
+    for bv in brand_variants:
+        if len(bv) > 2:
+            brand_words.update(bv.split())
+            
+    active_negatives = [nk for nk in normalized_negatives if nk not in brand_words]
+    
+    if any(nk in context_clean for nk in active_negatives):
         return False
 
     return True

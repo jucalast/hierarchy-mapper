@@ -1,6 +1,6 @@
 import React from 'react';
-import { ChevronRight, AlertTriangle } from 'lucide-react';
-import { Avatar, Spinner } from './ui';
+import { ChevronRight, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Avatar, Spinner, Badge } from './ui';
 import { getProxiedUrl } from '../utils/avatarUtils';
 import styles from './NetworkGraph.module.css';
 
@@ -49,9 +49,11 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
     const orgId = org.id || org.pipedrive_id;
     const taskSummary: TaskSummary | null = org._taskSummary || null;
     const isOverdue = taskSummary ? taskSummary.overdue_count > 0 : false;
+    const brToday = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     const isToday = taskSummary && !isOverdue
-        ? taskSummary.next_due_date === new Date().toISOString().slice(0, 10)
+        ? taskSummary.next_due_date === brToday
         : false;
+    const isNoTask = !isOverdue && !isToday && (!taskSummary || taskSummary.pending_count === 0);
 
     // Calcular dados internos se não fornecidos
     const displayCount = propDisplayCount !== undefined ? propDisplayCount : (org.employees_count || org.employee_count || org.mapped_count || 0);
@@ -69,43 +71,105 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
             onClick={() => onClick?.(org)}
             style={{
                 cursor: onClick ? 'pointer' : 'default',
-                boxShadow: isOverdue
-                    ? 'inset 3px 0 0 0 #ef4444'
-                    : isToday
-                        ? 'inset 3px 0 0 0 #22c55e'
-                        : undefined,
                 ...style
             }}
         >
-            <div className={styles.orgMainInfo}>
-                <div className={styles.orgLogoWrapper}>
-                    <Avatar
-                        kind="company"
-                        src={org.logo || org.organization_logo || org.logo_url || org.company_logo}
-                        name={org.name || org.title || org.label || org.org_name || 'Empresa'}
-                        data={org}
-                        size={32}
-                        noInitialFallback={displayCount === 0}
-                    />
-                </div>
-                <div className={styles.orgIdentity}>
-                    <span className={styles.orgName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {org.name || org.title || org.label || org.org_name || org.company_name || 'Empresa'}
-                        {scanningOrgId === orgId && (
-                            <Spinner size={14} inline color="rgb(122, 139, 255)" />
-                        )}
-                    </span>
-                    {(org.address || org.org_address) && (
-                        <div className={styles.orgAddress}>
-                            {(org.address || org.org_address).toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                <div className={styles.orgMainInfo} style={{ flex: 1, marginBottom: 0 }}>
+                    <div className={styles.orgLogoWrapper}>
+                        {(() => {
+                            const hasLogo = !!(org.logo || org.organization_logo || org.logo_url || org.company_logo);
+                            return (
+                                <Avatar
+                                    kind="company"
+                                    src={org.logo || org.organization_logo || org.logo_url || org.company_logo}
+                                    name={org.name || org.title || org.label || org.org_name || 'Empresa'}
+                                    data={org}
+                                    size={32}
+                                    noInitialFallback={displayCount === 0}
+                                    style={{ border: hasLogo ? '3px solid #272727ff' : 'none' }}
+                                />
+                            );
+                        })()}
+                    </div>
+                    <div className={styles.orgIdentity}>
+                        <div className={styles.orgName} style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+                            <span style={{
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                flex: '0 1 auto'
+                            }}>
+                                {(() => {
+                                    const fullName = org.name || org.title || org.label || org.org_name || org.company_name || 'Empresa';
+                                    return fullName.length > 12 ? `${fullName.substring(0, 12)}...` : fullName;
+                                })()}
+                            </span>
+
+                            {org.icp_tier && (
+                                <span
+                                    title={`Score ICP: ${org.icp_score || 'N/A'}`}
+                                    style={{
+                                        fontSize: '13px',
+                                        fontWeight: 500,
+                                        color: org.icp_tier === 'A' ? '#34d17c' : org.icp_tier === 'B' ? '#f59e0b' : 'rgba(255,255,255,0.4)',
+                                        width: 20,
+                                        height: 20,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0,
+                                        lineHeight: 1
+                                    }}
+                                >
+                                    {org.icp_tier}
+                                </span>
+                            )}
+
+                            {scanningOrgId === orgId && (
+                                <Spinner size={14} inline color="rgb(122, 139, 255)" />
+                            )}
+                            {(org.linkedin || org.linkedin_url) && (
+                                <a
+                                    href={org.linkedin || org.linkedin_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={styles.orgLinkedinLink}
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                                >
+                                    <img src="/linkedin.png" alt="LinkedIn" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                                </a>
+                            )}
                         </div>
-                    )}
+                        {(() => {
+                            const addr = org.address || org.org_address;
+                            if (!addr) return null;
+
+                            // Pipedrive às vezes retorna endereço como objeto
+                            let displayAddr = "";
+                            if (typeof addr === 'object' && addr !== null) {
+                                displayAddr = addr.label || addr.formatted_address || addr.address || "";
+                            } else {
+                                displayAddr = String(addr);
+                            }
+
+                            if (!displayAddr || displayAddr === "undefined") return null;
+
+                            return (
+                                <div className={styles.orgAddress}>
+                                    {displayAddr.toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}
+                                </div>
+                            );
+                        })()}
+                    </div>
                 </div>
                 {showExpandToggle && onToggleExpand && (
                     <button
-                        className={styles.expandToggle}
+                        className={`${styles.expandToggle} ${isOverdue ? styles.overdue : isToday ? styles.today : isNoTask ? styles.noTask : ''}`}
                         onClick={(e) => onToggleExpand(e, orgId)}
-                        title="Expandir"
+                        title={isOverdue ? 'Tarefa atrasada' : isToday ? 'Tarefa hoje' : isNoTask ? 'Sem tarefa agendada' : 'Expandir'}
+                        style={{ position: 'relative', top: 'auto', right: 'auto', flexShrink: 0 }}
                     >
                         <ChevronRight size={16} />
                     </button>
@@ -147,35 +211,6 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                         </>
                     ) : null}
                 </div>
-
-                {/* Badge de urgência de tarefas */}
-                {taskSummary && (
-                    <div style={{ display: 'flex', alignItems: 'center', marginLeft: 'auto' }}>
-                        {isOverdue ? (
-                            <span style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 18, height: 18,
-                                color: '#ef4444',
-                                background: 'rgba(239,68,68,0.12)',
-                                border: '1px solid rgba(239,68,68,0.25)',
-                                borderRadius: 5,
-                            }}>
-                                <AlertTriangle size={10} />
-                            </span>
-                        ) : isToday ? (
-                            <span style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 18, height: 18,
-                                color: '#22c55e',
-                                background: 'rgba(34,197,94,0.12)',
-                                border: '1px solid rgba(34,197,94,0.25)',
-                                borderRadius: 5,
-                            }}>
-                                <ChevronRight size={12} />
-                            </span>
-                        ) : null}
-                    </div>
-                )}
             </div>
         </div>
     );

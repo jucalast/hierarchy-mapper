@@ -292,16 +292,17 @@ class CandidateProcessor:
                  ai_data["evidence"] = f"REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. {ai_data.get('evidence', '')}"
 
         # 🎭 FALLBACK DE ÚLTIMA INSTÂNCIA: 'Análise Humana'
-        # Se chegamos aqui e o cargo ainda é genérico/inválido mas a pessoa TRABALHA na empresa, não descartamos.
-        # Salvamos para que o usuário possa decidir manualmente.
-        if not ai_data.get("is_valid") and (current_role_lower in generic_roles or not ai_data.get("role")):
-             # Só fazemos o fallback se o Detetive ou Sniper confirmaram o vínculo com a empresa
-             if ai_data.get("department") != "Não Identificado" or confidence > 0:
+        # Se chegamos aqui e o cargo AINDA é genérico (mesmo após repescagem), enviamos para aprovação humana.
+        # Não descartamos se houver evidência de vínculo.
+        final_processed_role = str(ai_data.get("role", "")).lower()
+        if final_processed_role in generic_roles or not ai_data.get("role"):
+             # Só fazemos o fallback se houver algum indício de que a pessoa trabalha lá
+             if ai_data.get("is_valid") or ai_data.get("department") != "Não Identificado" or confidence > 0:
                  ai_data["is_valid"] = True
                  ai_data["role"] = "Análise Humana"
                  ai_data["department"] = "A validar"
                  ai_data["matching_score"] = 10 
-                 ai_data["evidence"] = "ENVIADO PARA ANÁLISE HUMANA: Empresa confirmada, mas cargo oculto no LinkedIn."
+                 ai_data["evidence"] = "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
 
         # 🛡️ TRAVA FINAL: Só rejeita se a confiança for realmente nula ou se a IA for categórica.
         if ai_data.get("is_valid") and confidence < 5:

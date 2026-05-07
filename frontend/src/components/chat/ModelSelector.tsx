@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Check, ChevronUp, Lock } from 'lucide-react';
 import './ModelSelector.styles.css';
 
-export type AIModel = 'gemini' | 'groq' | 'claude';
+export type AIModel = 'gemini' | 'groq' | 'claude' | 'cerebras' | 'deepseek' | 'sambanova';
 
 interface ModelOption {
     id: AIModel;
@@ -13,9 +13,11 @@ interface ModelOption {
     accentColor: string;
     logoSrc: string;
     speed: number;
+    invertOnDark?: boolean;  // inverte o logo em tema escuro
 }
 
 const MODEL_OPTIONS: ModelOption[] = [
+
     {
         id: 'claude',
         name: 'Claude',
@@ -27,24 +29,55 @@ const MODEL_OPTIONS: ModelOption[] = [
         speed: 2,
     },
     {
-        id: 'gemini',
-        name: 'Gemini',
-        description: 'Raciocínio complexo e contexto longo',
+        id: 'cerebras',
+        name: 'Cerebras',
+        description: 'Hardware dedicado — latência ultra baixa',
+        badge: 'Mais Rápido',
+        badgeColor: 'rgba(234,88,12,0.18)',
+        accentColor: '#ea580c',
+        logoSrc: '/cerebras.png',
+        speed: 3,
+    },
+    {
+        id: 'sambanova',
+        name: 'SambaNova',
+        description: 'Llama 4 Scout — rápido e preciso',
         badge: 'Rápido',
-        badgeColor: 'rgba(59,130,246,0.18)',
-        accentColor: '#3b82f6',
-        logoSrc: '/gemini.png',
+        badgeColor: 'rgba(239,68,68,0.18)',
+        accentColor: '#ef4444',
+        logoSrc: '/sambanova.png',
         speed: 3,
     },
     {
         id: 'groq',
         name: 'Groq',
-        description: 'Ultra-rápido — respostas em menos de 1s',
+        description: 'LPU Hardware — Llama 3.3, Llama 4 & Qwen 3 (Sub-segundo)',
         badge: 'Mais Rápido',
         badgeColor: 'rgba(234,179,8,0.18)',
         accentColor: '#eab308',
         logoSrc: '/groq llama.svg',
         speed: 3,
+        invertOnDark: true,
+    },
+    {
+        id: 'deepseek',
+        name: 'DeepSeek',
+        description: 'Custo-benefício — código e raciocínio',
+        badge: 'Econômico',
+        badgeColor: 'rgba(99,102,241,0.18)',
+        accentColor: '#6366f1',
+        logoSrc: '/deepseek.png',
+        speed: 2,
+    },
+    {
+        id: 'gemini',
+        name: 'Gemini',
+        description: 'Contexto de 1M tokens — raciocínio complexo',
+        badge: 'Longo',
+        badgeColor: 'rgba(59,130,246,0.18)',
+        accentColor: '#3b82f6',
+        logoSrc: '/gemini.png',
+        speed: 2,
     },
 ];
 
@@ -54,19 +87,24 @@ interface ModelSelectorProps {
     strictMode?: boolean;
     setStrictMode?: (strict: boolean) => void;
     theme?: string;
+    liveModel?: AIModel | null;
 }
 
-export const ModelSelector: React.FC<ModelSelectorProps> = ({ 
-    model, 
-    setModel, 
-    strictMode = false, 
+export const ModelSelector: React.FC<ModelSelectorProps> = ({
+    model,
+    setModel,
+    strictMode = false,
     setStrictMode,
     theme = 'light',
+    liveModel,
 }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
-    const current = MODEL_OPTIONS.find(m => m.id === model) || MODEL_OPTIONS[0];
+    // Em streaming sem strict mode, mostra o modelo ativo em vez da preferência
+    const displayModel = (!strictMode && liveModel) ? liveModel : model;
+    const current = MODEL_OPTIONS.find(m => m.id === displayModel) || MODEL_OPTIONS[0];
+    const isLive = Boolean(!strictMode && liveModel && liveModel !== model);
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -96,18 +134,17 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
     );
 
     const getModelLogoStyle = (modelId: AIModel, isSelected: boolean = false, isTrigger: boolean = false) => {
-        if (modelId !== 'groq') return { filter: 'none' };
-        
-        // No trigger button (modelo atual selecionado)
+        const opt = MODEL_OPTIONS.find(m => m.id === modelId);
+        if (!opt?.invertOnDark) return { filter: 'none' };
+
+
+
         if (isTrigger) {
             return { filter: theme === 'dark' ? 'brightness(0) invert(1)' : 'brightness(0)' };
         }
-        
-        // No dropdown
         if (isSelected) {
-            return { filter: theme === 'dark' ? 'brightness(0)' : 'brightness(0)' };
+            return { filter: 'brightness(0)' };
         }
-        
         return { filter: 'brightness(0) invert(1)' };
     };
 
@@ -117,15 +154,18 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
             <button
                 onClick={() => setOpen(v => !v)}
                 data-open={open}
-                className="modelSelectorTrigger"
+                className={`modelSelectorTrigger`}
             >
                 <img
                     src={current.logoSrc}
                     alt={current.name}
                     className="modelIcon"
-                    style={getModelLogoStyle(model, true, true)}
+                    style={getModelLogoStyle(displayModel, true, true)}
                 />
                 <span>{current.name}</span>
+                {isLive && (
+                    <span className="modelLiveDot" title="Modelo ativo agora" />
+                )}
                 {strictMode && <Lock size={10} className="strictLock" />}
                 <ChevronUp
                     size={14}
@@ -175,7 +215,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                                             <span className="modelOptionSpeedLabel">
                                                 Velocidade
                                             </span>
-                                            <SpeedDots speed={opt.speed} accentColor="#5a5bd6" />
+                                            <SpeedDots speed={opt.speed} accentColor={opt.accentColor} />
                                         </div>
                                     </div>
 
@@ -202,8 +242,8 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                                     Strict Mode
                                 </div>
                                 <div className="modelSelectorStrictModeDesc">
-                                    {strictMode 
-                                        ? 'Força este modelo com retry agressivo' 
+                                    {strictMode
+                                        ? 'Força este modelo com retry agressivo'
                                         : 'Permite fallback automático se falhar'}
                                 </div>
                             </div>

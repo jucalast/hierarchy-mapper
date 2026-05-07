@@ -1,26 +1,9 @@
 import React from 'react';
-import {
-    AlertCircle,
-    Fingerprint,
-    Globe,
-    Target,
-    Sparkles,
-    Loader2,
-    Play,
-    Building,
-    ArrowLeft,
-    Search,
-    RotateCcw,
-    User,
-    Check,
-    X
-} from 'lucide-react';
+import type { ProspectSession, ProspectLead } from '@/hooks/useProspecting';
+import { ProspectingToolbar } from './FloatingToolbar/ProspectingToolbar';
+import { NormalToolbar } from './FloatingToolbar/NormalToolbar';
 
-
-import styles from './NetworkGraph.module.css';
-import { buildProxyImageUrl } from '@/services/config';
-
-interface FloatingToolbarProps {
+export interface FloatingToolbarProps {
     error: string | null;
     handleSearch: (e: React.FormEvent) => void;
     cnpj: string;
@@ -35,8 +18,8 @@ interface FloatingToolbarProps {
     setDomainTarget: (val: string) => void;
     productFocus: string;
     setProductFocus: (val: string) => void;
-    areaFocus: "compras" | "logistica";
-    setAreaFocus: (val: "compras" | "logistica") => void;
+    areaFocus: 'compras' | 'logistica';
+    setAreaFocus: (val: 'compras' | 'logistica') => void;
     handleAutoEnrich: () => void;
     enrichingIds: Set<number>;
     discovering: boolean;
@@ -50,335 +33,99 @@ interface FloatingToolbarProps {
     activeJobId?: string | null;
     onApproveCandidate?: (id: string) => void;
     onRejectCandidate?: (id: string) => void;
+
+    // ── Modo Prospecção (só ativo quando activeView === 'prospecting') ──
+    isProspectingMode?: boolean;
+    prospectCoords?: { lat: number; lng: number } | null;
+    prospectRadiusKm?: number;
+    onProspectRadiusChange?: (km: number) => void;
+    onProspectGeolocate?: () => void;
+    prospectGeoLoading?: boolean;
+    onProspectSearch?: () => void;
+    onProspectStop?: () => void;
+    prospectSearching?: boolean;
+    prospectSession?: ProspectSession | null;
+    prospectLeadsCount?: number;
+    prospectTierACount?: number;
+    prospectError?: string | null;
+    prospectCityName?: string | null;
+    onProspectCepLookup?: (cep: string) => Promise<void>;
+    prospectSelectedLead?: ProspectLead | null;
+    prospectPendingLeads?: ProspectLead[];
+    onProspectSelectLead?: (lead: ProspectLead) => void;
+    onProspectApproveLead?: (id: string) => Promise<void>;
+    onProspectRejectLead?: (id: string) => Promise<void>;
+    onProspectCloseLead?: () => void;
+    prospectCep?: string;
+    onProspectCepChange?: (cep: string) => void;
+    prospectHoveredLeadId?: string | null;
+    isSidebarOpen?: boolean;
+    isChatOpen?: boolean;
 }
 
-export const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
-    error,
-    handleSearch,
-    cnpj,
-    setCnpj,
-    confirmedBrand,
-    setConfirmedBrand,
-    confirmedLogo,
-    setConfirmedLogo,
-    confirmedFollowers,
-    setConfirmedFollowers,
-    domainTarget,
-    setDomainTarget,
-    productFocus,
-    setProductFocus,
-    areaFocus,
-    setAreaFocus,
-    handleAutoEnrich,
-    enrichingIds,
-    discovering,
-    loading,
-    step,
-    brandOptions,
-    onBrandSelect,
-    hasMapping,
-    stopHierarchyScan,
-    cancelDiscovery,
-    activeJobId,
-    onApproveCandidate,
-    onRejectCandidate
-}) => {
-    const [isClosing, setIsClosing] = React.useState(false);
-    const [displayOptions, setDisplayOptions] = React.useState<any[]>([]);
-    const [isFocused, setIsFocused] = React.useState(false);
-
-    // 🎭 Gerencia a animação de entrada e saída do carrossel
-    React.useEffect(() => {
-        if (brandOptions.length > 0) {
-            setIsClosing(false);
-            setDisplayOptions(brandOptions);
-        } else if (displayOptions.length > 0) {
-            setIsClosing(true);
-            const timer = setTimeout(() => {
-                setDisplayOptions([]);
-                setIsClosing(false);
-            }, 300); // Duração da animação swSlideDown
-            return () => clearTimeout(timer);
-        }
-    }, [brandOptions]);
-
-    const isDiscoveryActive = discovering || loading;
-
-    const [localSelected, setLocalSelected] = React.useState<string | null>(null);
-    const isSearching = discovering || loading || enrichingIds.has(999);
-    const isNewCompanyMode = confirmedBrand === " ";
-    const needsAttention = (!!confirmedBrand || isNewCompanyMode) && !cnpj && !isFocused && !isSearching;
-
-    const handleLocalSelect = (opt: any) => {
-        const key = opt.name || opt.url;
-        console.log("[Toolbar] Local Click Handled:", key);
-        setLocalSelected(key);
-        onBrandSelect(opt);
-    };
+export const FloatingToolbar: React.FC<FloatingToolbarProps> = (props) => {
+    if (props.isProspectingMode) {
+        return (
+            <ProspectingToolbar
+                prospectCoords={props.prospectCoords}
+                prospectRadiusKm={props.prospectRadiusKm}
+                onProspectRadiusChange={props.onProspectRadiusChange}
+                onProspectGeolocate={props.onProspectGeolocate}
+                prospectGeoLoading={props.prospectGeoLoading}
+                onProspectSearch={props.onProspectSearch}
+                onProspectStop={props.onProspectStop}
+                prospectSearching={props.prospectSearching}
+                prospectSession={props.prospectSession}
+                prospectLeadsCount={props.prospectLeadsCount}
+                prospectTierACount={props.prospectTierACount}
+                prospectError={props.prospectError}
+                prospectCityName={props.prospectCityName}
+                onProspectCepLookup={props.onProspectCepLookup}
+                prospectSelectedLead={props.prospectSelectedLead}
+                prospectPendingLeads={props.prospectPendingLeads}
+                onProspectSelectLead={props.onProspectSelectLead}
+                prospectHoveredLeadId={props.prospectHoveredLeadId}
+                onProspectApproveLead={props.onProspectApproveLead}
+                onProspectRejectLead={props.onProspectRejectLead}
+                onProspectCloseLead={props.onProspectCloseLead}
+                prospectCep={props.prospectCep}
+                onProspectCepChange={props.onProspectCepChange}
+                isSidebarOpen={props.isSidebarOpen}
+                isChatOpen={props.isChatOpen}
+            />
+        );
+    }
 
     return (
-        <div className={styles.toolbarUnifiedWrapper}>
-            {/* 1. Header com Erro ou Brand Select Options (Progressivo) */}
-            {error && <div className={styles.error}><AlertCircle size={18} /> {error}</div>}
-
-            {/* 🔄 Mostrar carrossel se houver candidatos (inclusive em outros steps como 'confirm' para análise humana) */}
-            {displayOptions.length > 0 && (
-                <div className={`${styles.optionsContainer} ${isClosing ? styles.optionsContainerClosing : ""}`}>
-                    {displayOptions.map((opt: any, idx: number) => (
-                        <div
-                            key={`brand-opt-${idx}-${opt.url || opt.name}`}
-                            className={`${styles.brandCard} ${(confirmedBrand === (opt.name || opt.url) || localSelected === (opt.name || opt.url)) ? styles.brandCardActive : ''}`}
-                            onClick={() => handleLocalSelect(opt)}
-                        >
-                            <div className={styles.brandAvatarWrapper}>
-                                {opt.logo ? (
-                                    <img
-                                        src={buildProxyImageUrl(opt.logo) || opt.logo}
-                                        alt={opt.name}
-                                        className={styles.brandAvatar}
-                                        style={opt.type === 'person' ? { borderRadius: '50%' } : {}}
-                                    />
-                                ) : (
-                                    <div className={styles.brandAvatarPlaceholder}>
-                                        {opt.type === 'person' ? <User size={16} /> : <Building size={16} />}
-                                    </div>
-                                )}
-                            </div>
-                            <div className={styles.brandInfo}>
-                                <div className={styles.brandNameLine}>{opt.name}</div>
-                                {opt.followers && (
-                                    <div className={styles.brandFollowers}>{opt.followers} seguidores</div>
-                                )}
-                            </div>
-                            
-                            {/* 🛠️ AÇÕES RÁPIDAS (Análise Humana) */}
-                            {opt.type === 'person' && (
-                                <div className={styles.cardQuickActions}>
-                                    <button 
-                                        type="button" 
-                                        className={styles.rejectBtn}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onRejectCandidate) onRejectCandidate(opt.id);
-                                        }}
-                                        title="Reprovar e Descartar"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                    <button 
-                                        type="button" 
-                                        className={styles.approveBtn}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onApproveCandidate) onApproveCandidate(opt.id);
-                                        }}
-                                        title="Aprovar Perfil"
-                                    >
-                                        <Check size={14} />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* 2. Main Search Bar (Refine Tab) */}
-            <div
-                className={`${styles.refineTab} ${isSearching ? styles.searching : ''} ${enrichingIds.has(999) ? styles.refineTabEnriching : ''}`}
-                title="Intelligence Controller"
-            >
-                {/* Search Box area (Left) */}
-                <div className={styles.searchBox}>
-                    <form onSubmit={handleSearch} className={styles.inputGroup}>
-                        {step === "input" ? (
-                            <>
-                                <div className={`${styles.toolbarSegment} ${needsAttention ? styles.inputAttention : ''}`}>
-                                    <Fingerprint size={14} className={styles.inputIcon} />
-                                    <input
-                                        placeholder="CNPJ"
-                                        className={styles.input}
-                                        value={cnpj}
-                                        onChange={(e) => setCnpj(e.target.value)}
-                                        onFocus={() => setIsFocused(true)}
-                                        onBlur={() => setIsFocused(false)}
-                                    />
-                                </div>
-
-                                {domainTarget && (
-                                    <>
-                                        <div className={styles.toolbarDivider} />
-                                        <div className={styles.toolbarSegment}>
-                                            <Globe size={14} className={styles.inputIcon} />
-                                            <input
-                                                placeholder="Domínio"
-                                                className={styles.input}
-                                                value={domainTarget}
-                                                onChange={(e) => setDomainTarget(e.target.value)}
-                                            />
-                                            {/* ✨ Botão de Enriquecimento (Reload) */}
-                                            {!discovering && !loading && (
-                                                <button
-                                                    type="button"
-                                                    className={`${styles.cleanSearchBtn} ${enrichingIds.has(999) ? styles.cleanSearchLoading : ''}`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleAutoEnrich();
-                                                    }}
-                                                    title="Refinar Metadados com IA (CNPJ/Domínio)"
-                                                >
-                                                    {enrichingIds.has(999) ? (
-                                                        <Loader2 size={16} className={styles.loadingAnim} />
-                                                    ) : (
-                                                        <RotateCcw size={16} />
-                                                    )}
-                                                </button>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* Se NÃO tem domínio ainda, mostra a lupa ao lado do CNPJ para permitir o enriquecimento inicial */}
-                                {!domainTarget && !discovering && !loading && (
-                                    <button
-                                        type="button"
-                                        className={`${styles.cleanSearchBtn} ${enrichingIds.has(999) ? styles.cleanSearchLoading : ''}`}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleAutoEnrich();
-                                        }}
-                                        title="Buscar Domínio e Dados"
-                                    >
-                                        {enrichingIds.has(999) ? (
-                                            <Loader2 size={18} className={styles.loadingAnim} />
-                                        ) : (
-                                            <Search size={18} />
-                                        )}
-                                    </button>
-                                )}
-                            </>
-                        ) : (
-                            <div className={styles.confirmState}>
-                                <button type="button" className={styles.backBtn} onClick={() => onBrandSelect(null)}>
-                                    <ArrowLeft size={16} />
-                                </button>
-
-                                <div className={`${styles.brandCard} ${styles.selectedBrandPreview}`}>
-                                    <div className={styles.brandAvatarWrapper}>
-                                        {confirmedLogo ? (
-                                            <img
-                                                src={buildProxyImageUrl(confirmedLogo) || confirmedLogo}
-                                                className={styles.brandAvatar}
-                                                alt="Logo"
-                                            />
-                                        ) : <Building size={14} className={styles.inputIcon} />}
-                                    </div>
-                                    <div className={styles.brandInfo}>
-                                        <input
-                                            className={`${styles.input} ${styles.brandNameLine}`}
-                                            value={confirmedBrand}
-                                            onChange={(e) => setConfirmedBrand(e.target.value)}
-                                        />
-                                        {confirmedFollowers && (
-                                            <div className={styles.brandFollowers} title={`${confirmedFollowers} seguidores`}>
-                                                {confirmedFollowers} seguidores
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className={styles.toolbarDivider} />
-
-
-                                {/* Area Selector (Compras / Logística) */}
-                                <div className={styles.areaSelectorContainer}>
-                                    <button
-                                        type="button"
-                                        className={`${styles.areaBtn} ${areaFocus === 'compras' ? styles.areaBtnActive : ''}`}
-                                        onClick={() => setAreaFocus('compras')}
-                                    >
-                                        Compras
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`${styles.areaBtn} ${areaFocus === 'logistica' ? styles.areaBtnActive : ''}`}
-                                        onClick={() => setAreaFocus('logistica')}
-                                    >
-                                        Logística
-                                    </button>
-                                </div>
-
-                                <div className={styles.toolbarDivider} />
-
-                                <div className={styles.toolbarSegment}>
-                                    <Target size={14} className={styles.inputIcon} />
-                                    <input
-                                        placeholder="Categoria (ex: Embalagens)"
-                                        className={styles.input}
-                                        value={productFocus}
-                                        onChange={(e) => setProductFocus(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </form>
-
-                    <div className={styles.toolbarActions}>
-                        {/* 🚀 BOTÃO PRINCIPAL (DETECTAR OU MAPEAR) */}
-                        {!enrichingIds.has(999) && (
-                            <>
-                                {step === "input" && domainTarget && (
-                                    <>
-                                        {(!discovering && !loading) && (
-                                            <button
-                                                onClick={handleSearch}
-                                                className={`${styles.detectBtn}`}
-                                            >
-                                                <Search size={14} />
-                                                Detectar
-                                            </button>
-                                        )}
-                                        {(discovering || loading) && (
-                                            <button
-                                                onClick={cancelDiscovery}
-                                                className={`${styles.detectBtn} ${styles.stopBtn}`}
-                                                title="Parar busca de empresa"
-                                            >
-                                                <Loader2 size={18} className={styles.loadingAnim} />
-                                                Parar
-                                            </button>
-                                        )}
-                                    </>
-                                )}
-
-                                {step !== "input" && (
-                                    <>
-                                        {(!discovering && !loading) && (
-                                            <button
-                                                onClick={handleSearch}
-                                                className={styles.detectBtn}
-                                            >
-                                                {hasMapping ? <RotateCcw size={14} /> : <Play size={14} fill="currentColor" />}
-                                                Mapear
-                                            </button>
-                                        )}
-                                        {(discovering || loading) && (
-                                            <button
-                                                onClick={stopHierarchyScan}
-                                                className={`${styles.detectBtn} ${styles.stopBtn}`}
-                                                title="Cancelar mapeamento em andamento"
-                                            >
-                                                <Loader2 size={18} className={styles.loadingAnim} />
-                                                Parar
-                                            </button>
-                                        )}
-                                    </>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
+        <NormalToolbar
+            error={props.error}
+            handleSearch={props.handleSearch}
+            cnpj={props.cnpj}
+            setCnpj={props.setCnpj}
+            confirmedBrand={props.confirmedBrand}
+            setConfirmedBrand={props.setConfirmedBrand}
+            confirmedLogo={props.confirmedLogo}
+            confirmedFollowers={props.confirmedFollowers}
+            domainTarget={props.domainTarget}
+            setDomainTarget={props.setDomainTarget}
+            productFocus={props.productFocus}
+            setProductFocus={props.setProductFocus}
+            areaFocus={props.areaFocus}
+            setAreaFocus={props.setAreaFocus}
+            handleAutoEnrich={props.handleAutoEnrich}
+            enrichingIds={props.enrichingIds}
+            discovering={props.discovering}
+            loading={props.loading}
+            step={props.step}
+            brandOptions={props.brandOptions}
+            onBrandSelect={props.onBrandSelect}
+            hasMapping={props.hasMapping}
+            stopHierarchyScan={props.stopHierarchyScan}
+            cancelDiscovery={props.cancelDiscovery}
+            onApproveCandidate={props.onApproveCandidate}
+            onRejectCandidate={props.onRejectCandidate}
+            isSidebarOpen={props.isSidebarOpen}
+            isChatOpen={props.isChatOpen}
+        />
     );
 };

@@ -188,7 +188,7 @@ async def _detect_email_triggers(session) -> List[Dict]:
         from services.communication.email_client import EmailClient
         import concurrent.futures
 
-        client = EmailClient()
+        client = EmailClient(use_outlook_app=True)
         loop = asyncio.get_event_loop()
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:

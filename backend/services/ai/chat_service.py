@@ -539,8 +539,8 @@ class ChatOrchestrator:
         try:
             import uuid as _uuid
             from core.database import async_session
-            from services.ai.agent_service import AgentService
             from api.v1.endpoints.conversations import save_message, get_thread_cached_context
+            from services.ai.agent_service import AgentService
 
             # Garante que a thread sempre tenha um ID — gerado automaticamente se o frontend
             # não enviar um. Isso permite que o contexto seja cacheado e reutilizado em
@@ -695,7 +695,12 @@ class ChatOrchestrator:
             return json.dumps(obj) + "\n"
 
         try:
+            import uuid as _uuid
             from core.database import async_session as _async_session_factory
+            from api.v1.endpoints.conversations import save_message
+
+            # Garante que a thread sempre tenha um ID
+            active_thread_id = payload.thread_id or str(_uuid.uuid4())
             log_queue: asyncio.Queue = asyncio.Queue()
             all_logs = []
 
@@ -703,6 +708,18 @@ class ChatOrchestrator:
             # criamos uma sessão própria que dura todo o ciclo de vida do stream.
             async with _async_session_factory() as owned_session:
                 active_session = owned_session
+
+                # 1. Salvar mensagem do usuário (pula se for regeneração)
+                if not is_regeneration:
+                    try:
+                        await save_message(
+                            session=active_session,
+                            thread_id=active_thread_id,
+                            role="user",
+                            content=payload.message
+                        )
+                    except Exception as e:
+                        log.warning("chat.save_user_msg_failed", error=str(e))
 
                 # Rodamos o handler em uma task separada para poder consumir a log_queue simultaneamente
                 task = asyncio.create_task(
@@ -735,22 +752,24 @@ class ChatOrchestrator:
                     "ui_module": "DealStatus",
                     "data": {**data, "suggested_actions": suggested_actions},
                     "suggested_actions": suggested_actions,
+                    "thread_id": active_thread_id,  # Retorna ID para o frontend
                 })
 
-                # Persiste na thread reutilizando a owned_session (já aberta acima)
+                # 2. Salvar resposta do assistente (com logs e contexto)
                 internal_context = result.get("_internal_context") if result else None
-                if payload.thread_id:
-                    try:
-                        from api.v1.endpoints.conversations import save_message
-                        # Pula o save do user message em regeneração (já existe no DB)
-                        if not is_regeneration:
-                            await save_message(owned_session, thread_id=payload.thread_id, role="user", content=payload.message)
-                        await save_message(owned_session, thread_id=payload.thread_id, role="assistant",
-                                           content=response_text, ui_module="DealStatus",
-                                           data={**data, "suggested_actions": suggested_actions},
-                                           logs=all_logs, internal_context=internal_context)
-                    except Exception:
-                        pass
+                try:
+                    await save_message(
+                        session=active_session,
+                        thread_id=active_thread_id,
+                        role="assistant",
+                        content=response_text,
+                        ui_module="DealStatus",
+                        data={**data, "suggested_actions": suggested_actions},
+                        logs=all_logs,
+                        internal_context=internal_context
+                    )
+                except Exception as e:
+                    log.warning("chat.save_assistant_msg_failed", error=str(e))
 
         except GeminiDailyQuotaExhaustedError as e:
             quota_summary = e.summary if hasattr(e, "summary") else {}
@@ -802,6 +821,7 @@ class ChatOrchestrator:
             AgentService._distill_communications(
                 ctx.get("email_result", {}),
                 ctx.get("whatsapp_result", {}),
+                org_id=pipe.org_id,
             )
         )
 
@@ -864,7 +884,10 @@ class ChatOrchestrator:
                 Retorne JSON:
                 {{"intro": "...", "tasks": "...", "analysis": "..."}}"""
                 
-                script_res = await ask_llm(DEAL_STATUS_NARRATIVE_PROMPT, json_mode=True, tier=LLMTier.STANDARD)
+                script_res = await ask_llm(
+                    DEAL_STATUS_NARRATIVE_PROMPT, json_mode=True, tier=LLMTier.STANDARD,
+                    cacheable=False,
+                )
                 narrative = script_res.json_data or {}
                 _narrative_bridge = narrative  # compartilha com DEAL_STATUS_PROMPT
                 
@@ -1064,22 +1087,24 @@ class ChatOrchestrator:
             lines.append("\nNEGÓCIOS ATIVOS: Nenhum encontrado.")
 
         if activities:
-            lines.append("\nATIVIDADES DO CRM:")
-            for a in activities[:20]:
+            lines.append("\nATIVIDADES DO CRM (Últimas 10):")
+            for a in activities[:10]:
                 done = "✅ Concluída" if a.get("done") else "⏳ Pendente"
                 person = a.get('person_name') or ''
                 person_tag = f" [Contato: {person}]" if person else ""
                 note_text = a.get('note') or ''
-                note_tag = f" — Nota: {note_text[:80]}" if note_text else ""
+                note_tag = f" — Nota: {note_text[:60]}" if note_text else ""
                 lines.append(f"  - {a.get('due_date', '?')}: {a.get('subject')} [{done}]{person_tag}{note_tag}")
 
         if notes:
             lines.append("\nÚLTIMAS NOTAS:")
             for n in notes[:2]:
-                snippet = (n.get("content") or "")[:200].replace("\n", " ")
+                snippet = (n.get("content") or "")[:150].replace("\n", " ")
                 lines.append(f"  - {snippet}")
 
-        lines.append(f"\nHISTÓRICO DE COMUNICAÇÕES (destilado):\n{distilled}")
+        # Limita o histórico destilado para não explodir o contexto
+        distilled_lean = distilled[:3000] + ("..." if len(distilled) > 3000 else "")
+        lines.append(f"\nHISTÓRICO DE COMUNICAÇÕES (destilado):\n{distilled_lean}")
 
         context_block = "\n".join(lines)
 
@@ -1099,13 +1124,19 @@ class ChatOrchestrator:
 
         try:
             from datetime import date as _date
+            from services.ai.llm.router import get_strict_mode_preference
             today_str = _date.today().strftime("%d/%m/%Y")
+            # Usamos o tier DEEP para análise de status e respeitamos o strict_mode
+            # Usamos o tier DEEP para análise de status e respeitamos o strict_mode
+            # do usuário se ele tiver uma preferência específica.
             res = await ask_llm(
                 DEAL_STATUS_PROMPT.format(context=context_block + already_shown_block, today=today_str),
-                tier=LLMTier.STANDARD,
-                cacheable=True,
+                tier=LLMTier.DEEP,
+                cacheable=False,
                 preferred_model=preferred_model,
-                json_mode=True
+                strict_model=get_strict_mode_preference(),
+                json_mode=True,
+                cache_prefix=f"org:{pipe.org_id}" if pipe.org_id else None,
             )
             response_data = res.json_data if hasattr(res, "json_data") and res.json_data else {}
             if not response_data and hasattr(res, "json") and res.json:

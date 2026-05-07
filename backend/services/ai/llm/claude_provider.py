@@ -111,12 +111,41 @@ class ClaudeProvider(LLMProvider):
         timeout = timeout_sec or _timeout_for(tier)
         client = get_http_client()
         
-        # Seleção de modelos inteligente por Preferência
+        # Seleção de modelos inteligente com ordenação adaptativa de tamanho
         all_models = settings.ai_claude_models_list or ["claude-sonnet-4-5", "claude-3-5-haiku-latest"]
-        if preferred_model and preferred_model in all_models:
-            models = [preferred_model] + [m for m in all_models if m != preferred_model]
+        
+        from services.ai.llm.router import _estimate_tokens, get_model_size, get_model_context_limit
+        est_tokens = _estimate_tokens(messages)
+
+        valid_models = []
+        for m in all_models:
+            ctx_limit = get_model_context_limit(m)
+            if est_tokens > ctx_limit:
+                log.warning("llm.claude.context_limit_skipped", model=m, estimated=est_tokens, limit=ctx_limit)
+                continue
+            valid_models.append(m)
+
+        if not valid_models:
+            valid_models = all_models
+
+        def _claude_size_sort_key(m: str) -> int:
+            sz = get_model_size(m)
+            if est_tokens < 15_000:
+                return sz
+            elif est_tokens < 100_000:
+                if sz == 2: return 0
+                if sz == 1: return 1
+                return 2
+            else:
+                return -sz
+
+        if preferred_model and preferred_model in valid_models:
+            other_models = [m for m in valid_models if m != preferred_model]
+            other_models.sort(key=_claude_size_sort_key)
+            models = [preferred_model] + other_models
         else:
-            models = all_models
+            valid_models.sort(key=_claude_size_sort_key)
+            models = valid_models
         headers = {
             "x-api-key": key,
             "anthropic-version": _ANTHROPIC_VERSION,
@@ -151,6 +180,12 @@ class ClaudeProvider(LLMProvider):
             ).observe(latency)
 
             if resp.status_code == 200:
+                try:
+                    from services.ai.llm.quota_manager import get_quota_manager
+                    await get_quota_manager().update_quota_from_headers(self.name, model, resp.headers)
+                except Exception as ex:
+                    log.warning("llm.claude.quota_error", error=str(ex))
+
                 data = resp.json()
                 try:
                     blocks = data.get("content", [])

@@ -8,6 +8,19 @@ $env:PYTHONUTF8=1
 Write-Host "🚀 Iniciando Ambiente de Desenvolvimento LINKB2B (COM HOT-RELOAD)..." -ForegroundColor Green
 Write-Host ""
 
+# --- Verificar Ollama local ---
+Write-Host "🤖 Verificando Ollama local..." -ForegroundColor Cyan
+try {
+    $ollamaCheck = Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -Method Get -TimeoutSec 5
+    Write-Host "✅ Ollama online com $(($ollamaCheck.models).Count) modelo(s) disponível(is)." -ForegroundColor Green
+} catch {
+    Write-Host "⚠️ Ollama não está rodando. Iniciando..." -ForegroundColor Yellow
+    Start-Process "ollama" -ArgumentList "serve" -WindowStyle Hidden
+    Start-Sleep -Seconds 3
+    Write-Host "✅ Ollama iniciado." -ForegroundColor Green
+}
+# -----------------------------------------------
+
 # 1. Limpar processos antigos
 Write-Host "🧹 Limpando servicos e terminais antigos..." -ForegroundColor Yellow
 Get-Process | Where-Object { $_.MainWindowTitle -like "*LINKB2B-*" } | Stop-Process -Force
@@ -56,7 +69,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Backend'
     Set-Location '$backendPath'
     Write-Host 'ℹ️ Backend iniciado com HOT-RELOAD ativo.' -ForegroundColor Yellow
-    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8000 --reload --reload-dir api --reload-dir core --reload-dir models --reload-dir services/ai --reload-dir services/communication --reload-dir services/context --reload-dir services/external --reload-dir services/hierarchy --reload-dir services/intelligence --reload-dir services/pipedrive --reload-dir services/whatsapp --reload-exclude '__pycache__' --reload-exclude '*.pyc' --reload-exclude '*.tmp' --reload-exclude '*.db' --reload-exclude '*.db-journal'
+    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8000 --reload --reload-dir api --reload-dir core --reload-dir models --reload-dir services/ai --reload-dir services/communication --reload-dir services/context --reload-dir services/external --reload-dir services/hierarchy --reload-dir services/intelligence --reload-dir services/pipedrive --reload-dir services/whatsapp --reload-exclude '__pycache__' --reload-exclude '*.pyc' --reload-exclude '*.tmp' --reload-exclude '*.db' --reload-exclude '*.db-journal' --reload-exclude '*.db-wal' --reload-exclude 'intelligence.db*' --reload-exclude '*.log'
 "
 
 # 4. Iniciar Worker (COM watchfiles)
@@ -65,7 +78,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Worker'
     Set-Location '$backendPath'
     Write-Host 'ℹ️ Worker iniciado com WATCHFILES ativo.' -ForegroundColor Yellow
-    & '$pythonPath' -m watchfiles 'arq services.worker.WorkerSettings' api core models services/ai services/communication services/context services/external services/hierarchy services/intelligence services/pipedrive services/whatsapp services/worker.py services/context_service.py services/whatsapp_integration.py services/whatsapp_resolver.py --ignore-paths '__pycache__,.pytest_cache,*.pyc,*.tmp,*.db,*.db-journal'
+    & '$pythonPath' -m watchfiles --filter python 'arq services.worker.WorkerSettings' api core models services/ai services/communication services/context services/external services/hierarchy services/intelligence services/pipedrive services/whatsapp services/worker.py services/context_service.py services/whatsapp_integration.py services/whatsapp_resolver.py --ignore-paths '__pycache__,.pytest_cache,*.db,intelligence.db,*.log,*.tmp'
 "
 
 # 5. Iniciar Frontend

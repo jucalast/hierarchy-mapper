@@ -59,3 +59,9 @@ backend/whatsapp-service/node_modules/
 backend/whatsapp-service/.wwebjs_auth/
 backend/whatsapp-service/.wwebjs_cache/
 backend/whatsapp-service/.env
+
+# Temp and Cache
+backend/tmp/
+
+# Large binary files
+scratch/OllamaSetup_Bits.exe

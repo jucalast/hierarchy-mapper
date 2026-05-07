@@ -167,19 +167,21 @@ PASSO 5 — ESCREVA A ANÁLISE. 3 frases, cada uma com informação NOVA:
 ❌ "O próximo passo concreto é entrar em contato..." (sempre igual)
 ❌ Qualquer frase que funcione para QUALQUER negócio sem mudar nada
 
-═══ EXEMPLOS (calibração de qualidade) ═══
+═══ EXEMPLOS DE ESTRUTURA (apenas formato — NUNCA copie este conteúdo) ═══
 
-❌ RUIM: "A falta de comunicação recente com o cliente pode estar atrasando o fechamento do negócio. A ação pendente de cobrar retorno do orçamento é crucial para entender as necessidades atuais do cliente. O próximo passo concreto é entrar em contato com o cliente para discutir o orçamento."
-→ Por que é ruim: genérico, funciona pra qualquer deal, zero referência aos dados reais.
+⚠️ ATENÇÃO: Os exemplos abaixo existem SOMENTE para mostrar a estrutura das frases.
+   Os nomes, produtos, datas e situações são FICTÍCIOS.
+   Se você escrever qualquer palavra destes exemplos na sua resposta, está errado.
+   Sua análise deve conter APENAS informações do bloco "DADOS DO NEGÓCIO" abaixo.
 
-✅ BOM: "O Gabriel pediu cotação de 4 itens com fundo automático e João enviou em 18/02, mas o retorno dele foi só 'vamos analisar' — desde então, em abril ele voltou pedindo reposição dos mesmos itens mais o 730053, o que mostra que a demanda é real mas ele ainda não bateu o martelo. A segunda cotação (1323) foi enviada e ele perguntou sobre IPI e ferramental, sinalizando que está comparando custos — quem pergunta detalhe de imposto está perto de decidir. João precisa ligar pro Gabriel agora e perguntar direto: 'Gabriel, conseguiu validar os valores internamente? Precisa que eu ajuste alguma condição pra fechar?'"
+❌ ESTRUTURA RUIM (genérica — não usa dados reais):
+"O negócio está em fase de negociação. Existem atividades pendentes. O cliente demonstrou interesse."
 
-❌ RUIM: "O negócio está em fase de negociação com valor de R$ 45.221,68. Existem 7 atividades pendentes que precisam ser executadas. O cliente demonstrou interesse nas cotações enviadas."
-→ Por que é ruim: repetiu dados dos cards, não cruzou nada, zero insight.
+✅ ESTRUTURA BOA (específica — cita fatos, datas e nomes dos dados):
+"[CONTATO] [fez/disse algo específico] em [DATA DOS DADOS]. [Consequência concreta]. Bola com [João/cliente]: [ação específica baseada nos dados]."
 
-✅ BOM: "O Gabriel está em modo de comparação — as perguntas sobre IPI e forma de pagamento mostram que ele tem outro fornecedor na mesa. João sugeriu Simples Nacional sem IPI mas não respondeu a pergunta sobre forma de pagamento que o Gabriel fez na última mensagem. Bola com João: mandar a condição de pagamento pelo WhatsApp hoje e fechar esse detalhe antes que o Gabriel decida com o outro fornecedor."
-
-✅ BOM (bola com cliente): "João enviou a Cotação 1323 em 15/03 com os 4 itens pedidos por Gabriel e esclareceu IPI, ferramental e condições de pagamento — respondeu tudo que foi perguntado. O risco é o silêncio: cotação sem retorno por mais de X dias em negociação B2B geralmente significa concorrente mais barato ou decisão travada internamente. Bola com o cliente: João já cumpriu o que cabia a ele, o próximo movimento é de Gabriel."
+✅ ESTRUTURA BOA (bola com cliente):
+"João [fez ação específica] em [DATA DOS DADOS] e [cliente respondeu/não respondeu]. O risco é [consequência baseada nos dados]. Bola com o cliente: [o que João já fez e está esperando]."
 
 ═══ FORMATO DE RESPOSTA ═══
 

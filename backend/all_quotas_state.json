@@ -1,0 +1,58 @@
+{
+  "groq": {
+    "llama-3.1-8b-instant": {
+      "used": 1,
+      "limit": 14400,
+      "remaining": 14399,
+      "pct": 100.0,
+      "tokens_limit": 6000,
+      "tokens_remaining": 1628,
+      "tokens_pct": 27.1,
+      "updated_at": 1778175877.025959
+    },
+    "llama-3.3-70b-versatile": {
+      "used": 1,
+      "limit": 1000,
+      "remaining": 999,
+      "pct": 99.9,
+      "tokens_limit": 12000,
+      "tokens_remaining": 11963,
+      "tokens_pct": 99.7,
+      "updated_at": 1778179814.3418913
+    },
+    "meta-llama/llama-4-scout-17b-16e-instruct": {
+      "used": 25,
+      "limit": 1000,
+      "remaining": 975,
+      "pct": 97.5,
+      "tokens_limit": 30000,
+      "tokens_remaining": 29988,
+      "tokens_pct": 100.0,
+      "updated_at": 1778181558.80621
+    }
+  },
+  "cerebras": {
+    "llama3.1-8b": {
+      "used": 0,
+      "limit": 0,
+      "remaining": 0,
+      "pct": 100.0,
+      "tokens_limit": 0,
+      "tokens_remaining": 0,
+      "tokens_pct": 100.0,
+      "updated_at": 0.0
+    }
+  },
+  "sambanova": {
+    "Meta-Llama-3.3-70B-Instruct": {
+      "used": 0,
+      "limit": 0,
+      "remaining": 0,
+      "pct": 100.0,
+      "tokens_limit": 0,
+      "tokens_remaining": 0,
+      "tokens_pct": 100.0,
+      "updated_at": 0.0
+    }
+  }
+}

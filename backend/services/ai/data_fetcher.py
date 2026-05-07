@@ -782,7 +782,7 @@ async def fetch_contextual_data(
                                         return {"contact": name, "email": addr, "human_threads": h_emails, "automated_threads": a_emails}
                             except Exception as e_em:
                                 import traceback
-                                print(f"[AI Pipeline]     ❌ Erro Crítico no Email ({name}):\n{traceback.format_exc()}")
+                                print(f"[AI Pipeline]     [ERROR] Erro Critico no Email ({name}):\n{traceback.format_exc()}")
                             return None
 
                         results = await asyncio.gather(*(fetch_email(n, a) for n, a in email_tasks))
@@ -1068,6 +1068,6 @@ async def _fetch_tasks(intent_info: dict, internal_context: dict, pipedrive_org_
         print(f"[AI Pipeline] Encontradas {len(tasks_to_return)} tarefas {filter_msg}.")
 
     except Exception as e_tasks:
-        print(f"[AI Pipeline] \u26a0\ufe0f Erro ao buscar tarefas: {e_tasks}")
+        print(f"[AI Pipeline] [WARNING] Erro ao buscar tarefas: {e_tasks}")
 
     return internal_context

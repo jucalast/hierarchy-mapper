@@ -1,7 +1,7 @@
 export interface SuggestedAction {
-    label: string;   // texto do chip: "Cobrar pedido do Gabriel"
-    prompt: string;  // mensagem enviada ao clicar: "Execute a cobrança..."
-    icon?: string;   // 'task' | 'sync' | 'whatsapp' | 'email' | 'pipeline'
+    label: string;
+    prompt: string;
+    icon?: string;
 }
 
 export interface Message {
@@ -24,6 +24,10 @@ export interface Message {
         full_prompt?: string;
     };
     showDebug?: boolean;
+    isV2?: boolean;
+    v2Events?: any[];
+    v2Streaming?: boolean;
+    v2ConfirmedActions?: Record<string, boolean>;
 }
 
 export interface CompanyResult {
@@ -48,5 +52,5 @@ export interface ApprovalAction {
     description: string;
     is_reply?: boolean;
     original_subject?: string;
-    email_entry_id?: string;  // ID do thread Exchange para reply_email
+    email_entry_id?: string;
 }

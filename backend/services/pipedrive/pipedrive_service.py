@@ -122,10 +122,7 @@ class PipedriveService:
         except CircuitOpenError:
             update_circuit_metric(self._breaker.name, True)
             log.warning("pipedrive.circuit_open")
-            external_api_requests_total.labels(
-                service="pipedrive", endpoint=endpoint, outcome="circuit_open"
-            ).inc()
-            return None
+            raise RuntimeError("Pipedrive temporariamente indisponível (Circuit Breaker aberto)")
 
         url = self._url(endpoint)
         client = get_http_client()
@@ -142,17 +139,7 @@ class PipedriveService:
                     method, url, json=json, params=params, timeout=t_out
                 )
             except Exception as e:
-                log.warning(
-                    "pipedrive.network_error",
-                    endpoint=endpoint,
-                    error=f"{type(e).__name__}: {e}",
-                )
-                self._breaker.record_failure(reason="network_error")
-                update_circuit_metric(self._breaker.name, True)
-                external_api_requests_total.labels(
-                    service="pipedrive", endpoint=endpoint, outcome="error"
-                ).inc()
-                return None
+                raise RuntimeError(f"Erro de conexão com Pipedrive: {e}")
 
             if resp.status_code == 429:
                 self._update_retry_after(resp)
@@ -164,31 +151,20 @@ class PipedriveService:
                             method, url, json=json, params=params, timeout=t_out
                         )
                     except Exception as e:
-                        log.warning(
-                            "pipedrive.network_error_retry",
-                            endpoint=endpoint,
-                            error=f"{type(e).__name__}: {e}",
-                        )
-                        self._breaker.record_failure(reason="network_error_retry")
-                        external_api_requests_total.labels(
-                            service="pipedrive", endpoint=endpoint, outcome="error"
-                        ).inc()
-                        return None
+                        raise RuntimeError(f"Erro de conexão com Pipedrive (retry): {e}")
 
-            outcome = "success" if resp.status_code < 400 else (
-                "rate_limited" if resp.status_code == 429 else "error"
-            )
-            external_api_requests_total.labels(
-                service="pipedrive", endpoint=endpoint, outcome=outcome
-            ).inc()
+            if resp.status_code == 429:
+                raise RuntimeError(f"Pipedrive Rate Limit persistente. Tente novamente em {self.get_retry_after_seconds()}s")
 
-            if 200 <= resp.status_code < 500 and resp.status_code != 429:
-                # sucesso ou erro de cliente — não abre breaker
-                self._breaker.record_success()
-                update_circuit_metric(self._breaker.name, False)
-            elif resp.status_code >= 500:
+            if resp.status_code >= 500:
                 self._breaker.record_failure(reason=f"http_{resp.status_code}")
                 update_circuit_metric(self._breaker.name, True)
+                raise RuntimeError(f"Erro interno no Pipedrive (HTTP {resp.status_code})")
+
+            # Sucesso ou erro de cliente (404, 403 etc)
+            if resp.status_code < 500:
+                self._breaker.record_success()
+                update_circuit_metric(self._breaker.name, False)
 
             return resp
 
@@ -262,6 +238,7 @@ class PipedriveService:
             "name": data.get("name"),
             "address": data.get("address"),
             "website": data.get("domain"),
+            "owner_id": data.get("owner_id") or self.user_id,
         }
         resp = await self._request("POST", "organizations", json=payload)
         if resp is None:
@@ -274,6 +251,47 @@ class PipedriveService:
                 return org_id
         except Exception as e:
             log.warning("pipedrive.org.create_failed", error=str(e))
+        return None
+
+    async def create_deal(self, title: str, org_id: Optional[int] = None, stage_name: Optional[str] = "Entrada") -> Optional[int]:
+        """Cria um negócio no Pipedrive, vinculado à organização, no estágio pelo nome."""
+        stage_id: Optional[int] = None
+        if stage_name:
+            stages = await self.get_all_stages_full()
+            for sid, info in stages.items():
+                if info.get("name", "").strip().lower() == stage_name.strip().lower():
+                    stage_id = sid
+                    break
+            if not stage_id:
+                log.warning("pipedrive.deal.stage_not_found", stage_name=stage_name)
+
+        payload: dict = {
+            "title": title,
+            "user_id": self.user_id,
+        }
+        if org_id:
+            payload["org_id"] = org_id
+        if stage_id:
+            payload["stage_id"] = stage_id
+
+        resp = await self._request("POST", "deals", json=payload)
+        if resp is None:
+            return None
+        try:
+            res_data = resp.json()
+            if res_data.get("success"):
+                deal_id = res_data["data"]["id"]
+                log.info("pipedrive.deal.created", deal_id=deal_id, title=title, stage_id=stage_id, org_id=org_id)
+                return deal_id
+            log.warning(
+                "pipedrive.deal.api_error",
+                error=res_data.get("error"),
+                error_info=res_data.get("error_info"),
+                http_status=resp.status_code,
+                payload=payload,
+            )
+        except Exception as e:
+            log.warning("pipedrive.deal.create_failed", error=str(e))
         return None
 
     async def get_person_details(self, person_id: int) -> Optional[dict]:
@@ -324,6 +342,8 @@ class PipedriveService:
             payload["website"] = data.get("domain")
         if data.get("name"):
             payload["name"] = data.get("name")
+        if data.get("owner_id"):
+            payload["owner_id"] = data.get("owner_id")
 
         if not payload:
             return True
@@ -414,72 +434,95 @@ class PipedriveService:
         from sqlalchemy import func, select
 
         async with async_session() as session:
+            from sqlalchemy import and_, or_
             stmt = (
                 select(Organization)
-                .where(Organization.is_excluded != 1)
+                .where(
+                    and_(
+                        Organization.is_excluded != 1,
+                        or_(
+                            Organization.source != "prospecting",
+                            Organization.pipedrive_id.is_not(None)
+                        )
+                    )
+                )
                 .order_by(Organization.last_enrichment.desc())
             )
             res = await session.execute(stmt)
             local_orgs = res.scalars().all()
 
-        if not local_orgs:
+        # Sincronização proativa: se houver poucas orgs ou se quisermos garantir dados frescos
+        # Vamos buscar as últimas 100 orgs do Pipedrive para garantir que endereços e domínios estejam ok
+        try:
             resp = await self._request(
                 "GET",
                 "organizations",
-                params={"user_id": self.user_id, "start": 0, "limit": 500},
+                params={"user_id": self.user_id, "start": 0, "limit": 100, "sort": "id DESC"},
             )
             if resp is not None and resp.status_code == 200:
-                try:
-                    data = resp.json()
-                    if data.get("success"):
-                        all_orgs = data.get("data") or []
-                        async with async_session() as session:
-                            for org in all_orgs:
-                                pid = org.get("id")
-                                name = (org.get("name") or "").strip()
+                data = resp.json()
+                if data.get("success"):
+                    all_orgs = data.get("data") or []
+                    async with async_session() as session:
+                        for org in all_orgs:
+                            pid = org.get("id")
+                            name = (org.get("name") or "").strip()
+                            if not name: continue
 
-                                open_deals = org.get("open_deals_count", 0)
-                                if open_deals == 0:
-                                    continue
-                                if not name or len(name) < 2:
-                                    continue
+                            stmt = select(Organization).where(Organization.pipedrive_id == pid)
+                            res = await session.execute(stmt)
+                            db_org = res.scalars().first()
 
-                                stmt = select(Organization).where(
-                                    (Organization.pipedrive_id == pid)
-                                    | (func.lower(Organization.name) == name.lower())
-                                )
-                                res = await session.execute(stmt)
-                                db_org = res.scalars().first()
+                            if db_org and db_org.is_excluded == 1:
+                                continue
 
-                                if db_org and db_org.is_excluded == 1:
-                                    continue
-
+                            if not db_org:
+                                # Tenta buscar por nome se não achou por ID (evitar duplicatas)
+                                stmt_name = select(Organization).where(func.lower(Organization.name) == name.lower())
+                                res_name = await session.execute(stmt_name)
+                                db_org = res_name.scalars().first()
+                                
                                 if not db_org:
                                     db_org = Organization(pipedrive_id=pid, name=name)
                                     session.add(db_org)
-                                    log.info("pipedrive.sync.new_org", name=name)
                                 else:
                                     db_org.pipedrive_id = pid
-                                    if not db_org.name:
-                                        db_org.name = name
-
+                            
+                            # Atualiza campos se estiverem vazios
+                            if not db_org.domain:
                                 p_domain = org.get("website")
                                 if p_domain and len(str(p_domain)) > 3:
                                     db_org.domain = p_domain
 
+                            if not db_org.address:
                                 p_address = org.get("address")
-                                if p_address and len(str(p_address)) > 3:
-                                    db_org.address = p_address
+                                if p_address:
+                                    if isinstance(p_address, dict):
+                                        db_org.address = p_address.get("label") or p_address.get("formatted_address")
+                                    elif len(str(p_address)) > 3:
+                                        db_org.address = str(p_address)
+                        
+                        await session.commit()
+        except Exception as e:
+            log.warning("pipedrive.list_sync_failed", error=str(e))
 
-                            await session.commit()
-                        async with async_session() as session:
-                            stmt = select(Organization).order_by(
-                                Organization.last_enrichment.desc()
-                            )
-                            res = await session.execute(stmt)
-                            local_orgs = res.scalars().all()
-                except Exception as e:
-                    log.warning("pipedrive.sync_failed", error=str(e))
+        async with async_session() as session:
+            from sqlalchemy import and_, or_
+            stmt = (
+                select(Organization)
+                .where(
+                    and_(
+                        Organization.is_excluded != 1,
+                        or_(
+                            Organization.source != "prospecting",
+                            Organization.pipedrive_id.is_not(None)
+                        )
+                    )
+                )
+                .order_by(Organization.last_enrichment.desc())
+            )
+            res = await session.execute(stmt)
+            local_orgs = res.scalars().all()
 
         result: List[dict] = []
         async with async_session() as session:
@@ -518,6 +561,9 @@ class PipedriveService:
                         "product_focus": o.product_focus,
                         "employee_count": emp_count,
                         "employee_pics": pics,
+                        "source": o.source,
+                        "icp_score": o.icp_score,
+                        "icp_tier": o.icp_tier,
                     }
                 )
 
@@ -940,6 +986,22 @@ class PipedriveService:
                 n for n in results["notes"] if n.get("deal_id") == primary_deal_id
             ]
 
+        # Busca dados extras no banco local (ICP Score/Tier)
+        icp_info = {"icp_score": None, "icp_tier": None}
+        try:
+            from core.database import async_session
+            from models import Organization
+            from sqlalchemy import select
+            async with async_session() as session:
+                stmt = select(Organization).where(Organization.pipedrive_id == org_id)
+                res = await session.execute(stmt)
+                org = res.scalars().first()
+                if org:
+                    icp_info["icp_score"] = org.icp_score
+                    icp_info["icp_tier"] = org.icp_tier
+        except Exception:
+            pass
+
         return {
             "id": org_id,
             "primary_deal_id": primary_deal_id,
@@ -948,6 +1010,7 @@ class PipedriveService:
             "activities": results["activities"],
             "notes": results["notes"],
             "updates": results["updates"],
+            **icp_info
         }
 
     # ---------------------------------------------------------------------

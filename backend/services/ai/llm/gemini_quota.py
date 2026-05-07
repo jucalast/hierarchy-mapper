@@ -28,9 +28,9 @@ log = get_logger(__name__)
 # Limites diários por modelo (free tier)
 # ---------------------------------------------------------------------------
 DAILY_LIMITS: Dict[str, Dict[str, int]] = {
-    "gemini-2.5-pro":        {"rpd": 100,  "rpm": 5},
-    "gemini-2.5-flash":      {"rpd": 250,  "rpm": 10},
-    "gemini-2.5-flash-lite": {"rpd": 1000, "rpm": 15},
+    "gemini-2.5-flash-lite":  {"rpd": 1000, "rpm": 15},
+    "gemini-2.5-flash":       {"rpd": 250,  "rpm": 10},
+    "gemini-2.5-pro":         {"rpd": 100,  "rpm": 5},
 }
 
 # Mapeamento tier → ordem de modelos para tentativa

@@ -61,7 +61,7 @@ async def get_db():
 async def init_db():
     """Cria as tabelas se não existirem e garante migrações de colunas."""
     # Import models here to ensure they are registered with Base.metadata
-    from models import Organization, Employee, ConversationThread, ConversationMessage, ActivityLog
+    from models import Organization, Employee, ConversationThread, ConversationMessage, ActivityLog, ProspectSession, ProspectLead
     
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -85,7 +85,8 @@ async def init_db():
             "ALTER TABLE employees ADD COLUMN whatsapp_number VARCHAR",
             "ALTER TABLE organizations ADD COLUMN source VARCHAR DEFAULT 'pipedrive'",
             "ALTER TABLE employees ADD COLUMN source VARCHAR DEFAULT 'pipedrive'",
-            "ALTER TABLE employees ADD COLUMN is_discovery INTEGER DEFAULT 0"
+            "ALTER TABLE employees ADD COLUMN is_discovery INTEGER DEFAULT 0",
+            "ALTER TABLE prospect_leads ADD COLUMN pipedrive_deal_id INTEGER"
         ]:
             try:
                 await conn.execute(text(query))

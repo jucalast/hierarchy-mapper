@@ -43,6 +43,8 @@ from services.ai.llm.claude_provider import ClaudeProvider
 from services.ai.llm.gemini_provider import GeminiProvider, GeminiDailyQuotaExhaustedError
 from services.ai.llm.groq_provider import GroqProvider
 from services.ai.llm.gemini_quota import get_quota_tracker
+from services.ai.llm.openai_compat_provider import OpenAICompatProvider
+from services.ai.llm.ollama_provider import OllamaProvider
 
 log = get_logger(__name__)
 
@@ -85,9 +87,10 @@ _app_global_preferred_model: Optional[str] = _pref_model
 _app_global_strict_mode: bool = _pref_strict
 
 
-# ContextVar para strict mode no request atual
-_request_strict_mode: ContextVar[bool] = ContextVar(
-    "request_strict_mode", default=False
+# ContextVar para strict mode no request atual — Optional[bool] para distinguir
+# "não definido" (None) de "explicitamente False" (fallback permitido)
+_request_strict_mode: ContextVar[Optional[bool]] = ContextVar(
+    "request_strict_mode", default=None
 )
 
 def set_preferred_model(model: Optional[str], strict_mode: bool = False) -> None:
@@ -105,8 +108,15 @@ def get_preferred_model() -> Optional[str]:
     return _request_preferred_model.get() or _app_global_preferred_model
 
 def get_strict_mode_preference() -> bool:
-    """Retorna se o strict mode está ativo no request ou globalmente."""
-    return _request_strict_mode.get() or _app_global_strict_mode
+    """Retorna se o strict mode está ativo no request ou globalmente.
+
+    O ContextVar tem prioridade sobre o global — se o request explicitamente
+    definiu False, respeita mesmo que o global seja True.
+    """
+    request_val = _request_strict_mode.get()
+    if request_val is not None:
+        return request_val
+    return _app_global_strict_mode
 
 # ---------------------------------------------------------------------------
 # Throttler global — serializa chamadas LLM para não explodir o rate limit
@@ -120,7 +130,7 @@ def get_strict_mode_preference() -> bool:
 # Gemini free: ~15 req/min → 1 req a cada 4s é seguro, mas com 2.0-flash-lite e fallback, 1s é aceitável.
 _llm_semaphore = asyncio.Semaphore(2)
 _last_llm_call_time: float = 0.0
-_MIN_CALL_GAP_SEC: float = 1.0  
+_MIN_CALL_GAP_SEC: float = 3.0  
 
 # Rastreia o tempo do último rate-limit por provider para skip rápido
 _provider_rate_limited_until: dict[str, float] = {}
@@ -165,6 +175,99 @@ def _build_messages(
 
 
 # ---------------------------------------------------------------------------
+# Classificação de Tamanhos de Modelo e Limites de Contexto (Ordenação Adaptativa)
+# ---------------------------------------------------------------------------
+# Mapeamento de modelos para seu ranking de tamanho (1=Menor/Mais barato, 2=Médio, 3=Maior/Deep/Raciocínio pesado)
+# e limites de contexto reais (tokens)
+MODEL_SPECS = {
+    # Gemini
+    "gemini-2.5-flash-lite":                     {"size": 1, "context_limit": 1_048_576},
+    "gemini-2.5-flash":                          {"size": 2, "context_limit": 1_048_576},
+    "gemini-2.5-pro":                            {"size": 3, "context_limit": 1_048_576},
+    "gemini-2.0-flash-exp":                      {"size": 2, "context_limit": 1_048_576},
+    "gemini-1.5-flash":                          {"size": 2, "context_limit": 1_048_576},
+    "gemini-flash-latest":                       {"size": 2, "context_limit": 1_048_576},
+
+    # Groq
+    "llama-3.1-8b-instant":                      {"size": 1, "context_limit": 131_072},
+    "llama-3.3-70b-versatile":                   {"size": 3, "context_limit": 131_072},
+    "llama-3.1-70b-versatile":                   {"size": 3, "context_limit": 131_072},
+    "meta-llama/llama-4-scout-17b-16e-instruct": {"size": 2, "context_limit": 131_072},
+    "qwen/qwen3-32b":                            {"size": 2, "context_limit": 131_072},
+    "llama-3.2-11b-vision-preview":              {"size": 1, "context_limit": 131_072},
+    "mixtral-8x7b-32768":                        {"size": 2, "context_limit": 32_768},
+    "groq/compound":                             {"size": 3, "context_limit": 131_072},
+
+    # Claude
+    "claude-3-5-haiku-latest":                   {"size": 1, "context_limit": 200_000},
+    "claude-3-5-sonnet-latest":                  {"size": 3, "context_limit": 200_000},
+    "claude-sonnet-4-5":                         {"size": 3, "context_limit": 200_000},
+
+    # Cerebras
+    "llama3.1-8b":                               {"size": 1, "context_limit": 8_192},
+    "llama-3.3-70b":                             {"size": 3, "context_limit": 8_192},
+    "qwen-3-235b-a22b-instruct-2507":            {"size": 3, "context_limit": 64_000},
+    "gpt-oss-120b":                              {"size": 3, "context_limit": 32_000},
+    "zai-glm-4.7":                               {"size": 2, "context_limit": 32_000},
+
+    # SambaNova
+    "Llama-4-Scout-17B-16E-Instruct":            {"size": 2, "context_limit": 128_000},
+    "Meta-Llama-3.3-70B-Instruct":               {"size": 3, "context_limit": 128_000},
+
+    # DeepSeek
+    "deepseek-chat":                             {"size": 3, "context_limit": 64_000},
+
+    # Ollama
+    "qwen2.5:3b":                                {"size": 1, "context_limit": 32_768},
+    "qwen2.5:14b":                               {"size": 2, "context_limit": 128_000},
+    "llama3.2":                                  {"size": 1, "context_limit": 128_000},
+    "llama3":                                    {"size": 1, "context_limit": 8_192},
+}
+
+def get_model_size(model_name: str) -> int:
+    """Retorna o ranking de tamanho do modelo (1=Small, 2=Medium, 3=Large/Deep)."""
+    if model_name in MODEL_SPECS:
+        return MODEL_SPECS[model_name]["size"]
+    # Busca heurística por substrings se o modelo não estiver explicitamente mapeado
+    model_lower = model_name.lower()
+    if any(x in model_lower for x in ["lite", "8b", "haiku", "3b", "scout"]):
+        return 1
+    if any(x in model_lower for x in ["flash", "14b", "mixtral", "17b"]):
+        return 2
+    if any(x in model_lower for x in ["pro", "70b", "sonnet", "deep", "chat"]):
+        return 3
+    return 2  # default para médio
+
+def get_model_context_limit(model_name: str) -> int:
+    """Retorna o limite de contexto estimado do modelo em tokens."""
+    if model_name in MODEL_SPECS:
+        return MODEL_SPECS[model_name]["context_limit"]
+    model_lower = model_name.lower()
+    if "8b" in model_lower or "70b" in model_lower:
+        if "cerebras" in model_lower:
+            return 8_192
+        return 128_000
+    if "gemini" in model_lower:
+        return 1_048_576
+    if "claude" in model_lower:
+        return 200_000
+    return 32_768  # default seguro
+
+def _estimate_tokens(messages: List[LLMMessage]) -> int:
+    """Estima a quantidade de tokens total no prompt usando tiktoken ou fallback de caracteres."""
+    try:
+        import tiktoken
+        enc = tiktoken.get_encoding("cl100k_base")
+        total = 0
+        for m in messages:
+            total += len(enc.encode(m.content or "")) + 4
+        return total
+    except Exception:
+        total_chars = sum(len(m.content or "") for m in messages)
+        return max(total_chars // 4, 1)
+
+
+# ---------------------------------------------------------------------------
 # Router
 # ---------------------------------------------------------------------------
 
@@ -178,6 +281,28 @@ class LLMRouter:
             "gemini": GeminiProvider(),
             "groq": GroqProvider(),
             "claude": ClaudeProvider(),
+            "sambanova": OpenAICompatProvider(
+                name="sambanova",
+                base_url="https://api.sambanova.ai/v1/chat/completions",
+                api_key_fn=lambda: settings.SAMBANOVA_API_KEY,
+                models_fn=lambda: settings.ai_sambanova_models_list,
+                timeout_sec=60.0,
+            ),
+            "deepseek": OpenAICompatProvider(
+                name="deepseek",
+                base_url="https://api.deepseek.com/v1/chat/completions",
+                api_key_fn=lambda: settings.DEEPSEEK_API_KEY,
+                models_fn=lambda: settings.ai_deepseek_models_list,
+                timeout_sec=45.0,
+            ),
+            "cerebras": OpenAICompatProvider(
+                name="cerebras",
+                base_url="https://api.cerebras.ai/v1/chat/completions",
+                api_key_fn=lambda: settings.CEREBRAS_API_KEY,
+                models_fn=lambda: settings.ai_cerebras_models_list,
+                timeout_sec=30.0,
+            ),
+            "ollama": OllamaProvider(),
         }
         self._cache = get_cache(
             "llm.responses",
@@ -200,6 +325,8 @@ class LLMRouter:
         coloca o provider correspondente no início da chain sem remover os outros como fallback.
         """
         base_order = list(settings.ai_fallback_providers or ["gemini", "groq"])
+        if "ollama" not in base_order:
+            base_order.append("ollama")
         
         # 1. Tenta identificar o provider se 'preferred' for um model_id (ex: 'gemini-2.0-flash')
         target_provider = None
@@ -214,6 +341,14 @@ class LLMRouter:
                     target_provider = "groq"
                 elif preferred in settings.ai_claude_models_list:
                     target_provider = "claude"
+                elif preferred in settings.ai_sambanova_models_list:
+                    target_provider = "sambanova"
+                elif preferred in settings.ai_deepseek_models_list:
+                    target_provider = "deepseek"
+                elif preferred in settings.ai_cerebras_models_list:
+                    target_provider = "cerebras"
+                elif preferred in settings.ai_ollama_models_list:
+                    target_provider = "ollama"
         
         # 2. Constrói a ordem com o provider alvo no topo
         if target_provider:
@@ -234,12 +369,14 @@ class LLMRouter:
         cacheable: bool = True,
         preferred_model: Optional[str] = None,
         strict_model: bool = False,
+        cache_prefix: Optional[str] = None,
     ) -> LLMResult:
         """
         Tenta cada provider em sequência. Retorna no primeiro sucesso.
         Se `preferred_model` for passado, ele lidera a chain (com fallback nos demais).
         Se `strict_model=True`, força o modelo selecionado com retry agressivo (sem fallback).
         Usa cache de respostas se cacheable e temperature <= 0.2.
+        `cache_prefix` particiona o cache por contexto (ex: org_id) — evita vazamento entre clientes.
         """
         temp = temperature if temperature is not None else settings.ai.temperature_default
         cache_enabled = (
@@ -252,6 +389,7 @@ class LLMRouter:
         if cache_enabled:
             key = cache_key_for(
                 "llm.v1",
+                cache_prefix or "",
                 json_mode,
                 round(temp, 2),
                 tier.value,
@@ -260,10 +398,11 @@ class LLMRouter:
             )
             cached = self._cache.get(key)
             if isinstance(cached, LLMResult):
-                log.debug("llm.cache.hit", tier=tier.value)
+                log.debug("llm.cache.hit", tier=tier.value, prefix=cache_prefix or "global")
                 return cached
 
-        # Se strict_model=True, força apenas o provider do modelo selecionado
+        # Se strict_model=True, força o provider do modelo selecionado como prioridade absoluta,
+        # mas adiciona um fallback interno de segurança (gemini) para evitar 503/429 fatais.
         if strict_model and preferred_model:
             target_provider = None
             if preferred_model in self._providers:
@@ -274,14 +413,43 @@ class LLMRouter:
                 target_provider = "groq"
             elif preferred_model in settings.ai_claude_models_list:
                 target_provider = "claude"
+            elif preferred_model in settings.ai_sambanova_models_list:
+                target_provider = "sambanova"
+            elif preferred_model in settings.ai_deepseek_models_list:
+                target_provider = "deepseek"
+            elif preferred_model in settings.ai_cerebras_models_list:
+                target_provider = "cerebras"
+            elif preferred_model in settings.ai_ollama_models_list:
+                target_provider = "ollama"
             
             if target_provider and target_provider in self._providers:
-                providers = [self._providers[target_provider]]
-                log.info("llm.strict_mode", provider=target_provider, model=preferred_model)
+                target_p = self._providers[target_provider]
+                providers = [target_p]
+                # Se o target não for gemini, adiciona gemini (mais estável) como safety fallback interno
+                if target_p.name != "gemini" and "gemini" in self._providers:
+                    providers.append(self._providers["gemini"])
+                
+                log.info("llm.strict_mode.with_internal_fallback", 
+                         primary=target_provider, fallback="gemini", model=preferred_model)
             else:
-                providers = []
+                providers = self.chain(preferred=preferred_model)
         else:
             providers = self.chain(preferred=preferred_model)
+            
+        # Reordena provedores adaptativamente baseado no tamanho do contexto se não for strict_model
+        if not strict_model:
+            est_tokens = _estimate_tokens(messages)
+            base_prov_names = [p.name for p in providers]
+            if est_tokens < 15_000:
+                # Menos tokens -> Prioriza provedores leves/rápidos: gemini, groq, cerebras
+                lightweight = ["gemini", "groq", "cerebras"]
+                sorted_prov_names = [p for p in lightweight if p in base_prov_names] + [p for p in base_prov_names if p not in lightweight]
+                providers = [self._providers[name] for name in sorted_prov_names if name in self._providers]
+            elif est_tokens > 100_000:
+                # Mais de 100k tokens -> Prioriza provedores com contextos massivos: gemini, claude, sambanova
+                heavyweight = ["gemini", "claude", "sambanova"]
+                sorted_prov_names = [p for p in heavyweight if p in base_prov_names] + [p for p in base_prov_names if p not in heavyweight]
+                providers = [self._providers[name] for name in sorted_prov_names if name in self._providers]
             
         if not providers:
             raise NoProviderAvailableError("No LLM providers registered.")
@@ -310,15 +478,30 @@ class LLMRouter:
                 # Skip rápido se o provider foi rate-limitado recentemente
                 cooldown_until = _provider_rate_limited_until.get(provider.name, 0)
                 if time.monotonic() < cooldown_until:
-                    remaining = round(cooldown_until - time.monotonic())
-                    log.debug("llm.provider.skipped_cooldown", provider=provider.name, remaining_sec=remaining)
-                    continue
+                    # Se for o provider preferido ou se estivermos em strict_model, NÃO pula!
+                    is_preferred = False
+                    if preferred_model:
+                        if preferred_model == provider.name:
+                            is_preferred = True
+                        elif hasattr(provider, "models") and preferred_model in provider.models:
+                            is_preferred = True
+                        elif provider.name == "gemini" and "gemini" in preferred_model:
+                            is_preferred = True
+                        elif provider.name == "groq" and preferred_model in (settings.ai_groq_models_list or []):
+                            is_preferred = True
+                        elif provider.name == "claude" and preferred_model in (settings.ai_claude_models_list or []):
+                            is_preferred = True
+
+                    if not strict_model and not is_preferred:
+                        remaining = round(cooldown_until - time.monotonic())
+                        log.debug("llm.provider.skipped_cooldown", provider=provider.name, remaining_sec=remaining)
+                        continue
 
                 any_available = True
 
                 # Retry loop para o provedor atual
                 # Em strict mode: retry agressivo (até 10x) com backoff exponencial
-                max_provider_retries = 10 if strict_model else 3
+                max_provider_retries = 15 if strict_model else 3
                 for attempt in range(1, max_provider_retries + 1):
                     try:
                         result = await provider.complete(
@@ -365,8 +548,8 @@ class LLMRouter:
 
                             if strict_model:
                                 # Strict mode: backoff exponencial, sempre retry
-                                base_wait = int(m.group(1)) if m else 2
-                                cooldown = min(base_wait * (2 ** (attempt - 1)), 60)
+                                base_wait = int(m.group(1)) if m else 5
+                                cooldown = min(base_wait * (2 ** (attempt - 1)), 120)
                                 log.warning("llm.strict.retry",
                                             provider=provider.name, attempt=attempt, wait_sec=cooldown)
                                 if attempt < max_provider_retries:
@@ -405,9 +588,12 @@ class LLMRouter:
         if daily_quota_exhausted_error and last_error == "gemini_daily_quota_exhausted":
             raise daily_quota_exhausted_error
 
-        raise NoProviderAvailableError(
-            f"All LLM providers failed. Last error: {last_error}"
-        )
+        # Se a falha for por contexto muito grande (413), adiciona uma sugestão amigável
+        error_msg = f"Todos os provedores falharam. Último erro: {last_error}"
+        if "413" in str(last_error):
+            error_msg += " (Contexto muito grande para este modelo. Tente reduzir o histórico ou usar um modelo Pro/70B)."
+        
+        raise NoProviderAvailableError(error_msg)
 
 
 def get_router() -> LLMRouter:
@@ -429,6 +615,7 @@ async def ask_llm(
     cacheable: bool = True,
     preferred_model: Optional[str] = None,
     strict_model: bool = False,
+    cache_prefix: Optional[str] = None,
 ) -> LLMResult:
     # Se o chamador não especificou um modelo, usa o preferido do request atual
     effective_model = preferred_model or get_preferred_model()
@@ -443,4 +630,69 @@ async def ask_llm(
         cacheable=cacheable,
         preferred_model=effective_model,
         strict_model=effective_strict,
+        cache_prefix=cache_prefix,
     )
+
+
+# ---------------------------------------------------------------------------
+# Healthcheck Proativo em Background (Heartbeat de Latência/Fidelidade)
+# ---------------------------------------------------------------------------
+
+async def run_llm_preemptive_healthcheck() -> None:
+    """
+    Roda um healthcheck proativo periódico (a cada 5 minutos) que faz ping em todos os providers ativos.
+    Se falhar, coloca o provider em cooldown imediato, evitando latências de retries no chat.
+    """
+    from services.ai.llm.base import LLMMessage
+    
+    # Mensagem de teste super barata e curta (1 token)
+    ping_messages = [LLMMessage(role="user", content="1")]
+    
+    # Aguarda o servidor estabilizar um pouco no startup (5 segundos)
+    await asyncio.sleep(5.0)
+    
+    while True:
+        try:
+            router = get_router()
+            providers = list(router._providers.values())
+            
+            for provider in providers:
+                if not provider.available:
+                    continue
+                
+                # Se for ollama e não houver modelos locais baixados, pula para não travar
+                if provider.name == "ollama":
+                    from core.config import settings
+                    if not settings.ai_ollama_models_list:
+                        continue
+                
+                start_time = time.monotonic()
+                try:
+                    # Usamos um timeout de 15 segundos para o ping de saúde (Gemini free tier pode demorar)
+                    timeout_val = 15.0 if provider.name == "gemini" else 8.0
+                    await asyncio.wait_for(
+                        provider.complete(
+                            ping_messages,
+                            temperature=0.0,
+                            timeout_sec=timeout_val,
+                        ),
+                        timeout=timeout_val + 2.0
+                    )
+                    # Sucesso — se estava em cooldown, remove!
+                    if provider.name in _provider_rate_limited_until:
+                        _provider_rate_limited_until.pop(provider.name, None)
+                        log.info("llm.healthcheck.recovered", provider=provider.name, latency_sec=round(time.monotonic() - start_time, 2))
+                    else:
+                        log.debug("llm.healthcheck.healthy", provider=provider.name, latency_sec=round(time.monotonic() - start_time, 2))
+                except Exception as e:
+                    # Falhou — coloca o provedor em cooldown de 60 segundos (evita punir por longos minutos devido a oscilações de rede)
+                    if provider.name != "ollama":
+                        _provider_rate_limited_until[provider.name] = time.monotonic() + 60.0
+                        log.warning("llm.healthcheck.failed", provider=provider.name, error=str(e)[:150], action="cooldown_applied_60s")
+                    else:
+                        log.warning("llm.healthcheck.ollama_failed", error=str(e)[:150])
+                        
+        except Exception as e:
+            log.exception("llm.healthcheck.loop_error", error=str(e))
+            
+        await asyncio.sleep(300.0)

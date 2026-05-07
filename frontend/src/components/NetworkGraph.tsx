@@ -18,7 +18,7 @@ import ReactFlow, {
     Connection,
     addEdge
 } from 'reactflow';
-import { Users } from 'lucide-react';
+import { Users, PanelRight, PanelRightOpen } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../utils/avatarUtils';
 
 import 'reactflow/dist/style.css';
@@ -32,12 +32,17 @@ import { useHierarchy } from '@/hooks/useHierarchy';
 
 // Modular Components
 import { Sidebar } from './Sidebar';
+import { ProspectingView } from './prospecting/ProspectingView';
 import { Header } from './Header';
 import { Drawer } from './Drawer';
 import { ChatPanel } from './ChatPanel';
+import { TriggerNotifications } from './TriggerNotifications';
+import { API_BASE_URL } from '@/services/config';
 import { WhatsAppView } from './WhatsAppView';
+import { PreferencesView } from './PreferencesView';
 import { NotificationContainer, NotificationType } from './Notification';
 import { organizations as orgsApi, hierarchy as hierarchyApi, api } from '@/services/api';
+import { useProspecting } from '@/hooks/useProspecting';
 
 
 // --- SMART BACKGROUND COMPONENT ---
@@ -248,6 +253,8 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         domainTarget: string;
     } | null>(null);
 
+    const [prospectHoveredLeadId, setProspectHoveredLeadId] = useState<string | null>(null);
+
     // 🛡️ FLAG para evitar reconexão infinita
     const hasAttemptedReconnect = useRef(false);
 
@@ -296,7 +303,10 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     // 💾 PERSISTENCE FOR DRAWER AND CHAT
     const [showDrawer, setShowDrawer] = useState(false);
     const [showChat, setShowChat] = useState(false);
-    const [activeView, setActiveView] = useState<'graph' | 'whatsapp'>('graph');
+    const [activeView, setActiveView] = useState<'graph' | 'whatsapp' | 'prospecting' | 'preferences'>('graph');
+    const prospecting = useProspecting();
+
+
     const [activeChatInfo, setActiveChatInfo] = useState<{ name: string, id?: string } | null>(null);
 
     // 💾 PERSISTENCE FOR DRAWER AND CHAT
@@ -306,6 +316,42 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
         setShowDrawer(savedDrawer);
         setShowChat(savedChat);
     }, []);
+
+    // Centraliza as notificações de prospecção
+    useEffect(() => {
+        if (prospecting.error) {
+            addNotification('error', prospecting.error);
+        }
+    }, [prospecting.error]);
+
+    // Garante que leads pendentes sejam carregados ao abrir a view de prospecção
+    useEffect(() => {
+        if (activeView === 'prospecting' && prospecting.leads.length === 0 && !prospecting.searching) {
+            prospecting.refreshPendingLeads();
+        }
+    }, [activeView]);
+
+    const handleProspectSearch = async () => {
+        try {
+            await prospecting.startSearch();
+        } catch (e: any) {
+            if (!prospecting.error) addNotification('error', e.message || "Erro ao iniciar busca");
+        }
+    };
+
+    const handleProspectCepLookup = async (cep: string) => {
+        if (prospecting.leads.some(l => l.status === 'pending')) return;
+        try {
+            await prospecting.lookupCep(cep);
+        } catch (e: any) {
+            if (!prospecting.error) addNotification('error', e.message || "Erro ao buscar CEP");
+        }
+    };
+
+    const handleProspectMapClick = (coords: { lat: number; lng: number }) => {
+        if (prospecting.leads.some(l => l.status === 'pending')) return;
+        prospecting.setCoords(coords);
+    };
 
     // Sync Drawer state to localStorage
     const handleSetShowDrawer = (val: boolean) => {
@@ -334,12 +380,17 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     };
 
     const filteredOrgs = useMemo(() => {
-        const today = new Date().toISOString().slice(0, 10);
+        const seen = new Set<number>();
         return pipedriveOrgs
-            .filter(org =>
-                org.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                org.domain?.toLowerCase().includes(searchTerm.toLowerCase())
-            )
+            .filter(org => {
+                const id = Number(org.id);
+                if (!id || seen.has(id)) return false;
+                seen.add(id);
+                return (
+                    org.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    org.domain?.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            })
             .map(org => ({
                 ...org,
                 _taskSummary: taskSummary[Number(org.id)] || null,
@@ -519,7 +570,12 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
 
             const data = await orgsApi.listOrganizations();
             console.log('[Pipedrive API] Data Received:', data);
-            const list = Array.isArray(data) ? data : [];
+            
+            // 🔝 Ordena por ID decrescente para que as novas fiquem no topo
+            const list = Array.isArray(data) 
+                ? [...data].sort((a: any, b: any) => Number(b.id) - Number(a.id)) 
+                : [];
+                
             setPipedriveOrgs(list);
             // Busca resumo de tarefas em paralelo
             fetchTaskSummary();
@@ -648,39 +704,24 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     };
 
     const handleOrgClick = async (org: any) => {
+        setActiveView('graph'); // 🚀 VOLTAR PARA O MODO GRAFO
         console.log('--- HANDLE ORG CLICK START ---', org.name);
         resetHierarchy(); // 🧹 Limpa os dados do hook
         setNodes([]); // 🧹 Limpa os nodes do grafo
         setEdges([]); // 🧹 Limpa as edges do grafo
-        setStep("input");
 
         try {
-            const cleanOrgName = cleanName(org.name || "");
-            setConfirmedBrand(cleanOrgName);
-            setConfirmedLogo(org.logo || "");
-            setConfirmedFollowers("");
-
-            let targetCnpj = org.cnpj || "";
-            const onlyNums = targetCnpj.replace(/\D/g, '');
-            if (onlyNums.length < 5) {
-                targetCnpj = "";
-            }
-
-            setCnpj(formatCnpj(targetCnpj));
-            setDomainTarget(org.domain || "");
-
-            // 🔄 Restaurar foco de produto e área
-            if (org.product_focus) setProductFocus(org.product_focus);
-            else setProductFocus("");
-
-            if (org.category === "compras" || org.category === "logistica") {
-                setAreaFocus(org.category);
-            } else {
-                setAreaFocus("compras"); // Default
-            }
-
             setCurrentOrgId(Number(org.id));
             localStorage.setItem('last-viewed-org', JSON.stringify(org));
+
+            // 🧹 Reset total de estados antes de carregar a nova empresa
+            setStep("input");
+            setCnpj("");
+            setDomainTarget("");
+            setConfirmedBrand("");
+            setConfirmedLogo("");
+            setPartners([]);
+            setError(null);
 
             if (org.id) {
                 // 1. CHECAR SE EXISTE JOB ATIVO NESTA EMPRESA
@@ -710,15 +751,38 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                 // 2. SE NÃO TIVER JOB ATIVO, CARREGA OS DADOS SALVOS NORMALMENTE
                 console.log('Attempting to load hierarchy for pipedrive_id:', org.id);
                 const data = await loadStoredHierarchy(Number(org.id), true);
-                if (data && data.nodes && data.nodes.length > 0) {
-                    setStep("confirm"); // Mostra o header mas já com os dados no grafo
-                    setShouldFitView(true); // 📍 Auto fit view após carregar dados
-                } else if (data && data.status === "new" || data && data.status === "empty") {
-                    setStep("input"); // Fica pronto para mapear se não tinha nada no BD e não tem job ativo
-                } else if (data && data.status === "cached") {
+                const hasNodes = data && data.nodes && data.nodes.length > 0;
+                const isProspecting = org.source === "prospecting";
+
+                console.log("[Graph] Avaliando estado:", { name: org.name, hasNodes, isProspecting, source: org.source });
+
+                if (hasNodes) {
+                    // Já foi mapeada, restaura os dados confirmados
+                    setConfirmedBrand(cleanName(org.name || ""));
+                    setConfirmedLogo(org.logo || "");
+                    setCnpj(formatCnpj(org.cnpj || ""));
+                    setDomainTarget(org.domain || "");
                     setStep("confirm");
                     setShouldFitView(true);
+                } else if (isProspecting && (org.domain || org.linkedin || org.linkedin_url)) {
+                    // É prospecção nova, popula tudo para o usuário clicar em Mapear
+                    setConfirmedBrand(cleanName(org.name || ""));
+                    setConfirmedLogo(org.logo || "");
+                    setCnpj(formatCnpj(org.cnpj || ""));
+                    setDomainTarget(org.domain || "");
+                    setStep("confirm");
+                    console.log("[Graph] Fluxo Prospecção -> confirm");
+                } else {
+                    // É manual ou vazia, mantém o nome mas deixa o resto para input manual
+                    setConfirmedBrand(cleanName(org.name || ""));
+                    setConfirmedLogo(org.logo || "");
+                    setStep("input");
+                    console.log("[Graph] Fluxo Manual -> input");
                 }
+
+                // Restaurar foco de produto e área (comum a todos)
+                if (org.product_focus) setProductFocus(org.product_focus);
+                if (org.category === "compras" || org.category === "logistica") setAreaFocus(org.category);
             }
         } catch (e: any) {
             console.error("Critical error in handleOrgClick:", (e as Error).message || e);
@@ -818,6 +882,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             }
         } else if (step === "confirm" || step === "scanning") {
             if (!confirmedBrand) { setError("Marca inválida."); return; }
+
             setStep("scanning");
             setRefreshDrawerTrigger(prev => prev + 1); // Recarrega/Zera o drawer
 
@@ -1045,6 +1110,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
     };
 
     return (
+        <>
         <div className={styles.container}>
             <Sidebar
                 showDrawer={showDrawer}
@@ -1070,24 +1136,6 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                     setActiveChatInfo(null);
                     localStorage.removeItem('last-viewed-org');
                 }}
-                onNewCompany={() => {
-                    // 🆕 Modo "Nova Empresa": Limpa tudo e força a toolbar no estado de CNPJ-only com atenção vermelha
-                    resetHierarchy();
-                    setNodes([]);
-                    setEdges([]);
-                    setCnpj("");
-                    setDomainTarget("");
-                    setProductFocus("");
-                    setConfirmedBrand(" "); // Sentinel para ativar needsAttention (!!confirmedBrand && !cnpj)
-                    setConfirmedLogo("");
-                    setConfirmedFollowers("");
-                    setPartners([]);
-                    setCurrentOrgId(null);
-                    setPreviousSearchState(null);
-                    setStep("input");
-                    handleSetShowDrawer(false);
-                    localStorage.removeItem('last-viewed-org');
-                }}
                 onCopyData={handleCopyData}
                 onRefine={() => {
                     if (localStorage.getItem('active-discovery-job')) {
@@ -1103,35 +1151,68 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                         fetchPipedriveOrgs(); // Refresh the list
                     }
                 }}
-            />
-
-
-            <Drawer
-                showDrawer={showDrawer}
-                setShowDrawer={handleSetShowDrawer}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                filteredOrgs={filteredOrgs}
-                onOrgClick={handleOrgClick}
-                onOrgReset={handleOrgReset}
-                onOrgRenamed={handleOrgRenamed}
-                isLoading={loadingOrgs}
-                selectedOrgId={currentOrgId}
-                selectedOrgLogo={confirmedLogo}
-                activeJobId={activeJobId}
-                graphEmployees={rawEmployees}
-                refreshDetailsTrigger={refreshDrawerTrigger}
-                addNotification={addNotification}
+                onOpenProspecting={() => setActiveView(v => v === 'prospecting' ? 'graph' : 'prospecting')}
+                isProspecting={activeView === 'prospecting'}
+                onOpenPreferences={() => setActiveView(v => v === 'preferences' ? 'graph' : 'preferences')}
+                isPreferences={activeView === 'preferences'}
             />
 
             <div className={styles.mainWrapper}>
-                <Header
-                    confirmedBrand={confirmedBrand}
-                    showChat={showChat}
-                    onToggleChat={() => handleSetShowChat(!showChat)}
-                />
+                <header className={styles.globalHeader}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className={styles.globalHeaderTitle}>LINKB2B Hierarchy Mapper</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
+                        <TriggerNotifications
+                            apiBase={API_BASE_URL}
+                            onOpenChat={(orgId, orgName) => {
+                                handleSetShowChat(true);
+                                handleOrgClick({ id: orgId, name: orgName });
+                            }}
+                        />
+                        {(activeView === 'graph' || activeView === 'prospecting') && (
+                            <button
+                                onClick={() => handleSetShowChat(!showChat)}
+                                className={`${styles.navIcon}`}
+                                style={{ 
+                                    background: 'transparent', 
+                                    border: 'none', 
+                                    cursor: 'pointer', 
+                                    padding: '8px', 
+                                    borderRadius: '8px', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    color: showChat ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.6)' 
+                                }}
+                                title={showChat ? "Fechar Assistente" : "Abrir Assistente"}
+                            >
+                                {showChat ? <PanelRightOpen size={20} /> : <PanelRight size={20} />}
+                            </button>
+                        )}
+                    </div>
+                </header>
 
                 <div className={styles.contentWrapper}>
+                    {(activeView === 'graph' || activeView === 'prospecting') && (
+                        <Drawer
+                            showDrawer={showDrawer}
+                            setShowDrawer={handleSetShowDrawer}
+                            searchTerm={searchTerm}
+                            setSearchTerm={setSearchTerm}
+                            filteredOrgs={filteredOrgs}
+                            onOrgClick={handleOrgClick}
+                            onOrgReset={handleOrgReset}
+                            onOrgRenamed={handleOrgRenamed}
+                            isLoading={loadingOrgs}
+                            selectedOrgId={currentOrgId}
+                            selectedOrgLogo={confirmedLogo}
+                            activeJobId={activeJobId}
+                            graphEmployees={rawEmployees}
+                            refreshDetailsTrigger={refreshDrawerTrigger}
+                            addNotification={addNotification}
+                        />
+                    )}
+
                     <main className={styles.mainContent}>
                         <NotificationContainer
                             notifications={notifications}
@@ -1139,8 +1220,11 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                         />
 
                         <div className={styles.graphWrapper}>
-                            {activeView === 'graph' ? (
-                                <ReactFlow
+                            {activeView === 'graph' && (
+                                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', position: 'relative' }}>
+                                    <Header confirmedBrand={confirmedBrand} />
+                                    <div style={{ flex: 1, position: 'relative' }}>
+                                        <ReactFlow
                                     nodes={nodes}
                                     edges={edges}
                                     nodeTypes={nodeTypes}
@@ -1155,8 +1239,11 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                                     <SmartBackground />
                                     <FitViewHandler shouldFitView={shouldFitView} nodes={nodes} />
                                     <Controls position="top-right" />
-                                </ReactFlow>
-                            ) : (
+                                        </ReactFlow>
+                                    </div>
+                                </div>
+                            )}
+                            {activeView === 'whatsapp' && (
                                 <div className={styles.whatsappContainer} style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#131313' }}>
                                     <WhatsAppView
                                         chatName={activeChatInfo?.name || "WhatsApp"}
@@ -1165,7 +1252,82 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                                     />
                                 </div>
                             )}
+                            {activeView === 'prospecting' && (
+                                <ProspectingView
+                                    coords={prospecting.coords}
+                                    onMapClick={handleProspectMapClick}
+                                    radiusKm={prospecting.radiusKm}
+                                    leads={prospecting.leads}
+                                    selectedLead={prospecting.selectedLead}
+                                    onLeadClick={lead => prospecting.setSelectedLead(
+                                        prev => prev?.id === lead.id ? null : lead
+                                    )}
+                                    onLeadClose={() => prospecting.setSelectedLead(null)}
+                                    onApproveLead={prospecting.approveLead}
+                                    onRejectLead={prospecting.rejectLead}
+                                    onLeadHover={(lead) => setProspectHoveredLeadId(lead?.id || null)}
+                                    session={prospecting.session}
+                                />
+                            )}
+                            {activeView === 'preferences' && (
+                                <PreferencesView onBack={() => setActiveView('graph')} />
+                            )}
                         </div>
+
+                        {activeView === 'prospecting' && (
+                            <div className={styles.bottomToolbarRow}>
+                                <FloatingToolbar
+                                    isProspectingMode
+                                    prospectCoords={prospecting.coords}
+                                    prospectRadiusKm={prospecting.radiusKm}
+                                    onProspectRadiusChange={prospecting.setRadiusKm}
+                                    onProspectGeolocate={prospecting.geolocate}
+                                    prospectGeoLoading={prospecting.geoLoading}
+                                    onProspectSearch={handleProspectSearch}
+                                    onProspectStop={prospecting.stopSearch}
+                                    onProspectCepLookup={handleProspectCepLookup}
+                                    prospectCityName={prospecting.cityName}
+                                    prospectSearching={prospecting.searching}
+                                    prospectSession={prospecting.session ?? undefined}
+                                    prospectLeadsCount={prospecting.leads.length}
+                                    prospectTierACount={prospecting.leads.filter(l => l.icp_tier === 'A').length}
+                                    prospectPendingLeads={prospecting.leads.filter(l => l.status === 'pending')}
+                                    onProspectSelectLead={prospecting.setSelectedLead}
+                                    prospectError={prospecting.error}
+                                    prospectSelectedLead={prospecting.selectedLead}
+                                    prospectHoveredLeadId={prospectHoveredLeadId}
+                                    onProspectApproveLead={async (id) => {
+                                        try {
+                                            await prospecting.approveLead(id);
+                                            addNotification('success', "Empresa aprovada e enviada ao Pipedrive!");
+                                            // 🚀 Atualiza o Drawer imediatamente para mostrar a nova empresa
+                                            fetchPipedriveOrgs();
+                                        } catch (e: any) {
+                                            addNotification('error', e.message);
+                                        }
+                                    }}
+                                    onProspectRejectLead={async (id) => {
+                                        try {
+                                            await prospecting.rejectLead(id);
+                                            addNotification('info', "Empresa descartada do radar.");
+                                        } catch (e: any) {
+                                            addNotification('error', e.message);
+                                        }
+                                    }}
+                                    onProspectCloseLead={prospecting.setSelectedLead ? () => prospecting.setSelectedLead(null) : undefined}
+                                    prospectCep={prospecting.cep}
+                                    onProspectCepChange={prospecting.setCep}
+                                    // props obrigatórias do toolbar (não usadas no modo prospecção)
+                                    error={null} handleSearch={() => {}} cnpj="" setCnpj={() => {}}
+                                    confirmedBrand="" setConfirmedBrand={() => {}} confirmedLogo=""
+                                    setConfirmedLogo={() => {}} confirmedFollowers="" setConfirmedFollowers={() => {}}
+                                    domainTarget="" setDomainTarget={() => {}} productFocus="" setProductFocus={() => {}}
+                                    areaFocus="compras" setAreaFocus={() => {}} handleAutoEnrich={() => {}}
+                                    enrichingIds={new Set()} discovering={false} loading={false}
+                                    step="input" brandOptions={[]} onBrandSelect={() => {}}
+                                />
+                            </div>
+                        )}
 
                         {activeView === 'graph' && (
                             <div className={styles.bottomToolbarRow}>
@@ -1197,6 +1359,8 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                                     stopHierarchyScan={() => stopHierarchyScan(addNotification)}
                                     cancelDiscovery={cancelDiscovery}
                                     activeJobId={activeJobId}
+                                    isSidebarOpen={showDrawer} // ✅ Corrigido
+                                    isChatOpen={showChat}     // ✅ Corrigido
                                     onApproveCandidate={async (id) => {
                                         try {
                                             await approveCandidate(id);
@@ -1319,7 +1483,7 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                         )}
                     </main>
 
-                    {showChat && (
+                    {showChat && (activeView === 'graph' || activeView === 'prospecting') && (
                         <ChatPanel
                             showChat={showChat}
                             setShowChat={handleSetShowChat}
@@ -1358,5 +1522,6 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
             </div>
         </div>
 
+        </>
     );
 }

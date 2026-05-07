@@ -401,17 +401,26 @@ const MODEL_LOGO_MAP: Record<AIModel, string> = {
     claude: '/claude.png',
     gemini: '/gemini.png',
     groq: '/groq llama.svg',
+    cerebras: '/cerebras.png',
+    deepseek: '/deepseek.png',
+    sambanova: '/sambanova.png',
+
+};
+
+const MODEL_INVERT_DARK: Partial<Record<AIModel, boolean>> = {
+    groq: true,
+
 };
 
 const AIAsterisk = ({ model }: { model: AIModel }) => (
-    <img 
-        src={MODEL_LOGO_MAP[model]} 
-        alt={`${model} AI`} 
-        width="16" 
-        height="16" 
+    <img
+        src={MODEL_LOGO_MAP[model] ?? '/claude.png'}
+        alt={`${model} AI`}
+        width="16"
+        height="16"
         className="shrink-0 object-contain"
-        style={{ 
-            filter: model === 'groq' ? 'brightness(0) invert(1)' : 'none'
+        style={{
+            filter: MODEL_INVERT_DARK[model] ? 'brightness(0) invert(1)' : 'none'
         }}
     />
 );

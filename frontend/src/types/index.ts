@@ -77,8 +77,8 @@ export interface ChatPayload {
     [k: string]: unknown;
   }>;
   context?: string | Record<string, unknown> | null;
-  /** Provider do LLM para a volta (gemini | groq | claude). */
-  model?: 'gemini' | 'groq' | 'claude' | string;
+  /** Provider do LLM para a volta. */
+  model?: 'gemini' | 'groq' | 'claude' | 'cerebras' | 'deepseek' | 'sambanova' | 'ollama' | string;
 }
 
 export interface SearchResultItem {

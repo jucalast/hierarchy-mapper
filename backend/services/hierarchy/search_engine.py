@@ -19,9 +19,9 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     ]
     
-    # 💤 Delay randômico BASE aumentado significativamente para segurança extrema
-    await asyncio.sleep(random.uniform(10.0, 20.0))
-    
+    # Delay inicial curto para não sobrecarregar em chamadas paralelas
+    await asyncio.sleep(random.uniform(1.5, 3.5))
+
     # --- RESILIÊNCIA DE REDE ---
     for dns_attempt in range(2):
         try:
@@ -29,46 +29,49 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
             socket.gethostbyname('duckduckgo.com')
             break
         except:
-            if dns_attempt == 0: await asyncio.sleep(3.0)
+            if dns_attempt == 0: await asyncio.sleep(2.0)
             else: return []
 
     # --- MOTOR PRINCIPAL: DUCKDUCKGO ---
+    consecutive_403 = 0
     for attempt in range(4):
         try:
-            # Rotaciona User-Agent aleatoriamente
             ua = random.choice(user_agents)
             print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4) com UA: {ua[:30]}...")
-            
-            # Usamos o backend 'lite' com um timeout generoso de 30s
-            with DDGS(timeout=30) as ddgs:
-                # O backend 'lite' costuma ser mais resiliente a bloqueios
+
+            with DDGS(timeout=20) as ddgs:
                 raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results, backend="lite"))
-                
+
                 if raw_results:
-                    filtered_results = []
-                    for r in raw_results:
-                        href = r.get("href", "")
-                        valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
-                            
-                        if any(p in href for p in valid_patterns):
-                            filtered_results.append(r)
-                    
-                    if filtered_results:
-                        print(f"[SearchEngine] Sucesso (DDG)! {len(filtered_results)} perfis LinkedIn filtrados.")
-                        return filtered_results
-                
-                print(f"      [DDG] Nenhum resultado. Aguardando pausa...")
-                await asyncio.sleep(5.0)
-                
+                    valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
+                    filtered = [r for r in raw_results if any(p in r.get("href", "") for p in valid_patterns)]
+                    if filtered:
+                        print(f"[SearchEngine] Sucesso (DDG)! {len(filtered)} perfis LinkedIn filtrados.")
+                        return filtered
+
+                await asyncio.sleep(2.0)
+
         except Exception as e:
             msg = str(e)
-            if "429" in msg or "Ratelimit" in msg:
-                 print(f"[SearchEngine] 🚨 Bloqueio 429 detectado no DDG.")
+            is_403 = "403" in msg or "Forbidden" in msg
+            is_429 = "429" in msg or "Ratelimit" in msg
+
+            if is_403:
+                consecutive_403 += 1
+                print(f"[SearchEngine] Bloqueio 403 (tentativa {attempt+1}) — IP bloqueado.")
+                # Após 2 bloqueios 403 seguidos, desiste imediatamente (retry não resolve)
+                if consecutive_403 >= 2:
+                    print(f"[SearchEngine] 2 bloqueios 403 consecutivos — encerrando busca.")
+                    return []
+                await asyncio.sleep(3.0)
+            elif is_429:
+                consecutive_403 = 0
+                print(f"[SearchEngine] 🚨 Rate limit 429 — aguardando {(attempt+1)*8}s.")
+                await asyncio.sleep((attempt + 1) * 8)  # 8s, 16s, 24s, 32s
             else:
-                 print(f"[SearchEngine] Erro no DDG: {msg}")
-            
-            wait_time = (attempt + 1) * 20 # 20s, 40s, 60s... Progressão mais lenta
-            await asyncio.sleep(wait_time)
+                consecutive_403 = 0
+                print(f"[SearchEngine] Erro no DDG: {msg}")
+                await asyncio.sleep(4.0)
             continue
 
     return []

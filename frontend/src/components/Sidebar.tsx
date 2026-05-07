@@ -1,16 +1,14 @@
 import React from 'react';
-import { 
-    Asterisk, 
-    LayoutDashboard, 
-    CirclePlus, 
-    History, 
-    Zap, 
-    Eraser, 
-    Sun, 
-    Moon, 
+import {
+    Asterisk,
+    CirclePlus,
+    Zap,
+    Sun,
+    Moon,
     Settings,
     Bug,
-    Workflow
+    Workflow,
+    Radar,
 } from 'lucide-react';
 
 import styles from './NetworkGraph.module.css';
@@ -21,23 +19,29 @@ interface SidebarProps {
     theme: string;
     onToggleTheme: () => void;
     onReset: () => void;
-    onNewCompany?: () => void;
     onCopyData: () => void;
     onRefine?: () => void;
     onSmartSync?: () => void;
+    onOpenProspecting?: () => void;
+    isProspecting?: boolean;
+    onOpenPreferences?: () => void;
+    isPreferences?: boolean;
 }
 
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-    showDrawer, 
+export const Sidebar: React.FC<SidebarProps> = ({
+    showDrawer,
     setShowDrawer,
-    theme, 
-    onToggleTheme, 
+    theme,
+    onToggleTheme,
     onReset,
-    onNewCompany,
     onCopyData,
     onRefine,
-    onSmartSync
+    onSmartSync,
+    onOpenProspecting,
+    isProspecting,
+    onOpenPreferences,
+    isPreferences,
 }) => {
 
     return (
@@ -67,13 +71,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 />
             </div>
 
-            <div
-                className={styles.navIcon}
-                onClick={onNewCompany || onReset}
-                title="Nova Empresa"
-            >
-                <CirclePlus size={20} className={styles.iconSide} />
-            </div>
 
             <div 
                 className={styles.navIcon} 
@@ -83,12 +80,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Workflow size={20} className={styles.iconSide} />
             </div>
 
-            <div className={styles.navIcon} title="Histórico">
-                <History size={20} className={styles.iconSide} />
-            </div>
 
             <div className={styles.navIcon} title="Smart Sync" onClick={onSmartSync}>
                 <Zap size={20} className={styles.iconSide} />
+            </div>
+
+            <div
+                className={`${styles.navIcon} ${isProspecting ? styles.navIconActive : ''}`}
+                title="Prospecção Inteligente"
+                onClick={onOpenProspecting}
+            >
+                <Radar size={20} className={styles.iconSide} />
             </div>
 
             {/* Ícone de acesso ao Módulo de WhatsApp */}
@@ -111,8 +113,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 />
             </div>
 
-            <div className={styles.navIcon} title="Limpar Canvas" onClick={onReset}>
-                <Eraser size={20} className={styles.iconSide} />
+            <div className={styles.navIcon} title="Nova Empresa" onClick={onReset}>
+                <CirclePlus size={20} className={styles.iconSide} />
             </div>
 
             <div className={styles.navIcon} title="Copiar Dados (Debug)" onClick={onCopyData}>
@@ -125,7 +127,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {theme === "dark" ? <Sun size={20} className={styles.iconSide} /> : <Moon size={20} className={styles.iconSide} />}
                 </div>
 
-                <div className={styles.navIcon} title="Preferências">
+                <div 
+                    className={`${styles.navIcon} ${isPreferences ? styles.navIconActive : ''}`} 
+                    title="Preferências"
+                    onClick={onOpenPreferences}
+                >
                     <Settings size={20} className={styles.iconSide} />
                 </div>
             </div>

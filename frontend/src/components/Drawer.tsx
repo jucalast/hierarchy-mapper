@@ -17,7 +17,7 @@ import { ContactList } from './ContactList';
 import { OrgListItem } from './OrgListItem';
 import type { NotificationType } from './Notification';
 import { organizations as orgsApi } from '@/services/api';
-import { Avatar, Button, Modal, Spinner } from './ui';
+import { Avatar, Button, Modal, Spinner, Badge } from './ui';
 
 interface DrawerProps {
     showDrawer: boolean;
@@ -354,9 +354,26 @@ export const Drawer: React.FC<DrawerProps> = ({
                                             setEditingNameValue(focusedOrg.name);
                                         }}
                                         title="Clique duas vezes para renomear"
-                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', width: '100%', overflow: 'hidden' }}
                                     >
-                                        {focusedOrg.name}
+                                        <span style={{ 
+                                            whiteSpace: 'nowrap', 
+                                            overflow: 'hidden', 
+                                            textOverflow: 'ellipsis',
+                                            flex: '0 1 auto'
+                                        }}>
+                                            {focusedOrg.name}
+                                        </span>
+                                        {orgDetails[expandedOrgId]?.icp_tier && (
+                                            <Badge 
+                                                tone={orgDetails[expandedOrgId].icp_tier === 'A' ? 'success' : orgDetails[expandedOrgId].icp_tier === 'B' ? 'warning' : 'neutral'}
+                                                size="sm"
+                                                style={{ fontSize: '11px', padding: '2px 8px', flexShrink: 0 }}
+                                                title={`ICP Score: ${orgDetails[expandedOrgId].icp_score}`}
+                                            >
+                                                Tier {orgDetails[expandedOrgId].icp_tier} • {orgDetails[expandedOrgId].icp_score}%
+                                            </Badge>
+                                        )}
                                         {scanningOrgId === expandedOrgId && (
                                             <Spinner size={16} inline color="rgb(122, 139, 255)" />
                                         )}
@@ -412,26 +429,42 @@ export const Drawer: React.FC<DrawerProps> = ({
 
                                         {activeTab === 'persons' && (
                                             <ContactList
-                                                persons={orgDetails[expandedOrgId].persons}
+                                                persons={(() => {
+                                                    const seen = new Set();
+                                                    return (orgDetails[expandedOrgId].persons || []).filter((p: any) => {
+                                                        if (!p.id || seen.has(p.id)) return false;
+                                                        seen.add(p.id);
+                                                        return true;
+                                                    });
+                                                })()}
                                             />
                                         )}
 
                                         {activeTab === 'deals' && (
                                             <div className={styles.dealList}>
                                                 {orgDetails[expandedOrgId].deals.length === 0 && <div className={styles.emptyState}>Sem negócios.</div>}
-                                                {orgDetails[expandedOrgId].deals.map((d: any) => (
-                                                    <div key={d.id} className={styles.dealItem}>
-                                                        <div className={styles.dealTitle}>{d.title}</div>
-                                                        <div className={styles.dealMeta}>
-                                                            <span className={styles.dealValue}>
-                                                                <DollarSign size={10} /> {d.formatted_value || 'R$ 0'}
-                                                            </span>
-                                                            <span className={`${styles.dealStatus} ${styles[d.status]}`}>
-                                                                {d.status === 'open' ? 'Aberto' : d.status === 'won' ? 'Ganho' : 'Perdido'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                {(() => {
+                                                    const seen = new Set();
+                                                    return (orgDetails[expandedOrgId].deals || [])
+                                                        .filter((d: any) => {
+                                                            if (!d.id || seen.has(d.id)) return false;
+                                                            seen.add(d.id);
+                                                            return true;
+                                                        })
+                                                        .map((d: any) => (
+                                                            <div key={d.id} className={styles.dealItem}>
+                                                                <div className={styles.dealTitle}>{d.title}</div>
+                                                                <div className={styles.dealMeta}>
+                                                                    <span className={styles.dealValue}>
+                                                                        <DollarSign size={10} /> {d.formatted_value || 'R$ 0'}
+                                                                    </span>
+                                                                    <span className={`${styles.dealStatus} ${styles[d.status]}`}>
+                                                                        {d.status === 'open' ? 'Aberto' : d.status === 'won' ? 'Ganho' : 'Perdido'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        ));
+                                                })()}
                                             </div>
                                         )}
                                     </div>

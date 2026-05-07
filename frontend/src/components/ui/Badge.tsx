@@ -26,7 +26,7 @@ export interface BadgeProps {
 const TONE: Record<BadgeTone, { bg: string; fg: string; border: string }> = {
   neutral: { bg: 'rgba(255,255,255,0.06)', fg: 'rgba(255,255,255,0.85)', border: 'rgba(255,255,255,0.12)' },
   info:    { bg: 'rgba(96,165,250,0.15)', fg: '#60A5FA',                border: 'rgba(96,165,250,0.4)' },
-  success: { bg: 'rgba(0,168,132,0.15)',   fg: '#00a884',                border: 'rgba(0,168,132,0.4)' },
+  success: { bg: 'rgba(52,209,124,0.15)',   fg: '#34d17c',                border: 'rgba(52,209,124,0.4)' },
   warning: { bg: 'rgba(245,158,11,0.15)',  fg: '#f59e0b',                border: 'rgba(245,158,11,0.4)' },
   danger:  { bg: 'rgba(239,68,68,0.15)',   fg: '#ef4444',                border: 'rgba(239,68,68,0.4)' },
   primary: { bg: 'rgba(122,139,255,0.15)', fg: '#7A8BFF',                border: 'rgba(122,139,255,0.4)' },

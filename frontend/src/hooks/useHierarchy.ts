@@ -433,7 +433,22 @@ export const useHierarchy = () => {
                 ws.close();
             }
             setLoading(false);
+            localStorage.removeItem('active-discovery-job');
+            setActiveJobId(null);
         }, 5 * 60 * 1000); // 5 minutos
+
+        ws.onclose = () => {
+            console.log("[WebSocket] Conexão encerrada pelo servidor.");
+            clearTimeout(timeoutId);
+            setLoading(false);
+            localStorage.removeItem('active-discovery-job');
+            setActiveJobId(null);
+            
+            // Dispara refinamento final como medida de segurança se a conexão caiu
+            setTimeout(() => {
+                refineHierarchy(currentEmployees);
+            }, 500);
+        };
 
         ws.onmessage = (event) => {
             try {
@@ -451,17 +466,8 @@ export const useHierarchy = () => {
 
                 if (data.type === 'done') {
                     console.log("[Worker] Scan finalizado via WebSocket.");
-                    ws.close();
-                    setLoading(false);
-                    clearTimeout(timeoutId);
-                    localStorage.removeItem('active-discovery-job');
-                    setActiveJobId(null);
                     if (onNotification) onNotification('success', "Mapeamento concluído com sucesso!");
-                    // Ensure the backend worker has fully exited before refining
-                    // and allow setRawEmployees to settle completely 
-                    setTimeout(() => {
-                        refineHierarchy(currentEmployees);
-                    }, 500);
+                    ws.close(); // Isso vai disparar o ws.onclose, que faz a limpeza e o refineHierarchy.
                     return;
                 }
 

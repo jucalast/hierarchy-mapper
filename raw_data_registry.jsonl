@@ -1744,3 +1744,935 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T10:40:11.726685",
+    "candidate": "Salvador",
+    "linkedin": "https://linkedin.com/in/pd_2169",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Salvador - Contato Madri Aromas & Ingredientes",
+            "body": "Email: compras@madriaromas.com.br | Telefone: 11916149558 | Pipedrive ID: 2169"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://linkedin.com/in/pd_2169",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T10:40:55.997299",
+    "candidate": "Renata Lima",
+    "linkedin": "https://br.linkedin.com/in/renatalimavendas",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Renata Lima - Madri Aromas & Ingredientes | LinkedIn",
+            "body": "Sobre Profissional com mais de 20 anos de experiência no segmento de aromas para alimentos…"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Profissional com mais de 20 anos de experiência no segmento de aromas para alimentos… · Experiência: Madri Aromas & Ingredientes · Formação acadêmica: Universidade Estácio de Sá · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Renata Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/renatalimavendas",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T10:42:35.558291",
+    "candidate": "Felipe Linares",
+    "linkedin": "https://www.linkedin.com/in/felipelinares",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Felipe Linares - Barentz | LinkedIn",
+            "body": "July 6, 2020 - 💼 Procurement and Sourcing expert - food & feed ingredients, Nutraceuticals, active (… · Experience: Barentz · Education: Faculdade Líbano · Location: São Paulo · 500+ connections on LinkedIn. View Felipe Linares ’ profile on LinkedIn, ..."
+        },
+        "osint_metadata": {
+            "role": "barentz",
+            "bio": "💼 Procurement and Sourcing expert  -  food & feed ingredients, Nutraceuticals,  active (… · Experiência: Barentz · Formação acadêmica: Faculdade Líbano · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Felipe Linares no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T10:43:04.602419",
+    "candidate": "FERNANDO DE JESUS",
+    "linkedin": "https://br.linkedin.com/in/fernandodejesus/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "FERNANDO DE JESUS - MasterSense Ingredientes e Aromas | LinkedIn",
+            "body": "December 8, 2025 - ☀️ In China, our sites are increasing renewable energy use as part of Mars’ global transition to 100% renewable electricity. 🚚 In Japan, we’re improving logistics efficiency to help cut supply chain emissions. These examples show how our Procurement & Sustainability teams are turning bold global commitments into local action."
+        },
+        "osint_metadata": {
+            "role": "mastersense ingredientes e aromas",
+            "bio": "Strategic leader with extensive experience in marketing, innovation, and business… · Experience: MasterSense Ingredientes e Aromas · Education: ESADE Business School · Location: Jundiaí · 500+ connections on LinkedIn. View FERNANDO DE JESUS’ profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/fernandodejesus/en",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Mastersense Ingredientes E Aromas",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T10:43:52.241919",
+    "candidate": "Symone Rodrigues",
+    "linkedin": "https://br.linkedin.com/in/symone-rodrigues-60b55749",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Symone Rodrigues - Procurement| Strategic Sourcing | Negotiation",
+            "body": "Experiência ; Supervisor de compras · mai. de 2025 - o momento ; Senior Procurement Analyst · ago. de 2021 - mai. de 2025 ; Comprador Senior · out. de 2019 - ago. de ..."
+        },
+        "osint_metadata": {
+            "role": "grupo 3corações",
+            "bio": "\n\n\n · Experiência: Grupo 3corações · Formação acadêmica: Fundação Getulio Vargas · Localidade: Fortaleza · + de 500 conexões no LinkedIn. Veja o perfil de Symone Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T10:43:58.216821",
+    "candidate": "Gisely Santos",
+    "linkedin": "https://br.linkedin.com/in/gisely-santos-8a610859",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gisely Santos - Compras I Suprimentos I Linha food ... - LinkedIn",
+            "body": "Profissional com vasta experiência na área de compras de materiais diretos, indiretos e serviços aplicados na indústria, linha food, utensílios, ..."
+        },
+        "osint_metadata": {
+            "role": "grupo família madalosso",
+            "bio": "Profissional com vasta experiência na área de compras de materiais diretos, indiretos e… · Experiência: Grupo Família Madalosso  · Formação acadêmica: IEL faculdade da industria  · Localidade: São José dos Pinhais · + de 500 conexões no LinkedIn. Veja o perfil de Gisely Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T10:45:00.521006",
+    "candidate": "Renata Santos",
+    "linkedin": "https://br.linkedin.com/in/renata-santos-020a43157",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Renata Santos - LinkedIn Brasil",
+            "body": "-- · Experiência: Madri Aromas & Ingredientes · Localidade: Brasil · 23 conexões no LinkedIn . Veja o perfil de Renata Santos no LinkedIn , uma comunidade profissional de 1 bilhão de..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Madri Aromas & Ingredientes · Localidade: Brasil · 23 conexões no LinkedIn. Veja o perfil de Renata Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/renata-santos-020a43157",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Linkedin Brasil",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T10:46:23.510273",
+    "candidate": "Raquel Santos",
+    "linkedin": "https://br.linkedin.com/in/raquel-santos-1ab227175",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Raquel Santos - Madri Aromas & Ingredientes | LinkedIn",
+            "body": "· Experiência: Madri Aromas & Ingredientes · Formação acadêmica: UNOPAR - Universidade Norte do Paraná · Localidade: Pindamonhangaba · + de 500 conexões no LinkedIn . Veja o perfil de Raquel..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "sou uma pessoa comprometida,  organizada e responsável com todas as minhas atividades.… · Experiência: Madri Aromas & Ingredientes · Formação acadêmica: UNOPAR - Universidade Norte do Paraná · Localidade: Pindamonhangaba · + de 500 conexões no LinkedIn. Veja o perfil de Raquel Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/raquel-santos-1ab227175",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T15:53:32.621314",
+    "candidate": "Sérgio Goncalves",
+    "linkedin": "https://br.linkedin.com/in/sérgio-goncalves-a314169",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Sérgio Goncalves - Sales Director at Wegmann Automotive ... WEGMANN AUTOMOTIVE BRASIL LTDA - Dun & Bradstreet WEGMANN automotive GmbH - LinkedIn Tiago Parpineli - Wegmann Automotive Brasil | LinkedIn Rodolfo Störmer - WEGMANN automotive GmbH | LinkedIn Marcos Vasconcelos - Auxiliar de estoque na ... - LinkedIn Brasil Marcos Vasconcelos - WEGMANN automotive GmbH | LinkedIn",
+            "body": "Sales Director at Wegmann Automotive · Trabalho focado em resultados, baseado em fortes conhecimentos técnico-comerciais, de processos produtivos, sistemas de qualidade, gerenciamento de... Find company research, competitor information, contact details & financial data for WEGMANN AUTOMOTIVE BRASIL LTDA of JUNDIAI, SAO PAULO. Get the latest business insights from Dun & Bradstreet. About us For more than 100 years, WEGMANN automotive has been one of the leading C parts manufacturers in the automotive industry with products all around the wheels. Experiência: Wegmann Automotive Brasil · Formação acadêmica: Universidade São Francisco · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Tiago Parpineli no... · Experiência: WEGMANN automotive GmbH · Formação acadêmica: Universidade Católica de Brasília · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Rodolfo Störmer no... Auxiliar de estoque na WEGMANN automotive · Experiência: WEGMANN automotive · Localidade: Louveira. Veja Marcos Vasconcelos o perfil no LinkedIn , uma comunidade profissional de 1 bilhão... Eletrecista na TM manutenção e instalação elétrica · Experiência: WEGMANN automotive GmbH · Localidade: Louveira · 7 conexões no LinkedIn . Veja o perfil de Marcos Vasconcelos no LinkedIn ,..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Trabalho focado em resultados, baseado em fortes conhecimentos técnico-comerciais, de… · Experiência: Wegmann Automotive · Formação acadêmica: Board Academy Br · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Sérgio Goncalves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/sérgio-goncalves-a314169",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sales Director At Wegmann Automotive ... Wegmann Automotive Brasil Ltda",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T15:54:00.778913",
+    "candidate": "Tiago Parpineli",
+    "linkedin": "https://br.linkedin.com/in/tiago-parpineli-b0807746",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tiago Parpineli - Wegmann Automotive Brasil | LinkedIn Rodolfo Störmer - WEGMANN automotive GmbH | LinkedIn Marcos Vasconcelos - Auxiliar de estoque na ... - LinkedIn Brasil Marcos Vasconcelos - WEGMANN automotive GmbH | LinkedIn",
+            "body": "Experiência: Wegmann Automotive Brasil · Formação acadêmica: Universidade São Francisco · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Tiago Parpineli no... · Experiência: WEGMANN automotive GmbH · Formação acadêmica: Universidade Católica de Brasília · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Rodolfo Störmer no... Auxiliar de estoque na WEGMANN automotive · Experiência: WEGMANN automotive · Localidade: Louveira. Veja Marcos Vasconcelos o perfil no LinkedIn , uma comunidade profissional de 1 bilhão... Eletrecista na TM manutenção e instalação elétrica · Experiência: WEGMANN automotive GmbH · Localidade: Louveira · 7 conexões no LinkedIn . Veja o perfil de Marcos Vasconcelos no LinkedIn ,..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Wegmann Automotive Brasil · Formação acadêmica: Universidade São Francisco · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Tiago Parpineli no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/tiago-parpineli-b0807746",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Wegmann Automotive Brasil",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T15:54:24.915159",
+    "candidate": "Marcos Vasconcelos",
+    "linkedin": "https://br.linkedin.com/in/marcos-vasconcelos-a25ba5252",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcos Vasconcelos - Auxiliar de estoque na ... - LinkedIn Brasil",
+            "body": "Auxiliar de estoque na WEGMANN automotive · Experiência: WEGMANN automotive · Localidade: Louveira. Veja Marcos Vasconcelos o perfil no LinkedIn , uma comunidade profissional de 1 bilhão..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: WEGMANN automotive · Localidade: Louveira. Veja o perfil de Marcos Vasconcelos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/marcos-vasconcelos-a25ba5252",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Auxiliar De Estoque Na ...",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-04-28T15:54:32.596244",
+    "candidate": "Camila da Costa",
+    "linkedin": "https://br.linkedin.com/in/camila-da-costa-360134105",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Camila da Costa - Compradora - Powermig Automação... | LinkedIn",
+            "body": "Compradora / Relações Públicas · Experiência: Powermig Automação e Soldagem · Localidade: Caxias do Sul · 401 conexões no LinkedIn . Veja o perfil de Camila da Costa no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "powermig automação e soldagem",
+            "bio": "Experiência: Powermig Automação e Soldagem · Localidade: Caxias do Sul · + de 500 conexões no LinkedIn. Veja Camila da Costa  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-04T16:24:56.974961",
+    "candidate": "Jonathan Lima",
+    "linkedin": "https://br.linkedin.com/in/jonathan-lima-479014117",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jonathan Lima - Comprador | Strategic Sourcing - LinkedIn Brasil",
+            "body": "Aquisições de matéria prima, insumos direto e indireto, cadastro de fornecedores, pedidos de compras, condições de pagamentos..."
+        },
+        "osint_metadata": {
+            "role": "tessin indústria e comércio ltda.",
+            "bio": "Experiência: Tessin Indústria e Comércio Ltda. · Formação acadêmica: Faculdades Oswaldo Cruz · Localidade: São Paulo · 283 conexões no LinkedIn. Veja o perfil de Jonathan Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/jonathan-lima-479014117",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-04T16:25:59.779199",
+    "candidate": "Bruna Santana",
+    "linkedin": "https://br.linkedin.com/in/bruna-santana-1a9a02115",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bruna Santana - Compradora | Mcore Indústria e Comércio de ... Sabrina Romagnolo de Sá - Compradora / Materiais ... - LinkedIn Michele Cândido - Compradora | Logística - LinkedIn Brasil LinkedIn Brasil: entre ou cadastre-se Meire - Compras Magma - compradora na Magma Indústria e ... Ione Pontes - LinkedIn Brasil",
+            "body": "Veja o perfil de Bruna Santana no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. View Sabrina Romagnolo de Sá’s profile on LinkedIn , a professional community of 1 billion members. Compradora | Logística | Suprimentos | Negociação e Gestão de Fornecedores. · Sou profissional da área administrativa, logística e de compras, com mais de 9 anos de experiência em empresas dos... Para quem o LinkedIn foi feito? Para qualquer pessoa buscando orientação profissional. compradora na Magma Indústria e Comercio Têxtil Ltda · Experiência: Magma Indústria e Comercio Têxtil Ltda · Formação acadêmica: COMERCIAL ALVORADA · Localidade: São Paulo · 16 conexões... Compradora com 19 anos de experiência em toda rotina de compras de materiais produtivos e improdutivos. Responsável pela gestão de importação de peças e equipamentos."
+        },
+        "osint_metadata": {
+            "role": "mcore indústria e comércio de produtos siderúrgicos ltda.",
+            "bio": "Experiência: Mcore Indústria e Comércio de Produtos Siderúrgicos Ltda. · Formação acadêmica: Faculdade de ciências Sociais Aplicadas do Sul de Minas · Localidade: Itajubá · 164 conexões no LinkedIn. Veja o perfil de Bruna Santana no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/bruna-santana-1a9a02115",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compradora",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-04T16:26:19.898616",
+    "candidate": "Michele Cândido",
+    "linkedin": "https://br.linkedin.com/in/michele-cândido-171004170",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Michele Cândido - Compradora | Logística - LinkedIn Brasil LinkedIn Brasil: entre ou cadastre-se Meire - Compras Magma - compradora na Magma Indústria e ... Ione Pontes - LinkedIn Brasil",
+            "body": "Compradora | Logística | Suprimentos | Negociação e Gestão de Fornecedores. · Sou profissional da área administrativa, logística e de compras, com mais de 9 anos de experiência em empresas dos... Para quem o LinkedIn foi feito? Para qualquer pessoa buscando orientação profissional. compradora na Magma Indústria e Comercio Têxtil Ltda · Experiência: Magma Indústria e Comercio Têxtil Ltda · Formação acadêmica: COMERCIAL ALVORADA · Localidade: São Paulo · 16 conexões... Compradora com 19 anos de experiência em toda rotina de compras de materiais produtivos e improdutivos. Responsável pela gestão de importação de peças e equipamentos."
+        },
+        "osint_metadata": {
+            "role": "metalisul industria e comercio ltda.",
+            "bio": "Sou profissional da área administrativa, logística e de compras, com mais de 9 anos de… · Experiência: Metalisul Industria e Comercio LTDA. · Formação acadêmica: UNIMAIS - Faculdade Educamais · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Michele Cândido no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/michele-cândido-171004170",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compradora",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-04T16:26:43.304616",
+    "candidate": "Meire",
+    "linkedin": "https://br.linkedin.com/in/meire-compras-magma-1672aa113",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Meire - Compras Magma - compradora na Magma Indústria e ...",
+            "body": "compradora na Magma Indústria e Comercio Têxtil Ltda · Experiência: Magma Indústria e Comercio Têxtil Ltda · Formação acadêmica: COMERCIAL ALVORADA · Localidade: São Paulo · 16 conexões..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/meire-compras-magma-1672aa113",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras Magma",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-04T16:26:47.882301",
+    "candidate": "Ione Pontes",
+    "linkedin": "https://br.linkedin.com/in/ioneleite",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ione Pontes - LinkedIn Brasil",
+            "body": "Compradora com 19 anos de experiência em toda rotina de compras de materiais produtivos e improdutivos. Responsável pela gestão de importação de peças e equipamentos."
+        },
+        "osint_metadata": {
+            "role": "apema equipamentos industriais ltda",
+            "bio": "Formada em Administração de Empresa com Ênfase em Comércio Exterior. \nCompradora com… · Experiência: Apema Equipamentos Industriais Ltda · Formação acadêmica: Anhanguera Educacional · Localidade: Santo André · + de 500 conexões no LinkedIn. Veja o perfil de Ione Pontes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-04T16:34:53.058174",
+    "candidate": "Sandro Galo",
+    "linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Sandro Galo - Cobaltech Ferramentas e Soluções de Usinagem ... Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn Cobaltech Ferramentas e Soluções de Usinagem no LinkedIn: # ... Cobaltech Ferramentas e Soluções de Usinagem posted on LinkedIn",
+            "body": "conhecimento em máquinas injetora.centro de usinagem .ferramentas em geral Retifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai ·... Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o... Desde o primeiro dia, nossa missão tem sido clara: revolucionar o setor de usinagem , trazendo soluções que impulsionam a indústria e moldam o futuro. E ao longo desses 11 anos, cada passo que... Descubra nossa variedade de produtos de usinagem ! Visite nosso site. 🔧🛠️ #Usinagem #Ferramentas # Cobaltech 174 followers"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "conhecimento em máquinas injetora.centro de usinagem.ferramentas em geral\nRetifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Sandro Galo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Cobaltech Comercio E Servicos",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-04T16:35:18.308485",
+    "candidate": "Anderson C. Rezende",
+    "linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cobaltech comercio e servicos",
+            "bio": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 346 conexões no LinkedIn. Veja o perfil de Anderson C. Rezende no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Cobaltech Comercio E Servicos",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-04T16:35:45.211098",
+    "candidate": "Anderson Rezende Marinho",
+    "linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn",
+            "body": "Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 329 conexões..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Diretor Na Cobaltech",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-05T09:10:36.798390",
+    "candidate": "Luis Fernando",
+    "linkedin": "https://br.linkedin.com/in/luis-fernando-298109387",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luis Fernando - Artemis - Soluções em Eletromotores ... | LinkedIn",
+            "body": "Experiência: Artemis - Soluções em Eletromotores e Serralheria Industrial · Localidade: 25065-004. Veja o perfil de Luis Fernando no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "artemis",
+            "bio": "Experiência: Artemis -Soluções em Eletromotores e Serralheria Industrial · Localidade: 25065-004. Veja o perfil de Luis Fernando no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/luis-fernando-298109387",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-05T09:13:12.690909",
+    "candidate": "Lucas Ribeiro Barbosa",
+    "linkedin": "https://br.linkedin.com/in/lucas-ribeiro-barbosa-1b7b3237b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Lucas Ribeiro Barbosa - Artemis - Soluções em ... | LinkedIn",
+            "body": "Experiência: Artemis - Soluções em Eletromotores e Serralheria Industrial · Localidade: 74003-010. Veja o perfil de Lucas Ribeiro Barbosa no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "artemis",
+            "bio": "Experiência: Artemis -Soluções em Eletromotores e Serralheria Industrial · Localidade: 74003-010. Veja o perfil de Lucas Ribeiro Barbosa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/lucas-ribeiro-barbosa-1b7b3237b",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-05T09:59:55.010234",
+    "candidate": "Rodrigo rocha",
+    "linkedin": "https://br.linkedin.com/in/rodrigo-rocha-1b5727223",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo rocha - -- | LinkedIn",
+            "body": "-- · Experiência: Grupo Repremium - Autorizado : Perkins |Yanmar |MWM |FPT |Mercury |Agrale |Lintec |Bosch |ZF |Garrett · Localidade: 50010-000. Veja Rodrigo rocha o perfil no LinkedIn , uma..."
+        },
+        "osint_metadata": {
+            "role": "grupo repremium",
+            "bio": "Experiência: Grupo Repremium-Autorizado: Perkins |Yanmar |MWM |FPT |Mercury |Agrale |Lintec |Bosch |ZF |Garrett · Localidade: 50010-000. Veja o perfil de Rodrigo rocha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/rodrigo-rocha-1b5727223",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-05T10:07:34.959727",
+    "candidate": "Lucas Ribeiro Barbosa",
+    "linkedin": "https://br.linkedin.com/in/lucas-ribeiro-barbosa-1b7b3237b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Lucas Ribeiro Barbosa - Artemis - Soluções em ... | LinkedIn",
+            "body": "Experiência: Artemis - Soluções em Eletromotores e Serralheria Industrial · Localidade: 74003-010. Veja o perfil de Lucas Ribeiro Barbosa no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "artemis",
+            "bio": "Experiência: Artemis -Soluções em Eletromotores e Serralheria Industrial · Localidade: 74003-010. Veja o perfil de Lucas Ribeiro Barbosa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/lucas-ribeiro-barbosa-1b7b3237b",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-05T10:08:04.325910",
+    "candidate": "Luis Fernando",
+    "linkedin": "https://br.linkedin.com/in/luis-fernando-298109387",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luis Fernando - Artemis - Soluções em Eletromotores ... | LinkedIn",
+            "body": "Experiência: Artemis - Soluções em Eletromotores e Serralheria Industrial · Localidade: 25065-004. Veja o perfil de Luis Fernando no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "artemis",
+            "bio": "Experiência: Artemis -Soluções em Eletromotores e Serralheria Industrial · Localidade: 25065-004. Veja o perfil de Luis Fernando no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Professional",
+        "matching_score": 50,
+        "department": "COMPRAS",
+        "verified_linkedin": "https://br.linkedin.com/in/luis-fernando-298109387",
+        "evidence": "APROVADO VIA REPESCAGEM: None"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Colaborador",
+        "department": "COMPRAS",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-05T11:39:28.163378",
+    "candidate": "JOÃO BATISTA PIZZOLATTO",
+    "linkedin": "https://br.linkedin.com/in/joão-batista-pizzolatto-aba290187",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "JOÃO BATISTA PIZZOLATTO - Diretor de operações na Ápice Sistemas ...",
+            "body": "Diretor de operações na Ápice Sistemas de Energia · Experiência: Ápice Sistemas de Energia · Formação acadêmica: USF/PUCC · Localidade: Campinas · 14 ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Ápice Sistemas de Energia · Formação acadêmica: USF/PUCC · Localidade: Campinas · 14 conexões no LinkedIn. Veja o perfil de JOÃO BATISTA PIZZOLATTO no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/joão-batista-pizzolatto-aba290187",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Diretor De Operações Na Ápice Sistemas ...",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-06T11:03:34.382668",
+    "candidate": "Marcio Costa",
+    "linkedin": "https://br.linkedin.com/in/marcio-costa-b0996729",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcio Costa - Ápice Sistemas de Energia | LinkedIn",
+            "body": "Marcio pode apresentar você a mais de 10 pessoas na empresa Ápice Sistemas de Energia"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Mais de 25 anos de Experiência em Gestão Comercial e Vendas\n\nCom mais de 25 anos de… · Experiência: Ápice Sistemas de Energia · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Marcio Costa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/marcio-costa-b0996729",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Professional",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-06T11:03:45.524707",
+    "candidate": "Lucas Barbosa",
+    "linkedin": "https://br.linkedin.com/in/lucas-barbosa-6877a0254",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Lucas Barbosa - Ápice Sistemas de Energia | LinkedIn",
+            "body": "Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies do LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Olá, me chamo Lucas e sou um profissional da área de manutenção elétrica e eletrônica… · Experiência: Ápice Sistemas de Energia · Formação acadêmica: Faculdade de Tecnologia de São Paulo - FATEC-SP · Localidade: São Paulo · 91 conexões no LinkedIn. Veja o perfil de Lucas Barbosa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/lucas-barbosa-6877a0254",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Professional",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------

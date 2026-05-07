@@ -18,7 +18,7 @@ export type AvatarSize = number | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 export interface AvatarProps {
   /** Dados do funcionário/empresa para derivar URL automaticamente */
-  data?: Record<string, unknown> | null;
+  data?: any;
   /** Forçar URL específica (tem prioridade sobre `data`) */
   src?: string | null;
   /** Nome para derivar iniciais no fallback ui-avatars */
@@ -89,10 +89,12 @@ function AvatarBase({
     (kind === 'company' ? 'C' : 'P');
 
   const [imgError, setImgError] = useState(false);
+  const [retryUrl, setRetryUrl] = useState<string | null>(null);
 
   // Reset error state when URL changes
   React.useEffect(() => {
     setImgError(false);
+    setRetryUrl(null);
   }, [proxiedUrl]);
 
   const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -108,12 +110,12 @@ function AvatarBase({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    backgroundColor: (kind === 'company' && !noInitialFallback) ? '#fff' : 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: kind === 'company' ? 'transparent' : 'rgba(255, 255, 255, 0.05)',
     position: 'relative',
     ...style,
   };
 
-  const showPlaceholder = !proxiedUrl || imgError;
+  const showPlaceholder = (!proxiedUrl && !retryUrl) || imgError;
 
   return (
     <span className={className} style={baseStyle} aria-label={alt || resolvedName}>
@@ -156,7 +158,7 @@ function AvatarBase({
         />
       ) : !showPlaceholder ? (
         <img
-          src={proxiedUrl}
+          src={retryUrl || proxiedUrl}
           alt={alt || resolvedName}
           width={pxSize}
           height={pxSize}
@@ -164,13 +166,21 @@ function AvatarBase({
             width: '100%',
             height: '100%',
             objectFit: defaultFit,
-            background: kind === 'company' ? '#fff' : undefined,
+            background: 'transparent',
             position: 'relative',
             zIndex: 1
           }}
           loading="lazy"
           decoding="async"
-          onError={() => setImgError(true)}
+          onError={() => {
+            // Se falhou a principal e temos um domínio, tenta unavatar.io como retry
+            const domain = data?.domain || data?.company_domain;
+            if (!retryUrl && kind === 'company' && domain) {
+               setRetryUrl(`https://unavatar.io/${domain}`);
+            } else {
+               setImgError(true);
+            }
+          }}
         />
       ) : null}
     </span>

@@ -41,25 +41,45 @@ def clean_brand_name(raw_name: str) -> str:
 def fetch_linkedin_logo(url: str) -> Optional[str]:
     """
     Tenta extrair o logo real do LinkedIn fingindo ser um bot de 
-    redes sociais (geralmente permitido por eles para previews).
+    redes sociais ou um navegador real em cascata.
     """
     if "/company/" not in url: return None
     
-    # User-Agent que o LinkedIn costuma deixar passar para ler meta-tags (Social Crawlers)
+    # 1. Tenta primeiro como Social Crawler (Mais chance de ler meta-tags sem login)
     social_headers = {
         "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
     
+    # 2. User-Agent de Navegador Real como Fallback
+    browser_headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+
+    def extract_from_html(html_text: str) -> Optional[str]:
+        # og:image
+        match = re.search(r'<meta property="og:image" content="([^"]+)"', html_text)
+        if match: return html.unescape(match.group(1))
+        # twitter:image
+        tw_match = re.search(r'<meta name="twitter:image" content="([^"]+)"', html_text)
+        if tw_match: return html.unescape(tw_match.group(1))
+        return None
+
     try:
-        with httpx.Client(timeout=10.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=8.0, follow_redirects=True) as client:
+            # Tentativa 1
             resp = client.get(url, headers=social_headers)
             if resp.status_code == 200:
-                # Procura a tag <meta property="og:image" content="...">
-                match = re.search(r'<meta property="og:image" content="(https://media\.licdn\.com/dms/image/[^"]+)"', resp.text)
-                if match:
-                    # Limpa a URL de entidades HTML (ex: &amp; -> &)
-                    return html.unescape(match.group(1))
+                logo = extract_from_html(resp.text)
+                if logo: return logo
+            
+            # Tentativa 2: Se deu erro (404/403) ou não achou a tag, tenta como Browser
+            if resp.status_code != 200 or not extract_from_html(resp.text):
+                resp = client.get(url, headers=browser_headers)
+                if resp.status_code == 200:
+                    return extract_from_html(resp.text)
     except:
         pass
     return None

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.v1.endpoints import proxy, hierarchy, brand, pipedrive, intelligence, jobs, ai, organizations, search, conversations, triggers
+from api.v1.endpoints import proxy, hierarchy, brand, pipedrive, intelligence, jobs, ai, organizations, search, conversations, triggers, agent_v2, prospecting
 
 api_router = APIRouter()
 
@@ -41,3 +41,9 @@ api_router.include_router(conversations.router, prefix="/conversations", tags=["
 
 # Triggers endpoints: /api/v1/triggers/*
 api_router.include_router(triggers.router, prefix="/triggers", tags=["triggers"])
+
+# Agent V2 endpoints: /api/v1/ai/v2/*
+api_router.include_router(agent_v2.router, prefix="/ai", tags=["agent-v2"])
+
+# Prospecting endpoints: /api/v1/prospecting/*
+api_router.include_router(prospecting.router, prefix="/prospecting", tags=["prospecting"])
