@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Loader2, ChevronRight, Sparkles, ArrowLeft, PanelRightOpen, PanelRightClose, Clock, Trash2 } from 'lucide-react';
+import { Loader2, ChevronRight, Sparkles, ArrowLeft, PanelRightOpen, PanelRightClose, Clock, Trash2, Plus } from 'lucide-react';
 import styles from './ChatPanel.module.css';
 
 import { Message, CompanyResult } from './chat/ChatInterfaces';
@@ -45,7 +45,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const { isListening, isTranscribing, transcript, finalTranscript, error: voiceError, startListening, stopListening, clearTranscript, isSupported: voiceSupported, analyserNode } = useSpeechToText();
 
     // ─── View state ──────────────────────────────────────────
-    const [view, setView] = useState<PanelView>('list');
+    const [view, setView] = useState<PanelView>('chat');
     const [activeThread, setActiveThread] = useState<ThreadOut | null>(null);
 
     // ─── Thread list state ───────────────────────────────────
@@ -110,6 +110,49 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [threadToDelete, setThreadToDelete] = useState<ThreadOut | null>(null);
+
+    const renderChatInput = () => (
+        <ChatInput
+            inputValue={inputValue}
+            setInputValue={handleInputChange}
+            isLoading={isLoading}
+            onSend={handleSendMessage}
+            selectedCompanies={selectedCompanies}
+            setSelectedCompanies={setSelectedCompanies}
+            model={model}
+            setModel={setModel}
+            strictMode={strictMode}
+            setStrictMode={setStrictMode}
+            liveModel={liveModel}
+            modelActivity={modelActivity}
+            isStreamingActivity={isLoading}
+            showAutocomplete={showAutocomplete}
+            isSearching={isSearching}
+            searchingCategory={searchingCategory}
+            searchTerm={searchTerm}
+            companies={companies}
+            selectSearchResult={item => {
+                if (!selectedCompanies.find(c => c.id === item.id)) {
+                    setSelectedCompanies([...selectedCompanies, item]);
+                }
+                const lastAt = inputValue.lastIndexOf('@');
+                if (lastAt !== -1) setInputValue(inputValue.substring(0, lastAt) + '@' + item.name + ' ');
+                setShowAutocomplete(false);
+            }}
+            isListening={isListening}
+            isTranscribing={isTranscribing}
+            startListening={startListening}
+            stopListening={stopListening}
+            voiceError={voiceError}
+            voiceSupported={voiceSupported}
+            analyserNode={analyserNode}
+            theme={theme}
+            pipedriveCooldown={pipedriveCooldown}
+            agentMode={agentMode}
+            setAgentMode={setAgentMode}
+            onStop={handleStopStreaming}
+        />
+    );
 
     // ─── Scroll ──────────────────────────────────────────────
     const handleScroll = useCallback(() => {
@@ -184,7 +227,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     // ─── Load threads when org changes ──────────────────────
     useEffect(() => {
-        setView('list');
+        setView('chat');
         setActiveThread(null);
         setMessages([]);
         // Sempre carrega threads, mesmo que orgId seja nulo (orgId=0 no backend pega tudo)
@@ -233,19 +276,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
     };
 
-    // ─── Create new thread ───────────────────────────────────
-    const handleNewThread = async () => {
-        setIsCreatingThread(true);
-        try {
-            const targetOrgId = selectedOrgId || 0;
-            const newThread = await conversations.createThread(targetOrgId);
-            setThreads(prev => [newThread, ...prev]);
-            await openThread(newThread);
-        } catch (err) {
-            console.error('[ChatPanel] Erro ao criar thread:', err);
-        } finally {
-            setIsCreatingThread(false);
-        }
+    const handleNewThread = () => {
+        setActiveThread(null);
+        setMessages([]);
+        setView('chat');
     };
 
     // ─── Back to list ────────────────────────────────────────
@@ -842,6 +876,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     selectedOrgLogo={selectedOrgLogo}
                     onDeleteThread={setThreadToDelete}
                     onCloseChat={() => setShowChat(false)}
+                    onBackToChat={() => setView('chat')}
                 />
 
                 <Modal
@@ -875,135 +910,129 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         <div className={`${styles.chatPanel} ${styles[theme]}`} data-theme={theme}>
 
             {/* Chat sub-header: back + thread title + activities toggle */}
-            <div className={styles.chatSubHeader}>
-                <button className={styles.chatBackBtn} onClick={handleBackToList} title="Voltar">
-                    <ArrowLeft size={15} />
-                </button>
-                <div className={styles.chatSubHeaderAvatar}>
-                    <Avatar 
-                        kind="company"
-                        src={selectedOrgLogo}
-                        name={selectedOrgName}
-                        size={32}
-                        noInitialFallback={true}
-                        style={{ border: selectedOrgLogo ? '3px solid #272727ff' : 'none' }}
-                    />
-                </div>
-                <div className={styles.chatSubHeaderInfo}>
-                    <span className={styles.chatSubHeaderTitle}>
-                        {activeThread?.title || 'Conversa'}
+            <div className={styles.chatSubHeader} style={{ paddingLeft: '16px', gap: '12px' }}>
+                <Avatar 
+                    kind="company"
+                    src={selectedOrgLogo}
+                    name={selectedOrgName}
+                    size={32}
+                    noInitialFallback={true}
+                    style={{ border: selectedOrgLogo ? '3px solid #272727ff' : 'none' }}
+                />
+                <div className={styles.chatSubHeaderInfo} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
+                    <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
+                        {activeThread?.title || 'Nova conversa'}
                     </span>
-                    <span className={styles.chatSubHeaderOrg}>{selectedOrgName || 'Geral'}</span>
+                    <span style={{ color: 'rgba(255, 255, 255, 0.15)', fontWeight: 300, fontSize: '0.88rem', flexShrink: 0 }}>/</span>
+                    <span style={{ color: '#ffffff', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
+                        {selectedOrgName || 'Geral'}
+                    </span>
                 </div>
                 <div style={{ flex: 1 }} />
-                <button 
-                    className={styles.chatHeaderDeleteBtn}
-                    onClick={() => setThreadToDelete(activeThread)}
-                    title="Excluir esta conversa"
-                >
-                    <Trash2 size={16} />
-                </button>
-
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '12px' }}>
+                    <button
+                        className={styles.tlNewBtn}
+                        onClick={handleNewThread}
+                        title="Nova conversa"
+                        style={{ height: '32px', padding: '0 12px', fontSize: '12px' }}
+                    >
+                        <Plus size={13} />
+                        <span>Nova</span>
+                    </button>
+                    <button
+                        className={styles.chatHeaderIconBtn}
+                        onClick={handleBackToList}
+                        title="Histórico de conversas"
+                    >
+                        <Clock size={20} />
+                    </button>
+                </div>
             </div>
 
             {/* Body: messages + optional sidebar */}
-            <div className={styles.chatBody}>
-                <div className={styles.messagesContainer} ref={scrollContainerRef} onScroll={handleScroll}>
-                    {messages.map(message => {
-                        if (message.isV2 && message.role === 'assistant') {
-                            return (
-                                <AgentV2Message
-                                    key={message.id}
-                                    events={message.v2Events || []}
-                                    isStreaming={message.v2Streaming !== false && v2Streaming}
-                                    onConfirm={handleV2Confirm}
-                                    confirmedActions={message.v2ConfirmedActions || {}}
-                                    onRegenerate={() => handleRegenerate(message.id)}
-                                    onAction={(prompt: string) => handleSendMessage(prompt, [], true)}
-                                    streamV2Url={V2_STREAM_URL}
-                                    confirmV2Url={V2_CONFIRM_URL}
-                                    orgId={selectedOrgId}
-                                    threadId={activeThread?.id}
-                                />
-                            );
-                        }
-                        return (
-                            <ChatMessage
-                                key={message.id}
-                                message={message}
-                                onApprove={handleApproveAction}
-                                onReject={handleRejectAction}
-                                onOpenWhatsApp={onOpenWhatsApp}
-                                approvalStatuses={approvalStatuses}
-                                onRegenerate={handleRegenerate}
-                                onSuggestedAction={(prompt) => handleSendMessage(prompt, [], true)}
-                                model={model}
-                            />
-                        );
-                    })}
-
-                    {/* Thinking panel */}
-                    {isLoading && agentMode === 'v1' && (
-                        <div className={styles.debugPanel}>
-                            <details className={styles.debugSection} style={{ border: 'none', background: 'transparent' }} open>
-                                <summary className={styles.debugSummary}>
-                                    <span>Agente está pensando...</span>
-                                    <ChevronRight size={12} className={styles.chevron} />
-                                </summary>
-                                <div className={styles.streamingLogs}>
-                                    {currentLogs.length === 0
-                                        ? <div className={styles.logLine}><Loader2 size={12} className={styles.spinner} /> <span>Iniciando pipeline...</span></div>
-                                        : currentLogs.map((log, i) => <RichLogRenderer key={i} log={log} onOpenWhatsApp={onOpenWhatsApp} />)
-                                    }
-                                </div>
-                            </details>
+            <div className={`${styles.chatBody} ${messages.length === 0 ? styles.emptyChatBody : ''}`}>
+                {messages.length === 0 ? (
+                    <div className={styles.emptyWelcomeContainer}>
+                        <h2 className={styles.emptyWelcomeText}>
+                            Olá! Como posso ajudar com a{' '}
+                            <span style={{
+                                backgroundColor: '#1e2145',
+                                color: '#7a8bff',
+                                padding: '2px 10px',
+                                borderRadius: '6px',
+                                border: '1px solid rgba(122, 139, 255, 0.15)',
+                                fontWeight: 500,
+                                display: 'inline-block',
+                                lineHeight: '1.3',
+                                verticalAlign: 'middle',
+                                transform: 'translateY(-1px)'
+                            }}>
+                                @{selectedOrgName || 'empresa'}
+                            </span>?
+                        </h2>
+                        <div className={styles.emptyInputWrapper}>
+                            {renderChatInput()}
                         </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                </div>
+                    </div>
+                ) : (
+                    <>
+                        <div className={styles.messagesContainer} ref={scrollContainerRef} onScroll={handleScroll}>
+                            {messages.map(message => {
+                                if (message.isV2 && message.role === 'assistant') {
+                                    return (
+                                        <AgentV2Message
+                                            key={message.id}
+                                            events={message.v2Events || []}
+                                            isStreaming={message.v2Streaming !== false && v2Streaming}
+                                            onConfirm={handleV2Confirm}
+                                            confirmedActions={message.v2ConfirmedActions || {}}
+                                            onRegenerate={() => handleRegenerate(message.id)}
+                                            onAction={(prompt: string) => handleSendMessage(prompt, [], true)}
+                                            streamV2Url={V2_STREAM_URL}
+                                            confirmV2Url={V2_CONFIRM_URL}
+                                            orgId={selectedOrgId}
+                                            threadId={activeThread?.id}
+                                        />
+                                    );
+                                }
+                                return (
+                                    <ChatMessage
+                                        key={message.id}
+                                        message={message}
+                                        onApprove={handleApproveAction}
+                                        onReject={handleRejectAction}
+                                        onOpenWhatsApp={onOpenWhatsApp}
+                                        approvalStatuses={approvalStatuses}
+                                        onRegenerate={handleRegenerate}
+                                        onSuggestedAction={(prompt) => handleSendMessage(prompt, [], true)}
+                                        model={model}
+                                    />
+                                );
+                            })}
 
+                            {/* Thinking panel */}
+                            {isLoading && agentMode === 'v1' && (
+                                <div className={styles.debugPanel}>
+                                    <details className={styles.debugSection} style={{ border: 'none', background: 'transparent' }} open>
+                                        <summary className={styles.debugSummary}>
+                                            <span>Agente está pensando...</span>
+                                            <ChevronRight size={12} className={styles.chevron} />
+                                        </summary>
+                                        <div className={styles.streamingLogs}>
+                                            {currentLogs.length === 0
+                                                ? <div className={styles.logLine}><Loader2 size={12} className={styles.spinner} /> <span>Iniciando pipeline...</span></div>
+                                                : currentLogs.map((log, i) => <RichLogRenderer key={i} log={log} onOpenWhatsApp={onOpenWhatsApp} />)
+                                            }
+                                        </div>
+                                    </details>
+                                </div>
+                            )}
+                            <div ref={messagesEndRef} />
+                        </div>
+                        {renderChatInput()}
+                    </>
+                )}
             </div>
-
-            <ChatInput
-                    inputValue={inputValue}
-                    setInputValue={handleInputChange}
-                    isLoading={isLoading}
-                    onSend={handleSendMessage}
-                    selectedCompanies={selectedCompanies}
-                    setSelectedCompanies={setSelectedCompanies}
-                    model={model}
-                    setModel={setModel}
-                    strictMode={strictMode}
-                    setStrictMode={setStrictMode}
-                    liveModel={liveModel}
-                    modelActivity={modelActivity}
-                    isStreamingActivity={isLoading}
-                    showAutocomplete={showAutocomplete}
-                    isSearching={isSearching}
-                    searchingCategory={searchingCategory}
-                    searchTerm={searchTerm}
-                    companies={companies}
-                    selectSearchResult={item => {
-                        if (!selectedCompanies.find(c => c.id === item.id)) {
-                            setSelectedCompanies([...selectedCompanies, item]);
-                        }
-                        const lastAt = inputValue.lastIndexOf('@');
-                        if (lastAt !== -1) setInputValue(inputValue.substring(0, lastAt) + '@' + item.name + ' ');
-                        setShowAutocomplete(false);
-                    }}
-                    isListening={isListening}
-                    isTranscribing={isTranscribing}
-                    startListening={startListening}
-                    stopListening={stopListening}
-                    voiceError={voiceError}
-                    voiceSupported={voiceSupported}
-                    analyserNode={analyserNode}
-                    theme={theme}
-                    pipedriveCooldown={pipedriveCooldown}
-                    agentMode={agentMode}
-                    setAgentMode={setAgentMode}
-                    onStop={handleStopStreaming}
-                />
         </div>
     );
 };

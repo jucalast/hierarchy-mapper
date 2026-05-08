@@ -427,37 +427,115 @@ class PipedriveService:
     # Listing / Sync
     # ---------------------------------------------------------------------
 
+    async def sync_all_parallel(self) -> Dict[str, Any]:
+        """
+        Sincronização massiva de organizações do Pipedrive para o banco local.
+        Paginado e resiliente.
+        """
+        from core.database import async_session
+        from models import Organization
+        from sqlalchemy import select, func
+        
+        log.info("pipedrive.sync_all.start")
+        start_time = time.time()
+        
+        try:
+            total_synced = 0
+            start = 0
+            limit = 100
+            has_more = True
+            
+            while has_more:
+                resp = await self._request(
+                    "GET",
+                    "organizations",
+                    params={"user_id": self.user_id, "start": start, "limit": limit, "sort": "id DESC"},
+                )
+                
+                if resp is None or resp.status_code != 200:
+                    log.error("pipedrive.sync_all.failed_page", start=start)
+                    break
+                    
+                data = resp.json()
+                if not data.get("success"):
+                    break
+                    
+                all_orgs = data.get("data") or []
+                if not all_orgs:
+                    break
+                
+                async with async_session() as session:
+                    for org in all_orgs:
+                        pid = org.get("id")
+                        name = (org.get("name") or "").strip()
+                        if not name or not pid: continue
+
+                        # Busca por Pipedrive ID
+                        stmt = select(Organization).where(Organization.pipedrive_id == pid)
+                        res = await session.execute(stmt)
+                        db_org = res.scalars().first()
+
+                        if db_org and db_org.is_excluded == 1:
+                            continue
+
+                        if not db_org:
+                            # Tenta por nome para evitar duplicatas manuais
+                            stmt_name = select(Organization).where(func.lower(Organization.name) == name.lower())
+                            res_name = await session.execute(stmt_name)
+                            db_org = res_name.scalars().first()
+                            
+                            if not db_org:
+                                db_org = Organization(pipedrive_id=pid, name=name)
+                                session.add(db_org)
+                                total_synced += 1
+                            else:
+                                db_org.pipedrive_id = pid
+                        
+                        # Atualiza campos se estiverem vazios
+                        if not db_org.domain:
+                            p_domain = org.get("website")
+                            if p_domain and len(str(p_domain)) > 3:
+                                db_org.domain = p_domain
+
+                        if not db_org.address:
+                            p_address = org.get("address")
+                            if p_address:
+                                if isinstance(p_address, dict):
+                                    db_org.address = p_address.get("label") or p_address.get("formatted_address")
+                                elif len(str(p_address)) > 3:
+                                    db_org.address = str(p_address)
+                    
+                    await session.commit()
+                
+                # Controle de paginação
+                pagination = data.get("additional_data", {}).get("pagination", {})
+                has_more = pagination.get("more_items_in_collection", False)
+                if has_more:
+                    start = pagination.get("next_start")
+                
+                # Stop gap para não entrar em loop infinito
+                if start > 5000: break 
+
+            duration = time.time() - start_time
+            log.info("pipedrive.sync_all.done", total=total_synced, duration_sec=round(duration, 2))
+            return {"status": "success", "synced": total_synced}
+            
+        except Exception as e:
+            log.error("pipedrive.sync_all.error", error=str(e))
+            return {"status": "error", "message": str(e)}
+
     async def list_organizations(self) -> List[dict]:
-        """Lista empresas priorizando o banco local; sincroniza com Pipedrive se vazio."""
+        """Lista empresas do banco local com estatísticas otimizadas."""
         from core.database import async_session
         from models import Employee, Organization
-        from sqlalchemy import func, select
+        from sqlalchemy import func, select, and_, or_
 
-        async with async_session() as session:
-            from sqlalchemy import and_, or_
-            stmt = (
-                select(Organization)
-                .where(
-                    and_(
-                        Organization.is_excluded != 1,
-                        or_(
-                            Organization.source != "prospecting",
-                            Organization.pipedrive_id.is_not(None)
-                        )
-                    )
-                )
-                .order_by(Organization.last_enrichment.desc())
-            )
-            res = await session.execute(stmt)
-            local_orgs = res.scalars().all()
-
-        # Sincronização proativa: se houver poucas orgs ou se quisermos garantir dados frescos
-        # Vamos buscar as últimas 100 orgs do Pipedrive para garantir que endereços e domínios estejam ok
+        # 1. Pequena sincronização proativa das últimas 50 para manter o topo atualizado
         try:
             resp = await self._request(
                 "GET",
                 "organizations",
-                params={"user_id": self.user_id, "start": 0, "limit": 100, "sort": "id DESC"},
+                params={"user_id": self.user_id, "start": 0, "limit": 50, "sort": "id DESC"},
             )
             if resp is not None and resp.status_code == 200:
                 data = resp.json()
@@ -473,41 +551,29 @@ class PipedriveService:
                             res = await session.execute(stmt)
                             db_org = res.scalars().first()
 
-                            if db_org and db_org.is_excluded == 1:
-                                continue
+                            if db_org and db_org.is_excluded == 1: continue
 
                             if not db_org:
-                                # Tenta buscar por nome se não achou por ID (evitar duplicatas)
                                 stmt_name = select(Organization).where(func.lower(Organization.name) == name.lower())
                                 res_name = await session.execute(stmt_name)
                                 db_org = res_name.scalars().first()
-                                
                                 if not db_org:
                                     db_org = Organization(pipedrive_id=pid, name=name)
                                     session.add(db_org)
                                 else:
                                     db_org.pipedrive_id = pid
                             
-                            # Atualiza campos se estiverem vazios
-                            if not db_org.domain:
-                                p_domain = org.get("website")
-                                if p_domain and len(str(p_domain)) > 3:
-                                    db_org.domain = p_domain
-
-                            if not db_org.address:
-                                p_address = org.get("address")
-                                if p_address:
-                                    if isinstance(p_address, dict):
-                                        db_org.address = p_address.get("label") or p_address.get("formatted_address")
-                                    elif len(str(p_address)) > 3:
-                                        db_org.address = str(p_address)
-                        
+                            # Atualiza campos básicos
+                            if not db_org.domain and org.get("website"): db_org.domain = org.get("website")
+                            if not db_org.address and org.get("address"):
+                                addr = org.get("address")
+                                db_org.address = addr.get("label") if isinstance(addr, dict) else str(addr)
                         await session.commit()
         except Exception as e:
-            log.warning("pipedrive.list_sync_failed", error=str(e))
+            log.warning("pipedrive.list_quick_sync_failed", error=str(e))
 
+        # 2. Busca TODAS as organizações locais ativas
         async with async_session() as session:
-            from sqlalchemy import and_, or_
             stmt = (
                 select(Organization)
                 .where(
@@ -524,50 +590,67 @@ class PipedriveService:
             res = await session.execute(stmt)
             local_orgs = res.scalars().all()
 
-        result: List[dict] = []
-        async with async_session() as session:
-            for o in local_orgs:
-                count_stmt = select(func.count(Employee.id)).where(
-                    (Employee.company_id == o.id)
-                    & (Employee.department != "Quadro Societário")
-                )
-                count_res = await session.execute(count_stmt)
-                emp_count = count_res.scalar() or 0
+            if not local_orgs:
+                return []
 
-                pics_stmt = (
-                    select(Employee.profile_pic)
-                    .where(
-                        (Employee.company_id == o.id)
-                        & (Employee.department != "Quadro Societário")
-                        & (Employee.profile_pic.is_not(None))
-                        & (Employee.profile_pic != "")
+            # 3. OTIMIZAÇÃO: Busca contagens de funcionários em lote (Group By)
+            org_ids = [o.id for o in local_orgs]
+            count_stmt = (
+                select(Employee.company_id, func.count(Employee.id))
+                .where(
+                    and_(
+                        Employee.company_id.in_(org_ids),
+                        Employee.department != "Quadro Societário"
                     )
-                    .limit(3)
                 )
-                pics_res = await session.execute(pics_stmt)
-                pics = [p for p in pics_res.scalars().all()]
+                .group_by(Employee.company_id)
+            )
+            count_res = await session.execute(count_stmt)
+            counts_map = {row[0]: row[1] for row in count_res.all()}
 
-                result.append(
-                    {
-                        "id": o.pipedrive_id or o.id,
-                        "name": o.name,
-                        "domain": o.domain,
-                        "cnpj": o.cnpj,
-                        "address": o.address,
-                        "local_id": o.id,
-                        "logo": o.logo_url,
-                        "linkedin": o.linkedin_url,
-                        "category": o.category,
-                        "product_focus": o.product_focus,
-                        "employee_count": emp_count,
-                        "employee_pics": pics,
-                        "source": o.source,
-                        "icp_score": o.icp_score,
-                        "icp_tier": o.icp_tier,
-                    }
+            # 4. OTIMIZAÇÃO: Busca fotos de funcionários em lote (Heurística: pega alguns de cada)
+            # Para manter performance, fazemos uma query que pega fotos de funcionários das orgs listadas
+            pics_stmt = (
+                select(Employee.company_id, Employee.profile_pic)
+                .where(
+                    and_(
+                        Employee.company_id.in_(org_ids),
+                        Employee.profile_pic.is_not(None),
+                        Employee.profile_pic != ""
+                    )
                 )
+            )
+            pics_res = await session.execute(pics_stmt)
+            pics_raw = pics_res.all()
+            
+            pics_map = defaultdict(list)
+            for cid, pic in pics_raw:
+                if len(pics_map[cid]) < 3:
+                    pics_map[cid].append(pic)
 
-        return result
+            # 5. Monta o resultado final
+            result = []
+            for o in local_orgs:
+                result.append({
+                    "id": o.pipedrive_id or o.id,
+                    "name": o.name,
+                    "domain": o.domain,
+                    "cnpj": o.cnpj,
+                    "address": o.address,
+                    "local_id": o.id,
+                    "logo": o.logo_url,
+                    "linkedin": o.linkedin_url,
+                    "category": o.category,
+                    "product_focus": o.product_focus,
+                    "employee_count": counts_map.get(o.id, 0),
+                    "employee_pics": pics_map.get(o.id, []),
+                    "source": o.source,
+                    "icp_score": o.icp_score,
+                    "icp_tier": o.icp_tier,
+                })
+
+            return result
+
 
     # ---------------------------------------------------------------------
     # Activities
@@ -947,7 +1030,56 @@ class PipedriveService:
             "activities": merged_activities,
         }
 
-        # Deep discovery de contatos
+        # --- Persistência de Pessoas no Banco Local (Hierarquia) ---
+        try:
+            from core.database import async_session
+            from models import Employee, Organization
+            from sqlalchemy import select
+
+            async with async_session() as session:
+                # 1. Resolve o ID local da organização
+                stmt_org = select(Organization).where(Organization.pipedrive_id == org_id)
+                res_org = await session.execute(stmt_org)
+                local_org = res_org.scalars().first()
+
+                if local_org:
+                    for p in results["persons"]:
+                        pid = str(p.get("id"))
+                        name = p.get("name")
+                        if not pid or not name: continue
+
+                        # 2. Busca/Cria funcionário
+                        stmt_emp = select(Employee).where(Employee.pipedrive_id == pid)
+                        res_emp = await session.execute(stmt_emp)
+                        db_emp = res_emp.scalars().first()
+
+                        if not db_emp:
+                            db_emp = Employee(
+                                pipedrive_id=pid,
+                                company_id=local_org.id,
+                                name=name,
+                                source="pipedrive",
+                                is_discovery=1
+                            )
+                            session.add(db_emp)
+                        
+                        # 3. Atualiza campos se vazios
+                        if not db_emp.email and p.get("email"):
+                            emails = p.get("email")
+                            if isinstance(emails, list) and emails:
+                                db_emp.email = emails[0].get("value")
+                        
+                        if not db_emp.phone and p.get("phone"):
+                            phones = p.get("phone")
+                            if isinstance(phones, list) and phones:
+                                db_emp.phone = phones[0].get("value")
+                    
+                    await session.commit()
+                    log.info("pipedrive.persons.synced", org_id=org_id, count=len(results["persons"]))
+        except Exception as e:
+            log.warning("pipedrive.persons.sync_failed", error=str(e))
+
+        # Deep discovery de contatos (se necessário)
         found_person_ids: set = set()
 
         def extract_pid(val):

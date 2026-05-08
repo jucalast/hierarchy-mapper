@@ -265,9 +265,10 @@ def _sanitize_email(data: dict) -> str:
 
     contact_name = data.get("contact", "")
     
-    # Tenta sempre usar extração narrativa avançada
     try:
         narrative = extract_thread_summary(emails, contact_name)
+        header = f"📧 E-mails com {contact_name or 'o contato'} ({len(emails)} e-mails):\n"
+        narrative = header + narrative
         entry_ids = [e.get("entryId", "") for e in emails[:5] if e.get("entryId")]
         if entry_ids:
             narrative += f"\n[EntryIDs para email_reply: {', '.join(entry_ids[:3])}]"
@@ -410,7 +411,7 @@ def _sanitize_whatsapp(data: dict) -> str:
     contact = data.get('contact', 'o contato')
     if not msgs: return f"💬 WhatsApp: Nenhuma mensagem com {contact}."
 
-    lines = [f"💬 WHATSAPP ({contact}):"]
+    lines = [f"💬 WHATSAPP ({contact}) - {len(msgs)} mensagens:"]
 
     # Últimas mensagens (mais recentes primeiro)
     recent_msgs = msgs[-12:]
@@ -2241,6 +2242,15 @@ def _build_phase_status(messages: list) -> str:
                     for p in persons_list:
                         if isinstance(p, dict) and p.get("name"):
                             name = p["name"].strip()
+                            name_lower = name.lower()
+                            is_company = any(suffix in name_lower for suffix in [
+                                "gmbh", "ltda", "s.a", "sa", "participaco", "participaço", 
+                                "holding", "corp", "s/a", "industria", "indústria", 
+                                "comercio", "comércio", "servico", "serviço", "eireli", 
+                                "me", "epp", "grupo"
+                            ])
+                            if is_company:
+                                continue
                             if name and name not in contacts_found:
                                 contacts_found.append(name)
                     parsed_ok = len(contacts_found) > 0
@@ -2260,6 +2270,15 @@ def _build_phase_status(messages: list) -> str:
                     # Normaliza org_name SEM acento para comparação robusta
                     org_words_norm = set(_strip_acc(org_name or "").split())
                     for n in names:
+                        n_lower = n.lower()
+                        is_company = any(suffix in n_lower for suffix in [
+                            "gmbh", "ltda", "s.a", "sa", "participaco", "participaço", 
+                            "holding", "corp", "s/a", "industria", "indústria", 
+                            "comercio", "comércio", "servico", "serviço", "eireli", 
+                            "me", "epp", "grupo"
+                        ])
+                        if is_company:
+                            continue
                         n_words_norm = set(_strip_acc(n).split())
                         stopwords_ext = {"do", "da", "de", "dos", "das", "ltda", "sa", "s.a", "cia"}
                         # Descarta se for o nome da org (comparação sem acento)
@@ -2948,13 +2967,16 @@ async def _agent_loop(
                                 _t_data = json.loads(_t_content) if _t_content.strip().startswith(("{", "[")) else {}
                             except Exception:
                                 _t_data = {}
-                            if _t_name == "pipedrive_get_org":
-                                found_org = _t_data.get("org", {}).get("name") or _t_data.get("name") or found_org
+                            if _t_name in ("pipedrive_get_org", "pipedrive_get_persons"):
+                                if _t_name == "pipedrive_get_org":
+                                    found_org = _t_data.get("org", {}).get("name") or _t_data.get("name") or found_org
                                 _p_list = _t_data.get("persons") or []
                                 for _p in _p_list:
                                     _p_name = _p.get("name")
-                                    if _p_name and _p_name not in [c.get("name") for c in found_contacts]:
-                                        found_contacts.append(_p)
+                                    if _p_name:
+                                        _p_name_clean = _p_name.strip().lower()
+                                        if _p_name_clean not in [c.get("name", "").strip().lower() for c in found_contacts]:
+                                            found_contacts.append(_p)
                             elif _t_name == "pipedrive_get_deals":
                                 _d_list = _t_data.get("deals") or []
                                 for _d in _d_list:
@@ -3027,27 +3049,49 @@ async def _agent_loop(
                             "content": (
                                 f"Dossiê entregue. DADOS REAIS EXTRAÍDOS DO HISTÓRICO (USE APENAS ESTES IDS):\n{real_data_str}\n\n"
                                 f"RESUMO DAS FONTES:\n{context_str}\n\n"
-                                "Chame OBRIGATORIAMENTE 'suggest_next_actions' com 3-6 ações ESPECÍFICAS, CONTEXTUAIS e comercialmente inteligentes.\n"
+                                "Você é um Consultor de Vendas B2B sênior e altamente estratégico. "
+                                "Chame OBRIGATORIAMENTE 'suggest_next_actions' com 3-6 ações específicas, contextualizadas e comercialmente brilhantes.\n"
                                 "Cada ação DEVE ter:\n"
-                                "• 'label': texto curto e atraente do botão\n"
-                                "• 'prompt': instrução autossuficiente com IDs e parâmetros REAIS dos dados acima\n\n"
-                                "REGRAS OBRIGATÓRIAS:\n"
-                                "1. NOVO CONTATO: Se e-mail ou WhatsApp revelou nome/e-mail de pessoa da empresa NÃO cadastrada no Pipedrive (NUNCA João Moura / joao.moura / jferres.com.br — ele é o vendedor), sugira pipedrive_create_person.\n"
-                                "   Prompt: 'Execute pipedrive_create_person: name=\"NOME\", email=\"EMAIL\", org_name=\"EMPRESA\"'\n\n"
-                                "2. CONCLUIR ATIVIDADE: Se há atividade pendente de follow-up e já houve contato real (e-mail/WhatsApp), sugira marcar como feita.\n"
-                                "   Prompt: 'Execute pipedrive_update_task com activity_id=ID e done=true'\n\n"
-                                "3. SEQUÊNCIA DE 5 FOLLOW-UPS PARA AGENDAR REUNIÃO (OBRIGATÓRIO): Sempre crie um botão que executa 5 tarefas em sequência no Pipedrive para tentar agendar reunião. O objetivo final é SEMPRE marcar uma reunião comercial. Use os dados reais (org_name, deal_id, nome do contato encontrado). Monte datas progressivas a partir de hoje. O prompt deve instruir a criação das 5 tarefas uma a uma. Exemplo:\n"
-                                "   label: 'Criar sequência de 5 follow-ups para reunião'\n"
-                                "   prompt: 'Execute pipedrive_create_task 5 vezes em sequência para criar o plano de follow-up para agendar reunião com <EMPRESA> (deal_id=<ID>):\n"
-                                "Tarefa 1: subject=\"Follow-up 1: Ligar para <CONTATO>\", type=\"call\", due_date=\"<HOJE+1d>\", org_name=\"<EMPRESA>\", note=\"Primeira tentativa de contato. Apresentar J.Ferres e propor reunião rápida de 20 min.\"\n"
-                                "Tarefa 2: subject=\"Follow-up 2: Email de apresentação\", type=\"task\", due_date=\"<HOJE+3d>\", org_name=\"<EMPRESA>\", note=\"Enviar e-mail de apresentação propondo reunião. Referenciar o último assunto discutido.\"\n"
-                                "Tarefa 3: subject=\"Follow-up 3: Segunda ligação\", type=\"call\", due_date=\"<HOJE+7d>\", org_name=\"<EMPRESA>\", note=\"Segunda tentativa de contato por telefone. Perguntar se recebeu o e-mail e se há disponibilidade.\"\n"
-                                "Tarefa 4: subject=\"Follow-up 4: LinkedIn / canal alternativo\", type=\"task\", due_date=\"<HOJE+10d>\", org_name=\"<EMPRESA>\", note=\"Tentar contato via LinkedIn ou canal alternativo para propor reunião.\"\n"
-                                "Tarefa 5: subject=\"Follow-up 5: Tentativa final de reunião\", type=\"call\", due_date=\"<HOJE+14d>\", org_name=\"<EMPRESA>\", note=\"Última tentativa antes de arquivar. Propor horário específico para reunião de 30 min.\"'\n\n"
-                                "4. RESPONDER E-MAIL (se houver thread ativo): Se encontrou e-mails com entry_id real, sugira resposta personalizada.\n"
-                                "   Prompt: 'Execute email_reply com entry_id=ID e body=TEXTO_DA_RESPOSTA'\n\n"
+                                "• 'label': texto curto, persuasivo e atraente para o botão (comercialmente focado)\n"
+                                "• 'prompt': instrução autossuficiente com IDs e parâmetros REAIS obtidos nas buscas.\n\n"
+                                "REGRAS OBRIGATÓRIAS DE RACIOCÍNIO COMERCIAL:\n"
+                                "1. EVITAR CADASTROS DUPLICADOS (CRÍTICO): Se o nome da pessoa identificada na comunicação (ex: Gabriel) "
+                                "já está listado nos 'Contatos Atuais no Pipedrive' fornecidos acima (mesmo com pequenas variações), "
+                                "você está ABSOLUTAMENTE PROIBIDO de sugerir criar o contato. O usuário considera isso um erro grave. "
+                                "Apenas sugira 'pipedrive_create_person' se for um contato 100% novo revelado no histórico que não esteja no CRM. "
+                                "(Lembre-se: João Moura é o vendedor, nunca cadastre ele).\n"
+                                "   Prompt caso novo: 'Execute pipedrive_create_person: name=[NOME_REAL_DO_CONTATO], email=[EMAIL_REAL], org_name=[NOME_DA_EMPRESA]' (substitua sempre as chaves por valores reais, nunca use palavras genéricas ou colchetes no prompt final)\n\n"
+                                "2. CONCLUIR ATIVIDADE: Se há uma atividade pendente de follow-up e o histórico de e-mails ou WhatsApp "
+                                "mostra que já houve uma interação/resposta real recente, sugira marcar essa atividade pendente como feita.\n"
+                                "   O 'label' da ação DEVE conter obrigatoriamente o assunto da tarefa no formato: 'Concluir atividade pendente · [Assunto da Tarefa]'.\n"
+                                "   Exemplo: se a tarefa pendente tem o assunto 'Ligar para Gabriel', o label deve ser exatamente: 'Concluir atividade pendente · Ligar para Gabriel'.\n"
+                                "   Prompt: 'Execute pipedrive_update_task com activity_id=[ID_NUMERICO_REAL] e done=true' (substitua sempre pelo ID numérico real da atividade encontrado no CRM, nunca escreva a palavra literal 'ID')\n\n"
+                                "3. ANÁLISE DE OBJEÇÃO DE PREÇO (MUITO IMPORTANTE): Verifique atentamente se o contato (ex: Gabriel) indicou "
+                                "nas mensagens de WhatsApp ou E-mail que nosso preço/orçamento está alto, caro, fora do orçamento, ou que "
+                                "está comparando com a concorrência que é mais barata. Neste cenário de objeção de preço:\n"
+                                "   - NÃO sugira sequências genéricas de follow-ups persistentes pedindo reunião. Isso afasta o cliente e é ineficaz.\n"
+                                "   - Em vez disso, crie um plano sob medida focado em contornar a objeção de preço, ajustando propostas, "
+                                "estudando margens e negociando termos técnicos de valor. A sequência de 5 tarefas no Pipedrive deve ser:\n"
+                                "     * Tarefa 1: Estudo interno de custos e viabilidade de desconto de margem (tipo='task', due_date='<HOJE+1d>')\n"
+                                "     * Tarefa 2: WhatsApp/Email rápido de alinhamento com o contato, informando que estamos revisando os custos (tipo='task', due_date='<HOJE+1d>')\n"
+                                "     * Tarefa 3: Elaborar e Enviar Proposta Comercial Revisada com a melhor margem possível ou especificações alternativas para caber no budget (tipo='task', due_date='<HOJE+3d>')\n"
+                                "     * Tarefa 4: Ligação consultiva para entender as propostas dos concorrentes e termos técnicos (tipo='call', due_date='<HOJE+6d>')\n"
+                                "     * Tarefa 5: Ligação/Reunião de fechamento comercial definitivo (tipo='call' ou 'meeting', due_date='<HOJE+10d>')\n"
+                                "   - Se NÃO houver reclamação de preço alto no histórico: use uma sequência padrão de 5 follow-ups progressivos de qualificação "
+                                "visando agendar uma reunião de apresentação.\n"
+                                "   Exemplo de prompt para sequência de follow-ups adaptada:\n"
+                                "   label: 'Criar plano de 5 tarefas de negociação de preço para <CONTATO>' (ou 'Criar sequência de 5 follow-ups para reunião' se for fluxo padrão)\n"
+                                "   prompt: 'Execute pipedrive_create_task 5 vezes em sequência para criar o plano de negociação/follow-up com <EMPRESA> (deal_id=<ID>):\n"
+                                "Tarefa 1: subject=\"<ASSUNTO ESTRETEGICO DA TAREFA 1>\", type=\"task\", due_date=\"<HOJE+1d>\", org_name=\"<EMPRESA>\", note=\"<DETALHE COMERCIAL ESTRUTURADO DA TAREFA 1>\"\n"
+                                "Tarefa 2: ...'\n\n"
+                                "4. ENVIAR PROPOSTA COM DESCONTO / RESPOSTA RÁPIDA: Se o histórico indica que o vendedor (João) prometeu um desconto (ex: 9% de desconto) "
+                                "ou que ficou de enviar uma nova proposta e isso ainda não foi formalizado/fechado, sugira uma ação direta de envio por e-mail ou WhatsApp "
+                                "com o teor exato da proposta negociada, citando os valores discutidos.\n\n"
+                                "5. RESPONDER E-MAIL / WHATSAPP: Se há um e-mail ou thread ativo com entry_id real, ou mensagem do WhatsApp recente sem resposta, "
+                                "sugira uma resposta comercialmente impecável, oferecendo resolver a dor do cliente.\n"
+                                "   Prompt: 'Execute email_reply com entry_id=[ENTRY_ID_REAL] e body=[TEXTO_DA_RESPOSTA_REAL]' (substitua sempre pelas informações reais coletadas das buscas, nunca use colchetes ou as palavras genéricas no prompt final)\n\n"
                                 "NÃO invente IDs. Se não tiver ID real, não use o prompt correspondente.\n"
-                                "NÃO escreva texto. Apenas chame suggest_next_actions."
+                                "NÃO escreva nenhum outro texto no seu retorno. Apenas chame suggest_next_actions."
                             ),
                         })
                         continue
@@ -3063,23 +3107,47 @@ async def _agent_loop(
 
                 for act in found_activities:
                     fallback_actions.append({
-                        "label": f"Marcar Atividade #{act['id']} como Feita",
+                        "label": f"Concluir atividade pendente · {act['subject']}",
                         "prompt": f"Execute pipedrive_update_task com activity_id={act['id']} e done=true"
                     })
 
                 if found_org:
+                    # Detect price objections in messages to customize fallback follow-ups
+                    has_price_objection = False
+                    objection_keywords = ["caro", "alto", "preço", "preco", "orcamento", "orçamento", "desconto", "concorrencia", "concorrência", "valor"]
+                    for _m in messages:
+                        _m_content = str(_m.get("content", "")).lower()
+                        if any(kw in _m_content for kw in objection_keywords):
+                            has_price_objection = True
+                            break
+
                     def _d(delta): return (today + timedelta(days=delta)).strftime("%Y-%m-%d")
-                    seq_prompt = (
-                        f"Execute pipedrive_create_task 5 vezes em sequência para criar o plano de follow-up para agendar reunião com {found_org}"
-                        + (f" (deal_id={found_deal_id})" if found_deal_id else "") + ":\n"
-                        f"Tarefa 1: subject=\"Follow-up 1: Ligar para {found_org}\", type=\"call\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Primeira tentativa de contato. Apresentar J.Ferres e propor reunião rápida de 20 min.\"\n"
-                        f"Tarefa 2: subject=\"Follow-up 2: Email de apresentação\", type=\"task\", due_date=\"{_d(3)}\", org_name=\"{found_org}\", note=\"Enviar e-mail de apresentação propondo reunião. Referenciar último assunto discutido.\"\n"
-                        f"Tarefa 3: subject=\"Follow-up 3: Segunda ligação\", type=\"call\", due_date=\"{_d(7)}\", org_name=\"{found_org}\", note=\"Segunda tentativa. Perguntar se recebeu o e-mail e verificar disponibilidade.\"\n"
-                        f"Tarefa 4: subject=\"Follow-up 4: Canal alternativo (LinkedIn)\", type=\"task\", due_date=\"{_d(10)}\", org_name=\"{found_org}\", note=\"Tentar contato via LinkedIn ou outro canal para propor reunião.\"\n"
-                        f"Tarefa 5: subject=\"Follow-up 5: Tentativa final\", type=\"call\", due_date=\"{_d(14)}\", org_name=\"{found_org}\", note=\"Última tentativa antes de arquivar. Propor horário específico para reunião de 30 min.\""
-                    )
+
+                    if has_price_objection:
+                        seq_prompt = (
+                            f"Execute pipedrive_create_task 5 vezes em sequência para criar o plano de negociação e contorno de objeção de preço com {found_org}"
+                            + (f" (deal_id={found_deal_id})" if found_deal_id else "") + ":\n"
+                            f"Tarefa 1: subject=\"Estudo interno de margem e engenharia de custos\", type=\"task\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Analisar viabilidade de concessão de descontos adicionais ou alteração de especificações para caber no orçamento.\"\n"
+                            f"Tarefa 2: subject=\"Aviso de revisão de proposta comercial\", type=\"task\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Enviar mensagem ao contato informando que estamos revisando internamente os valores para apresentar uma alternativa competitiva.\"\n"
+                            f"Tarefa 3: subject=\"Enviar proposta comercial revisada\", type=\"task\", due_date=\"{_d(3)}\", org_name=\"{found_org}\", note=\"Elaborar e enviar por e-mail ou WhatsApp a proposta com novos preços ou especificações.\"\n"
+                            f"Tarefa 4: subject=\"Ligação de acompanhamento consultivo\", type=\"call\", due_date=\"{_d(6)}\", org_name=\"{found_org}\", note=\"Ligar para entender o comparativo com a concorrência e o feedback sobre a proposta ajustada.\"\n"
+                            f"Tarefa 5: subject=\"Fechamento comercial / alinhamento final\", type=\"meeting\", due_date=\"{_d(10)}\", org_name=\"{found_org}\", note=\"Reunião rápida ou ligação para fechar o pedido ou ajustar termos finais de pagamento.\""
+                        )
+                        lbl = "Criar plano de 5 tarefas de negociação de preço"
+                    else:
+                        seq_prompt = (
+                            f"Execute pipedrive_create_task 5 vezes em sequência para criar o plano de follow-up para agendar reunião com {found_org}"
+                            + (f" (deal_id={found_deal_id})" if found_deal_id else "") + ":\n"
+                            f"Tarefa 1: subject=\"Follow-up 1: Ligar para {found_org}\", type=\"call\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Primeira tentativa de contato. Apresentar J.Ferres e propor reunião rápida de 20 min.\"\n"
+                            f"Tarefa 2: subject=\"Follow-up 2: Email de apresentação\", type=\"task\", due_date=\"{_d(3)}\", org_name=\"{found_org}\", note=\"Enviar e-mail de apresentação propondo reunião. Referenciar último assunto discutido.\"\n"
+                            f"Tarefa 3: subject=\"Follow-up 3: Segunda ligação\", type=\"call\", due_date=\"{_d(7)}\", org_name=\"{found_org}\", note=\"Segunda tentativa. Perguntar se recebeu o e-mail e verificar disponibilidade.\"\n"
+                            f"Tarefa 4: subject=\"Follow-up 4: Canal alternativo (LinkedIn)\", type=\"task\", due_date=\"{_d(10)}\", org_name=\"{found_org}\", note=\"Tentar contato via LinkedIn ou outro canal para propor reunião.\"\n"
+                            f"Tarefa 5: subject=\"Follow-up 5: Tentativa final\", type=\"call\", due_date=\"{_d(14)}\", org_name=\"{found_org}\", note=\"Última tentativa antes de arquivar. Propor horário específico para reunião de 30 min.\""
+                        )
+                        lbl = "Criar sequência de 5 follow-ups para reunião"
+
                     fallback_actions.append({
-                        "label": "Criar sequência de 5 follow-ups para reunião",
+                        "label": lbl,
                         "prompt": seq_prompt,
                     })
 
@@ -3222,10 +3290,12 @@ async def _agent_loop(
             try:
                 import inspect
                 sig = inspect.signature(first_executor)
+                exec_kwargs = {}
                 if "org_id" in sig.parameters:
-                    tool_result = await first_executor(tool_args, org_id=org_id)
-                else:
-                    tool_result = await first_executor(tool_args)
+                    exec_kwargs["org_id"] = org_id
+                if "messages" in sig.parameters:
+                    exec_kwargs["messages"] = messages
+                tool_result = await first_executor(tool_args, **exec_kwargs)
                 _raw_log(process_id, "tool_execute_result", {"tool": tool_name, "result_raw": tool_result, "call_id": first_call_id})
             except Exception as e:
                 tool_result = {"ok": False, "error": str(e)}

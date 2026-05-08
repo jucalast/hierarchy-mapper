@@ -10,9 +10,19 @@ router = APIRouter()
 
 @router.post("/pipedrive_sync")
 async def pipedrive_sync_endpoint():
-    """Endpoint para mover tarefas atrasadas para hoje."""
+    """Endpoint para sincronização completa: Organizações e Atividades."""
     try:
-        return await pipedrive_service.sync_overdue_activities()
+        # 1. Sincroniza Organizações (Paginação completa)
+        org_sync = await pipedrive_service.sync_all_parallel()
+        
+        # 2. Sincroniza Atividades (Perdão de atrasos)
+        act_sync = await pipedrive_service.sync_overdue_activities()
+        
+        return {
+            "status": "success",
+            "organizations": org_sync,
+            "activities": act_sync
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

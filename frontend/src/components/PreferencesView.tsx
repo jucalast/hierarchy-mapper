@@ -84,6 +84,9 @@ const HUMAN_MODELS = [
     { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash Lite (Rápido & Econômico)", description: "Otimizado para latência ultra-baixa em tarefas simples." },
     { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Padrão)", description: "Equilíbrio ideal entre velocidade e raciocínio contextual." },
     { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Alta Fidelidade)", description: "Raciocínio complexo e janela de contexto de 1M+ tokens." },
+    { value: "gemini-flash-latest", label: "Gemini Flash Latest", description: "Última versão de produção do modelo de alta velocidade do Google Gemini." },
+    { value: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash Exp (Experimental)", description: "Versão experimental de próxima geração para testes do Gemini Flash." },
+    { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash (Multimodal)", description: "Modelo multimídia eficiente e altamente estável do Google." },
     { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile (Meta / Groq)", description: "Poder analítico de 70B com a velocidade absurda do hardware LPU." },
     { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant (Rápido / Groq)", description: "Espinha dorsal para interações de alta frequência e baixa latência." },
     { value: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Llama 4 Scout 17B (Groq / SambaNova)", description: "Nova geração Llama 4 otimizada para eficiência e precisão." },
@@ -98,7 +101,12 @@ const HUMAN_MODELS = [
     { value: "deepseek-chat", label: "DeepSeek Chat V3", description: "Modelo versátil com excelente custo-benefício e lógica." },
     { value: "llama3.1-8b", label: "Llama 3.1 8B (Cerebras)", description: "Velocidade supersônica via hardware CS-3." },
     { value: "llama-3.3-70b", label: "Llama 3.3 70B (Cerebras)", description: "70B com latência mínima recorde na indústria." },
-    { value: "qwen2.5:3b", label: "Qwen 2.5 3B (Ollama Local)", description: "Privacidade total rodando localmente na sua máquina." },
+    { value: "qwen-3-235b-a22b-instruct-2507", label: "Qwen 3 235B Instruct (Alibaba / Cerebras)", description: "Modelo gigante executado em velocidade inacreditável via hardware Cerebras CS-3." },
+    { value: "qwen-3-235b-instruct", label: "Qwen 3 235B Instruct (Cerebras)", description: "Modelo de 235 bilhões de parâmetros com extrema profundidade cognitiva." },
+    { value: "gpt-oss-120b", label: "GPT OSS 120B (Cerebras)", description: "Modelo open-source de grande porte para orquestração avançada." },
+    { value: "zai-glm-4.7", label: "GLM 4.7 (Cerebras)", description: "Modelo de raciocínio lógico claro com suporte nativo a thinking." },
+    { value: "qwen2.5:3b", label: "Qwen 2.5 3B (Ollama Local)", description: "Privacidade total rodando localmente na sua máquina (3B)." },
+    { value: "qwen2.5:1.5b", label: "Qwen 2.5 1.5B (Ollama Local)", description: "Modelo leve rodando em hardware local para máxima eficiência e privacidade (1.5B)." },
 ];
 
 
@@ -410,6 +418,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                 const isRateLimited = Object.values(modelsMap).some(m => m.status === 'rate_limited');
 
+                                const isAnyNoCredits = Object.values(modelsMap).some(m => m.status === 'no_credits');
+
                                 const isExpanded = expandedProviders[provKey] ?? false;
 
                                 return (
@@ -454,7 +464,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                             <div className={styles.providerHeaderRight}>
 
-                                                <div className={`${styles.providerBadge} ${isRateLimited ? styles.badgeCritical : styles.badgeHealthy}`}>
+                                                <div className={`${styles.providerBadge} ${(isRateLimited || isAnyNoCredits) ? styles.badgeCritical : styles.badgeHealthy}`}>
 
                                                     {isRateLimited ? (
 
@@ -463,6 +473,16 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                                             <AlertTriangle size={12} />
 
                                                             <span>RATE LIMITED / COOLDOWN</span>
+
+                                                        </>
+
+                                                    ) : isAnyNoCredits ? (
+
+                                                        <>
+
+                                                            <AlertTriangle size={12} />
+
+                                                            <span>SEM SALDO / SEM CRÉDITOS</span>
 
                                                         </>
 
@@ -507,7 +527,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                                 Object.entries(modelsMap).map(([modelName, detail]) => {
 
                                                     const isModelRateLimited = detail.status === 'rate_limited' || detail.status === 'cooldown';
-                                                    const pct = isModelRateLimited ? 0 : detail.pct;
+                                                    const isNoCredits = detail.status === 'no_credits';
+                                                    const pct = (isModelRateLimited || isNoCredits) ? 0 : detail.pct;
 
                                                     return (
 
@@ -521,6 +542,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                                                     {isModelRateLimited ? (
                                                                         <span className={styles.modelStatsCritical}>INDISPONÍVEL (RATE LIMITED / COOLDOWN)</span>
+                                                                    ) : isNoCredits ? (
+                                                                        <span className={styles.modelStatsCritical}>INDISPONÍVEL (SEM CRÉDITOS / SALDO INSUFICIENTE)</span>
                                                                     ) : (
                                                                         <>
                                                                             Disponível: <span className={styles.modelStatsHighlight}>{pct}%</span> ({detail.remaining} / {detail.limit} reqs)
@@ -537,7 +560,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                                                 <div 
 
-                                                                    className={`${styles.progressBar} ${isModelRateLimited ? styles.progressRed : getProgressColorClass(pct)}`}
+                                                                    className={`${styles.progressBar} ${(isModelRateLimited || isNoCredits) ? styles.progressRed : getProgressColorClass(pct)}`}
 
                                                                     style={{ width: `${pct}%` }}
 

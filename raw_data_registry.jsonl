@@ -2676,3 +2676,275 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-07T16:55:30.206131",
+    "candidate": "Marcos Basso",
+    "linkedin": "https://br.linkedin.com/in/marcos-basso-89b59b2b3",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcos Basso - Indústrias Mangotex LTDA - LinkedIn Brasil Felipe Zaidan - Diretor de Exportação e ... - LinkedIn Brasil Luis Filipe - Indústrias Mangotex LTDA | LinkedIn Paulo Vitor Vasque - Indústrias Mangotex LTDA | LinkedIn",
+            "body": "Gerente de recursos humanos na Indústrias Mangotex LTDA · Experiência: Indústrias Mangotex LTDA · Localidade: 18025-000 · + de 500 conexões no LinkedIn . Veja Marcos Basso o perfil no... Sobre Diretor de Exportação e Engenharia na Mangotex . Responsável pelas áreas de Compras, TI, exportação e engenharia a Mangotex . Também é Diretor da Polyhose e Conselheiro do Sindipeças. · Experiência: Indústrias Mangotex LTDA · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja o perfil de Luis Filipe no LinkedIn , uma comunidade profissional de 1 bilhão de... · Experiência: Indústrias Mangotex LTDA · Formação acadêmica: Anhanguera Educacional · Localidade: Sorocaba · + de 500 conexões no LinkedIn . Veja o perfil de Paulo Vitor Vasque no..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Indústrias Mangotex LTDA · Localidade: 18025-000 · + de 500 conexões no LinkedIn. Veja Marcos Basso  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/marcos-basso-89b59b2b3",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-07T16:55:46.224274",
+    "candidate": "Felipe Zaidan",
+    "linkedin": "https://br.linkedin.com/in/felipe-zaidan-99002965",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Felipe Zaidan - Diretor de Exportação e ... - LinkedIn Brasil Luis Filipe - Indústrias Mangotex LTDA | LinkedIn Paulo Vitor Vasque - Indústrias Mangotex LTDA | LinkedIn",
+            "body": "Sobre Diretor de Exportação e Engenharia na Mangotex . Responsável pelas áreas de Compras, TI, exportação e engenharia a Mangotex . Também é Diretor da Polyhose e Conselheiro do Sindipeças. · Experiência: Indústrias Mangotex LTDA · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja o perfil de Luis Filipe no LinkedIn , uma comunidade profissional de 1 bilhão de... · Experiência: Indústrias Mangotex LTDA · Formação acadêmica: Anhanguera Educacional · Localidade: Sorocaba · + de 500 conexões no LinkedIn . Veja o perfil de Paulo Vitor Vasque no..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Diretor de Exportação e Engenharia na Mangotex. Responsável pelas áreas de Compras, TI… · Experiência: Indústrias Mangotex LTDA · Formação acadêmica: Fundação Dom Cabral · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Felipe Zaidan no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/felipe-zaidan-99002965",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-07T16:55:59.935231",
+    "candidate": "Luis Filipe",
+    "linkedin": "https://br.linkedin.com/in/luis-filipe-704642134",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luis Filipe - Indústrias Mangotex LTDA | LinkedIn",
+            "body": "· Experiência: Indústrias Mangotex LTDA · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja o perfil de Luis Filipe no LinkedIn , uma comunidade profissional de 1 bilhão de..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "➠ Formado – Engenharia de Controle de Automação (Mecatrônica)  - UNIP, Cursando Pós… · Experiência: Indústrias Mangotex LTDA · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Luis Filipe no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/luis-filipe-704642134",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-07T16:57:15.233708",
+    "candidate": "Jean Carlos",
+    "linkedin": "https://br.linkedin.com/in/jean-carlos-816040249",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jean Carlos - Indústrias Mangotex LTDA - LinkedIn Brasil",
+            "body": "-- · Experiência: Indústrias Mangotex LTDA · Localidade: Salto. Veja Jean Carlos o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Indústrias Mangotex LTDA · Localidade: Salto. Veja o perfil de Jean Carlos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/jean-carlos-816040249",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-07T16:58:40.143135",
+    "candidate": "Adriana Lima",
+    "linkedin": "https://br.linkedin.com/in/adriana-lima-959a5337b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Adriana Lima - Indústrias Mangotex LTDA | LinkedIn",
+            "body": "Compradora na Indústrias Mangotex LTDA · Experiência: Indústrias Mangotex LTDA · Localidade: 13300-003. Veja Adriana Lima o perfil no LinkedIn , uma comunidade profissional de 1..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Indústrias Mangotex LTDA · Localidade: 13300-003. Veja o perfil de Adriana Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/adriana-lima-959a5337b",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-07T16:58:51.257048",
+    "candidate": "Adriana Lima",
+    "linkedin": "https://br.linkedin.com/in/adriana-lima-40aa34112",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Adriana Lima - Indústrias Mangotex LTDA | LinkedIn",
+            "body": "Veja o perfil de Adriana Lima no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou um profissional com alguns anos de experiência na área administrativa e financeira… · Experiência: Indústrias Mangotex LTDA · Formação acadêmica: Fatec Itu · Localidade: Itu · 47 conexões no LinkedIn. Veja o perfil de Adriana Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/adriana-lima-40aa34112",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-07T16:59:07.599883",
+    "candidate": "Ana Julia França Coimbra",
+    "linkedin": "https://br.linkedin.com/in/ana-julia-frança-coimbra-84654b222",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ana Julia França Coimbra - Indústrias Mangotex LTDA | LinkedIn",
+            "body": "Sou profissional de Comércio Exterior com experiência em operações de importação e exportação, atuando de forma integrada com compras internacionais, customer service e área comercial. Tenho..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou profissional de Comércio Exterior com experiência em operações de importação e… · Experiência: Indústrias Mangotex LTDA · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Salto · + de 500 conexões no LinkedIn. Veja o perfil de Ana Julia França Coimbra no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/ana-julia-frança-coimbra-84654b222",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-07T17:00:49.470793",
+    "candidate": "Bruno Luiz",
+    "linkedin": "https://br.linkedin.com/in/bruno-luiz-b4a54a192",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bruno Luiz - Indústrias Mangotex LTDA | LinkedIn",
+            "body": "Veja o perfil de Bruno Luiz no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Indústrias Mangotex LTDA · Formação acadêmica: FIA Online · Localidade: Salto · + de 500 conexões no LinkedIn. Veja o perfil de Bruno Luiz no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/bruno-luiz-b4a54a192",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------

@@ -375,16 +375,8 @@ const SuggestedActionTask: React.FC<{
 
     return (
         <div style={{
-            borderRadius: 8,
-            border: '1px solid rgba(255,255,255,0.06)',
-            background: status === 'done'
-                ? 'rgba(16, 185, 129, 0.04)'
-                : status === 'rejected'
-                    ? 'rgba(255,255,255,0.01)'
-                    : 'rgba(255,255,255,0.025)',
             overflow: 'hidden',
             marginBottom: 6,
-            transition: 'background 0.2s',
         }}>
             {/* Header — mesmo estilo de logLine */}
             <div

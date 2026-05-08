@@ -14,6 +14,7 @@ interface ThreadListProps {
     isCreating: boolean;
     selectedOrgLogo?: string;
     onDeleteThread?: (thread: ThreadOut) => void;
+    onBackToChat?: () => void;
 }
 
 function formatDate(isoStr: string | null): string {
@@ -45,6 +46,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
     isCreating,
     selectedOrgLogo,
     onDeleteThread,
+    onBackToChat,
 }) => {
     return (
         <div className={styles.threadListPanel}>
@@ -65,18 +67,27 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                     <span className={styles.tlSubtitle}>Workspace</span>
                 </div>
                 {threads.length > 0 && (
-                    <button
-                        className={styles.tlNewBtn}
-                        onClick={onNewThread}
-                        disabled={isCreating}
-                        title="Nova conversa"
-                    >
-                        {isCreating
-                            ? <Loader2 size={14} className={styles.spinner} />
-                            : <Plus size={14} />
-                        }
-                        <span>Nova</span>
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                            className={styles.tlNewBtn}
+                            onClick={onNewThread}
+                            disabled={isCreating}
+                            title="Nova conversa"
+                        >
+                            {isCreating
+                                ? <Loader2 size={14} className={styles.spinner} />
+                                : <Plus size={14} />
+                            }
+                            <span>Nova</span>
+                        </button>
+                        <button
+                            className={`${styles.chatHeaderIconBtn} ${styles.chatHeaderIconBtnActive}`}
+                            onClick={onBackToChat}
+                            title="Fechar histórico"
+                        >
+                            <Clock size={20} />
+                        </button>
+                    </div>
                 )}
             </div>
 

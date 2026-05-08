@@ -202,6 +202,17 @@ class OpenAICompatProvider(LLMProvider):
                 log.warning(f"llm.{self.name}.rate_limit", model=model)
                 continue
 
+            if resp.status_code in (401, 402) or (resp.status_code in (400, 403) and any(x in resp.text.lower() for x in ["credit", "balance", "billing", "insufficient"])):
+                last_error = f"no_credits_on_{model}"
+                try:
+                    from services.ai.llm.quota_manager import get_quota_manager
+                    await get_quota_manager().record_billing_error(self.name, model)
+                except Exception as ex:
+                    log.warning(f"llm.{self.name}.quota_error", error=str(ex))
+                llm_requests_total.labels(provider=self.name, model=model, outcome="error").inc()
+                log.warning(f"llm.{self.name}.no_credits", model=model, error=resp.text[:200])
+                continue
+
             last_error = f"{resp.status_code}_on_{model}: {resp.text[:200]}"
             llm_requests_total.labels(provider=self.name, model=model, outcome="error").inc()
             log.warning(f"llm.{self.name}.error", model=model,

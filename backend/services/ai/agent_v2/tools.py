@@ -45,7 +45,7 @@ async def _resolve_wa_chat(client: httpx.AsyncClient, contact: str) -> tuple[str
         
         # 🔍 Fallback: Se não achou nos chats ativos/recentes, busca nos CONTATOS cadastrados por nome!
         try:
-            c_resp = await client.get(f"{WA_BASE}/contacts/search", params={"name": contact, "minSimilarity": 0.4}, timeout=5.0)
+            c_resp = await client.get(f"{WA_BASE}/contacts/search", params={"name": contact, "minSimilarity": 0.75}, timeout=5.0)
             if c_resp.status_code == 200:
                 c_data = c_resp.json()
                 contacts_list = c_data if isinstance(c_data, list) else c_data.get("contacts") or []
@@ -873,7 +873,21 @@ async def exec_generate_dossier(args: dict) -> dict:
     }
 
 
-async def exec_suggest_next_actions(args: dict) -> dict:
+async def exec_suggest_next_actions(args: dict, messages: list | None = None, org_id: int | None = None) -> dict:
+    if messages:
+        try:
+            from services.ai.sales_strategy_service import sales_strategy_service
+            strategy_res = await sales_strategy_service.analyze_and_suggest_actions(messages, org_id)
+            if strategy_res and strategy_res.get("ok"):
+                return {
+                    "ok": True,
+                    "actions": strategy_res.get("actions", []),
+                    "summary": strategy_res.get("summary", "")
+                }
+        except Exception as e:
+            # Fallback to default raw actions if service fails
+            pass
+
     raw_actions = args.get("actions", [])
     normalized = []
     for act in raw_actions:

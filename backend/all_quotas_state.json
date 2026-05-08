@@ -21,18 +21,40 @@
       "updated_at": 1778179814.3418913
     },
     "meta-llama/llama-4-scout-17b-16e-instruct": {
-      "used": 25,
+      "used": 85,
       "limit": 1000,
-      "remaining": 975,
-      "pct": 97.5,
+      "remaining": 915,
+      "pct": 91.5,
       "tokens_limit": 30000,
       "tokens_remaining": 29988,
       "tokens_pct": 100.0,
-      "updated_at": 1778181558.80621
+      "updated_at": 1778245468.9944868,
+      "status": "healthy"
+    },
+    "qwen/qwen3-32b": {
+      "used": 1,
+      "limit": 1000,
+      "remaining": 999,
+      "pct": 99.9,
+      "tokens_limit": 6000,
+      "tokens_remaining": 4904,
+      "tokens_pct": 81.7,
+      "updated_at": 1778241526.7313302,
+      "status": "healthy"
     }
   },
   "cerebras": {
     "llama3.1-8b": {
+      "used": 0,
+      "limit": 0,
+      "remaining": 0,
+      "pct": 100.0,
+      "tokens_limit": 0,
+      "tokens_remaining": 0,
+      "tokens_pct": 100.0,
+      "updated_at": 0.0
+    },
+    "qwen-3-235b-a22b-instruct-2507": {
       "used": 0,
       "limit": 0,
       "remaining": 0,
@@ -53,6 +75,40 @@
       "tokens_remaining": 0,
       "tokens_pct": 100.0,
       "updated_at": 0.0
+    }
+  },
+  "claude": {
+    "claude-3-5-haiku-latest": {
+      "used": 1000,
+      "limit": 1000,
+      "remaining": 0,
+      "pct": 0.0,
+      "updated_at": 1778245470.3478916,
+      "tokens_remaining": 0,
+      "tokens_pct": 0.0,
+      "status": "no_credits"
+    },
+    "claude-3-5-sonnet-latest": {
+      "used": 1000,
+      "limit": 1000,
+      "remaining": 0,
+      "pct": 0.0,
+      "updated_at": 1778245470.596248,
+      "tokens_remaining": 0,
+      "tokens_pct": 0.0,
+      "status": "no_credits"
+    }
+  },
+  "deepseek": {
+    "deepseek-chat": {
+      "used": 1000,
+      "limit": 1000,
+      "remaining": 0,
+      "pct": 0.0,
+      "updated_at": 1778245473.3616817,
+      "tokens_remaining": 0,
+      "tokens_pct": 0.0,
+      "status": "no_credits"
     }
   }
 }

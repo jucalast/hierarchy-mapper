@@ -49,6 +49,25 @@ class LLMQuotaManager:
             cls._instance = cls()
         return cls._instance
 
+    async def record_billing_error(self, provider: str, model: str) -> None:
+        """Mark a provider/model as out of credits (remaining and pct set to 0.0)."""
+        async with self._lock:
+            prov_data = self._state.setdefault(provider, {})
+            model_data = prov_data.setdefault(model, {
+                "used": 1000,
+                "limit": 1000,
+                "remaining": 0,
+                "pct": 0.0,
+                "updated_at": 0.0
+            })
+            model_data["remaining"] = 0
+            model_data["pct"] = 0.0
+            model_data["tokens_remaining"] = 0
+            model_data["tokens_pct"] = 0.0
+            model_data["status"] = "no_credits"
+            model_data["updated_at"] = time.time()
+            self._save()
+
     async def update_quota_from_headers(
         self,
         provider: str,
@@ -131,6 +150,7 @@ class LLMQuotaManager:
                     pass
 
             if updated:
+                model_data["status"] = "healthy"
                 model_data["updated_at"] = time.time()
                 self._save()
 
@@ -151,6 +171,7 @@ class LLMQuotaManager:
             lim = model_data.get("limit", 1000)
             model_data["remaining"] = max(0, lim - model_data["used"])
             model_data["pct"] = round((model_data["remaining"] / lim) * 100, 1) if lim else 0.0
+            model_data["status"] = "healthy"
             model_data["updated_at"] = time.time()
             self._save()
 
@@ -207,11 +228,16 @@ class LLMQuotaManager:
                 # Check provider rate limit cooldown state in router
                 from services.ai.llm.router import _provider_rate_limited_until
                 cooldown_until = _provider_rate_limited_until.get(provider, 0)
-                status = "healthy"
+                
+                status = m_state.get("status", "healthy")
                 cooldown_remaining = 0
                 if time.monotonic() < cooldown_until:
                     status = "rate_limited"
                     cooldown_remaining = max(0, int(cooldown_until - time.monotonic()))
+
+                # Keep no_credits status if set and not in cooldown
+                if m_state.get("status") == "no_credits" and status != "rate_limited":
+                    status = "no_credits"
 
                 # Ollama is local, has no limits (always 100% remaining)
                 if provider == "ollama":
@@ -225,14 +251,16 @@ class LLMQuotaManager:
                         "updated_at": time.time()
                     }
                 else:
+                    pct = m_state.get("pct", 100.0) if status != "no_credits" else 0.0
+                    remaining = m_state.get("remaining", 1000) if status != "no_credits" else 0
                     summary[provider][model] = {
                         "limit": m_state.get("limit", 1000),
-                        "remaining": m_state.get("remaining", 1000),
-                        "used": m_state.get("used", 0),
-                        "pct": m_state.get("pct", 100.0), # percent of remaining
+                        "remaining": remaining,
+                        "used": m_state.get("used", 0) if status != "no_credits" else m_state.get("limit", 1000),
+                        "pct": pct, # percent of remaining
                         "tokens_limit": m_state.get("tokens_limit", 0),
-                        "tokens_remaining": m_state.get("tokens_remaining", 0),
-                        "tokens_pct": m_state.get("tokens_pct", 100.0),
+                        "tokens_remaining": m_state.get("tokens_remaining", 0) if status != "no_credits" else 0,
+                        "tokens_pct": m_state.get("tokens_pct", 100.0) if status != "no_credits" else 0.0,
                         "status": status,
                         "cooldown_remaining": cooldown_remaining,
                         "updated_at": m_state.get("updated_at", time.time())

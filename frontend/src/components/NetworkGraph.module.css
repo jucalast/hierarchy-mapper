@@ -3256,7 +3256,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    background-color: #131313;
+    background: linear-gradient(135deg, #1e2145 0%, #131313 40%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     flex-shrink: 0;
     z-index: 10;
