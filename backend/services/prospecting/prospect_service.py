@@ -66,6 +66,10 @@ async def start_prospect_search(
 
     city_name = await reverse_geocode(lat, lng)
 
+    from services.ai.business_context import load_db_setting
+    icp_config = await load_db_setting("icp_config", {})
+    segments = icp_config.get("icp_segments", _ICP_SEGMENTS) if isinstance(icp_config, dict) else _ICP_SEGMENTS
+
     async with async_session() as db:
         sess = ProspectSession(
             id=session_id,
@@ -73,7 +77,7 @@ async def start_prospect_search(
             lng=str(lng),
             radius_km=radius_km,
             city_name=city_name,
-            segments_searched=_ICP_SEGMENTS,
+            segments_searched=segments,
             status="running",
         )
         db.add(sess)
@@ -125,8 +129,12 @@ async def _run_search(
     found = 0
     location_hint = city_name or ""
 
+    from services.ai.business_context import load_db_setting
+    icp_config = await load_db_setting("icp_config", {})
+    segments = icp_config.get("icp_segments", _ICP_SEGMENTS) if isinstance(icp_config, dict) else _ICP_SEGMENTS
+
     try:
-        for segment in _ICP_SEGMENTS:
+        for segment in segments:
             # 🛑 Check stop signal
             if not await _is_session_active(session_id):
                 log.info("prospect.search.aborted", session_id=session_id)

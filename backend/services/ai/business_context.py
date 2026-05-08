@@ -1,270 +1,155 @@
 """
-business_context.py — Inteligência de Negócio da J.Ferres
+business_context.py — Inteligência de Negócio Dinâmica
 
 Este módulo centraliza o conhecimento sobre a empresa, seus produtos, clientes ideais
-e metodologias de prospecção B2B. É a "alma" do agente de vendas.
+e metodologias de prospecção B2B. Agora totalmente desacoplado para o banco de dados.
 
-Todos os prompts de prospecção, cold outreach e análise de leads devem importar
-daqui para garantir consistência e fácil manutenção.
+Todas as constantes agora servem apenas como FALLBACK caso o banco de dados esteja vazio.
 """
 
 from __future__ import annotations
+from typing import Any, Dict
+from services.ai.business_context_service import BusinessContextService
 
 # =============================================================================
-# IDENTIDADE DA EMPRESA
+# FALLBACKS ESTÁTICOS (J.FERRES)
 # =============================================================================
 
 COMPANY_NAME = "J.Ferres"
 COMPANY_SEGMENT = "Embalagens de Papelão Ondulado Sob Medida"
 COMPANY_DIFFERENTIALS = [
-    "Especialistas em embalagens manuais e personalizadas que as grandes fábricas (Klabin, Irani, Papirus) não conseguem ou não querem produzir",
-    "Caixas de exportação CKD (Complete Knock Down) com encaixe e montagem personalizados",
-    "Modelo Kanban: estoque em fábrica com retirada just-in-time pelo cliente",
-    "Atendimento consultivo — acompanhamos o projeto do protótipo até a entrega em série",
-    "Calços, envoltórios e tabuleiros de papelão ondulado para proteção de peças industriais",
-    "Alta capacidade de adaptação: mudanças de projeto, gramatura e dimensões em ciclo curto",
+    "Especialistas em embalagens manuais e personalizadas que as grandes fábricas não conseguem",
+    "Caixas de exportação CKD (Complete Knock Down)",
+    "Modelo Kanban: estoque em fábrica com retirada just-in-time",
 ]
 
 SELLER_NAME = "João Luccas"
 SELLER_ROLE = "Representante Comercial"
 
-# =============================================================================
-# CATÁLOGO DE PRODUTOS
-# =============================================================================
-
 PRODUCTS = {
     "caixas_onduladas": {
         "name": "Caixas de Papelão Ondulado",
-        "description": "Caixas corrugadas personalizadas em qualquer dimensão, ondulação (B, C, BC, E) e impressão",
-        "use_cases": [
-            "Embalagem de peças automotivas para estoque e distribuição",
-            "Transporte de componentes industriais entre plantas",
-            "Embalagem de linha de montagem (kitting)",
-        ],
-    },
-    "caixas_ckd": {
-        "name": "Caixas de Exportação CKD",
-        "description": "Embalagens para exportação de veículos e máquinas desmontadas (Complete Knock Down), com encaixe e proteção específicos para cada peça",
-        "use_cases": [
-            "Exportação de peças automotivas desmontadas",
-            "Envio de maquinário industrial em partes",
-            "Projetos de exportação com exigências de qualidade e rastreabilidade",
-        ],
-    },
-    "calcos": {
-        "name": "Calços de Papelão",
-        "description": "Suportes e espaçadores de papelão ondulado para proteção e fixação de peças durante o transporte",
-        "use_cases": [
-            "Proteção de peças metálicas, plásticas e elétricas durante transporte",
-            "Substituição de calços de espuma (mais sustentável e econômico)",
-            "Separadores internos de caixa para linhas de montagem",
-        ],
-    },
-    "envoltórios": {
-        "name": "Envoltórios de Papelão",
-        "description": "Chapas e envoltórios corrugados para proteção superficial de peças e produtos",
-        "use_cases": [
-            "Proteção de superfícies pintadas ou polidas",
-            "Envoltório de bobinas e rolos industriais",
-            "Proteção de perfis metálicos e plásticos",
-        ],
-    },
-    "tabuleiros": {
-        "name": "Tabuleiros de Papelão Ondulado",
-        "description": "Bandejas e tabuleiros para organização e movimentação de peças em linha de produção",
-        "use_cases": [
-            "Kitting de linha de montagem automotiva",
-            "Organização de peças pequenas para montagem manual",
-            "Transporte interno de peças entre setores",
-        ],
-    },
+        "description": "Caixas corrugadas personalizadas em qualquer dimensão",
+        "use_cases": ["Peças automotivas", "Componentes industriais"]
+    }
 }
-
-# =============================================================================
-# PERFIL DE CLIENTE IDEAL (ICP)
-# =============================================================================
 
 ICP = {
-    "industries": [
-        "Autopeças e montadoras",
-        "Máquinas e equipamentos industriais",
-        "Ferramentas e instrumentos",
-        "Motores e componentes elétricos/mecânicos",
-        "Exportadores de peças industriais",
-        "Fornecedores de linha de montagem (tier 1 e 2)",
-    ],
-    "company_profiles": [
-        "Empresas de médio e grande porte (100+ funcionários) que fabricam e exportam",
-        "Indústrias que consomem embalagem em volume contínuo (necessidade recorrente)",
-        "Empresas que têm departamento de Compras, Suprimentos ou Supply Chain estruturado",
-        "Fornecedores de montadoras (Toyota, Honda, Volkswagen, FCA, GM, Ford)",
-        "Empresas com processo de exportação CKD ou similares",
-    ],
-    "decision_makers": [
-        "Gerente / Analista de Compras",
-        "Coordenador de Suprimentos",
-        "Gerente de Supply Chain / Logística",
-        "Gerente de Produção (em empresas menores)",
-        "Engenheiro de Embalagens (em empresas maiores)",
-    ],
-    "pain_points": [
-        "Fornecedor atual atrasa ou tem rupturas de estoque frequentes",
-        "Embalagem padrão da Klabin/Irani não serve para peças específicas (precisa de customização)",
-        "Lead time longo do fornecedor atual — prejudica a linha de produção",
-        "Falta de Plano B de fornecimento — risco de parada de linha",
-        "Custo de parada de linha muito alto — qualquer atraso de embalagem é crítico",
-        "Dificuldade em conseguir embalagem para exportação CKD com especificações técnicas",
-        "Fornecedor atual não faz estoque — precisa pedir com muito antecedência",
-    ],
-    "disqualifiers": [
-        "Empresas de varejo ou food/beverage (embalagem primária, não é nosso foco)",
-        "Microempresas sem volume consistente",
-        "Empresas que só precisam de caixas simples e de baixo valor agregado (commodities)",
-    ],
+    "industries": ["Autopeças", "Máquinas Industriais"],
+    "company_profiles": ["Médio e grande porte (100+ funcionários)"],
+    "decision_makers": ["Gerente de Compras", "Supply Chain"],
+    "pain_points": ["Ruptura de estoque", "Lead time longo"],
+    "disqualifiers": ["Varejo", "Microempresas"]
 }
 
-# Clientes de referência (podem ser mencionados em cold outreach para construir credibilidade)
 REFERENCE_CLIENTS = [
     {"name": "Toyota TMD", "segment": "Montadora automotiva"},
-    {"name": "Cobreq", "segment": "Autopeças — baterias e componentes elétricos"},
-    {"name": "SEW-Eurodrive", "segment": "Motores e redutores industriais"},
-    {"name": "Fast Tools", "segment": "Ferramentas industriais"},
-    {"name": "TSA", "segment": "Sistemas de transmissão automotiva"},
-    {"name": "Singer do Brasil", "segment": "Máquinas industriais"},
-    {"name": "Dayco", "segment": "Correntes e correias automotivas"},
+    {"name": "Cobreq", "segment": "Autopeças"},
 ]
 
-# =============================================================================
-# PROPOSTA DE VALOR — TEXTOS DE PROSPECÇÃO
-# =============================================================================
-
 VALUE_PROPOSITIONS = {
-    "plano_b": (
-        "Toda indústria que depende de embalagem personalizada precisa de um Plano B. "
-        "A J.Ferres atende empresas como Toyota TMD, SEW e Dayco exatamente por isso: "
-        "quando o fornecedor principal atrasa, não tem estoque ou não consegue fazer uma caixa específica, "
-        "a J.Ferres resolve."
-    ),
-    "kanban_stock": (
-        "Trabalhamos com modelo Kanban: estocamos em fábrica com base no seu consumo histórico "
-        "e você retira conforme a demanda — sem pedido mínimo por lote, sem ruptura de linha."
-    ),
-    "custom_manufacturing": (
-        "Produzimos embalagens que Klabin e Irani não fazem: calços, tabuleiros, envoltórios "
-        "e caixas CKD com encaixe específico para cada peça. Trabalho manual, rastreável e com protótipo aprovado."
-    ),
-    "ckd_export": (
-        "Somos especialistas em embalagem CKD para exportação. Se a sua empresa exporta peças desmontadas, "
-        "desenvolvemos a embalagem junto com a sua engenharia — desde o protótipo até a produção em série."
-    ),
-    "just_in_time": (
-        "Entregamos just-in-time. Sabemos que parada de linha custa caro. "
-        "Por isso nosso compromisso é com o prazo, não com o lote mínimo."
-    ),
+    "plano_b": "Toda indústria precisa de um Plano B de embalagem.",
+    "kanban_stock": "Trabalhamos com modelo Kanban: estocamos em fábrica."
 }
 
 # =============================================================================
-# METODOLOGIA DE PROSPECÇÃO B2B
+# FUNÇÕES DINÂMICAS
 # =============================================================================
 
-PROSPECTING_METHODOLOGY = """
-METODOLOGIA DE PROSPECÇÃO J.FERRES — GUIA PARA O AGENTE
-
-PRINCÍPIOS FUNDAMENTAIS:
-1. RELEVÂNCIA ANTES DE VOLUME: Uma mensagem personalizada vale por 100 genéricas.
-2. REFERÊNCIA DE PARES: Mencionar um cliente do mesmo setor/porte aumenta credibilidade em 3x.
-3. CANAL CERTO: Email para primeiro contato formal (Compras prefere email). WhatsApp para follow-up se não houver resposta em 5 dias.
-4. URGÊNCIA REAL: Não criar urgência falsa. Usar urgência real do setor (parada de linha, exportação, auditoria de fornecedores).
-5. CURTO E DIRETO: Decisores de compras recebem dezenas de abordagens. Máximo 5 linhas no primeiro contato.
-
-SEQUÊNCIA DE CADÊNCIA RECOMENDADA:
-- Dia 0: Email de primeiro contato (apresentação + referência de par + CTA de reunião curta)
-- Dia 4 (sem resposta): WhatsApp direto ("Olá [nome], vi que enviei um email sobre embalagens — faz sentido conversar?")
-- Dia 9 (sem resposta): Email de follow-up com ângulo diferente (foco em Plano B ou caso de sucesso)
-- Dia 16 (sem resposta): Email de encerramento ("Entendemos se não for o momento. Se mudar, estamos aqui.")
-
-REGRAS DE ABORDAGEM:
-- NUNCA mencionar preço no primeiro contato
-- SEMPRE personalizar com o setor/produto da empresa prospectada
-- SEMPRE terminar com uma pergunta fechada de baixo comprometimento ("Faz sentido marcarmos 15 minutos?")
-- NUNCA copiar/colar template genérico — o comprador percebe na hora
-- SE a empresa for exportadora: mencionar CKD/exportação como gancho principal
-- SE a empresa for fornecedora de montadora: mencionar Toyota TMD / SEW como referência de par
-"""
-
-# =============================================================================
-# FUNÇÕES UTILITÁRIAS
-# =============================================================================
-
-def get_business_context_for_prompt() -> str:
+async def load_db_setting(key: str, default: Any = None) -> Any:
     """
-    Retorna um bloco de texto compacto com o contexto de negócio da J.Ferres
-    para ser injetado em prompts de prospecção e cold outreach.
+    Mantido para compatibilidade legado, mas agora redireciona para o 
+    BusinessContextService para usar as tabelas relacionais.
     """
-    ref_clients = ", ".join([c["name"] for c in REFERENCE_CLIENTS[:5]])
-    products = ", ".join([p["name"] for p in PRODUCTS.values()])
-    pain_points = "\n".join([f"- {p}" for p in ICP["pain_points"][:4]])
-    value_props = "\n".join([f"- {v}" for v in list(VALUE_PROPOSITIONS.values())[:3]])
+    ctx = await BusinessContextService.get_tenant_context()
+    if not ctx:
+        return default
+    
+    # Mapeamento de chaves legadas para o novo contexto
+    mapping = {
+        "company_profile": {
+            "company_name": ctx["company_name"],
+            "company_segment": ctx["company_segment"],
+            "company_differentials": ctx["company_differentials"],
+            "seller_name": ctx["seller_name"],
+            "seller_role": ctx["seller_role"]
+        },
+        "products": {"list": list(ctx["products"].values())},
+        "reference_clients": {"list": ctx["reference_clients"]},
+        "icp_config": ctx["icp"],
+        "hierarchy_config": ctx["hierarchy"]
+    }
+    
+    return mapping.get(key, default)
+
+async def get_business_context_for_prompt() -> str:
+    """
+    Retorna um bloco de texto compacto com o contexto de negócio dinâmico.
+    """
+    ctx = await BusinessContextService.get_tenant_context()
+    if not ctx:
+        return "Erro ao carregar contexto de negócio."
+
+    company_name = ctx["company_name"]
+    company_segment = ctx["company_segment"]
+    seller_name = ctx["seller_name"]
+    
+    diffs_str = "\n".join([f"- {d}" for d in ctx["company_differentials"]])
+    products_str = ", ".join([p["name"] for p in ctx["products"].values()])
+    ref_clients = ", ".join([c["name"] for c in ctx["reference_clients"][:5]])
+    pain_points_str = "\n".join([f"- {p}" for p in ctx["icp"]["pain_points"][:4]])
 
     return f"""
-=== CONTEXTO DA J.FERRES (Vendedor: {SELLER_NAME}) ===
-EMPRESA: {COMPANY_NAME} — {COMPANY_SEGMENT}
-PRODUTOS: {products}
+=== CONTEXTO DA {company_name.upper()} (Vendedor: {seller_name}) ===
+EMPRESA: {company_name} — {company_segment}
+PRODUTOS: {products_str}
 CLIENTES DE REFERÊNCIA: {ref_clients}
 DIFERENCIAIS PRINCIPAIS:
-- Fazemos o que Klabin, Irani e Papirus não fazem: embalagem manual, personalizada e CKD para exportação
-- Modelo Kanban com estoque em fábrica — just-in-time, sem ruptura
-- Atendimento consultivo desde o protótipo
+{diffs_str}
 
 DORES QUE RESOLVEMOS:
-{pain_points}
+{pain_points_str}
 
-PROPOSTA DE VALOR PARA LEAD FRIO:
-{value_props}
-
-PÚBLICO-ALVO: Compras, Suprimentos, Supply Chain em indústrias de autopeças, maquinário, ferramentas e exportadores.
+PÚBLICO-ALVO: Compras, Suprimentos, Supply Chain em indústrias e exportadores correspondentes.
 """.strip()
 
-
-def get_icp_score(company_info: dict) -> dict:
+async def get_icp_score(company_info: dict) -> dict:
     """
-    Pontua um lead com base no ICP da J.Ferres.
-    Retorna um dict com score (0-100) e motivos.
-
-    company_info esperado:
-    - segment (str): setor/segmento da empresa
-    - size (str): porte ("pequena", "media", "grande")
-    - exports (bool): se exporta
-    - has_purchasing_dept (bool): se tem depto de compras estruturado
-    - known_suppliers (list[str]): fornecedores conhecidos
+    Pontua um lead de forma dinâmica com base no ICP carregado do banco de dados.
     """
+    ctx = await BusinessContextService.get_tenant_context()
+    icp = ctx.get("icp", {})
+    rules = icp.get("score_rules", [])
+
     score = 0
     reasons = []
     penalties = []
 
     segment = (company_info.get("segment") or "").lower()
+    description = (company_info.get("description") or "").lower()
+    full_text = f"{segment} {description}"
 
-    # Setor — pontuação primária
-    high_fit_keywords = ["autopeça", "automotivo", "montadora", "motor", "redutor", "transmissão", "ferramenta", "máquina", "equipamento", "exportação"]
-    medium_fit_keywords = ["plástico", "borracha", "eletromecânico", "eletrônico", "metalúrgica", "mecânica"]
-    low_fit_keywords = ["alimento", "bebida", "cosmétic", "farmac", "varejo", "têxtil"]
+    # Aplicar regras dinâmicas do banco
+    for rule in rules:
+        pattern = rule["pattern"].lower()
+        if pattern in full_text:
+            val = rule["score"]
+            score += val
+            if val > 0:
+                reasons.append(rule["reason"])
+            else:
+                penalties.append(rule["reason"])
 
-    if any(k in segment for k in high_fit_keywords):
-        score += 40
-        reasons.append("Setor de alto encaixe (autopeças/industrial)")
-    elif any(k in segment for k in medium_fit_keywords):
-        score += 20
-        reasons.append("Setor de encaixe médio (industrial genérico)")
-    elif any(k in segment for k in low_fit_keywords):
-        score -= 20
-        penalties.append("Setor de baixo encaixe para embalagem industrial")
+    # Porte (Lógica básica mantida, mas poderia ser parametrizada também)
+    employees = company_info.get("employees", 0)
+    try:
+        emp_count = int(employees) if isinstance(employees, (int, float)) or (isinstance(employees, str) and employees.isdigit()) else 0
+    except: emp_count = 0
 
-    # Porte
-    size = (company_info.get("size") or "").lower()
-    if "grande" in size or "grande" in str(company_info.get("employees", 0)):
+    if emp_count >= 100:
         score += 20
         reasons.append("Empresa de grande porte — volume consistente")
-    elif "media" in size or "médio" in size:
+    elif emp_count >= 30:
         score += 10
         reasons.append("Empresa de médio porte")
 
@@ -273,19 +158,7 @@ def get_icp_score(company_info: dict) -> dict:
         score += 25
         reasons.append("Empresa exportadora — potencial para caixas CKD")
 
-    # Depto de compras estruturado
-    if company_info.get("has_purchasing_dept"):
-        score += 15
-        reasons.append("Departamento de compras estruturado")
-
-    # Fornecedores conhecidos (concorrentes)
-    known_suppliers = [s.lower() for s in (company_info.get("known_suppliers") or [])]
-    if any(s in known_suppliers for s in ["klabin", "irani", "papirus", "smurfit"]):
-        score += 10
-        reasons.append("Usa fornecedor grande — abertura para alternativas especializadas")
-
     score = max(0, min(100, score))
-
     tier = "A" if score >= 70 else "B" if score >= 40 else "C"
 
     return {
@@ -300,40 +173,13 @@ def get_icp_score(company_info: dict) -> dict:
         )
     }
 
-
-def get_cold_outreach_angle(company_info: dict) -> str:
-    """
-    Determina o melhor ângulo de abordagem para uma empresa específica.
-    Retorna uma string descrevendo o ângulo e os argumentos a usar.
-    """
-    segment = (company_info.get("segment") or "").lower()
-    exports = company_info.get("exports", False)
+async def get_cold_outreach_angle(company_info: dict) -> str:
+    """Determina o melhor ângulo de abordagem baseado no banco de dados."""
+    ctx = await BusinessContextService.get_tenant_context()
+    ref_names = [c["name"] for c in ctx["reference_clients"]]
+    client1 = ref_names[0] if len(ref_names) > 0 else "Toyota"
+    
     org_name = company_info.get("name", "a empresa")
-
-    if exports or any(k in segment for k in ["exportação", "ckd", "internacional"]):
-        return (
-            f"ÂNGULO: Exportação CKD\n"
-            f"USO: {org_name} provavelmente precisa de embalagem específica para exportação de peças desmontadas.\n"
-            f"GANCHO: 'Trabalhamos com Toyota TMD e SEW em embalagens CKD para exportação — seria relevante para vocês?'"
-        )
-
-    if any(k in segment for k in ["autopeça", "montadora", "tier 1", "tier 2"]):
-        return (
-            f"ÂNGULO: Plano B para fornecedores de montadora\n"
-            f"USO: Fornecedores de montadora têm zero tolerância a falha de embalagem — parada de linha é muito cara.\n"
-            f"GANCHO: 'Empresas como Cobreq e Dayco nos usam como Plano B exatamente por isso — qualquer ruptura do fornecedor atual e a linha não para.'"
-        )
-
-    if any(k in segment for k in ["ferramenta", "instrumento", "equipamento"]):
-        return (
-            f"ÂNGULO: Embalagem personalizada para peças específicas\n"
-            f"USO: Ferramentas e equipamentos industriais geralmente precisam de embalagem customizada com calços e separadores.\n"
-            f"GANCHO: 'Fazemos calços e tabuleiros personalizados para cada peça — o que as grandes fábricas não conseguem fazer.'"
-        )
-
-    # Ângulo genérico industrial
-    return (
-        f"ÂNGULO: Kanban + Just-in-Time\n"
-        f"USO: Toda indústria tem dor com supply chain de embalagem. Oferecer o modelo Kanban diferencia.\n"
-        f"GANCHO: 'Trabalhamos com estoque em fábrica no modelo Kanban — sem pedido mínimo, sem ruptura de linha.'"
-    )
+    
+    # Por enquanto mantemos os ângulos fixos mas usando dados dinâmicos nos ganchos
+    return f"GANCHO SUGERIDO: 'Trabalhamos com {client1} e resolvemos problemas de suprimentos. Seria relevante para a {org_name}?'"

@@ -74,9 +74,20 @@ export async function fetchWithRetry(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+  // Tenta recuperar o token JWT do localStorage se no ambiente do browser
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const authHeaders: Record<string, string> = {};
+  if (token) {
+    authHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
   try {
     const response = await fetch(url, {
       ...options,
+      headers: {
+        ...authHeaders,
+        ...options.headers,
+      },
       signal: controller.signal,
     });
 

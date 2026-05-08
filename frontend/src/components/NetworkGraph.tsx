@@ -18,7 +18,7 @@ import ReactFlow, {
     Connection,
     addEdge
 } from 'reactflow';
-import { Users, PanelRight, PanelRightOpen } from 'lucide-react';
+import { Users, PanelRight, PanelRightOpen, LogOut } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../utils/avatarUtils';
 
 import 'reactflow/dist/style.css';
@@ -92,7 +92,7 @@ const nodeTypes = Object.freeze({
 // Edge types também congelados para estabilidade
 const edgeTypes = Object.freeze({});
 
-export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: string }) {
+export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCnpj?: string, onLogout?: () => void }) {
 
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
@@ -1187,6 +1187,34 @@ export default function NetworkGraph({ defaultCnpj = "" }: { defaultCnpj?: strin
                                 title={showChat ? "Fechar Assistente" : "Abrir Assistente"}
                             >
                                 {showChat ? <PanelRightOpen size={20} /> : <PanelRight size={20} />}
+                            </button>
+                        )}
+                        {onLogout && (
+                            <button
+                                onClick={onLogout}
+                                className={`${styles.navIcon}`}
+                                style={{ 
+                                    background: 'transparent', 
+                                    border: 'none', 
+                                    cursor: 'pointer', 
+                                    padding: '8px', 
+                                    borderRadius: '8px', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    color: 'rgba(255, 255, 255, 0.6)',
+                                    transition: 'all 0.2s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = '#f87171';
+                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+                                    e.currentTarget.style.background = 'transparent';
+                                }}
+                                title="Sair da Conta"
+                            >
+                                <LogOut size={20} />
                             </button>
                         )}
                     </div>

@@ -1,7 +1,9 @@
 import re
 import unicodedata
+from services.ai.business_context_service import BusinessContextService
 
-negative_keywords = [
+# Fallbacks legados (J.Ferres)
+negative_keywords_fallback = [
     "customer service", "vendedor", "vendedora", "sales", "crm", "rh", "hr", "recurso humano", 
     "juridicio", "pessoal", "enfermagem", "fiscal", "comunicação", "communication", "it ", "software", 
     "desenvolvedor", "developer", "sistemas", "totvs", "datasul", "marketing", "vendas", "comercial", 
@@ -15,7 +17,6 @@ negative_keywords = [
     "manutenção Predial", "facilities management", "recepção", "portaria"
 ]
 
-# 🛒 DICIONÁRIO DE COMPRAS (DIVERSIFICADO)
 PURCHASING_KEYWORDS = [
     "Comprador", "Compradora", "Procurement", "Strategic Sourcing", "Buyer", 
     "Analista de Compras", "Sourcing", "Purchasing", "Category Manager", 
@@ -24,7 +25,6 @@ PURCHASING_KEYWORDS = [
     "Coordenador de Compras", "Gerente de Compras", "Diretor de Compras"
 ]
 
-# 📦 DICIONÁRIO DE LOGÍSTICA (DIVERSIFICADO)
 LOGISTICS_KEYWORDS = [
     "Logística", "Supply Chain", "Warehouse Manager", "PCP", "Coordenador de Logística",
     "Inventory", "Almoxarifado", "Expedição", "Logistics Operations", "Cadeia de Suprimentos",
@@ -39,126 +39,96 @@ def normalize_str(s: str) -> str:
     s = "".join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
     return s.strip()
 
-def get_seniority_level(role: str) -> int:
+async def get_seniority_level(role: str) -> int:
     role = role.lower()
-    # Nível 6: C-Level / Heads Globais / Sócios / Fundadores
-    if any(x in role for x in ["cpo", "csco", "coo", "chief operation", "chief procurement", "chief", "ceo", "president", "socio", "sócio", "owner", "fundador", "founder", "board"]): return 6
-    # Nível 5: Diretoria / VP / Superintendência
-    if any(x in role for x in ["diretor", "director", "vp", "vice president", "superintendente"]): return 5
-    # Nível 4: Gerência / Head / Lead / Chefia Geral
-    if any(x in role for x in ["gerente", "manager", "head", "lead", "gerenta", "chefe", "gestor"]): return 4
-    # Nível 3: Coordenação / Supervisão / Encarregados / Especialistas Sêniores
-    if any(x in role for x in ["coordenador", "coordinator", "supervisor", "lider", "líder", "encarregado", "specialist", "especialista", "sr.", "senior", "sênior", "supervisão"]): return 3
-    # Nível 1: Entrada / Apoio / Estágio / Operacional de base
-    if any(x in role for x in ["estagio", "estagiario", "estagiário", "intern", "aprendiz", "auxiliar", "assistente", "assistant", "conferente", "estoquista", "almoxarife", "operador", "jovem"]): return 1
-    # Nível 2: Analistas, Compradores, Engenheiros, Consultores e Planejadores (Jr/Pl/Default)
+    ctx = await BusinessContextService.get_tenant_context()
+    rules = ctx.get("hierarchy", {}).get("seniority_rules", {})
+    
+    if not rules:
+        # Fallback legados
+        if any(x in role for x in ["cpo", "csco", "coo", "chief operation", "chief procurement", "chief", "ceo", "president", "socio", "sócio", "owner", "fundador", "founder", "board"]): return 6
+        if any(x in role for x in ["diretor", "director", "vp", "vice president", "superintendente"]): return 5
+        if any(x in role for x in ["gerente", "manager", "head", "lead", "gerenta", "chefe", "gestor"]): return 4
+        if any(x in role for x in ["coordenador", "coordinator", "supervisor", "lider", "líder", "encarregado", "specialist", "especialista", "sr.", "senior", "sênior", "supervisão"]): return 3
+        if any(x in role for x in ["estagio", "estagiario", "estagiário", "intern", "aprendiz", "auxiliar", "assistente", "assistant", "conferente", "estoquista", "almoxarife", "operador", "jovem"]): return 1
+        return 2
+
+    # Usar regras do banco
+    for kw, score in sorted(rules.items(), key=lambda item: item[1], reverse=True):
+        if kw in role:
+            return score
+    
     return 2 
 
-def get_department_tag(role: str) -> str:
+async def get_department_tag(role: str) -> str:
     role = role.lower()
-    if any(x in role for x in ["compras", "procurement", "buyer", "comprador", "sourcing", "purchas", "category manager", "strategic buyer", "technical buyer"]): return "Procurement"
-    if any(x in role for x in ["supply", "suprimentos", "cadeia"]): return "Supply Chain"
-    if any(x in role for x in ["logistica", "logística", "logistics", "transporte", "distribuição", "warehouse", "armazém", "almoxarifado", "freight", "last mile", "expedição", "estoque", "frota", "wms", "tms"]): return "Logistics"
-    if any(x in role for x in ["comex", "import", "export", "comércio exterior"]): return "Comex"
-    if any(x in role for x in ["planejamento", "planning", "pdm", "pcp", "ppcp", "inventário"]): return "Planning"
-    if any(x in role for x in ["ceo", "coo", "diretor", "director", "manager", "gerente", "head", "president"]): return "Executive Management"
+    ctx = await BusinessContextService.get_tenant_context()
+    mapping = ctx.get("hierarchy", {}).get("department_mapping", {})
+
+    if not mapping:
+        # Fallback legado
+        if any(x in role for x in ["compras", "procurement", "buyer", "comprador", "sourcing", "purchas", "category manager", "strategic buyer", "technical buyer"]): return "Procurement"
+        if any(x in role for x in ["supply", "suprimentos", "cadeia"]): return "Supply Chain"
+        if any(x in role for x in ["logistica", "logística", "logistics", "transporte", "distribuição", "warehouse", "armazém", "almoxarifado", "freight", "last mile", "expedição", "estoque", "frota", "wms", "tms"]): return "Logistics"
+        if any(x in role for x in ["comex", "import", "export", "comércio exterior"]): return "Comex"
+        if any(x in role for x in ["planejamento", "planning", "pdm", "pcp", "ppcp", "inventário"]): return "Planning"
+        if any(x in role for x in ["ceo", "coo", "diretor", "director", "manager", "gerente", "head", "president"]): return "Executive Management"
+        return "Operations"
+
+    for kw, tag in mapping.items():
+        if kw in role:
+            return tag
+    
     return "Operations"
 
-def apply_strict_filters(name: str, title: str, snippet: str, core_company: str, target_brand: str, target_location: str = None) -> bool:
+async def apply_strict_filters(name: str, title: str, snippet: str, core_company: str, target_brand: str, target_location: str = None) -> bool:
     """
     PRE-FILTRO DE SEGURANÇA: Bloqueia marcas invasoras e lixo óbvio para economizar API da IA.
     Retorna True se o candidato PARECE ser da empresa certa, False se for lixo óbvio.
     """
-    # 🛡️ NORMALIZAÇÃO: Remove acentos para garantir match (ex: Böttcher -> Bottcher)
+    ctx = await BusinessContextService.get_tenant_context()
+    hier = ctx.get("hierarchy", {})
+    
     title_clean = normalize_str(title)
     snippet_clean = normalize_str(snippet)
     context_clean = f"{title_clean} | {snippet_clean}"
     
     brand_variants = [normalize_str(target_brand), normalize_str(core_company)]
-    if " " in target_brand:
-        brand_parts = target_brand.split()
-        if len(brand_parts[0]) > 2:
-            brand_variants.append(normalize_str(brand_parts[0]))
     
     # 🕵️ 1. SEGURANÇA DE MARCA
     has_our_brand = any(bv in context_clean for bv in brand_variants if len(bv) > 2)
     
-    # 🕵️ 4. FILTRAGEM POR RELEVÂNCIA (Whitelist vs Blacklist)
-    # Se houver uma palavra de ALTO VALOR, passamos para IA sem medo.
-    high_value_keywords = ["buyer", "compras", "comprador", "compradora", "purchasing", "suprimentos", "supply", "procurement", "sourcing", "strategic"]
-    is_high_value = any(kw in context_clean for kw in high_value_keywords)
+    # 🕵️ 2. FILTRAGEM POR RELEVÂNCIA (Whitelist)
+    whitelist_raw = hier.get("whitelist_keywords", ["buyer", "compras", "procurement", "suprimentos", "supply", "sourcing"])
+    if isinstance(whitelist_raw, dict):
+        whitelist = []
+        for lst in whitelist_raw.values():
+            if isinstance(lst, list):
+                whitelist.extend(lst)
+    elif isinstance(whitelist_raw, list):
+        whitelist = whitelist_raw
+    else:
+        whitelist = ["buyer", "compras", "procurement", "suprimentos", "supply", "sourcing"]
+        
+    is_high_value = any(kw in context_clean for kw in whitelist)
 
     if not has_our_brand and not is_high_value:
-        # Se não tem a marca E não é um cargo óbvio de compras, descarta
         return False
 
-    # 🕵️ 2. BLOQUEIO DE OUTRAS MARCAS (Anticoncorrente)
-    # Se mencionar outras marcas GRANDES no título com "na" ou "at", bloqueia
+    # 🕵️ 3. BLOQUEIO DE OUTRAS MARCAS
     other_competitors = ["mercedes", "scania", "volkswagen", "bosch", "zf ", "continental", "gm", "volvo"]
     for comp in other_competitors:
         normalized_comp = normalize_str(comp)
-        if f"at {normalized_comp}" in title_clean or f"na {normalized_comp}" in title_clean or f"no {normalized_comp}" in title_clean:
+        if f"at {normalized_comp}" in title_clean or f"na {normalized_comp}" in title_clean:
             return False
 
-    # 🕵️ 3. LIXO DE BUSCA (Páginas de vagas, perfis sem nome, etc)
-    junk_patterns = ["vagas em", "trabalhe na", "talentos", "recrutamento", "vaga para", "visualizar perfil", "quem e", "salario"]
-    if any(p in title_clean for p in junk_patterns):
-        return False
-
-    # 🕵️ 4. FILTRAGEM POR RELEVÂNCIA (Whitelist vs Blacklist)
-    # Se houver uma palavra de ALTO VALOR (Compras, Suprimentos, Sourcing), ignoramos as negativas e passamos para IA.
-    # Adicionado variações para capturar posts informativos (como o da Kamila)
-    positive_keywords = [
-        # --- COMPRAS / PROCUREMENT / SOURCING ---
-        "buyer", "comprador", "compradora", "compras", "purchasing", "suprimentos", "suprimento", 
-        "supply", "procurement", "sourcing", "strategic", "strategic sourcing", "indirect procurement", 
-        "direct procurement", "category manager", "capex buyer", "opex buyer", "insumos", 
-        "negociador", "cotacao", "fornecedores", "fornecedor", "contratos", "commodity", "commodities",
-        "purchasing agent", "purchasing analyst", "procurement specialist", "procurement officer",
-        "global sourcing", "supply management", "supply manager",
-        
-        # --- LOGÍSTICA / SUPPLY CHAIN ---
-        "logistic", "logistica", "supply chain", "cadeia de suprimentos", "warehouse", "almoxarifado", 
-        "almoxarife", "estoque", "conferente", "expedicao", "planejamento", "pcp", "ppcp", 
-        "distribuicao", "transportes", "transporte", "frota", "roteirizacao", "armazem", "inventario", 
-        "armazenagem", "recebimento", "demand planning", "demand planner", "inventory", "distribution",
-        "shipping", "receiving", "freight", "wms", "tms", "fulfillment", "materials planner",
-        
-        # --- COMÉRCIO EXTERIOR (COMEX) ---
-        "comex", "comercio exterior", "importacao", "exportacao", "desembaraco", "despachante", 
-        "import", "export", "trade", "customs", "international trade",
-        
-        # --- OPERAÇÕES & NEGOCIAÇÃO ---
-        "negociacao", "operacoes", "operations", "operacional", "fluxo de materiais",
-        
-        # --- EXECUTIVE / LIDERANÇA / C-LEVEL ---
-        "diretor", "diretora", "director", "gerente", "manager", "head", "coordenador", 
-        "coordenadora", "coordinator", "supervisor", "supervisora", "lider", "líder", "leader", 
-        "chefe", "chefia", "chief", "gestor", "gestora", "socio", "sócio", "partner", "fundador", 
-        "fundadora", "founder", "co-founder", "cofounder", "co-fundador", "owner", "proprietario", 
-        "proprietaria", "board", "c-level", "cpo", "csco", "coo", "ceo", "president", "presidente", 
-        "vice president", "vp", "managing director", "general manager"
-    ]
-    has_positive = any(pk in context_clean for pk in positive_keywords)
+    # 🕵️ 4. NEGATIVE KEYWORDS (Vetos do banco)
+    # Pega os vetos do departamento focado ou globais
+    focus = hier.get("department_focus", "compras")
+    forbidden = hier.get("forbidden_keywords", {}).get(focus, negative_keywords_fallback)
     
-    if has_positive:
-        # Se tem algo positivo (cargo, departamento ou liderança), deixamos a IA decidir
-        return True
-
-    # Só aplicamos o bloqueio de negativas se NÃO houver nenhuma palavra positiva forte
-    normalized_negatives = [normalize_str(nk) for nk in negative_keywords]
-    
-    # 🛡️ EVITAR FALSOS NEGATIVOS COM O NOME DA EMPRESA:
-    # Se uma palavra negativa (ex: "sistemas" em "Ápice Sistemas de Energia") fizer parte do nome da própria empresa/marca,
-    # nós removemos essa palavra das negativas ativas para evitar rejeitar todos os funcionários da empresa.
-    brand_words = set()
-    for bv in brand_variants:
-        if len(bv) > 2:
-            brand_words.update(bv.split())
-            
-    active_negatives = [nk for nk in normalized_negatives if nk not in brand_words]
-    
-    if any(nk in context_clean for nk in active_negatives):
+    normalized_negatives = [normalize_str(nk) for nk in forbidden]
+    if any(nk in context_clean for nk in normalized_negatives):
         return False
 
     return True

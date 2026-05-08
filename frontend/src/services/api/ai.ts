@@ -60,3 +60,53 @@ export function getQuotas() {
   }>>>('/ai/quotas');
 }
 
+export function getAllSettings() {
+  return api.get<Record<string, any>>('/settings');
+}
+
+export function getSetting(key: string) {
+  return api.get<{ key: string; category: string; value: any }>(`/settings/${key}`);
+}
+
+export function updateSetting(key: string, value: any, category?: string) {
+  return api.post<{ status: string; key: string; value: any }>(`/settings/${key}`, { value, category });
+}
+
+// --- V2 SaaS Settings ---
+
+export function getFullContext() {
+  return api.get<any>('/settings/v2/context');
+}
+
+export function updateProfile(payload: any) {
+  return api.post<any>('/settings/v2/profile', payload);
+}
+
+export function getProductsV2() {
+  return api.get<any[]>('/settings/v2/products');
+}
+
+export function addProductV2(payload: any) {
+  return api.post<any>('/settings/v2/products', payload);
+}
+
+export function deleteProductV2(productId: string) {
+  return api.delete<any>(`/settings/v2/products/${productId}`);
+}
+
+export function updateICPV2(payload: any) {
+  return api.post<any>('/settings/v2/icp', payload);
+}
+
+export function updateHierarchyV2(payload: any) {
+  return api.post<any>('/settings/v2/hierarchy', payload);
+}
+
+export function getIntegrations() {
+  return api.get<any>('/settings/v2/integrations');
+}
+
+export function updateIntegration(type: string, payload: any) {
+  return api.post<any>(`/settings/v2/integrations/${type}`, payload);
+}
+

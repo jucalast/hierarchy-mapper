@@ -52,7 +52,7 @@ async def qualify_prospect(
     """
     enriched = await _extract_company_data(company_name, description, location, linkedin_url)
 
-    icp_result = get_icp_score({
+    icp_result = await get_icp_score({
         "segment": enriched.get("segment", ""),
         "size": enriched.get("size_label", ""),
         "exports": enriched.get("exports", False),
@@ -60,7 +60,7 @@ async def qualify_prospect(
         "known_suppliers": enriched.get("known_suppliers", []),
     })
 
-    angle = get_cold_outreach_angle({
+    angle = await get_cold_outreach_angle({
         "name": company_name,
         "segment": enriched.get("segment", ""),
         "exports": enriched.get("exports", False),

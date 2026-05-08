@@ -1,7 +1,15 @@
+
+
 from fastapi import APIRouter
-from api.v1.endpoints import proxy, hierarchy, brand, pipedrive, intelligence, jobs, ai, organizations, search, conversations, triggers, agent_v2, prospecting
+from api.v1.endpoints import proxy, hierarchy, brand, pipedrive, intelligence, jobs, ai, organizations, search, conversations, triggers, agent_v2, prospecting, settings, auth
 
 api_router = APIRouter()
+
+# Auth endpoints: /api/v1/auth/*
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+
+# Settings endpoints: /api/v1/settings/*
+api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 
 # Jobs & Background Tasks: /api/v1/jobs/*
 api_router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])

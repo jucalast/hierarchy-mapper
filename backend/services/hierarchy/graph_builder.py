@@ -47,7 +47,7 @@ def build_socio_nodes(qsa: list, razao_social: str) -> List[Dict[str, Any]]:
     return nodes
 
 
-def assign_managers(
+async def assign_managers(
     new_emp: EmployeeNode,
     hierarchy_pool: List[EmployeeNode]
 ) -> str:
@@ -56,7 +56,7 @@ def assign_managers(
     Usa departamento matching + nível sênior imediato.
     """
     if new_emp.level <= 0:
-        new_emp.level = get_seniority_level(new_emp.role)
+        new_emp.level = await get_seniority_level(new_emp.role)
         if new_emp.level <= 0:
             new_emp.level = 1
 

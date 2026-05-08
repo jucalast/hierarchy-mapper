@@ -260,7 +260,11 @@ Responda APENAS JSON:
         
         # --- ETAPA 2: O ESPECIALISTA DE RH (REFINO DE CARGO E DEPARTAMENTO) ---
         area_label = "SUPRIMENTOS / COMPRAS / PROCUREMENT" if area_focus == "compras" else "LOGÍSTICA / SUPPLY CHAIN"
-        forbidden_list = self.FORBIDDEN_KEYWORDS.get(area_focus, [])
+        
+        from services.ai.business_context import load_db_setting
+        hierarchy_config = await load_db_setting("hierarchy_config", {})
+        forbidden_dict = hierarchy_config.get("forbidden_keywords", self.FORBIDDEN_KEYWORDS) if isinstance(hierarchy_config, dict) else self.FORBIDDEN_KEYWORDS
+        forbidden_list = forbidden_dict.get(area_focus, [])
         forbidden = ", ".join(forbidden_list)
         
         # 🛡️ FIX #1: Injeta resultado do Detetive no Especialista (Cascata de Dados)

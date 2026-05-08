@@ -2948,3 +2948,37 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-08T10:40:19.028626",
+    "candidate": "Bruno Duarte",
+    "linkedin": "https://www.linkedin.com/in/brunoduarterh",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bruno Duarte - RHesolve | LinkedIn",
+            "body": "March 4, 2026 - Sou especialista em Recursos Humanos e Gestão Estratégica de Pessoas, com mais de 15 anos … · Experience: RHesolve · Education: Universidade Veiga de Almeida · Location: Rio de Janeiro · 500+ connections on LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "rhesolve",
+            "bio": "Sou especialista em Recursos Humanos e Gestão Estratégica de Pessoas, com mais de 15 anos… · Experiência: RHesolve · Formação acadêmica: Universidade Veiga de Almeida · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Bruno Duarte no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/brunoduarterh",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------

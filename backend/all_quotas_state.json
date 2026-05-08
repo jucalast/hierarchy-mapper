@@ -18,17 +18,18 @@
       "tokens_limit": 12000,
       "tokens_remaining": 11963,
       "tokens_pct": 99.7,
-      "updated_at": 1778179814.3418913
+      "updated_at": 1778263609.67185,
+      "status": "healthy"
     },
     "meta-llama/llama-4-scout-17b-16e-instruct": {
-      "used": 85,
+      "used": 50,
       "limit": 1000,
-      "remaining": 915,
-      "pct": 91.5,
+      "remaining": 950,
+      "pct": 95.0,
       "tokens_limit": 30000,
       "tokens_remaining": 29988,
       "tokens_pct": 100.0,
-      "updated_at": 1778245468.9944868,
+      "updated_at": 1778267407.6608372,
       "status": "healthy"
     },
     "qwen/qwen3-32b": {
@@ -83,7 +84,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1778245470.3478916,
+      "updated_at": 1778267408.011552,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -93,7 +94,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1778245470.596248,
+      "updated_at": 1778267408.2915742,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -105,7 +106,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1778245473.3616817,
+      "updated_at": 1778267410.4146526,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"

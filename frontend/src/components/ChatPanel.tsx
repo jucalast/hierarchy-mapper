@@ -332,9 +332,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // ─── Ensure thread before sending ───────────────────────
     const ensureThread = async (): Promise<string | null> => {
         if (activeThread) return activeThread.id;
-        if (!selectedOrgId) return null;
+        const targetOrgId = selectedOrgId || 0;
         try {
-            const t = await conversations.createThread(selectedOrgId);
+            const t = await conversations.createThread(targetOrgId);
             setActiveThread(t);
             setThreads(prev => [t, ...prev]);
             return t.id;
@@ -432,9 +432,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                     suggested_actions: chunk.data?.suggested_actions || [],
                                 }]);
                                 // Refresh thread title/count silently
-                                if (selectedOrgId) {
-                                    conversations.listThreads(selectedOrgId).then(setThreads).catch(() => {});
-                                }
+                                const targetOrgId = selectedOrgId || 0;
+                                conversations.listThreads(targetOrgId).then(setThreads).catch(() => {});
                             }
                         } catch { /* ignore */ }
                     }
@@ -919,12 +918,24 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     noInitialFallback={true}
                     style={{ border: selectedOrgLogo ? '3px solid #272727ff' : 'none' }}
                 />
-                <div className={styles.chatSubHeaderInfo} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 0 auto' }}>
+                <div className={styles.chatSubHeaderInfo} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0 }}>
                     <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
                         {activeThread?.title || 'Nova conversa'}
                     </span>
                     <span style={{ color: 'rgba(255, 255, 255, 0.15)', fontWeight: 300, fontSize: '0.88rem', flexShrink: 0 }}>/</span>
-                    <span style={{ color: '#ffffff', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
+                    <span 
+                        style={{ 
+                            color: '#ffffff', 
+                            fontWeight: 600, 
+                            fontSize: '0.88rem', 
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: '180px',
+                            flexShrink: 1
+                        }}
+                        title={selectedOrgName || 'Geral'}
+                    >
                         {selectedOrgName || 'Geral'}
                     </span>
                 </div>
@@ -954,21 +965,28 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 {messages.length === 0 ? (
                     <div className={styles.emptyWelcomeContainer}>
                         <h2 className={styles.emptyWelcomeText}>
-                            Olá! Como posso ajudar com a{' '}
-                            <span style={{
-                                backgroundColor: '#1e2145',
-                                color: '#7a8bff',
-                                padding: '2px 10px',
-                                borderRadius: '6px',
-                                border: '1px solid rgba(122, 139, 255, 0.15)',
-                                fontWeight: 500,
-                                display: 'inline-block',
-                                lineHeight: '1.3',
-                                verticalAlign: 'middle',
-                                transform: 'translateY(-1px)'
-                            }}>
-                                @{selectedOrgName || 'empresa'}
-                            </span>?
+                            {selectedOrgName ? (
+                                <>
+                                    Olá! Como posso ajudar com a{' '}
+                                    <span style={{
+                                        backgroundColor: '#1e2145',
+                                        color: '#7a8bff',
+                                        padding: '2px 8px',
+                                        borderRadius: '4px',
+                                        border: '1px solid rgba(122, 139, 255, 0.15)',
+                                        fontWeight: 500,
+                                        display: 'inline',
+                                        boxDecorationBreak: 'clone',
+                                        WebkitBoxDecorationBreak: 'clone',
+                                        lineHeight: '1.6',
+                                        verticalAlign: 'baseline'
+                                    }}>
+                                        @{selectedOrgName}
+                                    </span>?
+                                </>
+                            ) : (
+                                "Olá! como posso te ajudar Hoje?"
+                            )}
                         </h2>
                         <div className={styles.emptyInputWrapper}>
                             {renderChatInput()}

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 import re
 
 def clean_cnpj(val: str) -> str:
@@ -43,3 +43,46 @@ class ConfirmEnrichRequest(BaseModel):
 class CandidateActionRequest(BaseModel):
     employee_id: str
     action: str # 'approve' or 'reject'
+
+# --- SaaS / Settings Schemas ---
+
+class ProductSchema(BaseModel):
+    id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    use_cases: Optional[List[str]] = None
+
+class ReferenceClientSchema(BaseModel):
+    id: Optional[str] = None
+    name: str
+    segment: Optional[str] = None
+    pain_solved: Optional[str] = None
+
+class BusinessProfileSchema(BaseModel):
+    segment: Optional[str] = None
+    differentials: Optional[List[str]] = None
+    methodology: Optional[str] = None
+    seller_name: Optional[str] = None
+    seller_role: Optional[str] = None
+    value_propositions: Optional[dict] = None
+
+class ICPRuleSchema(BaseModel):
+    rule_type: str
+    value_pattern: str
+    weight_score: int
+    reason: str
+
+class ICPConfigSchema(BaseModel):
+    industries_target: Optional[List[str]] = None
+    company_size_target: Optional[List[str]] = None
+    decision_makers: Optional[List[str]] = None
+    disqualifiers: Optional[List[str]] = None
+    pain_points: Optional[List[str]] = None
+    score_rules: Optional[List[ICPRuleSchema]] = None
+
+class HierarchyConfigSchema(BaseModel):
+    department_focus: str
+    forbidden_keywords: Optional[dict] = None
+    whitelist_keywords: Optional[Any] = None
+    seniority_rules: Optional[dict] = None
+    department_mapping_rules: Optional[dict] = None

@@ -104,6 +104,23 @@ class PipedriveService:
             url += f"&{k}={v}"
         return url
 
+    async def _ensure_credentials(self) -> None:
+        """Carrega dinamicamente as credenciais de integração do banco de dados (SaaS)."""
+        try:
+            from services.ai.business_context_service import BusinessContextService
+            t_id = await BusinessContextService.get_first_tenant_id()
+            if t_id:
+                creds = await BusinessContextService.get_integration_credentials(t_id, "pipedrive")
+                if creds:
+                    token = creds.get("api_token")
+                    uid = creds.get("user_id")
+                    if token:
+                        self.api_token = token
+                    if uid:
+                        self.user_id = int(uid)
+        except Exception as e:
+            log.warning("pipedrive_service.ensure_credentials_failed", error=str(e))
+
     # ---------------------------------------------------------------------
     # Core: requisição com rate-limit, breaker e métricas
     # ---------------------------------------------------------------------
@@ -117,6 +134,7 @@ class PipedriveService:
         params: Optional[dict] = None,
         timeout: Optional[float] = None,
     ) -> Optional[httpx.Response]:
+        await self._ensure_credentials()
         try:
             self._breaker.ensure_available()
         except CircuitOpenError:

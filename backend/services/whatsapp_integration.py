@@ -18,6 +18,21 @@ class WhatsAppIntegration:
     """Integração com WhatsApp Service para enriquecimento de contatos."""
     
     @staticmethod
+    async def _get_service_url() -> str:
+        """Carrega dinamicamente a URL do WhatsApp Service a partir do banco de dados (SaaS)."""
+        try:
+            from services.ai.business_context_service import BusinessContextService
+            from core.config import settings
+            t_id = await BusinessContextService.get_first_tenant_id()
+            if t_id:
+                creds = await BusinessContextService.get_integration_credentials(t_id, "whatsapp")
+                if creds and creds.get("service_url"):
+                    return creds["service_url"]
+            return getattr(settings, "WHATSAPP_SERVICE_URL", "http://localhost:8001/api/whatsapp")
+        except Exception:
+            return "http://localhost:8001/api/whatsapp"
+
+    @staticmethod
     async def get_contact_status(phone_number: str) -> Optional[Dict]:
         """
         Busca status de um contato no WhatsApp.
@@ -27,14 +42,6 @@ class WhatsAppIntegration:
         
         Returns:
             Dict com dados do contato ou None se não encontrado
-            {
-                "id": "5511987654321@c.us",
-                "name": "João Silva",
-                "number": "5511987654321",
-                "isBusiness": false,
-                "isMyContact": true,
-                "status": "found"  # ou "not_found"
-            }
         """
         if not phone_number or not phone_number.strip():
             return None
@@ -43,9 +50,10 @@ class WhatsAppIntegration:
         clean_number = phone_number.replace("+", "").replace("-", "").replace(" ", "").replace("@c.us", "")
         
         try:
+            service_url = await WhatsAppIntegration._get_service_url()
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
                 # Tentar buscar pelo número no WhatsApp Service
-                url = f"{WHATSAPP_SERVICE_URL}/contacts/by-number/{clean_number}"
+                url = f"{service_url}/contacts/by-number/{clean_number}"
                 response = await client.get(url)
                 
                 if response.status_code == 200:
@@ -98,8 +106,9 @@ class WhatsAppIntegration:
             return []
         
         try:
+            service_url = await WhatsAppIntegration._get_service_url()
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-                url = f"{WHATSAPP_SERVICE_URL}/contacts/search"
+                url = f"{service_url}/contacts/search"
                 params = {
                     "name": name,
                     "minSimilarity": min_similarity,

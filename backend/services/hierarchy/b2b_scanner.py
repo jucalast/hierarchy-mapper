@@ -82,9 +82,15 @@ async def discover_employees_stream(
     # 1. CLEAN BRAND FOR SEARCH (Remove ruído corporativo: GmbH, Ltda, etc)
     clean_brand = temp_brand.replace("Gmb H", "").replace("GmbH", "").replace("Ltda", "").replace("S.A.", "").strip()
     
-    # 2. DYNAMIC QUERY GENERATION (Lê do centralizador filters.py)
+    # 2. DYNAMIC QUERY GENERATION (Lê do centralizador filters.py com suporte a banco de dados)
     search_location = location if location else "Brasil"
-    selected_terms = LOGISTICS_KEYWORDS if area_focus == "logistica" else PURCHASING_KEYWORDS
+    
+    from services.ai.business_context import load_db_setting
+    hierarchy_config = await load_db_setting("hierarchy_config", {})
+    purchasing_kws = hierarchy_config.get("purchasing_keywords", PURCHASING_KEYWORDS) if isinstance(hierarchy_config, dict) else PURCHASING_KEYWORDS
+    logistics_kws = hierarchy_config.get("logistics_keywords", LOGISTICS_KEYWORDS) if isinstance(hierarchy_config, dict) else LOGISTICS_KEYWORDS
+    
+    selected_terms = logistics_kws if area_focus == "logistica" else purchasing_kws
     base_queries = []
     
     # ==== REGRA DE NEGÓCIO: PRIORIZAR SÓCIOS DO CNPJ ====

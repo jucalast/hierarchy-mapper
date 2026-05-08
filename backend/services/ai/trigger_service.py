@@ -458,7 +458,7 @@ async def _analyze_trigger(trigger: Dict, session) -> None:
                 log.debug("trigger.history_error", error=str(he)[:100])
 
         prompt = INCOMING_RESPONSE_ANALYSIS_PROMPT.format(
-            business_context=get_business_context_for_prompt(),
+            business_context=await get_business_context_for_prompt(),
             company_name=trigger["org_name"],
             history_summary=history_summary,
             channel=trigger["channel"],

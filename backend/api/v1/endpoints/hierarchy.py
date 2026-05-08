@@ -64,7 +64,7 @@ async def candidate_action(payload: CandidateActionRequest, db: AsyncSession = D
         if emp.role == "Análise Humana":
             emp.role = emp.headline or "Colaborador"
             # Recalcula departamento se necessário
-            emp.department = get_department_tag(emp.role)
+            emp.department = await get_department_tag(emp.role)
         
         await db.commit()
         return {"status": "success", "message": f"Candidato {emp.name} aprovado."}
@@ -133,7 +133,7 @@ async def refine_hierarchy(
             
             # Garantir que funcionário não seja Nível 0 (reservado para a empresa)
             if original_id != "root_company" and new_level == 0:
-                new_level = get_seniority_level(node.get("role", ""))
+                new_level = await get_seniority_level(node.get("role", ""))
 
             # RESOLUÇÃO DE MANAGER ID PARA PERSISTÊNCIA ESTÁVEL
             final_manager_id = new_manager_id
@@ -224,7 +224,7 @@ async def get_company_hierarchy(
             department="Quadro de Sócios (QSA)",
             company=razao_social,
             manager_id=None,
-            level=1 if "sócio" in cargo_socio.lower() or "administrador" in cargo_socio.lower() else get_seniority_level(cargo_socio)
+            level=1 if "sócio" in cargo_socio.lower() or "administrador" in cargo_socio.lower() else await get_seniority_level(cargo_socio)
         ))
         
     raw_name = data.get("nome_fantasia") or razao_social
@@ -239,10 +239,10 @@ async def get_company_hierarchy(
             id=f"engine_{len(temp_employees)}",
             name=lead.get("name", "Colaborador"),
             role=cargo_custom,
-            department=get_department_tag(cargo_custom),
+            department=await get_department_tag(cargo_custom),
             company=lead.get("company"),
             manager_id=None,
-            level=get_seniority_level(cargo_custom),
+            level=await get_seniority_level(cargo_custom),
             email=lead.get("email"),
             linkedin=lead.get("linkedin")
         ))
@@ -260,7 +260,7 @@ async def get_company_hierarchy(
         
     supply_chain_employees = []
     for e in temp_employees:
-        dept = get_department_tag(e.role)
+        dept = await get_department_tag(e.role)
         if any(keyword in dept for keyword in [
             "Compras", "Logística", "Diretoria Executiva", "Corporativo Geral", "QSA"
         ]) or "QSA" in e.department or e.id == "aviso":
@@ -273,18 +273,19 @@ async def get_company_hierarchy(
 
     for e in temp_employees:
         assigned_manager = "root_company"
-        my_dept = get_department_tag(e.role)
+        my_dept = await get_department_tag(e.role)
         for senior_level in range(e.level - 1, 0, -1):
             if not levels_map.get(senior_level): continue
             candidates = levels_map[senior_level]
-            matching_bosses = [
-                b for b in candidates 
-                if get_department_tag(b.role) == my_dept 
-                or any(keyword in get_department_tag(b.role) for keyword in [
-                    "Diretoria Executiva", "Corporativo Geral", "Compras"
-                ])
-                or "QSA" in b.department
-            ]
+            
+            matching_bosses = []
+            for b in candidates:
+                b_dept = await get_department_tag(b.role)
+                if (b_dept == my_dept 
+                    or any(keyword in b_dept for keyword in ["Diretoria Executiva", "Corporativo Geral", "Compras"])
+                    or "QSA" in b.department):
+                    matching_bosses.append(b)
+            
             if matching_bosses:
                 assigned_manager = matching_bosses[0].id
                 break
@@ -391,7 +392,7 @@ async def stream_company_hierarchy(
                 )
                 
                 # Atribuição de manager via módulo graph_builder
-                emp.manager_id = assign_managers(emp, hierarchy_pool)
+                emp.manager_id = await assign_managers(emp, hierarchy_pool)
                 
                 # Re-ligamento dinâmico de subordinados existentes
                 reparented_nodes = reparent_subordinates(emp, hierarchy_pool)
@@ -471,7 +472,7 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
         
         # Proteção: Funcionário não pode ser Nível 0 (senão vira root entity no UI)
         if level <= 0:
-            level = get_seniority_level(emp.role)
+            level = await get_seniority_level(emp.role)
             
         manager_id = emp.manager_id
         if not manager_id or manager_id == "None":
@@ -495,7 +496,7 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
             "role": emp.role, 
             "level": level,
             "seniority": level,
-            "department": get_department_tag(emp.role), 
+            "department": await get_department_tag(emp.role), 
             "manager_id": manager_id, 
             "linkedin": emp.linkedin_url, 
             "url": emp.linkedin_url, 
