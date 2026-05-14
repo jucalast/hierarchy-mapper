@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Loader2, ChevronRight, Sparkles, ArrowLeft, PanelRightOpen, PanelRightClose, Clock, Trash2, Plus } from 'lucide-react';
+import { Loader2, ChevronRight, Sparkles, ArrowLeft, PanelRightOpen, PanelRightClose, Clock, Trash2, Plus, CheckCircle2, XCircle, AlertTriangle, Maximize2, Minimize2, Terminal, Check, X } from 'lucide-react';
 import styles from './ChatPanel.module.css';
 
 import { Message, CompanyResult } from './chat/ChatInterfaces';
 import { ChatInput } from './chat/ChatInput';
 import { AIModel, ModelSelector } from './chat/ModelSelector';
 import { ChatMessage, RichLogRenderer } from './chat/ChatMessage';
-import { AgentV2Message } from './chat/AgentV2Message';
+import { AgentV2Message, V2Event, TaskStatus, InlineEventStream, MappedContact } from './chat/AgentV2Message';
 import { ModelActivityEvent } from './chat/ModelActivityBar';
 import { ActivitySidebar } from './chat/ActivitySidebar';
 import { ThreadList } from './chat/ThreadList';
@@ -44,8 +44,22 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 }) => {
     const { isListening, isTranscribing, transcript, finalTranscript, error: voiceError, startListening, stopListening, clearTranscript, isSupported: voiceSupported, analyserNode } = useSpeechToText();
 
+    const hasValidOrg = !!(selectedOrgName && selectedOrgName.trim() !== '');
+    const cleanOrgName = hasValidOrg ? selectedOrgName!.trim() : '';
+
     // ─── View state ──────────────────────────────────────────
-    const [view, setView] = useState<PanelView>('chat');
+    const [view, setView] = useState<PanelView>(() => {
+        if (typeof window !== 'undefined') {
+            const targetOrgId = selectedOrgId || 0;
+            const savedThreadId = window.localStorage.getItem(`active-thread-id-${targetOrgId}`);
+            const savedView = window.localStorage.getItem('chat-panel-view');
+            if (savedView === 'list' && !savedThreadId) {
+                return 'list';
+            }
+            return (savedView as PanelView) || 'chat';
+        }
+        return 'chat';
+    });
     const [activeThread, setActiveThread] = useState<ThreadOut | null>(null);
 
     // ─── Thread list state ───────────────────────────────────
@@ -111,6 +125,269 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [isAtBottom, setIsAtBottom] = useState(true);
     const [threadToDelete, setThreadToDelete] = useState<ThreadOut | null>(null);
 
+    // ─── External Task Runner State & Handlers ───────────────
+    const [activeRunningTask, setActiveRunningTask] = useState<{
+        label: string;
+        prompt: string;
+        status: TaskStatus;
+        logs: V2Event[];
+        isExpanded: boolean;
+        orgId?: number | null;
+        threadId?: string;
+        actionIndex: number;
+        parentMessageId?: string;
+    } | null>(null);
+
+    const [approvedSuggestedActions, setApprovedSuggestedActions] = useState<Record<string, TaskStatus>>({});
+    const [taskInlineConfirmed, setTaskInlineConfirmed] = useState<Record<string, boolean>>({});
+    const taskConsoleLogsBottomRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (activeRunningTask?.isExpanded) {
+            taskConsoleLogsBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [activeRunningTask?.logs, activeRunningTask?.isExpanded]);
+
+
+
+    const streamTaskInto = async (url: string, body: object, initialTaskState: typeof activeRunningTask) => {
+        const collected: V2Event[] = [];
+        
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...body }),
+                signal: controller.signal,
+            });
+            if (!response.ok || !response.body) return collected;
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    try {
+                        const ev: V2Event = JSON.parse(line);
+                        collected.push(ev);
+                        setActiveRunningTask(prev => {
+                            if (!prev) return null;
+                            return {
+                                ...prev,
+                                logs: [...prev.logs, ev]
+                            };
+                        });
+                    } catch { /* ignore */ }
+                }
+            }
+        } catch (err) {
+            if ((err as any)?.name === 'AbortError') {
+                console.log('[Task Console] Stream cancelado');
+            } else {
+                console.error('[Task Console] Erro:', err);
+            }
+        } finally {
+            if (abortControllerRef.current === controller) {
+                abortControllerRef.current = null;
+            }
+        }
+        return collected;
+    };
+
+    const handleApproveSuggestedAction = async (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => {
+        const taskKey = `${parentMessageId}-${index}`;
+        
+        setApprovedSuggestedActions(prev => ({
+            ...prev,
+            [taskKey]: 'streaming'
+        }));
+
+        const newTask = {
+            label: action.label,
+            prompt: action.prompt,
+            status: 'streaming' as const,
+            logs: [] as V2Event[],
+            isExpanded: true, // Autoexpand upon approval for immersive execution Console!
+            orgId: selectedOrgId,
+            threadId: activeThread?.id,
+            actionIndex: index,
+            parentMessageId,
+        };
+        
+        setActiveRunningTask(newTask);
+        setTaskInlineConfirmed({});
+
+        try {
+            const collected = await streamTaskInto(V2_STREAM_URL, {
+                message: action.prompt,
+                org_id: selectedOrgId,
+                thread_id: activeThread?.id,
+                history: [],
+                direct_action: true,
+                parent_message_id: parentMessageId,
+                action_index: index,
+            }, newTask);
+
+            const hierarchyEv = collected.find(e => e.type === 'hierarchy_mapping_required');
+            const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
+            
+            let finalStatus: TaskStatus = 'done';
+            if (hierarchyEv) {
+                finalStatus = 'awaiting_mapping';
+            } else if (pendingConfirm) {
+                finalStatus = 'awaiting_confirm';
+            }
+
+            setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
+            setApprovedSuggestedActions(prev => ({
+                ...prev,
+                [taskKey]: finalStatus
+            }));
+            
+            if (selectedOrgId) {
+                conversations.listThreads(selectedOrgId).then(setThreads).catch(() => {});
+            }
+        } catch {
+            setActiveRunningTask(prev => prev ? { ...prev, status: 'error' } : null);
+            setApprovedSuggestedActions(prev => ({
+                ...prev,
+                [taskKey]: 'error'
+            }));
+        }
+    };
+
+    const handleTaskInlineConfirm = async (action_id: string, approved: boolean) => {
+        if (!activeRunningTask) return;
+        
+        setTaskInlineConfirmed(prev => ({ ...prev, [action_id]: approved }));
+
+        if (!approved) {
+            setActiveRunningTask(prev => prev ? { ...prev, status: 'done' } : null);
+            if (activeRunningTask.parentMessageId) {
+                const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'done' }));
+            }
+            return;
+        }
+
+        setActiveRunningTask(prev => prev ? { ...prev, status: 'streaming' } : null);
+        if (activeRunningTask.parentMessageId) {
+            const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+            setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'streaming' }));
+        }
+
+        try {
+            const collected = await streamTaskInto(V2_CONFIRM_URL, {
+                action_id,
+                approved: true,
+                thread_id: activeThread?.id,
+            }, activeRunningTask);
+            
+            const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
+            let finalStatus: TaskStatus = 'done';
+            if (pendingConfirm) {
+                finalStatus = 'awaiting_confirm';
+            }
+
+            setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
+            if (activeRunningTask.parentMessageId) {
+                const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
+            }
+        } catch {
+            setActiveRunningTask(prev => prev ? { ...prev, status: 'error' } : null);
+            if (activeRunningTask.parentMessageId) {
+                const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'error' }));
+            }
+        }
+    };
+
+    const handleTaskMappingComplete = async (contacts: MappedContact[]) => {
+        if (!activeRunningTask) return;
+
+        const hierarchyEv = activeRunningTask.logs.find(e => e.type === 'hierarchy_mapping_required');
+        if (!hierarchyEv) return;
+
+        setActiveRunningTask(prev => prev ? { ...prev, status: 'streaming' } : null);
+        if (activeRunningTask.parentMessageId) {
+            const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+            setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'streaming' }));
+        }
+
+        const contactsSummary = contacts.length > 0
+            ? `Contatos reais encontrados pelo mapeamento (${contacts.length} total): ` +
+              contacts.slice(0, 8).map((c: MappedContact) =>
+                  `${c.name} (${c.role}${c.email ? ', ' + c.email : ''}${c.temperature ? ', temp=' + c.temperature : ''})`
+              ).join(' | ')
+            : 'Nenhum contato foi encontrado no mapeamento.';
+
+        const preTaskClause = hierarchyEv.pre_task_id
+            ? `Marque a tarefa de rastreamento pre_task_id=${hierarchyEv.pre_task_id} como concluída com pipedrive_update_task done=true. `
+            : '';
+
+        const continuation = (
+            `EXECUTE ESTAS ETAPAS EM ORDEM:\n` +
+            `1. Mapeamento de hierarquia concluído para "${hierarchyEv.org_name}". ${contactsSummary}\n` +
+            `2. Para cada contato relevante acima (priorize decisores de compras, level alto ou temperature=hot/warm), ` +
+            `sugira criá-lo no Pipedrive com pipedrive_create_person` +
+            (hierarchyEv.deal_id ? ` vinculado ao deal_id=${hierarchyEv.deal_id}` : '') + `.\n` +
+            (preTaskClause ? `3. ${preTaskClause}\n` : '') +
+            (hierarchyEv.activity_id
+                ? `4. A atividade original activity_id=${hierarchyEv.activity_id} NÃO deve ser marcada como concluída — ela só termina após a ligação real. Sugira criar uma nova tarefa "Ligar para [nome do decisor]".\n`
+                : '') +
+            `PROIBIDO: NÃO invente dados. Use APENAS os contatos listados acima.`
+        );
+
+        try {
+            const newEvents = await streamTaskInto(V2_STREAM_URL, {
+                message: continuation,
+                org_id: selectedOrgId,
+                thread_id: activeThread?.id,
+                history: [],
+                direct_action: true,
+                parent_message_id: activeRunningTask.parentMessageId,
+                action_index: activeRunningTask.actionIndex,
+            }, activeRunningTask);
+
+            const pendingConfirm = newEvents.find(e => e.type === 'confirmation_required' && e.action_id);
+            let finalStatus: TaskStatus = 'done';
+            if (pendingConfirm) {
+                finalStatus = 'awaiting_confirm';
+            }
+            setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
+            if (activeRunningTask.parentMessageId) {
+                const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
+            }
+        } catch {
+            setActiveRunningTask(prev => prev ? { ...prev, status: 'error' } : null);
+            if (activeRunningTask.parentMessageId) {
+                const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'error' }));
+            }
+        }
+    };
+
+
+
+    const renderActiveTaskConsoleOverlay = () => {
+        return null;
+    };
+
     const renderChatInput = () => (
         <ChatInput
             inputValue={inputValue}
@@ -151,6 +428,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             agentMode={agentMode}
             setAgentMode={setAgentMode}
             onStop={handleStopStreaming}
+            activeRunningTask={activeRunningTask}
+            setActiveRunningTask={setActiveRunningTask}
+            taskInlineConfirmed={taskInlineConfirmed}
+            onTaskInlineConfirm={handleTaskInlineConfirm}
+            onTaskMappingComplete={handleTaskMappingComplete}
         />
     );
 
@@ -207,36 +489,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         void syncPreference();
     }, [model, strictMode]);
 
-    // ─── Load threads and activities ────────────────────────
-    const loadThreads = useCallback(async () => {
-        setIsLoadingThreads(true);
-        try {
-            const targetOrgId = selectedOrgId || 0;
-            const [threadList, actList] = await Promise.all([
-                conversations.listThreads(targetOrgId),
-                conversations.listActivities(targetOrgId),
-            ]);
-            setThreads(threadList);
-            setActivities(actList);
-        } catch (err) {
-            console.error('[ChatPanel] Erro ao carregar dados:', err);
-        } finally {
-            setIsLoadingThreads(false);
-        }
-    }, [selectedOrgId]);
-
-    // ─── Load threads when org changes ──────────────────────
-    useEffect(() => {
-        setView('chat');
-        setActiveThread(null);
-        setMessages([]);
-        // Sempre carrega threads, mesmo que orgId seja nulo (orgId=0 no backend pega tudo)
-        void loadThreads();
-    }, [selectedOrgId, loadThreads]);
-
     // ─── Open thread ─────────────────────────────────────────
-    const openThread = async (thread: ThreadOut) => {
+    const openThread = useCallback(async (thread: ThreadOut) => {
         setActiveThread(thread);
+        if (typeof window !== 'undefined') {
+            const targetOrgId = selectedOrgId || 0;
+            window.localStorage.setItem(`active-thread-id-${targetOrgId}`, thread.id);
+            window.localStorage.setItem('chat-panel-view', 'chat');
+        }
         setCurrentLogs([]);
         setView('chat');
 
@@ -246,7 +506,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 setMessages([{
                     id: 'welcome',
                     role: 'assistant',
-                    content: `Olá! Como posso ajudar com a @${selectedOrgName}?`,
+                    content: hasValidOrg ? `Como posso te ajudar com a @${cleanOrgName}?` : "Como posso te ajudar hoje?",
                     timestamp: new Date(),
                 }]);
             } else {
@@ -270,14 +530,71 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             setMessages([{
                 id: 'welcome',
                 role: 'assistant',
-                content: `Olá! Como posso ajudar com a @${selectedOrgName}?`,
+                content: hasValidOrg ? `Como posso te ajudar com a @${cleanOrgName}?` : "Como posso te ajudar hoje?",
                 timestamp: new Date(),
             }]);
         }
-    };
+    }, [selectedOrgId, selectedOrgName, hasValidOrg, cleanOrgName]);
+
+    // ─── Load threads and activities ────────────────────────
+    const loadThreads = useCallback(async () => {
+        setIsLoadingThreads(true);
+        try {
+            const targetOrgId = selectedOrgId || 0;
+            const [threadList, actList] = await Promise.all([
+                conversations.listThreads(targetOrgId),
+                conversations.listActivities(targetOrgId),
+            ]);
+            setThreads(threadList);
+            setActivities(actList);
+
+            // Restore active thread from localStorage
+            if (typeof window !== 'undefined') {
+                const savedThreadId = window.localStorage.getItem(`active-thread-id-${targetOrgId}`);
+                if (savedThreadId) {
+                    const matched = threadList.find(t => t.id === savedThreadId);
+                    if (matched) {
+                        void openThread(matched);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('[ChatPanel] Erro ao carregar dados:', err);
+        } finally {
+            setIsLoadingThreads(false);
+        }
+    }, [selectedOrgId, openThread]);
+
+    // ─── Load threads when org changes ──────────────────────
+    useEffect(() => {
+        setActiveThread(null);
+        setMessages([]);
+
+        if (typeof window !== 'undefined') {
+            const targetOrgId = selectedOrgId || 0;
+            const savedThreadId = window.localStorage.getItem(`active-thread-id-${targetOrgId}`);
+            const savedView = window.localStorage.getItem('chat-panel-view');
+            if (savedView === 'list' && !savedThreadId) {
+                setView('list');
+            } else {
+                setView('chat');
+            }
+        } else {
+            setView('chat');
+        }
+        
+        // Sempre carrega threads, mesmo que orgId seja nulo (orgId=0 no backend pega tudo)
+        void loadThreads();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedOrgId]);
 
     const handleNewThread = () => {
         setActiveThread(null);
+        if (typeof window !== 'undefined') {
+            const targetOrgId = selectedOrgId || 0;
+            window.localStorage.removeItem(`active-thread-id-${targetOrgId}`);
+            window.localStorage.setItem('chat-panel-view', 'chat');
+        }
         setMessages([]);
         setView('chat');
     };
@@ -285,6 +602,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // ─── Back to list ────────────────────────────────────────
     const handleBackToList = async () => {
         setView('list');
+        if (typeof window !== 'undefined') {
+            const targetOrgId = selectedOrgId || 0;
+            window.localStorage.removeItem(`active-thread-id-${targetOrgId}`);
+            window.localStorage.setItem('chat-panel-view', 'list');
+        }
         setActiveThread(null);
         setMessages([]);
         setCurrentLogs([]);
@@ -488,6 +810,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
+        let hasMappingRequired = false;
+        let hasConfirmationRequired = false;
+
         try {
             const response = await fetch(ai.getV2ChatStreamUrl(), {
                 method: 'POST',
@@ -554,6 +879,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 }
             }
 
+            for (const ev of collectedEvents) {
+                if (ev.type === 'hierarchy_mapping_required') hasMappingRequired = true;
+                if (ev.type === 'confirmation_required') hasConfirmationRequired = true;
+            }
+
             // Marca streaming como concluído, limpa modelos live
             setLiveModel(null);
             // Mantém a barra visível por 3s se houver eventos de espera, depois limpa
@@ -563,9 +893,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             } else {
                 setModelActivity([]);
             }
-            setMessages(prev => prev.map(m =>
-                m.id === msgId ? { ...m, v2Events: [...collectedEvents], v2Streaming: false } : m
-            ));
+            // Não alteramos o v2Streaming aqui pois faremos isso no finally com base na variável hasMappingRequired
 
         } catch (err) {
             if ((err as any)?.name === 'AbortError') {
@@ -577,6 +905,139 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (abortControllerRef.current === controller) {
                 abortControllerRef.current = null;
             }
+            
+            
+            setMessages(prev => prev.map(m =>
+                m.id === msgId ? { ...m, v2Streaming: hasMappingRequired ? true : false } : m
+            ));
+            
+            if (!hasMappingRequired && !hasConfirmationRequired) {
+                setIsLoading(false);
+                setV2Streaming(false);
+            }
+        }
+    };
+
+    // ─── V2: lidar com finalização de mapeamento no chat principal
+    // ─── V2: lidar com finalização de mapeamento no chat principal
+    const handleMainChatMappingDone = async (contacts: any[], event?: V2Event) => {
+        const contactsSummary = contacts.length > 0 
+            ? `Contatos mapeados:\n${contacts.map(c => `- ${c.name} (Level: ${c.level}, Email: ${c.email}, Phone: ${c.phone}, Decisor: ${c.decision_maker ? 'Sim' : 'Não'}, Temp: ${c.temperature})`).join('\n')}`
+            : 'Nenhum contato retornado pelo mapeamento.';
+
+        const preTaskClause = event?.pre_task_id
+            ? `Marque a tarefa de rastreamento pre_task_id=${event.pre_task_id} como concluída com pipedrive_update_task done=true. `
+            : '';
+
+        const orgName = event?.org_name || 'a empresa';
+        const continuation = (
+            `[SISTEMA]: Mapeamento de hierarquia concluído para "${orgName}". ${contactsSummary}\n` +
+            `REGRA DE INTELIGÊNCIA CRÍTICA: Os contatos acima foram recém-mapeados do LinkedIn (cold leads) e são 100% novos. Como todo o histórico de comunicação da empresa já foi verificado antes do mapeamento e nada foi encontrado, VOCÊ ESTÁ ESTRITAMENTE PROIBIDO de chamar 'whatsapp_get_messages', 'email_get_contact_history' ou 'whatsapp_list_chats' para qualquer um desses novos contatos, pois o histórico deles é inexistente. Não faça novas varreduras de mensagens.\n` +
+            `ANÁLISE E EXECUÇÃO DE TAREFA ("Encontrar contato"): Analise a lista de contatos mapeados e selecione a melhor pessoa para focar a prospecção (priorizando decisores de compras, cargos de liderança ou alta temperatura). Para concluir a tarefa com sucesso, CHAME IMEDIATAMENTE a ferramenta 'pipedrive_create_person' para cadastrar esse contato no Pipedrive na empresa org_id=${selectedOrgId || event?.org_id}` +
+            (event?.deal_id ? ` e atrelado ao negócio deal_id=${event.deal_id}` : '') + `.\n` +
+            `Após criar o contato, caso o usuário tenha pedido expressamente um plano de prospecção ou dossiê final, gere-o. Caso contrário, finalize a resposta.` +
+            (preTaskClause ? ` ${preTaskClause}` : '') +
+            (event?.activity_id ? ` A atividade original activity_id=${event.activity_id} NÃO deve ser marcada como concluída.` : '')
+        );
+
+        const targetMsg = messages.find(m => m.v2Events && m.v2Events.some(e => e.type === 'hierarchy_mapping_required'));
+        if (!targetMsg || !targetMsg.id) {
+            // Fallback se não encontrar a mensagem anterior
+            setIsLoading(false);
+            setV2Streaming(false);
+            setTimeout(() => handleSendMessage(continuation, [], true), 0);
+            return;
+        }
+
+        const targetMsgId = targetMsg.id;
+        const existingEvents = targetMsg.v2Events || [];
+
+        setIsLoading(true);
+        setV2Streaming(true);
+        setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, v2Streaming: true } : m));
+
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        const threadId = activeThread?.id || '';
+
+        try {
+            const response = await fetch(V2_STREAM_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: continuation, direct_action: true, org_id: selectedOrgId, thread_id: threadId }),
+                signal: controller.signal,
+            });
+
+            if (!response.ok || !response.body) {
+                setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, v2Streaming: false } : m));
+                setIsLoading(false);
+                setV2Streaming(false);
+                return;
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            const collectedEvents: any[] = [];
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    try {
+                        const eventObj = JSON.parse(line);
+                        collectedEvents.push(eventObj);
+
+                        if (eventObj.type === 'model_active') {
+                            if (!strictMode) setLiveModel(eventObj.provider as AIModel);
+                            setModelActivity(prev => {
+                                const last = prev[prev.length - 1];
+                                if (last?.type === 'model_active' && last.provider === eventObj.provider) return prev;
+                                const extra: ModelActivityEvent[] = [];
+                                if (last && last.provider !== eventObj.provider && eventObj.provider) {
+                                    extra.push({ id: ++modelActivityIdRef.current, type: 'model_switch', provider: eventObj.provider as AIModel, model: eventObj.model, timestamp: Date.now() });
+                                }
+                                return [...prev, ...extra, { id: ++modelActivityIdRef.current, type: 'model_active', provider: eventObj.provider as AIModel, model: eventObj.model, timestamp: Date.now() }];
+                            });
+                        }
+
+                        if (eventObj.type === 'rate_wait') {
+                            setModelActivity(prev => [...prev, { id: ++modelActivityIdRef.current, type: 'rate_wait', provider: eventObj.provider as AIModel | undefined, model: eventObj.model, wait_sec: eventObj.wait_sec, reason: eventObj.reason, timestamp: Date.now() }]);
+                        }
+                        if (eventObj.type === 'context_overflow') {
+                            setModelActivity(prev => [...prev, { id: ++modelActivityIdRef.current, type: 'context_overflow', model: eventObj.model, estimated_tokens: eventObj.estimated_tokens, limit: eventObj.limit, timestamp: Date.now() }]);
+                        }
+
+                        setMessages(prev => prev.map(m =>
+                            m.id === targetMsgId ? { ...m, v2Events: [...existingEvents, ...collectedEvents] } : m
+                        ));
+                    } catch { /* ignore */ }
+                }
+            }
+
+            setLiveModel(null);
+            const hadWaits = modelActivity.some(e => e.type === 'rate_wait' || e.type === 'context_overflow');
+            if (hadWaits) {
+                setTimeout(() => setModelActivity([]), 3000);
+            } else {
+                setModelActivity([]);
+            }
+        } catch (err) {
+            console.error('[AgentV2 Continuation] Erro:', err);
+        } finally {
+            if (abortControllerRef.current === controller) {
+                abortControllerRef.current = null;
+            }
+            setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, v2Streaming: false } : m));
             setIsLoading(false);
             setV2Streaming(false);
         }
@@ -679,6 +1140,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const handleSendMessage = async (text: string, companiesSelected: CompanyResult[], isSuggestedAction: boolean = false) => {
         if (!text.trim() && companiesSelected.length === 0) return;
 
+        // Garante transição visual para a tela do chat ativo ao enviar qualquer mensagem
+        setView('chat');
+
         const threadId = await ensureThread();
         if (!threadId) return;
 
@@ -703,6 +1167,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             await executeChatWorkflow(text, companiesSelected, threadId, historyForApi, isSuggestedAction);
         }
     };
+
+    useEffect(() => {
+        const handleAgentPrompt = (e: Event) => {
+            const customEvent = e as CustomEvent<{ prompt: string }>;
+            if (customEvent.detail && customEvent.detail.prompt) {
+                handleSendMessage(customEvent.detail.prompt, [], false);
+            }
+        };
+        window.addEventListener('submit_agent_prompt', handleAgentPrompt);
+        return () => {
+            window.removeEventListener('submit_agent_prompt', handleAgentPrompt);
+        };
+    }, [handleSendMessage]);
 
     // ─── Regenerate response ─────────────────────────────────
     const handleRegenerate = async (fromMessageId?: string) => {
@@ -866,7 +1343,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         return (
             <div className={`${styles.chatPanel} ${styles[theme]}`} data-theme={theme}>
                 <ThreadList
-                    orgName={selectedOrgName}
+                    orgName={hasValidOrg ? cleanOrgName : 'Geral'}
                     threads={threads}
                     isLoading={isLoadingThreads}
                     onSelectThread={openThread}
@@ -934,9 +1411,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             maxWidth: '180px',
                             flexShrink: 1
                         }}
-                        title={selectedOrgName || 'Geral'}
+                        title={hasValidOrg ? cleanOrgName : 'Geral'}
                     >
-                        {selectedOrgName || 'Geral'}
+                        {hasValidOrg ? cleanOrgName : 'Geral'}
                     </span>
                 </div>
                 <div style={{ flex: 1 }} />
@@ -965,27 +1442,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 {messages.length === 0 ? (
                     <div className={styles.emptyWelcomeContainer}>
                         <h2 className={styles.emptyWelcomeText}>
-                            {selectedOrgName ? (
+                            {hasValidOrg ? (
                                 <>
-                                    Olá! Como posso ajudar com a{' '}
-                                    <span style={{
-                                        backgroundColor: '#1e2145',
-                                        color: '#7a8bff',
-                                        padding: '2px 8px',
-                                        borderRadius: '4px',
-                                        border: '1px solid rgba(122, 139, 255, 0.15)',
-                                        fontWeight: 500,
-                                        display: 'inline',
-                                        boxDecorationBreak: 'clone',
-                                        WebkitBoxDecorationBreak: 'clone',
-                                        lineHeight: '1.6',
-                                        verticalAlign: 'baseline'
-                                    }}>
-                                        @{selectedOrgName}
-                                    </span>?
+                                    Como posso te ajudar com a{' '}
+                                    <span className={styles.highlightPurple}>
+                                        @{cleanOrgName}
+                                    </span>
+                                    ?
                                 </>
                             ) : (
-                                "Olá! como posso te ajudar Hoje?"
+                                "Como posso te ajudar hoje?"
                             )}
                         </h2>
                         <div className={styles.emptyInputWrapper}>
@@ -994,12 +1460,23 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     </div>
                 ) : (
                     <>
-                        <div className={styles.messagesContainer} ref={scrollContainerRef} onScroll={handleScroll}>
+                        <div 
+                            className={styles.messagesContainer} 
+                            style={{
+                                paddingBottom: activeRunningTask?.isExpanded ? '440px' : undefined,
+                                filter: activeRunningTask?.isExpanded ? 'blur(10px)' : 'none',
+                                opacity: activeRunningTask?.isExpanded ? 0.45 : 1,
+                                transition: 'filter 0.3s ease, opacity 0.3s ease, padding-bottom 0.3s ease',
+                            }}
+                            ref={scrollContainerRef} 
+                            onScroll={handleScroll}
+                        >
                             {messages.map(message => {
                                 if (message.isV2 && message.role === 'assistant') {
                                     return (
                                         <AgentV2Message
                                             key={message.id}
+                                            messageId={message.id}
                                             events={message.v2Events || []}
                                             isStreaming={message.v2Streaming !== false && v2Streaming}
                                             onConfirm={handleV2Confirm}
@@ -1009,7 +1486,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                             streamV2Url={V2_STREAM_URL}
                                             confirmV2Url={V2_CONFIRM_URL}
                                             orgId={selectedOrgId}
+                                             selectedOrgName={cleanOrgName}
                                             threadId={activeThread?.id}
+                                            approvedSuggestedActions={approvedSuggestedActions}
+                                            onApproveSuggestedAction={handleApproveSuggestedAction}
+                                            onHierarchyMappingDone={handleMainChatMappingDone}
+                                            model={model}
                                         />
                                     );
                                 }
@@ -1051,6 +1533,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     </>
                 )}
             </div>
+            {renderActiveTaskConsoleOverlay()}
         </div>
     );
 };

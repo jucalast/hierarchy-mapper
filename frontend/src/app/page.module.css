@@ -40,7 +40,7 @@
 
 .intro h1 {
   max-width: 320px;
-  font-size: 40px;
+  font-size: var(--font-3xl);
   font-weight: 600;
   line-height: 48px;
   letter-spacing: -2.4px;
@@ -117,7 +117,7 @@ a.secondary {
   }
 
   .intro h1 {
-    font-size: 32px;
+    font-size: var(--font-2xl);
     line-height: 40px;
     letter-spacing: -1.92px;
   }

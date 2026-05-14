@@ -6,13 +6,14 @@ import json
 import asyncio
 from typing import List, Dict, Optional
 from services.external.groq_service import GroqService
+from services.ai.llm.base import LLMTier
 
 # Reusing the Groq API key from environment
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 class RoleEngine:
     def __init__(self):
-        self.groq = GroqService() if GROQ_API_KEY else None
+        self.groq = GroqService()
         
         # ⚠️ TABELA DE VETO CATEGÓRICO (Para evitar alucinações de 'Sales' em 'Purchasing')
         self.FORBIDDEN_KEYWORDS = {
@@ -148,7 +149,7 @@ class RoleEngine:
 
     async def distill_role(self, name: str, company: str, context: List[str], product_focus: str = None, area_focus: str = "compras", target_location: str = "Brasil", official_role: str = None, meta_company: str = "") -> Dict:
         """Motor de Decisão em Cadeia (Especializado): Sniper -> Detetive -> Especialista -> Juiz."""
-        if not self.groq:
+        if not GROQ_API_KEY:
             return {"is_valid": True, "role": "Professional", "matching_score": 50, "department": area_focus.upper()}
 
         # 🛡️ TRAVA DE SEGURANÇA: Veto Mecânico de Perfis Institucionais (Fuzzy)
@@ -344,7 +345,7 @@ Responda APENAS JSON:
 }}
 """
         try:
-            verdict = await self.groq.ask(prompt_judge, json_mode=True)
+            verdict = await self.groq.ask(prompt_judge, json_mode=True, tier=LLMTier.STANDARD)
             
             # 🛡️ SOBERANIA MECÂNICA: Se o Especialista vetou e estamos no escuro (sem cargo oficial), barramos.
             # Evita que o Juiz Final alucine ou seja otimista demais com a marca.

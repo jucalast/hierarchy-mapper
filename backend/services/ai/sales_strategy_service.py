@@ -6,10 +6,12 @@ ações comerciais de alta performance de forma dinâmica.
 """
 import json
 import re
+from datetime import datetime
 from typing import Any, Dict, List
 from core.logging_config import get_logger
 from services.ai.llm.router import ask_llm
 from services.ai.llm.base import LLMTier
+from services.ai.business_context_service import BusinessContextService
 
 log = get_logger(__name__)
 
@@ -19,7 +21,7 @@ class SalesStrategyService:
     Aplica técnicas consagradas de vendas para diagnosticar negócios e gerar planos de ação impecáveis.
     """
 
-    async def analyze_and_suggest_actions(self, messages: List[Dict[str, Any]], org_id: int | None = None) -> Dict[str, Any]:
+    async def analyze_and_suggest_actions(self, messages: List[Dict[str, Any]], org_id: int | None = None, contact_name: str = "", phone: str = "") -> Dict[str, Any]:
         """
         Analisa o histórico de mensagens e o contexto comercial atual para gerar
         um diagnóstico de vendas rico e ações executáveis.
@@ -41,9 +43,9 @@ class SalesStrategyService:
                         elif item.get("type") == "tool_result":
                             tool_name = item.get("tool_name", "")
                             tool_content = str(item.get("content", ""))
-                            # Resume conteúdos gigantescos de ferramentas para poupar contexto
-                            if len(tool_content) > 1500:
-                                tool_content = tool_content[:1500] + "... [conteúdo truncado]"
+                            # Aumentado para 12.000 para suportar conversas longas sem perder o fim do histórico (o mais importante)
+                            if len(tool_content) > 12000:
+                                tool_content = tool_content[:12000] + "... [conteúdo truncado]"
                             text_parts.append(f"[Resultado da ferramenta '{tool_name}': {tool_content}]")
                 content = "\n".join(text_parts)
             
@@ -51,6 +53,10 @@ class SalesStrategyService:
                 "role": role,
                 "content": str(content)
             })
+
+        # 1.5 Carrega Contexto de Negócio (Configurado no Sistema)
+        business_context = await BusinessContextService.get_tenant_context()
+        biz_data_str = json.dumps(business_context, indent=2, ensure_ascii=False) if business_context else "Sem contexto de negócio configurado."
 
         # 2. Constrói o Prompt Estratégico de Vendas B2B sênior
         system_prompt = (
@@ -60,26 +66,28 @@ class SalesStrategyService:
             "utilizando técnicas consagradas de vendas:\n\n"
             "## METODOLOGIAS DE VENDAS EXIGIDAS:\n"
             "1. **SPIN Selling**: Identifique a Situação, Problemas latentes do cliente (atrasos de entrega, problemas de qualidade com fornecedor atual, caixas rasgando, etc.), "
-            "as Implicações desses problemas (parada de linha de fábrica, reclamações de clientes finais) e a Necessidade de Solução.\n"
-            "2. **MEDDPICC**: Identifique a Dor Principal (Pain), os Critérios de Decisão (Decision Criteria - ex: preço, resistência do material, lead time), "
-            "quem é o Decisor/Comprador Econômico (Economic Buyer), e a Concorrência (Competition).\n"
-            "3. **Challenger Sale**: Crie abordagens onde o vendedor assume o controle, 'ensina' o cliente sobre valor técnico de embalagem, "
-            "'customiza' a proposta comercial para o perfil do decisor e 'desafia' objeções rasas de preço mostrando o custo real de desperdício.\n\n"
-            "## SUAS REGRAS DE GERAÇÃO DE AÇÕES COMERCIAIS:\n"
-            "- **Evitar Duplicações (CRÍTICO)**: Se o contato com quem conversamos no histórico (ex: Gabriel) já está listado nos contatos atuais do CRM, "
-            "NUNCA sugira criá-lo. O usuário odeia redundâncias.\n"
-            "- **Concluir Atividades Obsoletas e Adicionar Notas (CRÍTICO)**: Se houver qualquer tarefa pendente no Pipedrive de 'cobrar orçamento', 'ligar', 'follow-up' ou similar, "
-            "e a conversa correspondente já tiver acontecido nas mensagens (ex: você já cobrou, enviou proposta, discutiu preços), você DEVE sugerir "
-            "uma ação para marcar essa atividade específica como concluída (usando 'pipedrive_update_task' com o ID da atividade e done=true) "
-            "E criar uma nota rica de resumo comercial (usando 'pipedrive_create_note' no deal_id real) registrando as dores/objeções levantadas pelo cliente (como a objeção de preço do orçamento caro e o desconto de 9% discutido). "
-            "O 'label' desta ação específica DEVE ser obrigatoriamente no formato: 'Concluir atividade pendente · [Assunto da Tarefa]'. "
-            "Exemplo: se a tarefa pendente tem o assunto 'Ligar para Gabriel', o label deve ser exatamente: 'Concluir atividade pendente · Ligar para Gabriel'.\n"
-            "   Exemplo de Prompt da ação: 'Execute pipedrive_update_task com activity_id=[ID_NUMERICO_REAL] e done=true e execute pipedrive_create_note no deal_id=[ID_NUMERICO_REAL] com content=\"Resumo da negociação:...\"' (substitua sempre as expressões em colchetes por IDs numéricos reais encontrados nas buscas, nunca escreva a palavra genérica 'ID' no prompt)\n"
-            "- **Tratar Objeções de Preço com Inteligência**: Se o contato reclamou que o orçamento ficou caro ou acima de concorrentes:\n"
-            "  * NÃO peça reuniões genéricas de follow-up. Sugira contornar a objeção focando em valor técnico, renegociação de lote ou especificações alternativas (ex: papelão Kraft de outra gramatura, menos resistente mas mais barato, ou reduzir aba da caixa).\n"
-            "  * Crie um plano de 5 tarefas de negociação de preço estruturado de forma excelente no Pipedrive.\n"
-            "- **Templates de Copys Perfeitos**: Se sugerir enviar e-mail ou mensagem no WhatsApp, forneça o copy EXATO, profissional, caloroso, personalizado "
-            "e altamente persuasivo, citando dados específicos ditos pelo próprio contato (valores negociados, nomes, termos).\n\n"
+            "as Implicações desses problemas (parada de linha de fábrica, reclamações de clientes finais) e a Necessidade de Solução. **Use isso para criar ganchos de curiosidade e urgência.**\n"
+            "2. **Venda Consultiva (Autoridade Técnica)**: Você não é apenas um vendedor, você é um consultor técnico da J.Ferres. "
+            "Sempre que possível, use ganchos de autoridade como: \n"
+            "   - **Cálculo de Mackee**: Mencione que podemos otimizar o peso da caixa mantendo a resistência ideal, reduzindo custos sem perder qualidade.\n"
+            "   - **Laboratório Próprio**: Diga que temos testes internos de compressão e resistência para garantir o melhor material.\n"
+            "   - **Estratégia de Itens de Menor Volume**: Explique que somos mais competitivos e agressivos em itens de menor volume/lançamentos, onde o mercado costuma ser caro.\n"
+            "3. **MEDDPICC**: Identifique a Dor Principal (Pain), os Critérios de Decisão (Decision Criteria), "
+            "quem é o Decisor (Economic Buyer), e a Concorrência (Competition).\n"
+            "4. **Challenger Sale**: 'Ensine' o cliente sobre valor técnico. Desafie a ideia de que o fornecedor atual é imbatível apenas pelo preço unitário, mostrando o custo do desperdício.\n\n"
+            "## CONTEXTO DA J.FERRES (NOSSA EMPRESA):\n"
+            f"{biz_data_str}\n\n"
+            "## REGRAS DE OURO PARA AS COPYS (MENSAGENS):\n"
+            f"- **PRONTO PARA ENVIO (SEM PLACEHOLDERS)**: É terminantemente PROIBIDO o uso de colchetes `[]`. A mensagem deve estar PRONTA. Use data real: Hoje é {datetime.now().strftime('%A, %d/%m/%Y')}.\n"
+            "- **RECONHECIMENTO DE ENTIDADE (STRICT CONTEXT)**: Se o nome de um contato no WhatsApp/Email contiver o nome da empresa alvo (ex: 'Gabriel - Compras Walsywa' e a empresa é 'Walsywa'), você DEVE assumir que se trata da mesma empresa. É erro grave de análise dizer que o histórico não é relevante por causa de sufixos de departamento ou cargo.\n"
+            "- **SELEÇÃO INTELIGENTE DE CANAL**: Analise o volume e a RECÊNCIA das interações. Priorize o canal (WhatsApp ou Email) onde o cliente demonstra maior engajamento ou onde ocorreu a última conversa relevante. Se o usuário explicitamente pedir um canal para uma tarefa, obedeça, mas em geral, siga onde o cliente 'mora'. Nunca use e-mail por preguiça se o WhatsApp for o canal de maior calor.\n"
+            "- **PROIBIDO SER GENÉRICO (ANTI-SPAM)**: NUNCA, em hipótese alguma, comece com 'Prezado', 'Espero que esteja bem', 'Tudo bem?', 'Como vai?'. Isso destrói a autoridade técnica. Comece direto no assunto ou com uma provocação técnica (Challenger Sale).\n"
+            "- **ZERO REDUNDÂNCIA (DATA-DRIVEN E LEITURA DE HISTÓRICO)**: É terminantemente PROIBIDO perguntar ao cliente informações que já constam no histórico (ex: 'Os preços incluem IPI?', 'Quem são os fornecedores?', 'É cartonagem?'). Leia TODO o histórico até o fim ATENTAMENTE. Se a resposta para sua dúvida já foi dada pelo contato mais abaixo na conversa, NÃO REPITA A PERGUNTA na sua nova mensagem. Analise friamente: 'O cliente já informou se tem IPI? Sim, então não pergunto. Ele já falou quem é o fornecedor? Sim, então não pergunto'. USE os dados fornecidos para criar argumentos lógicos de fechamento ou criar encerramentos firmes.\n"
+            "- **EXEMPLO DE MENSAGEM PROIBIDA (NÃO FAÇA)**: \"Prezado Gabriel, espero que este e-mail o encontre bem. Estou acompanhando o orçamento...\"\n"
+            "- **EXEMPLO DE MENSAGEM IDEAL (FAÇA)**: \"Gabriel, sobre o orçamento das caixas 730036: vi que a Walsywa ainda não fechou. Conseguimos cobrir a oferta da Cartonagem X se fecharmos o lote de 5k unidades hoje. O que te impede de avançar?\"\n"
+            "- **DEDICAÇÃO TOTAL (DATA-DRIVEN)**: Você DEVE citar itens específicos (ex: '730036'), quantidades e os PREÇOS reais do histórico.\n"
+            "- **AUTORIDADE TÉCNICA**: Desafie a concorrência (Fabricante vs Cartonagem), use Cálculo de Mackee, Teste de Compressão.\n"
+            "- **TOM DE VOZ**: Natural, assertivo, comercialmente agressivo e direto. No WhatsApp, seja curto e focado na dor do cliente.\n"
             "Você DEVE responder estritamente em formato JSON no esquema abaixo, sem markdown ou textos fora do JSON:\n"
             "{\n"
             "  \"diagnostico_vendas\": {\n"
@@ -94,17 +102,20 @@ class SalesStrategyService:
             "    {\n"
             "      \"label\": \"título do botão comercial curto e atraente (ex: 'WhatsApp: Oferecer Caixa Alternativa', máx 45 caracteres)\",\n"
             "      \"estrategia_vendas\": \"breve explicação do porquê fazer isso agora usando as técnicas de vendas\",\n"
-            "      \"prompt\": \"o comando em formato de prompt executável autossuficiente para o agente executar (ex: 'Execute whatsapp_send_message com contact=\\\"Gabriel\\\", message=\\\"Olá Gabriel...\\\"')\"\n"
+            "      \"prompt\": \"o comando em formato de prompt executável autossuficiente para o agente executar (ex: 'Execute whatsapp_send_message com contact=\\\"[Nome]\\\", message=\\\"[Mensagem Técnica]...\\\"')\"\n"
             "    }\n"
             "  ]\n"
             "}"
         )
 
         prompt_user = (
-            "Com base no histórico da investigação comercial fornecido nas mensagens, "
-            "aplique as metodologias SPIN, MEDDPICC e Challenger Sale para extrair o diagnóstico comercial detalhado do negócio "
-            "e formular as 3 a 5 ações mais brilhantes possíveis. Identifique contatos e IDs reais envolvidos. "
-            "Lembre-se de retornar apenas o JSON puro."
+            f"CONTATO: {contact_name} " + (f"(Tel: {phone})" if phone else "") + "\n\n"
+            "Analise o histórico RECENTE de WhatsApp e Email. Identifique os preços dos concorrentes citados (ex: R$ 0,9085), "
+            "os códigos dos itens (ex: 730036) e a última dúvida do vendedor (ex: fabricante ou cartonagem). "
+            "Crie 3 ações comerciais brilhantes, sendo que a primeira deve ser uma mensagem de WhatsApp que use todos esses dados reais "
+            "para desafiar o preço baixo do concorrente e avançar para o fechamento. "
+            "PROIBIDO USAR TEMPLATES. Seja específico e técnico.\n"
+            f"IMPORTANTE: No campo 'prompt' das ações, SEMPRE inclua contact='{contact_name}'" + (f" e phone='{phone}'" if phone else "") + " para que o agente tenha os dados exatos."
         )
 
         try:
@@ -127,7 +138,7 @@ class SalesStrategyService:
                 content = content[:-3]
             content = content.strip()
             
-            data = json.loads(content)
+            data = json.loads(content, strict=False)
             diagnostico = data.get("diagnostico_vendas", {})
             acoes = data.get("acoes_recomendadas", [])
             

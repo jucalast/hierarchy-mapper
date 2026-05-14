@@ -96,10 +96,23 @@ async def discover_employees_stream(
     # ==== REGRA DE NEGÓCIO: PRIORIZAR SÓCIOS DO CNPJ ====
     # 1. Busca os sócios que já estão no banco (vindos do QSA/CNPJ)
     qsa_partners = []
+    rejected_urls = set()
+    rejected_names = set()
     async with async_session() as session:
         stmt = select(Employee).where(Employee.company_id == db_org_id, Employee.department == "Quadro de Sócios (QSA)")
         res = await session.execute(stmt)
         qsa_partners = res.scalars().all()
+
+        # Busca funcionários rejeitados (Reprovados) para essa empresa para ignorá-los
+        stmt_rej = select(Employee).where(
+            Employee.company_id == db_org_id,
+            (Employee.role == "Reprovado") | (Employee.department == "Reprovado")
+        )
+        res_rej = await session.execute(stmt_rej)
+        for emp in res_rej.scalars().all():
+            if emp.linkedin_url:
+                rejected_urls.add(emp.linkedin_url.split("?")[0].rstrip("/"))
+            rejected_names.add(emp.name.lower().strip())
 
     # 2. Envia os sócios do QSA imediatamente para o front-end (mesmo sem LinkedIn)
     if qsa_partners:
@@ -248,16 +261,36 @@ async def discover_employees_stream(
         results = await get_duck_results(query, max_results=30)
         if not results: continue
 
+        # Identifica se a query atual é uma busca por sócios/fundadores/proprietários
+        query_lower = query.lower()
+        is_partner_search = (
+            "socio" in query_lower or 
+            "sócio" in query_lower or 
+            "fundador" in query_lower or 
+            "owner" in query_lower or 
+            any(p.name.lower() in query_lower for p in qsa_partners)
+        )
+
         found_nodes = []
         for res in results:
             href = res.get("href", "").split("?")[0].rstrip("/")
             if not href or "linkedin.com/in/" not in href or any(n in href for n in ["/posts/", "/jobs/", "/company/", "/dir/"]) or href in seen_urls:
                 continue
             
+            # Pula se já estiver rejeitado anteriormente
+            if href in rejected_urls:
+                print(f"      [B2B Engine] Ignorando candidato previamente REPROVADO (LinkedIn match): {href}")
+                continue
+            
+            name_guess = processor.clean_name_from_title(res.get('title', ''))
+            if name_guess and name_guess.lower().strip() in rejected_names:
+                print(f"      [B2B Engine] Ignorando candidato previamente REPROVADO (Name match): {name_guess}")
+                continue
+
             seen_urls.add(href)
             
             # Processa o candidato usando o novo módulo (capturando órfãos)
-            processor_res = await processor.process_candidate(res)
+            processor_res = await processor.process_candidate(res, is_partner_search=is_partner_search)
             if not processor_res: continue
             
             node_data = processor_res.get("main")

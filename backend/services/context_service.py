@@ -101,7 +101,7 @@ class ContextService:
         if not org:
             return {}
 
-        employees = list(org.employees)
+        employees = [e for e in org.employees if e.role != "Reprovado" and e.department != "Reprovado"]
 
         # Busca estatísticas
         total_mapped = len(employees)
@@ -155,7 +155,9 @@ class ContextService:
                 select(Organization.id).where(
                     (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
                 )
-            )
+            ),
+            Employee.role != "Reprovado",
+            Employee.department != "Reprovado"
         )
         emp_result = await session.execute(emp_stmt)
         employees = emp_result.scalars().all()
@@ -211,7 +213,9 @@ class ContextService:
                 select(Organization.id).where(
                     (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
                 )
-            )
+            ),
+            Employee.role != "Reprovado",
+            Employee.department != "Reprovado"
         )
         
         if department:
@@ -311,7 +315,9 @@ class ContextService:
                     select(Organization.id).where(
                         (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
                     )
-                )
+                ),
+                Employee.role != "Reprovado",
+                Employee.department != "Reprovado"
             ).limit(limit)
             result = await session.execute(stmt)
             employees = result.scalars().all()

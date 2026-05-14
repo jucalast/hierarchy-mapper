@@ -44,6 +44,7 @@ export interface NormalToolbarProps {
     onRejectCandidate?: (id: string) => void;
     isSidebarOpen?: boolean;
     isChatOpen?: boolean;
+    children?: React.ReactNode;
 }
 
 export const NormalToolbar: React.FC<NormalToolbarProps> = ({
@@ -75,6 +76,7 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
     onRejectCandidate,
     isSidebarOpen = false,
     isChatOpen = false,
+    children,
 }) => {
     const [isClosing, setIsClosing] = React.useState(false);
     const [displayOptions, setDisplayOptions] = React.useState<any[]>([]);
@@ -354,6 +356,7 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
                     </div>
                 )}
             </div>
+            {children}
         </div>
     );
 };

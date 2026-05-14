@@ -70,9 +70,11 @@ async def candidate_action(payload: CandidateActionRequest, db: AsyncSession = D
         return {"status": "success", "message": f"Candidato {emp.name} aprovado."}
     
     elif payload.action == "reject":
-        await db.delete(emp)
+        emp.role = "Reprovado"
+        emp.department = "Reprovado"
+        emp.seniority = -1
         await db.commit()
-        return {"status": "success", "message": f"Candidato {emp.name} removido."}
+        return {"status": "success", "message": f"Candidato {emp.name} marcado como reprovado no banco."}
 
     else:
         raise HTTPException(status_code=400, detail="Ação inválida. Use 'approve' ou 'reject'.")
@@ -436,7 +438,11 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession = Depends(get_db)):
     if not org:
         raise HTTPException(status_code=404, detail="Organizacao nao encontrada no banco local.")
 
-    stmt_emp = select(Employee).where(Employee.company_id == org_id).order_by(Employee.seniority.desc())
+    stmt_emp = select(Employee).where(
+        Employee.company_id == org_id,
+        Employee.role != "Reprovado",
+        Employee.department != "Reprovado"
+    ).order_by(Employee.seniority.desc())
     result_emp = await db.execute(stmt_emp)
     employees = result_emp.scalars().all()
 

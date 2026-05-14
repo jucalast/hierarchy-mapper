@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Loader2, CheckCircle2, XCircle, Check, X, AlertTriangle,
-    Copy, RotateCcw, Clock, AlertCircle, ChevronDown,
+    Copy, RotateCcw, Clock, AlertCircle, Network,
+    Phone, Mail, Calendar, Building2, User, Paperclip,
+    FileText, Package, Lightbulb, Target, ClipboardList,
+    Box, Layers, MessageSquare, TrendingUp, Wand2,
 } from 'lucide-react';
 import styles from '../ChatPanel.module.css';
+import timelineStyles from '../HistoryTimeline.module.css';
+import { refineMessage } from '../../services/api/ai';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface V2Event {
-    type: 'thinking' | 'tool_call' | 'tool_result' | 'confirmation_required' | 'final' | 'error' | 'context_saved' | 'rate_wait' | 'context_overflow' | 'suggested_actions';
+    type: 'thinking' | 'tool_call' | 'tool_result' | 'confirmation_required' | 'final' | 'error' | 'context_saved' | 'rate_wait' | 'context_overflow' | 'suggested_actions' | 'hierarchy_mapping_required';
     content?: string;
     call_id?: string;
     tool_use_id?: string;
@@ -27,7 +32,15 @@ export interface V2Event {
     reason?: string;
     estimated_tokens?: number;
     limit?: number;
+    // hierarchy_mapping_required
+    org_name?: string;
+    org_id?: number | null;
+    deal_id?: number | null;
+    activity_id?: number | null;
+    pre_task_id?: number | null;
 }
+
+import { AIModel } from './ModelSelector';
 
 export interface AgentV2MessageProps {
     messageId?: string;
@@ -41,7 +54,12 @@ export interface AgentV2MessageProps {
     streamV2Url?: string;
     confirmV2Url?: string;
     orgId?: number | null;
+    selectedOrgName?: string | null;
     threadId?: string;
+    approvedSuggestedActions?: Record<string, 'pending' | 'streaming' | 'awaiting_confirm' | 'awaiting_mapping' | 'done' | 'rejected' | 'error'>;
+    onApproveSuggestedAction?: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => void;
+    onHierarchyMappingDone?: (contacts: any[], event?: V2Event) => void;
+    model: AIModel;
 }
 
 // ─── Cores por ferramenta ─────────────────────────────────────────────────────
@@ -59,12 +77,171 @@ const TOOL_COLORS: Record<string, string> = {
     pipedrive_create_task: '#f36e21',
     pipedrive_update_task: '#f36e21',
     pipedrive_create_note: '#f36e21',
+    pipedrive_create_person: '#f36e21',
     email_get_inbox: '#7a8bff',
     email_get_contact_history: '#7a8bff',
     email_send: '#7a8bff',
     email_reply: '#7a8bff',
     web_search: '#60a5fa',
+    web_search_external: '#60a5fa',
+    find_company_contact: '#60a5fa',
+    evaluate_prospects: '#a78bfa',
     generate_dossier: '#a78bfa',
+    generate_call_script: '#3b82f6',
+    open_hierarchy_drawer: '#818cf8',
+    suggest_next_actions: '#10b981',
+};
+
+// ─── Categorias de tarefa ─────────────────────────────────────────────────────
+
+type TaskCategory =
+    | 'find_contact' | 'call' | 'meeting' | 'followup'
+    | 'presentation' | 'quote' | 'message' | 'insight'
+    | 'order' | 'homologation' | 'sample' | 'strategic' | 'unknown';
+
+const detectTaskCategory = (label: string): TaskCategory => {
+    const l = label.toLowerCase();
+    if (/(encontrar|conseguir|buscar|mapear|pesquisar).*(contato|decisor)|decisor.*(real|certo)/.test(l)) return 'find_contact';
+    if (/(ligar|ligação|chamada|telefonar|provocar|primeiro contato|call)/.test(l)) return 'call';
+    if (/(reunião|meeting|agendar|marcar reunião|visita|reagendar|cold meet|ir pessoalmente)/.test(l)) return 'meeting';
+    if (/(follow.?up|cobrar retorno|acompanhar|aguardar retorno)/.test(l)) return 'followup';
+    if (/(apresentação|apresentacao|proposta comercial|linkb2b)/.test(l)) return 'presentation';
+    if (/(orçamento|cotação|orcamento|cotacao|realizar orçamento|fazer cotação)/.test(l)) return 'quote';
+    if (/(insight|insigth|mercado|tendência)/.test(l)) return 'insight';
+    if (/(pedido|compra|programação de pedidos|cobrar pedido|colocar pedido)/.test(l)) return 'order';
+    if (/(homologação|homologacao|confidencialidade|formulário|cadastro de fornecedor)/.test(l)) return 'homologation';
+    if (/(amostra|levar amostra|retirar amostra)/.test(l)) return 'sample';
+    if (/(linkedin|seguir no linkedin|conexão no linkedin|qualificar oportunidade|saneamento)/.test(l)) return 'strategic';
+    if (/(email|e-mail|mensagem|whatsapp|escrever|enviar)/.test(l)) return 'message';
+    return 'unknown';
+};
+
+const CATEGORY_CONFIG: Record<TaskCategory, { icon: React.ReactNode; color: string; label: string; isManual?: boolean }> = {
+    find_contact:  { icon: <Network size={14} />,        color: '#818cf8', label: 'Mapear Decisor' },
+    call:          { icon: <Phone size={14} />,           color: '#3b82f6', label: 'Ligação' },
+    meeting:       { icon: <Calendar size={14} />,        color: '#f59e0b', label: 'Reunião' },
+    followup:      { icon: <Clock size={14} />,           color: '#10b981', label: 'Follow-up' },
+    presentation:  { icon: <Layers size={14} />,          color: '#a855f7', label: 'Apresentação' },
+    quote:         { icon: <FileText size={14} />,        color: '#06b6d4', label: 'Orçamento' },
+    message:       { icon: <MessageSquare size={14} />,   color: '#7a8bff', label: 'Mensagem' },
+    insight:       { icon: <Lightbulb size={14} />,       color: '#eab308', label: 'Insight' },
+    order:         { icon: <Package size={14} />,         color: '#f97316', label: 'Pedido' },
+    homologation:  { icon: <ClipboardList size={14} />,   color: '#14b8a6', label: 'Homologação' },
+    sample:        { icon: <Box size={14} />,             color: '#8b5cf6', label: 'Amostra' },
+    strategic:     { icon: <Target size={14} />,          color: '#ec4899', label: 'Estratégico', isManual: true },
+    unknown:       { icon: <Clock size={14} />,           color: '#6b7280', label: 'Tarefa' },
+};
+
+// ─── Contexto de leitura: ferramentas que fazem parte da Fase 1 ───────────────
+
+const CONTEXT_TOOLS = new Set([
+    'pipedrive_get_org', 'pipedrive_get_persons', 'pipedrive_get_deals',
+    'pipedrive_get_activities', 'whatsapp_get_messages', 'email_get_contact_history',
+]);
+
+const CONTEXT_STEPS: { tool: string; label: string }[] = [
+    { tool: 'pipedrive_get_org',           label: 'Empresa' },
+    { tool: 'pipedrive_get_persons',       label: 'Contatos' },
+    { tool: 'pipedrive_get_deals',         label: 'Negócios' },
+    { tool: 'pipedrive_get_activities',    label: 'Atividades' },
+    { tool: 'whatsapp_get_messages',       label: 'WhatsApp' },
+    { tool: 'email_get_contact_history',   label: 'E-mail' },
+];
+
+// ─── HierarchyMappingCard ─────────────────────────────────────────────────────
+
+type MappingStatus = 'waiting' | 'scanning' | 'done';
+
+export interface MappedContact {
+    name: string;
+    role: string;
+    email?: string;
+    department?: string;
+    temperature?: string;
+    level?: number;
+}
+
+/**
+ * Card de status do mapeamento de hierarquia.
+ * NÃO inicia o scan — apenas abre a empresa no Drawer (via CustomEvent) e aguarda
+ * o sinal `hierarchy_scan_done` disparado pelo useHierarchy quando o worker termina.
+ */
+const HierarchyMappingCard: React.FC<{
+    event: V2Event;
+    onMappingDone: (contacts: MappedContact[]) => void;
+    isStreaming?: boolean;
+}> = ({ event, onMappingDone, isStreaming }) => {
+    const [status, setStatus] = useState<MappingStatus>('waiting');
+    const [contactCount, setContactCount] = useState(0);
+    const doneCalledRef = useRef(false);
+
+    useEffect(() => {
+        if (!isStreaming) {
+            setStatus('done');
+            return;
+        }
+
+        // Abre a org no background graph (sem forçar a abertura do Drawer lateral)
+        const payload = { org_id: event.org_id, org_name: event.org_name, openDrawer: false };
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('open_org_in_drawer', { detail: payload }));
+        }, 800);
+
+        // Ouve o sinal do worker quando o mapeamento terminar
+        const handleScanDone = (e: Event) => {
+            const contacts: MappedContact[] = (e as CustomEvent).detail?.contacts || [];
+            setContactCount(contacts.length);
+            setStatus('done');
+            if (!doneCalledRef.current) {
+                doneCalledRef.current = true;
+                setTimeout(() => onMappingDone(contacts), 800);
+            }
+        };
+
+        // Atualiza para 'scanning' quando o worker inicia
+        const handleScanStart = () => setStatus('scanning');
+
+        window.addEventListener('hierarchy_scan_done', handleScanDone);
+        window.addEventListener('hierarchy_scan_started', handleScanStart);
+        return () => {
+            window.removeEventListener('hierarchy_scan_done', handleScanDone);
+            window.removeEventListener('hierarchy_scan_started', handleScanStart);
+        };
+    }, [isStreaming, event.org_id, event.org_name]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const color = '#818cf8';
+
+    return (
+        <div className={styles.logLine} style={{ marginBottom: 8 }}>
+            {status === 'waiting' && (
+                <>
+                    <Network size={12} style={{ color, flexShrink: 0 }} />
+                    <span>
+                        Mapeamento de Hierarquia · <strong style={{ color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>{event.org_name}</strong>
+                        <span style={{ opacity: 0.5, marginLeft: 5 }}>· empresa aberta, insira o CNPJ para mapear</span>
+                    </span>
+                </>
+            )}
+            {status === 'scanning' && (
+                <>
+                    <Loader2 size={12} className={styles.spinner} style={{ color, flexShrink: 0 }} />
+                    <span>
+                        Mapeamento de Hierarquia · <strong style={{ color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>{event.org_name}</strong>
+                        <span style={{ opacity: 0.5, marginLeft: 5 }}>· mapeando...</span>
+                    </span>
+                </>
+            )}
+            {status === 'done' && (
+                <>
+                    <CheckCircle2 size={12} style={{ color: '#10b981', flexShrink: 0 }} />
+                    <span>
+                        Mapeamento de Hierarquia concluído · <strong style={{ color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>{event.org_name}</strong>
+                        <span style={{ opacity: 0.5, marginLeft: 5 }}>· {contactCount} contatos mapeados · analisando…</span>
+                    </span>
+                </>
+            )}
+        </div>
+    );
 };
 
 // ─── Markdown simples ─────────────────────────────────────────────────────────
@@ -97,14 +274,45 @@ const ConfirmationCard: React.FC<{
     decided?: boolean;
     approvedResult?: boolean;
 }> = ({ event, onConfirm, decided, approvedResult }) => {
+    const [previewText, setPreviewText] = useState(event.preview ?? '');
+    const [refineText, setRefineText] = useState('');
+    const [isRefining, setIsRefining] = useState(false);
+
+    const handleRefine = async () => {
+        if (!refineText.trim() || isRefining || !event.action_id) return;
+        setIsRefining(true);
+        try {
+            const res = await refineMessage({ action_id: event.action_id, feedback: refineText });
+            if (res.ok && res.refined_message) {
+                setPreviewText(res.refined_message);
+                setRefineText('');
+            }
+        } catch {
+            // silent — mantém a mensagem atual
+        } finally {
+            setIsRefining(false);
+        }
+    };
+
     const tool = event.tool || '';
-    const color = TOOL_COLORS[tool] || '#7a8bff';
+    const isEmail = tool === 'email_send' || tool === 'email_reply';
+    
+    // Configurações visuais por canal
+    const channelConfig = {
+        bg: 'transparent',
+        border: 'rgba(255, 255, 255, 0.1)',
+        headerBg: 'transparent',
+        icon: isEmail ? '/outlook.png' : '/wppicon.png',
+        iconSize: isEmail ? 16 : 14,
+        accentColor: isEmail ? '#0078d4' : '#22c55e',
+        labelColor: 'rgba(255,255,255,0.4)',
+    };
 
     if (decided) {
         return (
             <div className={styles.logLine} style={{ marginBottom: 8 }}>
                 {approvedResult
-                    ? <CheckCircle2 size={12} style={{ color: '#22c55e', flexShrink: 0 }} />
+                    ? <CheckCircle2 size={12} style={{ color: channelConfig.accentColor, flexShrink: 0 }} />
                     : <XCircle size={12} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
                 }
                 <span>{approvedResult ? 'Ação aprovada' : 'Ação cancelada'}</span>
@@ -113,24 +321,143 @@ const ConfirmationCard: React.FC<{
         );
     }
 
+    const labelStr = event.label || '';
+    const hasAttachment = labelStr.includes('+ anexo:') || labelStr.includes('attachment');
+    const attachmentName = hasAttachment
+        ? (labelStr.match(/\+\s*anexo:\s*([^)]+)\)/i)?.[1]?.trim() || 'Arquivo')
+        : null;
+
     return (
-        <div style={{ borderRadius: 10, border: `1px solid ${color}33`, background: `${color}0d`, overflow: 'hidden', marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: `1px solid ${color}22`, background: `${color}0a` }}>
-                <AlertTriangle size={13} color={color} />
-                <span style={{ fontSize: 11, fontWeight: 700, color, letterSpacing: '0.03em' }}>CONFIRMAR AÇÃO</span>
+        <div style={{ 
+            borderRadius: 10, 
+            border: `1px solid ${channelConfig.border}`, 
+            background: channelConfig.bg, 
+            overflow: 'hidden', 
+            marginBottom: 12,
+            transition: 'all 0.3s ease'
+        }}>
+            <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 8, 
+                padding: '8px 12px', 
+                borderBottom: `1px solid ${channelConfig.border}`, 
+                background: channelConfig.headerBg 
+            }}>
+                <img src={channelConfig.icon} alt="Channel" style={{ width: channelConfig.iconSize, height: channelConfig.iconSize, borderRadius: 3 }} />
+                <span style={{ fontSize: 'var(--font-xs)', color: channelConfig.labelColor, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>
+                    {isEmail ? 'CONFIRMAR E-MAIL' : 'CONFIRMAR WHATSAPP'}
+                </span>
+                {hasAttachment && (
+                    <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#a855f7', background: 'rgba(168,85,247,0.12)', borderRadius: 4, padding: '2px 7px', fontWeight: 600 }}>
+                        <Paperclip size={10} /> {attachmentName}
+                    </span>
+                )}
             </div>
-            <div style={{ padding: '10px 12px' }}>
-                <div style={{ fontSize: 13, color: 'var(--sw-text-base)', marginBottom: 6 }}>{event.label}</div>
-                {event.preview && (
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', background: 'rgba(0,0,0,0.2)', padding: '6px 8px', borderRadius: 6, fontStyle: 'italic', marginBottom: 10, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                        {event.preview}
+            <div style={{ padding: '12px' }}>
+                <div style={{ fontSize: 'var(--font-sm)', color: 'var(--sw-text-base)', marginBottom: 8, fontWeight: 700, lineHeight: '1.4' }}>
+                    {hasAttachment ? labelStr.replace(/\s*\(.*?anexo.*?\)/i, '') : labelStr}
+                </div>
+                {previewText && (
+                    <div style={{
+                        fontSize: 'var(--font-md)',
+                        color: 'rgba(255, 255, 255, 0.85)',
+                        padding: '6px 0',
+                        borderRadius: 6,
+                        fontStyle: 'italic',
+                        marginBottom: 10,
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        lineHeight: '1.6'
+                    }}>
+                        {previewText}
+                    </div>
+                )}
+                {event.action_id && (
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                        <input
+                            value={refineText}
+                            onChange={e => setRefineText(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter' && refineText.trim() && !isRefining) handleRefine(); }}
+                            placeholder="O que você quer mudar na mensagem?"
+                            disabled={isRefining}
+                            style={{
+                                flex: 1,
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                borderRadius: 8,
+                                padding: '7px 10px',
+                                fontSize: 12,
+                                color: 'rgba(255,255,255,0.8)',
+                                outline: 'none',
+                                minWidth: 0,
+                                opacity: isRefining ? 0.4 : 1,
+                            }}
+                        />
+                        <button
+                            onClick={handleRefine}
+                            disabled={isRefining || !refineText.trim()}
+                            style={{
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '7px 12px',
+                                background: 'rgba(255,255,255,0.06)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: 8,
+                                color: 'rgba(255,255,255,0.65)',
+                                fontSize: 12,
+                                cursor: isRefining || !refineText.trim() ? 'not-allowed' : 'pointer',
+                                opacity: isRefining || !refineText.trim() ? 0.4 : 1,
+                                whiteSpace: 'nowrap',
+                                transition: 'all 0.18s ease',
+                            }}
+                        >
+                            {isRefining ? <Loader2 size={12} className={styles.spinner} /> : <Wand2 size={12} />}
+                            <span>{isRefining ? 'Refinando...' : 'Refinar'}</span>
+                        </button>
                     </div>
                 )}
                 <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => onConfirm(event.action_id!, true)} style={{ flex: 1, padding: '7px 12px', borderRadius: 7, border: 'none', background: '#22c55e', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                    <button 
+                        onClick={() => onConfirm(event.action_id!, true)} 
+                        style={{ 
+                            flex: 1, 
+                            padding: '8px 12px', 
+                            borderRadius: 7, 
+                            border: 'none', 
+                            background: channelConfig.accentColor, 
+                            color: '#fff', 
+                            fontSize: 12, 
+                            fontWeight: 600, 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: 5,
+                            transition: 'opacity 0.2s'
+                        }}
+                    >
                         <Check size={13} /> Confirmar
                     </button>
-                    <button onClick={() => onConfirm(event.action_id!, false)} style={{ flex: 1, padding: '7px 12px', borderRadius: 7, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: 'rgba(255,255,255,0.55)', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                    <button 
+                        onClick={() => onConfirm(event.action_id!, false)} 
+                        style={{ 
+                            flex: 1, 
+                            padding: '8px 12px', 
+                            borderRadius: 7, 
+                            border: '1px solid rgba(255,255,255,0.12)', 
+                            background: 'transparent', 
+                            color: 'rgba(255,255,255,0.55)', 
+                            fontSize: 12, 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            gap: 5 
+                        }}
+                    >
                         <X size={13} /> Cancelar
                     </button>
                 </div>
@@ -138,6 +465,7 @@ const ConfirmationCard: React.FC<{
         </div>
     );
 };
+
 
 // ─── RateWaitBadge ────────────────────────────────────────────────────────────
 
@@ -167,25 +495,47 @@ const ContextOverflowBadge: React.FC<{ event: V2Event }> = ({ event }) => (
 
 // ─── Renderizador inline de eventos (reutilizado no accordion) ────────────────
 
-const InlineEventStream: React.FC<{
+export const InlineEventStream: React.FC<{
     events: V2Event[];
     isStreaming: boolean;
     inlineConfirmed: Record<string, boolean>;
     onInlineConfirm: (action_id: string, approved: boolean) => void;
-}> = ({ events, isStreaming, inlineConfirmed, onInlineConfirm }) => {
+    onHierarchyMappingDone?: (contacts: MappedContact[]) => void;
+    model: AIModel;
+}> = ({ events, isStreaming, inlineConfirmed, onInlineConfirm, onHierarchyMappingDone, model }) => {
     const resultMap: Record<string, V2Event> = {};
     for (const ev of events) {
         if (ev.type === 'tool_result' && ev.call_id) resultMap[ev.call_id] = ev;
     }
     const seenIds = new Set<string>();
 
+    // Detecta se está na fase de leitura de contexto
+    const calledContextTools = new Set(
+        events
+            .filter(e => e.type === 'tool_call' && e.tool && CONTEXT_TOOLS.has(e.tool))
+            .map(e => e.tool!)
+    );
+    const doneContextTools = new Set(
+        events
+            .filter(e => e.type === 'tool_result' && e.tool && CONTEXT_TOOLS.has(e.tool))
+            .map(e => e.tool!)
+    );
+    let iconShown = false;
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {events.map((ev, i) => {
                 if (ev.type === 'thinking') {
+                    const displayModel = ev.model as any || model;
+                    const showIcon = !iconShown;
+                    if (showIcon) iconShown = true;
                     return (
-                        <div key={i} className={styles.aiMessage} style={{ fontSize: 13, marginBottom: 4 }}>
-                            {renderMarkdown(ev.content || '')}
+                        <div key={i} className={styles.aiMessageWrapper} style={{ marginBottom: 4 }}>
+                            <div className={styles.aiMessageIconArea}>
+                                {showIcon && <AIAsterisk model={displayModel} />}
+                            </div>
+                            <div className={styles.aiMessage}>
+                                {renderMarkdown(ev.content || '')}
+                            </div>
                         </div>
                     );
                 }
@@ -221,9 +571,17 @@ const InlineEventStream: React.FC<{
                 if (ev.type === 'rate_wait') return null;
                 if (ev.type === 'context_overflow') return null;
                 if (ev.type === 'final') {
+                    const displayModel = ev.model as any || model;
+                    const showIcon = !iconShown;
+                    if (showIcon) iconShown = true;
                     return (
-                        <div key={i} className={styles.aiMessage} style={{ fontSize: 13, marginTop: 6 }}>
-                            {renderMarkdown(ev.response || '')}
+                        <div key={i} className={styles.aiMessageWrapper} style={{ marginTop: 6 }}>
+                            <div className={styles.aiMessageIconArea}>
+                                {showIcon && <AIAsterisk model={displayModel} />}
+                            </div>
+                            <div className={styles.aiMessage}>
+                                {renderMarkdown(ev.response || '')}
+                            </div>
                         </div>
                     );
                 }
@@ -245,6 +603,16 @@ const InlineEventStream: React.FC<{
                         />
                     );
                 }
+                if (ev.type === 'hierarchy_mapping_required' && onHierarchyMappingDone) {
+                    return (
+                        <HierarchyMappingCard
+                            key={i}
+                            event={ev}
+                            onMappingDone={onHierarchyMappingDone}
+                            isStreaming={isStreaming}
+                        />
+                    );
+                }
                 return null;
             })}
             {isStreaming && (
@@ -259,31 +627,92 @@ const InlineEventStream: React.FC<{
 
 // ─── SuggestedActionTask — card de tarefa com streaming inline ────────────────
 
-type TaskStatus = 'pending' | 'streaming' | 'awaiting_confirm' | 'done' | 'rejected' | 'error';
+export type TaskStatus = 'pending' | 'streaming' | 'awaiting_confirm' | 'awaiting_mapping' | 'done' | 'rejected' | 'error';
+
+const getCompanyFromLabel = (label: string): string => {
+    const clean = label.replace('->', '→').replace('·', '→').replace('•', '→');
+    const parts = clean.split('→');
+    if (parts.length > 1) {
+        return parts[parts.length - 1].trim().toLowerCase();
+    }
+    const lowercase = label.toLowerCase();
+    const paraIdx = lowercase.lastIndexOf(' para ');
+    if (paraIdx !== -1) {
+        return label.substring(paraIdx + 6).trim().toLowerCase();
+    }
+    const comIdx = lowercase.lastIndexOf(' com ');
+    if (comIdx !== -1) {
+        return label.substring(comIdx + 5).trim().toLowerCase();
+    }
+    return label.trim().toLowerCase();
+};
 
 const SuggestedActionTask: React.FC<{
     action: { label: string; prompt: string; status?: TaskStatus; logs?: V2Event[] };
     streamV2Url: string;
     confirmV2Url: string;
     orgId?: number | null;
+    selectedOrgName?: string | null;
     threadId?: string;
     parentMessageId?: string;
     actionIndex?: number;
-}> = ({ action, streamV2Url, confirmV2Url, orgId, threadId, parentMessageId, actionIndex }) => {
-    const [status, setStatus] = useState<TaskStatus>(action.status || 'pending');
-    const [taskEvents, setTaskEvents] = useState<V2Event[]>(action.logs || []);
-    const [isExpanded, setIsExpanded] = useState(!!action.logs && action.logs.length > 0);
+    approvedSuggestedActions?: Record<string, TaskStatus>;
+    onApproveSuggestedAction?: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => void;
+    isLast?: boolean;
+    sameCompanyAsNext?: boolean;
+    model: AIModel;
+}> = ({ action, streamV2Url, confirmV2Url, orgId, selectedOrgName, threadId, parentMessageId, actionIndex, approvedSuggestedActions = {}, onApproveSuggestedAction, isLast = false, sameCompanyAsNext = false, model }) => {
+    const taskKey = `${parentMessageId}-${actionIndex}`;
+    const externalStatus = approvedSuggestedActions[taskKey];
+    const [localStatus, setLocalStatus] = useState<TaskStatus>(action.status || 'pending');
+    const status = externalStatus || localStatus;
+    const [taskEvents, setTaskEvents] = useState<V2Event[]>(() => {
+        if (!action.logs) return [];
+        if (typeof action.logs === 'string') {
+            try {
+                const parsed = JSON.parse(action.logs);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+        return Array.isArray(action.logs) ? action.logs : [];
+    });
+    const [isExpanded, setIsExpanded] = useState(() => {
+        if (!action.logs) return false;
+        if (typeof action.logs === 'string') {
+            try {
+                const parsed = JSON.parse(action.logs);
+                return Array.isArray(parsed) && parsed.length > 0;
+            } catch {
+                return false;
+            }
+        }
+        return Array.isArray(action.logs) && action.logs.length > 0;
+    });
     const [inlineConfirmed, setInlineConfirmed] = useState<Record<string, boolean>>(() => {
         const confirmed: Record<string, boolean> = {};
+        let logsArray: any[] = [];
         if (action.logs) {
-            action.logs.forEach(ev => {
-                if (ev.type === 'tool_result' && ev.tool_use_id) {
-                    confirmed[ev.tool_use_id] = true;
-                }
-            });
+            if (typeof action.logs === 'string') {
+                try {
+                    const parsed = JSON.parse(action.logs);
+                    if (Array.isArray(parsed)) {
+                        logsArray = parsed;
+                    }
+                } catch { /* ignore */ }
+            } else if (Array.isArray(action.logs)) {
+                logsArray = action.logs;
+            }
         }
+        logsArray.forEach(ev => {
+            if (ev && typeof ev === 'object' && ev.type === 'tool_result' && ev.tool_use_id) {
+                confirmed[ev.tool_use_id] = true;
+            }
+        });
         return confirmed;
     });
+    const [isRowHovered, setIsRowHovered] = useState(false);
 
     const streamInto = async (url: string, body: object): Promise<V2Event[]> => {
         const collected: V2Event[] = [];
@@ -319,7 +748,12 @@ const SuggestedActionTask: React.FC<{
     };
 
     const handleApprove = async () => {
-        setStatus('streaming');
+        if (onApproveSuggestedAction && actionIndex !== undefined) {
+            onApproveSuggestedAction(action, actionIndex, parentMessageId);
+            return;
+        }
+
+        setLocalStatus('streaming');
         setIsExpanded(true);
 
         const collected = await streamInto(streamV2Url, {
@@ -332,131 +766,332 @@ const SuggestedActionTask: React.FC<{
             action_index: actionIndex,
         });
 
+        const hierarchyEv = collected.find(e => e.type === 'hierarchy_mapping_required');
         const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
-        if (pendingConfirm) {
-            setStatus('awaiting_confirm');
+        if (hierarchyEv) {
+            setLocalStatus('awaiting_mapping');
+        } else if (pendingConfirm) {
+            setLocalStatus('awaiting_confirm');
         } else {
-            setStatus('done');
+            setLocalStatus('done');
+        }
+    };
+
+    const handleMappingComplete = async (contacts: MappedContact[]) => {
+        const hierarchyEv = taskEvents.find(e => e.type === 'hierarchy_mapping_required');
+        if (!hierarchyEv) return;
+
+        setLocalStatus('streaming');
+
+        // Formata contatos reais encontrados pelo mapeamento para a IA usar sem alucinar
+        const contactsSummary = contacts.length > 0
+            ? `Contatos reais encontrados pelo mapeamento (${contacts.length} total): ` +
+              contacts.slice(0, 8).map(c =>
+                  `${c.name} (${c.role}${c.email ? ', ' + c.email : ''}${c.temperature ? ', temp=' + c.temperature : ''})`
+              ).join(' | ')
+            : 'Nenhum contato foi encontrado no mapeamento.';
+
+        const preTaskClause = hierarchyEv.pre_task_id
+            ? `Marque a tarefa de rastreamento pre_task_id=${hierarchyEv.pre_task_id} como concluída com pipedrive_update_task done=true. `
+            : '';
+
+        const continuation = (
+            `EXECUTE ESTAS ETAPAS EM ORDEM:\n` +
+            `1. Mapeamento de hierarquia concluído para "${hierarchyEv.org_name}". ${contactsSummary}\n` +
+            `2. REGRA DE INTELIGÊNCIA: Os contatos listados acima foram recém-mapeados do LinkedIn (cold leads) e são 100% novos. Como você já investigou a empresa e não havia histórico anterior de e-mail ou WhatsApp, VOCÊ ESTÁ PROIBIDO de chamar 'whatsapp_get_messages', 'email_get_contact_history' ou 'whatsapp_list_chats' para qualquer uma dessas novas pessoas, pois não existe histórico com elas.\n` +
+            `3. ANÁLISE E EXECUÇÃO ("Encontrar contato"): Analise os perfis mapeados acima e selecione o(s) melhor(es) contato(s) (priorizando decisores de compras, cargos de liderança ou temperature=hot/warm). Em seguida, CONCLUA A TAREFA CADASTRANDO ESTE CONTATO NO PIPEDRIVE chamando a ferramenta 'pipedrive_create_person' atrelado à organização org_id=${orgId}` +
+            (hierarchyEv.deal_id ? ` e vinculado ao negócio deal_id=${hierarchyEv.deal_id}` : '') + `.\n` +
+            (preTaskClause ? `4. ${preTaskClause}\n` : '') +
+            (hierarchyEv.activity_id
+                ? `5. A atividade original activity_id=${hierarchyEv.activity_id} NÃO deve ser marcada como concluída — ela só termina após a ligação real. Sugira criar uma nova tarefa "Ligar para [nome do decisor]".\n`
+                : '') +
+            `PROIBIDO: NÃO invente dados. Use APENAS os contatos listados acima.`
+        );
+
+        const newEvents = await streamInto(streamV2Url, {
+            message: continuation,
+            org_id: orgId,
+            thread_id: threadId,
+            history: [],
+            direct_action: true,
+            parent_message_id: parentMessageId,
+            action_index: actionIndex,
+        });
+
+        const pendingConfirm = newEvents.find(e => e.type === 'confirmation_required' && e.action_id);
+        if (pendingConfirm) {
+            setLocalStatus('awaiting_confirm');
+        } else {
+            setLocalStatus('done');
         }
     };
 
     const handleInlineConfirm = async (action_id: string, approved: boolean) => {
         setInlineConfirmed(prev => ({ ...prev, [action_id]: approved }));
         if (!approved) {
-            setStatus('done');
+            setLocalStatus('done');
             return;
         }
-        setStatus('streaming');
+        setLocalStatus('streaming');
         await streamInto(confirmV2Url, {
             action_id,
             approved: true,
             thread_id: threadId,
         });
-        setStatus('done');
+        setLocalStatus('done');
     };
 
-    const canExpand = status !== 'pending' && status !== 'rejected';
+    const canExpand = !externalStatus && status !== 'pending' && status !== 'rejected';
     const isActive = status === 'streaming';
 
     const statusIcon = {
         pending:          <span style={{ width: 12, height: 12, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.2)', display: 'inline-block', flexShrink: 0 }} />,
         streaming:        <Loader2 size={12} className={styles.spinner} style={{ flexShrink: 0 }} />,
         awaiting_confirm: <AlertTriangle size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />,
+        awaiting_mapping: <Network size={12} style={{ color: '#818cf8', flexShrink: 0 }} />,
         done:             <CheckCircle2 size={12} style={{ color: '#10b981', flexShrink: 0 }} />,
         rejected:         <XCircle size={12} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />,
         error:            <XCircle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />,
     }[status];
 
-    const labelColor = status === 'rejected'
-        ? 'rgba(255,255,255,0.25)'
-        : status === 'done'
-            ? 'rgba(255,255,255,0.7)'
-            : 'var(--chat-text-secondary)';
+    const category = detectTaskCategory(action.label);
+    const catCfg = CATEGORY_CONFIG[category];
+    const { icon, color } = { icon: catCfg.icon, color: catCfg.color };
+    const isLinkedIn = action.label.toLowerCase().includes('linkedin');
+
+    const metaItems = [];
+    metaItems.push(
+        <span key="meta-cat" className={timelineStyles.metaItem} style={{ color: catCfg.color, fontWeight: 600 }}>
+            {catCfg.label}
+        </span>
+    );
+    if (isLinkedIn || catCfg.isManual) {
+        metaItems.push(
+            <span key="meta-manual" className={timelineStyles.metaItem} style={{ color: '#eab308', display: 'flex', alignItems: 'center', gap: 3 }}>
+                Ação manual
+            </span>
+        );
+    }
+    metaItems.push(
+        <span key="meta-user" className={timelineStyles.metaItem}>
+            <User size={10} /> João Luccas
+        </span>
+    );
+    if (selectedOrgName) {
+        metaItems.push(
+            <span key="meta-org" className={timelineStyles.metaItem}>
+                <Building2 size={10} /> {selectedOrgName}
+            </span>
+        );
+    }
 
     return (
-        <div style={{
-            overflow: 'hidden',
-            marginBottom: 6,
-        }}>
-            {/* Header — mesmo estilo de logLine */}
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '9px 12px',
-                    fontSize: 13,
-                    color: labelColor,
+        <div 
+            style={{
+                marginBottom: isLast ? 0 : 16,
+                minHeight: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                width: '100%',
+            }}
+            onMouseEnter={() => setIsRowHovered(true)}
+            onMouseLeave={() => setIsRowHovered(false)}
+        >
+            {/* Conteúdo do Card */}
+            <div 
+                style={{ 
                     cursor: canExpand ? 'pointer' : 'default',
-                    userSelect: 'none',
+                    userSelect: 'text',
+                    width: '100%',
                 }}
-                onClick={() => canExpand && setIsExpanded(e => !e)}
+                onClick={() => {
+                    const selection = window.getSelection();
+                    if (selection && selection.toString().trim().length > 0) {
+                        return;
+                    }
+                    if (canExpand) setIsExpanded(e => !e);
+                }}
             >
-                {statusIcon}
-                <span style={{ flex: 1 }}>{action.label}</span>
-                {canExpand && (
-                    <ChevronDown
-                        size={12}
+                <div className={timelineStyles.eventHeader} style={{ background: 'transparent', border: 'none', padding: '4px 0', minHeight: 'auto' }}>
+                    <div className={timelineStyles.titleArea} style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                        <span style={{ color: color, display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+                            {icon}
+                        </span>
+                        <span className={timelineStyles.eventTitle} style={{ fontSize: '13px', fontWeight: 600, color: status === 'rejected' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.95)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{action.label}</span>
+                        {(isLinkedIn || catCfg.isManual) && status === 'pending' && (
+                            <span style={{ flexShrink: 0, fontSize: 9, color: '#eab308', background: 'rgba(234,179,8,0.12)', borderRadius: 3, padding: '2px 5px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                Manual
+                            </span>
+                        )}
+                    </div>
+                    
+                    {/* Botões de Ação */}
+                    {status === 'pending' ? (
+                        <div 
+                            style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: 6, 
+                                flexShrink: 0,
+                                opacity: isRowHovered ? 1 : 0.4,
+                                transform: isRowHovered ? 'translateX(0)' : 'translateX(4px)',
+                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                            }}
+                        >
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApprove();
+                                }}
+                                title="Aprovar"
+                                style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 6,
+                                    border: 'none',
+                                    background: 'rgba(52, 209, 124, 0.1)',
+                                    color: '#34d17c',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    transition: 'all 0.2s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(52, 209, 124, 0.25)';
+                                    e.currentTarget.style.transform = 'scale(1.08)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(52, 209, 124, 0.1)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
+                            >
+                                <Check size={14} strokeWidth={2.5} />
+                            </button>
+                            
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLocalStatus('rejected');
+                                }}
+                                title="Reprovar"
+                                style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 6,
+                                    border: 'none',
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    color: '#ef4444',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    transition: 'all 0.2s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
+                                    e.currentTarget.style.transform = 'scale(1.08)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
+                            >
+                                <X size={14} strokeWidth={2.5} />
+                            </button>
+                        </div>
+                    ) : status === 'rejected' ? (
+                        <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.2)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>
+                            Rejeitada
+                        </span>
+                    ) : status === 'done' ? (
+                        <span style={{ fontSize: '11px', color: '#10b981', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle2 size={12} /> Aprovada
+                        </span>
+                    ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', color: 'var(--chat-accent-color)' }}>
+                            <Loader2 size={12} className={styles.spinner} />
+                            <span>Executando...</span>
+                        </div>
+                    )}
+                </div>
+
+                <div className={timelineStyles.eventMeta} style={{ marginBottom: 0 }}>
+                    {metaItems.map((item, index) => (
+                        <React.Fragment key={index}>
+                            {item}
+                            {index < metaItems.length - 1 && <span className={timelineStyles.metaSeparator}>•</span>}
+                        </React.Fragment>
+                    ))}
+                </div>
+
+                {/* Accordion de eventos inline */}
+                {isExpanded && taskEvents.length > 0 && (
+                    <div 
                         style={{
-                            opacity: 0.35,
-                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.18s ease',
-                            flexShrink: 0,
+                            marginTop: 12,
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            borderRadius: 12,
+                            padding: '12px 14px',
                         }}
-                    />
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <InlineEventStream
+                            events={taskEvents}
+                            isStreaming={isActive}
+                            inlineConfirmed={inlineConfirmed}
+                            onInlineConfirm={handleInlineConfirm}
+                            onHierarchyMappingDone={handleMappingComplete}
+                            model={model}
+                        />
+                    </div>
+                )}
+
+                {/* Spinner enquanto streaming mas accordion fechado */}
+                {isActive && !isExpanded && (
+                    <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
+                        <Loader2 size={10} className={styles.spinner} />
+                        <span>Sincronizando com o CRM...</span>
+                    </div>
                 )}
             </div>
-
-            {/* Botões Aprovar / Reprovar — só quando pendente */}
-            {status === 'pending' && (
-                <div style={{ display: 'flex', gap: 6, padding: '0 12px 10px' }}>
-                    <button
-                        onClick={handleApprove}
-                        style={{
-                            flex: 1, padding: '6px 10px', borderRadius: 6, border: 'none',
-                            background: '#22c55e', color: '#fff', fontSize: 11, fontWeight: 600,
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                        }}
-                    >
-                        <Check size={11} /> Aprovar
-                    </button>
-                    <button
-                        onClick={() => setStatus('rejected')}
-                        style={{
-                            flex: 1, padding: '6px 10px', borderRadius: 6,
-                            border: '1px solid rgba(255,255,255,0.08)', background: 'transparent',
-                            color: 'rgba(255,255,255,0.35)', fontSize: 11,
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                        }}
-                    >
-                        <X size={11} /> Reprovar
-                    </button>
-                </div>
-            )}
-
-            {/* Accordion de eventos inline */}
-            {isExpanded && taskEvents.length > 0 && (
-                <div style={{
-                    borderTop: '1px solid rgba(255,255,255,0.05)',
-                    padding: '10px 12px',
-                }}>
-                    <InlineEventStream
-                        events={taskEvents}
-                        isStreaming={isActive}
-                        inlineConfirmed={inlineConfirmed}
-                        onInlineConfirm={handleInlineConfirm}
-                    />
-                </div>
-            )}
-
-            {/* Spinner enquanto streaming mas accordion fechado */}
-            {isActive && !isExpanded && (
-                <div style={{ padding: '0 12px 8px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
-                    <Loader2 size={10} className={styles.spinner} />
-                    <span>Executando…</span>
-                </div>
-            )}
         </div>
+    );
+};
+
+// ─── AIAsterisk ──────────────────────────────────────────────────────────────
+
+const MODEL_LOGO_MAP: Record<string, string> = {
+    claude: '/claude.png',
+    gemini: '/gemini.png',
+    groq: '/groq llama.svg',
+    cerebras: '/cerebras.png',
+    deepseek: '/deepseek.png',
+    sambanova: '/sambanova.png',
+};
+
+const MODEL_INVERT_DARK: Record<string, boolean> = {
+    groq: true,
+};
+
+const AIAsterisk = ({ model }: { model: string }) => {
+    // Tenta encontrar a chave correta (ex: 'claude-3-5' -> 'claude')
+    const key = Object.keys(MODEL_LOGO_MAP).find(k => model.toLowerCase().includes(k)) || 'claude';
+    
+    return (
+        <img
+            src={MODEL_LOGO_MAP[key]}
+            alt={`${model} AI`}
+            width="16"
+            height="16"
+            className="shrink-0 object-contain"
+            style={{
+                filter: MODEL_INVERT_DARK[key] ? 'brightness(0) invert(1)' : 'none'
+            }}
+        />
     );
 };
 
@@ -473,7 +1108,12 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
     streamV2Url,
     confirmV2Url,
     orgId,
+    selectedOrgName,
     threadId,
+    approvedSuggestedActions = {},
+    onApproveSuggestedAction,
+    onHierarchyMappingDone,
+    model,
 }) => {
     const [copied, setCopied] = useState(false);
 
@@ -489,6 +1129,11 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
         .filter(e => e.type === 'suggested_actions' && e.actions?.length)
         .flatMap(e => e.actions || []);
 
+    // Progresso da fase de contexto no fluxo principal
+    const mainCalledCtx = new Set(events.filter(e => e.type === 'tool_call' && e.tool && CONTEXT_TOOLS.has(e.tool)).map(e => e.tool!));
+    const mainDoneCtx   = new Set(events.filter(e => e.type === 'tool_result' && e.tool && CONTEXT_TOOLS.has(e.tool)).map(e => e.tool!));
+    const showMainCtxProgress = mainCalledCtx.size > 0 && !finalEvent && !errorEvent;
+
     const handleCopy = () => {
         navigator.clipboard.writeText(finalEvent?.response || '');
         setCopied(true);
@@ -497,13 +1142,20 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
 
     const seenCallIds = new Set<string>();
     const orderedItems: React.ReactNode[] = [];
+    let iconShown = false;
 
     for (let i = 0; i < events.length; i++) {
         const ev = events[i];
 
         if (ev.type === 'thinking') {
+            const displayModel = ev.model as any || model;
+            const showIcon = !iconShown;
+            if (showIcon) iconShown = true;
             orderedItems.push(
                 <div key={`think-${i}`} className={styles.aiMessageWrapper} style={{ marginBottom: 4 }}>
+                    <div className={styles.aiMessageIconArea}>
+                        {showIcon && <AIAsterisk model={displayModel} />}
+                    </div>
                     <div className={styles.aiMessage}>{renderMarkdown(ev.content || '')}</div>
                 </div>
             );
@@ -526,6 +1178,29 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
                         {ev.label}
                         {result?.summary && <span style={{ opacity: 0.5, marginLeft: 5 }}>· {result.summary}</span>}
                     </span>
+                    {/* Debug info for failed tools or explicit debug mode */}
+                    {(result && (typeof window !== 'undefined' && (window.location.search.includes('debug=true') || !ok))) && (
+                        <div style={{ 
+                            fontSize: '10px', 
+                            background: 'rgba(255, 255, 255, 0.03)', 
+                            padding: '6px 8px', 
+                            borderRadius: '4px', 
+                            marginTop: '4px',
+                            marginLeft: '18px',
+                            borderLeft: `2px solid ${ok ? '#10b981' : '#ef4444'}`,
+                            fontFamily: 'monospace',
+                            color: ok ? 'rgba(255,255,255,0.5)' : '#ef4444'
+                        }}>
+                            {ev.args && (
+                                <div style={{ marginBottom: 4, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 2 }}>
+                                    <strong>Args:</strong> {JSON.stringify(ev.args)}
+                                </div>
+                            )}
+                            {result.error && <div>Error: {result.error}</div>}
+                            {result.response && <div>Response: {typeof result.response === 'string' ? result.response : JSON.stringify(result.response)}</div>}
+                            {!result.error && !result.response && <div>Raw Result: {JSON.stringify(result)}</div>}
+                        </div>
+                    )}
                 </div>
             );
         } else if (ev.type === 'tool_result') {
@@ -540,6 +1215,15 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
             continue;
         } else if (ev.type === 'context_overflow') {
             continue;
+        } else if (ev.type === 'hierarchy_mapping_required' && onHierarchyMappingDone) {
+            orderedItems.push(
+                <HierarchyMappingCard
+                    key={`mapping-${i}`}
+                    event={ev}
+                    onMappingDone={(contacts) => onHierarchyMappingDone(contacts, ev)}
+                    isStreaming={isStreaming}
+                />
+            );
         }
     }
 
@@ -548,6 +1232,7 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
 
     return (
         <div className={styles.assistantMessageGroup}>
+
             {/* Eventos em ordem */}
             {hasActivity && (
                 <div style={{ marginBottom: 8 }}>
@@ -592,6 +1277,9 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
             {/* Dossiê final */}
             {finalEvent && (
                 <div className={styles.aiMessageWrapper}>
+                    <div className={styles.aiMessageIconArea}>
+                        {!iconShown && <AIAsterisk model={(finalEvent.model as any) || model} />}
+                    </div>
                     <div className={styles.aiMessage}>{renderMarkdown(finalEvent.response || '')}</div>
                 </div>
             )}
@@ -599,23 +1287,36 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
             {/* Tarefas sugeridas — cards empilhados abaixo do dossiê */}
             {hasTaskCards && (
                 <div style={{ marginTop: 14 }}>
-                    {suggestedActions.map((action, idx) => (
-                        <SuggestedActionTask
-                            key={idx}
-                            action={action}
-                            streamV2Url={streamV2Url!}
-                            confirmV2Url={confirmV2Url!}
-                            orgId={orgId}
-                            threadId={threadId}
-                            parentMessageId={messageId}
-                            actionIndex={idx}
-                        />
-                    ))}
+                    {suggestedActions.map((action, idx) => {
+                        const nextAction = suggestedActions[idx + 1];
+                        const currentCompany = getCompanyFromLabel(action.label);
+                        const nextCompany = nextAction ? getCompanyFromLabel(nextAction.label) : null;
+                        const sameCompanyAsNext = nextCompany ? currentCompany === nextCompany : false;
+
+                        return (
+                            <SuggestedActionTask
+                                key={idx}
+                                action={action}
+                                streamV2Url={streamV2Url!}
+                                confirmV2Url={confirmV2Url!}
+                                orgId={orgId}
+                                selectedOrgName={selectedOrgName}
+                                threadId={threadId}
+                                parentMessageId={messageId}
+                                actionIndex={idx}
+                                approvedSuggestedActions={approvedSuggestedActions}
+                                onApproveSuggestedAction={onApproveSuggestedAction}
+                                isLast={idx === suggestedActions.length - 1}
+                                sameCompanyAsNext={sameCompanyAsNext}
+                                model={model}
+                            />
+                        );
+                    })}
                 </div>
             )}
 
             {/* Botões da mensagem */}
-            {(!isStreaming || finalEvent || errorEvent) && (
+            {(!isStreaming || errorEvent) && (
                 <div className={styles.messageActions}>
                     <div className={styles.actionGroup}>
                         <button className={styles.actionBtn} title="Copiar resposta" onClick={handleCopy}>

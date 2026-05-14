@@ -22,11 +22,12 @@ REGRAS DE RESOLUÇÃO DE CONTEXTO:
 CATEGORIAS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-"deal_status"  → O usuário quer ser INFORMADO. A IA só lê e relata — não executa nada.
+"deal_status"  → O usuário quer ser INFORMADO sobre uma EMPRESA/NEGÓCIO ESPECÍFICO. A IA só lê e relata — não executa nada.
   Sinais claros: "como tá", "qual o andamento", "me dê um status", "o que está acontecendo",
   "tem novidade", "qual a situação", "me atualiza", "o que rolou", "como está",
   "quais foram as últimas interações", "me explica", "me resume", "o que aconteceu com",
   "analisa o histórico", "me diz o que rolou", "qual a última interação".
+  REQUISITO: Deve ter uma empresa ou pessoa mencionada, ou estar no contexto do histórico.
 
 "agent_workflow" → O usuário quer que a IA EXECUTE uma ação no mundo real.
   Sinais claros: "faça", "execute", "manda", "envia", "cria tarefa", "agenda", "marca",
@@ -41,8 +42,18 @@ CATEGORIAS:
 "email"        → Enviar email ou ler caixa de entrada.
 "contacts"     → Informações sobre pessoas e cargos de uma empresa.
 "enrichment"   → Encontrar contato (OSINT/LinkedIn/telefone).
-"pipedrive_tasks" → Listar tarefas e atividades agendadas no Pipedrive.
-"general"      → Conversa sem empresa/ação específica.
+
+"pipedrive_tasks" → Listar tarefas, atividades, agenda do dia, pendências no Pipedrive.
+  Sinais claros: "o que eu tenho pra fazer", "quais são minhas tarefas", "minha agenda",
+  "o que tá pendente", "atividades de hoje", "atividades atrasadas", "tem algo pendente",
+  "o que preciso fazer", "me mostra minhas tarefas", "quais tarefas", "agenda do dia",
+  "tarefas de hoje", "o que ficou pra hoje", "minhas pendências", "meus compromissos",
+  "o que está agendado", "o que tem marcado", "resumo do dia", "to-do",
+  "tarefas atrasadas", "algo pra fazer", "prioridades de hoje".
+  IMPORTANTE: Se o usuário pergunta sobre SUAS tarefas pessoais (sem mencionar empresa específica), use ESTA categoria.
+
+"general"      → APENAS para saudações simples ("oi", "olá", "bom dia"), perguntas sobre o próprio sistema ("o que você faz?", "como funciona?"), ou assuntos completamente fora do escopo comercial.
+  ATENÇÃO: Se houver QUALQUER indício de que o usuário quer dados do CRM, tarefas, emails, WhatsApp ou informações comerciais, NÃO use "general". Use a categoria mais específica.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 EXEMPLOS CRÍTICOS — CASOS LIMÍTROFES:
@@ -63,9 +74,34 @@ EXEMPLOS CRÍTICOS — CASOS LIMÍTROFES:
 ✅ agent_workflow → "realiza a cobrança"                      ← EXECUÇÃO
 ✅ agent_workflow → "agenda uma tarefa de follow-up"          ← EXECUÇÃO
 
+✅ pipedrive_tasks → "o que eu tenho pra fazer hoje?"
+✅ pipedrive_tasks → "quais são minhas tarefas?"
+✅ pipedrive_tasks → "minha agenda de hoje"
+✅ pipedrive_tasks → "o que tá pendente?"
+✅ pipedrive_tasks → "tem alguma coisa pra hoje?"
+✅ pipedrive_tasks → "me mostra minhas atividades"
+✅ pipedrive_tasks → "quais tarefas estão atrasadas?"
+✅ pipedrive_tasks → "resumo do meu dia"
+✅ pipedrive_tasks → "o que ficou pra fazer?"
+
+✅ email → "me mostra meus emails"
+✅ email → "quais emails recebi hoje?"
+✅ email → "tem email novo?"
+✅ whatsapp → "me mostra minhas mensagens"
+✅ whatsapp → "quais conversas recebi?"
+
+✅ general → "oi"
+✅ general → "bom dia"
+✅ general → "o que você faz?"
+✅ general → "como funciona o sistema?"
+
 ⚠️  REGRA DO VERBO FINAL: Se a mensagem tem análise + ação, o verbo FINAL determina a intenção.
    "Analise o histórico e execute a cobrança" → agent_workflow (verbo final = execute)
    "Analise o histórico" → deal_status (sem verbo de execução)
+
+⚠️  REGRA DE ANTI-GENERAL: Se a mensagem contém QUALQUER referência a tarefas, agenda, pendências, emails,
+   WhatsApp, empresas, negócios ou atividades comerciais, NUNCA classifique como "general".
+   "general" é EXCLUSIVAMENTE para saudações e perguntas sobre o sistema.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 REGRAS DE OURO:
@@ -76,6 +112,7 @@ REGRAS DE OURO:
 2. CONTEXTO DO HISTÓRICO: Se o assistente acabou de mostrar um briefing de status e o usuário responde com ação ("faz", "cobra", "executa", "manda"), é SEMPRE agent_workflow — ele já tem a análise e quer agir.
 3. Se a intenção for 'agent_workflow' ou 'deal_status', o data_scope DEVE incluir OBRIGATORIAMENTE ['activities', 'deals', 'persons', 'notes', 'emails', 'whatsapp'].
 4. Não seja conservador: se há ambiguidade entre deal_status e agent_workflow, avalie o VERBO PRINCIPAL. Verbos de ação = agent_workflow. Verbos de pergunta/informação = deal_status.
+5. REGRA ANTI-GENERAL: "general" é o ÚLTIMO recurso. Se a pergunta pode ser respondida com dados do sistema (tarefas, emails, WhatsApp, CRM), use a categoria específica. "o que tenho pra fazer?" = pipedrive_tasks, NUNCA general.
 
 Retorne um JSON válido:
 {{

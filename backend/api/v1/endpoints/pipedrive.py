@@ -11,20 +11,24 @@ router = APIRouter()
 @router.post("/pipedrive_sync")
 async def pipedrive_sync_endpoint():
     """Endpoint para sincronização completa: Organizações e Atividades."""
+    # Se em cooldown por rate limit, retorna imediatamente (não bloqueia o frontend).
+    cooldown = pipedrive_service.get_retry_after_seconds()
+    if cooldown > 0:
+        return {"status": "rate_limited", "retry_after_seconds": cooldown}
+
     try:
-        # 1. Sincroniza Organizações (Paginação completa)
         org_sync = await pipedrive_service.sync_all_parallel()
-        
-        # 2. Sincroniza Atividades (Perdão de atrasos)
         act_sync = await pipedrive_service.sync_overdue_activities()
-        
         return {
             "status": "success",
             "organizations": org_sync,
             "activities": act_sync
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        err = str(e)
+        if "cooldown" in err.lower() or "rate limit" in err.lower():
+            return {"status": "rate_limited", "detail": err}
+        raise HTTPException(status_code=500, detail=err)
 
 @router.post("/pipedrive_smart_sync")
 async def pipedrive_smart_sync_endpoint():
@@ -37,10 +41,17 @@ async def pipedrive_smart_sync_endpoint():
 @router.get("/pipedrive/organizations")
 async def get_pipedrive_organizations():
     """Retorna lista de todas as empresas do Pipedrive."""
+    cooldown = pipedrive_service.get_retry_after_seconds()
+    if cooldown > 0:
+        return []  # Retorna lista vazia imediatamente; frontend usa cache local
+
     try:
         return await pipedrive_service.list_organizations()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        err = str(e)
+        if "cooldown" in err.lower() or "rate limit" in err.lower():
+            return []
+        raise HTTPException(status_code=500, detail=err)
 
 
 @router.get("/pipedrive/activities/pending-summary")
@@ -51,8 +62,9 @@ async def get_pending_activities_summary():
     Formato: [{org_id, org_name, next_due_date, overdue_count, pending_count}]
     """
     try:
-        from datetime import date
-        today = date.today().isoformat()
+        from datetime import datetime, timezone, timedelta
+        sao_paulo_tz = timezone(timedelta(hours=-3))
+        today = datetime.now(sao_paulo_tz).date().isoformat()
 
         # Busca até 500 atividades pendentes do usuário logado
         r = await pipedrive_service.make_request(
@@ -68,6 +80,10 @@ async def get_pending_activities_summary():
         for act in activities:
             due = act.get("due_date")
             if not due:
+                continue
+
+            # Filtra apenas atividades atreladas a um negócio (deal_id)
+            if not act.get("deal_id"):
                 continue
 
             # Extrai org_id com segurança
@@ -117,10 +133,17 @@ async def update_pipedrive_org(org_id: int, payload: Dict[str, Any]):
 @router.get("/pipedrive/organizations/{org_id}/details")
 async def get_org_details(org_id: int):
     """Retorna o 360 da empresa: Tarefas, contatos, negócios e notas."""
+    cooldown = pipedrive_service.get_retry_after_seconds()
+    if cooldown > 0:
+        raise HTTPException(status_code=429, detail=f"Pipedrive em cooldown. Tente em {cooldown}s")
+
     try:
         return await pipedrive_service.get_organization_details(org_id)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        err = str(e)
+        if "cooldown" in err.lower() or "rate limit" in err.lower():
+            raise HTTPException(status_code=429, detail=err)
+        raise HTTPException(status_code=500, detail=err)
 
 @router.post("/pipedrive/organizations/{org_id}/reset")
 async def reset_org_data(org_id: int, db: AsyncSession = Depends(get_db)):

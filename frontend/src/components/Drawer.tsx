@@ -10,6 +10,8 @@ import {
     Trash2,
     MoreHorizontal,
     AlertTriangle,
+    RefreshCw,
+    User,
 } from 'lucide-react';
 import styles from './NetworkGraph.module.css';
 import { HistoryTimeline } from './HistoryTimeline';
@@ -77,10 +79,60 @@ export const Drawer: React.FC<DrawerProps> = ({
     refreshDetailsTrigger = 0,
     addNotification = () => {},
 }) => {
-    const [expandedOrgId, setExpandedOrgId] = useState<number | null>(null);
-    const [orgDetails, setOrgDetails] = useState<Record<number, any>>({});
+    const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem('drawer-expanded-org-id');
+            return saved ? Number(saved) : null;
+        }
+        return null;
+    });
+
+    const setExpandedOrgId = (orgId: number | null) => {
+        setExpandedOrgIdState(orgId);
+        if (typeof window !== 'undefined') {
+            if (orgId === null) {
+                window.localStorage.removeItem('drawer-expanded-org-id');
+            } else {
+                window.localStorage.setItem('drawer-expanded-org-id', orgId.toString());
+            }
+        }
+    };
+
+    const [orgDetails, setOrgDetails] = useState<Record<number, any>>(() => {
+        if (typeof window !== 'undefined' && expandedOrgId) {
+            const cached = window.localStorage.getItem(`org-${expandedOrgId}-details`);
+            if (cached) {
+                try {
+                    return { [expandedOrgId]: JSON.parse(cached) };
+                } catch {}
+            }
+        }
+        return {};
+    });
     const [loadingDetails, setLoadingDetails] = useState<Record<number, boolean>>({});
-    const [activeTab, setActiveTab] = useState<string>('activities');
+    
+    const [activeTab, setActiveTabState] = useState<string>(() => {
+        if (typeof window !== 'undefined') {
+            return window.localStorage.getItem('drawer-active-tab') || 'activities';
+        }
+        return 'activities';
+    });
+
+    const setActiveTab = (tab: string) => {
+        setActiveTabState(tab);
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem('drawer-active-tab', tab);
+        }
+    };
+
+    // 🚀 Carregamento inicial de detalhes se já houver empresa expandida
+    useEffect(() => {
+        if (expandedOrgId) {
+            void fetchOrgDetails(expandedOrgId);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const [editingNameOrgId, setEditingNameOrgId] = useState<number | null>(null);
     const [editingNameValue, setEditingNameValue] = useState<string>('');
     const [showOptionsDropdown, setShowOptionsDropdown] = useState<boolean>(false);
@@ -110,6 +162,11 @@ export const Drawer: React.FC<DrawerProps> = ({
         try {
             const data = await orgsApi.getOrganizationDetails(orgId);
             setOrgDetails(prev => ({ ...prev, [orgId]: data }));
+            
+            // Persiste no cache para que na próxima abertura o dado atualizado seja lido
+            if (typeof window !== 'undefined') {
+                window.localStorage.setItem(`org-${orgId}-details`, JSON.stringify(data));
+            }
         } catch (e: any) {
             console.error('Erro ao carregar detalhes:', e.message || e);
         } finally {
@@ -263,6 +320,15 @@ export const Drawer: React.FC<DrawerProps> = ({
                                 <MoreHorizontal size={20} />
                             </button>
 
+                            <button
+                                onClick={() => fetchOrgDetails(expandedOrgId!, true)}
+                                className={styles.refreshBtn}
+                                title="Sincronizar agora"
+                                disabled={loadingDetails[expandedOrgId!]}
+                            >
+                                <RefreshCw size={14} className={loadingDetails[expandedOrgId!] ? styles.spin : ''} />
+                            </button>
+
                             {showOptionsDropdown && (
                                 <div className={styles.dropdownMenu}>
                                     <button
@@ -385,6 +451,12 @@ export const Drawer: React.FC<DrawerProps> = ({
                                             {focusedOrg.address.toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}
                                         </span>
                                     )}
+                                    {orgDetails[expandedOrgId]?.org?.owner_name && (
+                                        <span className={styles.focusedOrgOwner} title="Responsável pela empresa">
+                                            <User size={12} style={{ marginRight: '4px', opacity: 0.6 }} />
+                                            {orgDetails[expandedOrgId].org.owner_name}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -454,6 +526,10 @@ export const Drawer: React.FC<DrawerProps> = ({
                                                         .map((d: any) => (
                                                             <div key={d.id} className={styles.dealItem}>
                                                                 <div className={styles.dealTitle}>{d.title}</div>
+                                                                <div className={styles.dealOwner} title="Responsável pelo negócio">
+                                                                    <Users size={10} style={{ marginRight: '4px', opacity: 0.5 }} />
+                                                                    {d.user_id?.name || d.owner_name || 'Sem responsável'}
+                                                                </div>
                                                                 <div className={styles.dealMeta}>
                                                                     <span className={styles.dealValue}>
                                                                         <DollarSign size={10} /> {d.formatted_value || 'R$ 0'}
@@ -510,7 +586,12 @@ export const Drawer: React.FC<DrawerProps> = ({
                                 key={orgId}
                                 org={orgWithLogo}
                                 isSelected={isSelected}
-                                onClick={onOrgClick}
+                                onClick={(clickedOrg) => {
+                                    onOrgClick(clickedOrg);
+                                    const clickedOrgId = Number(clickedOrg.id || clickedOrg.pipedrive_id);
+                                    setExpandedOrgId(clickedOrgId);
+                                    void fetchOrgDetails(clickedOrgId);
+                                }}
                                 onToggleExpand={toggleExpand}
                                 displayCount={displayCount}
                                 displayPics={displayPics}

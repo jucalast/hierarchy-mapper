@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Edge } from 'reactflow';
 import type { HierarchyEmployee } from '@/types';
 import {
@@ -13,6 +13,7 @@ export const useHierarchy = () => {
     const [loading, setLoading] = useState(false);
     const [discovering, setDiscovering] = useState(false);
     const [brandOptions, setBrandOptions] = useState<any[]>([]);
+    const currentEmployeesRef = useRef<HierarchyEmployee[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [streamAbortController, setStreamAbortController] = useState<AbortController | null>(null);
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -307,12 +308,11 @@ export const useHierarchy = () => {
     ) => {
         setLoading(true);
         setError("");
-        
-        // Em vez de pisar, mantemos o visual limpo apenas se não houver dados iniciais persistentes
-        if (!initialEmployees || initialEmployees.length === 0) {
-            setRawEmployees([]);
-            setRawBackendEdges([]);
-        }
+        setRawBackendEdges([]);
+
+        // Ao iniciar novo scan, limpa imediatamente entradas de "Análise Humana" de scans anteriores.
+        // Se há initialEmployees (root + sócios), usa-os como base; caso contrário, zera tudo.
+        setRawEmployees(initialEmployees && initialEmployees.length > 0 ? initialEmployees : []);
         
         const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
 
@@ -348,6 +348,8 @@ export const useHierarchy = () => {
             };
             localStorage.setItem('active-discovery-job', JSON.stringify(jobData));
             setActiveJobId(job_id);
+            // Notifica o chat que o scan iniciou (para o HierarchyMappingCard atualizar status)
+            window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
 
             // Conectar ao WebSocket e monitorar
             connectToJobWebSocket(job_id, confirmedBrand, confirmedLogo, explicitDomain, partners, onNotification, initialEmployees);
@@ -409,6 +411,7 @@ export const useHierarchy = () => {
         }
 
         // Sincroniza estado inicial para renderização instantânea
+        currentEmployeesRef.current = [...currentEmployees];
         setRawEmployees([...currentEmployees]);
 
         const initialEdges: Edge[] = [];
@@ -467,6 +470,21 @@ export const useHierarchy = () => {
                 if (data.type === 'done') {
                     console.log("[Worker] Scan finalizado via WebSocket.");
                     if (onNotification) onNotification('success', "Mapeamento concluído com sucesso!");
+                    // Notifica o chat agent que o mapeamento terminou, passando os contatos reais
+                    window.dispatchEvent(new CustomEvent('hierarchy_scan_done', {
+                        detail: {
+                            contacts: currentEmployees
+                                .filter(e => e.id !== 'root_company' && e.name)
+                                .map(e => ({
+                                    name: e.name,
+                                    role: (e as any).role || '',
+                                    email: (e as any).email || undefined,
+                                    department: (e as any).department || undefined,
+                                    temperature: (e as any).temperature || undefined,
+                                    level: (e as any).level,
+                                })),
+                        },
+                    }));
                     ws.close(); // Isso vai disparar o ws.onclose, que faz a limpeza e o refineHierarchy.
                     return;
                 }
@@ -474,20 +492,19 @@ export const useHierarchy = () => {
                 if (data.type === 'batch' || data.type === 'initial') {
                     const incomingNodes = (data.nodes || []) as HierarchyEmployee[];
                     
-                    // 🛠️ ATUALIZAÇÃO SÍNCRONA: Mantemos currentEmployees atualizado IMEDIATAMENTE.
                     incomingNodes.forEach(emp => {
-                        // 🔍 Match por ID (Stream), ou LinkedIn/Nome (Cruzamento Stream vs Database durante Reconexão)
-                        const idx = currentEmployees.findIndex(n => 
-                            n.id === emp.id || 
+                        const idx = currentEmployeesRef.current.findIndex(n => 
+                            String(n.id) === String(emp.id) || 
                             (n.linkedin && emp.linkedin && n.linkedin === emp.linkedin) ||
                             (n.name === emp.name && n.role === emp.role)
                         );
                         
                         if (idx > -1) {
-                            // Merge de metadados (preserva o ID do Banco se já foi mapeado, para não quebrar edges antigas)
-                            const merged = { ...emp, ...currentEmployees[idx] };
-                            
-                            // Mas força as atualizações novas do emp (stream) por cima
+                            if (currentEmployeesRef.current[idx].role?.startsWith('Aprovado') || currentEmployeesRef.current[idx].role === 'Reprovado') {
+                                return;
+                            }
+
+                            const merged = { ...emp, ...currentEmployeesRef.current[idx] };
                             merged.role = emp.role || merged.role;
                             merged.department = emp.department || merged.department;
                             merged.level = emp.level || merged.level;
@@ -495,31 +512,29 @@ export const useHierarchy = () => {
                             
                             const imgFields = ['logo', 'image', 'url', 'company_logo', 'logo_url', 'brand_logo', 'avatar', 'profile_pic', 'photo'];
                             imgFields.forEach(field => {
-                                if ((currentEmployees[idx] as any)[field] && !(emp as any)[field]) {
-                                    (merged as any)[field] = (currentEmployees[idx] as any)[field];
+                                if ((currentEmployeesRef.current[idx] as any)[field] && !(emp as any)[field]) {
+                                    (merged as any)[field] = (currentEmployeesRef.current[idx] as any)[field];
                                 }
                             });
-                            currentEmployees[idx] = merged;
+                            currentEmployeesRef.current[idx] = merged;
                         } else {
-                            currentEmployees.push(emp);
+                            currentEmployeesRef.current.push(emp);
                         }
                     });
 
-                    // Sincroniza com o state do React para renderização
-                    setRawEmployees([...currentEmployees]);
+                    setRawEmployees([...currentEmployeesRef.current]);
 
                     setRawBackendEdges(prev => {
                         const next = [...prev];
                         incomingNodes.forEach(emp => {
-                            // Encontrar o Nó real (que pode estar com ID antigo de DB) para amarrar certo 
-                            const myNode = currentEmployees.find(n => 
-                                n.id === emp.id || 
+                            const myNode = currentEmployeesRef.current.find(n => 
+                                String(n.id) === String(emp.id) || 
                                 (n.linkedin && emp.linkedin && n.linkedin === emp.linkedin) ||
                                 (n.name === emp.name && n.role === emp.role)
                             ) || emp;
 
                             if (myNode.manager_id && myNode.id !== "root_company") {
-                                const edgeIdx = next.findIndex(e => e.target === myNode.id);
+                                const edgeIdx = next.findIndex(e => String(e.target) === String(myNode.id));
                                 const newEdge = {
                                     id: `e-${myNode.manager_id}-${myNode.id}`,
                                     source: myNode.manager_id,
@@ -741,29 +756,32 @@ export const useHierarchy = () => {
 
             console.log(`[useHierarchy] Candidato ${action === 'approve' ? 'aprovado' : 'rejeitado'}:`, data);
 
-            // 🔄 Atualização de Estado Local
+            // 🔄 Atualização de Estado Local (Usa conversão para String para evitar colisão entre id numérico e string do parâmetro)
             if (action === 'approve') {
-                // Se aprovou, removemos da lista de opções do carrossel (brandOptions)
-                // e recarregamos/atualizamos o funcionario no grafo (ou forçamos um fetch se necessário)
-                setBrandOptions(prev => prev.filter(opt => opt.id !== employeeId));
+                setBrandOptions(prev => prev.filter(opt => String(opt.id) !== String(employeeId)));
                 
-                // Atualiza o funcionário no grafo se ele já estiver lá (format 'node_ID')
                 setRawEmployees(prev => {
-                    return prev.map(emp => {
-                        if (emp.id === employeeId && emp.role === 'Análise Humana') {
-                            // O backend já alterou pro headline, mas como não sabemos o headline aqui 
-                            // (ou poderíamos passar no retorno do server), vamos colocar 'Aprovado' 
-                            // O próximo fetch database resolverá 100%.
+                    const next = prev.map(emp => {
+                        if (String(emp.id) === String(employeeId) && emp.role === 'Análise Humana') {
                             return { ...emp, role: 'Aprovado (Recarregue para ver cargo)' };
                         }
                         return emp;
                     });
+                    currentEmployeesRef.current = next;
+                    return next;
                 });
             } else {
-                // Se rejeitou, removemos de tudo
-                setBrandOptions(prev => prev.filter(opt => opt.id !== employeeId));
-                setRawEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-                setRawBackendEdges(prev => prev.filter(edge => edge.target !== employeeId && edge.source !== employeeId));
+                setBrandOptions(prev => prev.filter(opt => String(opt.id) !== String(employeeId)));
+                setRawEmployees(prev => {
+                    const next = prev.map(emp => {
+                        if (String(emp.id) === String(employeeId)) {
+                            return { ...emp, role: 'Reprovado', department: 'Reprovado' };
+                        }
+                        return emp;
+                    });
+                    currentEmployeesRef.current = next;
+                    return next;
+                });
             }
 
             return data;

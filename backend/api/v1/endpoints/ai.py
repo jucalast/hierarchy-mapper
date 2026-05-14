@@ -25,6 +25,11 @@ class AgentActionRequest(PydanticBaseModel):
     thread_id: Optional[str] = None   # para registrar ActivityLog na thread certa
 
 
+class RefineMessageRequest(PydanticBaseModel):
+    action_id: str
+    feedback: str
+
+
 class PreferenceRequest(PydanticBaseModel):
     model: str
     strict_mode: Optional[bool] = False  # Se True, força o modelo com retry agressivo (sem fallback)
@@ -144,6 +149,84 @@ async def transcribe_audio(audio: UploadFile = File(...)):
 
     transcript = resp.json().get("text", "").strip()
     return {"transcript": transcript}
+
+
+@router.post("/refine-message")
+async def refine_message(payload: RefineMessageRequest):
+    """Refina a mensagem de uma ação pendente com base no feedback do usuário e atualiza em memória."""
+    from services.ai.agent_service import AgentService
+    from services.ai.business_context_service import BusinessContextService
+    from services.ai.llm.router import ask_llm
+    from services.ai.llm.base import LLMTier
+    import json
+
+    # V2: _PENDING em agent.py (dict de módulo)
+    from services.ai.agent_v2.agent import _PENDING as _V2_PENDING
+    pending_v2 = _V2_PENDING.get(payload.action_id)
+    pending_v1 = AgentService._pending_actions.get(payload.action_id)
+    pending = pending_v2 or pending_v1
+    if not pending:
+        raise HTTPException(status_code=404, detail="Ação não encontrada ou já expirou.")
+
+    # Extrai campos independente da versão do agente
+    if pending_v2:
+        args = pending_v2.get("args", {})
+        current_message = args.get("message") or args.get("body") or ""
+        contact_name = args.get("contact") or args.get("contact_name") or ""
+        channel = "email" if "email" in pending_v2.get("tool", "") else "whatsapp"
+    else:
+        current_message = pending_v1.get("message_preview", "")
+        contact_name = pending_v1.get("contact_name", "")
+        channel = pending_v1.get("channel", "whatsapp")
+
+    business_context = await BusinessContextService.get_tenant_context()
+    biz_data_str = json.dumps(business_context, indent=2, ensure_ascii=False) if business_context else ""
+
+    system_prompt = (
+        "Você é um redator comercial B2B sênior. Reescreva a mensagem de vendas abaixo aplicando "
+        "exatamente o ajuste solicitado — não altere o que não foi pedido.\n\n"
+        f"## CONTEXTO DA EMPRESA (mantenha os diferenciais):\n{biz_data_str}\n\n"
+        "REGRAS:\n"
+        "- Aplique APENAS o ajuste pedido. Preserve tom, dados concretos (nomes, preços, códigos) e estratégia geral.\n"
+        "- Nunca adicione placeholders como [x] ou [y].\n"
+        f"- Canal: {channel}. Tom natural e direto.\n"
+        "RETORNE APENAS O TEXTO DA MENSAGEM REESCRITA. Sem introdução, sem explicação."
+    )
+    prompt_user = (
+        f"MENSAGEM ORIGINAL:\n{current_message}\n\n"
+        f"AJUSTE SOLICITADO: {payload.feedback}\n\n"
+        "Reescreva a mensagem aplicando o ajuste."
+    )
+
+    try:
+        res = await ask_llm(
+            prompt=prompt_user,
+            system=system_prompt,
+            json_mode=False,
+            temperature=0.4,
+            tier=LLMTier.STANDARD
+        )
+        refined = res.text.strip()
+
+        # Atualiza o pending em memória para que o envio use a versão refinada
+        if pending_v2:
+            args = _V2_PENDING[payload.action_id].get("args", {})
+            if "message" in args:
+                args["message"] = refined
+            if "body" in args:
+                args["body"] = refined
+        else:
+            AgentService._pending_actions[payload.action_id]["message_preview"] = refined
+            params = AgentService._pending_actions[payload.action_id].get("params", {})
+            if "message" in params:
+                params["message"] = refined
+            if "body" in params:
+                params["body"] = refined
+
+        return {"ok": True, "refined_message": refined}
+    except Exception as e:
+        log.exception("ai.refine_message.failed", error=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/agent-action")

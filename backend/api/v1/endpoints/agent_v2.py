@@ -54,8 +54,43 @@ async def agent_v2_chat(payload: V2ChatRequest):
                 is_regeneration = True
                 from core.database import async_session as _async_session
                 from api.v1.endpoints.conversations import delete_last_assistant_message
+                from sqlalchemy import select
+                from models.conversation import ConversationMessage
+                
                 async with _async_session() as db:
+                    # Se for uma ação sugerida, precisamos limpar o estado no pai
+                    if payload.parent_message_id and payload.action_index is not None:
+                        res = await db.execute(
+                            select(ConversationMessage).where(ConversationMessage.id == payload.parent_message_id)
+                        )
+                        parent_msg = res.scalar_one_or_none()
+                        if parent_msg:
+                            msg_data = dict(parent_msg.data or {})
+                            runs = msg_data.get("suggested_actions_runs", {})
+                            idx_str = str(payload.action_index)
+                            if idx_str in runs:
+                                del runs[idx_str]
+                                msg_data["suggested_actions_runs"] = runs
+                                parent_msg.data = msg_data
+                                
+                                # Também reseta o status no log original
+                                parent_logs = list(parent_msg.logs or [])
+                                for event in parent_logs:
+                                    if event.get("type") == "suggested_actions":
+                                        actions = event.get("actions", [])
+                                        if 0 <= payload.action_index < len(actions):
+                                            actions[payload.action_index]["status"] = "pending"
+                                            if "logs" in actions[payload.action_index]:
+                                                del actions[payload.action_index]["logs"]
+                                parent_msg.logs = parent_logs
+                                
+                                db.add(parent_msg)
+                                await db.commit()
+                                log.info("agent.regeneration.parent_cleared", parent_id=payload.parent_message_id, idx=payload.action_index)
+                    
+                    # Deleta a última mensagem do assistente (comportamento padrão)
                     await delete_last_assistant_message(db, payload.thread_id)
+                
                 # Remove a última resposta do assistente do histórico
                 payload.history = payload.history[:-1]
 

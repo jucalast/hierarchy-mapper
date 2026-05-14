@@ -286,18 +286,18 @@ export default function ProspectMap({
               box-shadow: 0 4px 12px rgba(0,0,0,0.4);
               min-width: 140px;
             ">
-              <div style="font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">
+              <div style="font-weight: 800; font-size: var(--font-base); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">
                 ${lead.name}
               </div>
               <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                <span style="font-size: 10px; font-weight: 900; color: ${tierColor}; text-transform: uppercase;">Tier ${tier}</span>
-                <span style="font-size: 10px; color: rgba(255,255,255,0.4);">·</span>
-                <span style="font-size: 11px; font-weight: 700; color: ${(lead.status as string) === 'created' ? '#3b82f6' : (tier === 'A' ? '#34d17c' : '#f59e0b')}">
+                <span style="font-size: var(--font-xs); font-weight: 900; color: ${tierColor}; text-transform: uppercase;">Tier ${tier}</span>
+                <span style="font-size: var(--font-xs); color: rgba(255,255,255,0.4);">·</span>
+                <span style="font-size: var(--font-sm); font-weight: 700; color: ${(lead.status as string) === 'created' ? '#3b82f6' : (tier === 'A' ? '#34d17c' : '#f59e0b')}">
                   ${(lead.status as string) === 'created' ? '✓ Aprovado' : lead.icp_score + ' pts'}
                 </span>
               </div>
               ${lead.address ? `
-                <div style="margin-top: 6px; font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1.3; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px; max-width: 200px;">
+                <div style="margin-top: 6px; font-size: var(--font-xs); color: rgba(255,255,255,0.5); line-height: 1.3; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px; max-width: 200px;">
                   ${lead.address}
                 </div>
               ` : ''}

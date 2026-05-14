@@ -10,6 +10,11 @@ def clean_brand_name(raw_name: str) -> str:
     """
     Limpa o nome extraído do LinkedIn, preservando espaços e separando CamelCase.
     """
+    # Corrige corrupções comuns de tokenizer Llama (ex: 'Colch9es' -> 'Colchões')
+    raw_name = re.sub(r'Colch\d+(\s+\d+)?es', 'Colchões', raw_name, flags=re.IGNORECASE)
+    raw_name = re.sub(r'Colch\d+(\s+\d+)?', 'Colchões', raw_name, flags=re.IGNORECASE)
+    raw_name = re.sub(r'([a-zA-Z]+)\d+es', r'\1oes', raw_name)
+
     # 1. Divide em separadores comuns e pega o primeiro pedaço (Mantendo hífens internos)
     clean = re.split(r"[|–•·:]", raw_name)[0].strip()
     

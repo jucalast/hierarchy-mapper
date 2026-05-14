@@ -155,7 +155,7 @@ class CandidateProcessor:
         print(f"      [Orphan Upgrade] ✅ Sucesso: {name} promovido para {final_role}")
         return node_data
 
-    async def process_candidate(self, search_result: Dict) -> Optional[Dict]:
+    async def process_candidate(self, search_result: Dict, is_partner_search: bool = False) -> Optional[Dict]:
         """
         Orquestra toda a análise de um único candidato.
         Retorna node_data se aprovado, None se reprovado.
@@ -169,10 +169,11 @@ class CandidateProcessor:
             log_candidate_rejection(name or "Unknown", href, "Nome inválido ou coincidente com a marca")
             return None
 
-        # 🛡️ FIX #4: Ativa o Filtro Mecânico Estrito antes da IA
-        if not apply_strict_filters(name, title, body, self.brand, self.brand, self.location):
-            log_candidate_rejection(name, href, "REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)")
-            return None
+        # 🛡️ FIX #4: Ativa o Filtro Mecânico Estrito antes da IA (Bypassado para buscas de sócios/fundadores)
+        if not is_partner_search:
+            if not await apply_strict_filters(name, title, body, self.brand, self.brand, self.location):
+                log_candidate_rejection(name, href, "REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)")
+                return None
 
         # 1. 🔍 THE ORG (Verdade Absoluta)
         theorg_info, theorg_role, theorg_url = await org_search.get_theorg_role(self.brand, name)

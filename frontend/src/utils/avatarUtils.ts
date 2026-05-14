@@ -23,8 +23,10 @@ export const getLinkedinAvatar = (linkedinUrl: string | null | undefined) => {
     return `https://unavatar.io/linkedin/${username}`;
 };
 
-export const getAvatarUrl = (data: any) => {
-    const avatarUrl = data.avatar_url ||
+export const getAvatarUrl = (data: any): string | null | undefined => {
+    if (!data) return null;
+    const avatarUrl = data.logo || 
+                     data.avatar_url ||
                      data.avatar || 
                      data.profile_pic || 
                      data.photo || 
@@ -32,7 +34,8 @@ export const getAvatarUrl = (data: any) => {
                      data.profile_image ||
                      data.linkedin_image ||
                      data.linkedin_metadata?.profile_image ||
-                     getLinkedinAvatar(data.linkedin);
+                     getLinkedinAvatar(data.linkedin) ||
+                     (data.originalEmployee ? getAvatarUrl(data.originalEmployee) : null);
     
     // Comentado para evitar buscar imagens genéricas que muitas vezes falham
     // if (!avatarUrl && data.email) {

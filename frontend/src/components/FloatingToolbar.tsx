@@ -61,6 +61,7 @@ export interface FloatingToolbarProps {
     prospectHoveredLeadId?: string | null;
     isSidebarOpen?: boolean;
     isChatOpen?: boolean;
+    children?: React.ReactNode;
 }
 
 export const FloatingToolbar: React.FC<FloatingToolbarProps> = (props) => {
@@ -126,6 +127,8 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = (props) => {
             onRejectCandidate={props.onRejectCandidate}
             isSidebarOpen={props.isSidebarOpen}
             isChatOpen={props.isChatOpen}
-        />
+        >
+            {props.children}
+        </NormalToolbar>
     );
 };

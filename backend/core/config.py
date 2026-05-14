@@ -229,6 +229,9 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         EMAIL_PASSWORD: str = Field(default="")
         EMAIL_PORT: int = Field(default=8002)
         API_BASE_URL: str = Field(default="http://localhost:8000")
+
+        # --- Attachments conhecidos (caminhos absolutos no filesystem) ---
+        LINKB2B_PRESENTATION_PATH: str = Field(default="")  # ex: C:\Users\João\Docs\Apresentação LINKB2B.pdf
         OLLAMA_API_BASE: str = Field(default="http://localhost:11434/v1/chat/completions")
 
         # --- WhatsApp ---
@@ -263,6 +266,17 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         def cors_origins_list(self) -> list[str]:
             raw = self.cors.allow_origins.strip()
             if raw in ("*", ""):
+                if self.cors.allow_credentials:
+                    return [
+                        "http://localhost:3000",
+                        "http://127.0.0.1:3000",
+                        "http://localhost:5173",
+                        "http://127.0.0.1:5173",
+                        "http://localhost:3001",
+                        "http://127.0.0.1:3001",
+                        "http://localhost:8000",
+                        "http://127.0.0.1:8000",
+                    ]
                 return ["*"]
             return [o.strip() for o in raw.split(",") if o.strip()]
 
@@ -437,6 +451,17 @@ else:
         def cors_origins_list(self) -> list:
             raw = self.cors.allow_origins.strip()
             if raw in ("*", ""):
+                if self.cors.allow_credentials:
+                    return [
+                        "http://localhost:3000",
+                        "http://127.0.0.1:3000",
+                        "http://localhost:5173",
+                        "http://127.0.0.1:5173",
+                        "http://localhost:3001",
+                        "http://127.0.0.1:3001",
+                        "http://localhost:8000",
+                        "http://127.0.0.1:8000",
+                    ]
                 return ["*"]
             return [o.strip() for o in raw.split(",") if o.strip()]
 

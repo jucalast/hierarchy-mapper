@@ -81,10 +81,15 @@ class PipedriveService:
         retry_after = resp.headers.get("retry-after")
         if retry_after:
             try:
-                PipedriveService._retry_after_until = time.time() + int(retry_after) + 0.5
+                raw = int(retry_after)
+                # Pipedrive retorna Retry-After em milissegundos (ex: 59721 ms ≈ 60s).
+                # Valores > 3600 são impossíveis em segundos (1h), logo são ms.
+                seconds = raw / 1000 if raw > 3600 else raw
+                PipedriveService._retry_after_until = time.time() + seconds + 0.5
                 log.warning(
                     "pipedrive.rate_limited",
                     retry_after=int(retry_after),
+                    cooldown_sec=int(seconds),
                 )
             except Exception:
                 pass
@@ -149,8 +154,12 @@ class PipedriveService:
         async with PipedriveService._semaphore:
             wait = PipedriveService._retry_after_until - time.time()
             if wait > 0:
+                # Falha rápido — não bloqueia o event loop nem o frontend.
+                # O chamador (sync_hub, etc.) é responsável por retentar depois.
                 log.info("pipedrive.cooldown_wait", seconds=int(wait))
-                await asyncio.sleep(wait)
+                raise RuntimeError(
+                    f"Pipedrive em cooldown por rate limit. Tente novamente em {int(wait)}s"
+                )
 
             try:
                 resp = await client.request(
@@ -163,7 +172,9 @@ class PipedriveService:
                 self._update_retry_after(resp)
                 wait = PipedriveService._retry_after_until - time.time()
                 if wait > 0:
-                    await asyncio.sleep(wait)
+                    raise RuntimeError(
+                        f"Pipedrive Rate Limit. Tente novamente em {int(wait)}s"
+                    )
                     try:
                         resp = await client.request(
                             method, url, json=json, params=params, timeout=t_out
@@ -228,6 +239,25 @@ class PipedriveService:
             PipedriveService._stages_cache = {sid: info["name"] for sid, info in mapping.items()}
             return mapping
         return {}
+
+    _users_cache: Dict[int, str] = {}
+    _users_cache_time: float = 0
+
+    async def get_users_map(self) -> Dict[int, str]:
+        """Retorna mapeamento {user_id: user_name} com cache de 1 hora."""
+        if time.time() - self._users_cache_time < 3600 and self._users_cache:
+            return self._users_cache
+        
+        try:
+            resp = await self._request("GET", "users")
+            if resp and resp.status_code == 200:
+                data = resp.json().get("data") or []
+                self._users_cache = {u["id"]: u["name"] for u in data if "id" in u and "name" in u}
+                self._users_cache_time = time.time()
+                return self._users_cache
+        except Exception:
+            pass
+        return self._users_cache
 
     # ---------------------------------------------------------------------
     # CRUD — Organizations
@@ -590,6 +620,29 @@ class PipedriveService:
         except Exception as e:
             log.warning("pipedrive.list_quick_sync_failed", error=str(e))
 
+        # 1.5. Busca todos os negócios abertos (open deals) no Pipedrive para filtrar apenas organizações com negócios ativos
+        open_org_ids = None
+        try:
+            deals_resp = await self._request(
+                "GET",
+                "deals",
+                params={"status": "open", "limit": 500}
+            )
+            if deals_resp is not None and deals_resp.status_code == 200:
+                open_org_ids = set()
+                deals_data = deals_resp.json().get("data") or []
+                for d in deals_data:
+                    org_info = d.get("org_id")
+                    if org_info:
+                        if isinstance(org_info, dict):
+                            oid = org_info.get("value")
+                        else:
+                            oid = org_info
+                        if oid:
+                            open_org_ids.add(int(oid))
+        except Exception as e:
+            log.warning("pipedrive.list_organizations.fetch_deals_failed", error=str(e))
+
         # 2. Busca TODAS as organizações locais ativas
         async with async_session() as session:
             stmt = (
@@ -607,6 +660,10 @@ class PipedriveService:
             )
             res = await session.execute(stmt)
             local_orgs = res.scalars().all()
+
+            # Filtrar organizações com negócios abertos (se carregado com sucesso)
+            if open_org_ids is not None:
+                local_orgs = [o for o in local_orgs if o.pipedrive_id in open_org_ids]
 
             if not local_orgs:
                 return []
@@ -648,6 +705,7 @@ class PipedriveService:
 
             # 5. Monta o resultado final
             result = []
+            users_map = await self.get_users_map()
             for o in local_orgs:
                 result.append({
                     "id": o.pipedrive_id or o.id,
@@ -665,6 +723,8 @@ class PipedriveService:
                     "source": o.source,
                     "icp_score": o.icp_score,
                     "icp_tier": o.icp_tier,
+                    "owner_id": o.owner_id,
+                    "owner_name": users_map.get(o.owner_id) if o.owner_id in users_map else "Sistema",
                 })
 
             return result
@@ -675,7 +735,9 @@ class PipedriveService:
     # ---------------------------------------------------------------------
 
     async def sync_overdue_activities(self) -> Dict[str, Any]:
-        today = date.today().isoformat()
+        from datetime import datetime, timezone, timedelta
+        sao_paulo_tz = timezone(timedelta(hours=-3))
+        today = datetime.now(sao_paulo_tz).date().isoformat()
         resp = await self._request(
             "GET",
             "activities",
@@ -691,6 +753,10 @@ class PipedriveService:
             updated = 0
             for act in activities:
                 due = act.get("due_date")
+                deal_id = act.get("deal_id")
+                # Apenas atualiza atividades atreladas a negócios (Deals)
+                if not deal_id:
+                    continue
                 if due and due < today:
                     r = await self._request(
                         "PUT",
@@ -705,7 +771,9 @@ class PipedriveService:
 
     async def smart_reschedule_activities(self) -> Dict[str, Any]:
         """Remanejamento Inteligente v2 — mesma lógica, via `_request`."""
-        today_date = date.today()
+        from datetime import datetime, timezone, timedelta
+        sao_paulo_tz = timezone(timedelta(hours=-3))
+        today_date = datetime.now(sao_paulo_tz).date()
         if today_date.weekday() >= 5:
             today_date += timedelta(days=(7 - today_date.weekday()))
         log.info("pipedrive.smart_reschedule.start", base_date=today_date.isoformat())
@@ -985,7 +1053,7 @@ class PipedriveService:
         deals_resp = await self._request(
             "GET",
             f"organizations/{org_id}/deals",
-            params={"user_id": self.user_id},
+            params={},
         )
         deals = (
             deals_resp.json().get("data") or []
@@ -1016,6 +1084,8 @@ class PipedriveService:
         tasks.append(asyncio.create_task(self._request("GET", "notes", params={"org_id": org_id})))
         keys.append("updates")
         tasks.append(asyncio.create_task(self._request("GET", f"organizations/{org_id}/flow")))
+        keys.append("org")
+        tasks.append(asyncio.create_task(self._request("GET", f"organizations/{org_id}")))
         for i, dv in enumerate(done_values):
             keys.append(f"activities_{i}")
             tasks.append(
@@ -1041,11 +1111,62 @@ class PipedriveService:
         for i in range(len(done_values)):
             merged_activities.extend(raw_results.get(f"activities_{i}", []))
 
+        # --- Enriquecimento de Nomes de Usuários (Evita Delay de Denormalização do Pipedrive) ---
+        users_map = await self.get_users_map()
+        persons_list = raw_results.get("persons", [])
+        persons_map = {p["id"]: p.get("name") for p in persons_list if "id" in p}
+        
+        for act in merged_activities:
+            # Pipedrive às vezes retorna user_id como objeto ou int
+            uid = act.get("user_id")
+            if isinstance(uid, dict):
+                act["owner_name"] = uid.get("name") or act.get("owner_name")
+            elif isinstance(uid, int) and uid in users_map:
+                act["owner_name"] = users_map[uid]
+            
+            # Resolve nome da pessoa (contato)
+            pid = act.get("person_id")
+            if isinstance(pid, dict):
+                act["person_name"] = pid.get("name") or act.get("person_name")
+            elif isinstance(pid, int) and pid in persons_map:
+                act["person_name"] = persons_map[pid]
+
+        for deal in deals:
+            uid = deal.get("user_id")
+            if isinstance(uid, dict):
+                deal["owner_name"] = uid.get("name") or deal.get("owner_name")
+            elif isinstance(uid, int) and uid in users_map:
+                deal["owner_name"] = users_map[uid]
+            
+            pid = deal.get("person_id")
+            if isinstance(pid, dict):
+                deal["person_name"] = pid.get("name") or deal.get("person_name")
+            elif isinstance(pid, int) and pid in persons_map:
+                deal["person_name"] = persons_map[pid]
+
+        for note in raw_results.get("notes", []):
+            uid = note.get("user_id")
+            if isinstance(uid, dict):
+                note["owner_name"] = uid.get("name")
+            elif isinstance(uid, int) and uid in users_map:
+                note["owner_name"] = users_map[uid]
+
+        org_data = raw_results.get("org", {})
+        if isinstance(org_data, dict):
+            # Resolve nome do dono da organização
+            oid = org_data.get("owner_id")
+            if isinstance(oid, dict):
+                org_data["owner_name"] = oid.get("name")
+            elif isinstance(oid, int) and oid in users_map:
+                org_data["owner_name"] = users_map[oid]
+
         results = {
+            "org": org_data,
             "persons": raw_results.get("persons", []),
             "notes": raw_results.get("notes", []),
             "updates": raw_results.get("updates", []),
             "activities": merged_activities,
+            "deals": deals,
         }
 
         # --- Persistência de Pessoas no Banco Local (Hierarquia) ---

@@ -9,11 +9,13 @@ O agente deve agir como um consultor sênior que "corre atrás" da informação.
 - Buscar variações de nome no WhatsApp e Email.
 - Buscar por nomes citados em notas ou e-mails.
 
-## 2. Sequência de Execução (Algoritmo)
+## 2. Sequência de Execução (Algoritmo Inteligente)
 1. **Mapeamento:** Chamar `pipedrive_get_org` e `pipedrive_get_persons`.
-2. **Varredura:** Disparar buscas paralelas de `whatsapp_get_messages` e `email_get_contact_history` para cada entidade encontrada.
-3. **Aprofundamento:** Se novos nomes surgirem nos resultados, repetir o passo 2 para esses nomes.
-4. **Consolidação:** Cruzar dados de CRM com o tom das conversas reais para gerar o relatório.
+2. **Varredura Contextual (Regra de Ouro):** Disparar buscas de `whatsapp_get_messages` e `email_get_contact_history`. 
+   - **PARE IMEDIATAMENTE:** Assim que você encontrar uma conversa (ex: menção a produto ou deal) que confirme que este é o contato certo, você DEVE PARAR a investigação. 
+   - **É PROIBIDO** continuar investigando outros contatos (como Edvaldo, Giovanna, etc) se você já encontrou o Lucas e o contexto dele é suficiente. Investigar todos os contatos sem necessidade é um erro grave.
+3. **Verificação de Identidade:** Sempre cruze o número de telefone do Pipedrive com o ID do chat do WhatsApp. Se o telefone não bater, descarte o contato.
+4. **Consolidação:** Cruzar dados de CRM com o tom das conversas reais para gerar o relatório ou ação.
 
 ## 3. Diretrizes Técnicas (Token Efficiency)
 - O Agente deve receber resumos narrativos e densos para manter o contexto pequeno.

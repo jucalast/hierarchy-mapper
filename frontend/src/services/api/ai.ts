@@ -32,6 +32,15 @@ export function agentAction(payload: AgentActionPayload) {
   return api.post<Record<string, unknown>>('/ai/agent-action', payload);
 }
 
+export interface RefineMessagePayload {
+  action_id: string;
+  feedback: string;
+}
+
+export function refineMessage(payload: RefineMessagePayload) {
+  return api.post<{ ok: boolean; refined_message: string }>('/ai/refine-message', payload);
+}
+
 export interface PreferenceResponse {
   status: string;
   preferred_model: string;

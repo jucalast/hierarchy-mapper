@@ -83,6 +83,30 @@ export function useProspecting() {
   const [session, setSession] = useState<ProspectSession | null>(null);
   const [leads, setLeads] = useState<ProspectLead[]>([]);
   const [selectedLead, setSelectedLead] = useState<ProspectLead | null>(null);
+
+  // Sync selectedLead ID to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        if (selectedLead) {
+            localStorage.setItem('prospect_selected_lead_id', selectedLead.id);
+        } else {
+            localStorage.removeItem('prospect_selected_lead_id');
+        }
+    }
+  }, [selectedLead]);
+
+  // Restore selectedLead from leads once leads are loaded/updated
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !selectedLead && leads.length > 0) {
+        const savedId = localStorage.getItem('prospect_selected_lead_id');
+        if (savedId) {
+            const matched = leads.find(l => l.id === savedId);
+            if (matched) {
+                setSelectedLead(matched);
+            }
+        }
+    }
+  }, [leads, selectedLead]);
   const [cityName, setCityName] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
         return localStorage.getItem('prospect_city') || null;

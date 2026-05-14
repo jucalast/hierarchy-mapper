@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from typing import List, Optional
 import os
 import sqlite3
 import time
@@ -30,28 +31,31 @@ class SendEmailRequest(BaseModel):
     to_email: str
     subject: str
     body: str
+    attachment_paths: Optional[List[str]] = None  # caminhos absolutos de arquivos a anexar
 
 @router.post("/send")
 async def send_email(payload: SendEmailRequest):
     tracking_id = str(uuid.uuid4())
-    
+
     # Salvar no DB para cruzar depois
     conn = _get_db()
-    conn.execute("INSERT INTO emails_sent (tracking_id, to_email, subject) VALUES (?, ?, ?)", 
+    conn.execute("INSERT INTO emails_sent (tracking_id, to_email, subject) VALUES (?, ?, ?)",
                  (tracking_id, payload.to_email, payload.subject))
     conn.commit()
     conn.close()
 
     client = EmailClient()
-    # Enviando numa thread em background para não bloquear o servidor (time.sleep do envio falso humano)
     loop = asyncio.get_event_loop()
     success = await loop.run_in_executor(
-        None, 
-        client.send_outbound_email, 
-        payload.to_email, 
-        payload.subject, 
-        payload.body, 
-        tracking_id
+        None,
+        lambda: client.send_outbound_email(
+            payload.to_email,
+            payload.subject,
+            payload.body,
+            tracking_id,
+            False,  # request_read_receipt
+            payload.attachment_paths,
+        )
     )
 
     if success:

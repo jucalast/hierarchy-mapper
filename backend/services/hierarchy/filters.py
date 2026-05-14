@@ -127,7 +127,19 @@ async def apply_strict_filters(name: str, title: str, snippet: str, core_company
     focus = hier.get("department_focus", "compras")
     forbidden = hier.get("forbidden_keywords", {}).get(focus, negative_keywords_fallback)
     
-    normalized_negatives = [normalize_str(nk) for nk in forbidden]
+    # Ignora palavras-chave negativas que façam parte do próprio nome da empresa alvo
+    words_to_ignore = set()
+    for bv in brand_variants:
+        if len(bv) > 2:
+            for word in bv.split():
+                if len(word) > 2:
+                    words_to_ignore.add(word)
+
+    normalized_negatives = [
+        normalize_str(nk) for nk in forbidden 
+        if normalize_str(nk) not in words_to_ignore
+    ]
+    
     if any(nk in context_clean for nk in normalized_negatives):
         return False
 

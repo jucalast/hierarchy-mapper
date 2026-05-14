@@ -2982,3 +2982,3387 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T09:21:20.625507",
+    "candidate": "Olga Fonseca",
+    "linkedin": "https://br.linkedin.com/in/olgafonsecamkt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Olga Fonseca - Diretora de Marketing na Flex Do Brasil | LinkedIn",
+            "body": "Como Diretora de Marketing na Flex do Brasil , multinacional espanhola no setor de colchões , lidero as marcas Simmons®, Flex® e Epeda®, integrando branding, design, produto, trade, digital..."
+        },
+        "osint_metadata": {
+            "role": "flex do brasil",
+            "bio": "Sou criadora e contadora de histórias de marcas. Como Diretora de Marketing na Flex do… · Experiência: Flex Do Brasil · Formação acadêmica: PUCRS - Pontifícia Universidade Católica do Rio Grande do Sul · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Olga Fonseca no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/olgafonsecamkt",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T09:21:27.218487",
+    "candidate": "Tito Leal",
+    "linkedin": "https://br.linkedin.com/in/tito-leal-295069297",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tito Leal - Flex do Brasil Ltda",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "flex do brasil ltda",
+            "bio": "Experiência: Flex do Brasil Ltda · Localidade: Valinhos · 6 conexões no LinkedIn. Veja o perfil de Tito Leal no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/tito-leal-295069297",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T09:21:41.905491",
+    "candidate": "Rafael Gobo",
+    "linkedin": "https://br.linkedin.com/in/rafael-gobo-6b4b38134",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rafael Gobo - Flex do Brasil",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "flex do brasil",
+            "bio": "Gerenciamento do departamento de Supply Chain e Custumer Service (Compras, Planejamento… · Experiência: Flex do Brasil · Formação acadêmica: Universidade Metodista de Piracicaba · Localidade: Americana · + de 500 conexões no LinkedIn. Veja o perfil de Rafael Gobo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/rafael-gobo-6b4b38134",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T09:23:00.178777",
+    "candidate": "Fabiano Balieiro",
+    "linkedin": "https://br.linkedin.com/in/fabianobalieiro",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fabiano Balieiro - Diretor Geral - Flex Do Brasil",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "flex bedding group",
+            "bio": "EXECUTIVO DE NEGÓCIOS\nExperiente Executivo de negócios talhado ao longo de 23 anos em… · Experiência: Flex Bedding Group · Formação acadêmica: Universidade de São Paulo · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Fabiano Balieiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/fabianobalieiro",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T09:24:29.827257",
+    "candidate": "Aline Domingues",
+    "linkedin": "https://br.linkedin.com/in/aline-domingues-019009187",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Aline Domingues - Compradora | LinkedIn",
+            "body": "Compradora · Experiência: Veolia Brasil · Localidade: Brasil · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "veolia brasil",
+            "bio": "Experiência: Veolia Brasil · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja Aline Domingues  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/aline-domingues-019009187",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T09:25:12.263982",
+    "candidate": "Fabiano Balieiro",
+    "linkedin": "https://br.linkedin.com/in/fabianobalieiro/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fabiano Balieiro - Flex Bedding Group | LinkedIn Flex Do Brasil: Contact Details and Business Profile Flex Brasil - Company Profile & Staff Directory | ContactOut Sobre nós - Flex Colchões",
+            "body": "· Experience: Flex Bedding Group · Education: Universidade de São Paulo · Location: São Paulo · 500+ connections on LinkedIn . View Fabiano Balieiro’s profile on LinkedIn , a professional... Flex Do Brasil is a Furniture and Home Furnishings Manufacturing company located in BR with 77 employees. Find top employees, contact details and business statistics at RocketReach. Pertence ao grupo europeu \"Flex Bedding Group\" com mais de 110 anos de tradição na produção de colchões e equipamentos para descanso, está no Brasil desde 2000 com uma moderna fábrica em Limeira, no interior de São Paulo. O selo da ABICOL é um reconhecimento da Associação Brasileira da Indústria de Colchões aos fabricantes e fornecedores do setor colchoeiro que possuem uma política de gestão diferenciada de boas práticas, produzem colchões de confiança, e, acima de tudo, atuam no combate a propaganda enganosa."
+        },
+        "osint_metadata": {
+            "role": "flex bedding group",
+            "bio": "BUSINESS EXECUTIVE\nExecutive seasoned during 23+ years’ experience on leading… · Experience: Flex Bedding Group · Education: Universidade de São Paulo · Location: São Paulo · 500+ connections on LinkedIn. View Fabiano Balieiro’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/fabianobalieiro/en",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:39:22.780286",
+    "candidate": "Thiago Jesus",
+    "linkedin": "https://br.linkedin.com/in/thiago-jesus-273b664a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Thiago Jesus - Flex Brasil | LinkedIn",
+            "body": "Profissional com mais de 20 anos de carreira em empresas dos segmentos industriais e… · Experiência: Flex Brasil · Formação acadêmica: Insper · Localidade: São Paulo · + de 500 conexões no LinkedIn . Veja o perfil de Thiago Jesus no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "flex brasil",
+            "bio": "Profissional com mais de 20 anos de carreira em empresas dos segmentos industriais e serviços, sendo 10 anos em posições de liderança relacionadas a finanças. \nExperiência na gestão de equipes multidisciplinares, e visão generalista, tendo como principais habilidades e atribuições:\n• Diretoria das áreas de Contabilidade, Custos, Tesouraria, Fiscal, FP&A, Finance Business Partners, Reporting (I..."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/thiago-jesus-273b664a",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:40:08.202393",
+    "candidate": "Olga Fonseca",
+    "linkedin": "https://br.linkedin.com/in/olgafonsecamkt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Olga Fonseca - Diretora de Marketing na Flex Do Brasil | LinkedIn Olga Fonseca's email & phone | Flex Brasil's Marketing ... Flex do Brasil | LinkedIn Olga Fonseca Email & Phone Number | Flex Do Brasil - ContactOut Olga Fonseca's email | FinalScout Olga Lucia Silva Fonseca » Suas Empresas e Sócios Flex do Brasil LTDA - 03718581000190 Limeira - CNPJ Biz",
+            "body": "Como Diretora de Marketing na Flex do Brasil , multinacional espanhola no setor de colchões, lidero as marcas Simmons®, Flex® e Epeda®, integrando branding, design, produto, trade, digital e... Olga Fonseca works as a Marketing Director at Flex Brasil , which is a Furniture company with an estimated 74 employees; and founded in 2000. They are part of the Marketing team within the Marketing Department and their management level is Director. Flex do Brasil | 4.924 seguidores no LinkedIn . Somos especialistas em descanso, há 110 anos atuando no setor colchoeiro. Junte-se a nós. | A Flex do Brasil com suas marcas Simmons, Flex... To contact Olga Fonseca send an email to olgafonseca35 @gmail.com or ofonseca@simmons.com.br. About Olga Fonseca is from Campinas, São Paulo, Brazil . You can find Olga Fonseca 's email on finalScout.com. FinalScout is a popular professional database with more than 500 million business professionals and over 200 million company profiles. FLEX EQUIPOS DE DESCANSO S.A. Flex é sócio (a) de Olga na empresa FLEX DO BRASIL LTDA desde 09/04/2018. Mar 27, 2000 · A empresa Flex do Brasil LTDA de CNPJ 03.718.581/0001-90, foi fundada em 27/03/2000 na cidade Limeira no estado São Paulo. Sua atividade principal, conforme a Receita Federal, é 31.04-7-00 - Fabricação de colchões."
+        },
+        "osint_metadata": {
+            "role": "flex do brasil",
+            "bio": "Sou criadora e contadora de histórias de marcas. Como Diretora de Marketing na Flex do… · Experiência: Flex Do Brasil · Formação acadêmica: PUCRS - Pontifícia Universidade Católica do Rio Grande do Sul · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Olga Fonseca no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/olgafonsecamkt",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:40:48.834167",
+    "candidate": "Wagner Machado",
+    "linkedin": "https://br.linkedin.com/in/wagnermachado-flexinter",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Wagner Machado - Diretor Executivo na FlexInter | LinkedIn",
+            "body": "Diretor Executivo na FlexInter · Experiência: FlexInter · Localidade: São Paulo e Região · + de 500 conexões no LinkedIn . Veja Wagner Machado o perfil no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "flexinter",
+            "bio": "Experiência: FlexInter · Localidade: São Paulo e Região · + de 500 conexões no LinkedIn. Veja Wagner Machado  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/wagnermachado-flexinter",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:40:57.890985",
+    "candidate": "Rosi Medeiros",
+    "linkedin": "https://br.linkedin.com/in/rosi-medeiros-23798715b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rosi Medeiros - assistente financeiro | LinkedIn",
+            "body": "assistente financeiro · Experiência: FlexInter · Formação acadêmica: UNINOVE · Localidade: São Paulo · 59 conexões no LinkedIn . Veja o perfil de Rosi Medeiros no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "flexinter",
+            "bio": "Experiência: FlexInter · Formação acadêmica: UNINOVE · Localidade: São Paulo · 59 conexões no LinkedIn. Veja o perfil de Rosi Medeiros no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/rosi-medeiros-23798715b",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:41:40.532405",
+    "candidate": "Stanley Crepaldi",
+    "linkedin": "https://br.linkedin.com/in/stanley-crepaldi-3849b1247",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Stanley Crepaldi - Técnico Jr. de Qualidade | LinkedIn",
+            "body": "Iniciei na empresa Flex do Brasil como auxiliar de produção e sempre tive o objetivo de … · Experiência: Flex Equipos de Descanso · Localidade: Santa Bárbara d'Oeste · 39 conexões no LinkedIn . Veja o perfil de Stanley Crepaldi no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "flex equipos de descanso",
+            "bio": "Iniciei na empresa Flex do Brasil como auxiliar de produção e sempre tive o objetivo de… · Experiência: Flex Equipos de Descanso · Localidade: Santa Bárbara d'Oeste · 44 conexões no LinkedIn. Veja o perfil de Stanley Crepaldi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/stanley-crepaldi-3849b1247",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:41:49.750588",
+    "candidate": "Pedro Libório",
+    "linkedin": "https://br.linkedin.com/in/pedro-liborio",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Pedro Libório - Flex Equipos de Descanso | LinkedIn",
+            "body": "Sou profissional de Logística com experiência Supply Chain, com forte atuação em análise… · Experiência: Flex Equipos de Descanso · Formação acadêmica: UNISAL - Centro Universitário Salesiano de São Paulo · Localidade: 13465-005 · 151 conexões no LinkedIn . Veja o perfil de Pedro Libório no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "flex equipos de descanso",
+            "bio": "Sou profissional de Logística com experiência Supply Chain, com forte atuação em análise… · Experiência: Flex Equipos de Descanso · Formação acadêmica: UNISAL - Centro Universitário Salesiano de São Paulo · Localidade: 13465-005 · 153 conexões no LinkedIn. Veja o perfil de Pedro Libório no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/pedro-liborio",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:42:01.190061",
+    "candidate": "Enio Dourado",
+    "linkedin": "https://br.linkedin.com/in/eniodourado",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Enio Dourado - Flex Equipos de Descanso | LinkedIn",
+            "body": "Ajudo as pessoas a desenvolver seus talentos e a realizarem resultados extraordinários… · Experiência: Flex Equipos de Descanso · Formação acadêmica: Fundação Dom Cabral · Localidade: Fortaleza · + de 500 conexões no LinkedIn . Veja o perfil de Enio Dourado no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "flex equipos de descanso",
+            "bio": "Ajudo as pessoas a desenvolver seus talentos e a realizarem resultados extraordinários… · Experiência: Flex Equipos de Descanso · Formação acadêmica: Fundação Dom Cabral · Localidade: Fortaleza · + de 500 conexões no LinkedIn. Veja o perfil de Enio Dourado no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/eniodourado",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:42:41.406299",
+    "candidate": "Fabiano Balieiro",
+    "linkedin": "https://br.linkedin.com/in/fabianobalieiro",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fabiano Balieiro - LinkedIn Brasil",
+            "body": "· Experiência: Flex Bedding Group · Formação acadêmica: Universidade de São Paulo · Localidade: São Paulo · + de 500 conexões no LinkedIn . Veja o perfil de Fabiano Balieiro no LinkedIn ,..."
+        },
+        "osint_metadata": {
+            "role": "flex bedding group",
+            "bio": "EXECUTIVO DE NEGÓCIOS\nExperiente Executivo de negócios talhado ao longo de 23 anos em… · Experiência: Flex Bedding Group · Formação acadêmica: Universidade de São Paulo · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Fabiano Balieiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/fabianobalieiro",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:42:51.792397",
+    "candidate": "Fabiano Balieiro",
+    "linkedin": "https://br.linkedin.com/in/fabianobalieiro/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fabiano Balieiro - Flex Bedding Group | LinkedIn",
+            "body": "Desde 1912, más de un siglo dedicados a transformar el descanso 😴 💙 En Flex llevamos más de 110 años combinando tradición, innovación y tecnología propia, acompañando a generaciones y..."
+        },
+        "osint_metadata": {
+            "role": "flex bedding group",
+            "bio": "BUSINESS EXECUTIVE\nExecutive seasoned during 23+ years’ experience on leading… · Experience: Flex Bedding Group · Education: Universidade de São Paulo · Location: São Paulo · 500+ connections on LinkedIn. View Fabiano Balieiro’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/fabianobalieiro/en",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:43:37.822603",
+    "candidate": "Ignácio Kruel Gambarra",
+    "linkedin": "https://br.linkedin.com/in/ignaciogambarra",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ignácio Kruel Gambarra - Presidente @ogrupoflex | LinkedIn",
+            "body": "Veja o perfil de Ignácio Kruel Gambarra no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "grupo flex",
+            "bio": "🔹 Especialista em Recuperação de Crédito e Estratégia Comercial B2C.\n🔹… · Experiência: GRUPO FLEX · Formação acadêmica: PUC-RS · Localidade: Porto Alegre · 261 conexões no LinkedIn. Veja o perfil de Ignácio Kruel Gambarra no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/ignaciogambarra",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:43:51.970467",
+    "candidate": "Isis Borge Sangiovani",
+    "linkedin": "https://br.linkedin.com/in/isisborge",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Isis Borge Sangiovani - Headhunter I Linkedin Top Voice... | LinkedIn",
+            "body": "Headhunter I Linkedin Top Voice I Managing Partner Assigna & Partner Talenses Group I colunista da VocêRH, do Valor Econômico e do Portal Celulose. São Paulo, São Paulo, Brasil . 114 mil seguidores + de 500 conexões."
+        },
+        "osint_metadata": {
+            "role": "headhunter i linkedin top voice i managing partner assigna & partner talenses group i colunista da vocêrh, do valor econômico e do portal celulose",
+            "bio": "Headhunter I Linkedin Top Voice I Managing Partner Assigna & Partner Talenses Group I colunista da VocêRH, do Valor Econômico e do Portal Celulose · Headhunter e sócia do Talenses Group!  Colunista da revista VocêRH da Abril, do Carreira no Divã do jornal Valor Econômico e do Portal Celulose.\n\nNa vida pessoal, moro em São Paulo, sou casada e tenho três filhos. Sou uma pessoa acessível, fiquem ..."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/isisborge",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:44:39.523157",
+    "candidate": "Jorge Manuel",
+    "linkedin": "https://mz.linkedin.com/in/jorge-manuel-43872a305",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jorge Manuel - Founder & CEO at Flex Investimentos | LinkedIn",
+            "body": "Founder & CEO at Flex Investimentos · As the CEO of Flex Investimentos Limitada and Global Flex Group (PTY) LTD, I lead strategic operations in the sectors of trade, logistics, and..."
+        },
+        "osint_metadata": {
+            "role": "global flex group (pty)",
+            "bio": "As the CEO of Flex Investimentos Limitada and Global Flex Group (PTY) LTD, I lead… · Experiência: Global Flex Group (PTY) · Formação acadêmica: Robert Kennedy College · Localidade: 1100 · 241 conexões no LinkedIn. Veja o perfil de Jorge Manuel no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://mz.linkedin.com/in/jorge-manuel-43872a305",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:44:53.575652",
+    "candidate": "Rogério Marques",
+    "linkedin": "https://br.linkedin.com/in/rogério-marques-25072564",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rogério Marques - Diretor comercial - Flex Filmes | LinkedIn",
+            "body": "Sócio- fundador | Flex Group · Prezado Senhor (a) Meu nome é Rogério Marques, CEO da Flex Filmes, somos fabricantes de filmes e transfers."
+        },
+        "osint_metadata": {
+            "role": "flex filmes",
+            "bio": "Prezado Senhor (a) \n\nPrazer meu nome é Rogério Marques, CEO da Flex Group, somos… · Experiência: Flex Filmes · Formação acadêmica: Faculdades Metropolitanas Unidas · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Rogério Marques no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/rogério-marques-25072564",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:45:42.237145",
+    "candidate": "Bruno A. Di Fonzo, MBA",
+    "linkedin": "https://br.linkedin.com/in/bruno-a-di-fonzo-b357526/pt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bruno A. Di Fonzo, MBA - Flex do Brasil Ltda. | LinkedIn",
+            "body": "- Sou um profissional formado pela combinação dos fatores: Dirigido a Resultados… · Experiência: Flex do Brasil Ltda. · Formação acadêmica: MBA USP/Esalq · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de Bruno A. Di Fonzo, MBA no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "flex do brasil ltda.",
+            "bio": "- Sou um profissional formado pela combinação dos fatores: Dirigido a Resultados… · Experiência: Flex do Brasil Ltda. · Formação acadêmica: MBA USP/Esalq · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Bruno A. Di Fonzo, MBA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/bruno-a-di-fonzo-b357526/pt",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:46:23.658833",
+    "candidate": "Ambiental Flex",
+    "linkedin": "https://br.linkedin.com/in/ambiental-flex-b7413734b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ambiental Flex - Comprador na Ambiental Flex | LinkedIn",
+            "body": "Comprador na Ambiental Flex · Experiência: Sucata Eletrônica · Localidade: 32600-002. Veja Ambiental Flex o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "sucata eletrônica",
+            "bio": "Experiência: Sucata Eletrônica · Localidade: 32600-002. Veja o perfil de Ambiental Flex no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/ambiental-flex-b7413734b",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:46:41.018281",
+    "candidate": "Lilian Spricigo",
+    "linkedin": "https://br.linkedin.com/in/lilian-spricigo-7a873912",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Lilian Spricigo - LinkedIn Brasil",
+            "body": "Experiência em empresas multinacionais como IBM, Foxconn, Flextronics, Lenovo e… · Experiência: Flextronics International Tecnologia Ltda. · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de Lilian Spricigo no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "flextronics international tecnologia ltda.",
+            "bio": "Experiência em empresas multinacionais como IBM, Foxconn, Flextronics, Lenovo e… · Experiência: Flextronics International Tecnologia Ltda. · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Lilian Spricigo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/lilian-spricigo-7a873912",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:46:57.153471",
+    "candidate": "Alex Illingworth Romero",
+    "linkedin": "https://mx.linkedin.com/in/aairp21",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alex Illingworth Romero - Comprador Directo en Flex - LinkedIn México",
+            "body": "Comprador Directo en Flex | Gestión de Compras Efectiva · Como Buyer Direct en Flex , contribuyo al manejo eficiente de compras internacionales, trabajando con un enfoque en comercio global y logística estratégica. Gracias a mi formación en Negocios Internacionales por la Universidad Autónoma de Aguascalientes, aporto un conocimiento profundo en la gestión de operaciones internacionales ..."
+        },
+        "osint_metadata": {
+            "role": "flex",
+            "bio": "Como Buyer Direct  en Flex, contribuyo al manejo eficiente de compras internacionales… · Experiencia: Flex · Educación: Universidad Autónoma de Aguascalientes · Ubicación: Aguascalientes · 175 contactos en LinkedIn. Ver el perfil de Alex Illingworth Romero en LinkedIn, una red profesional de más de 1.000 millones de miembros."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://mx.linkedin.com/in/aairp21",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:47:10.202460",
+    "candidate": "Anderson Souza",
+    "linkedin": "https://www.linkedin.com/in/anderson-souza-279846316",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Souza - Comprador na HBR Flex | LinkedIn",
+            "body": "Comprador na HBR Flex · Experiência: HBR Flex · Localidade: 60010-000 · 12 conexões no LinkedIn . Veja o perfil de Anderson Souza no LinkedIn , uma comunidade profissional de 1 bilhão de ..."
+        },
+        "osint_metadata": {
+            "role": "hbr flex",
+            "bio": "Experiência: HBR Flex · Localidade: 60010-000 · 12 conexões no LinkedIn. Veja o perfil de Anderson Souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/anderson-souza-279846316",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:47:26.837895",
+    "candidate": "Douglas Henrique Eger",
+    "linkedin": "https://br.linkedin.com/in/douglas-henrique-eger-685632228",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Douglas Henrique Eger - HANSA-FLEX do Brasil | LinkedIn",
+            "body": "Experiência: HANSA- FLEX do Brasil · Localidade: 89020-302 · 374 conexões no LinkedIn . Veja o perfil de Douglas Henrique Eger no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "hansa",
+            "bio": "Experiência: HANSA-FLEX do Brasil · Localidade: 89020-302 · 393 conexões no LinkedIn. Veja o perfil de Douglas Henrique Eger no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/douglas-henrique-eger-685632228",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:48:10.881563",
+    "candidate": "Gabriela Rocha",
+    "linkedin": "https://br.linkedin.com/in/gabriela-rocha-a2a345148",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gabriela Rocha - Flex | LinkedIn Flex Atacarejo - LinkedIn Brasil Marta Fonseca - Compradora, Capex, MRO ... - LinkedIn Portugal",
+            "body": "· Experiência: Flex · Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: Sorocaba · + de 500 conexões no LinkedIn . Veja o perfil de Gabriela Rocha no LinkedIn , uma... Você compra no atacado e no varejo, sempre com os melhores preços. E para facilitar os pagamentos, o Flex aceita todos os cartões de crédito. Pode vir que compensa! Conheça as nossas vagas... Compradora , Capex, MRO, Strategic Sourcing, Projetos, Construção Civil, compras estratégicas, Negociação, Procurement, · Profissional Especialista na área de Strategic Sourcing, com vasta..."
+        },
+        "osint_metadata": {
+            "role": "flex",
+            "bio": "Atuação em compras indiretas a nível nacional, com experiência nos estados de SP e AM nas… · Experiência: Flex · Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: Sorocaba · + de 500 conexões no LinkedIn. Veja o perfil de Gabriela Rocha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/gabriela-rocha-a2a345148",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:48:21.511854",
+    "candidate": "Alex Souza",
+    "linkedin": "https://br.linkedin.com/in/alex-souza-b618411b8",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alex Souza - Gerente na Compra Flex | LinkedIn",
+            "body": "Experiência: Compra Flex · Localidade: São Paulo. Veja o perfil de Alex Souza no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "compra flex",
+            "bio": "Experiência: Compra Flex · Localidade: São Paulo. Veja o perfil de Alex Souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/alex-souza-b618411b8",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:48:33.646312",
+    "candidate": "Marta Fonseca",
+    "linkedin": "https://pt.linkedin.com/in/marta-fonseca-1310j4943",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marta Fonseca - Compradora, Capex, MRO ... - LinkedIn Portugal",
+            "body": "Compradora , Capex, MRO, Strategic Sourcing, Projetos, Construção Civil, compras estratégicas, Negociação, Procurement, · Profissional Especialista na área de Strategic Sourcing, com vasta..."
+        },
+        "osint_metadata": {
+            "role": "fonseca&morgado empreendimentos ltda",
+            "bio": "Profissional Especialista na área de Strategic Sourcing, com vasta experiência na área de… · Experiência: Fonseca&Morgado Empreendimentos Ltda · Formação acadêmica: Fundação Getulio Vargas · Localidade: Braga · + de 500 conexões no LinkedIn. Veja o perfil de Marta Fonseca no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://pt.linkedin.com/in/marta-fonseca-1310j4943",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:48:46.976336",
+    "candidate": "Larissa Renata Vicente",
+    "linkedin": "https://br.linkedin.com/in/larissa-renata-vicente-",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Larissa Renata Vicente - Terapeuta Cognitivo... | LinkedIn",
+            "body": "Veja o perfil de Larissa Renata Vicente no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Inicialmente compradora de materiais e serviços para Facilities Sorocaba, passando por diversos segmentos nos demais sites da Flex Brasil ."
+        },
+        "osint_metadata": {
+            "role": "consultório particular",
+            "bio": "Bacharelado em Administração de Empresas pela UFSCar, pós-graduada em Terapia Cognitivo… · Experiência: Consultório Particular - Terapia Cognitivo Comportamental · Formação acadêmica: Universidade Federal de São Carlos · Localidade: Ribeirão Preto · + de 500 conexões no LinkedIn. Veja o perfil de Larissa Renata Vicente no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/larissa-renata-vicente-",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:48:59.096033",
+    "candidate": "César Fogaça Franco",
+    "linkedin": "https://br.linkedin.com/in/cesar-ffranco",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "César Fogaça Franco - Comprador | Flextronics | LinkedIn",
+            "body": "Comprador | Flextronics · Profissional com sólida experiência na área de Compras e Suprimentos, atuando em empresas de médio e grande porte nos segmentos de manufatura, industrial e comercial."
+        },
+        "osint_metadata": {
+            "role": "flex",
+            "bio": "Profissional com sólida experiência na área de Compras e Suprimentos, atuando em empresas… · Experiência: Flex · Formação acadêmica: Universidade de Sorocaba · Localidade: Sorocaba · + de 500 conexões no LinkedIn. Veja o perfil de César Fogaça Franco no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/cesar-ffranco",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:49:44.073724",
+    "candidate": "Mariana Costa",
+    "linkedin": "https://br.linkedin.com/in/mlcosta13",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Mariana Costa - Flex | LinkedIn Prem Kumar - Manager- Global Procurement ... - LinkedIn India Sergio Palacio - Purchasing Manager | LinkedIn Flex Careers in Brazil Thiago Jesus - Flex Brasil | LinkedIn Olga Fonseca - Diretora de Marketing na Flex Do Brasil | LinkedIn",
+            "body": "Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies do LinkedIn . Supply Chain Management, Procurement / materials support & management, Latin America and Brazil market supply chain expert, team handling and operation support, p2p, HC planning and... At Flex , my role as Purchasing Manager revolves around spearheading a dedicated team to ensure the strategic procurement of direct materials aligns with corporate goals. Join Flex in Brazil and you will enter a fast-paced world where we use the very latest technology to create value for our customers. We offer a professional, modern work environment where you can refine your skills, broaden your experience, and advance your career. Faça parte da Flex do Brasil e lidere operações logísticas de alta performance. Buscamos um (a) Coordenador (a) de Logística com forte experiência operacional e capacidade de liderança para... Como Diretora de Marketing na Flex do Brasil , multinacional espanhola no setor de colchões, lidero as marcas Simmons®, Flex® e Epeda®, integrando branding, design, produto, trade, digital e..."
+        },
+        "osint_metadata": {
+            "role": "flex",
+            "bio": "Professional with over 10 years of experience in supplier development and procurement… · Experiência: Flex · Formação acadêmica: FM2S Educação e Consultoria · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Mariana Costa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/mlcosta13",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:49:55.524971",
+    "candidate": "Prem Kumar",
+    "linkedin": "https://in.linkedin.com/in/prem-kumar-20987b7",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Prem Kumar - Manager- Global Procurement ... - LinkedIn India Sergio Palacio - Purchasing Manager | LinkedIn Flex Careers in Brazil Thiago Jesus - Flex Brasil | LinkedIn Olga Fonseca - Diretora de Marketing na Flex Do Brasil | LinkedIn",
+            "body": "Supply Chain Management, Procurement / materials support & management, Latin America and Brazil market supply chain expert, team handling and operation support, p2p, HC planning and... At Flex , my role as Purchasing Manager revolves around spearheading a dedicated team to ensure the strategic procurement of direct materials aligns with corporate goals. Join Flex in Brazil and you will enter a fast-paced world where we use the very latest technology to create value for our customers. We offer a professional, modern work environment where you can refine your skills, broaden your experience, and advance your career. Faça parte da Flex do Brasil e lidere operações logísticas de alta performance. Buscamos um (a) Coordenador (a) de Logística com forte experiência operacional e capacidade de liderança para... Como Diretora de Marketing na Flex do Brasil , multinacional espanhola no setor de colchões, lidero as marcas Simmons®, Flex® e Epeda®, integrando branding, design, produto, trade, digital e..."
+        },
+        "osint_metadata": {
+            "role": "flex",
+            "bio": "SCM professional, operational leader with 15 plus years of experience in procurement… · Experience: Flex · Location: Pune District · 500+ connections on LinkedIn. View Prem Kumar’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://in.linkedin.com/in/prem-kumar-20987b7",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:50:07.131032",
+    "candidate": "Sergio Palacio",
+    "linkedin": "https://mx.linkedin.com/in/sergiompalacio",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Sergio Palacio - Purchasing Manager | LinkedIn Flex Careers in Brazil Thiago Jesus - Flex Brasil | LinkedIn Olga Fonseca - Diretora de Marketing na Flex Do Brasil | LinkedIn",
+            "body": "At Flex , my role as Purchasing Manager revolves around spearheading a dedicated team to ensure the strategic procurement of direct materials aligns with corporate goals. Join Flex in Brazil and you will enter a fast-paced world where we use the very latest technology to create value for our customers. We offer a professional, modern work environment where you can refine your skills, broaden your experience, and advance your career. Faça parte da Flex do Brasil e lidere operações logísticas de alta performance. Buscamos um (a) Coordenador (a) de Logística com forte experiência operacional e capacidade de liderança para... Como Diretora de Marketing na Flex do Brasil , multinacional espanhola no setor de colchões, lidero as marcas Simmons®, Flex® e Epeda®, integrando branding, design, produto, trade, digital e..."
+        },
+        "osint_metadata": {
+            "role": "flex",
+            "bio": "At Flex, my role as Purchasing Manager revolves around spearheading a dedicated team to… · Experiencia: Flex · Educación: Universidad de Guadalajara · Ubicación: Zapopan · 193 contactos en LinkedIn. Ver el perfil de Sergio Palacio en LinkedIn, una red profesional de más de 1.000 millones de miembros."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://mx.linkedin.com/in/sergiompalacio",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:50:20.929950",
+    "candidate": "João Claudio Vianna",
+    "linkedin": "https://br.linkedin.com/in/joaoclaudiovianna/pt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Claudio Vianna - Head of Procurement Brazil @ Indra | LinkedIn",
+            "body": "Barueri, São Paulo, Brazil . Líder em Compras e Operações, com foco em Source-to-Contract e Otimização de Serviços, atuando na entrega de serviços de suporte ponta a ponta por meio de sourcing estratégico e modelos de compras baseados em BPO."
+        },
+        "osint_metadata": {
+            "role": "indra",
+            "bio": "Liderando a estratégia de compras da Indra no Brasil, minha atuação envolve o… · Experiência: Indra · Formação acadêmica: APICS · Localidade: Barueri · + de 500 conexões no LinkedIn. Veja o perfil de João Claudio Vianna no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/joaoclaudiovianna/pt",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:50:58.377872",
+    "candidate": "Renan Matsumoto",
+    "linkedin": "https://br.linkedin.com/in/renanmatsumoto",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Renan Matsumoto - LinkedIn Brasil Marcelo dos Santos - Supervisor de Suprimentos - LinkedIn Brasil Careers at Flex | Flex",
+            "body": "Em 2015 fui o comprador pioneiro em realizar o Strategic Sourcing na área de compras. Além disso, acumulei 06 meses de experiência em logística outbound dos metais sanitários e louças,... Minha trajetória de 20 anos em Suprimentos no setor industrial foi construída unindo inteligência comercial à visão estratégica de negócio. Especializei-me em gerir categorias complexas como metais... View careers at Flex , the manufacturing partner of choice, helping our diverse customer base design & build products that improve the world."
+        },
+        "osint_metadata": {
+            "role": "caasp",
+            "bio": "Com mais de 18 anos de experiência na área de Suprimentos em empresas de grande porte de… · Experiência: CAASP - Caixa de Assistência dos Advogados de São Paulo · Formação acadêmica: BSP - Business School São Paulo · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Renan Matsumoto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/renanmatsumoto",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:51:09.100317",
+    "candidate": "Bruna L.",
+    "linkedin": "https://br.linkedin.com/in/brunanascimentolopes",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bruna L. - Compras | Suprimentos | MRO - LinkedIn Brasil",
+            "body": "Profissional com experiência consolidada em compras de serviços e materiais indiretos, incluindo itens de estoque e suprimentos em geral. Especialista em negociação estratégica, aplicando..."
+        },
+        "osint_metadata": {
+            "role": "wam group",
+            "bio": "\nCompradora | Administração | MBA em Logística de Compras e… · Experiência: WAM Group · Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Bruna L. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/brunanascimentolopes",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T11:51:21.923523",
+    "candidate": "Marcelo dos Santos",
+    "linkedin": "https://br.linkedin.com/in/marcelo-snt-santos",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcelo dos Santos - Supervisor de Suprimentos - LinkedIn Brasil",
+            "body": "Minha trajetória de 20 anos em Suprimentos no setor industrial foi construída unindo inteligência comercial à visão estratégica de negócio. Especializei-me em gerir categorias complexas como metais..."
+        },
+        "osint_metadata": {
+            "role": "danidrea",
+            "bio": "Minha trajetória de 20 anos em Suprimentos no setor industrial foi construída unindo… · Experiência: Danidrea · Formação acadêmica: Anhanguera Educacional · Localidade: Valinhos · 458 conexões no LinkedIn. Veja o perfil de Marcelo dos Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/marcelo-snt-santos",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T17:15:28.671556",
+    "candidate": "Jadir gonçalves junior",
+    "linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jadir gonçalves junior - FMIS Ltd. | LinkedIn",
+            "body": "-- · Experiência: FMIS Ltd . · Localidade: 38740-000. Veja Jadir gonçalves junior o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: FMIS Ltd. · Localidade: 38740-000. Veja o perfil de Jadir gonçalves junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-12T17:15:38.124161",
+    "candidate": "Preto Araujo",
+    "linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Preto Araujo - Caldeireiro na FMIS Ltd. | LinkedIn",
+            "body": "Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Américo Brasiliense. Veja Preto Araujo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T12:02:14.062460",
+    "candidate": "Anderson Rezende Marinho",
+    "linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn",
+            "body": "Veja o perfil de Anderson Rezende Marinho no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Diretor na Cobaltech . Indaiatuba, São Paulo, Brasil . 321 seguidores 317 conexões."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T12:02:54.556555",
+    "candidate": "Anderson C. Rezende",
+    "linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cobaltech comercio e servicos",
+            "bio": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 349 conexões no LinkedIn. Veja o perfil de Anderson C. Rezende no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T12:04:34.089561",
+    "candidate": "Sandro Galo",
+    "linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Sandro Galo - Cobaltech Ferramentas e Soluções de Usinagem ... João Paulo Lopes - Administração de empresas | LinkedIn Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "conhecimento em máquinas injetora.centro de usinagem.ferramentas em geral Retifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai · Localidade:... Administração de empresas · Experiência: Cobaltech · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Indaiatuba · 44 conexões no LinkedIn . Veja o... Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 329 conexões... Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "conhecimento em máquinas injetora.centro de usinagem.ferramentas em geral\nRetifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Sandro Galo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T12:04:48.252769",
+    "candidate": "João Paulo Lopes",
+    "linkedin": "https://br.linkedin.com/in/joão-paulo-lopes-30a1bb20b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Paulo Lopes - Administração de empresas | LinkedIn Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Administração de empresas · Experiência: Cobaltech · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Indaiatuba · 44 conexões no LinkedIn . Veja o... Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 329 conexões... Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou Analista Administrativo, com bacharelado em Administração pela CEUNSP. Tenho… · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Indaiatuba · 55 conexões no LinkedIn. Veja o perfil de João Paulo Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/joão-paulo-lopes-30a1bb20b",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T13:47:43.896561",
+    "candidate": "Anderson Rezende Marinho",
+    "linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn",
+            "body": "Veja o perfil de Anderson Rezende Marinho no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Diretor na Cobaltech . Indaiatuba, São Paulo, Brasil . 321 seguidores 317 conexões."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T13:47:53.066638",
+    "candidate": "Anderson Rezende Marinho",
+    "linkedin": "https://www.linkedin.com/in/anderson-rezende-marinho-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Rezende Marinho - Proprietário - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experience: Cobaltech Comercio E Servicos · Education: CEUNSP · Location: Indaiatuba · 285 connections on LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/anderson-rezende-marinho-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T13:48:04.330696",
+    "candidate": "Anderson C. Rezende",
+    "linkedin": "https://www.linkedin.com/in/anderson-c-rezende-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "January 16, 2025 - Transformando a Indústria com Inovação e Experiência.💡🏭 #CobalTech #SoluçõesIndustriais #Inovação #usinagem ... Anderson C. Rezende ... Anderson C. Rezende shared this ... Anderson C. Rezende shared this · Descubra nossa variedade de produtos de usinagem! Visite nosso site. 🔧🛠️ #Usinagem #Ferramentas #Cobaltech"
+        },
+        "osint_metadata": {
+            "role": "cobaltech comercio e servicos",
+            "bio": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 349 conexões no LinkedIn. Veja o perfil de Anderson C. Rezende no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/anderson-c-rezende-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T13:48:53.529919",
+    "candidate": "Sandro Galo",
+    "linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Sandro Galo - Cobaltech Ferramentas e Soluções de Usinagem ... Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn Cobaltech Ferramentas e Soluções de Usinagem no LinkedIn ... Cobaltech Ferramentas e Soluções de Usinagem posted on LinkedIn",
+            "body": "conhecimento em máquinas injetora.centro de usinagem.ferramentas em geral Retifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai · Localidade:... Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o... Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 329 conexões... Obrigado, @paulosofiati, pela visita à Cobaltech e pela reunião promissora para falar sobre nossos futuros negócios. Que honra ter participado da construção da história da Cobaltech Ferramentas e Soluções de Usinagem como consultor nos anos de 2017, 2018 e 2019 e ontem, dia 10/8/2023, ter participado..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "conhecimento em máquinas injetora.centro de usinagem.ferramentas em geral\nRetifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Sandro Galo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T13:49:03.724321",
+    "candidate": "Anderson C. Rezende",
+    "linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cobaltech comercio e servicos",
+            "bio": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 349 conexões no LinkedIn. Veja o perfil de Anderson C. Rezende no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T13:50:15.971689",
+    "candidate": "João Paulo Lopes",
+    "linkedin": "https://br.linkedin.com/in/joão-paulo-lopes-30a1bb20b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Paulo Lopes - Administração de empresas | LinkedIn Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Administração de empresas · Experiência: Cobaltech · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Indaiatuba · 44 conexões no LinkedIn . Veja o... Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 329 conexões... Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou Analista Administrativo, com bacharelado em Administração pela CEUNSP. Tenho… · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Indaiatuba · 55 conexões no LinkedIn. Veja o perfil de João Paulo Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/joão-paulo-lopes-30a1bb20b",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:51:27.553582",
+    "candidate": "Juliano Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-santos-6b718b120",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano Santos - LinkedIn Brasil",
+            "body": "-- · Localidade: Brasil . Veja Juliano Santos o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "brasil",
+            "bio": "Localidade: Brasil. Veja o perfil de Juliano Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:51:32.512555",
+    "candidate": "Juliano dos Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-santos-4841396b/pt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano dos Santos - Engineering Manager | LinkedIn",
+            "body": "Implementação de melhorias contínuas nos processos de montagem, reduzindo retrabalho e aumentando a confiabilidade dos produtos. Coordenação de equipe técnica, promovendo um ambiente..."
+        },
+        "osint_metadata": {
+            "role": "schneider electric",
+            "bio": "Sou um Líder de Engenharia com mais de 18 anos de experiência na indústria, com atuação… · Experiência: Schneider Electric · Formação acadêmica: UNIASSELVI · Localidade: Blumenau · + de 500 conexões no LinkedIn. Veja o perfil de Juliano dos Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:51:45.019884",
+    "candidate": "Juliano Santos",
+    "linkedin": "https://www.linkedin.com/in/juliano-santos92",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano Santos - Vivo (Telefônica Brasil) | LinkedIn",
+            "body": "Result-driven Backend Developer with 3+ years of experience specializing in SAP Hybris … · Experience: Vivo (Telefônica Brasil) · Education: PUC-RS · Location: São Paulo · 500+ connections on LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "vivo (telefônica brasil)",
+            "bio": "Desenvolvedor Backend orientado a resultados com mais de 3 anos de experiência… · Experiência: Vivo (Telefônica Brasil) · Formação acadêmica: PUC-RS · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Juliano Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/juliano-santos92",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:51:49.098710",
+    "candidate": "Juliano Santos",
+    "linkedin": "https://br.linkedin.com/in/julianocsantos",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano Santos - Inter | LinkedIn",
+            "body": "October 16, 2025 - O livro, Transformação Digital Além do Óbvio: casos comentados de empresas brasileiras , do qual fui um dos co-autores, apresenta casos reais e inspiradores de empresas brasileiras – Inter, Drogaria Araujo, Cemig e Gol – e uma análise ..."
+        },
+        "osint_metadata": {
+            "role": "inter",
+            "bio": "Possuo mais de quinze anos de experiência em TI. Tech Manager no Inter nos produtos do… · Experiência: Inter · Formação acadêmica: Universidade Federal de Minas Gerais · Localidade: Belo Horizonte · + de 500 conexões no LinkedIn. Veja o perfil de Juliano Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:51:54.220729",
+    "candidate": "Juliano Coelho Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-coelho-santos-5916bb158",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano Coelho Santos - ArcelorMittal Brasil | LinkedIn",
+            "body": "November 13, 2025 - Experience: ArcelorMittal Brasil · Location: Serra · 500+ connections on LinkedIn. View Juliano Coelho Santos’ profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "arcelormittal brasil",
+            "bio": "Experiência: ArcelorMittal Brasil · Localidade: Serra · + de 500 conexões no LinkedIn. Veja Juliano Coelho Santos  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:51:59.688702",
+    "candidate": "Juliano Cesar Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-cesar-santos-663027163",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano Cesar Santos - Valaris Limited | LinkedIn",
+            "body": "I am a Procurement and Supply Chain Strategic with over 15 years of experience in… · Experience: Valaris Limited · Education: Universidade Positivo · Location: Greater Curitiba · 500+ connections on LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "valaris limited",
+            "bio": "I am a Procurement and Supply Chain Strategic with over 15 years of experience in… · Experiência: Valaris Limited · Formação acadêmica: Universidade Positivo · Localidade: Curitiba e Região · + de 500 conexões no LinkedIn. Veja o perfil de Juliano Cesar Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:52:06.258011",
+    "candidate": "Juliano dos Santos da Silva",
+    "linkedin": "https://br.linkedin.com/in/juliano-s-silva",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano dos Santos da Silva - Grupo Combustol & Metalpó",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "grupo combustol & metalpó",
+            "bio": "Engenheiro de produto com sólida experiência no design conceitual e na criação de… · Experiência: Grupo Combustol & Metalpó · Formação acadêmica: Anhanguera Educacional · Localidade: Indaiatuba · 114 conexões no LinkedIn. Veja o perfil de Juliano dos Santos da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:52:10.381856",
+    "candidate": "Juliano Dos Santos Silva",
+    "linkedin": "https://br.linkedin.com/in/juliano-dos-santos-silva-bb1b1293",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano Dos Santos Silva - Teralife do Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "teralife do brasil",
+            "bio": "Experiência: Teralife do Brasil · Formação acadêmica: Ufes · Localidade: Serra · 31 conexões no LinkedIn. Veja o perfil de Juliano Dos Santos Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:52:15.026632",
+    "candidate": "juliano Dos Santos Souza",
+    "linkedin": "https://br.linkedin.com/in/juliano-dos-santos-souza-416a02293",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "juliano Dos Santos Souza - Não - Morro da Fumaça ...",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "não",
+            "bio": "Formação acadêmica: Não  · Localidade: 88830-000. Veja o perfil de juliano Dos Santos Souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:52:19.360106",
+    "candidate": "Juliano Dos Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-dos-santos-0717b0226",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano Dos Santos - Osasco, São Paulo, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "municipio santana do parnaiba",
+            "bio": "Experiência: Municipio santana do parnaiba · Formação acadêmica: Anhanguera Educacional · Localidade: 06110-008 · 6 conexões no LinkedIn. Veja o perfil de Juliano Dos Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:52:22.837198",
+    "candidate": "JULIANO DOS SANTOS DA SILVA",
+    "linkedin": "https://br.linkedin.com/in/juliano-dos-santos-da-silva-83485a137",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "JULIANO DOS SANTOS DA SILVA - Analista de controle ...",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "reunidas s.a.",
+            "bio": "Olá,\nSou organizado, trabalho bem em equipe, sou dedicado e esforçado, gosto de… · Experiência: Reunidas S.A. · Localidade: Santa Catarina · 81 conexões no LinkedIn. Veja o perfil de JULIANO DOS SANTOS DA SILVA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:53:01.287019",
+    "candidate": "Jadir gonçalves junior",
+    "linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jadir gonçalves junior - FMIS Ltd. | LinkedIn",
+            "body": "-- · Experiência: FMIS Ltd . · Localidade: 38740-000. Veja Jadir gonçalves junior o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: FMIS Ltd. · Localidade: 38740-000. Veja o perfil de Jadir gonçalves junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:53:12.961444",
+    "candidate": "Ricardo Fernandes",
+    "linkedin": "https://br.linkedin.com/in/ricardo-fernandes-03679a54",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ricardo Fernandes - FMIS - Fábrica de ... - LinkedIn Brasil Maicon Gomes - Caldeireiro na FMIS Ltd. | LinkedIn Preto Araujo - Caldeireiro na FMIS Ltd. | LinkedIn Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Experiência: FMIS - Fábrica de Máquinas Indústrial Santos · Localidade: Dourado · + de 500 conexões no LinkedIn . Veja Ricardo Fernandes o perfil no LinkedIn , uma comunidade profissional de 1... Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Araraquara · 19 conexões no LinkedIn . Veja o perfil de Maicon Gomes no LinkedIn , uma comunidade profissional de 1 bilhão... Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Américo Brasiliense. Veja Preto Araujo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "fmis",
+            "bio": "Experiência: FMIS - Fábrica de Máquinas Indústrial Santos  · Localidade: Dourado · + de 500 conexões no LinkedIn. Veja Ricardo Fernandes  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/ricardo-fernandes-03679a54",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:53:21.691669",
+    "candidate": "Maicon Gomes",
+    "linkedin": "https://br.linkedin.com/in/maicon-gomes-b2187b331",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Maicon Gomes - Caldeireiro na FMIS Ltd. | LinkedIn Preto Araujo - Caldeireiro na FMIS Ltd. | LinkedIn Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Araraquara · 19 conexões no LinkedIn . Veja o perfil de Maicon Gomes no LinkedIn , uma comunidade profissional de 1 bilhão... Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Américo Brasiliense. Veja Preto Araujo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: FMIS Ltd. · Localidade: Araraquara · 19 conexões no LinkedIn. Veja o perfil de Maicon Gomes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/maicon-gomes-b2187b331",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:53:28.452392",
+    "candidate": "Preto Araujo",
+    "linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Preto Araujo - Caldeireiro na FMIS Ltd. | LinkedIn",
+            "body": "Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Américo Brasiliense. Veja Preto Araujo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:53:35.157939",
+    "candidate": "Heiko Hosomi Spitzeck",
+    "linkedin": "https://br.linkedin.com/in/heikohosomispitzeck/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "são paulo, são paulo, brazil",
+            "bio": "Location: São Paulo · 500+ connections on LinkedIn. View Heiko Hosomi Spitzeck’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:54:19.810598",
+    "candidate": "John de Robeck",
+    "linkedin": "https://uk.linkedin.com/in/john-de-robeck-95108514",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "John de Robeck - FMIS Ltd. | LinkedIn Fábrica de Máquinas Industriais Santos - LinkedIn LinkedIn Brasil: entre ou cadastre-se FMIS É NOMEADA MONTADORA OFICIAL DOS ... - LinkedIn Portugal",
+            "body": "I lead commercial growth at FMIS , supporting clients worldwide with integrated software… · Experience: FMIS Ltd . · Location: Penzance · 500+ connections on LinkedIn . View John de Robeck’s... Com unidades em Canoinhas-SC e Dourado-SP, a Fábrica de Máquinas Industriais Santos ( FMIS ) caracteriza-se como uma empresa especializada em fabricação, montagem e manutenção industriais. Para quem o LinkedIn foi feito? Para qualquer pessoa buscando orientação profissional. A FMIS foi oficialmente nomeada montadora autorizada dos transportadores MPE – Chain-Vey no Brasil , trazendo para o setor a união entre a excelência de fabricação local e a engenharia de um dos..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "I lead commercial growth at FMIS, supporting clients worldwide with integrated software… · Experience: FMIS Ltd. · Location: Penzance · 500+ connections on LinkedIn. View John de Robeck’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://uk.linkedin.com/in/john-de-robeck-95108514",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:57:49.339238",
+    "candidate": "Juliano Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-santos-6b718b120",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano Santos - LinkedIn Brasil",
+            "body": "-- · Localidade: Brasil . Veja Juliano Santos o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "brasil",
+            "bio": "Localidade: Brasil. Veja o perfil de Juliano Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:57:53.111007",
+    "candidate": "Juliano dos Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-santos-4841396b/pt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano dos Santos - Engineering Manager | LinkedIn",
+            "body": "Implementação de melhorias contínuas nos processos de montagem, reduzindo retrabalho e aumentando a confiabilidade dos produtos. Coordenação de equipe técnica, promovendo um ambiente..."
+        },
+        "osint_metadata": {
+            "role": "schneider electric",
+            "bio": "Sou um Líder de Engenharia com mais de 18 anos de experiência na indústria, com atuação… · Experiência: Schneider Electric · Formação acadêmica: UNIASSELVI · Localidade: Blumenau · + de 500 conexões no LinkedIn. Veja o perfil de Juliano dos Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:58:28.430897",
+    "candidate": "Jadir gonçalves junior",
+    "linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jadir gonçalves junior - FMIS Ltd. | LinkedIn",
+            "body": "-- · Experiência: FMIS Ltd . · Localidade: 38740-000. Veja Jadir gonçalves junior o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: FMIS Ltd. · Localidade: 38740-000. Veja o perfil de Jadir gonçalves junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:58:39.418900",
+    "candidate": "Ricardo Fernandes",
+    "linkedin": "https://br.linkedin.com/in/ricardo-fernandes-03679a54",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ricardo Fernandes - FMIS - Fábrica de ... - LinkedIn Brasil Maicon Gomes - Caldeireiro na FMIS Ltd. | LinkedIn Preto Araujo - Caldeireiro na FMIS Ltd. | LinkedIn Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Experiência: FMIS - Fábrica de Máquinas Indústrial Santos · Localidade: Dourado · + de 500 conexões no LinkedIn . Veja Ricardo Fernandes o perfil no LinkedIn , uma comunidade profissional de 1... Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Araraquara · 19 conexões no LinkedIn . Veja o perfil de Maicon Gomes no LinkedIn , uma comunidade profissional de 1 bilhão... Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Américo Brasiliense. Veja Preto Araujo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "fmis",
+            "bio": "Experiência: FMIS - Fábrica de Máquinas Indústrial Santos  · Localidade: Dourado · + de 500 conexões no LinkedIn. Veja Ricardo Fernandes  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/ricardo-fernandes-03679a54",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:58:54.033530",
+    "candidate": "Maicon Gomes",
+    "linkedin": "https://br.linkedin.com/in/maicon-gomes-b2187b331",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Maicon Gomes - Caldeireiro na FMIS Ltd. | LinkedIn Preto Araujo - Caldeireiro na FMIS Ltd. | LinkedIn Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Araraquara · 19 conexões no LinkedIn . Veja o perfil de Maicon Gomes no LinkedIn , uma comunidade profissional de 1 bilhão... Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Américo Brasiliense. Veja Preto Araujo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: FMIS Ltd. · Localidade: Araraquara · 19 conexões no LinkedIn. Veja o perfil de Maicon Gomes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/maicon-gomes-b2187b331",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:59:01.854305",
+    "candidate": "Preto Araujo",
+    "linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Preto Araujo - Caldeireiro na FMIS Ltd. | LinkedIn",
+            "body": "Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Américo Brasiliense. Veja Preto Araujo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:59:05.964148",
+    "candidate": "Heiko Hosomi Spitzeck",
+    "linkedin": "https://br.linkedin.com/in/heikohosomispitzeck/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "são paulo, são paulo, brazil",
+            "bio": "Location: São Paulo · 500+ connections on LinkedIn. View Heiko Hosomi Spitzeck’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T14:59:43.585115",
+    "candidate": "John de Robeck",
+    "linkedin": "https://uk.linkedin.com/in/john-de-robeck-95108514",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "John de Robeck - FMIS Ltd. | LinkedIn Fábrica de Máquinas Industriais Santos - LinkedIn FMIS É NOMEADA MONTADORA OFICIAL DOS ... - LinkedIn Portugal LinkedIn Brasil: entre ou cadastre-se",
+            "body": "I lead commercial growth at FMIS , supporting clients worldwide with integrated software… · Experience: FMIS Ltd . · Location: Penzance · 500+ connections on LinkedIn . View John de Robeck’s... Com unidades em Canoinhas-SC e Dourado-SP, a Fábrica de Máquinas Industriais Santos ( FMIS ) caracteriza-se como uma empresa especializada em fabricação, montagem e manutenção industriais. A FMIS foi oficialmente nomeada montadora autorizada dos transportadores MPE – Chain-Vey no Brasil , trazendo para o setor a união entre a excelência de fabricação local e a engenharia de um dos... Para quem o LinkedIn foi feito? Para qualquer pessoa buscando orientação profissional."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "I lead commercial growth at FMIS, supporting clients worldwide with integrated software… · Experience: FMIS Ltd. · Location: Penzance · 500+ connections on LinkedIn. View John de Robeck’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://uk.linkedin.com/in/john-de-robeck-95108514",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:00:26.847554",
+    "candidate": "Khushboo Kushwaha",
+    "linkedin": "https://in.linkedin.com/in/khushboo-kushwaha-20ba74161",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Khushboo Kushwaha - FMIS Ltd. | LinkedIn",
+            "body": "Experience: FMIS Ltd . · Location: Indore. View Khushboo Kushwaha’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experience: FMIS Ltd. · Location: Indore. View Khushboo Kushwaha’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://in.linkedin.com/in/khushboo-kushwaha-20ba74161",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:12:49.600913",
+    "candidate": "Juliano dos Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-santos-4841396b/pt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano dos Santos - Engineering Manager | LinkedIn",
+            "body": "Implementação de melhorias contínuas nos processos de montagem, reduzindo retrabalho e aumentando a confiabilidade dos produtos. Coordenação de equipe técnica, promovendo um ambiente..."
+        },
+        "osint_metadata": {
+            "role": "schneider electric",
+            "bio": "Sou um Líder de Engenharia com mais de 18 anos de experiência na indústria, com atuação… · Experiência: Schneider Electric · Formação acadêmica: UNIASSELVI · Localidade: Blumenau · + de 500 conexões no LinkedIn. Veja o perfil de Juliano dos Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:13:52.980101",
+    "candidate": "Jadir gonçalves junior",
+    "linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jadir gonçalves junior - FMIS Ltd. | LinkedIn",
+            "body": "-- · Experiência: FMIS Ltd . · Localidade: 38740-000. Veja Jadir gonçalves junior o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: FMIS Ltd. · Localidade: 38740-000. Veja o perfil de Jadir gonçalves junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:14:01.305193",
+    "candidate": "Preto Araujo",
+    "linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Preto Araujo - Caldeireiro na FMIS Ltd. | LinkedIn",
+            "body": "Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Américo Brasiliense. Veja Preto Araujo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:14:14.415340",
+    "candidate": "Ricardo Fernandes",
+    "linkedin": "https://br.linkedin.com/in/ricardo-fernandes-03679a54",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ricardo Fernandes - FMIS - Fábrica de ... - LinkedIn Brasil #reformatributária #direitotributário #fmislaw # ... - LinkedIn Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Experiência: FMIS - Fábrica de Máquinas Indústrial Santos · Localidade: Dourado · + de 500 conexões no LinkedIn . Veja Ricardo Fernandes o perfil no LinkedIn , uma comunidade profissional de 1... 🎙️ Entrevista no Canal TIMES BRASIL - LICENCIADO EXCLUSIVO CNBC O sócio e especialista em Direito Tributário do FMIS law, Daniel Moreti, analisou os principais pontos da Reforma Tributária... Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "fmis",
+            "bio": "Experiência: FMIS - Fábrica de Máquinas Indústrial Santos  · Localidade: Dourado · + de 500 conexões no LinkedIn. Veja Ricardo Fernandes  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/ricardo-fernandes-03679a54",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:14:17.858078",
+    "candidate": "Heiko Hosomi Spitzeck",
+    "linkedin": "https://br.linkedin.com/in/heikohosomispitzeck/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "são paulo, são paulo, brazil",
+            "bio": "Location: São Paulo · 500+ connections on LinkedIn. View Heiko Hosomi Spitzeck’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:15:05.161901",
+    "candidate": "John de Robeck",
+    "linkedin": "https://uk.linkedin.com/in/john-de-robeck-95108514",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "John de Robeck - FMIS Ltd. | LinkedIn Fábrica de Máquinas Industriais Santos - LinkedIn LinkedIn Brasil: entre ou cadastre-se FMIS É NOMEADA MONTADORA OFICIAL DOS ... - LinkedIn Portugal",
+            "body": "I lead commercial growth at FMIS , supporting clients worldwide with integrated software… · Experience: FMIS Ltd . · Location: Penzance · 500+ connections on LinkedIn . View John de Robeck’s... Com unidades em Canoinhas-SC e Dourado-SP, a Fábrica de Máquinas Industriais Santos ( FMIS ) caracteriza-se como uma empresa especializada em fabricação, montagem e manutenção industriais. Para quem o LinkedIn foi feito? Para qualquer pessoa buscando orientação profissional. A FMIS foi oficialmente nomeada montadora autorizada dos transportadores MPE – Chain-Vey no Brasil , trazendo para o setor a união entre a excelência de fabricação local e a engenharia de um dos..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "I lead commercial growth at FMIS, supporting clients worldwide with integrated software… · Experience: FMIS Ltd. · Location: Penzance · 500+ connections on LinkedIn. View John de Robeck’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://uk.linkedin.com/in/john-de-robeck-95108514",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:15:47.319661",
+    "candidate": "Juliano dos Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-santos-4841396b/pt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano dos Santos - Engineering Manager | LinkedIn",
+            "body": "Implementação de melhorias contínuas nos processos de montagem, reduzindo retrabalho e aumentando a confiabilidade dos produtos. Coordenação de equipe técnica, promovendo um ambiente..."
+        },
+        "osint_metadata": {
+            "role": "schneider electric",
+            "bio": "Sou um Líder de Engenharia com mais de 18 anos de experiência na indústria, com atuação… · Experiência: Schneider Electric · Formação acadêmica: UNIASSELVI · Localidade: Blumenau · + de 500 conexões no LinkedIn. Veja o perfil de Juliano dos Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:15:51.584874",
+    "candidate": "Juliano dos Santos Santos",
+    "linkedin": "https://br.linkedin.com/in/juliano-dos-santos-santos-8a598265",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliano dos Santos Santos - Supervisor de Manutenção... | LinkedIn",
+            "body": "Supervisor de Manutenção Industrial · Gestão de pessoas e coordenação de recursos de manutenção · Experiência: Raizen-Barra · Formação acadêmica: Engenheiro Mecanico · Localidade: Brasil · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "raizen",
+            "bio": "Gestão de pessoas e coordenação de recursos de manutenção · Experiência: Raizen-Barra  · Formação acadêmica: Engenheiro Mecanico · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Juliano  dos Santos Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:15:55.543502",
+    "candidate": "JULIANO DOS SANTOS",
+    "linkedin": "https://br.linkedin.com/in/juliano-dos-santos-40a15b65",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "JULIANO DOS SANTOS - Academia Toshio Aquatics... | LinkedIn",
+            "body": "Experiência: Academia Toshio Aquatics & Fitness · Formação acadêmica: Universidade de São Paulo · Localidade: São Paulo · 266 conexões no LinkedIn . Veja o perfil de JULIANO DOS SANTOS no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "academia toshio aquatics & fitness",
+            "bio": "Experiência: Academia Toshio Aquatics & Fitness · Formação acadêmica: Universidade de São Paulo · Localidade: São Paulo · 266 conexões no LinkedIn. Veja o perfil de JULIANO DOS SANTOS no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:16:26.518140",
+    "candidate": "Maicon Gomes",
+    "linkedin": "https://br.linkedin.com/in/maicon-gomes-b2187b331",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Maicon Gomes - Caldeireiro na FMIS Ltd. | LinkedIn",
+            "body": "Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Araraquara · 19 conexões no LinkedIn . Veja o perfil de Maicon Gomes no LinkedIn , uma comunidade profissional de 1 bilhão..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: FMIS Ltd. · Localidade: Araraquara · 19 conexões no LinkedIn. Veja o perfil de Maicon Gomes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/maicon-gomes-b2187b331",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:16:47.451099",
+    "candidate": "Jadir gonçalves junior",
+    "linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jadir gonçalves junior - FMIS Ltd. | LinkedIn",
+            "body": "-- · Experiência: FMIS Ltd . · Localidade: 38740-000. Veja Jadir gonçalves junior o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: FMIS Ltd. · Localidade: 38740-000. Veja o perfil de Jadir gonçalves junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/jadir-gonçalves-junior-858b56247",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:17:01.057858",
+    "candidate": "Preto Araujo",
+    "linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Preto Araujo - Caldeireiro na FMIS Ltd. | LinkedIn",
+            "body": "Caldeireiro na FMIS Ltd . · Experiência: FMIS Ltd . · Localidade: Américo Brasiliense. Veja Preto Araujo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/preto-araujo-09aa72388",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:17:16.259268",
+    "candidate": "Ricardo Fernandes",
+    "linkedin": "https://br.linkedin.com/in/ricardo-fernandes-03679a54",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ricardo Fernandes - FMIS - Fábrica de ... - LinkedIn Brasil #reformatributária #direitotributário #fmislaw # ... - LinkedIn Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Experiência: FMIS - Fábrica de Máquinas Indústrial Santos · Localidade: Dourado · + de 500 conexões no LinkedIn . Veja Ricardo Fernandes o perfil no LinkedIn , uma comunidade profissional de 1... 🎙️ Entrevista no Canal TIMES BRASIL - LICENCIADO EXCLUSIVO CNBC O sócio e especialista em Direito Tributário do FMIS law, Daniel Moreti, analisou os principais pontos da Reforma Tributária... Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "fmis",
+            "bio": "Experiência: FMIS - Fábrica de Máquinas Indústrial Santos  · Localidade: Dourado · + de 500 conexões no LinkedIn. Veja Ricardo Fernandes  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/ricardo-fernandes-03679a54",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:17:19.980886",
+    "candidate": "Heiko Hosomi Spitzeck",
+    "linkedin": "https://br.linkedin.com/in/heikohosomispitzeck/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Heiko Hosomi Spitzeck - LinkedIn Brasil",
+            "body": "Location: São Paulo · 500+ connections on LinkedIn . View Heiko Hosomi Spitzeck’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "são paulo, são paulo, brazil",
+            "bio": "Location: São Paulo · 500+ connections on LinkedIn. View Heiko Hosomi Spitzeck’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T15:18:00.517805",
+    "candidate": "John de Robeck",
+    "linkedin": "https://uk.linkedin.com/in/john-de-robeck-95108514",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "John de Robeck - FMIS Ltd. | LinkedIn Fábrica de Máquinas Industriais Santos - LinkedIn LinkedIn Brasil: entre ou cadastre-se FMIS É NOMEADA MONTADORA OFICIAL DOS ... - LinkedIn Portugal",
+            "body": "I lead commercial growth at FMIS , supporting clients worldwide with integrated software… · Experience: FMIS Ltd . · Location: Penzance · 500+ connections on LinkedIn . View John de Robeck’s... Com unidades em Canoinhas-SC e Dourado-SP, a Fábrica de Máquinas Industriais Santos ( FMIS ) caracteriza-se como uma empresa especializada em fabricação, montagem e manutenção industriais. Para quem o LinkedIn foi feito? Para qualquer pessoa buscando orientação profissional. A FMIS foi oficialmente nomeada montadora autorizada dos transportadores MPE – Chain-Vey no Brasil , trazendo para o setor a união entre a excelência de fabricação local e a engenharia de um dos..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "I lead commercial growth at FMIS, supporting clients worldwide with integrated software… · Experience: FMIS Ltd. · Location: Penzance · 500+ connections on LinkedIn. View John de Robeck’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://uk.linkedin.com/in/john-de-robeck-95108514",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T16:35:35.160701",
+    "candidate": "Jander",
+    "linkedin": "https://linkedin.com/in/pd_204",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jander - Contato Baumer",
+            "body": "Email: compras@baumer.com.br | Telefone: (19) 99589-9939 | Pipedrive ID: 204"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_204",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T16:35:52.585721",
+    "candidate": "Bruno",
+    "linkedin": "https://br.linkedin.com/in/bruno-baumer-8a340817",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bruno Baumer - LinkedIn Brasil Baumer Bruno Bueno Gamboa Salvari Baumer - ConsultaSocio.com Bruno Bueno Gamboa Salvari Baumer - SociosBrasil.com Bruno Bueno Gamboa Salvari Baumer » Suas Empresas e Sócios BAUMER S.A DIRETORES: BRUNO BUENO GAMBOA SALVARI BAUMER,",
+            "body": "· Experiência: Fiesp - Federação das Indústrias do Estado de São Paulo · Formação acadêmica: Georgetown College · Localidade: São Paulo · + de 500 conexões no LinkedIn . Veja o perfil de Bruno ... Diretoria Executiva Estrutura de nossa diretoria executiva Ruy Salvari Baumer Diretor Presidente ... RCA ocorrida em 09/08/2023 e Mandato até 09/08/2026 Informações cadastrais e quadro societário referente a \" Bruno Bueno Gamboa Salvari Baumer \". Consulte a quantidade de empresas, CNPJ, endereço, telefone e demais informações. Informações cadastrais e quadro societário referente a \" Bruno Bueno Gamboa Salvari Baumer \". Consulte a quantidade de empresas, CNPJ, endereço, telefone e demais informações. Todos os Sócios de Bruno RUY SALVARI BAUMER Ruy é sócio (a) de Bruno na empresa BAXX ADMINISTRACAO E PARTICIPACOES LTDA. desde 26/06/2012. brasileiro, casado, industrial, RG 7.456.968 SSP/SP e CPF 003.881.608-37, residente na Rua Manuel Marques Simões, no 196 , em São Paulo – SP; VICE-PRESIDENTE: MÔNICA SALVARI BAUMER ,"
+        },
+        "osint_metadata": {
+            "role": "fiesp",
+            "bio": "Experienced Product Manager with a demonstrated history of working in the medical device… · Experiência: Fiesp - Federação das Indústrias do Estado de São Paulo · Formação acadêmica: Georgetown College · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Bruno Baumer no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/bruno-baumer-8a340817",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T16:43:07.247303",
+    "candidate": "Jander",
+    "linkedin": "https://linkedin.com/in/pd_204",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jander - Contato Baumer",
+            "body": "Email: compras@baumer.com.br | Telefone: (19) 99589-9939 | Pipedrive ID: 204"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_204",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T16:43:22.157403",
+    "candidate": "Bruno",
+    "linkedin": "https://br.linkedin.com/in/bruno-baumer-8a340817",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bruno Baumer - LinkedIn Brasil Baumer Bruno Bueno Gamboa Salvari Baumer - ConsultaSocio.com Bruno Bueno Gamboa Salvari Baumer - SociosBrasil.com Bruno Bueno Gamboa Salvari Baumer » Suas Empresas e Sócios BAUMER S.A DIRETORES: BRUNO BUENO GAMBOA SALVARI BAUMER,",
+            "body": "· Experiência: Fiesp - Federação das Indústrias do Estado de São Paulo · Formação acadêmica: Georgetown College · Localidade: São Paulo · + de 500 conexões no LinkedIn . Veja o perfil de Bruno ... Diretoria Executiva Estrutura de nossa diretoria executiva Ruy Salvari Baumer Diretor Presidente ... RCA ocorrida em 09/08/2023 e Mandato até 09/08/2026 Informações cadastrais e quadro societário referente a \" Bruno Bueno Gamboa Salvari Baumer \". Consulte a quantidade de empresas, CNPJ, endereço, telefone e demais informações. Informações cadastrais e quadro societário referente a \" Bruno Bueno Gamboa Salvari Baumer \". Consulte a quantidade de empresas, CNPJ, endereço, telefone e demais informações. Todos os Sócios de Bruno RUY SALVARI BAUMER Ruy é sócio (a) de Bruno na empresa BAXX ADMINISTRACAO E PARTICIPACOES LTDA. desde 26/06/2012. brasileiro, casado, industrial, RG 7.456.968 SSP/SP e CPF 003.881.608-37, residente na Rua Manuel Marques Simões, no 196 , em São Paulo – SP; VICE-PRESIDENTE: MÔNICA SALVARI BAUMER ,"
+        },
+        "osint_metadata": {
+            "role": "fiesp",
+            "bio": "Experienced Product Manager with a demonstrated history of working in the medical device… · Experiência: Fiesp - Federação das Indústrias do Estado de São Paulo · Formação acadêmica: Georgetown College · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Bruno Baumer no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/bruno-baumer-8a340817",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T16:43:54.827862",
+    "candidate": "Jose marques Camargo",
+    "linkedin": "https://br.linkedin.com/in/jose-marques-camargo-96848128b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jose marques Camargo - LinkedIn Brasil",
+            "body": "-- · Localidade: 13090-150 · 7 conexões no LinkedIn . Veja Jose marques Camargo o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "campinas, são paulo, brasil",
+            "bio": "Localidade: 13090-150 · 7 conexões no LinkedIn. Veja o perfil de Jose marques Camargo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T16:44:39.528270",
+    "candidate": "Breno Farago",
+    "linkedin": "https://br.linkedin.com/in/breno-farago-97056128",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Breno Farago - Baumer | LinkedIn Breno Farago - Gerente - Baumer | ZoomInfo Baumer Breno Correa Farago: Positions, Relations and Network ... Breno Correa Farago - BALM4.BR | Baumer S/A Pref - Wall ... Breno Farago Email & Phone Number | Engenheiro de Produção ... FUNDAMENTUS - BALM3 - Invista consciente - Administradores",
+            "body": "Experiência: Baumer · Formação acadêmica: UNIMEP · Localidade: São Paulo · 95 conexões no LinkedIn . Veja o perfil de Breno Farago no LinkedIn , uma comunidade profissional de 1 bilhão de... View Breno Farago ' s verified business profile as Gerente at Baumer . Find contact's direct phone number, email address, work history, and more. Diretoria Executiva Estrutura de nossa diretoria executiva Ruy Salvari Baumer Diretor Presidente ... RCA ocorrida em 09/08/2023 e Mandato até 09/08/2026 Director/Board Member at Baumer SA, Discover Breno Correa Farago ' s known position history, network and 6 relationships. Find out about his known public assets. Breno Correa Farago Member-Management Board, Baumer SA Breno Correa Farago is Member-Management Board at Baumer SA. To contact Breno Farago send an email to brenofarago @hotmail.com or breno@ baumer .com. br . Atividades iniciadas em 1974 como Office boy e cargos posteriores, incluindo auxiliar de cobrança, responsável pelo CPD, supervisor de vendas, responsável pela implantação dos agentes estaduais e gerente comercial da Baumer ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Baumer · Formação acadêmica: UNIMEP · Localidade: São Paulo · 95 conexões no LinkedIn. Veja o perfil de Breno Farago no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/breno-farago-97056128",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T20:03:46.010491",
+    "candidate": "Anderson Rezende Marinho",
+    "linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn",
+            "body": "Veja o perfil de Anderson Rezende Marinho no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Diretor na Cobaltech . Indaiatuba, São Paulo, Brasil . 321 seguidores 317 conexões."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T20:03:56.197542",
+    "candidate": "Anderson Rezende Marinho",
+    "linkedin": "https://www.linkedin.com/in/anderson-rezende-marinho-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Rezende Marinho - Proprietário - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experience: Cobaltech Comercio E Servicos · Education: CEUNSP · Location: Indaiatuba · 285 connections on LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/anderson-rezende-marinho-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T20:04:12.943143",
+    "candidate": "Anderson C. Rezende",
+    "linkedin": "https://www.linkedin.com/in/anderson-c-rezende-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "January 16, 2025 - Transformando a Indústria com Inovação e Experiência.💡🏭 #CobalTech #SoluçõesIndustriais #Inovação #usinagem ... Anderson C. Rezende ... Anderson C. Rezende shared this ... Anderson C. Rezende shared this · Descubra nossa variedade de produtos de usinagem! Visite nosso site. 🔧🛠️ #Usinagem #Ferramentas #Cobaltech"
+        },
+        "osint_metadata": {
+            "role": "cobaltech comercio e servicos",
+            "bio": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 349 conexões no LinkedIn. Veja o perfil de Anderson C. Rezende no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/anderson-c-rezende-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T20:05:28.792136",
+    "candidate": "Sandro Galo",
+    "linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Sandro Galo - Cobaltech Ferramentas e Soluções de Usinagem ... Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn Cobaltech Ferramentas e Soluções de Usinagem no LinkedIn ... Cobaltech Ferramentas e Soluções de Usinagem posted on LinkedIn",
+            "body": "conhecimento em máquinas injetora.centro de usinagem.ferramentas em geral Retifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai · Localidade:... Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o... Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 329 conexões... Obrigado, @paulosofiati, pela visita à Cobaltech e pela reunião promissora para falar sobre nossos futuros negócios. Que honra ter participado da construção da história da Cobaltech Ferramentas e Soluções de Usinagem como consultor nos anos de 2017, 2018 e 2019 e ontem, dia 10/8/2023, ter participado..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "conhecimento em máquinas injetora.centro de usinagem.ferramentas em geral\nRetifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Sandro Galo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T20:05:42.124275",
+    "candidate": "Anderson C. Rezende",
+    "linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cobaltech comercio e servicos",
+            "bio": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 349 conexões no LinkedIn. Veja o perfil de Anderson C. Rezende no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-13T20:06:57.225899",
+    "candidate": "João Paulo Lopes",
+    "linkedin": "https://br.linkedin.com/in/joão-paulo-lopes-30a1bb20b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Paulo Lopes - Administração de empresas | LinkedIn Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Administração de empresas · Experiência: Cobaltech · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Indaiatuba · 44 conexões no LinkedIn . Veja o... Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 329 conexões... Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 344 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou Analista Administrativo, com bacharelado em Administração pela CEUNSP. Tenho… · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Indaiatuba · 55 conexões no LinkedIn. Veja o perfil de João Paulo Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/joão-paulo-lopes-30a1bb20b",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------

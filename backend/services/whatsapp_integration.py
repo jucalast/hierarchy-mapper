@@ -192,6 +192,65 @@ class WhatsAppIntegration:
             return employees
 
 
+    @staticmethod
+    async def send_message(chat_id: str, message: str) -> Dict:
+        """
+        Envia uma mensagem de WhatsApp para um ID ou número.
+        Suporta: 55... @c.us, ID@lid, ou número puro.
+        """
+        if not chat_id or not message:
+            return {"ok": False, "error": "Faltam dados de destino ou mensagem."}
+            
+        # Limpeza e Normalização do ID
+        target_jid = chat_id
+        if not "@" in target_jid:
+            # LIDs (Linked IDs) do Baileys/Multidevice costumam ter 15+ dígitos
+            # Números brasileiros com o 9 extra têm 13 dígitos (ex: 5511999998888)
+            if target_jid.isdigit() and len(target_jid) >= 15:
+                target_jid = f"{target_jid}@lid"
+            elif target_jid.isdigit():
+                target_jid = f"{target_jid}@c.us"
+
+        try:
+            service_url = await WhatsAppIntegration._get_service_url()
+            async with httpx.AsyncClient(timeout=TIMEOUT * 3) as client:
+                url = f"{service_url}/send"
+
+                # Para contatos LID (ID interno >13 dígitos), o bridge pode rejeitar
+                # o campo 'number' (que espera um telefone real). Tenta chatId-only primeiro,
+                # pois alguns bridges roteiam via chatId sem validar o número.
+                cid_num = target_jid.split("@")[0] if "@" in target_jid else target_jid
+                is_lid = cid_num.isdigit() and len(cid_num) > 13
+
+                if is_lid:
+                    # Tentativa 1: chatId-only (sem number) com @c.us
+                    jid_cus = f"{cid_num}@c.us"
+                    for try_payload in [
+                        {"chatId": jid_cus, "message": message},
+                        {"chatId": target_jid, "message": message},
+                        {"to": jid_cus, "message": message},
+                    ]:
+                        try:
+                            r = await client.post(url, json=try_payload)
+                            if r.status_code == 200:
+                                return {"ok": True, "result": r.json()}
+                        except Exception:
+                            pass
+
+                # Tentativa padrão: number + chatId
+                payload = {"number": target_jid, "chatId": target_jid, "message": message}
+                response = await client.post(url, json=payload)
+
+                if response.status_code == 200:
+                    return {"ok": True, "result": response.json()}
+                else:
+                    err_msg = response.json().get("error") or response.text or f"Erro {response.status_code}"
+                    return {"ok": False, "error": err_msg}
+        except Exception as e:
+            logger.error(f"Erro ao enviar mensagem WhatsApp: {str(e)}")
+            return {"ok": False, "error": str(e)}
+
+
 # Test/Demo
 if __name__ == "__main__":
     import asyncio

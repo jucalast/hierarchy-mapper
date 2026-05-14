@@ -22,12 +22,14 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* CENTRAL TYPOGRAPHY SCALE */
-  --font-xs: 11px;
-  --font-sm: 13px;
-  --font-base: 14px;
-  --font-md: 15px;
-  --font-lg: 18px;
-  --font-xl: 24px;
+  --font-xs: 13px;
+  --font-sm: 15px;
+  --font-base: 16px;
+  --font-md: 17px;
+  --font-lg: 20px;
+  --font-xl: 28px;
+  --font-2xl: 36px;
+  --font-3xl: 46px;
 
   /* DARK MODE (Console / Obsidian Style) - DEFAULT */
   --sw-bg: #0c0d0e;

@@ -100,19 +100,38 @@ const restartClient = async () => {
     console.log('[WA Service] 🔄 Reiniciando cliente devido a falhas excessivas...');
     isReady = false;
     fatalErrorCount = 0;
-    
+
     // Invalidate contact cache since the frame is gone
     try {
         const cs = require('./contactService');
         if (cs._invalidateCache) cs._invalidateCache();
     } catch (e) {}
-    
+
+    // 1. Tenta destruir graciosamente
     try {
         await client.destroy();
     } catch (e) {
         console.warn('[WA Service] ⚠️ Erro ao destruir cliente:', e.message);
     }
-    await delay(3000);
+
+    // 2. Força o kill do processo Chrome se ainda estiver vivo
+    // (client.destroy às vezes não fecha o processo, deixando o userDataDir bloqueado)
+    try {
+        const browserProcess = client.pupBrowser && client.pupBrowser.process && client.pupBrowser.process();
+        if (browserProcess && !browserProcess.killed) {
+            browserProcess.kill('SIGKILL');
+            console.log('[WA Service] 🔪 Processo Chrome forçado a encerrar (PID', browserProcess.pid, ')');
+        }
+    } catch (e) {
+        // último recurso: mata pelo nome no Windows
+        try {
+            const { execSync } = require('child_process');
+            execSync('taskkill /F /IM chrome.exe /T 2>nul', { stdio: 'ignore' });
+            console.log('[WA Service] 🔪 Chrome encerrado via taskkill');
+        } catch (_) {}
+    }
+
+    await delay(4000);
     try {
         await client.initialize();
         console.log('[WA Service] ✅ Cliente reinicializado com sucesso.');

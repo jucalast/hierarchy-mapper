@@ -248,6 +248,14 @@ const findContactByExactName = async (client, name) => {
 const findContactByNumber = async (client, number) => {
     try {
         const formattedNumber = number.includes('@c.us') ? number : `${number}@c.us`;
+        
+        // Verifica primeiro se o número tem WhatsApp
+        const isRegistered = await client.isRegisteredUser(formattedNumber);
+        if (!isRegistered) {
+            console.log(`[WA ContactService] Número ${formattedNumber} não está registrado no WhatsApp.`);
+            return null;
+        }
+
         const contact = await client.getContactById(formattedNumber);
         
         if (!contact || !contact.id) return null;
@@ -261,6 +269,7 @@ const findContactByNumber = async (client, number) => {
             similarity: 100
         };
     } catch (error) {
+        console.warn(`[WA ContactService] Erro ao buscar contator por numero:`, error.message);
         return null;
     }
 };

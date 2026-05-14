@@ -46,9 +46,23 @@ const SuggestedActionChips = ({
             padding: '4px 16px 12px 16px',
         }}>
             {actions.map((action, i) => (
-                <button
+                <div
                     key={i}
-                    onClick={() => onAction(action.prompt)}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                        const selection = window.getSelection();
+                        if (selection && selection.toString().trim().length > 0) {
+                            return;
+                        }
+                        onAction(action.prompt);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onAction(action.prompt);
+                        }
+                    }}
                     style={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -64,6 +78,8 @@ const SuggestedActionChips = ({
                         transition: 'all 0.15s ease',
                         lineHeight: 1.3,
                         textAlign: 'left',
+                        userSelect: 'text',
+                        outline: 'none',
                     }}
                     onMouseEnter={e => {
                         const el = e.currentTarget;
@@ -83,7 +99,7 @@ const SuggestedActionChips = ({
                         {ACTION_ICON_MAP[action.icon || 'default']}
                     </span>
                     {action.label}
-                </button>
+                </div>
             ))}
         </div>
     );

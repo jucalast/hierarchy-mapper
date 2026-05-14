@@ -219,7 +219,7 @@
 }
 
 .statusBadge {
-    font-size: 9px;
+    font-size: var(--font-xs);
     font-weight: 500;
     letter-spacing: 0.05em;
     padding: 2px 8px;
@@ -285,8 +285,8 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@container (min-width: 750px) {
-    .inputGroupColumn {
+@media (min-width: 750px) {
+    .toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] .inputGroupColumn {
         flex-direction: row;
         align-items: center;
         gap: 0;
@@ -490,7 +490,7 @@
 
 .toolbarUnifiedWrapper {
     position: relative;
-    width: 100%;
+    width: fit-content;
     max-width: 100%;
     z-index: 1000;
     display: flex;
@@ -498,7 +498,6 @@
     align-items: center;
     pointer-events: none;
     overflow: visible;
-    container-type: inline-size;
 }
 
 .toolbarUnifiedWrapper>* {
@@ -507,8 +506,9 @@
 
 /* BRAND SUGGESTIONS ROW */
 .optionsContainer {
-    position: relative;
-    /* Mudado de absolute para relative */
+    position: absolute;
+    bottom: 100%;
+    left: 0;
     width: 100%;
     box-sizing: border-box;
     margin-bottom: 0;
@@ -983,9 +983,10 @@
     border-radius: var(--radius-lg);
     pointer-events: auto;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    width: fit-content;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
+    flex-shrink: 1;
     min-height: 44px;
     height: auto;
     gap: 4px;
@@ -1265,15 +1266,32 @@
     gap: 8px;
     width: 100%;
     min-width: 0;
-    height: 40px;
+    height: auto;
+    min-height: 40px;
     flex-shrink: 0;
-    padding: 0 4px;
+    padding: 6px 4px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
-@container (min-width: 750px) {
-    .confirmRow1 {
+.confirmRow1 :global(.toolbarDivider),
+.confirmRow1 [class*="toolbarDivider"] {
+    display: none !important;
+}
+
+@media (min-width: 750px) {
+    .toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] .confirmRow1 {
         width: auto;
         flex: 0 0 auto;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        height: 40px;
+        padding: 0 4px;
+    }
+    
+    .toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] .confirmRow1 :global(.toolbarDivider),
+    .toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] .confirmRow1 [class*="toolbarDivider"] {
+        display: block !important;
     }
 }
 
@@ -1289,8 +1307,8 @@
     flex-shrink: 0;
 }
 
-@container (min-width: 750px) {
-    .confirmRow2 {
+@media (min-width: 750px) {
+    .toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] .confirmRow2 {
         width: auto;
         flex: 1 1 auto;
         border-top: none;
@@ -1672,6 +1690,15 @@
     font-weight: 400;
 }
 
+.focusedOrgOwner {
+    font-size: var(--font-xs);
+    color: var(--sw-primary);
+    display: flex;
+    align-items: center;
+    margin-top: 4px;
+    font-weight: 500;
+}
+
 .expandToggle {
     background: transparent;
     border: none;
@@ -1895,6 +1922,46 @@
     font-size: var(--font-xs);
     color: rgba(255, 255, 255, 0.2);
     font-style: italic;
+}
+
+.refreshBtn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.refreshBtn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--sw-primary);
+}
+
+.refreshBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.dealOwner {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    margin-top: 2px;
 }
 
 /* Activity Items */
@@ -2591,7 +2658,7 @@
 .deptBadge {
     display: inline-flex;
     align-items: center;
-    font-size: 9px;
+    font-size: var(--font-xs);
     font-weight: 500;
     background: rgba(129, 140, 248, 0.08);
     /* System primary tint */
@@ -2617,7 +2684,7 @@
 }
 
 .osintLabel {
-    font-size: 9px;
+    font-size: var(--font-xs);
     font-weight: 500;
     color: rgba(255, 255, 255, 0.15);
     text-transform: uppercase;
@@ -3014,11 +3081,11 @@
     right: 16px;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     z-index: 1200;
     pointer-events: none;
     max-width: calc(100% - 32px);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .bottomToolbarRow>* {
@@ -3033,9 +3100,16 @@
     border: none;
     padding: 0;
     cursor: pointer;
-    position: relative;
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
     pointer-events: auto;
-    transition: var(--transition-smooth);
+    transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease, filter 0.2s ease;
+    z-index: 1010;
+}
+
+.optionsContainer ~ .humanAnalysisTrigger {
+    bottom: calc(100% + 96px); /* Flutua suavemente em cima do carrossel quando estiver aberto! */
 }
 
 .humanAnalysisTrigger:hover {
@@ -3264,7 +3338,7 @@
 
 .globalHeaderTitle {
     font-family: var(--font-primary);
-    font-size: 11px;
+    font-size: var(--font-sm);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.45);
     letter-spacing: 0.08em;

@@ -6,9 +6,10 @@
       "remaining": 14399,
       "pct": 100.0,
       "tokens_limit": 6000,
-      "tokens_remaining": 1628,
-      "tokens_pct": 27.1,
-      "updated_at": 1778175877.025959
+      "tokens_remaining": 3105,
+      "tokens_pct": 51.7,
+      "updated_at": 1778718245.9090548,
+      "status": "healthy"
     },
     "llama-3.3-70b-versatile": {
       "used": 1,
@@ -16,20 +17,20 @@
       "remaining": 999,
       "pct": 99.9,
       "tokens_limit": 12000,
-      "tokens_remaining": 11963,
-      "tokens_pct": 99.7,
-      "updated_at": 1778263609.67185,
+      "tokens_remaining": 11306,
+      "tokens_pct": 94.2,
+      "updated_at": 1778696106.9049895,
       "status": "healthy"
     },
     "meta-llama/llama-4-scout-17b-16e-instruct": {
-      "used": 50,
+      "used": 1,
       "limit": 1000,
-      "remaining": 950,
-      "pct": 95.0,
+      "remaining": 999,
+      "pct": 99.9,
       "tokens_limit": 30000,
       "tokens_remaining": 29988,
       "tokens_pct": 100.0,
-      "updated_at": 1778267407.6608372,
+      "updated_at": 1778781801.142701,
       "status": "healthy"
     },
     "qwen/qwen3-32b": {
@@ -38,9 +39,9 @@
       "remaining": 999,
       "pct": 99.9,
       "tokens_limit": 6000,
-      "tokens_remaining": 4904,
-      "tokens_pct": 81.7,
-      "updated_at": 1778241526.7313302,
+      "tokens_remaining": 1079,
+      "tokens_pct": 18.0,
+      "updated_at": 1778497056.993092,
       "status": "healthy"
     }
   },
@@ -84,7 +85,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1778267408.011552,
+      "updated_at": 1778781801.4720385,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -94,7 +95,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1778267408.2915742,
+      "updated_at": 1778781801.7066486,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -106,7 +107,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1778267410.4146526,
+      "updated_at": 1778781805.3809547,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"

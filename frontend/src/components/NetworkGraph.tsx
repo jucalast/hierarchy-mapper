@@ -29,6 +29,7 @@ import { FloatingToolbar } from './FloatingToolbar';
 import { SupplyChainNode } from './nodes/SupplyChainNode';
 import { getLayoutedElements, calculateEdges } from '@/utils/layout';
 import { useHierarchy } from '@/hooks/useHierarchy';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 // Modular Components
 import { Sidebar } from './Sidebar';
@@ -239,6 +240,8 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
     const [domainTarget, setDomainTarget] = useState("");
     const [productFocus, setProductFocus] = useState("");
     const [currentOrgId, setCurrentOrgId] = useState<number | null>(null);
+    // orgId que controla o ChatPanel — só atualiza quando o usuário abre o chat explicitamente
+    const [chatOrgId, setChatOrgId] = useState<number | null>(null);
     const [refreshDrawerTrigger, setRefreshDrawerTrigger] = useState(0);
     const [confirmedBrand, setConfirmedBrand] = useState("");
     const [confirmedLogo, setConfirmedLogo] = useState("");
@@ -303,11 +306,11 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
     // 💾 PERSISTENCE FOR DRAWER AND CHAT
     const [showDrawer, setShowDrawer] = useState(false);
     const [showChat, setShowChat] = useState(false);
-    const [activeView, setActiveView] = useState<'graph' | 'whatsapp' | 'prospecting' | 'preferences'>('graph');
+    const [activeView, setActiveView] = useLocalStorage<'graph' | 'whatsapp' | 'prospecting' | 'preferences'>('active-view', 'graph');
     const prospecting = useProspecting();
 
 
-    const [activeChatInfo, setActiveChatInfo] = useState<{ name: string, id?: string } | null>(null);
+    const [activeChatInfo, setActiveChatInfo] = useLocalStorage<{ name: string, id?: string } | null>('active-chat-info', null);
 
     // 💾 PERSISTENCE FOR DRAWER AND CHAT
     useEffect(() => {
@@ -369,7 +372,7 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
     const [shouldFitView, setShouldFitView] = useState(false);
 
     // 🔔 NOTIFICATION STATE
-    const [confirmModal, setConfirmModal] = useState<{isOpen: boolean, empId: string | null}>({isOpen: false, empId: null});
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
     const [notifications, setNotifications] = useState<Array<{ id: string; type: NotificationType; message: string }>>([]);
     const addNotification = useCallback((type: NotificationType, message: string) => {
         const id = Math.random().toString(36).substring(2, 9);
@@ -474,7 +477,7 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
                     // 2. Só agora mudamos para o estado visual de mapeamento
                     setStep("scanning");
                     setConfirmedBrand(brand);
-                    if (orgId) setCurrentOrgId(orgId);
+                    if (orgId) { setCurrentOrgId(orgId); setChatOrgId(orgId); }
 
                     // 3. Reconectar ao WebSocket para continuar recebendo novos nós
                     const reconnected = await reconnectToActiveJob((type, msg) => {
@@ -500,7 +503,7 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
             if (lastOrgStr) {
                 if (lastOrgStr === "NaN" || lastOrgStr === "undefined") {
                     localStorage.removeItem('last-viewed-org');
-                    setConfirmedBrand(" ");
+                    setConfirmedBrand("");
                     setStep("input");
                     return;
                 }
@@ -517,6 +520,7 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
                     }
                     setDomainTarget(org.domain || "");
                     setCurrentOrgId(Number(org.id));
+                    setChatOrgId(Number(org.id)); // restore inicial — sincroniza chat com último org visitado
 
                     if (org.id) {
                         const data = await loadStoredHierarchy(Number(org.id), true);
@@ -531,11 +535,11 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
                     }
                 } catch (e) {
                     console.error("[Last Org Check] Erro ao verificar last-viewed-org:", (e as Error).message || e);
-                    setConfirmedBrand(" "); // Sentinel para ativar modo "Nova Empresa" (Vermelho)
+                    setConfirmedBrand(""); // Clean slate (OSINT Flow)
                     setStep("input");
                 }
             } else {
-                setConfirmedBrand(" "); // Sentinel para ativar modo "Nova Empresa" (Vermelho)
+                setConfirmedBrand(""); // Clean slate (OSINT Flow)
                 setStep("input");
             }
         };
@@ -544,6 +548,56 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
     }, []); // ✅ Dependency array vazio - executa apenas na montagem
 
     /* === REMOVIDO loop checkActiveJobForOrg pois está nativamente dentro do handleOrgClick gora === */
+
+    // Pedido pendente de abertura de empresa via agente (resolvido quando pipedriveOrgs carregar)
+    const pendingOrgOpenRef = useRef<{ org_id: any; org_name: string; openDrawer?: boolean } | null>(null);
+
+    // Ouve evento do agente para abrir empresa no Drawer + grafo SEM abrir o chat.
+    useEffect(() => {
+        const handleOpenOrg = (e: Event) => {
+            const { org_id, org_name, openDrawer = true } = (e as CustomEvent).detail || {};
+            if (openDrawer) handleSetShowDrawer(true);
+            const byId = org_id ? pipedriveOrgs.find((o: any) => String(o.id) === String(org_id)) : null;
+            const byName = org_name ? pipedriveOrgs.find((o: any) =>
+                o.name?.toLowerCase().trim() === String(org_name).toLowerCase().trim()
+            ) : null;
+            const found = byId || byName;
+            if (found) {
+                if (Number(found.id) !== currentOrgId) {
+                    handleOrgClick(found, false); // openChat=false — não navega o chat
+                } else {
+                    setActiveView('graph'); // Já está na empresa, só garante a visualização
+                }
+                pendingOrgOpenRef.current = null;
+            } else {
+                pendingOrgOpenRef.current = { org_id, org_name, openDrawer };
+            }
+        };
+        window.addEventListener('open_org_in_drawer', handleOpenOrg);
+        return () => window.removeEventListener('open_org_in_drawer', handleOpenOrg);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pipedriveOrgs, currentOrgId]);
+
+    // Resolve pedido pendente quando a lista de orgs carregar
+    useEffect(() => {
+        if (!pendingOrgOpenRef.current || pipedriveOrgs.length === 0) return;
+        const { org_id, org_name, openDrawer } = pendingOrgOpenRef.current;
+        const byId = org_id ? pipedriveOrgs.find((o: any) => String(o.id) === String(org_id)) : null;
+        const byName = org_name ? pipedriveOrgs.find((o: any) =>
+            o.name?.toLowerCase().trim() === String(org_name).toLowerCase().trim()
+        ) : null;
+        const found = byId || byName || { id: org_id || null, name: org_name };
+
+        if (found.id && Number(found.id) === currentOrgId) {
+            setActiveView('graph');
+        } else {
+            handleOrgClick(found, false); // openChat=false
+        }
+
+        if (openDrawer) handleSetShowDrawer(true);
+        pendingOrgOpenRef.current = null;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pipedriveOrgs, currentOrgId]);
 
     const fetchTaskSummary = async () => {
         try {
@@ -561,21 +615,26 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
         } catch { /* silent — não bloqueia a UI */ }
     };
 
+    const SYNC_TTL_MS = 5 * 60 * 1000; // 5 minutos
+
     const fetchPipedriveOrgs = async () => {
         // Se já temos cache, não limpamos para não dar flicker na UI
         if (pipedriveOrgs.length === 0) setLoadingOrgs(true);
         try {
-            // Sincronização em background (Pipedrive -> DB Local) — fire & forget
-            orgsApi.triggerPipedriveSync().catch(() => { /* silent */ });
+            // Sincronização em background (Pipedrive -> DB Local) — só dispara se passou o TTL
+            const lastSync = Number(localStorage.getItem('pipedrive-sync-ts') || 0);
+            if (Date.now() - lastSync > SYNC_TTL_MS) {
+                localStorage.setItem('pipedrive-sync-ts', String(Date.now()));
+                orgsApi.triggerPipedriveSync().catch(() => { /* silent */ });
+            }
 
             const data = await orgsApi.listOrganizations();
-            console.log('[Pipedrive API] Data Received:', data);
-            
+
             // 🔝 Ordena por ID decrescente para que as novas fiquem no topo
-            const list = Array.isArray(data) 
-                ? [...data].sort((a: any, b: any) => Number(b.id) - Number(a.id)) 
+            const list = Array.isArray(data)
+                ? [...data].sort((a: any, b: any) => Number(b.id) - Number(a.id))
                 : [];
-                
+
             setPipedriveOrgs(list);
             // Busca resumo de tarefas em paralelo
             fetchTaskSummary();
@@ -594,6 +653,13 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
         }
     };
 
+    // Auto-update drawer tasks and organizations list when drawer is open and there is a change of company or business
+    useEffect(() => {
+        if (showDrawer) {
+            fetchPipedriveOrgs();
+        }
+    }, [showDrawer, currentOrgId, activeJobId]);
+
     const handleBrandSelect = async (brandObj: any) => {
         console.log("[Graph] handleBrandSelect called with:", brandObj);
 
@@ -605,7 +671,7 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
 
         if (!brandObj) {
             console.log("[Graph] VOLTAR CLICADO - Verificando se fecha carrossel ou volta step");
-            
+
             // 🔄 Se o carrossel está aberto, o primeiro "Voltar" apenas o fecha
             if (brandOptions.length > 0) {
                 setBrandOptions([]);
@@ -703,8 +769,9 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
         }
     };
 
-    const handleOrgClick = async (org: any) => {
+    const handleOrgClick = async (org: any, openChat = false) => {
         setActiveView('graph'); // 🚀 VOLTAR PARA O MODO GRAFO
+        if (openChat) handleSetShowChat(true); // Só abre o chat quando explicitamente solicitado
         console.log('--- HANDLE ORG CLICK START ---', org.name);
         resetHierarchy(); // 🧹 Limpa os dados do hook
         setNodes([]); // 🧹 Limpa os nodes do grafo
@@ -712,6 +779,7 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
 
         try {
             setCurrentOrgId(Number(org.id));
+            if (openChat) setChatOrgId(Number(org.id)); // Só sincroniza o chat quando o usuário abriu explicitamente
             localStorage.setItem('last-viewed-org', JSON.stringify(org));
 
             // 🧹 Reset total de estados antes de carregar a nova empresa
@@ -884,6 +952,7 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
             if (!confirmedBrand) { setError("Marca inválida."); return; }
 
             setStep("scanning");
+            setBrandOptions([]); // Limpa carrossel de Análise Humana de scans anteriores
             setRefreshDrawerTrigger(prev => prev + 1); // Recarrega/Zera o drawer
 
             // Só mandamos raiz e sócios, para "zerar" os outros funcionarios já mapeados
@@ -926,7 +995,7 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
 
         // 🕵️ Filtrar 'Análise Humana' dos nós do grafo principal para não poluir
         const humanAnalysisCandidates = rawEmployees.filter(emp => emp.role === "Análise Humana");
-        const visibleEmployees = rawEmployees.filter(emp => emp.role !== "Análise Humana");
+        const visibleEmployees = rawEmployees.filter(emp => emp.role !== "Análise Humana" && emp.role !== "Reprovado" && emp.department !== "Reprovado");
 
         let uiNodes: Node[] = visibleEmployees.map(emp => {
             const isRootNode = emp.id === 'root_company' || emp.level === 0;
@@ -1111,444 +1180,443 @@ export default function NetworkGraph({ defaultCnpj = "", onLogout }: { defaultCn
 
     return (
         <>
-        <div className={styles.container}>
-            <Sidebar
-                showDrawer={showDrawer}
-                setShowDrawer={handleSetShowDrawer}
-                theme={theme}
-                onToggleTheme={toggleTheme}
-                onReset={() => {
-                    // 🧹 Limpar Canvas: Limpa grafo e toolbar
-                    setNodes([]);
-                    setEdges([]);
-                    setStep("input");
-                    setCnpj("");
-                    setDomainTarget("");
-                    setProductFocus("");
-                    setConfirmedBrand("");
-                    setConfirmedLogo("");
-                    setConfirmedFollowers("");
-                    setPartners([]);
-                    setCurrentOrgId(null);
-                    setPreviousSearchState(null);
-                    resetHierarchy();
-                    setActiveView('graph');
-                    setActiveChatInfo(null);
-                    localStorage.removeItem('last-viewed-org');
-                }}
-                onCopyData={handleCopyData}
-                onRefine={() => {
-                    if (localStorage.getItem('active-discovery-job')) {
-                        addNotification('warning', "Aguarde o mapeamento atual terminar antes de utilizar o Analista de IA.");
-                        return;
-                    }
-                    refineHierarchy(rawEmployees);
-                }}
-                onSmartSync={async () => {
-                    const res = await smartSyncPipedrive();
-                    if (res && res.status === 'success') {
-                        addNotification('success', "Sincronização com Pipedrive concluída!");
-                        fetchPipedriveOrgs(); // Refresh the list
-                    }
-                }}
-                onOpenProspecting={() => setActiveView(v => v === 'prospecting' ? 'graph' : 'prospecting')}
-                isProspecting={activeView === 'prospecting'}
-                onOpenPreferences={() => setActiveView(v => v === 'preferences' ? 'graph' : 'preferences')}
-                isPreferences={activeView === 'preferences'}
-            />
+            <div className={styles.container}>
+                <Sidebar
+                    showDrawer={showDrawer}
+                    setShowDrawer={handleSetShowDrawer}
+                    theme={theme}
+                    onToggleTheme={toggleTheme}
+                    onReset={() => {
+                        // 🧹 Limpar Canvas: Limpa grafo e toolbar
+                        setNodes([]);
+                        setEdges([]);
+                        setStep("input");
+                        setCnpj("");
+                        setDomainTarget("");
+                        setProductFocus("");
+                        setConfirmedBrand("");
+                        setConfirmedLogo("");
+                        setConfirmedFollowers("");
+                        setPartners([]);
+                        setCurrentOrgId(null);
+                        setPreviousSearchState(null);
+                        resetHierarchy();
+                        setActiveView('graph');
+                        setActiveChatInfo(null);
+                        localStorage.removeItem('last-viewed-org');
+                    }}
+                    onCopyData={handleCopyData}
+                    onRefine={() => {
+                        if (localStorage.getItem('active-discovery-job')) {
+                            addNotification('warning', "Aguarde o mapeamento atual terminar antes de utilizar o Analista de IA.");
+                            return;
+                        }
+                        refineHierarchy(rawEmployees);
+                    }}
+                    onSmartSync={async () => {
+                        const res = await smartSyncPipedrive();
+                        if (res && res.status === 'success') {
+                            addNotification('success', "Sincronização com Pipedrive concluída!");
+                            fetchPipedriveOrgs(); // Refresh the list
+                        }
+                    }}
+                    onOpenProspecting={() => setActiveView(v => v === 'prospecting' ? 'graph' : 'prospecting')}
+                    isProspecting={activeView === 'prospecting'}
+                    onOpenPreferences={() => setActiveView(v => v === 'preferences' ? 'graph' : 'preferences')}
+                    isPreferences={activeView === 'preferences'}
+                />
 
-            <div className={styles.mainWrapper}>
-                <header className={styles.globalHeader}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className={styles.globalHeaderTitle}>LINKB2B Hierarchy Mapper</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
-                        <TriggerNotifications
-                            apiBase={API_BASE_URL}
-                            onOpenChat={(orgId, orgName) => {
-                                handleSetShowChat(true);
-                                handleOrgClick({ id: orgId, name: orgName });
-                            }}
-                        />
-                        {(activeView === 'graph' || activeView === 'prospecting') && (
-                            <button
-                                onClick={() => handleSetShowChat(!showChat)}
-                                className={`${styles.navIcon}`}
-                                style={{ 
-                                    background: 'transparent', 
-                                    border: 'none', 
-                                    cursor: 'pointer', 
-                                    padding: '8px', 
-                                    borderRadius: '8px', 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    color: showChat ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.6)' 
+                <div className={styles.mainWrapper}>
+                    <header className={styles.globalHeader}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className={styles.globalHeaderTitle}>LINKB2B Hierarchy Mapper</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
+                            <TriggerNotifications
+                                apiBase={API_BASE_URL}
+                                onOpenChat={(orgId, orgName) => {
+                                    handleOrgClick({ id: orgId, name: orgName }, true);
                                 }}
-                                title={showChat ? "Fechar Assistente" : "Abrir Assistente"}
-                            >
-                                {showChat ? <PanelRightOpen size={20} /> : <PanelRight size={20} />}
-                            </button>
-                        )}
-                        {onLogout && (
-                            <button
-                                onClick={onLogout}
-                                className={`${styles.navIcon}`}
-                                style={{ 
-                                    background: 'transparent', 
-                                    border: 'none', 
-                                    cursor: 'pointer', 
-                                    padding: '8px', 
-                                    borderRadius: '8px', 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    color: 'rgba(255, 255, 255, 0.6)',
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = '#f87171';
-                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
-                                    e.currentTarget.style.background = 'transparent';
-                                }}
-                                title="Sair da Conta"
-                            >
-                                <LogOut size={20} />
-                            </button>
-                        )}
-                    </div>
-                </header>
-
-                <div className={styles.contentWrapper}>
-                    {(activeView === 'graph' || activeView === 'prospecting') && (
-                        <Drawer
-                            showDrawer={showDrawer}
-                            setShowDrawer={handleSetShowDrawer}
-                            searchTerm={searchTerm}
-                            setSearchTerm={setSearchTerm}
-                            filteredOrgs={filteredOrgs}
-                            onOrgClick={handleOrgClick}
-                            onOrgReset={handleOrgReset}
-                            onOrgRenamed={handleOrgRenamed}
-                            isLoading={loadingOrgs}
-                            selectedOrgId={currentOrgId}
-                            selectedOrgLogo={confirmedLogo}
-                            activeJobId={activeJobId}
-                            graphEmployees={rawEmployees}
-                            refreshDetailsTrigger={refreshDrawerTrigger}
-                            addNotification={addNotification}
-                        />
-                    )}
-
-                    <main className={styles.mainContent}>
-                        <NotificationContainer
-                            notifications={notifications}
-                            removeNotification={removeNotification}
-                        />
-
-                        <div className={styles.graphWrapper}>
-                            {activeView === 'graph' && (
-                                <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', position: 'relative' }}>
-                                    <Header confirmedBrand={confirmedBrand} />
-                                    <div style={{ flex: 1, position: 'relative' }}>
-                                        <ReactFlow
-                                    nodes={nodes}
-                                    edges={edges}
-                                    nodeTypes={nodeTypes}
-                                    edgeTypes={edgeTypes}
-                                    onNodesChange={onNodesChange}
-                                    onEdgesChange={onEdgesChange}
-                                    onConnect={onConnect}
-                                    fitView
-                                    minZoom={0.1}
-                                    maxZoom={1.5}
+                            />
+                            {(activeView === 'graph' || activeView === 'prospecting') && (
+                                <button
+                                    onClick={() => handleSetShowChat(!showChat)}
+                                    className={`${styles.navIcon}`}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        padding: '8px',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        color: showChat ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.6)'
+                                    }}
+                                    title={showChat ? "Fechar Assistente" : "Abrir Assistente"}
                                 >
-                                    <SmartBackground />
-                                    <FitViewHandler shouldFitView={shouldFitView} nodes={nodes} />
-                                    <Controls position="top-right" />
-                                        </ReactFlow>
-                                    </div>
-                                </div>
+                                    {showChat ? <PanelRightOpen size={20} /> : <PanelRight size={20} />}
+                                </button>
                             )}
-                            {activeView === 'whatsapp' && (
-                                <div className={styles.whatsappContainer} style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#131313' }}>
-                                    <WhatsAppView
-                                        chatName={activeChatInfo?.name || "WhatsApp"}
-                                        chatId={activeChatInfo?.id}
-                                        onBack={() => setActiveView('graph')}
-                                    />
-                                </div>
-                            )}
-                            {activeView === 'prospecting' && (
-                                <ProspectingView
-                                    coords={prospecting.coords}
-                                    onMapClick={handleProspectMapClick}
-                                    radiusKm={prospecting.radiusKm}
-                                    leads={prospecting.leads}
-                                    selectedLead={prospecting.selectedLead}
-                                    onLeadClick={lead => prospecting.setSelectedLead(
-                                        prev => prev?.id === lead.id ? null : lead
-                                    )}
-                                    onLeadClose={() => prospecting.setSelectedLead(null)}
-                                    onApproveLead={prospecting.approveLead}
-                                    onRejectLead={prospecting.rejectLead}
-                                    onLeadHover={(lead) => setProspectHoveredLeadId(lead?.id || null)}
-                                    session={prospecting.session}
-                                />
-                            )}
-                            {activeView === 'preferences' && (
-                                <PreferencesView onBack={() => setActiveView('graph')} />
+                            {onLogout && (
+                                <button
+                                    onClick={onLogout}
+                                    className={`${styles.navIcon}`}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        padding: '8px',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        transition: 'all 0.2s ease',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.color = '#f87171';
+                                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+                                        e.currentTarget.style.background = 'transparent';
+                                    }}
+                                    title="Sair da Conta"
+                                >
+                                    <LogOut size={20} />
+                                </button>
                             )}
                         </div>
+                    </header>
 
-                        {activeView === 'prospecting' && (
-                            <div className={styles.bottomToolbarRow}>
-                                <FloatingToolbar
-                                    isProspectingMode
-                                    prospectCoords={prospecting.coords}
-                                    prospectRadiusKm={prospecting.radiusKm}
-                                    onProspectRadiusChange={prospecting.setRadiusKm}
-                                    onProspectGeolocate={prospecting.geolocate}
-                                    prospectGeoLoading={prospecting.geoLoading}
-                                    onProspectSearch={handleProspectSearch}
-                                    onProspectStop={prospecting.stopSearch}
-                                    onProspectCepLookup={handleProspectCepLookup}
-                                    prospectCityName={prospecting.cityName}
-                                    prospectSearching={prospecting.searching}
-                                    prospectSession={prospecting.session ?? undefined}
-                                    prospectLeadsCount={prospecting.leads.length}
-                                    prospectTierACount={prospecting.leads.filter(l => l.icp_tier === 'A').length}
-                                    prospectPendingLeads={prospecting.leads.filter(l => l.status === 'pending')}
-                                    onProspectSelectLead={prospecting.setSelectedLead}
-                                    prospectError={prospecting.error}
-                                    prospectSelectedLead={prospecting.selectedLead}
-                                    prospectHoveredLeadId={prospectHoveredLeadId}
-                                    onProspectApproveLead={async (id) => {
-                                        try {
-                                            await prospecting.approveLead(id);
-                                            addNotification('success', "Empresa aprovada e enviada ao Pipedrive!");
-                                            // 🚀 Atualiza o Drawer imediatamente para mostrar a nova empresa
-                                            fetchPipedriveOrgs();
-                                        } catch (e: any) {
-                                            addNotification('error', e.message);
-                                        }
-                                    }}
-                                    onProspectRejectLead={async (id) => {
-                                        try {
-                                            await prospecting.rejectLead(id);
-                                            addNotification('info', "Empresa descartada do radar.");
-                                        } catch (e: any) {
-                                            addNotification('error', e.message);
-                                        }
-                                    }}
-                                    onProspectCloseLead={prospecting.setSelectedLead ? () => prospecting.setSelectedLead(null) : undefined}
-                                    prospectCep={prospecting.cep}
-                                    onProspectCepChange={prospecting.setCep}
-                                    // props obrigatórias do toolbar (não usadas no modo prospecção)
-                                    error={null} handleSearch={() => {}} cnpj="" setCnpj={() => {}}
-                                    confirmedBrand="" setConfirmedBrand={() => {}} confirmedLogo=""
-                                    setConfirmedLogo={() => {}} confirmedFollowers="" setConfirmedFollowers={() => {}}
-                                    domainTarget="" setDomainTarget={() => {}} productFocus="" setProductFocus={() => {}}
-                                    areaFocus="compras" setAreaFocus={() => {}} handleAutoEnrich={() => {}}
-                                    enrichingIds={new Set()} discovering={false} loading={false}
-                                    step="input" brandOptions={[]} onBrandSelect={() => {}}
-                                />
-                            </div>
+                    <div className={styles.contentWrapper}>
+                        {(activeView === 'graph' || activeView === 'prospecting') && (
+                            <Drawer
+                                showDrawer={showDrawer}
+                                setShowDrawer={handleSetShowDrawer}
+                                searchTerm={searchTerm}
+                                setSearchTerm={setSearchTerm}
+                                filteredOrgs={filteredOrgs}
+                                onOrgClick={(org) => handleOrgClick(org, true)}
+                                onOrgReset={handleOrgReset}
+                                onOrgRenamed={handleOrgRenamed}
+                                isLoading={loadingOrgs}
+                                selectedOrgId={currentOrgId}
+                                selectedOrgLogo={confirmedLogo}
+                                activeJobId={activeJobId}
+                                graphEmployees={rawEmployees}
+                                refreshDetailsTrigger={refreshDrawerTrigger}
+                                addNotification={addNotification}
+                            />
                         )}
 
-                        {activeView === 'graph' && (
-                            <div className={styles.bottomToolbarRow}>
-                                <FloatingToolbar
-                                    error={error}
-                                    handleSearch={handleSearch}
-                                    cnpj={cnpj}
-                                    setCnpj={setCnpj}
-                                    confirmedBrand={confirmedBrand}
-                                    setConfirmedBrand={setConfirmedBrand}
-                                    confirmedLogo={confirmedLogo}
-                                    setConfirmedLogo={setConfirmedLogo}
-                                    confirmedFollowers={confirmedFollowers}
-                                    setConfirmedFollowers={setConfirmedFollowers}
-                                    domainTarget={domainTarget}
-                                    setDomainTarget={setDomainTarget}
-                                    productFocus={productFocus}
-                                    setProductFocus={setProductFocus}
-                                    areaFocus={areaFocus}
-                                    setAreaFocus={setAreaFocus}
-                                    handleAutoEnrich={handleAutoEnrich}
-                                    enrichingIds={enrichingIds}
-                                    discovering={discovering}
-                                    loading={loading}
-                                    step={step}
-                                    brandOptions={brandOptions}
-                                    onBrandSelect={handleBrandSelect}
-                                    hasMapping={nodes.some(n => n.id.startsWith('node_'))}
-                                    stopHierarchyScan={() => stopHierarchyScan(addNotification)}
-                                    cancelDiscovery={cancelDiscovery}
-                                    activeJobId={activeJobId}
-                                    isSidebarOpen={showDrawer} // ✅ Corrigido
-                                    isChatOpen={showChat}     // ✅ Corrigido
-                                    onApproveCandidate={async (id) => {
-                                        try {
-                                            await approveCandidate(id);
-                                            addNotification('success', "Perfil aprovado e integrado ao grafo.");
-                                        } catch(e: any) {
-                                            addNotification('error', e.message);
-                                        }
-                                    }}
-                                    onRejectCandidate={async (id) => {
-                                        setConfirmModal({ isOpen: true, empId: id });
-                                    }}
-                                />
+                        <main className={styles.mainContent}>
+                            <NotificationContainer
+                                notifications={notifications}
+                                removeNotification={removeNotification}
+                            />
 
-                                {/* 🎭 ANÁLISE HUMANA BADGE (Independente) */}
-                                {rawEmployees.filter(e => e.role === 'Análise Humana').length > 0 && (
-                                    <div 
-                                        className={styles.humanAnalysisTrigger} 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-
-                                            // 🔄 Lógica de Toggle: Se já estiver mostrando pessoas, fecha ao clicar de novo
-                                            const isAlreadyShowingHuman = brandOptions.length > 0 && brandOptions[0]?.type === 'person';
-                                            if (isAlreadyShowingHuman) {
-                                                setBrandOptions([]);
-                                                return;
-                                            }
-
-                                            const pending = rawEmployees.filter(e => e.role === 'Análise Humana');
-                                            const candidates = pending.map(p => ({
-                                                name: p.name,
-                                                logo: getAvatarUrl(p),
-                                                followers: p.department || (p.role === 'Análise Humana' ? 'Review Pendente' : p.role),
-                                                type: 'person',
-                                                id: p.id,
-                                                originalEmployee: p
-                                            }));
-                                            setBrandOptions(candidates);
-                                            // Mantemos o step atual conforme pedido pelo usuário
-                                        }}
-                                    >
-                                 {(() => {
-                                                const humanPending = rawEmployees.filter(e => e.role === 'Análise Humana');
-                                                if (humanPending.length === 0) return null;
-                                                
-                                                // Pegamos até os 3 primeiros para o efeito de stack
-                                                const stack = humanPending.slice(0, 3);
-                                                
-                                                return (
-                                                    <div className={styles.humanAnalysisAvatarStack}>
-                                                        {stack.map((node, idx) => {
-                                                            const rawUrl = getAvatarUrl(node);
-                                                            const proxiedUrl = getProxiedUrl(rawUrl);
-                                                            
-                                                            return (
-                                                                <div 
-                                                                    key={node.id} 
-                                                                    className={`${styles.humanAnalysisStackedAvatar} ${styles[`stackLayer${idx}`]}`}
-                                                                >
-                                                                    {proxiedUrl ? (
-                                                                        <img
-                                                                            src={proxiedUrl}
-                                                                            alt=""
-                                                                            onError={(e) => {
-                                                                                const target = e.target as HTMLImageElement;
-                                                                                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(node.name || 'P')}&background=ffab00&color=fff&bold=true&rounded=true&size=128`;
-                                                                            }}
-                                                                        />
-                                                                    ) : (
-                                                                        <div className={styles.humanAnalysisAvatarPlaceholder}>
-                                                                            <Users size={idx === 0 ? 20 : 14} />
-                                                                        </div>
-                                                                    )}
-                                                                    
-                                                                    {/* O badge de notificação só aparece no avatar do topo */}
-                                                                    {idx === 0 && humanPending.length > 0 && (
-                                                                        <div className={styles.humanAnalysisNotification}>
-                                                                            {humanPending.length}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                );
-                                            })()}
-                                        <div className={styles.humanAnalysisList}>
-                                            <div className={styles.humanAnalysisListTitle}>Análise Humana Pendente</div>
-                                            {rawEmployees.filter(e => e.role === 'Análise Humana').slice(0, 15).map((n, i) => {
-                                                const rawUrl = getAvatarUrl(n);
-                                                const proxiedUrl = getProxiedUrl(rawUrl);
-                                                return (
-                                                    <div key={i} className={styles.humanAnalysisCard}>
-                                                        {proxiedUrl ? (
-                                                            <img
-                                                                className={styles.humanAnalysisCardAvatar}
-                                                                src={proxiedUrl}
-                                                                alt={n.name}
-                                                                onError={(e) => {
-                                                                    const target = e.target as HTMLImageElement;
-                                                                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(n.name || 'P')}&background=ffab00&color=fff&bold=true&rounded=true&size=128`;
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <Users 
-                                                                className={styles.humanAnalysisCardAvatar}
-                                                                size={14} 
-                                                            />
-                                                        )}
-                                                        <div className={styles.humanAnalysisCardInfo}>
-                                                            <div className={styles.humanAnalysisCardName}>{n.name}</div>
-                                                            <div className={styles.humanAnalysisCardSub}>Cargo não identificado</div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                            <div className={styles.graphWrapper}>
+                                {activeView === 'graph' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', position: 'relative' }}>
+                                        <Header confirmedBrand={confirmedBrand} />
+                                        <div style={{ flex: 1, position: 'relative' }}>
+                                            <ReactFlow
+                                                nodes={nodes}
+                                                edges={edges}
+                                                nodeTypes={nodeTypes}
+                                                edgeTypes={edgeTypes}
+                                                onNodesChange={onNodesChange}
+                                                onEdgesChange={onEdgesChange}
+                                                onConnect={onConnect}
+                                                fitView
+                                                minZoom={0.1}
+                                                maxZoom={1.5}
+                                            >
+                                                <SmartBackground />
+                                                <FitViewHandler shouldFitView={shouldFitView} nodes={nodes} />
+                                                <Controls position="top-right" />
+                                            </ReactFlow>
                                         </div>
                                     </div>
                                 )}
+                                {activeView === 'whatsapp' && (
+                                    <div className={styles.whatsappContainer} style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#131313' }}>
+                                        <WhatsAppView
+                                            chatName={activeChatInfo?.name || "WhatsApp"}
+                                            chatId={activeChatInfo?.id}
+                                            onBack={() => setActiveView('graph')}
+                                        />
+                                    </div>
+                                )}
+                                {activeView === 'prospecting' && (
+                                    <ProspectingView
+                                        coords={prospecting.coords}
+                                        onMapClick={handleProspectMapClick}
+                                        radiusKm={prospecting.radiusKm}
+                                        leads={prospecting.leads}
+                                        selectedLead={prospecting.selectedLead}
+                                        onLeadClick={lead => prospecting.setSelectedLead(
+                                            prev => prev?.id === lead.id ? null : lead
+                                        )}
+                                        onLeadClose={() => prospecting.setSelectedLead(null)}
+                                        onApproveLead={prospecting.approveLead}
+                                        onRejectLead={prospecting.rejectLead}
+                                        onLeadHover={(lead) => setProspectHoveredLeadId(lead?.id || null)}
+                                        session={prospecting.session}
+                                    />
+                                )}
+                                {activeView === 'preferences' && (
+                                    <PreferencesView onBack={() => setActiveView('graph')} />
+                                )}
                             </div>
-                        )}
-                    </main>
 
-                    {showChat && (activeView === 'graph' || activeView === 'prospecting') && (
-                        <ChatPanel
-                            showChat={showChat}
-                            setShowChat={handleSetShowChat}
-                            selectedOrgId={currentOrgId}
-                            selectedOrgName={confirmedBrand}
-                            selectedOrgLogo={confirmedLogo}
-                            theme={theme}
-                            onToggleTheme={toggleTheme}
-                            onOpenWhatsApp={(info) => {
-                                setActiveChatInfo(info);
-                                setActiveView('whatsapp');
+                            {activeView === 'prospecting' && (
+                                <div className={styles.bottomToolbarRow}>
+                                    <FloatingToolbar
+                                        isProspectingMode
+                                        prospectCoords={prospecting.coords}
+                                        prospectRadiusKm={prospecting.radiusKm}
+                                        onProspectRadiusChange={prospecting.setRadiusKm}
+                                        onProspectGeolocate={prospecting.geolocate}
+                                        prospectGeoLoading={prospecting.geoLoading}
+                                        onProspectSearch={handleProspectSearch}
+                                        onProspectStop={prospecting.stopSearch}
+                                        onProspectCepLookup={handleProspectCepLookup}
+                                        prospectCityName={prospecting.cityName}
+                                        prospectSearching={prospecting.searching}
+                                        prospectSession={prospecting.session ?? undefined}
+                                        prospectLeadsCount={prospecting.leads.length}
+                                        prospectTierACount={prospecting.leads.filter(l => l.icp_tier === 'A').length}
+                                        prospectPendingLeads={prospecting.leads.filter(l => l.status === 'pending')}
+                                        onProspectSelectLead={prospecting.setSelectedLead}
+                                        prospectError={prospecting.error}
+                                        prospectSelectedLead={prospecting.selectedLead}
+                                        prospectHoveredLeadId={prospectHoveredLeadId}
+                                        onProspectApproveLead={async (id) => {
+                                            try {
+                                                await prospecting.approveLead(id);
+                                                addNotification('success', "Empresa aprovada e enviada ao Pipedrive!");
+                                                // 🚀 Atualiza o Drawer imediatamente para mostrar a nova empresa
+                                                fetchPipedriveOrgs();
+                                            } catch (e: any) {
+                                                addNotification('error', e.message);
+                                            }
+                                        }}
+                                        onProspectRejectLead={async (id) => {
+                                            try {
+                                                await prospecting.rejectLead(id);
+                                                addNotification('info', "Empresa descartada do radar.");
+                                            } catch (e: any) {
+                                                addNotification('error', e.message);
+                                            }
+                                        }}
+                                        onProspectCloseLead={prospecting.setSelectedLead ? () => prospecting.setSelectedLead(null) : undefined}
+                                        prospectCep={prospecting.cep}
+                                        onProspectCepChange={prospecting.setCep}
+                                        // props obrigatórias do toolbar (não usadas no modo prospecção)
+                                        error={null} handleSearch={() => { }} cnpj="" setCnpj={() => { }}
+                                        confirmedBrand="" setConfirmedBrand={() => { }} confirmedLogo=""
+                                        setConfirmedLogo={() => { }} confirmedFollowers="" setConfirmedFollowers={() => { }}
+                                        domainTarget="" setDomainTarget={() => { }} productFocus="" setProductFocus={() => { }}
+                                        areaFocus="compras" setAreaFocus={() => { }} handleAutoEnrich={() => { }}
+                                        enrichingIds={new Set()} discovering={false} loading={false}
+                                        step="input" brandOptions={[]} onBrandSelect={() => { }}
+                                    />
+                                </div>
+                            )}
+
+                            {activeView === 'graph' && (
+                                <div className={styles.bottomToolbarRow}>
+                                    <FloatingToolbar
+                                        error={error}
+                                        handleSearch={handleSearch}
+                                        cnpj={cnpj}
+                                        setCnpj={setCnpj}
+                                        confirmedBrand={confirmedBrand}
+                                        setConfirmedBrand={setConfirmedBrand}
+                                        confirmedLogo={confirmedLogo}
+                                        setConfirmedLogo={setConfirmedLogo}
+                                        confirmedFollowers={confirmedFollowers}
+                                        setConfirmedFollowers={setConfirmedFollowers}
+                                        domainTarget={domainTarget}
+                                        setDomainTarget={setDomainTarget}
+                                        productFocus={productFocus}
+                                        setProductFocus={setProductFocus}
+                                        areaFocus={areaFocus}
+                                        setAreaFocus={setAreaFocus}
+                                        handleAutoEnrich={handleAutoEnrich}
+                                        enrichingIds={enrichingIds}
+                                        discovering={discovering}
+                                        loading={loading}
+                                        step={step}
+                                        brandOptions={brandOptions}
+                                        onBrandSelect={handleBrandSelect}
+                                        hasMapping={nodes.some(n => n.id.startsWith('node_'))}
+                                        stopHierarchyScan={() => stopHierarchyScan(addNotification)}
+                                        cancelDiscovery={cancelDiscovery}
+                                        activeJobId={activeJobId}
+                                        isSidebarOpen={showDrawer} // ✅ Corrigido
+                                        isChatOpen={showChat}     // ✅ Corrigido
+                                        onApproveCandidate={async (id) => {
+                                            try {
+                                                await approveCandidate(id);
+                                                addNotification('success', "Perfil aprovado e integrado ao grafo.");
+                                            } catch (e: any) {
+                                                addNotification('error', e.message);
+                                            }
+                                        }}
+                                        onRejectCandidate={async (id) => {
+                                            setConfirmModal({ isOpen: true, empId: id });
+                                        }}
+                                    >
+                                        {/* 🎭 ANÁLISE HUMANA BADGE (Independente) */}
+                                        {rawEmployees.filter(e => e.role === 'Análise Humana').length > 0 && (
+                                            <div
+                                                className={styles.humanAnalysisTrigger}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+
+                                                    // 🔄 Lógica de Toggle: Se já estiver mostrando pessoas, fecha ao clicar de novo
+                                                    const isAlreadyShowingHuman = brandOptions.length > 0 && brandOptions[0]?.type === 'person';
+                                                    if (isAlreadyShowingHuman) {
+                                                        setBrandOptions([]);
+                                                        return;
+                                                    }
+
+                                                    const pending = rawEmployees.filter(e => e.role === 'Análise Humana');
+                                                    const candidates = pending.map(p => ({
+                                                        name: p.name,
+                                                        logo: getAvatarUrl(p),
+                                                        followers: p.department || (p.role === 'Análise Humana' ? 'Review Pendente' : p.role),
+                                                        type: 'person',
+                                                        id: p.id,
+                                                        originalEmployee: p
+                                                    }));
+                                                    setBrandOptions(candidates);
+                                                    // Mantemos o step atual conforme pedido pelo usuário
+                                                }}
+                                            >
+                                                {(() => {
+                                                    const humanPending = rawEmployees.filter(e => e.role === 'Análise Humana');
+                                                    if (humanPending.length === 0) return null;
+
+                                                    // Pegamos até os 3 primeiros para o efeito de stack
+                                                    const stack = humanPending.slice(0, 3);
+
+                                                    return (
+                                                        <div className={styles.humanAnalysisAvatarStack}>
+                                                            {stack.map((node, idx) => {
+                                                                const rawUrl = getAvatarUrl(node);
+                                                                const proxiedUrl = getProxiedUrl(rawUrl);
+
+                                                                return (
+                                                                    <div
+                                                                        key={node.id}
+                                                                        className={`${styles.humanAnalysisStackedAvatar} ${styles[`stackLayer${idx}`]}`}
+                                                                    >
+                                                                        {proxiedUrl ? (
+                                                                            <img
+                                                                                src={proxiedUrl}
+                                                                                alt=""
+                                                                                onError={(e) => {
+                                                                                    const target = e.target as HTMLImageElement;
+                                                                                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(node.name || 'P')}&background=ffab00&color=fff&bold=true&rounded=true&size=128`;
+                                                                                }}
+                                                                            />
+                                                                        ) : (
+                                                                            <div className={styles.humanAnalysisAvatarPlaceholder}>
+                                                                                <Users size={idx === 0 ? 20 : 14} />
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* O badge de notificação só aparece no avatar do topo */}
+                                                                        {idx === 0 && humanPending.length > 0 && (
+                                                                            <div className={styles.humanAnalysisNotification}>
+                                                                                {humanPending.length}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    );
+                                                })()}
+                                                <div className={styles.humanAnalysisList}>
+                                                    <div className={styles.humanAnalysisListTitle}>Análise Humana Pendente</div>
+                                                    {rawEmployees.filter(e => e.role === 'Análise Humana').slice(0, 15).map((n, i) => {
+                                                        const rawUrl = getAvatarUrl(n);
+                                                        const proxiedUrl = getProxiedUrl(rawUrl);
+                                                        return (
+                                                            <div key={i} className={styles.humanAnalysisCard}>
+                                                                {proxiedUrl ? (
+                                                                    <img
+                                                                        className={styles.humanAnalysisCardAvatar}
+                                                                        src={proxiedUrl}
+                                                                        alt={n.name}
+                                                                        onError={(e) => {
+                                                                            const target = e.target as HTMLImageElement;
+                                                                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(n.name || 'P')}&background=ffab00&color=fff&bold=true&rounded=true&size=128`;
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <Users
+                                                                        className={styles.humanAnalysisCardAvatar}
+                                                                        size={14}
+                                                                    />
+                                                                )}
+                                                                <div className={styles.humanAnalysisCardInfo}>
+                                                                    <div className={styles.humanAnalysisCardName}>{n.name}</div>
+                                                                    <div className={styles.humanAnalysisCardSub}>Cargo não identificado</div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </FloatingToolbar>
+                                </div>
+                            )}
+                        </main>
+
+                        {showChat && (activeView === 'graph' || activeView === 'prospecting') && (
+                            <ChatPanel
+                                showChat={showChat}
+                                setShowChat={handleSetShowChat}
+                                selectedOrgId={chatOrgId}
+                                selectedOrgName={confirmedBrand}
+                                selectedOrgLogo={confirmedLogo}
+                                theme={theme}
+                                onToggleTheme={toggleTheme}
+                                onOpenWhatsApp={(info) => {
+                                    setActiveChatInfo(info);
+                                    setActiveView('whatsapp');
+                                }}
+                            />
+                        )}
+
+                        <ConfirmModal
+                            isOpen={confirmModal.isOpen}
+                            title="Descartar Perfil"
+                            message="Deseja realmente descartar este perfil? Esta ação removerá o candidato do banco de dados permanentemente."
+                            confirmLabel="Descartar"
+                            cancelLabel="Manter"
+                            onCancel={() => setConfirmModal({ isOpen: false, empId: null })}
+                            onConfirm={async () => {
+                                if (confirmModal.empId) {
+                                    try {
+                                        await rejectCandidate(confirmModal.empId);
+                                        addNotification('info', "Perfil descartado com sucesso.");
+                                    } catch (e: any) {
+                                        addNotification('error', e.message);
+                                    }
+                                }
+                                setConfirmModal({ isOpen: false, empId: null });
                             }}
                         />
-                    )}
-
-                    <ConfirmModal 
-                        isOpen={confirmModal.isOpen}
-                        title="Descartar Perfil"
-                        message="Deseja realmente descartar este perfil? Esta ação removerá o candidato do banco de dados permanentemente."
-                        confirmLabel="Descartar"
-                        cancelLabel="Manter"
-                        onCancel={() => setConfirmModal({ isOpen: false, empId: null })}
-                        onConfirm={async () => {
-                            if (confirmModal.empId) {
-                                try {
-                                    await rejectCandidate(confirmModal.empId);
-                                    addNotification('info', "Perfil descartado com sucesso.");
-                                } catch(e: any) {
-                                    addNotification('error', e.message);
-                                }
-                            }
-                            setConfirmModal({ isOpen: false, empId: null });
-                        }}
-                    />
+                    </div>
                 </div>
             </div>
-        </div>
 
         </>
     );

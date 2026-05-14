@@ -10,9 +10,12 @@ import re
 import unicodedata
 import smtplib
 import imaplib
+import mimetypes
 import email
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
 # Tenta importar win32com para a "mágica" do Windows/Outlook
 try:
@@ -94,7 +97,7 @@ class EmailClient:
         log.error("email.outlook.error", context=context_msg, error=e)
         return False
 
-    def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False):
+    def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False, attachment_paths: Optional[List[str]] = None):
         """
         Envia e-mail via Outlook App ou SMTP com suporte a Recibo de Leitura.
         """
@@ -152,6 +155,16 @@ class EmailClient:
                                 mail._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
                                 break
                     
+                    # Anexos (aceita lista de caminhos absolutos)
+                    if attachment_paths:
+                        for ap in attachment_paths:
+                            if ap and os.path.exists(ap):
+                                try:
+                                    mail.Attachments.Add(ap)
+                                    log.info("email.outlook.attachment_added", path=ap)
+                                except Exception as ae:
+                                    log.warning("email.outlook.attachment_failed", path=ap, error=ae)
+
                     mail.Send()
                     log.info("email.sent.success", provider="outlook", to=to_email)
                     return True
@@ -169,6 +182,23 @@ class EmailClient:
             msg['To'] = to_email
             msg['Subject'] = subject
             msg.attach(MIMEText(final_body, 'html'))
+
+            # Anexos SMTP
+            if attachment_paths:
+                for ap in attachment_paths:
+                    if ap and os.path.exists(ap):
+                        try:
+                            mime_type, _ = mimetypes.guess_type(ap)
+                            main_type, sub_type = (mime_type.split('/') if mime_type else ('application', 'octet-stream'))
+                            with open(ap, 'rb') as f:
+                                part = MIMEBase(main_type, sub_type)
+                                part.set_payload(f.read())
+                            encoders.encode_base64(part)
+                            part.add_header('Content-Disposition', 'attachment', filename=os.path.basename(ap))
+                            msg.attach(part)
+                            log.info("email.smtp.attachment_added", path=ap)
+                        except Exception as ae:
+                            log.warning("email.smtp.attachment_failed", path=ap, error=ae)
 
             try:
                 server = smtplib.SMTP(self.SMTP_SERVER, self.SMTP_PORT)

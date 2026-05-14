@@ -51,7 +51,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 20px;
+  font-size: var(--font-lg);
   font-weight: 700;
   color: #ffffff;
   letter-spacing: -0.5px;
@@ -71,7 +71,7 @@
 }
 
 .brandTitle {
-  font-size: 34px;
+  font-size: var(--font-2xl);
   font-weight: 700;
   color: #ffffff;
   line-height: 1.25;

@@ -665,10 +665,13 @@ Retorne JSON:
                 # Gera action_id único e armazena no dicionário de ações pendentes
                 import uuid
                 action_id = str(uuid.uuid4())
-                # org_id extraído do contexto para uso no ActivityLog
                 _org_id = None
-                if raw_context:
-                    _org_id = (raw_context.get("organization") or {}).get("id") or (raw_context.get("org") or {}).get("id")
+                if raw_context and isinstance(raw_context, dict):
+                    org_ctx = raw_context.get("organization")
+                    org_ctx_id = org_ctx.get("id") if isinstance(org_ctx, dict) else None
+                    org_val = raw_context.get("org")
+                    org_val_id = org_val.get("id") if isinstance(org_val, dict) else None
+                    _org_id = org_ctx_id or org_val_id
                 AgentService._pending_actions[action_id] = {
                     "action": action,
                     "params": params,

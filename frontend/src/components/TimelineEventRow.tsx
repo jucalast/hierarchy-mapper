@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
-    User, Building2, Check 
+    User, Building2, Check, Sparkles
 } from 'lucide-react';
 import styles from './HistoryTimeline.module.css';
 
@@ -8,6 +8,7 @@ export type TimelineEvent = {
     id: string | number;
     type: 'activity' | 'note' | 'update';
     timestamp: string;
+    dueDate?: string;
     title: string;
     subtext?: string;
     content?: string;
@@ -26,6 +27,7 @@ interface TimelineEventRowProps {
 }
 
 export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLast, hasBackground }) => {
+    const [showMenu, setShowMenu] = useState(false);
     const formatDateTime = (ts: string) => {
         if (!ts) return '';
         try {
@@ -78,12 +80,111 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
 
             {/* Conteúdo do Card */}
             <div className={`${styles.eventCard} ${event.done ? styles.eventCardDone : ''} ${hasBackground ? styles.cardWithBg : ''}`}>
-                <div className={styles.eventHeader}>
+                <div className={styles.eventHeader} style={{ position: 'relative' }}>
                     <div className={styles.titleArea}>
                         {event.done && <Check size={12} className={styles.doneCheck} />}
                         <span className={styles.eventTitle}>{event.title}</span>
                     </div>
-                    <span className={styles.moreOptions}>•••</span>
+                    <div style={{ position: 'relative' }}>
+                        <span 
+                            className={styles.moreOptions}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowMenu(prev => !prev);
+                            }}
+                            style={{ 
+                                padding: '4px 8px', 
+                                borderRadius: 4, 
+                                background: showMenu ? 'rgba(255,255,255,0.08)' : 'transparent',
+                                color: showMenu ? '#fff' : undefined,
+                            }}
+                        >
+                            •••
+                        </span>
+                        {showMenu && (
+                            <>
+                                {/* Overlay invisível para fechar ao clicar fora */}
+                                <div 
+                                    style={{
+                                        position: 'fixed',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        zIndex: 999,
+                                        cursor: 'default',
+                                    }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMenu(false);
+                                    }}
+                                />
+                                <div 
+                                    style={{
+                                        position: 'absolute',
+                                        right: 0,
+                                        top: '100%',
+                                        marginTop: 4,
+                                        background: 'rgba(20, 20, 20, 0.95)',
+                                        backdropFilter: 'blur(12px)',
+                                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                                        borderRadius: 8,
+                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+                                        zIndex: 1000,
+                                        minWidth: 160,
+                                        overflow: 'hidden',
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <button
+                                        onClick={() => {
+                                            setShowMenu(false);
+                                            // Mapeia títulos de atividade Pipedrive para instruções claras
+                                            const titleLower = event.title.toLowerCase();
+                                            let taskInstruction = `realizar a tarefa "${event.title}"`;
+                                            if (titleLower.includes('encontrar contato') || titleLower.includes('encontrar decisor')) {
+                                                taskInstruction = `encontrar o contato/decisor real da empresa${event.company ? ` ${event.company}` : ''}. Se não houver contato com canal válido cadastrado no CRM, abra o mapeador de hierarquia (open_hierarchy_drawer) para identificar o decisor`;
+                                            } else if (titleLower.includes('ligar') || titleLower.includes('ligação')) {
+                                                taskInstruction = `executar a ligação "${event.title}"${event.contact ? ` com ${event.contact}` : ''}`;
+                                            } else if (titleLower.includes('enviar') || titleLower.includes('email') || titleLower.includes('whatsapp')) {
+                                                taskInstruction = `executar o envio: "${event.title}"${event.contact ? ` para ${event.contact}` : ''}`;
+                                            } else if (titleLower.includes('follow') || titleLower.includes('retorno') || titleLower.includes('cobrança')) {
+                                                taskInstruction = `executar o follow-up "${event.title}"${event.contact ? ` com ${event.contact}` : ''}. Analise o histórico e execute a ação de comunicação mais adequada`;
+                                            }
+                                            const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction}${event.company ? ` para a empresa ${event.company}` : ''}. Use as ferramentas para executar isso agora.`;
+                                            window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText } }));
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 14px',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'rgba(255, 255, 255, 0.9)',
+                                            fontSize: '12px',
+                                            fontWeight: 500,
+                                            textAlign: 'left',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 8,
+                                            transition: 'background 0.2s, color 0.2s',
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                                            e.currentTarget.style.color = '#fff';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'transparent';
+                                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)';
+                                        }}
+                                    >
+                                        <Sparkles size={12} />
+                                        Fazer com o agente
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 <div className={styles.eventMeta}>

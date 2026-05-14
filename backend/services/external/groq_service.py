@@ -35,12 +35,12 @@ class GroqService:
         # api_key é ignorado — a chave vem de settings (centralizado)
         self.api_key = api_key
 
-    async def ask(self, prompt: str, json_mode: bool = False) -> Dict[str, Any]:
+    async def ask(self, prompt: str, json_mode: bool = False, tier: LLMTier = LLMTier.FAST) -> Dict[str, Any]:
         try:
             result = await ask_llm(
                 prompt=prompt,
                 json_mode=json_mode,
-                tier=LLMTier.STANDARD,
+                tier=tier,
             )
         except NoProviderAvailableError as e:
             return {"error": str(e)}

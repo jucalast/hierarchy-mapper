@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    Mail, ExternalLink, CheckCheck, User2, Reply, Send, XCircle, Loader2, ShieldCheck, CornerDownLeft
+    Mail, ExternalLink, CheckCheck, User2, Reply, Send, XCircle, Loader2, ShieldCheck, CornerDownLeft, Wand2
 } from 'lucide-react';
 import styles from '../../ChatPanel.module.css';
 
@@ -17,6 +17,11 @@ interface ThreadCardProps {
     originalSubject?: string;
     /** Para modo histórico: lista de mensagens {body, fromMe, timestamp} */
     historyMessages?: Array<{ body: string; fromMe: boolean; timestamp?: number }>;
+    /** Props de refinamento de mensagem */
+    refineText?: string;
+    onRefineChange?: (v: string) => void;
+    onRefine?: () => void;
+    isRefining?: boolean;
 }
 
 /**
@@ -32,6 +37,10 @@ export const WhatsAppThreadCard: React.FC<ThreadCardProps> = ({
     onReject,
     onOpenExternal,
     historyMessages,
+    refineText,
+    onRefineChange,
+    onRefine,
+    isRefining,
 }) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const isPending = status === 'pending';
@@ -166,6 +175,32 @@ export const WhatsAppThreadCard: React.FC<ThreadCardProps> = ({
                       )}
             </div>
 
+            {/* ── Refine area (apenas quando pending e callback fornecido) ── */}
+            {isPending && onRefine && (
+                <div className={styles.refineRow}>
+                    <input
+                        className={styles.refineInput}
+                        value={refineText ?? ''}
+                        onChange={e => onRefineChange?.(e.target.value)}
+                        placeholder="O que você quer mudar na mensagem?"
+                        disabled={isRefining}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter' && refineText?.trim() && !isRefining) onRefine();
+                        }}
+                    />
+                    <button
+                        className={styles.refineBtn}
+                        onClick={onRefine}
+                        disabled={isRefining || !refineText?.trim()}
+                    >
+                        {isRefining
+                            ? <Loader2 size={12} className={styles.spinner} />
+                            : <Wand2 size={12} />}
+                        <span>{isRefining ? 'Refinando...' : 'Refinar'}</span>
+                    </button>
+                </div>
+            )}
+
             {/* ── Approval Controls (apenas no modo pending/approving/etc.) ── */}
             {status && (
                 <div className={styles.approvalActionsInCard}>
@@ -199,7 +234,8 @@ export const WhatsAppThreadCard: React.FC<ThreadCardProps> = ({
 };
 
 export const EmailThreadCard: React.FC<ThreadCardProps> = ({
-    contact, sentMessage, subject, status, onApprove, onReject, onOpenExternal, isReply, originalSubject, historyMessages
+    contact, sentMessage, subject, status, onApprove, onReject, onOpenExternal, isReply, originalSubject, historyMessages,
+    refineText, onRefineChange, onRefine, isRefining,
 }) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const isPending = status === 'pending';
@@ -305,6 +341,32 @@ export const EmailThreadCard: React.FC<ThreadCardProps> = ({
                             <div className={styles.emailTime}>{time}</div>
                         </div>
                     </>
+                )}
+
+                {/* Refine area (email) */}
+                {isPending && onRefine && (
+                    <div className={styles.refineRow}>
+                        <input
+                            className={styles.refineInput}
+                            value={refineText ?? ''}
+                            onChange={e => onRefineChange?.(e.target.value)}
+                            placeholder="O que você quer mudar na mensagem?"
+                            disabled={isRefining}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && refineText?.trim() && !isRefining) onRefine();
+                            }}
+                        />
+                        <button
+                            className={styles.refineBtn}
+                            onClick={onRefine}
+                            disabled={isRefining || !refineText?.trim()}
+                        >
+                            {isRefining
+                                ? <Loader2 size={12} className={styles.spinner} />
+                                : <Wand2 size={12} />}
+                            <span>{isRefining ? 'Refinando...' : 'Refinar'}</span>
+                        </button>
+                    </div>
                 )}
 
                 {/* Approval Controls */}

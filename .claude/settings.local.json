@@ -78,7 +78,13 @@
       "Bash(Select-Object -Last 5)",
       "PowerShell(Get-Content \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\backend\\\\logs\\\\agent_v2_debug.md\" -Tail 200 | Where-Object { $_ -match \"0d01ae084e564230\" } | Select-Object -Last 60)",
       "PowerShell(Get-Content \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\backend\\\\logs\\\\agent_v2_raw.log\" -Tail 200 | Where-Object { $_ -match \"0d01ae084e564230\" })",
-      "PowerShell(Get-Content \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\engine_raw.log\" -Tail 300 | Where-Object { $_ -match \"0d01ae\" } | Select-Object -Last 80)"
+      "PowerShell(Get-Content \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\engine_raw.log\" -Tail 300 | Where-Object { $_ -match \"0d01ae\" } | Select-Object -Last 80)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\" -Recurse -Directory)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\backend\\\\logs\\\\agent_v2_raw.log\" -Tail 50)",
+      "Bash(Select-Object -Last 50)",
+      "Bash(powershell *)",
+      "Bash(findstr /I \"mackee compressao laboratorio autoridade tecnica\" \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\services\\\\ai\\\\prompts.py\")"
     ]
   }
 }

@@ -1,511 +1,1019 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  background-color: #131313;
-  /* Matches standard header/sidenav background */
-  color: rgba(255, 255, 255, 0.9);
-  padding: 32px 40px;
-  /* Increased padding for breathing room */
-  overflow-y: auto;
-  font-family: var(--font-primary);
-  /* Explicit Nexa base */
-  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 40px;
-  /* Spaced out from content grid */
-}
-
-.titleArea {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.title {
-  font-family: var(--font-primary);
-  font-size: var(--font-xl);
-  /* Slight increase for bold Nexa */
-  font-weight: 500;
-  /* Nexa Heavy */
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  letter-spacing: -0.2px;
-}
-
-.subtitle {
-  font-family: var(--font-primary);
-  font-size: var(--font-sm);
-  font-weight: 300;
-  /* Nexa ExtraLight */
-  color: rgba(255, 255, 255, 0.4);
-  /* Clean muted metadata */
-}
-
-.backBtn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: transparent !important;
-  border: none !important;
-  padding: 4px 0;
-  border-radius: 0;
-  color: var(--sw-primary);
-  cursor: pointer;
-  font-family: var(--font-primary);
-  font-weight: 500;
-  font-size: var(--font-sm);
-  transition: all 0.2s ease;
-}
-
-.backBtn:hover {
-  background-color: transparent !important;
-  border-color: transparent !important;
-  color: #ffffff;
-}
-
-.dashboardContainer {
-  width: 100%;
-}
-
-/* Fully transparent seamless outer layout boxes */
-.card {
-  background-color: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  /* Generous spacing inside settings forms */
-}
-
-.cardTitle {
-  font-family: var(--font-primary);
-  font-size: var(--font-sm);
-  /* Strong contrast spacing */
-  font-weight: 500;
-  /* Nexa Heavy */
-  color: rgba(255, 255, 255, 0.55);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 14px;
-}
-
-.cardTitleText {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.formGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  /* Spaced labels from select inputs */
-}
-
-.label {
-  font-family: var(--font-primary);
-  font-size: var(--font-xs);
-  font-weight: 500;
-  /* Nexa Heavy */
-  color: rgba(255, 255, 255, 0.4);
-  /* Matching standard metadata labels */
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.select {
-  background-color: #1a1a1a;
-  /* Professional dark input field */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  color: #ffffff;
-  padding: 12px;
-  font-size: var(--font-sm);
-  font-family: var(--font-primary);
-  font-weight: 300;
-  /* Nexa ExtraLight */
-  outline: none;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.select option {
-  background-color: #131313;
-  color: #ffffff;
-  font-family: var(--font-primary);
-  font-weight: 300;
-}
-
-.select:hover {
-  background-color: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.select:focus {
-  border-color: #3b82f6;
-}
-
-.checkboxContainer {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 16px;
-  /* Spaced out inner margins */
-  border-radius: 6px;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.2s;
-}
-
-.checkboxContainer:hover {
-  background-color: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.checkbox {
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
-  cursor: pointer;
-  margin-top: 3px;
-}
-
-.checkboxText {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.checkboxLabel {
-  font-family: var(--font-primary);
-  font-weight: 500;
-  /* Nexa Heavy */
-  font-size: var(--font-sm);
-  color: #ffffff;
-}
-
-.checkboxSub {
-  font-family: var(--font-primary);
-  font-weight: 300;
-  /* Nexa ExtraLight */
-  font-size: var(--font-xs);
-  color: rgba(255, 255, 255, 0.4);
-  line-height: 1.5;
-}
-
-.saveBtn {
-  background: #3b82f6;
-  color: #ffffff;
-  border: none;
-  padding: 14px;
-  border-radius: 6px;
-  font-size: var(--font-sm);
-  font-family: var(--font-primary);
-  font-weight: 500;
-  /* Nexa Heavy */
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.2s;
-}
-
-.saveBtn:hover {
-  background: #2563eb;
-}
-
-.saveBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.providersList {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.providerCard {
-  background-color: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.2s;
-}
-
-.providerCard:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.providerHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  /* Enhanced space in provider header */
-  background-color: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.providerBrand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.providerName {
-  font-family: var(--font-primary);
-  font-size: var(--font-base);
-  font-weight: 500;
-  /* Nexa Heavy */
-  color: #ffffff;
-  letter-spacing: 0.2px;
-}
-
-/* High-Density status badges matching system draft badges */
-.providerBadge {
-  font-family: var(--font-primary);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.05em;
-  padding: 0;
-  border-radius: 0;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.badgeHealthy {
-  background-color: transparent !important;
-  color: #34d17c;
-  border: none !important;
-}
-
-.badgeWarning {
-  background-color: transparent !important;
-  color: #f59e0b;
-  border: none !important;
-}
-
-.badgeCritical {
-  background-color: transparent !important;
-  color: #ef4444;
-  border: none !important;
-}
-
-.providerContent {
-  padding: 20px;
-  /* Increased internal padding */
-  background-color: transparent !important;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  /* Spaced out model rows inside cards */
-}
-
-.modelRow {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  /* Clear vertical gap inside progress bar items */
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.modelRow:last-child {
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-.modelInfo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.modelName {
-  font-size: var(--font-sm);
-  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 600;
-}
-
-.modelStats {
-  font-family: var(--font-primary);
-  font-size: var(--font-xs);
-  font-weight: 300;
-  /* Nexa ExtraLight */
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.modelStatsHighlight {
-  font-family: var(--font-primary);
-  color: #ffffff;
-  font-weight: 500;
-  /* Nexa Heavy */
-}
-
-.progressContainer {
-  position: relative;
-  width: 100%;
-  height: 6px;
-  background-color: rgba(255, 255, 255, 0.04);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.progressBar {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.progressGreen {
-  background-color: #34d17c;
-}
-
-.progressOrange {
-  background-color: #f59e0b;
-}
-
-.progressRed {
-  background-color: #ef4444;
-}
-
-.tokenStats {
-  font-family: var(--font-primary);
-  font-size: var(--font-xs);
-  font-weight: 300;
-  /* Nexa ExtraLight */
-  color: rgba(255, 255, 255, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  margin-top: 4px;
-}
-
-.refreshingIndicator {
-  font-family: var(--font-primary);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--font-xs);
-  font-weight: 500;
-  /* Nexa Heavy */
-  color: rgba(255, 255, 255, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.noDataText {
-  font-family: var(--font-primary);
-  font-weight: 300;
-  /* Nexa ExtraLight */
-  color: rgba(255, 255, 255, 0.35);
-  text-align: center;
-  padding: 32px 0;
-  font-size: var(--font-sm);
-}
-
-.providerLogoImage {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.providerLogoEmoji {
-  font-size: var(--font-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* INTERACTIVE ACCORDION CLASSES */
-.providerHeaderRight {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.chevron {
-  color: rgba(255, 255, 255, 0.4);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
-  flex-shrink: 0;
-}
-
-.chevronExpanded {
-  transform: rotate(180deg);
-  color: var(--sw-primary);
-}
-
-.providerHeader {
-  transition: background-color 0.2s ease !important;
-}
-
-.providerHeader:hover {
-  background-color: rgba(255, 255, 255, 0.02) !important;
-}
-
-.providerHeader:hover .chevron {
-  color: #ffffff;
-}
-.modelStatsCritical {
-  font-family: var(--font-primary);
-  color: #ef4444;
-  font-weight: 500;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-size: var(--font-xs);
+.container {
+
+  display: flex;
+
+  flex-direction: column;
+
+  width: 100%;
+
+  height: 100%;
+
+  background-color: #131313;
+
+  /* Matches standard header/sidenav background */
+
+  color: rgba(255, 255, 255, 0.9);
+
+  padding: 32px 40px;
+
+  /* Increased padding for breathing room */
+
+  overflow-y: auto;
+
+  font-family: var(--font-primary);
+
+  /* Explicit Nexa base */
+
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+}
+
+
+
+@keyframes fadeIn {
+
+  from {
+
+    opacity: 0;
+
+    transform: translateY(8px);
+
+  }
+
+
+
+  to {
+
+    opacity: 1;
+
+    transform: translateY(0);
+
+  }
+
+}
+
+
+
+.header {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  margin-bottom: 40px;
+
+  /* Spaced out from content grid */
+
+}
+
+
+
+.titleArea {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 6px;
+
+}
+
+
+
+.title {
+
+  font-family: var(--font-primary);
+
+  font-size: var(--font-xl);
+
+  /* Slight increase for bold Nexa */
+
+  font-weight: 500;
+
+  /* Nexa Heavy */
+
+  color: #ffffff;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  letter-spacing: -0.2px;
+
+}
+
+
+
+.subtitle {
+
+  font-family: var(--font-primary);
+
+  font-size: var(--font-sm);
+
+  font-weight: 300;
+
+  /* Nexa ExtraLight */
+
+  color: rgba(255, 255, 255, 0.4);
+
+  /* Clean muted metadata */
+
+}
+
+
+
+.backBtn {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  background-color: transparent !important;
+
+  border: none !important;
+
+  padding: 4px 0;
+
+  border-radius: 0;
+
+  color: var(--sw-primary);
+
+  cursor: pointer;
+
+  font-family: var(--font-primary);
+
+  font-weight: 500;
+
+  font-size: var(--font-sm);
+
+  transition: all 0.2s ease;
+
+}
+
+
+
+.backBtn:hover {
+
+  background-color: transparent !important;
+
+  border-color: transparent !important;
+
+  color: #ffffff;
+
+}
+
+
+
+.dashboardContainer {
+
+  width: 100%;
+
+}
+
+
+
+/* Fully transparent seamless outer layout boxes */
+
+.card {
+
+  background-color: transparent !important;
+
+  border: none !important;
+
+  border-radius: 0 !important;
+
+  padding: 0 !important;
+
+  box-shadow: none !important;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 32px;
+
+  /* Generous spacing inside settings forms */
+
+}
+
+
+
+.cardTitle {
+
+  font-family: var(--font-primary);
+
+  font-size: var(--font-sm);
+
+  /* Strong contrast spacing */
+
+  font-weight: 500;
+
+  /* Nexa Heavy */
+
+  color: rgba(255, 255, 255, 0.55);
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.08em;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding-bottom: 14px;
+
+}
+
+
+
+.cardTitleText {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+}
+
+
+
+.formGroup {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+  /* Spaced labels from select inputs */
+
+}
+
+
+
+.label {
+
+  font-family: var(--font-primary);
+
+  font-size: var(--font-xs);
+
+  font-weight: 500;
+
+  /* Nexa Heavy */
+
+  color: rgba(255, 255, 255, 0.4);
+
+  /* Matching standard metadata labels */
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.05em;
+
+}
+
+
+
+.select {
+
+  background-color: #1a1a1a;
+
+  /* Professional dark input field */
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  border-radius: 6px;
+
+  color: #ffffff;
+
+  padding: 12px;
+
+  font-size: var(--font-sm);
+
+  font-family: var(--font-primary);
+
+  font-weight: 300;
+
+  /* Nexa ExtraLight */
+
+  outline: none;
+
+  cursor: pointer;
+
+  transition: all 0.2s;
+
+}
+
+
+
+.select option {
+
+  background-color: #131313;
+
+  color: #ffffff;
+
+  font-family: var(--font-primary);
+
+  font-weight: 300;
+
+}
+
+
+
+.select:hover {
+
+  background-color: rgba(255, 255, 255, 0.02);
+
+  border-color: rgba(255, 255, 255, 0.12);
+
+}
+
+
+
+.select:focus {
+
+  border-color: #3b82f6;
+
+}
+
+
+
+.checkboxContainer {
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 12px;
+
+  background-color: transparent;
+
+  border: 1px solid rgba(255, 255, 255, 0.06);
+
+  padding: 16px;
+
+  /* Spaced out inner margins */
+
+  border-radius: 6px;
+
+  cursor: pointer;
+
+  user-select: none;
+
+  transition: all 0.2s;
+
+}
+
+
+
+.checkboxContainer:hover {
+
+  background-color: rgba(255, 255, 255, 0.02);
+
+  border-color: rgba(255, 255, 255, 0.1);
+
+}
+
+
+
+.checkbox {
+
+  width: 14px;
+
+  height: 14px;
+
+  border-radius: 3px;
+
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+
+  cursor: pointer;
+
+  margin-top: 3px;
+
+}
+
+
+
+.checkboxText {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+
+}
+
+
+
+.checkboxLabel {
+
+  font-family: var(--font-primary);
+
+  font-weight: 500;
+
+  /* Nexa Heavy */
+
+  font-size: var(--font-sm);
+
+  color: #ffffff;
+
+}
+
+
+
+.checkboxSub {
+
+  font-family: var(--font-primary);
+
+  font-weight: 300;
+
+  /* Nexa ExtraLight */
+
+  font-size: var(--font-xs);
+
+  color: rgba(255, 255, 255, 0.4);
+
+  line-height: 1.5;
+
+}
+
+
+
+.saveBtn {
+
+  background: #3b82f6;
+
+  color: #ffffff;
+
+  border: none;
+
+  padding: 14px;
+
+  border-radius: 6px;
+
+  font-size: var(--font-sm);
+
+  font-family: var(--font-primary);
+
+  font-weight: 500;
+
+  /* Nexa Heavy */
+
+  cursor: pointer;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+
+  transition: all 0.2s;
+
+}
+
+
+
+.saveBtn:hover {
+
+  background: #2563eb;
+
+}
+
+
+
+.saveBtn:disabled {
+
+  opacity: 0.4;
+
+  cursor: not-allowed;
+
+}
+
+
+
+.providersList {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 32px;
+
+}
+
+
+
+.providerCard {
+
+  background-color: transparent !important;
+
+  border: 1px solid rgba(255, 255, 255, 0.06);
+
+  border-radius: 8px;
+
+  overflow: hidden;
+
+  transition: all 0.2s;
+
+}
+
+
+
+.providerCard:hover {
+
+  border-color: rgba(255, 255, 255, 0.12);
+
+}
+
+
+
+.providerHeader {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  padding: 16px 20px;
+
+  /* Enhanced space in provider header */
+
+  background-color: transparent !important;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+}
+
+
+
+.providerBrand {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+}
+
+
+
+.providerName {
+
+  font-family: var(--font-primary);
+
+  font-size: var(--font-base);
+
+  font-weight: 500;
+
+  /* Nexa Heavy */
+
+  color: #ffffff;
+
+  letter-spacing: 0.2px;
+
+}
+
+
+
+/* High-Density status badges matching system draft badges */
+
+.providerBadge {
+
+  font-family: var(--font-primary);
+
+  font-size: var(--font-xs);
+
+  font-weight: 500;
+
+  letter-spacing: 0.05em;
+
+  padding: 0;
+
+  border-radius: 0;
+
+  text-transform: uppercase;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+}
+
+
+
+.badgeHealthy {
+
+  background-color: transparent !important;
+
+  color: #34d17c;
+
+  border: none !important;
+
+}
+
+
+
+.badgeWarning {
+
+  background-color: transparent !important;
+
+  color: #f59e0b;
+
+  border: none !important;
+
+}
+
+
+
+.badgeCritical {
+
+  background-color: transparent !important;
+
+  color: #ef4444;
+
+  border: none !important;
+
+}
+
+
+
+.providerContent {
+
+  padding: 20px;
+
+  /* Increased internal padding */
+
+  background-color: transparent !important;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 20px;
+
+  /* Spaced out model rows inside cards */
+
+}
+
+
+
+.modelRow {
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+
+  /* Clear vertical gap inside progress bar items */
+
+  padding-bottom: 16px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+
+}
+
+
+
+.modelRow:last-child {
+
+  padding-bottom: 0;
+
+  border-bottom: none;
+
+}
+
+
+
+.modelInfo {
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+}
+
+
+
+.modelName {
+
+  font-size: var(--font-sm);
+
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+
+  color: rgba(255, 255, 255, 0.85);
+
+  font-weight: 600;
+
+}
+
+
+
+.modelStats {
+
+  font-family: var(--font-primary);
+
+  font-size: var(--font-xs);
+
+  font-weight: 300;
+
+  /* Nexa ExtraLight */
+
+  color: rgba(255, 255, 255, 0.4);
+
+}
+
+
+
+.modelStatsHighlight {
+
+  font-family: var(--font-primary);
+
+  color: #ffffff;
+
+  font-weight: 500;
+
+  /* Nexa Heavy */
+
+}
+
+
+
+.progressContainer {
+
+  position: relative;
+
+  width: 100%;
+
+  height: 6px;
+
+  background-color: rgba(255, 255, 255, 0.04);
+
+  border-radius: 3px;
+
+  overflow: hidden;
+
+}
+
+
+
+.progressBar {
+
+  height: 100%;
+
+  border-radius: 3px;
+
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+}
+
+
+
+.progressGreen {
+
+  background-color: #34d17c;
+
+}
+
+
+
+.progressOrange {
+
+  background-color: #f59e0b;
+
+}
+
+
+
+.progressRed {
+
+  background-color: #ef4444;
+
+}
+
+
+
+.tokenStats {
+
+  font-family: var(--font-primary);
+
+  font-size: var(--font-xs);
+
+  font-weight: 300;
+
+  /* Nexa ExtraLight */
+
+  color: rgba(255, 255, 255, 0.3);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-end;
+
+  gap: 4px;
+
+  margin-top: 4px;
+
+}
+
+
+
+.refreshingIndicator {
+
+  font-family: var(--font-primary);
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  font-size: var(--font-xs);
+
+  font-weight: 500;
+
+  /* Nexa Heavy */
+
+  color: rgba(255, 255, 255, 0.3);
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.05em;
+
+}
+
+
+
+.spin {
+
+  animation: spin 1s linear infinite;
+
+}
+
+
+
+@keyframes spin {
+
+  from {
+
+    transform: rotate(0deg);
+
+  }
+
+
+
+  to {
+
+    transform: rotate(360deg);
+
+  }
+
+}
+
+
+
+.noDataText {
+
+  font-family: var(--font-primary);
+
+  font-weight: 300;
+
+  /* Nexa ExtraLight */
+
+  color: rgba(255, 255, 255, 0.35);
+
+  text-align: center;
+
+  padding: 32px 0;
+
+  font-size: var(--font-sm);
+
+}
+
+
+
+.providerLogoImage {
+
+  width: 20px;
+
+  height: 20px;
+
+  object-fit: contain;
+
+  border-radius: 4px;
+
+  flex-shrink: 0;
+
+}
+
+
+
+.providerLogoEmoji {
+
+  font-size: var(--font-lg);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-shrink: 0;
+
+}
+
+
+
+/* INTERACTIVE ACCORDION CLASSES */
+
+.providerHeaderRight {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 16px;
+
+}
+
+
+
+.chevron {
+
+  color: rgba(255, 255, 255, 0.4);
+
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+
+  flex-shrink: 0;
+
+}
+
+
+
+.chevronExpanded {
+
+  transform: rotate(180deg);
+
+  color: var(--sw-primary);
+
+}
+
+
+
+.providerHeader {
+
+  transition: background-color 0.2s ease !important;
+
+}
+
+
+
+.providerHeader:hover {
+
+  background-color: rgba(255, 255, 255, 0.02) !important;
+
+}
+
+
+
+.providerHeader:hover .chevron {
+
+  color: #ffffff;
+
+}
+
+.modelStatsCritical {
+
+  font-family: var(--font-primary);
+
+  color: #ef4444;
+
+  font-weight: 500;
+
+  letter-spacing: 0.05em;
+
+  text-transform: uppercase;
+
+  font-size: var(--font-xs);
+
 }
 
 /* ==========================================
@@ -531,7 +1039,7 @@
 
 .sidebarSectionTitle {
   font-family: var(--font-primary);
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.12em;
