@@ -1,0 +1,119 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 24px;
+}
+
+.empty {
+    padding: 60px 0;
+    text-align: center;
+    color: var(--sw-text-muted);
+    font-size: var(--font-sm);
+    font-style: italic;
+}
+
+.contactRow {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--sw-border);
+}
+
+.contactRow:last-child {
+    border-bottom: none;
+}
+
+.iconCircle {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sw-text-muted);
+    flex-shrink: 0;
+}
+
+.contentCard {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.contactHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.name {
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: var(--sw-text-base);
+    margin: 0;
+}
+
+.role {
+    font-size: var(--font-xs);
+    color: #7a8bff; /* Lavender from your callNote */
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.metaList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.metaItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-xs);
+    color: var(--sw-text-muted);
+    transition: color 0.2s;
+}
+
+.metaItem:hover {
+    color: var(--sw-text-base);
+}
+
+.metaItem svg {
+    opacity: 0.6;
+}
+
+.emailLink {
+    color: inherit;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
+
+.emailLink:hover {
+    text-decoration: underline;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.actionBtn {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.actionBtn:hover {
+    color: var(--sw-text-base);
+}

@@ -1,0 +1,295 @@
+.orgItem {
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0 8px 8px 0;
+    margin: 4px 0;
+    background: transparent;
+    border-bottom: 1px solid var(--sw-border);
+    box-shadow: inset 0px 0 0 0 var(--sw-primary);
+    position: relative;
+}
+
+.orgItem:hover,
+.selectedOrgItem {
+    background: transparent;
+    box-shadow: inset 3px 0 0 0 var(--sw-primary);
+}
+
+.orgItem.noHover:hover {
+    background: transparent;
+    box-shadow: none;
+}
+
+.orgMainInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.orgLogoWrapper {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 1;
+    transition: all 0.2s ease;
+}
+
+.orgLogo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 6px;
+    opacity: 1;
+    transition: all 0.2s ease;
+}
+
+.orgIcon {
+    color: var(--sw-text-muted);
+    transition: all 0.2s ease;
+}
+
+.orgItem:hover .orgIcon,
+.selectedOrgItem .orgIcon {
+    color: var(--sw-text-base);
+}
+
+.orgIdentity {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.orgName {
+    font-size: var(--font-base);
+    font-weight: 400;
+    color: var(--sw-text-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s ease;
+    max-width: 200px;
+}
+
+.selectedOrgItem .orgName {
+    font-weight: 500;
+}
+
+.orgDomain {
+    font-size: var(--font-xs);
+    color: var(--sw-text-muted);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.orgFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-left: 40px;
+}
+
+.employeeStack {
+    display: flex;
+    align-items: center;
+}
+
+.stackedAvatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--sw-sidebar);
+    object-fit: cover;
+    margin-left: -8px;
+    background: var(--sw-surface-raised);
+    transition: transform 0.2s, opacity 0.2s ease;
+    opacity: 1;
+}
+
+.stackedAvatar:first-child {
+    margin-left: 0;
+}
+
+.stackedAvatar:hover {
+    transform: translateY(-4px);
+    z-index: 10;
+    opacity: 1;
+}
+
+.orgItem:hover .stackedAvatar,
+.selectedOrgItem .stackedAvatar {
+    opacity: 1;
+}
+
+.mappedBadge {
+    font-size: 0.65rem;
+    font-weight: 500;
+    background: rgba(45, 212, 191, 0.1);
+    color: #2dd4bf;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(45, 212, 191, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.empCountBadge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--sw-text-muted);
+    margin-left: 8px;
+}
+
+.orgAddress {
+    font-size: var(--font-xs);
+    color: var(--sw-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: capitalize;
+    margin-top: 2px;
+    max-width: 200px;
+    font-weight: 400;
+}
+
+.expandToggle {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    margin-left: auto;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.expandToggle:hover {
+    background: #1a1a1b;
+    color: #34d17c;
+}
+
+.expandToggle.today {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: #34d17c;
+    background: #1a1a1b;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 0;
+}
+
+.expandToggle.today::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1a1a1b;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.expandToggle.today:hover {
+    background: #34d17c;
+    color: #1a1a1b;
+}
+
+.expandToggle.today:hover::before {
+    opacity: 1;
+    background: #34d17d4d;
+}
+
+.expandToggle.overdue {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: #ef4444;
+    background: #1a1a1b;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 0;
+}
+
+.expandToggle.overdue::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1a1a1b;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.expandToggle.overdue:hover {
+    background: #ef4444;
+    color: #1a1a1b;
+}
+
+.expandToggle.overdue:hover::before {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.3);
+}
+
+.expandToggle.noTask {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: #f59e0b;
+    background: #1a1a1b;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 0;
+}
+
+.expandToggle.noTask::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1a1a1b;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.expandToggle.noTask:hover {
+    background: #f59e0b;
+    color: #1a1a1b;
+}
+
+.expandToggle.noTask:hover::before {
+    opacity: 1;
+    background: rgba(245, 158, 11, 0.3);
+}

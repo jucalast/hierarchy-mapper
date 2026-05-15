@@ -1,0 +1,614 @@
+/* --- GRAPH NODES (SaaS PREMIUM CARDS) --- */
+.customNode {
+    background: var(--sw-sidebar);
+    /* Consistent with SideNav/Header */
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-radius: 16px;
+    /* Harmonized with FloatingToolbar */
+    width: 440px;
+    /* High-performance rendering */
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    /* Slightly wider for better text flow */
+    padding: 0;
+
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    cursor: grab;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    z-index: 1;
+    transform-style: preserve-3d;
+}
+
+.chatNode {
+    cursor: default !important;
+    will-change: auto !important;
+    transition: none !important;
+    transform-style: preserve-3d !important;
+}
+
+.chatNode .seniorityWrapper {
+    transform: translateZ(-1px) !important;
+    z-index: auto !important;
+}
+
+.chatNode:hover {
+    box-shadow: none !important;
+    transform: none !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+
+.customNode:hover {
+    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+    /* Maintain same as base */
+    transform: none !important;
+}
+
+.level_6:hover {
+    border-color: #7A8BFF !important;
+}
+
+.level_5:hover {
+    border-color: #60A5FA !important;
+}
+
+.level_4:hover {
+    border-color: #2DD4BF !important;
+}
+
+.level_3:hover {
+    border-color: #4ADE80 !important;
+}
+
+.level_2:hover {
+    border-color: #FBBF24 !important;
+}
+
+.level_1:hover {
+    border-color: #A1A1AA !important;
+}
+
+.level_0:hover {
+    border-color: #F4F4F5 !important;
+}
+
+
+
+
+.handle {
+    width: 8px !important;
+    height: 8px !important;
+    background: #09090B !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    z-index: 100 !important;
+    transition: all 0.2s;
+}
+
+.handle:hover {
+    border-color: var(--sw-primary) !important;
+    transform: scale(1.4);
+}
+
+.handleTopLine,
+.handleBottomLine {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+
+.handleTopLine {
+    top: -10px;
+}
+
+.handleBottomLine {
+    bottom: -10px;
+}
+
+.nodeHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.02);
+    /* Very subtle top bar */
+    border-bottom: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px 16px 0 0;
+    position: relative;
+    z-index: 2;
+}
+
+
+
+.seniorityWrapper {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    font-size: var(--font-xs);
+    font-weight: 500;
+    padding: 6px 16px 40px 16px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transform: translateZ(-1px);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    transition: all 0.2s;
+}
+
+/* Color Variants - Harmonized Intelligence Palette */
+.badge_6 {
+    color: #1E2145 !important;
+    background: #7A8BFF !important;
+
+}
+
+/* C-Level (Indigo) */
+.badge_5 {
+    color: #1E2D45 !important;
+    background: #60A5FA !important;
+
+}
+
+/* Director (Royal) */
+.badge_4 {
+    color: #11363B !important;
+    background: #2DD4BF !important;
+
+}
+
+/* Manager (Cyan) */
+.badge_3 {
+    color: #063720 !important;
+    background: #4ADE80 !important;
+
+}
+
+/* Coordinator (Pipedrive Green) */
+.badge_2 {
+    color: #372A10 !important;
+    background: #FBBF24 !important;
+}
+
+/* Specialist (Amber) */
+.badge_1 {
+    color: #27272A !important;
+    background: #A1A1AA !important;
+
+}
+
+/* Support (Slate) */
+.badge_0 {
+    color: #3F3F46 !important;
+    background: #F4F4F5 !important;
+
+}
+
+.seniorityWrapper svg {
+    filter: drop-shadow(0 0 4px rgba(122, 139, 255, 0.4));
+}
+
+
+.levelBadge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--sw-text-muted);
+}
+
+.scoreBadge {
+    padding: 2px 8px;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 4px;
+    font-size: var(--font-xs);
+    font-weight: 500;
+}
+
+
+.nodeBody {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    contain: layout style paint;
+}
+
+.nodeNameWrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nodeAvatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: var(--sw-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.2);
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+    border: none !important;
+}
+
+
+.avatarImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    backface-visibility: hidden;
+    will-change: opacity;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+}
+
+.nodeAvatarCompanyBadge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--sw-sidebar);
+    border: 2px solid #131313;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.companyBadgeImg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: transparent;
+    backface-visibility: hidden;
+}
+
+
+.nodeName {
+    font-size: var(--font-xl);
+    font-weight: 500;
+    color: var(--sw-text-base);
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+}
+
+.roleWrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--sw-text-muted);
+}
+
+.roleDept {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #60A5FA;
+}
+
+.roleCompany {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.roleDot {
+    width: 4px;
+    height: 4px;
+    background: #3F3F46;
+    border-radius: 50%;
+}
+
+
+.nodeRole {
+    font-size: var(--font-sm);
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.roleIcon,
+.emailIcon,
+.metaIcon {
+    color: var(--sw-text-muted) !important;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+.deptBadge {
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--font-xs);
+    font-weight: 500;
+    background: rgba(129, 140, 248, 0.08);
+    /* System primary tint */
+    color: var(--sw-primary);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: 1px solid rgba(129, 140, 248, 0.15);
+}
+
+.osintSection {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.osintLabel {
+    font-size: var(--font-xs);
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.15);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding-left: 4px;
+}
+
+.osintBox {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+
+
+.osintLine {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+}
+
+.osintLineMetadata {
+    background: transparent;
+    align-items: flex-start;
+}
+
+
+
+
+.osintLine:last-child {
+    border-bottom: none;
+}
+
+.osintIcon {
+    width: 14px;
+    height: 14px;
+    color: var(--sw-text-muted);
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.osintText {
+    font-size: var(--font-sm);
+    color: var(--sw-text-base);
+    opacity: 0.9;
+}
+
+
+.osintParagraph {
+    font-size: var(--font-xs);
+    color: var(--sw-text-muted);
+    line-height: 1.6;
+    max-height: 120px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.osintParagraph::-webkit-scrollbar {
+    width: 3px;
+}
+
+.osintParagraph::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.emailLine {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    background: transparent;
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+
+
+.emailText {
+    font-size: var(--font-sm);
+    color: var(--sw-text-muted);
+    font-weight: 500;
+}
+
+
+.statusContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+
+
+.deepDataBox {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    /* Very subtle depth */
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.metaLine {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-xs);
+    color: var(--sw-text-subtle);
+}
+
+.highlightPill {
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: var(--sw-hover);
+    border: var(--sw-border-width) solid var(--sw-border);
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: var(--sw-text-muted);
+}
+
+.nodeFooter {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: var(--sw-border-width) solid var(--sw-border);
+}
+
+.infoIcon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--sw-hover);
+    border: var(--sw-border-width) solid var(--sw-border);
+    color: rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.infoIcon:hover {
+    background: var(--sw-hover);
+    color: var(--sw-text-base);
+    border-color: var(--sw-border-strong);
+}
+
+.headerBadges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.connBadge {
+    font-size: 0.65rem;
+    font-weight: 500;
+    background: rgba(129, 140, 248, 0.1);
+    color: var(--sw-primary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(129, 140, 248, 0.2);
+}
+
+.highlightsContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.footerActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.contactRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nodeActionFooter {
+    margin-top: 8px;
+}
+
+.linkedinMainBtn {
+    background: #0077b5;
+    color: var(--sw-text-base);
+    height: 48px;
+    border-radius: 14px;
+    font-size: var(--font-sm);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none !important;
+}
+
+.linkedinMainBtn:hover {
+    background: #008cdc;
+    transform: translateY(-2px);
+    box-shadow: none !important;
+}
+
+.linkedinBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: var(--sw-hover);
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-radius: 12px;
+    color: var(--sw-text-base);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--transition-fast);
+    padding: 12px;
+    width: 100%;
+}
+
+.linkedinBtn:hover {
+    background: var(--sw-hover);
+    border-color: var(--sw-border-strong);
+    color: var(--sw-text-base);
+    transform: translateY(-1px);
+}
+
+.linkedinIconImg {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.linkedinBtn:hover .linkedinIconImg {
+    opacity: 1;
+}

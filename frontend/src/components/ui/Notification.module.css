@@ -1,0 +1,110 @@
+.container {
+    width: 100%;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+    position: relative;
+}
+
+.notification {
+    pointer-events: auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 10px 24px;
+    position: relative;
+    overflow: hidden;
+    animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.iconWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.content {
+    flex: 1;
+    min-width: 0;
+}
+
+.message {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.closeBtn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: 12px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.progressBar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    animation: progress 5s linear forwards;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+@keyframes progress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+/* SUCCESS THEME */
+.success { background: #10b981; }
+.success .iconWrapper { color: #022c22; }
+.success .message { color: #022c22; }
+.success .closeBtn { color: rgba(2, 44, 34, 0.6); }
+.success .closeBtn:hover { background: rgba(2, 44, 34, 0.1); color: #022c22; }
+
+/* ERROR THEME */
+.error { background: #ef4444; }
+.error .iconWrapper { color: #450a0a; }
+.error .message { color: #450a0a; }
+.error .closeBtn { color: rgba(69, 10, 10, 0.6); }
+.error .closeBtn:hover { background: rgba(69, 10, 10, 0.1); color: #450a0a; }
+
+/* INFO THEME */
+.info { background: var(--sw-primary); }
+.info .iconWrapper { color: #131415; } 
+.info .message { color: #131415; }
+.info .closeBtn { color: rgba(19, 20, 21, 0.6); }
+.info .closeBtn:hover { background: rgba(19, 20, 21, 0.1); color: #131415; }
+
+/* WARNING THEME */
+.warning { background: #f59e0b; }
+.warning .iconWrapper { color: #451a03; }
+.warning .message { color: #451a03; }
+.warning .closeBtn { color: rgba(69, 26, 3, 0.6); }
+.warning .closeBtn:hover { background: rgba(69, 26, 3, 0.1); color: #451a03; }
