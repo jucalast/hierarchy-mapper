@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from '@/components/Sidebar';
-import { Header } from '@/components/Header';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Header } from '@/components/layout/Header';
 import { RotateCcw, Send, Mail, Eye, Calendar, User, Activity, AlertCircle } from 'lucide-react';
 import { communication } from '@/services/api';
 import { Button, EmptyState } from '@/components/ui';

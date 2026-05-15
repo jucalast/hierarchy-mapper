@@ -2,7 +2,7 @@ import React from 'react';
 import { Plus, MessageSquare, Loader2, Clock, Trash2, PanelRightClose } from 'lucide-react';
 import { Avatar } from '../ui';
 import type { ThreadOut } from '@/services/api/conversations';
-import styles from '../ChatPanel.module.css';
+import styles from './ChatPanel.module.css';
 
 interface ThreadListProps {
     orgName: string;

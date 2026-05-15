@@ -11,9 +11,9 @@ import { WhatsAppThread, EmailThread } from './modules/CommunicationModules';
 import { ActionApproval } from './modules/ActionApproval';
 import { DebugPanel } from './DebugPanel';
 import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
-import styles from '../ChatPanel.module.css';
-import { TimelineEventRow, TimelineEvent } from '../TimelineEventRow';
-import { CompactEmployeeCard } from '../CompactEmployeeCard';
+import styles from './ChatPanel.module.css';
+import { TimelineEventRow, TimelineEvent } from '../prospecting/TimelineEventRow';
+import { CompactEmployeeCard } from '../network-graph/CompactEmployeeCard';
 
 import {
     ContactLogCard, DealLogCard, NoteLogCard, ActivityLogCard, EmailLogCard

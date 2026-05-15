@@ -6,8 +6,8 @@ import {
     FileText, Package, Lightbulb, Target, ClipboardList,
     Box, Layers, MessageSquare, TrendingUp, Wand2,
 } from 'lucide-react';
-import styles from '../ChatPanel.module.css';
-import timelineStyles from '../HistoryTimeline.module.css';
+import styles from './ChatPanel.module.css';
+import timelineStyles from '../prospecting/HistoryTimeline.module.css';
 import { refineMessage } from '../../services/api/ai';
 
 // ─── Types ────────────────────────────────────────────────────────────────────

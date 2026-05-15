@@ -2,12 +2,12 @@ import React from 'react';
 import { 
     Phone, Mail, Calendar, CheckCircle2, User2, Building2, DollarSign, Check, Clock 
 } from 'lucide-react';
-import { TimelineEventRow, TimelineEvent } from '../../TimelineEventRow';
-import { PersonaCard } from '../../PersonaCard';
-import { CompactEmployeeCard } from '../../CompactEmployeeCard';
+import { TimelineEventRow, TimelineEvent } from '../../prospecting/TimelineEventRow';
+import { PersonaCard } from '../../prospecting/PersonaCard';
+import { CompactEmployeeCard } from '../../network-graph/CompactEmployeeCard';
 import { Avatar } from '../../ui';
-import { OrgListItem } from '../../OrgListItem';
-import styles from '../../ChatPanel.module.css'; 
+import { OrgListItem } from '../../prospecting/OrgListItem';
+import styles from '../ChatPanel.module.css'; 
 
 export const TaskList: React.FC<{ data: any }> = ({ data }) => {
     const tasks = data?.today_tasks || data?.activities || [];

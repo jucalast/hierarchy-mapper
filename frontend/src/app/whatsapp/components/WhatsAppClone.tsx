@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, MessageSquare, Plus, Smile, Mic, AlertCircle } from 'lucide-react';
-import { Drawer } from '@/components/Drawer';
-import { Sidebar } from '@/components/Sidebar';
-import { Header } from '@/components/Header';
+import { Drawer } from '@/components/ui/Drawer/Drawer';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Header } from '@/components/layout/Header';
 import { Button, EmptyState } from '@/components/ui';
 import { useOrganizations } from '@/hooks/useOrganizations';
-import styles from '@/components/NetworkGraph.module.css'; // reaproveitar grid
+import styles from '@/components/network-graph/NetworkGraph.module.css'; // reaproveitar grid
 
 export default function WhatsAppClone() {
   const [activeChat, setActiveChat] = useState<string | null>(null);

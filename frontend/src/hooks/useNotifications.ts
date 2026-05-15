@@ -10,7 +10,7 @@
  *  - helpers: success(msg), error(msg), info(msg), warning(msg)
  */
 import { useCallback, useState } from 'react';
-import type { NotificationType } from '@/components/Notification';
+import type { NotificationType } from '@/components/ui/Notification';
 
 export interface NotificationEntry {
   id: string;

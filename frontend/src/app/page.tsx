@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import LoginView from '@/components/LoginView';
+import LoginView from '@/components/layout/LoginView';
 
 // Carrega dinamicamente o NetworkGraph no lado do cliente para evitar problemas de SSR (ReactFlow dependente)
-const NetworkGraph = dynamic(() => import('@/components/NetworkGraph'), { ssr: false });
+const NetworkGraph = dynamic(() => import('@/components/network-graph/NetworkGraph'), { ssr: false });
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);

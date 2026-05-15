@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'Enterprise visual hierarchy and supply chain network mapper',
 };
 
-import Footer from '@/components/Footer';
+import Footer from '@/components/layout/Footer';
 
 export default function RootLayout({
   children,

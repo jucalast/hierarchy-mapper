@@ -4,11 +4,12 @@ import {
 } from 'lucide-react';
 import { CompanyResult } from './ChatInterfaces';
 import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
-import styles from '../ChatPanel.module.css';
+import styles from './ChatPanel.module.css';
 import { ModelSelector, AIModel } from './ModelSelector';
 import { ModelActivityBar, ModelActivityEvent, getNoticeStyle } from './ModelActivityBar';
 import { AudioWaveform } from './AudioWaveform';
 import { InlineEventStream, MappedContact } from './AgentV2Message';
+import { ActiveTaskConsole } from './ActiveTaskConsole';
 
 interface ChatInputProps {
     inputValue: string;
@@ -255,61 +256,24 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         );
     };
 
-    const renderTaskExpandedConsole = () => {
-        if (!activeRunningTask) return null;
 
-        const isStreaming = activeRunningTask.status === 'streaming';
-        const isDone = activeRunningTask.status === 'done';
-        const isErr = activeRunningTask.status === 'error';
-
-        return (
-            <>
-                {/* Console Logs */}
-                <div
-                    style={{
-                        padding: '14px 16px',
-                        flex: 1,
-                        minHeight: 0,
-                        overflowY: 'auto',
-                        fontFamily: 'monospace',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '10px',
-                        background: '#1e1e1e',
-                        borderRadius: '12px',
-                        borderTop: 'var(--chat-border-width, 1.5px) solid rgba(255, 255, 255, 0.08)',
-                        borderLeft: 'var(--chat-border-width, 1.5px) solid rgba(255, 255, 255, 0.08)',
-                        borderRight: 'var(--chat-border-width, 1.5px) solid rgba(255, 255, 255, 0.08)',
-                        borderBottom: 'none',
-                    }}
-                >
-                    {activeRunningTask.logs.length === 0 ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'rgba(255, 255, 255, 0.35)' }}>
-                            <Loader2 size={12} className={styles.spinner} />
-                            <span>Iniciando pipeline de tarefa em console dedicado...</span>
-                        </div>
-                    ) : (
-                        <InlineEventStream
-                            events={activeRunningTask.logs}
-                            isStreaming={isStreaming}
-                            inlineConfirmed={taskInlineConfirmed || {}}
-                            onInlineConfirm={onTaskInlineConfirm || (() => { })}
-                            onHierarchyMappingDone={onTaskMappingComplete}
-                            model={model}
-                        />
-                    )}
-                    <div ref={taskConsoleLogsBottomRef} />
-                </div>
-            </>
-        );
-    };
 
     return (
         <div className={styles.inputContainer} style={inputContainerStyle}>
             <div style={containerStyle}>
                 {notice && <ModelActivityBar events={modelActivity || []} />}
                 {hasRunningTask && renderTaskMinimizedBar()}
-                {isExpandedRunningTask && renderTaskExpandedConsole()}
+                {isExpandedRunningTask && (
+                    <ActiveTaskConsole
+                        activeRunningTask={activeRunningTask}
+                        isExpanded={isExpandedRunningTask}
+                        inlineConfirmed={taskInlineConfirmed || {}}
+                        onInlineConfirm={onTaskInlineConfirm || (async () => { })}
+                        onMappingComplete={onTaskMappingComplete}
+                        model={model}
+                        theme={theme}
+                    />
+                )}
                 <div
                     className={styles.inputBox}
                     style={isExpandedRunningTask ? {

@@ -2,7 +2,7 @@ import React from 'react';
 import {
     User2, Building2, MessageSquare, ArrowUpRight, ArrowDownLeft, ArrowRight, Phone, Mail, Calendar, CheckCircle2, Clock
 } from 'lucide-react';
-import styles from '../../ChatPanel.module.css';
+import styles from '../ChatPanel.module.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ContactLogCard
