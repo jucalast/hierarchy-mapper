@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import styles from '../styles/ChatPanel.module.css';
+import styles from '../../styles/ChatPanel.module.css';
 
 interface AudioWaveformProps {
     analyserNode: React.MutableRefObject<AnalyserNode | null>;

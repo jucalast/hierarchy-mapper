@@ -7,7 +7,7 @@ import { PersonaCard } from '@/features/prospecting/components/PersonaCard';
 import { CompactEmployeeCard } from '@/features/network-graph/components/CompactEmployeeCard';
 import { Avatar } from '@/components/ui';
 import { OrgListItem } from '@/features/prospecting/components/OrgListItem';
-import styles from '../AgentV2Message.module.css'; 
+import styles from '../../styles/components/AgentV2Message.module.css';
 
 export const TaskList: React.FC<{ data: any }> = ({ data }) => {
     const tasks = data?.today_tasks || data?.activities || [];

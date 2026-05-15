@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, Terminal, Database, Code2 } from 'lucide-react';
-import styles from '../styles/ChatPanel.module.css';
+import styles from '../../styles/ChatPanel.module.css';
 
 interface DebugSectionProps {
     title: string;

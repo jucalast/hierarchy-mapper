@@ -6,41 +6,12 @@ import {
     FileText, Package, Lightbulb, Target, ClipboardList,
     Box, Layers, MessageSquare, TrendingUp, Wand2,
 } from 'lucide-react';
-import styles from './AgentV2Message.module.css';
+import styles from '../styles/components/AgentV2Message.module.css';
 import { refineMessage } from '@/services/api/ai';
+import { V2Event } from '../types';
+import { AIModel } from './ui/ModelSelector';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface V2Event {
-    type: 'thinking' | 'tool_call' | 'tool_result' | 'confirmation_required' | 'final' | 'error' | 'context_saved' | 'rate_wait' | 'context_overflow' | 'suggested_actions' | 'hierarchy_mapping_required';
-    content?: string;
-    call_id?: string;
-    tool_use_id?: string;
-    tool_name?: string;
-    tool?: string;
-    args?: Record<string, any>;
-    label?: string;
-    summary?: string;
-    ok?: boolean;
-    action_id?: string;
-    preview?: string;
-    actions?: Array<{ label: string; prompt: string; razao?: string; categoria?: string }>;
-    response?: string;
-    model?: string;
-    wait_sec?: number;
-    reason?: string;
-    estimated_tokens?: number;
-    limit?: number;
-    // hierarchy_mapping_required
-    org_name?: string;
-    org_id?: number | null;
-    deal_id?: number | null;
-    activity_id?: number | null;
-    pre_task_id?: number | null;
-    error?: string;
-}
-
-import { AIModel } from './ModelSelector';
 
 export interface AgentV2MessageProps {
     messageId?: string;

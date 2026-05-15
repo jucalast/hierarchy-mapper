@@ -119,3 +119,7 @@ export function updateIntegration(type: string, payload: any) {
   return api.post<any>(`/settings/v2/integrations/${type}`, payload);
 }
 
+export function searchEntities(query: string) {
+  return api.get<any[]>(`/ai/search-entities?q=${encodeURIComponent(query)}`);
+}
+

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Check, ChevronUp, Lock } from 'lucide-react';
-import '../styles/ModelSelector.styles.css';
+import styles from '../../styles/components/ModelSelector.module.css';
 
 export type AIModel = 'gemini' | 'groq' | 'claude' | 'cerebras' | 'deepseek' | 'sambanova';
 
@@ -149,70 +149,70 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
     };
 
     return (
-        <div ref={ref} className="modelSelectorWrapper">
+        <div ref={ref} className={styles.modelSelectorWrapper}>
             {/* Trigger button */}
             <button
                 onClick={() => setOpen(v => !v)}
                 data-open={open}
-                className={`modelSelectorTrigger`}
+                className={styles.modelSelectorTrigger}
             >
                 <img
                     src={current.logoSrc}
                     alt={current.name}
-                    className="modelIcon"
+                    className={styles.modelIcon}
                     style={getModelLogoStyle(displayModel, true, true)}
                 />
                 <span>{current.name}</span>
                 {isLive && (
-                    <span className="modelLiveDot" title="Modelo ativo agora" />
+                    <span className={styles.modelLiveDot} title="Modelo ativo agora" />
                 )}
-                {strictMode && <Lock size={10} className="strictLock" />}
+                {strictMode && <Lock size={10} className={styles.strictLock} />}
                 <ChevronUp
                     size={14}
-                    className={`chevron ${open ? 'open' : ''}`}
+                    className={`${styles.chevron} ${open ? styles.open : ''}`}
                 />
             </button>
 
             {/* Dropdown popup */}
             {open && (
-                <div className="modelSelectorDropdown">
+                <div className={styles.modelSelectorDropdown}>
                     {/* Options */}
-                    <div className="modelSelectorOptions">
+                    <div className={styles.modelSelectorOptions}>
                         {MODEL_OPTIONS.map(opt => {
                             const isSelected = opt.id === model;
                             return (
                                 <button
                                     key={opt.id}
                                     onClick={() => { setModel(opt.id); setOpen(false); }}
-                                    className={`modelOption ${isSelected ? 'selected' : ''}`}
+                                    className={`${styles.modelOption} ${isSelected ? styles.selected : ''}`}
                                 >
                                     {/* Icon */}
-                                    <div className="modelOptionIconWrapper">
+                                    <div className={styles.modelOptionIconWrapper}>
                                         <img
                                             src={opt.logoSrc}
                                             alt={opt.name}
-                                            className="modelOptionLogo"
+                                            className={styles.modelOptionLogo}
                                             style={getModelLogoStyle(opt.id, isSelected)}
                                         />
                                     </div>
 
                                     {/* Text */}
-                                    <div className="modelOptionInfo">
-                                        <div className="modelOptionNameRow">
-                                            <span className="modelOptionName">
+                                    <div className={styles.modelOptionInfo}>
+                                        <div className={styles.modelOptionNameRow}>
+                                            <span className={styles.modelOptionName}>
                                                 {opt.name}
                                             </span>
                                             <span
-                                                className="modelOptionBadge"
+                                                className={styles.modelOptionBadge}
                                             >
                                                 {opt.badge}
                                             </span>
                                         </div>
-                                        <div className="modelOptionDesc">
+                                        <div className={styles.modelOptionDesc}>
                                             {opt.description}
                                         </div>
-                                        <div className="modelOptionSpeedRow">
-                                            <span className="modelOptionSpeedLabel">
+                                        <div className={styles.modelOptionSpeedRow}>
+                                            <span className={styles.modelOptionSpeedLabel}>
                                                 Velocidade
                                             </span>
                                             <SpeedDots speed={opt.speed} accentColor={opt.accentColor} />
@@ -220,7 +220,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                                     </div>
 
                                     {/* Check mark */}
-                                    <div className="modelOptionCheck">
+                                    <div className={styles.modelOptionCheck}>
                                         {isSelected && (
                                             <Check size={14} style={{ color: 'var(--chat-accent-color)' }} />
                                         )}
@@ -231,24 +231,24 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                     </div>
 
                     {/* Strict Mode Toggle */}
-                    <div className="modelSelectorStrictMode">
+                    <div className={styles.modelSelectorStrictMode}>
                         <button
                             onClick={() => setStrictMode?.(!strictMode)}
-                            className={`modelSelectorStrictModeButton ${strictMode ? 'active' : ''}`}
+                            className={`${styles.modelSelectorStrictModeButton} ${strictMode ? styles.active : ''}`}
                         >
-                            <Lock size={14} className="modelSelectorStrictModeIcon" />
-                            <div className="modelSelectorStrictModeInfo">
-                                <div className="modelSelectorStrictModeTitle">
+                            <Lock size={14} className={styles.modelSelectorStrictModeIcon} />
+                            <div className={styles.modelSelectorStrictModeInfo}>
+                                <div className={styles.modelSelectorStrictModeTitle}>
                                     Strict Mode
                                 </div>
-                                <div className="modelSelectorStrictModeDesc">
+                                <div className={styles.modelSelectorStrictModeDesc}>
                                     {strictMode
                                         ? 'Força este modelo com retry agressivo'
                                         : 'Permite fallback automático se falhar'}
                                 </div>
                             </div>
-                            <div className="modelSelectorStrictModeToggle">
-                                <div className="modelSelectorStrictModeToggleKnob" />
+                            <div className={styles.modelSelectorStrictModeToggle}>
+                                <div className={styles.modelSelectorStrictModeToggleKnob} />
                             </div>
                         </button>
                     </div>

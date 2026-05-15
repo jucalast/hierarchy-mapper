@@ -1,0 +1,108 @@
+@import "../../../styles/chat-tokens.css";
+
+.chatSubHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  padding: 0 20px 0 72px;
+  height: 48px;
+  position: relative;
+  border-bottom: var(--sw-border-width) solid var(--sw-border);
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.chatBackBtn {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--chat-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all var(--chat-transition-fast);
+}
+
+.chatBackBtn:hover {
+  color: var(--chat-text-primary);
+  background: var(--chat-bg-secondary);
+}
+
+.chatSubHeaderAvatar {
+  margin-right: var(--space-4);
+}
+
+.chatSubHeaderInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.chatSubHeaderTitle {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--chat-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.chatSubHeaderOrg {
+  font-size: var(--font-xs);
+  color: var(--chat-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.chatHeaderIconBtn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent !important;
+  color: var(--chat-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--chat-transition-fast);
+  border-radius: 8px;
+}
+
+.chatHeaderIconBtn:hover {
+  color: var(--chat-text-primary);
+  background: var(--chat-bg-secondary) !important;
+}
+
+.chatHeaderIconBtnActive {
+  color: var(--chat-accent-color) !important;
+  background: var(--chat-accent-soft) !important;
+}
+
+.asCount {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 10px;
+  background: var(--chat-accent-color);
+  color: white;
+  min-width: 16px;
+  text-align: center;
+}
