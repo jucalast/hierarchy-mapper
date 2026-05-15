@@ -6366,3 +6366,1667 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:58:25.736028",
+    "candidate": "Mariana Ruiz",
+    "linkedin": "https://linkedin.com/in/pd_2286",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Mariana Ruiz - Contato Master Sense",
+            "body": "Email: mariana.ruiz@mastersense.com | Telefone: +55 11 95037-4342 | Pipedrive ID: 2286"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_2286",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:58:35.270993",
+    "candidate": "compras",
+    "linkedin": "https://linkedin.com/in/pd_2228",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "compras master sense - Contato Master Sense",
+            "body": "Email: compras@mastersense.com | Telefone:  | Pipedrive ID: 2228"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_2228",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:58:53.991042",
+    "candidate": "Gustavo Assis Rodrigues",
+    "linkedin": "https://br.linkedin.com/in/gustavo-assis-rodrigues-6518968",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Assis Rodrigues - MasterSense Ingredientes... | LinkedIn",
+            "body": "Gustavo Assis Rodrigues . Jundiaí, São Paulo, Brasil . 5 mil seguidores + de 500 conexões.Aceite e cadastre-se no LinkedIn . Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies do LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "mastersense ingredientes e aromas",
+            "bio": "Expertise in strategic growth, conscious leadership, and fostering shared value to the… · Experiência: MasterSense Ingredientes e Aromas · Formação acadêmica: Harvard Online · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Gustavo Assis Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/gustavo-assis-rodrigues-6518968",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:03.500469",
+    "candidate": "Gustavo Assis Rodrigues",
+    "linkedin": "https://www.linkedin.com/in/gustavo-assis-rodrigues-6518968",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Assis Rodrigues - President - MasterSense Ingredientes e Aromas | LinkedIn",
+            "body": "President at MasterSense · Experience: MasterSense Ingredientes e Aromas · Education: Harvard Online · Location: Jundiaí · 500+ connections on LinkedIn. View Gustavo Assis Rodrigues’ profile on LinkedIn, a professional community of 1 ..."
+        },
+        "osint_metadata": {
+            "role": "mastersense ingredientes e aromas",
+            "bio": "Expertise in strategic growth, conscious leadership, and fostering shared value to the… · Experiência: MasterSense Ingredientes e Aromas · Formação acadêmica: Harvard Online · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Gustavo Assis Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/gustavo-assis-rodrigues-6518968",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:09.310978",
+    "candidate": "Gustavo H. de Assis Rodrigues",
+    "linkedin": "https://www.linkedin.com/in/assisrodrigues",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo H. de Assis Rodrigues - Tribunal Regional Federal da 3ª Região | LinkedIn",
+            "body": "Gustavo de Assis Rodrigues · São Paulo, SP · Connect · Maylla Nascimento Costa Amorim · Sertãozinho, SP · Connect · Aline Souza · São Paulo, SP · Connect · Karen Bonfim · São Paulo, SP · Connect · Leticia Rivera Costa · São Paulo, SP · Connect · Giovana Lago Levita ·"
+        },
+        "osint_metadata": {
+            "role": "tribunal regional federal da 3ª região",
+            "bio": "(EN) Experienced legal adviser specialized in criminal law and human rights, with… · Experiência: Tribunal Regional Federal da 3ª Região · Formação acadêmica: Université de Strasbourg · Localidade: Estrasburgo · + de 500 conexões no LinkedIn. Veja o perfil de Gustavo H. de Assis Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:15.735495",
+    "candidate": "Marcelo Rodrigues da Costa 🇧🇷🇬🇧🇪🇸",
+    "linkedin": "https://br.linkedin.com/in/marcelorodriguescosta/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcelo Rodrigues da Costa 🇧🇷🇬🇧🇪🇸 - OSB Software | LinkedIn",
+            "body": "October 21, 2023 - Vitae Brasil · 2K followers · São José dos Campos, SP · View Profile · Alberto Cavendish · CAVENDISH Consultoria Empresarial · 3K followers · Recife, PE · View Profile · Flávio Gustavo Rodrigues · Sistema Findes · 1K followers · Vitória, ES ·"
+        },
+        "osint_metadata": {
+            "role": "osb software",
+            "bio": "For over 27 years, I have operated at the intersection of growth, sales, technology… · Experience: OSB Software · Education: Fundação Getulio Vargas · Location: Sorocaba · 500+ connections on LinkedIn. View Marcelo Rodrigues da Costa 🇧🇷🇬🇧🇪🇸’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:20.734334",
+    "candidate": "Gustavo de Assis Rodrigues",
+    "linkedin": "https://br.linkedin.com/in/gustavo-de-assis-rodrigues-14899455",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo de Assis Rodrigues - Assistente jurídico",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "tribunal regional federal da 3ª região",
+            "bio": "Servidor Público Federal · Experiência: Tribunal Regional Federal da 3ª Região · Formação acadêmica: Universidade Presbiteriana Mackenzie · Localidade: São Paulo · 80 conexões no LinkedIn. Veja o perfil de Gustavo de Assis Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:26.802561",
+    "candidate": "Francisco de Assis Rodrigues de Souza",
+    "linkedin": "https://br.linkedin.com/in/francisco-de-assis-rodrigues-de-souza-71483b19a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Francisco de Assis Rodrigues de Souza - BRF",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "brf",
+            "bio": "Experiência: BRF · Localidade: Rio de Janeiro. Veja o perfil de Francisco de Assis Rodrigues de Souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:31.496641",
+    "candidate": "Francisco De Assis Rodrigues De Souza Soares",
+    "linkedin": "https://br.linkedin.com/in/francisco-de-assis-rodrigues-de-souza-soares-317319367",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Francisco De Assis Rodrigues De Souza Soares - Porto",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "porto",
+            "bio": "Experiência: Porto · Localidade: 64890-000. Veja o perfil de Francisco De Assis Rodrigues De Souza Soares no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:36.640237",
+    "candidate": "Gustavo Henrique Ferreira rodrigues",
+    "linkedin": "https://br.linkedin.com/in/gustavo-henrique-ferreira-rodrigues-b4118431a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Henrique Ferreira rodrigues - Vitoria, Acre, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "vitoria, acre, brasil",
+            "bio": "Localidade: Vitoria. Veja o perfil de Gustavo Henrique Ferreira rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:42.811383",
+    "candidate": "Francisco Assis Rodrigues",
+    "linkedin": "https://br.linkedin.com/in/francisco-assis-rodrigues-42bbb774",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Francisco Assis Rodrigues",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "rodrigues montagens e manutenção industrial ltda",
+            "bio": "Experiência: Rodrigues Montagens e Manutenção Industrial LTDA · Formação acadêmica: Universidade Cruzeiro do Sul · Localidade: Itaquaquecetuba · 35 conexões no LinkedIn. Veja o perfil de Francisco Assis Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:45.979496",
+    "candidate": "francisco de assis rodrigues de souza",
+    "linkedin": "https://br.linkedin.com/in/francisco-de-assis-rodrigues-de-souza-07867396",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "francisco de assis rodrigues de souza - assessor jurídico",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "pcs informatica",
+            "bio": "Experiência: PCS Informatica · Localidade: Fortaleza. Veja o perfil de francisco de assis rodrigues de souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:50.186719",
+    "candidate": "Gustavo Victor",
+    "linkedin": "https://br.linkedin.com/in/gustavo-victor-565504310",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Victor - Assis Chateaubriand, Paraná, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "assis chateaubriand, paraná, brasil",
+            "bio": "Localidade: 85935-000. Veja o perfil de Gustavo Victor no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:54.573622",
+    "candidate": "Maikon Rodrigues",
+    "linkedin": "https://br.linkedin.com/in/maikon-rodrigues-a382991b6",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Maikon Rodrigues - Garçom - cavanhas assis brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "cavanhas assis brasil",
+            "bio": "Experiência: cavanhas assis brasil · Localidade: Porto Alegre. Veja o perfil de Maikon Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T15:59:59.558502",
+    "candidate": "Ernani Assis",
+    "linkedin": "https://br.linkedin.com/in/ernaniassis",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ernani Assis - Entrepreneur | Board Member | Angel Investor",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "oxus finance",
+            "bio": "Desde 2010, minha trajetória tem sido dedicada a impulsionar negócios na indústria… · Experiência: Oxus Finance · Formação acadêmica: University of Phoenix · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Ernani Assis no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T16:05:00.039292",
+    "candidate": "Mariana Ruiz",
+    "linkedin": "https://linkedin.com/in/pd_2286",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Mariana Ruiz - Contato Master Sense",
+            "body": "Email: mariana.ruiz@mastersense.com | Telefone: +55 11 95037-4342 | Pipedrive ID: 2286"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_2286",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T16:05:17.720529",
+    "candidate": "compras",
+    "linkedin": "https://linkedin.com/in/pd_2228",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "compras master sense - Contato Master Sense",
+            "body": "Email: compras@mastersense.com | Telefone:  | Pipedrive ID: 2228"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_2228",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T16:05:49.626921",
+    "candidate": "Gustavo Assis Rodrigues",
+    "linkedin": "https://br.linkedin.com/in/gustavo-assis-rodrigues-6518968",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Assis Rodrigues - LinkedIn Brasil MasterSense Management Team | Org Chart - RocketReach Gustavo Assis - dairynews.today Gustavo Assis Rodrigues - Autor - Revista Coaching Brasil Inovação em Alimentos e Bebidas | MasterSense List of 12 MasterSense Employees - Find Emails & Phones ... 4 anos após abrir escritório fora do Brasil, eles já faturam ...",
+            "body": "· Experiência: MasterSense Ingredientes e Aromas · Formação acadêmica: Harvard Online · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Gustavo Assis Rodrigues no... The MasterSense management team includes Gustavo Assis Rodrigues (Chief Executive Officer), Tiago Pusas (Vice President of Sales and Innovation), and Cláudia Shimada (Analista de recrutamento e seleção). 6 days ago · Gustavo Assis is a prominent figure in the dairy industry, currently serving as the President of MasterSense . His leadership is marked by a strong emphasis on innovation and consumer health, which is evident in his recent collaboration with AFI. Artigos publicados na Revista Coaching Brasil Orientação para Stakeholders Stakeholder. Não há tradução exata para o português. A melhor definição que encontrei, e que o mercado aceitou foi: Partes Interessadas. Partes interessadas no negócio. Partindo então desse entendimento qual seria o interesse dessas partes no negócio? Somos uma multinacional latino-americana com escritórios no Brasil , México, Chile, Colômbia, Bolívia e Guatemala. Levamos tecnologia de ponta e ingredientes de alta performance para marcas que querem liderar o futuro da alimentação. MasterSense Brazil employs 12 employees. Reveal contacts of top MasterSense managers and employees. Os empreendedores paulistas Gustavo Assis e Tiago Pusas comemoram recordes de receita na esteira de uma mudança profunda dos hábitos alimentares dentro e fora do Brasil. Assis e Pusas são sócios da MasterSense , uma fabricante de ingredientes e aromas de alimentos industrializados fundada em Jundiaí, no interior paulista, em 2005."
+        },
+        "osint_metadata": {
+            "role": "mastersense ingredientes e aromas",
+            "bio": "Expertise in strategic growth, conscious leadership, and fostering shared value to the… · Experiência: MasterSense Ingredientes e Aromas · Formação acadêmica: Harvard Online · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Gustavo Assis Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/gustavo-assis-rodrigues-6518968",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T16:06:28.556606",
+    "candidate": "Tiago Pusas",
+    "linkedin": "https://br.linkedin.com/in/tiago-pusas-22238b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tiago Pusas - São Paulo, Brasil | Perfil profissional | LinkedIn",
+            "body": "Veja o perfil de Tiago Pusas no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "são paulo, brasil",
+            "bio": "Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Tiago Pusas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-14T16:06:32.923414",
+    "candidate": "Tiago Rangel",
+    "linkedin": "https://pt.linkedin.com/in/tiago-rangel",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tiago Rangel - Hovione | LinkedIn",
+            "body": "Veja o perfil de Tiago Rangel no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Les Echos, one of France’s leading newspapers, has dedicated a profile article to Hovione’s CEO, Dr. Jean-Luc Herbeaux, highlighting not only his… Tiago Rangel gostou."
+        },
+        "osint_metadata": {
+            "role": "hovione",
+            "bio": "Experiência: Hovione · Formação acadêmica: The Lisbon MBA - Católica | Nova · Localidade: Lisboa · + de 500 conexões no LinkedIn. Veja o perfil de Tiago Rangel no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:49:32.004640",
+    "candidate": "Carlos Henrique Fracaro",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-fracaro-6948a2158",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique Fracaro - POSITIVO SERVICE | LinkedIn",
+            "body": "Carlos Henrique Fracaro . Curitiba, Paraná, Brasil . 10 mil seguidores + de 500 conexões. Carlos Henrique pode apresentar você a mais de 10 pessoas na empresa POSITIVO SERVICE ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou um líder de serviços com mais de 17 anos de experiência em gestão de operações e… · Experiência: POSITIVO SERVICE · Formação acadêmica: Pontifícia Universidade Católica do Paraná · Localidade: Curitiba · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Henrique Fracaro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/carlos-henrique-fracaro-6948a2158",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:49:41.458961",
+    "candidate": "Carlos Fracaro",
+    "linkedin": "https://www.linkedin.com/in/carlosfracaro",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Fracaro - Project Manager for Payment Means | LinkedIn",
+            "body": "September 22, 2024 - CEO - Diretor Operacional na POSITIVO SERVICE | Apresentações, Habilidades Analíticas · Curitiba, PR · Energy Engineer | LEED Green Associate · Campo Largo, PR · -- Spain · -- Pozuelo de Alarcón · 16 others named Carlos Fracaro are ..."
+        },
+        "osint_metadata": {
+            "role": "minsait",
+            "bio": "Experienced Sytems Analyst with a demonstrated history of working in the information… · Experiência: Minsait · Formação acadêmica: Fundação Armando Alvares Penteado · Localidade: Pozuelo de Alarcón · 317 conexões no LinkedIn. Veja o perfil de Carlos Fracaro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/carlosfracaro",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:49:55.173164",
+    "candidate": "Carlos Henrique Vilarinho",
+    "linkedin": "https://www.linkedin.com/in/carlos-henrique-vilarinho-72a85a18",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique Vilarinho - Positivo S+ | LinkedIn",
+            "body": "November 19, 2019 - Carlos Henrique can introduce you to 10+ people at Positivo S+"
+        },
+        "osint_metadata": {
+            "role": "positivo s+",
+            "bio": "Com mais de 25 anos de experiência em gestão de negócios como executivo, sou um… · Experiência: Positivo S+ · Formação acadêmica: FIPECAFI - Fundação Instituto de Pesquisas Contábeis, Atuariais e Financeiras · Localidade: Uberlândia · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Henrique Vilarinho no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/carlos-henrique-vilarinho-72a85a18",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:01.407044",
+    "candidate": "Marcelo Henrique Fracaro",
+    "linkedin": "https://br.linkedin.com/in/marcelo-henrique-fracaro-2a176826b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcelo Henrique Fracaro - Curitiba, Paraná, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "datatem",
+            "bio": "Experiência: Datatem · Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: Curitiba · 67 conexões no LinkedIn. Veja o perfil de Marcelo Henrique Fracaro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:05.020697",
+    "candidate": "Carlos Henrique",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-4805b31b1",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique - Praia Grande, São Paulo, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "praia grande, são paulo, brasil",
+            "bio": "Sou Desenvolvedor de Software com experiência na construção de aplicações web, atuando… · Formação acadêmica: Universidade Paulista · Localidade: 11700-005 · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Henrique no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:11.581745",
+    "candidate": "João Henrique Fracaro",
+    "linkedin": "https://br.linkedin.com/in/joão-henrique-fracaro",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Henrique Fracaro - Empresa de Aguas Ouro Fino Ltda",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "empresa de aguas ouro fino ltda",
+            "bio": "RESUMO DE QUALIFICAÇÕES\n\t\n•\tAcompanhamento de processos industriais, almoxarifado e… · Experiência: Empresa de Aguas Ouro Fino Ltda · Formação acadêmica: Universidade Tuiuti do Paraná · Localidade: Campo Largo · + de 500 conexões no LinkedIn. Veja o perfil de João Henrique Fracaro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:14.077340",
+    "candidate": "Carlos Henrique",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-a5364552",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique - Montes Claros, Minas Gerais, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "montes claros, minas gerais, brasil",
+            "bio": "Formação acadêmica: FEMC · Localidade: Montes Claros. Veja o perfil de Carlos Henrique no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:16.725118",
+    "candidate": "Carlos Henrique",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-35ba20309",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique - Especialista em segurança - Brink´s Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "brink´s brasil",
+            "bio": "Experiência: Brink´s Brasil · Localidade: 20010-000. Veja o perfil de Carlos Henrique no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:22.021597",
+    "candidate": "Carlos Henrique Franco",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-franco-1250159a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique Franco - Tek-System",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "tek",
+            "bio": "Experiência no desenvolvimento  de software, administração de banco de dados e de… · Experiência: Tek-System · Formação acadêmica: Fundação Presidente Antônio Carlos - FUPAC VRB · Localidade: Coimbra · 181 conexões no LinkedIn. Veja o perfil de Carlos Henrique Franco no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:26.263207",
+    "candidate": "Carlos Henrique Farias Barros",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-farias-barros-a3277ba2",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique Farias Barros - Fundador e Socio Diretor",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:32.991823",
+    "candidate": "Carlos Henrique de Oliveira",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-de-oliveira-7b882676",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique de Oliveira - Supply Chain Management / ...",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "zoetis",
+            "bio": "Minha carreira profissional está baseada em 19 anos de experiência em Supply Chain… · Experiência: Zoetis · Formação acadêmica: Fundação Getulio Vargas · Localidade: Poços de Caldas · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Henrique de Oliveira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:40.680546",
+    "candidate": "Carlos Henrique Brasil",
+    "linkedin": "https://br.linkedin.com/in/chbrasil",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique Brasil - Energy Consulting and Analytics",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "psr",
+            "bio": "🚀 Inquieto. Multidisciplinar. Inconformado com soluções medianas.\n\nMinha carreira… · Experiência: PSR - Energy Consulting and Analytics · Formação acadêmica: Universidade Veiga de Almeida · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Henrique Brasil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:44.645166",
+    "candidate": "Carlos Henrique Oliveira",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-oliveira-4b192949",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique Oliveira - sebrae-ba",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "sebrae",
+            "bio": "Experiência: SEBRAE-BA · Localidade: Santo Antônio de Jesus · 16 conexões no LinkedIn. Veja o perfil de Carlos Henrique Oliveira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:49.824651",
+    "candidate": "Carlos Henrique de Oliveira Franco",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-de-oliveira-franco-969ab5127",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique de Oliveira Franco - Analista de contas a ...",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "pires do rio cibraço",
+            "bio": "Por dois anos, trabalhei em contas a pagar, onde a responsabilidade era manter os… · Experiência: Pires do rio Cibraço · Formação acadêmica: USCS - Universidade Municipal de São Caetano do Sul · Localidade: Mauá · 41 conexões no LinkedIn. Veja o perfil de Carlos Henrique de Oliveira Franco no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:50:54.110859",
+    "candidate": "Carlos Henrique Vieira",
+    "linkedin": "https://br.linkedin.com/in/carlos-henrique-vieira-23aaba207",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Henrique Vieira - Advogado - Autônomo",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:51:37.837728",
+    "candidate": "Lisandra Geteski",
+    "linkedin": "https://br.linkedin.com/in/lisandra-geteski-5325a654",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Lisandra Geteski - POSITIVO SERVICE | LinkedIn LISANDRA GETESKI - POSITIVO ELETROMOTORES | LinkedIn Lisandra Geteski Da Rocha » Suas Empresas e Sócios Lisandra Geteski Da Rocha - Empresas no CNPJ Services 89e11a01c118fae4!!!! | PDF zxcvbn.js.min · GitHub display/node_modules/zxcvbn/dist/zxcvbn.js.map ...",
+            "body": "Gerente de vendas Supervisora · Experiência: POSITIVO SERVICE · Formação acadêmica: Faculdade santa cruz Curitiba · Localidade: Curitiba · 396 conexões no LinkedIn . Veja o perfil de... Experiência: POSITIVO ELETROMOTORES · Localidade: Curitiba · 1 conexão no LinkedIn . Veja o perfil de LISANDRA GETESKI no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Todos os Sócios de Lisandra CARLOS HENRIQUE FRACARO Carlos é sócio (a) de Lisandra na empresa POSITIVO SERVICE NEW ENERGY MOTORES ELETRICOS LTDA desde 13/04/2018. O site não classifica o Sócio da empresa pelo CPF, ela é feita apenas pelo nome. Nós não exibimos número de CPF, apenas dados referentes a pessoa jurídica que são públicos e podem ser divulgados. Todas as informações são atualizadas junto à Receita Federal e juntas de acordo com o Nome. Jun 17, 2021 · Scribd is the world's largest social reading and publishing site. Nov 19, 2023 · GitHub Gist: instantly share code, notes, and snippets. Jan 2, 2020 · Gestion des collections d'échantillon - management of samples collections"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Gerente de vendas \nSupervisora · Experiência: POSITIVO SERVICE · Formação acadêmica: Faculdade santa cruz Curitiba · Localidade: Curitiba · 397 conexões no LinkedIn. Veja o perfil de Lisandra Geteski no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/lisandra-geteski-5325a654",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:51:51.511110",
+    "candidate": "Leonardo I. S.",
+    "linkedin": "https://br.linkedin.com/in/leonardo-i-s-1395771b2",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leonardo I. S. - POSITIVO SERVICE | LinkedIn",
+            "body": "Empresa que atua no ramo de manutenção de motores elétricos multi marcas em todo o… · Experiência: POSITIVO SERVICE · Localidade: Curitiba · 268 conexões no ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Empresa que atua no ramo de manutenção de motores elétricos multi marcas em todo o… · Experiência: POSITIVO SERVICE · Localidade: Curitiba · 268 conexões no LinkedIn. Veja o perfil de Leonardo I. S. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/leonardo-i-s-1395771b2",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:52:00.445964",
+    "candidate": "Karine Candido",
+    "linkedin": "https://br.linkedin.com/in/karine-candido-b20842265",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Karine Candido - POSITIVO SERVICE | LinkedIn",
+            "body": "Experiência: POSITIVO SERVICE · Formação acadêmica: Centro Universitário de Belo Horizonte · Localidade: Belo Horizonte · 132 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: POSITIVO SERVICE · Formação acadêmica: Centro Universitário de Belo Horizonte · Localidade: Belo Horizonte · 132 conexões no LinkedIn. Veja o perfil de Karine Candido no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/karine-candido-b20842265",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:52:11.646123",
+    "candidate": "Guilherme Kauling",
+    "linkedin": "https://br.linkedin.com/in/guilherme-kauling-090387194",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Guilherme Kauling - POSITIVO SERVICE - LinkedIn",
+            "body": "Experiência: POSITIVO SERVICE · Localidade: Jaraguá do Sul · + de 500 conexões no LinkedIn. Veja Guilherme Kauling o perfil no LinkedIn, uma comunidade ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: POSITIVO SERVICE · Localidade: Jaraguá do Sul · + de 500 conexões no LinkedIn. Veja Guilherme Kauling  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/guilherme-kauling-090387194",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:52:25.318759",
+    "candidate": "Henrique liasch bitante",
+    "linkedin": "https://br.linkedin.com/in/henrique-liasch-bitante-888a84234",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Henrique liasch bitante - Gerente de Manutenção Especialista em máquinas rotativas de alta tensão | LinkedIn",
+            "body": "Gerente de Manutenção Especialista em máquinas rotativas de alta tensão · Experiência: POSITIVO SERVICE · Localidade: Curitiba · 52 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: POSITIVO SERVICE · Localidade: Curitiba · 52 conexões no LinkedIn. Veja o perfil de Henrique liasch bitante no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/henrique-liasch-bitante-888a84234",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:52:37.912295",
+    "candidate": "Jaqueline Mikrut",
+    "linkedin": "https://br.linkedin.com/in/jaqueline-mikrut-77872b204",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jaqueline Mikrut - POSITIVO SERVICE - LinkedIn",
+            "body": "Experiência: POSITIVO SERVICE · Formação acadêmica: UniCesumar · Localidade: São José dos Pinhais · 9 conexões no LinkedIn. Veja o perfil de Jaqueline ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: POSITIVO SERVICE · Formação acadêmica: UniCesumar · Localidade: São José dos Pinhais · 9 conexões no LinkedIn. Veja o perfil de Jaqueline Mikrut no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/jaqueline-mikrut-77872b204",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:52:43.297225",
+    "candidate": "Evandro Kollet",
+    "linkedin": "https://br.linkedin.com/in/evandro-kollet-026a908a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Evandro Kollet - Abranjo Geração de Energia S/A - LinkedIn",
+            "body": "Experiência: Abranjo Geração de Energia S/A · Formação acadêmica: SENAI Carlos Tannhauser · Localidade: Encruzilhada do Sul · 241 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "abranjo geração de energia s/a",
+            "bio": "Experiência: Abranjo Geração de Energia S/A · Formação acadêmica: SENAI Carlos Tannhauser · Localidade: Encruzilhada do Sul · 241 conexões no LinkedIn. Veja o perfil de Evandro Kollet no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:52:51.930651",
+    "candidate": "LISANDRA GETESKI",
+    "linkedin": "https://br.linkedin.com/in/lisandra-geteski-a0322857",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "LISANDRA GETESKI - POSITIVO ELETROMOTORES | LinkedIn",
+            "body": "Experiência: POSITIVO ELETROMOTORES · Localidade: Curitiba · 1 conexão no LinkedIn . Veja o perfil de LISANDRA GETESKI no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "positivo eletromotores",
+            "bio": "Experiência: POSITIVO ELETROMOTORES · Localidade: Curitiba · 1 conexão no LinkedIn. Veja o perfil de LISANDRA GETESKI no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/lisandra-geteski-a0322857",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:53:35.766931",
+    "candidate": "Iago Silva",
+    "linkedin": "https://br.linkedin.com/in/iago-silva-60826620a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Iago Silva - POSITIVO SERVICE | LinkedIn",
+            "body": "Experiência: POSITIVO SERVICE · Localidade: 76810-552 · 461 conexões no LinkedIn . Veja o perfil de Iago Silva no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: POSITIVO SERVICE · Localidade: 76810-552 · 459 conexões no LinkedIn. Veja o perfil de Iago Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/iago-silva-60826620a",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:53:48.580688",
+    "candidate": "Luiz Carlos Mendes",
+    "linkedin": "https://br.linkedin.com/in/luiz-carlos-mendes-0bb10050",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luiz Carlos Mendes - Positivo Service - LinkedIn Brasil",
+            "body": "· Experiência: POSITIVO SERVICE NEW ENERGY · Formação acadêmica: PUC PR · Localidade: São José dos Pinhais · + de 500 conexões no LinkedIn . Veja o perfil de Luiz Carlos Mendes no LinkedIn ,..."
+        },
+        "osint_metadata": {
+            "role": "positivo service new energy",
+            "bio": "Manutenção em motor ca /cc de baixa e alta tensão ,Turbo geradores ,transformadores… · Experiência: POSITIVO SERVICE NEW ENERGY · Formação acadêmica: PUC PR · Localidade: São José dos Pinhais · + de 500 conexões no LinkedIn. Veja o perfil de Luiz Carlos Mendes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/luiz-carlos-mendes-0bb10050",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:53:57.524784",
+    "candidate": "Gustavo Silva",
+    "linkedin": "https://br.linkedin.com/in/gustavo-silva-52a2b5260",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Silva - Ciências Contábeis |UNINTER | LinkedIn",
+            "body": "· Experiência: POSITIVO SERVICE · Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: São José dos Pinhais · 32 conexões no LinkedIn . Veja o perfil de Gustavo Silva..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: POSITIVO SERVICE · Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: São José dos Pinhais · 36 conexões no LinkedIn. Veja o perfil de Gustavo Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/gustavo-silva-52a2b5260",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:54:08.050547",
+    "candidate": "Diego Cardoso",
+    "linkedin": "https://br.linkedin.com/in/diego-cardoso-384643185",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Diego Cardoso - Montador na Positivo Service | LinkedIn",
+            "body": "Montador na Positivo Service · Experiência: POSITIVO SERVICE · Localidade: Curitiba · 155 conexões no LinkedIn . Veja o perfil de Diego Cardoso no LinkedIn , uma comunidade profissional..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: POSITIVO SERVICE · Localidade: Curitiba · 155 conexões no LinkedIn. Veja o perfil de Diego Cardoso no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/diego-cardoso-384643185",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:54:48.460464",
+    "candidate": "Hélio Bruck Rotenberg",
+    "linkedin": "https://br.linkedin.com/in/helio-bruck-rotenberg",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Hélio Bruck Rotenberg - Positivo Tecnologia | LinkedIn Positivo Tecnologia - LinkedIn Hélio Bruck Rotenberg - President of Positivo Tecnologia ... Fernando Falaschi on LinkedIn: Armazenamento local ou em ... Co Fundador do Grupo Positivo - LinkedIn Brasil Positivo Service - LinkedIn Brasil POSITIVO SERVICE - LinkedIn",
+            "body": "\"Empreendedor do Ano 2022 no Brasil \" e representante do país na edição global da iniciativa da Ernst & Young. O programa reconhece lideranças empresariais que contribuem para o ecossistema de... Positivo Tecnologia | 152,079 followers on LinkedIn . Somos uma empresa brasileira de tecnologia. Desenvolvemos soluções de hardware, software e serviços de TI. ‣ As founder and president of Positivo Tecnologia, a company which develops and manufactures technological solutions, I work with a team who is extraordinarily engaged in the purpose of making... A :upd8 é patrocinadora do AWS Cloud Experience BRASIL 2024 - Generative AI Edition que acontece amanhã em Campinas, SP. Será uma ótima oportunidade de nos conectar com empresas que desejam... Co Fundador do Grupo Positivo + Consultor Educacional do Bolsa Mais Brasil Gestor de Estágios na Smarter Estágios Servidor Público Estado do RJ · Co Fundador do Grupo Positivo +. Graduado em... Experiência: POSITIVO SERVICE · Localidade: São José dos Pinhais. Veja o perfil de Positivo Service no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. A Positivo Service , instalada em uma área de 15.000m2 no pólo industrial de São José dos Pinhais, região metropolitana de Curitiba, com grande facilidade logística."
+        },
+        "osint_metadata": {
+            "role": "positivo tecnologia",
+            "bio": "‣ Como fundador e presidente da Positivo Tecnologia, empresa que desenvolve e fabrica… · Experiência: Positivo Tecnologia · Formação acadêmica: Pontifícia Universidade Católica do Rio de Janeiro · Localidade: Curitiba · + de 500 conexões no LinkedIn. Veja o perfil de Hélio Bruck Rotenberg no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/helio-bruck-rotenberg",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:55:00.341622",
+    "candidate": "Hélio Bruck Rotenberg",
+    "linkedin": "https://br.linkedin.com/in/helio-bruck-rotenberg/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Hélio Bruck Rotenberg - President of Positivo Tecnologia ... Fernando Falaschi on LinkedIn: Armazenamento local ou em ... Co Fundador do Grupo Positivo - LinkedIn Brasil Positivo Service - LinkedIn Brasil POSITIVO SERVICE - LinkedIn",
+            "body": "‣ As founder and president of Positivo Tecnologia, a company which develops and manufactures technological solutions, I work with a team who is extraordinarily engaged in the purpose of making... A :upd8 é patrocinadora do AWS Cloud Experience BRASIL 2024 - Generative AI Edition que acontece amanhã em Campinas, SP. Será uma ótima oportunidade de nos conectar com empresas que desejam... Co Fundador do Grupo Positivo + Consultor Educacional do Bolsa Mais Brasil Gestor de Estágios na Smarter Estágios Servidor Público Estado do RJ · Co Fundador do Grupo Positivo +. Graduado em... Experiência: POSITIVO SERVICE · Localidade: São José dos Pinhais. Veja o perfil de Positivo Service no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. A Positivo Service , instalada em uma área de 15.000m2 no pólo industrial de São José dos Pinhais, região metropolitana de Curitiba, com grande facilidade logística."
+        },
+        "osint_metadata": {
+            "role": "positivo tecnologia",
+            "bio": "‣ As founder and president of Positivo Tecnologia, a company which develops and… · Experience: Positivo Tecnologia · Education: Pontifical Catholic University of Rio de Janeiro · Location: Curitiba · 500+ connections on LinkedIn. View Hélio Bruck Rotenberg’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/helio-bruck-rotenberg/en",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:55:13.128094",
+    "candidate": "Co Fundador do Grupo Positivo",
+    "linkedin": "https://br.linkedin.com/in/fernando-malafaia-b1223b284",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Co Fundador do Grupo Positivo - LinkedIn Brasil",
+            "body": "Co Fundador do Grupo Positivo + Consultor Educacional do Bolsa Mais Brasil Gestor de Estágios na Smarter Estágios Servidor Público Estado do RJ · Co Fundador do Grupo Positivo +. Graduado em..."
+        },
+        "osint_metadata": {
+            "role": "bolsa mais brasil",
+            "bio": "Co Fundador do Grupo Positivo+. Graduado em Gestão de Recursos Humanos pela UNiFTB… · Experiência: Bolsa Mais Brasil · Formação acadêmica: UNIFTB · Localidade: 25900-040 · 6 conexões no LinkedIn. Veja o perfil de Fernando Malafaia no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/fernando-malafaia-b1223b284",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:56:01.928896",
+    "candidate": "Roberto Manoel Silva Junior",
+    "linkedin": "https://br.linkedin.com/in/roberto-manoel-silva-junior-331b5733",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Roberto Manoel Silva Junior - Positivo Servers & Solutions | LinkedIn",
+            "body": "Over 15 years of experience in Business Management, Sales, Marketing and Product… · Experiência: Positivo Servers & Solutions · Formação acadêmica: Fundação ..."
+        },
+        "osint_metadata": {
+            "role": "positivo servers & solutions",
+            "bio": "Over 15 years of experience in Business Management, Sales, Marketing and Product… · Experiência: Positivo Servers & Solutions · Formação acadêmica: Fundação Getulio Vargas · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Roberto Manoel Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/roberto-manoel-silva-junior-331b5733",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-15T09:56:11.968925",
+    "candidate": "Ana Carolina",
+    "linkedin": "https://br.linkedin.com/in/ana-carolina-90866236",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ana Carolina - POSITIVO SERVICE | LinkedIn",
+            "body": "Experiência: POSITIVO SERVICE · Localidade: Brasil · 28 conexões no LinkedIn. Veja o perfil de Ana Carolina no LinkedIn, uma comunidade profissional de 1 ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: POSITIVO SERVICE · Localidade: Brasil · 28 conexões no LinkedIn. Veja o perfil de Ana Carolina no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/ana-carolina-90866236",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------

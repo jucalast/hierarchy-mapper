@@ -1973,8 +1973,11 @@ Retorne JSON:
         contact_name = params.get("contact_name", "Contato")
         subject = params.get("subject", "Assunto")
 
-        # Extrai histórico destilado para o contexto do redator
-        history_distilled = ""
+        from datetime import datetime, timedelta, timezone
+        br_time = datetime.now(timezone(timedelta(hours=-3)))
+        hour = br_time.hour
+        greeting = "Bom dia" if 5 <= hour < 12 else "Boa tarde" if 12 <= hour < 18 else "Boa noite"
+
         try:
             # Tenta pegar a destilação que já foi feita para a análise (arqueologia)
             history_distilled = await AgentService._distill_communications(
@@ -1993,8 +1996,8 @@ Retorne JSON:
                 body_hint=params.get("body") or params.get("message") or "",
                 history=history_distilled or "Sem histórico recente."
             )
-            # Adicionamos um reforço sistêmico para não assinar
-            prompt += "\n\nIMPORTANTE: Não inclua saudações finais como 'Atenciosamente' ou 'Obrigado', pois uma assinatura profissional será inserida automaticamente."
+            # Adicionamos um reforço sistêmico para não assinar e usar a saudação correta
+            prompt += f"\n\nIMPORTANTE:\n1. Comece o e-mail com '{greeting}, {contact_name}'.\n2. Não inclua saudações finais como 'Atenciosamente' ou 'Obrigado', pois uma assinatura profissional será inserida automaticamente."
 
             from services.ai.llm import ask_llm, LLMTier
             res = await ask_llm(prompt, tier=LLMTier.STANDARD)
@@ -2041,6 +2044,11 @@ Retorne JSON:
         contact_name = params.get("contact_name", "Contato")
         body_hint = params.get("message") or params.get("body") or ""
 
+        from datetime import datetime, timedelta, timezone
+        br_time = datetime.now(timezone(timedelta(hours=-3)))
+        hour = br_time.hour
+        greeting = "Bom dia" if 5 <= hour < 12 else "Boa tarde" if 12 <= hour < 18 else "Boa noite"
+
         # Extrai histórico destilado para o contexto do redator
         history_distilled = ""
         try:
@@ -2059,6 +2067,8 @@ Retorne JSON:
                 body_hint=body_hint,
                 history=history_distilled or "Sem histórico recente."
             )
+            # Reforço de saudação e proibição de assinatura formal no WhatsApp
+            prompt += f"\n\nIMPORTANTE:\n1. Comece a mensagem com '{greeting}, {contact_name}'.\n2. PROIBIDO incluir assinaturas como 'Att. João', 'Atenciosamente' ou qualquer outra. Termine de forma direta."
             from services.ai.llm import ask_llm, LLMTier
             res = await ask_llm(prompt, tier=LLMTier.FAST)
             refined = res.text

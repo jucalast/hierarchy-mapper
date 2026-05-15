@@ -1288,7 +1288,7 @@
         height: 40px;
         padding: 0 4px;
     }
-    
+
     .toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] .confirmRow1 :global(.toolbarDivider),
     .toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] .confirmRow1 [class*="toolbarDivider"] {
         display: block !important;
@@ -1952,8 +1952,13 @@
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .dealOwner {
@@ -3108,8 +3113,9 @@
     z-index: 1010;
 }
 
-.optionsContainer ~ .humanAnalysisTrigger {
-    bottom: calc(100% + 96px); /* Flutua suavemente em cima do carrossel quando estiver aberto! */
+.optionsContainer~.humanAnalysisTrigger {
+    bottom: calc(100% + 96px);
+    /* Flutua suavemente em cima do carrossel quando estiver aberto! */
 }
 
 .humanAnalysisTrigger:hover {
@@ -3321,6 +3327,7 @@
     color: #22c55e !important;
     background: rgba(34, 197, 94, 0.1) !important;
 }
+
 /* ==========================================
    Global Header Superior Styles
    ========================================== */
@@ -3330,7 +3337,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    background: linear-gradient(135deg, #1e2145 0%, #131313 40%);
+    background: linear-gradient(135deg, #1e2145 30%, #131313 80%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     flex-shrink: 0;
     z-index: 10;

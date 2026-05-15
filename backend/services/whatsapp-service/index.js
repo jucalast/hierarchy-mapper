@@ -15,6 +15,8 @@ app.use(express.json());
 // Limpeza manual do lockfile para evitar erro EBUSY em crashes
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
+
 const lockfilePath = path.join(__dirname, '.wwebjs_auth', 'session', 'lockfile');
 const sessionPath = path.join(__dirname, '.wwebjs_auth', 'session');
 
@@ -23,7 +25,23 @@ if (fs.existsSync(lockfilePath)) {
         console.log('[WA Service] 🧹 Removendo lockfile órfão para liberar a sessão...');
         fs.unlinkSync(lockfilePath);
     } catch (e) {
-        console.warn('[WA Service] ⚠️ Não foi possível remover o lockfile (pode estar em uso por outro processo):', e.message);
+        if (e.code === 'EBUSY') {
+            console.warn('[WA Service] ⚠️ Lockfile ocupado. Tentando forçar encerramento do Chrome...');
+            try {
+                // No Windows, mata processos chrome.exe que podem estar travando a pasta de sessão
+                execSync('taskkill /F /IM chrome.exe /T 2>nul');
+                // Pequena pausa para o SO liberar o arquivo
+                execSync('powershell Start-Sleep -Milliseconds 500');
+                if (fs.existsSync(lockfilePath)) {
+                    fs.unlinkSync(lockfilePath);
+                    console.log('[WA Service] ✅ Lockfile removido após forçar encerramento.');
+                }
+            } catch (killError) {
+                console.error('[WA Service] ❌ Falha crítica ao tentar liberar o lockfile:', killError.message);
+            }
+        } else {
+            console.warn('[WA Service] ⚠️ Erro ao remover lockfile:', e.message);
+        }
     }
 }
 

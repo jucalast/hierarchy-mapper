@@ -147,10 +147,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const notice = getNoticeStyle(modelActivity || []);
     const hasRunningTask = !!activeRunningTask;
 
+    const consoleBg = theme === 'dark' ? '#1e1e1e' : 'var(--chat-bg-primary)';
+
     const taskStyle = (hasRunningTask && !isExpandedRunningTask) ? {
         border: 'var(--chat-border-width) solid var(--chat-border-weak)',
-        background: 'rgba(19, 19, 19, 0.85)',
-        backdropFilter: 'blur(12px)',
+        background: consoleBg,
         borderRadius: 16,
         pointerEvents: 'auto' as const,
         overflow: 'hidden',
@@ -158,7 +159,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
     const inputContainerStyle = isExpandedRunningTask ? {
         position: 'absolute' as const,
-        top: 62,
+        top: '50%',
         bottom: 0,
         left: 0,
         width: '100%',
@@ -170,8 +171,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
     const expandedTaskStyle = isExpandedRunningTask ? {
         border: 'var(--chat-border-width) solid var(--chat-border-weak)',
-        background: 'rgba(19, 19, 19, 0.85)',
-        backdropFilter: 'blur(12px)',
+        background: consoleBg,
         borderRadius: 16,
         pointerEvents: 'auto' as const,
         display: 'flex',
@@ -215,7 +215,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     cursor: 'pointer',
                     userSelect: 'none',
                     transition: 'opacity 0.2s',
-                    background: 'transparent',
+                    background: '#1e1e1e',
                     borderTopLeftRadius: 15,
                     borderTopRightRadius: 15,
                 }}
@@ -268,7 +268,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 <div
                     style={{
                         padding: '14px 16px',
-                        margin: '0 8px',
                         flex: 1,
                         minHeight: 0,
                         overflowY: 'auto',
@@ -276,11 +275,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '10px',
-                        background: '#0d0d0d',
+                        background: '#1e1e1e',
                         borderRadius: '12px',
-                        borderWidth: 'var(--chat-border-width, 1.5px)',
-                        borderStyle: 'solid',
-                        borderColor: 'var(--chat-border-weak, rgba(255, 255, 255, 0.1))',
+                        borderTop: 'var(--chat-border-width, 1.5px) solid rgba(255, 255, 255, 0.08)',
+                        borderLeft: 'var(--chat-border-width, 1.5px) solid rgba(255, 255, 255, 0.08)',
+                        borderRight: 'var(--chat-border-width, 1.5px) solid rgba(255, 255, 255, 0.08)',
+                        borderBottom: 'none',
                     }}
                 >
                     {activeRunningTask.logs.length === 0 ? (
@@ -313,10 +313,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 <div
                     className={styles.inputBox}
                     style={isExpandedRunningTask ? {
-                        background: 'transparent',
-                        border: 'none',
-                        boxShadow: 'none',
-                        backdropFilter: 'none',
                         padding: '8px',
                     } : {}}
                 >

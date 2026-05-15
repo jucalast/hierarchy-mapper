@@ -8,12 +8,10 @@ Tipos:
 from __future__ import annotations
 
 import json
-import logging as _logging
 from typing import Any, Dict
-
 import httpx
-
-log = _logging.getLogger(__name__)
+from core.logging_config import get_logger
+log = get_logger(__name__)
 
 WA_BASE = "http://localhost:8001/api/whatsapp"
 EMAIL_SERVICE_BASE = "http://localhost:8002/api/email"
@@ -33,7 +31,9 @@ async def _resolve_wa_chat(client: httpx.AsyncClient, contact: str, phone: str =
     """Retorna (chat_id, nome_encontrado). Busca pelo telefone primeiro, depois por nome mais recente com fallback em contatos."""
     import re
     phone_digits = re.sub(r'\D', '', phone) if phone else ""
-    org_clean = _remove_diacritics(org_name) if org_name else ""
+    # Normaliza org_name removendo espaços E acentos para comparar com nomes colados
+    # (ex: "Master Sense" → "mastersense" para bater com "mastersense" no nome do chat)
+    org_clean = _remove_diacritics(org_name).replace(" ", "") if org_name else ""
     
     try:
         r = await client.get(f"{WA_BASE}/chats", timeout=10.0)
@@ -77,14 +77,18 @@ async def _resolve_wa_chat(client: httpx.AsyncClient, contact: str, phone: str =
                         if c_resp.status_code == 200:
                             best_contact = c_resp.json()
                             if best_contact and not best_contact.get("error"):
+                                # Valida nome: rejeita se o bridge retornou um contato cujo nome
+                                # não tem nenhuma palavra em comum com o contato esperado.
+                                # Evita falsos positivos (ex: retornar "Gabriel" ao buscar "Mariana Ruiz").
+                                returned_name = (best_contact.get("name") or "").lower().strip()
+                                contact_words = {w for w in contact.lower().split() if len(w) >= 3}
+                                if returned_name and contact_words and not any(w in returned_name for w in contact_words):
+                                    print(f"[WA Resolver] by-number({p}) retornou '{returned_name}' mas esperava '{contact}' — rejeitando nome divergente.")
+                                    continue
                                 cid = _chat_id_str(best_contact)
-                                # Se o bridge retornou um LID em vez do JID real,
-                                # prefere o campo 'number' para construir um JID enviável.
-                                cid_n = cid.split("@")[0] if "@" in cid else cid
-                                if cid_n.isdigit() and len(cid_n) > 13:
-                                    real_n = best_contact.get("number") or ""
-                                    if real_n.isdigit() and 10 <= len(real_n) <= 13:
-                                        cid = f"{real_n}@c.us"
+                                # Sempre usa o número do Pipedrive (phone_digits) como JID,
+                                # não o que o bridge retornou — o bridge pode ter dados errados.
+                                cid = f"{p}@c.us"
                                 return cid, best_contact.get("name") or contact
                     except Exception: continue
 
@@ -101,12 +105,46 @@ async def _resolve_wa_chat(client: httpx.AsyncClient, contact: str, phone: str =
             term = contact.lower()
             matches = [c for c in all_chats if term in (c.get("name") or "").lower()]
             
+            def _name_has_org(name: str) -> bool:
+                """Verifica se o nome do chat contém o org_clean (sem espaços para cobrir variações)."""
+                return org_clean in _remove_diacritics(name).replace(" ", "")
+
             # Se temos nome da empresa, prioriza quem tem o nome da empresa no chat
             if org_clean and matches:
-                org_matches = [c for c in matches if org_clean in _remove_diacritics(c.get("name") or "")]
+                org_matches = [c for c in matches if _name_has_org(c.get("name") or "")]
                 if org_matches: matches = org_matches
 
             if matches:
+                # Se org_name foi fornecido e nenhum match nos chats contém o nome da empresa,
+                # há risco de homônimo. Faz contacts search com threshold menor para tentar
+                # encontrar a versão específica (ex: "Mariana Ruiz - Compras MasterSense")
+                # antes de aceitar o match genérico dos chats ativos.
+                if org_clean and not any(_name_has_org(c.get("name") or "") for c in matches):
+                    try:
+                        c_resp_org = await client.get(
+                            f"{WA_BASE}/contacts/search",
+                            params={"name": contact, "minSimilarity": 0.6},
+                            timeout=5.0,
+                        )
+                        if c_resp_org.status_code == 200:
+                            c_data_org = c_resp_org.json()
+                            cl_org = c_data_org if isinstance(c_data_org, list) else (c_data_org.get("contacts") or [])
+                            org_specific = [c for c in cl_org if _name_has_org(c.get("name") or "")]
+                            if org_specific:
+                                best_specific = org_specific[0]
+                                chat_id_s = _chat_id_str(best_specific)
+                                cid_s = chat_id_s.split("@")[0] if "@" in chat_id_s else chat_id_s
+                                is_lid_s = "@lid" in chat_id_s or (cid_s.isdigit() and len(cid_s) > 13)
+                                # Para leitura: mantém o LID — mensagens ficam armazenadas sob ele.
+                                if is_lid_s and "@" not in chat_id_s:
+                                    chat_id_s = f"{cid_s}@lid"
+                                return chat_id_s, best_specific.get("name") or contact
+                    except Exception:
+                        pass
+                    # Nenhum contato org-específico encontrado — não aceita match de homônimo.
+                    # Retorna vazio para evitar enviar/ler mensagens do contato errado.
+                    return None, ""
+
                 exact_matches = [c for c in matches if term == (c.get("name") or "").lower()]
                 if exact_matches:
                     matches = exact_matches
@@ -116,30 +154,29 @@ async def _resolve_wa_chat(client: httpx.AsyncClient, contact: str, phone: str =
                     if isinstance(c.get("lastMessage"), dict) else 0,
                 )
                 return _chat_id_str(best), best.get("name", contact)
-        
+
         # 🔍 Fallback: Busca nos CONTATOS cadastrados por nome
         try:
             c_resp = await client.get(f"{WA_BASE}/contacts/search", params={"name": contact, "minSimilarity": 0.8}, timeout=5.0)
             if c_resp.status_code == 200:
                 c_data = c_resp.json()
                 contacts_list = c_data if isinstance(c_data, list) else c_data.get("contacts") or []
-                
+
                 if org_clean:
-                    org_contacts = [c for c in contacts_list if org_clean in _remove_diacritics(c.get("name") or "")]
+                    org_contacts = [c for c in contacts_list if _name_has_org(c.get("name") or "")]
                     if org_contacts: contacts_list = org_contacts
 
                 if contacts_list:
                     best_contact = contacts_list[0]
                     chat_id = _chat_id_str(best_contact)
 
-                    # Se o chat_id é um ID interno (LID via @lid ou número >13 dígitos via @c.us),
-                    # prefere o campo 'number' real do contato (número de telefone registrado).
-                    number_clean = best_contact.get("number") or ""
                     cid_num = chat_id.split("@")[0] if "@" in chat_id else chat_id
                     is_lid_like = "@lid" in chat_id or (cid_num.isdigit() and len(cid_num) > 13)
-                    if is_lid_like and number_clean.isdigit() and len(number_clean) <= 15:
-                        chat_id = f"{number_clean}@c.us"
-
+                    if is_lid_like:
+                        # Contato usa LID — mantém @lid para leitura.
+                        # Mensagens ficam armazenadas sob o LID, não sob o número @c.us.
+                        if "@" not in chat_id:
+                            chat_id = f"{cid_num}@lid"
                     found_name = best_contact.get("name") or contact
                     return chat_id, found_name
         except Exception:
@@ -356,6 +393,7 @@ async def _pipedrive_get_org_by_id(org_id: int):
 # ─── Executores: READ ─────────────────────────────────────────────────────────
 
 async def exec_whatsapp_get_messages(args: Dict[str, Any]) -> Dict[str, Any]:
+    import re as _re
     contact = args.get("contact", "")
     # Rejeita buscas com valores inválidos que o LLM às vezes gera ao perder o contexto
     if not contact or contact.strip().lower() in ("none", "null", "undefined", "n/a", ""):
@@ -370,18 +408,102 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             return {"ok": False, "error": "WhatsApp inacessível"}
 
-        chat_id, found_name = await _resolve_wa_chat(
-            client, 
-            contact, 
-            args.get("phone", ""), 
-            org_name=args.get("org_name", "")
-        )
-        if not chat_id:
-            return {"ok": False, "error": f"Contato '{contact}' não encontrado no WhatsApp"}
+        # Se o phone for um LID (>13 dígitos), tenta buscar mensagens diretamente via
+        # {LID}@lid — as conversas com contatos LID ficam sob esse ID, não sob o número.
+        phone_arg = args.get("phone", "")
+        phone_digits_arg = _re.sub(r'\D', '', phone_arg)
+        if phone_digits_arg and len(phone_digits_arg) > 13:
+            lid_chat_id = f"{phone_digits_arg}@lid"
+            try:
+                r_lid = await client.get(
+                    f"{WA_BASE}/chats/{lid_chat_id}/messages",
+                    params={"limit": limit},
+                    timeout=10.0,
+                )
+                if r_lid.status_code == 200:
+                    msgs_lid = r_lid.json()
+                    if isinstance(msgs_lid, dict):
+                        msgs_lid = msgs_lid.get("messages") or msgs_lid.get("data") or []
+                    if msgs_lid:
+                        fmt = []
+                        for m in msgs_lid:
+                            body = m.get("body") or m.get("text") or m.get("content") or ""
+                            if not body or (len(body) > 100 and " " not in body):
+                                continue
+                            sender = "Você" if m.get("fromMe") else contact
+                            fmt.append(f"[{sender}]: {body[:300]}")
+                        return {
+                            "ok": True,
+                            "contact": contact,
+                            "phone": "",  # LID — não expor ao LLM
+                            "messages": fmt,
+                            "count": len(fmt),
+                            "summary": (
+                                f"{len(fmt)} mensagens com {contact}"
+                                " — ATENÇÃO: este contato usa ID interno do WhatsApp;"
+                                " para enviar mensagens use o telefone cadastrado no Pipedrive"
+                            ),
+                        }
+            except Exception:
+                pass
+            # LID não retornou mensagens — tenta pelo número real do Pipedrive via _resolve
+            phone_arg = ""
+
+        # Sempre busca o número real no Pipedrive quando possível — ignora o que o LLM passou
+        # para evitar contaminação de contexto de sessões anteriores (ex: Gabriel/Walsywa).
+        org_name_arg = args.get("org_name", "")
+        if contact and org_name_arg:
+            try:
+                _verified_phone = await _pipedrive_phone_for_contact(contact, org_name_arg)
+                if _verified_phone:
+                    phone_digits_arg = _verified_phone
+            except Exception:
+                pass
+
+        if phone_digits_arg and len(phone_digits_arg) <= 13:
+            pd_chat_id = f"{phone_digits_arg}@c.us"
+            found_name = contact
+        else:
+            pd_chat_id = None
+
+        if pd_chat_id:
+            chat_id = pd_chat_id
+        else:
+            chat_id, found_name = await _resolve_wa_chat(
+                client,
+                contact,
+                phone_arg,
+                org_name=args.get("org_name", "")
+            )
+            if not chat_id:
+                return {"ok": False, "error": f"Contato '{contact}' não encontrado no WhatsApp"}
 
         r = await client.get(f"{WA_BASE}/chats/{chat_id}/messages", params={"limit": limit}, timeout=10.0)
         if r.status_code != 200:
-            return {"ok": False, "error": f"Erro ao buscar mensagens (HTTP {r.status_code})"}
+            # HTTP 500 por "No LID for user": contato usa LID interno do WhatsApp.
+            # Tenta resolver por nome via _resolve_wa_chat antes de desistir.
+            if r.status_code == 500 and chat_id == pd_chat_id:
+                try:
+                    chat_id_lid, found_name_lid = await _resolve_wa_chat(
+                        client, contact, "", org_name=args.get("org_name", "")
+                    )
+                    if chat_id_lid:
+                        r2 = await client.get(
+                            f"{WA_BASE}/chats/{chat_id_lid}/messages",
+                            params={"limit": limit}, timeout=10.0
+                        )
+                        if r2.status_code == 200:
+                            r = r2
+                            chat_id = chat_id_lid
+                            found_name = found_name_lid
+                        else:
+                            return {"ok": False, "error": f"Contato '{contact}' encontrado mas sem conversa ativa no WhatsApp"}
+                    else:
+                        return {"ok": False, "error": f"Contato '{contact}' não possui conversa ativa no WhatsApp (sem LID)"}
+                except Exception:
+                    return {"ok": False, "error": f"Contato '{contact}' não encontrado no WhatsApp (sem LID)"}
+            else:
+                return {"ok": False, "error": f"Erro ao buscar mensagens (HTTP {r.status_code})"}
 
         msgs_raw = r.json()
         if isinstance(msgs_raw, dict):
@@ -395,18 +517,18 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any]) -> Dict[str, Any]:
             sender = "Você" if m.get("fromMe") else (found_name or contact)
             formatted.append(f"[{sender}]: {body[:300]}")
 
-        # Se o chat_id for um LID (identificador interno do WhatsApp), não o expõe ao LLM.
-        # Números brasileiros têm no máximo 13 dígitos com DDI (5511999998888).
-        # Qualquer coisa acima disso é ID interno e não serve para enviar mensagens.
+        # O campo phone sempre usa o número do Pipedrive (args["phone"]), nunca o chat_id
+        # retornado pelo bridge — o bridge pode ter dados inconsistentes.
         phone_val = chat_id.split("@")[0] if "@" in chat_id else chat_id
         is_lid = "@lid" in chat_id or (phone_val.isdigit() and len(phone_val) > 13)
+        # Número canônico: preferência ao Pipedrive, fallback ao chat_id se não for LID
+        pipedrive_phone = _re.sub(r'\D', '', phone_arg) if phone_arg else ""
+        canonical_phone = pipedrive_phone if (pipedrive_phone and len(pipedrive_phone) <= 13) else ("" if is_lid else phone_val)
 
         return {
             "ok": True,
             "contact": found_name or contact,
-            # chat_id NÃO é exposto — o LLM confundia o ID interno com o telefone real,
-            # causando erro 404 ao tentar enviar. Use o telefone do Pipedrive para enviar.
-            "phone": "" if is_lid else phone_val,
+            "phone": canonical_phone,
             "messages": formatted,
             "count": len(formatted),
             "summary": f"{len(formatted)} mensagens com {found_name or contact}"
@@ -686,7 +808,10 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
             "count": len(result),
             "summary": (
                 f"{len(result)} contatos em {match.get('name')}: "
-                + ", ".join(f"{p['name']} (tel: {p['phone'] or 'nenhum'})" for p in result[:4])
+                + ", ".join(
+                    f"{p['name']} ({'WhatsApp:registrado' if p['phone'] and len(''.join(c for c in str(p['phone']) if c.isdigit())) > 13 else ('tel: ' + (p['phone'] or 'nenhum'))}, email: {p['email'] or 'nenhum'})"
+                    for p in result[:4]
+                )
             ),
         }
     except Exception as e:
@@ -712,6 +837,7 @@ async def exec_pipedrive_get_activities(args: Dict[str, Any], org_id: int | None
         activities = details.get("activities", []) if isinstance(details, dict) else []
         pending = [
             {"id": a.get("id"), "subject": a.get("subject"), "type": a.get("type"),
+             "person_name": a.get("person_name"),
              "due_date": a.get("due_date"), "note": (a.get("note") or "")[:100]}
             for a in activities if not a.get("done")
         ]
@@ -802,6 +928,7 @@ async def exec_pipedrive_get_all_activities(args: Dict[str, Any]) -> Dict[str, A
                 "id": act.get("id"),
                 "subject": act.get("subject", ""),
                 "type": act.get("type", ""),
+                "person_name": act.get("person_name"),
                 "org": org_name,
                 "org_id": org_pd_id,
                 "deal_id": act.get("deal_id"),
@@ -909,6 +1036,7 @@ async def _extract_org_domain(org_name: str, org_id: int | None = None) -> str |
 
 
 async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | None = None) -> Dict[str, Any]:
+    log.info("exec_email_get_contact_history", tool_args=args, org_id=org_id)
     contact_name = (args.get("contact_name") or "").lower()
     contact_email = (args.get("contact_email") or "").lower()
     org_name = (args.get("org_name") or "").strip()
@@ -940,6 +1068,17 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                 elif contact_name:
                     domain = await _extract_org_domain(contact_name, org_id=org_id)
 
+            # OTIMIZAÇÃO: Se temos o nome mas não o email, tentamos resolver o email no Pipedrive antes da busca.
+            # Isso evita falhas de substring no Outlook (ex: "Matheus Muniz" vs "matheus.muniz@...")
+            if contact_name and not contact_email and (org_name or org_id):
+                try:
+                    pd_email = await _pipedrive_email_for_contact(contact_name, org_name or "", org_id=org_id)
+                    if pd_email:
+                        log.info("email_search.contact_email_resolved", contact=contact_name, email=pd_email)
+                        contact_email = pd_email
+                except Exception:
+                    pass
+
             search_query = contact_email or contact_name
             if not search_query:
                 if domain and domain != JFERRES_DOMAIN:
@@ -970,24 +1109,20 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                 _fallback_query = next((w for w in _words if len(w) > 3 and w not in _sw), _words[0] if _words else None)
 
             async with httpx.AsyncClient(timeout=30.0) as client:
-                # Fazemos a busca direto na API passando a query para não carregar emails velhos à toa
-                inbox_r = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "Inbox", "limit": limit * 2, "q": search_query})
-                sent_r  = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "Itens Enviados", "limit": limit * 2, "q": search_query})
+                # "conversations" varre TODAS as pastas do Outlook recursivamente
+                all_r = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "conversations", "limit": limit * 2, "q": search_query})
 
                 all_messages = []
-                for resp in [inbox_r, sent_r]:
-                    if resp.status_code == 200:
-                        all_messages.extend(resp.json().get("messages", []))
+                if all_r.status_code == 200:
+                    all_messages.extend(all_r.json().get("messages", []))
 
-                # Retry com primeira palavra do nome da empresa se busca por domínio não achou nada
+                # Retry com primeira palavra do nome da empresa se busca não achou nada
                 if not all_messages and _fallback_query and _fallback_query != search_query:
-                    inbox_fb = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "Inbox", "limit": limit * 2, "q": _fallback_query})
-                    sent_fb  = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "Itens Enviados", "limit": limit * 2, "q": _fallback_query})
-                    for resp in [inbox_fb, sent_fb]:
-                        if resp.status_code == 200:
-                            all_messages.extend(resp.json().get("messages", []))
+                    fb_r = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "conversations", "limit": limit * 2, "q": _fallback_query})
+                    if fb_r.status_code == 200:
+                        all_messages.extend(fb_r.json().get("messages", []))
                     if all_messages:
-                        search_query = _fallback_query  # atualiza para o summary refletir a busca que achou
+                        search_query = _fallback_query
 
                         # Descobre domínio real pelos remetentes encontrados e salva no banco
                         discovered_domain = None
@@ -1035,6 +1170,20 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                                     await session.commit()
                             except Exception:
                                 pass
+
+                # Fallback: se não achou por nome, tenta pelo email real do Pipedrive.
+                # DEVE ficar dentro do `async with client` — client já fechado fora daqui.
+                if not all_messages and contact_name and not contact_email and (org_name or org_id):
+                    try:
+                        _pd_email = await _pipedrive_email_for_contact(contact_name, org_name or "", org_id=org_id)
+                        if _pd_email and _pd_email.lower() not in (search_query, contact_name):
+                            _em_r = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "conversations", "limit": limit * 2, "q": _pd_email})
+                            if _em_r.status_code == 200:
+                                all_messages.extend(_em_r.json().get("messages", []))
+                            if all_messages:
+                                search_query = _pd_email
+                    except Exception:
+                        pass
 
             if not all_messages:
                 label = contact_name or contact_email or org_name
@@ -1247,6 +1396,34 @@ async def exec_generate_call_script(args: dict) -> dict:
     }
 
 
+async def _pipedrive_email_for_contact(contact: str, org_name: str, org_id: int | None = None) -> str:
+    """Busca o email real de um contato no Pipedrive. Retorna string vazia se não encontrado."""
+    try:
+        from services.pipedrive.pipedrive_service import pipedrive_service
+        if org_id:
+            details = await pipedrive_service.get_organization_details(org_id)
+        else:
+            _, pd_org_id = await _pipedrive_find_org(org_name)
+            if not pd_org_id:
+                return ""
+            details = await pipedrive_service.get_organization_details(pd_org_id)
+        persons = details.get("persons", []) if isinstance(details, dict) else []
+        contact_lower = contact.lower()
+        for p in persons:
+            pname = (p.get("name") or "").lower()
+            if contact_lower in pname or pname in contact_lower:
+                email_list = p.get("email", [])
+                pd_email = next(
+                    (x.get("value") for x in email_list if x.get("value")),
+                    None
+                ) if isinstance(email_list, list) else None
+                if pd_email:
+                    return pd_email.lower()
+    except Exception as _e:
+        log.debug(f"_pipedrive_email_for_contact error: {_e}")
+    return ""
+
+
 async def _pipedrive_phone_for_contact(contact: str, org_name: str) -> str:
     """Busca o telefone real de um contato no Pipedrive. Retorna string vazia se não encontrado."""
     try:
@@ -1288,23 +1465,28 @@ async def exec_whatsapp_send_message(args: dict, messages: list | None = None, o
     if not contact:
         return {"ok": False, "error": "Falta o parâmetro obrigatório 'contact' para envio de WhatsApp."}
 
-    # ── Sanitiza o phone: se for LID (>13 dígitos) o LLM passou o ID interno do WhatsApp.
-    # Substitui imediatamente pelo telefone real do Pipedrive para garantir a entrega.
+    # O número do Pipedrive é a fonte de verdade — usa diretamente quando disponível.
     phone_digits = _re.sub(r'\D', '', phone)
+
+    # Se for LID (>13 dígitos), tenta buscar o número real no Pipedrive
     if phone_digits and len(phone_digits) > 13 and org_name:
         pd_phone = await _pipedrive_phone_for_contact(contact, org_name)
         if pd_phone:
             log.info(f"wa_send.lid_replaced phone_orig={phone_digits} pipedrive={pd_phone}")
-            phone = pd_phone
+            phone_digits = pd_phone
         else:
-            phone = ""  # não usa LID como telefone
+            phone_digits = ""
 
-    # Resolve o Chat ID usando a lógica resiliente (telefone > nome+empresa > nome)
+    # Resolve o Chat ID: se temos número real do Pipedrive, usa direto sem resolução por nome
     chat_id = None
-    resolved_name = None
+    resolved_name = contact
 
     if contact and "@" in contact:
         chat_id = contact
+        resolved_name = contact
+    elif phone_digits and len(phone_digits) <= 13:
+        # Número real do Pipedrive → chat_id direto, sem busca por nome
+        chat_id = f"{phone_digits}@c.us"
         resolved_name = contact
     else:
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -1405,16 +1587,26 @@ async def exec_generate_dossier(args: dict) -> dict:
 
 
 async def exec_generate_sales_message(args: dict, messages: list | None = None, org_id: int | None = None) -> dict:
-    """Gera uma mensagem de vendas focada em diferenciais e autoridade técnica, sem análise paralela."""
+    """Gera uma mensagem comercial: o LLM decide o modo (follow-up leve vs. venda ativa) com base no histórico e objetivo."""
     from services.ai.business_context_service import BusinessContextService
     from services.ai.llm.router import ask_llm
     from services.ai.llm.base import LLMTier
-    from datetime import datetime
+    from datetime import datetime, timedelta, timezone
 
     contact_name = args.get("contact_name", "")
     goal = args.get("goal", "fazer follow-up e avançar o negócio")
-    channel = args.get("channel", "whatsapp")
+    channel = args.get("channel", "whatsapp").lower()
     phone = args.get("phone", "")
+
+    # ── Saudação baseada no horário de Brasília (UTC-3)
+    br_time = datetime.now(timezone(timedelta(hours=-3)))
+    hour = br_time.hour
+    if 5 <= hour < 12:
+        greeting_hint = "Bom dia"
+    elif 12 <= hour < 18:
+        greeting_hint = "Boa tarde"
+    else:
+        greeting_hint = "Boa noite"
 
     if not messages:
         _reason = "None" if messages is None else "vazia"
@@ -1447,31 +1639,45 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
     biz_data_str = json.dumps(business_context, indent=2, ensure_ascii=False) if business_context else "Sem contexto configurado."
 
     channel_tone = (
-        "CANAL: WhatsApp — seja direto, natural e conversacional. Parágrafos curtos. Sem saudações formais."
-        if channel.lower() == "whatsapp" else
-        "CANAL: Email — pode ter mais profundidade técnica. Linha de assunto impactante. Evite parágrafos longos."
+        "CANAL: WhatsApp — seja direto, natural e conversacional. Parágrafos curtos. "
+        f"Comece SEMPRE com '{greeting_hint}, [Nome]'. "
+        "PROIBIDO incluir assinaturas formais (ex: 'Att. João', 'Atenciosamente', etc). "
+        "A mensagem deve terminar de forma natural ou com um CTA, sem assinatura de e-mail."
+        if channel == "whatsapp" else
+        "CANAL: Email — pode ter mais profundidade técnica. Linha de assunto impactante. Evite parágrafos longos. "
+        f"Comece com '{greeting_hint}, [Nome]'. "
+        "Escreva o corpo do e-mail de forma profissional. "
+        "NÃO inclua saudações finais como 'Atenciosamente' ou 'Obrigado', pois a assinatura será inserida automaticamente."
     )
 
     system_prompt = (
-        "Você é um redator comercial B2B sênior especializado em vendas consultivas de alta performance. "
-        "Sua ÚNICA tarefa nesta chamada é escrever UMA mensagem de vendas completa e pronta para envio. "
+        "Você é um redator comercial B2B sênior. "
+        "Sua ÚNICA tarefa é escrever UMA mensagem comercial completa e pronta para envio. "
         "Não faça diagnóstico, não liste opções, não explique sua estratégia. Escreva apenas a mensagem.\n\n"
-        f"## CONTEXTO DA NOSSA EMPRESA (use estes dados):\n{biz_data_str}\n\n"
-        "## PRINCÍPIOS OBRIGATÓRIOS:\n"
-        "1. **DIFERENCIAIS ACIMA DE PREÇO**: Nunca briga por preço. Posicione a empresa pelos diferenciais técnicos "
-        "configurados acima. Se o cliente mencionou concorrente mais barato, apresente o custo real do risco "
-        "(desperdício, retrabalho, ruptura de fornecimento) com dados concretos do histórico.\n"
-        "2. **AUTORIDADE TÉCNICA (CHALLENGER SALE)**: Ensine o cliente algo que ele ainda não sabe. Use ganchos como "
-        "Cálculo de Mackee, laboratório próprio, otimização de peso/resistência, análise de TCO. "
-        "Mostre que somos consultores técnicos, não apenas fornecedores.\n"
-        "3. **SPIN SELLING — DORES E IMPLICAÇÕES**: Identifique e mencione as dores reais do cliente no histórico "
-        "(atrasos, qualidade inconsistente, risco de ruptura) para criar urgência genuína.\n"
-        "4. **DATA-DRIVEN**: Cite itens específicos (códigos, quantidades, preços reais do histórico). "
-        "NUNCA use placeholders como [item], [preço], [empresa].\n"
-        "5. **ANTI-GENÉRICO**: JAMAIS comece com 'Prezado', 'Espero que esteja bem', 'Tudo bem?', 'Como vai?'. "
-        "Comece direto no ponto ou com uma provocação técnica relevante.\n"
-        "6. **ZERO REDUNDÂNCIA**: Não pergunte o que já foi respondido no histórico. Use os dados fornecidos como argumento.\n"
-        "7. **TOM**: Natural, assertivo, consultivo. Mensagem pronta para copiar e enviar — sem colchetes, sem placeholders.\n"
+        f"## CONTEXTO DA NOSSA EMPRESA (disponível se necessário):\n{biz_data_str}\n\n"
+        "## INTELIGÊNCIA DE CONTEXTO — LEIA O HISTÓRICO E DECIDA O MODO:\n\n"
+        "**MODO 1 — FOLLOW-UP SIMPLES**\n"
+        "Use quando: o objetivo é cobrar retorno/resposta/confirmação E o histórico não mostra objeções ativas.\n"
+        "→ Mensagem curta (máx. 3-4 linhas). Referencie o que ficou pendente. Tom humano, sem pressão. CTA único.\n"
+        "→ PROIBIDO: diferenciais técnicos, laboratório, certificações, TCO, pitch de vendas. "
+        "Inserir argumentos de venda num follow-up simples passa despreparo e é invasivo.\n\n"
+        "**MODO 2 — FOLLOW-UP COM OBJEÇÃO**\n"
+        "Use quando: o objetivo é dar continuidade MAS o histórico mostra uma objeção clara e não respondida "
+        "(ex: 'está caro', 'estou com outro fornecedor', 'preciso pensar', reclamação de qualidade, prazo).\n"
+        "→ Mensagem moderada (4-6 linhas). Reconheça o contexto brevemente, depois endereço a objeção "
+        "com UM argumento cirúrgico e baseado em dados reais do histórico. Não faça lista de diferenciais — "
+        "escolha o argumento mais relevante para aquela objeção específica. Feche com CTA claro.\n\n"
+        "**MODO 3 — VENDA ATIVA**\n"
+        "Use quando: primeiro contato, reativação de lead frio, apresentação de proposta, "
+        "rebate de concorrente direto, criação de urgência comercial.\n"
+        "→ Use os diferenciais técnicos e contexto da empresa acima. CHALLENGER SALE: ensine algo que o cliente "
+        "ainda não sabe. SPIN SELLING: mencione dores reais do histórico. DATA-DRIVEN: cite itens reais "
+        "(códigos, preços, datas). NUNCA use placeholders.\n\n"
+        "## REGRAS UNIVERSAIS:\n"
+        "- ANTI-GENÉRICO: JAMAIS comece com 'Prezado', 'Espero que esteja bem', 'Tudo bem?', 'Como vai?'\n"
+        "- ZERO REDUNDÂNCIA: não pergunte o que já foi respondido no histórico\n"
+        "- ZERO PLACEHOLDERS: nunca use [nome], [empresa], [item], [preço] — só dados reais\n"
+        "- Tom natural, assertivo, sem desespero\n"
         f"Hoje é {datetime.now().strftime('%A, %d/%m/%Y')}.\n\n"
         f"{channel_tone}\n\n"
         "RETORNE APENAS O TEXTO DA MENSAGEM. Sem introdução, sem explicação, sem título. Só a mensagem."
@@ -1480,9 +1686,14 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
     prompt_user = (
         f"CONTATO: {contact_name}" + (f" (Tel: {phone})" if phone else "") + "\n"
         f"OBJETIVO: {goal}\n\n"
-        "Leia TODO o histórico disponível e escreva a mensagem ideal para atingir este objetivo. "
-        "Use os dados reais do histórico (preços citados, itens, objeções, fornecedores mencionados) e posicione "
-        "nossa empresa pelos diferenciais e autoridade técnica — não pela competição de preço."
+        "Leia TODO o histórico disponível. Identifique:\n"
+        "1. O que está pendente/em aberto\n"
+        "2. Se há objeções não respondidas do cliente\n"
+        "3. Qual é o momento real da negociação\n\n"
+        "Depois escolha o modo correto e escreva a mensagem:\n"
+        "- Sem objeções ativas → MODO 1 (follow-up simples, breve)\n"
+        "- Com objeção não respondida → MODO 2 (follow-up + argumento cirúrgico)\n"
+        "- Primeiro contato / venda ativa → MODO 3 (diferenciais + SPIN + dados reais)"
     )
 
     try:
@@ -1496,6 +1707,19 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         )
 
         draft = res.text.strip()
+
+        # ── Injeção de Assinatura para Email (se disponível)
+        if channel == "email":
+            try:
+                import httpx
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    resp = await client.get("http://localhost:8002/api/email/signature")
+                    if resp.status_code == 200:
+                        signature = resp.json().get("signature", "")
+                        if signature:
+                            draft = f"{draft}<br><br><!-- SIGNATURE_START -->{signature}<!-- SIGNATURE_END -->"
+            except:
+                pass
 
         return {
             "ok": True,
@@ -1768,11 +1992,11 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "executor": exec_email_get_inbox,
     },
     "email_get_contact_history": {
-        "description": "Busca TODO o histórico de e-mails (caixa de entrada e enviados). ÚNICA ferramenta permitida para investigar e-mails de uma empresa ou contato. IMPORTANTE: Se a empresa NÃO tiver contatos cadastrados, você DEVE chamar esta ferramenta passando o 'domain' (se souber) ou o 'org_name' para buscar e-mails da empresa.",
+        "description": "Busca TODO o histórico de e-mails (caixa de entrada e enviados). ÚNICA ferramenta permitida para investigar e-mails de uma empresa ou contato. IMPORTANTE: Se você tiver o e-mail do contato (encontrado em pipedrive_get_persons), é OBRIGATÓRIO passar o 'contact_email' para garantir a precisão da busca. Se a empresa NÃO tiver contatos cadastrados, passe o 'domain' ou 'org_name'.",
         "args_schema": {
             "contact_name": "string opcional (nome do contato)",
-            "contact_email": "string opcional (e-mail do contato)",
-            "org_name": "string opcional (nome da empresa — fallback se não tiver contatos)",
+            "contact_email": "string opcional (e-mail do contato — USE SEMPRE QUE TIVER)",
+            "org_name": "string opcional (nome da empresa — ajuda no fallback)",
             "domain": "string opcional (domínio do site/email da empresa. Ex: 'empresa.com.br')",
             "limit": "int (padrão 25)",
         },
@@ -1993,9 +2217,19 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "executor": exec_open_hierarchy_drawer,
     },
     "suggest_next_actions": {
-        "description": "Gere botões de ação estruturados baseados nas informações reais encontradas. Chame esta ferramenta NA MESMA VEZ que gerar ou entregar o Dossiê Final. Cada item será um botão que o usuário pode aprovar e você vai executar usando as informações/IDs encontrados.",
+        "description": (
+            "Gera um conjunto personalizado de próximos passos executáveis baseados no contexto REAL do negócio. "
+            "O serviço analisa automaticamente o histórico da conversa (dados do Pipedrive, WhatsApp, Email) e "
+            "gera 5-8 sugestões cobrindo TODAS as categorias: mensagens, tarefas CRM, agendamento de reuniões, "
+            "atualização de deals, estratégias. "
+            "QUANDO CHAMAR: após qualquer investigação concluída, ao final de um follow-up enviado, "
+            "ou quando o usuário pede próximos passos. "
+            "PODE passar 'actions' como array vazio [] — o serviço extrai contexto do histórico automaticamente. "
+            "IMPORTANTE: inclua no array 'actions' apenas se você já sabe as ações específicas com IDs; "
+            "caso contrário, passe [] e o serviço gerará as sugestões com base no histórico."
+        ),
         "args_schema": {
-            "actions": "array de objetos contendo chaves: 'label' (Texto curto do botão, ex: 'Concluir atividade ID 123'), 'prompt' (Instrução detalhada que será enviada de volta pra você pedindo para executar a ação, ex: 'Use pipedrive_update_task na atividade 123 com done=true')"
+            "actions": "array (pode ser vazio []) — o serviço gera sugestões automaticamente a partir do histórico. Se quiser pré-definir alguma ação específica com IDs concretos, inclua objetos com 'label' e 'prompt'."
         },
         "type": "read",
         "executor": exec_suggest_next_actions,

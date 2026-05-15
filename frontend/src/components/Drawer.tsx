@@ -162,17 +162,22 @@ export const Drawer: React.FC<DrawerProps> = ({
         try {
             const data = await orgsApi.getOrganizationDetails(orgId);
             setOrgDetails(prev => ({ ...prev, [orgId]: data }));
-            
-            // Persiste no cache para que na próxima abertura o dado atualizado seja lido
             if (typeof window !== 'undefined') {
                 window.localStorage.setItem(`org-${orgId}-details`, JSON.stringify(data));
             }
+            if (force) {
+                addNotification('success', 'Dados sincronizados com o Pipedrive.');
+            }
         } catch (e: any) {
             console.error('Erro ao carregar detalhes:', e.message || e);
+            if (force) {
+                const msg = (e as any)?.message || 'Erro ao sincronizar. Tente novamente.';
+                addNotification('error', msg);
+            }
         } finally {
             setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
         }
-    }, [orgDetails]);
+    }, [orgDetails, addNotification]);
 
     useEffect(() => {
         if (refreshDetailsTrigger > 0) {

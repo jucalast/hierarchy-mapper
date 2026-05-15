@@ -104,6 +104,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
         setIsLoading(false);
         setV2Streaming(false);
+        setActiveRunningTask(prev => prev?.status === 'streaming' ? { ...prev, status: 'done' } : prev);
         setLiveModel(null);
         setModelActivity([]);
     }, []);
@@ -147,6 +148,34 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             taskConsoleLogsBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
     }, [activeRunningTask?.logs, activeRunningTask?.isExpanded]);
+
+    // ─── Recover: retoma mapeamento após reload de página ───────────────────
+    useEffect(() => {
+        const pending = localStorage.getItem('pending-hierarchy-continuation');
+        const activeJob = localStorage.getItem('active-discovery-job');
+        if (!pending || !activeJob) return;
+
+        let ctx: any;
+        try { ctx = JSON.parse(pending); } catch { return; }
+
+        // Mostra estado de loading enquanto o worker ainda roda
+        setIsLoading(true);
+        setV2Streaming(true);
+
+        const handleScanDone = (e: Event) => {
+            window.removeEventListener('hierarchy_scan_done', handleScanDone);
+            const contacts = (e as CustomEvent).detail?.contacts || [];
+            handleMainChatMappingDone(contacts, ctx.event as V2Event);
+        };
+
+        window.addEventListener('hierarchy_scan_done', handleScanDone);
+
+        // Dispara evento para o HierarchyMappingCard (se ainda montado) mostrar "scanning"
+        window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
+
+        return () => window.removeEventListener('hierarchy_scan_done', handleScanDone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
 
 
@@ -392,7 +421,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         <ChatInput
             inputValue={inputValue}
             setInputValue={handleInputChange}
-            isLoading={isLoading}
+            isLoading={isLoading || activeRunningTask?.status === 'streaming'}
             onSend={handleSendMessage}
             selectedCompanies={selectedCompanies}
             setSelectedCompanies={setSelectedCompanies}
@@ -880,7 +909,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             }
 
             for (const ev of collectedEvents) {
-                if (ev.type === 'hierarchy_mapping_required') hasMappingRequired = true;
+                if (ev.type === 'hierarchy_mapping_required') {
+                    hasMappingRequired = true;
+                    // Persiste contexto para sobreviver a reloads enquanto o worker roda
+                    localStorage.setItem('pending-hierarchy-continuation', JSON.stringify({
+                        thread_id: activeThread?.id || null,
+                        org_id: selectedOrgId || null,
+                        org_name: selectedOrgName || ev.org_name || null,
+                        event: ev,
+                    }));
+                }
                 if (ev.type === 'confirmation_required') hasConfirmationRequired = true;
             }
 
@@ -921,6 +959,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // ─── V2: lidar com finalização de mapeamento no chat principal
     // ─── V2: lidar com finalização de mapeamento no chat principal
     const handleMainChatMappingDone = async (contacts: any[], event?: V2Event) => {
+        // Limpa contexto persistido — mapeamento concluído com sucesso
+        localStorage.removeItem('pending-hierarchy-continuation');
         const contactsSummary = contacts.length > 0 
             ? `Contatos mapeados:\n${contacts.map(c => `- ${c.name} (Level: ${c.level}, Email: ${c.email}, Phone: ${c.phone}, Decisor: ${c.decision_maker ? 'Sim' : 'Não'}, Temp: ${c.temperature})`).join('\n')}`
             : 'Nenhum contato retornado pelo mapeamento.';
@@ -1464,9 +1504,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             className={styles.messagesContainer} 
                             style={{
                                 paddingBottom: activeRunningTask?.isExpanded ? '440px' : undefined,
-                                filter: activeRunningTask?.isExpanded ? 'blur(10px)' : 'none',
-                                opacity: activeRunningTask?.isExpanded ? 0.45 : 1,
-                                transition: 'filter 0.3s ease, opacity 0.3s ease, padding-bottom 0.3s ease',
+                                opacity: activeRunningTask?.isExpanded ? 0.55 : 1,
+                                transition: 'opacity 0.3s ease, padding-bottom 0.3s ease',
                             }}
                             ref={scrollContainerRef} 
                             onScroll={handleScroll}

@@ -25,7 +25,7 @@ export interface V2Event {
     ok?: boolean;
     action_id?: string;
     preview?: string;
-    actions?: Array<{ label: string; prompt: string }>;
+    actions?: Array<{ label: string; prompt: string; razao?: string; categoria?: string }>;
     response?: string;
     model?: string;
     wait_sec?: number;
@@ -38,6 +38,7 @@ export interface V2Event {
     deal_id?: number | null;
     activity_id?: number | null;
     pre_task_id?: number | null;
+    error?: string;
 }
 
 import { AIModel } from './ModelSelector';
@@ -296,15 +297,16 @@ const ConfirmationCard: React.FC<{
 
     const tool = event.tool || '';
     const isEmail = tool === 'email_send' || tool === 'email_reply';
+    const isPipedrive = tool.startsWith('pipedrive_');
     
     // Configurações visuais por canal
     const channelConfig = {
         bg: 'transparent',
         border: 'rgba(255, 255, 255, 0.1)',
         headerBg: 'transparent',
-        icon: isEmail ? '/outlook.png' : '/wppicon.png',
-        iconSize: isEmail ? 16 : 14,
-        accentColor: isEmail ? '#0078d4' : '#22c55e',
+        icon: isEmail ? '/outlook.png' : isPipedrive ? '/pipedrive.png' : '/wppicon.png',
+        iconSize: isEmail ? 16 : isPipedrive ? 16 : 14,
+        accentColor: isEmail ? '#0078d4' : isPipedrive ? '#f36e21' : '#22c55e',
         labelColor: 'rgba(255,255,255,0.4)',
     };
 
@@ -346,7 +348,7 @@ const ConfirmationCard: React.FC<{
             }}>
                 <img src={channelConfig.icon} alt="Channel" style={{ width: channelConfig.iconSize, height: channelConfig.iconSize, borderRadius: 3 }} />
                 <span style={{ fontSize: 'var(--font-xs)', color: channelConfig.labelColor, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>
-                    {isEmail ? 'CONFIRMAR E-MAIL' : 'CONFIRMAR WHATSAPP'}
+                    {isEmail ? 'CONFIRMAR E-MAIL' : isPipedrive ? 'CONFIRMAR PIPEDRIVE' : 'CONFIRMAR WHATSAPP'}
                 </span>
                 {hasAttachment && (
                     <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#a855f7', background: 'rgba(168,85,247,0.12)', borderRadius: 4, padding: '2px 7px', fontWeight: 600 }}>
@@ -648,7 +650,7 @@ const getCompanyFromLabel = (label: string): string => {
 };
 
 const SuggestedActionTask: React.FC<{
-    action: { label: string; prompt: string; status?: TaskStatus; logs?: V2Event[] };
+    action: { label: string; prompt: string; razao?: string; categoria?: string; status?: TaskStatus; logs?: V2Event[] };
     streamV2Url: string;
     confirmV2Url: string;
     orgId?: number | null;
@@ -841,220 +843,184 @@ const SuggestedActionTask: React.FC<{
         setLocalStatus('done');
     };
 
-    const canExpand = !externalStatus && status !== 'pending' && status !== 'rejected';
+    const canExpand = status !== 'pending' && status !== 'rejected';
     const isActive = status === 'streaming';
 
-    const statusIcon = {
-        pending:          <span style={{ width: 12, height: 12, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.2)', display: 'inline-block', flexShrink: 0 }} />,
-        streaming:        <Loader2 size={12} className={styles.spinner} style={{ flexShrink: 0 }} />,
-        awaiting_confirm: <AlertTriangle size={12} style={{ color: '#f59e0b', flexShrink: 0 }} />,
-        awaiting_mapping: <Network size={12} style={{ color: '#818cf8', flexShrink: 0 }} />,
-        done:             <CheckCircle2 size={12} style={{ color: '#10b981', flexShrink: 0 }} />,
-        rejected:         <XCircle size={12} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />,
-        error:            <XCircle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />,
-    }[status];
+    // Canal a partir da categoria (mais confiável que detectar pelo texto do label)
+    const CHANNEL_CFG: Record<string, { img?: string; label: string; accentColor: string }> = {
+        whatsapp:   { img: '/wppicon.png',   label: 'WHATSAPP',   accentColor: '#22c55e' },
+        email:      { img: '/outlook.png',   label: 'E-MAIL',     accentColor: '#0078d4' },
+        tarefa_crm: { img: '/pipedrive.png', label: 'PIPEDRIVE',  accentColor: '#f36e21' },
+        reuniao:    { img: '/pipedrive.png', label: 'PIPEDRIVE',  accentColor: '#f59e0b' },
+        estrategia: {                        label: 'ESTRATÉGIA', accentColor: '#ec4899' },
+    };
+    const channelCfg = CHANNEL_CFG[action.categoria || ''] ?? { label: 'TAREFA', accentColor: '#6b7280' };
+    const accentColor = channelCfg.accentColor;
+
+    // Limpa prefixos de canal do label (legado de prompts anteriores)
+    const LABEL_PREFIXES = ['whatsapp:', 'e-mail:', 'email:', 'tarefa crm:', 'tarefa:', 'estratégia:', 'estrategia:', 'reunião:', 'reuniao:', 'pipedrive:'];
+    const cleanLabel = (() => {
+        const lower = action.label.toLowerCase();
+        for (const prefix of LABEL_PREFIXES) {
+            if (lower.startsWith(prefix)) return action.label.slice(prefix.length).trim();
+        }
+        return action.label;
+    })();
 
     const category = detectTaskCategory(action.label);
     const catCfg = CATEGORY_CONFIG[category];
-    const { icon, color } = { icon: catCfg.icon, color: catCfg.color };
-    const isLinkedIn = action.label.toLowerCase().includes('linkedin');
+    const isManual = action.label.toLowerCase().includes('linkedin') || catCfg.isManual;
 
-    const metaItems = [];
-    metaItems.push(
-        <span key="meta-cat" className={timelineStyles.metaItem} style={{ color: catCfg.color, fontWeight: 600 }}>
-            {catCfg.label}
-        </span>
-    );
-    if (isLinkedIn || catCfg.isManual) {
-        metaItems.push(
-            <span key="meta-manual" className={timelineStyles.metaItem} style={{ color: '#eab308', display: 'flex', alignItems: 'center', gap: 3 }}>
-                Ação manual
-            </span>
-        );
-    }
-    metaItems.push(
-        <span key="meta-user" className={timelineStyles.metaItem}>
-            <User size={10} /> João Luccas
-        </span>
-    );
-    if (selectedOrgName) {
-        metaItems.push(
-            <span key="meta-org" className={timelineStyles.metaItem}>
-                <Building2 size={10} /> {selectedOrgName}
-            </span>
+    // Estado compacto (concluído / rejeitado / erro)
+    if (status === 'done' || status === 'rejected' || status === 'error') {
+        return (
+            <div className={styles.logLine} style={{ marginBottom: isLast ? 0 : 6 }}>
+                {status === 'done'
+                    ? <CheckCircle2 size={12} style={{ color: accentColor, flexShrink: 0 }} />
+                    : status === 'error'
+                        ? <XCircle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />
+                        : <XCircle size={12} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                }
+                <span style={{ opacity: status === 'rejected' ? 0.35 : 1 }}>{action.label}</span>
+                <span style={{ opacity: 0.3 }}>· {status === 'done' ? 'executado' : status === 'rejected' ? 'ignorado' : 'erro'}</span>
+            </div>
         );
     }
 
     return (
-        <div 
-            style={{
-                marginBottom: isLast ? 0 : 16,
-                minHeight: 'auto',
+        <div style={{
+            borderRadius: 10,
+            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'transparent',
+            overflow: 'hidden',
+            marginBottom: isLast ? 0 : 10,
+            transition: 'border-color 0.2s ease',
+        }}>
+            {/* Header — mesmo padrão do ConfirmationCard */}
+            <div style={{
                 display: 'flex',
-                flexDirection: 'column',
-                width: '100%',
-            }}
-            onMouseEnter={() => setIsRowHovered(true)}
-            onMouseLeave={() => setIsRowHovered(false)}
-        >
-            {/* Conteúdo do Card */}
-            <div 
-                style={{ 
-                    cursor: canExpand ? 'pointer' : 'default',
-                    userSelect: 'text',
-                    width: '100%',
-                }}
-                onClick={() => {
-                    const selection = window.getSelection();
-                    if (selection && selection.toString().trim().length > 0) {
-                        return;
-                    }
-                    if (canExpand) setIsExpanded(e => !e);
-                }}
-            >
-                <div className={timelineStyles.eventHeader} style={{ background: 'transparent', border: 'none', padding: '4px 0', minHeight: 'auto' }}>
-                    <div className={timelineStyles.titleArea} style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                        <span style={{ color: color, display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
-                            {icon}
-                        </span>
-                        <span className={timelineStyles.eventTitle} style={{ fontSize: '13px', fontWeight: 600, color: status === 'rejected' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.95)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{action.label}</span>
-                        {(isLinkedIn || catCfg.isManual) && status === 'pending' && (
-                            <span style={{ flexShrink: 0, fontSize: 9, color: '#eab308', background: 'rgba(234,179,8,0.12)', borderRadius: 3, padding: '2px 5px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                                Manual
-                            </span>
-                        )}
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 12px',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
+            }}>
+                {channelCfg.img
+                    ? <img src={channelCfg.img} alt={channelCfg.label} style={{ width: 14, height: 14, borderRadius: 2, objectFit: 'contain' }} />
+                    : <span style={{ color: accentColor, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{catCfg.icon}</span>
+                }
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.07em', fontWeight: 700, textTransform: 'uppercase' }}>
+                    {channelCfg.label}
+                </span>
+                {isManual && (
+                    <span style={{ fontSize: 9, color: '#eab308', background: 'rgba(234,179,8,0.12)', borderRadius: 3, padding: '2px 5px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                        Ação Manual
+                    </span>
+                )}
+                {/* Status badge (execução ativa) */}
+                {(status === 'streaming' || status === 'awaiting_confirm' || status === 'awaiting_mapping') && (
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: status === 'awaiting_confirm' ? '#f59e0b' : status === 'awaiting_mapping' ? '#818cf8' : 'rgba(255,255,255,0.5)' }}>
+                        {status === 'streaming'
+                            ? <><Loader2 size={10} className={styles.spinner} /><span>Executando...</span></>
+                            : status === 'awaiting_confirm'
+                                ? <><AlertTriangle size={10} /><span>Aguardando confirmação</span></>
+                                : <><Network size={10} /><span>Mapeando...</span></>
+                        }
                     </div>
-                    
-                    {/* Botões de Ação */}
-                    {status === 'pending' ? (
-                        <div 
-                            style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: 6, 
-                                flexShrink: 0,
-                                opacity: isRowHovered ? 1 : 0.4,
-                                transform: isRowHovered ? 'translateX(0)' : 'translateX(4px)',
-                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                            }}
-                        >
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleApprove();
-                                }}
-                                title="Aprovar"
-                                style={{
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: 6,
-                                    border: 'none',
-                                    background: 'rgba(52, 209, 124, 0.1)',
-                                    color: '#34d17c',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    padding: 0,
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'rgba(52, 209, 124, 0.25)';
-                                    e.currentTarget.style.transform = 'scale(1.08)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(52, 209, 124, 0.1)';
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                }}
-                            >
-                                <Check size={14} strokeWidth={2.5} />
-                            </button>
-                            
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setLocalStatus('rejected');
-                                }}
-                                title="Reprovar"
-                                style={{
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: 6,
-                                    border: 'none',
-                                    background: 'rgba(239, 68, 68, 0.1)',
-                                    color: '#ef4444',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    padding: 0,
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
-                                    e.currentTarget.style.transform = 'scale(1.08)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                }}
-                            >
-                                <X size={14} strokeWidth={2.5} />
-                            </button>
-                        </div>
-                    ) : status === 'rejected' ? (
-                        <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.2)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>
-                            Rejeitada
-                        </span>
-                    ) : status === 'done' ? (
-                        <span style={{ fontSize: '11px', color: '#10b981', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle2 size={12} /> Aprovada
-                        </span>
-                    ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11px', color: 'var(--chat-accent-color)' }}>
-                            <Loader2 size={12} className={styles.spinner} />
-                            <span>Executando...</span>
-                        </div>
-                    )}
+                )}
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '10px 12px' }}>
+                {/* Título da ação — sem prefixo de canal */}
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.92)', marginBottom: action.razao ? 6 : 0, lineHeight: 1.4 }}>
+                    {cleanLabel}
                 </div>
 
-                <div className={timelineStyles.eventMeta} style={{ marginBottom: 0 }}>
-                    {metaItems.map((item, index) => (
-                        <React.Fragment key={index}>
-                            {item}
-                            {index < metaItems.length - 1 && <span className={timelineStyles.metaSeparator}>•</span>}
-                        </React.Fragment>
-                    ))}
-                </div>
-
-                {/* Accordion de eventos inline */}
-                {isExpanded && taskEvents.length > 0 && (
-                    <div 
-                        style={{
-                            marginTop: 12,
-                            background: 'rgba(255, 255, 255, 0.02)',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            borderRadius: 12,
-                            padding: '12px 14px',
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <InlineEventStream
-                            events={taskEvents}
-                            isStreaming={isActive}
-                            inlineConfirmed={inlineConfirmed}
-                            onInlineConfirm={handleInlineConfirm}
-                            onHierarchyMappingDone={handleMappingComplete}
-                            model={model}
-                        />
+                {/* Razão — itálico, como preview no ConfirmationCard */}
+                {action.razao && (
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                        {action.razao}
                     </div>
                 )}
 
-                {/* Spinner enquanto streaming mas accordion fechado */}
-                {isActive && !isExpanded && (
-                    <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>
-                        <Loader2 size={10} className={styles.spinner} />
-                        <span>Sincronizando com o CRM...</span>
+                {/* Accordion de eventos inline */}
+                {canExpand && taskEvents.length > 0 && (
+                    <div
+                        style={{ marginTop: 10, cursor: 'pointer' }}
+                        onClick={() => setIsExpanded(e => !e)}
+                    >
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}>▶</span>
+                            {isExpanded ? 'ocultar detalhes' : 'ver detalhes'}
+                        </div>
+                        {isExpanded && (
+                            <div
+                                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 12px' }}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <InlineEventStream
+                                    events={taskEvents}
+                                    isStreaming={isActive}
+                                    inlineConfirmed={inlineConfirmed}
+                                    onInlineConfirm={handleInlineConfirm}
+                                    onHierarchyMappingDone={handleMappingComplete}
+                                    model={model}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Botões — apenas no estado pending */}
+                {status === 'pending' && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                        <button
+                            onClick={handleApprove}
+                            style={{
+                                flex: 1,
+                                padding: '7px 12px',
+                                borderRadius: 7,
+                                border: 'none',
+                                background: accentColor,
+                                color: '#fff',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 5,
+                                transition: 'opacity 0.15s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
+                            onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+                        >
+                            <Check size={12} strokeWidth={2.5} />
+                            {isManual ? 'Marcar como feito' : 'Executar'}
+                        </button>
+                        <button
+                            onClick={() => setLocalStatus('rejected')}
+                            style={{
+                                flex: 1,
+                                padding: '7px 12px',
+                                borderRadius: 7,
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                background: 'transparent',
+                                color: 'rgba(255,255,255,0.45)',
+                                fontSize: 12,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 5,
+                                transition: 'opacity 0.15s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}
+                        >
+                            <X size={12} strokeWidth={2.5} />
+                            Ignorar
+                        </button>
                     </div>
                 )}
             </div>
@@ -1178,28 +1144,61 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
                         {ev.label}
                         {result?.summary && <span style={{ opacity: 0.5, marginLeft: 5 }}>· {result.summary}</span>}
                     </span>
-                    {/* Debug info for failed tools or explicit debug mode */}
-                    {(result && (typeof window !== 'undefined' && (window.location.search.includes('debug=true') || !ok))) && (
-                        <div style={{ 
-                            fontSize: '10px', 
-                            background: 'rgba(255, 255, 255, 0.03)', 
-                            padding: '6px 8px', 
-                            borderRadius: '4px', 
-                            marginTop: '4px',
-                            marginLeft: '18px',
-                            borderLeft: `2px solid ${ok ? '#10b981' : '#ef4444'}`,
-                            fontFamily: 'monospace',
-                            color: ok ? 'rgba(255,255,255,0.5)' : '#ef4444'
-                        }}>
-                            {ev.args && (
-                                <div style={{ marginBottom: 4, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 2 }}>
-                                    <strong>Args:</strong> {JSON.stringify(ev.args)}
-                                </div>
-                            )}
-                            {result.error && <div>Error: {result.error}</div>}
-                            {result.response && <div>Response: {typeof result.response === 'string' ? result.response : JSON.stringify(result.response)}</div>}
-                            {!result.error && !result.response && <div>Raw Result: {JSON.stringify(result)}</div>}
-                        </div>
+                    {/* Debug integrado — colapsável, estilo consistente com o card */}
+                    {result && (typeof window !== 'undefined' && (window.location.search.includes('debug=true') || !ok)) && (
+                        <details
+                            open={!ok}
+                            style={{ marginTop: 4, marginLeft: 18 }}
+                        >
+                            <summary style={{
+                                fontSize: 10,
+                                color: ok ? 'rgba(255,255,255,0.3)' : 'rgba(239,68,68,0.7)',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                                letterSpacing: '0.03em',
+                                listStyle: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                            }}>
+                                <span style={{
+                                    display: 'inline-block',
+                                    width: 12,
+                                    textAlign: 'center',
+                                    fontSize: 8,
+                                }}>▶</span>
+                                {ok ? 'detalhes' : 'erro · ver detalhes'}
+                            </summary>
+                            <div style={{
+                                marginTop: 4,
+                                borderLeft: `2px solid ${ok ? color + '40' : '#ef444440'}`,
+                                paddingLeft: 8,
+                                fontFamily: 'monospace',
+                                fontSize: 10,
+                                lineHeight: 1.5,
+                                color: 'rgba(255,255,255,0.45)',
+                            }}>
+                                {ev.args && Object.keys(ev.args).length > 0 && (
+                                    <div style={{ marginBottom: 4 }}>
+                                        {Object.entries(ev.args).map(([k, v]) => (
+                                            <div key={k}>
+                                                <span style={{ color: color, opacity: 0.8 }}>{k}</span>
+                                                <span style={{ opacity: 0.4 }}>: </span>
+                                                <span>{typeof v === 'string' ? v : JSON.stringify(v)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                {result.error && (
+                                    <div style={{ color: '#ef4444', opacity: 0.85 }}>
+                                        {typeof result.error === 'string' ? result.error : JSON.stringify(result.error)}
+                                    </div>
+                                )}
+                                {!result.error && result.summary && (
+                                    <div style={{ opacity: 0.6 }}>{result.summary}</div>
+                                )}
+                            </div>
+                        </details>
                     )}
                 </div>
             );

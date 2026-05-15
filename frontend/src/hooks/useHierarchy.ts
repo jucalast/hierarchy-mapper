@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Edge } from 'reactflow';
 import type { HierarchyEmployee } from '@/types';
 import {
@@ -17,6 +17,22 @@ export const useHierarchy = () => {
     const [error, setError] = useState<string | null>(null);
     const [streamAbortController, setStreamAbortController] = useState<AbortController | null>(null);
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
+
+    // Auto-reconecta ao WebSocket se houver um job ativo persistido no localStorage
+    useEffect(() => {
+        const saved = localStorage.getItem('active-discovery-job');
+        if (!saved) return;
+        let jobData: any;
+        try { jobData = JSON.parse(saved); } catch { return; }
+        const { job_id, brand, logo, domain } = jobData;
+        if (!job_id) return;
+        console.log('[useHierarchy] Reconectando ao job:', job_id);
+        setLoading(true);
+        setActiveJobId(job_id);
+        // Reconecta sem initialEmployees — o WebSocket vai repassar os dados
+        connectToJobWebSocket(job_id, brand || '', logo || '', domain || '', [], undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const cleanName = (name: string) => {
         if (!name) return "";

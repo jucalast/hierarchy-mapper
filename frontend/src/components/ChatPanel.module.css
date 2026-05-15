@@ -18,14 +18,14 @@
 /* Light Mode (default) */
 .chatPanel.light {
   background: var(--chat-bg-primary);
-  
+
   color: var(--chat-text-primary);
 }
 
 /* Dark Mode */
 .chatPanel.dark {
   background: var(--chat-bg-primary);
-  
+
   color: var(--chat-text-primary);
 }
 
@@ -177,7 +177,7 @@
 
 .chatPanel.dark .contextPill {
   background: var(--chat-bg-secondary);
-  
+
 }
 
 .contextText {
@@ -508,7 +508,7 @@
 
 .chatPanel.dark .inputBox {
   background: rgba(19, 19, 19, 0.85);
-  
+
 }
 
 .inputBoxInterior {
@@ -536,7 +536,7 @@
 
 .chatPanel.dark .inputContextPill {
   background: var(--chat-bg-secondary);
-  
+
 }
 
 .inputContextPill .contextTitle {
@@ -569,7 +569,7 @@
 
 .removePillBtn:hover {
   color: var(--chat-text-primary);
-  
+
   background: var(--chat-bg-secondary);
 }
 
@@ -648,7 +648,7 @@
 
 .inputCompanyPill:hover {
   background: var(--chat-bg-tertiary);
-  
+
 }
 
 .pillCompanyName {
@@ -1011,7 +1011,7 @@
 .chatPanel.dark .sendBtn {
   background: var(--chat-bg-primary);
   color: var(--chat-text-primary);
-  
+
 }
 
 .chatPanel.dark .sendBtn:hover:not(:disabled) {
@@ -2485,12 +2485,12 @@
 
 .chatPanel.dark .glassModuleCard {
   background: var(--chat-bg-secondary);
-  
+
 }
 
 .glassModuleCard:hover {
   background: var(--chat-bg-tertiary);
-  
+
   box-shadow: var(--chat-shadow-md);
 }
 
@@ -2641,7 +2641,7 @@
 
 .chatPanel.dark .logCard {
   background: var(--chat-bg-secondary);
-  
+
 }
 
 .warningLog {
@@ -2961,7 +2961,8 @@
   margin-top: 0;
   margin-bottom: var(--space-24);
   padding-left: 72px;
-  opacity: 0.85; /* Sempre visível para que o botão de regenerar/copiar apareça de primeira */
+  opacity: 0.85;
+  /* Sempre visível para que o botão de regenerar/copiar apareça de primeira */
   transition: all 0.2s ease;
 }
 
@@ -4059,7 +4060,3 @@
   width: 100% !important;
   background: transparent !important;
 }
-
-
-
-

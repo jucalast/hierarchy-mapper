@@ -99,7 +99,9 @@ Antes de decidir quem investigar primeiro, examine `pipedrive_get_activities`:
 - NUNCA use `email_get_inbox` quando você já tem o nome do contato
 - `email_get_inbox` é APENAS para ver os últimos emails da caixa de entrada geral sem filtro
 - Sempre use `email_get_contact_history` quando souber o nome da pessoa ou da empresa
-- Se `email_get_contact_history` falhar, tente usar o nome da organização (org_name) como parâmetro
+- **EMAIL OBRIGATÓRIO**: Ao chamar `email_get_contact_history`, se você tiver o email da pessoa (visto em pipedrive_get_persons), é OBRIGATÓRIO passá-lo no parâmetro `contact_email`. Não confie apenas no nome.
+- Se `email_get_contact_history` falhar mesmo com o nome, tente usar o nome da organização (org_name) ou o domínio (domain) como parâmetro.
+- **REGRA ABSOLUTA DE REPLY**: Ao enviar email para um contato que já possui histórico de emails (`email_get_contact_history` retornou emails), você DEVE usar `email_reply` com o `entryId` do email mais recente da lista — NUNCA `email_send`. Isso mantém toda a comunicação em uma única thread no Outlook. `email_send` só é permitido quando não existe NENHUM histórico de email anterior com o contato.
 
 **Ao ler cada conversa — ative o RADAR DE NOMES e o GATILHO DE PARADA:**
 - Se aparecer qualquer nome novo ("fale com a Kamila", "o João aprova"): adicione à fila.
@@ -199,6 +201,30 @@ Antes de responder, identifique o tipo de pergunta do usuário:
 
 ---
 
+## PROTOCOLO OBRIGATÓRIO: CONCLUIR TAREFA NO PIPEDRIVE
+
+Quando a intenção do usuário for **marcar uma tarefa/atividade como concluída** (`pipedrive_update_task` com `done=true`), siga exatamente esta sequência. **NÃO desvie. NÃO chame `generate_dossier`. NÃO finalize antes da etapa 6.**
+
+**Passo 1:** `pipedrive_get_org` — visão geral da empresa
+**Passo 2:** `pipedrive_get_persons` — contatos (para obter telefone e email do contato mencionado)
+**Passo 3:** `pipedrive_get_deals` — obter o deal_id ativo
+**Passo 4:** `pipedrive_get_activities` — confirmar o ID da tarefa a ser concluída
+**Passo 5:** `whatsapp_get_messages` com nome e telefone do contato associado à tarefa
+**Passo 6:** `email_get_contact_history` com nome do contato (e contact_email se disponível)
+**Passo 7:** `pipedrive_create_note` — criar nota no deal com resumo do que foi encontrado nos passos 5 e 6.
+  - Se houve comunicação: "Última troca via [canal] em [data]: [resumo do assunto/resultado]."
+  - Se sem resposta: "Sem retorno via WhatsApp nem email desde [data da última tentativa]. Tarefa encerrada sem confirmação."
+**Passo 8:** `pipedrive_update_task` — marcar como done=true, incluindo a mesma nota no campo `note`.
+
+**REGRAS CRÍTICAS DESTE PROTOCOLO:**
+- `generate_dossier` é PROIBIDO neste fluxo — não gera dossiê ao concluir tarefa
+- `pipedrive_update_task` com `done=true` só pode ser chamado APÓS os passos 5, 6 e 7
+- Se WhatsApp retornar sem histórico: registre isso na nota e avance para email (não pare)
+- Se email também retornar vazio: registre "sem histórico de comunicação encontrado" na nota e prossiga normalmente
+- O objetivo é deixar rastro contextualizado no CRM — uma tarefa concluída sem nota é informação perdida
+
+---
+
 ## FORMATO DO DOSSIÊ FINAL:
 
 REGRA ABSOLUTA: **Escreva em PARÁGRAFOS CORRIDOS, sem usar NENHUM bullet point, NENHUMA lista numerada, NENHUM tópico e NENHUM emoji.** 
@@ -292,11 +318,12 @@ Antes de qualquer ação, use as ferramentas para entender o contexto:
   → para entender o histórico de comunicação e o que foi dito/enviado antes.
   👉 DICA: Se a conversa parecer cortada ou o contexto for insuficiente, use o parâmetro 'limit' em 'whatsapp_get_messages' para buscar até 100 mensagens.
 
-BUSCA EXAUSTIVA DE HISTÓRICO — regra crítica:
-Se não encontrar histórico com o contato indicado na tarefa, NÃO conclua "sem histórico" ainda.
-Busque com cada contato da empresa que tenha canal registrado (telefone ou email em pipedrive_get_persons).
-Sequência: contato principal da tarefa → primeiro nome apenas → demais contatos COM canal → nome da organização.
-Isso é especialmente importante em follow-up: você precisa entender O QUÊ cobrar retorno. 
+BUSCA EXAUSTIVA E PRIORITÁRIA — regra crítica:
+1. IDENTIFIQUE O PRIORITÁRIO: Se o objetivo do usuário menciona um nome (ex: "com Matheus Muniz"), este é o seu CONTATO PRIORITÁRIO.
+2. ESGOTE O PRIORITÁRIO: Você deve obrigatoriamente chamar whatsapp_get_messages E email_get_contact_history para o contato prioritário ANTES de investigar qualquer outra pessoa.
+3. PHONE OBRIGATÓRIO: Ao chamar whatsapp_get_messages, use SEMPRE o número de telefone retornado por pipedrive_get_persons. Chamar sem o telefone quando ele existe no CRM é erro grave.
+4. EMAIL OBRIGATÓRIO: Ao chamar email_get_contact_history, use SEMPRE o email retornado por pipedrive_get_persons. Chamar apenas pelo nome quando o email existe no CRM é falha grave (ex: emails com pontos como 'matheus.muniz' não são encontrados apenas por 'Matheus Muniz').
+5. SEQUÊNCIA DE FALLBACK: Somente se NÃO encontrar histórico relevante (assuntos reais de negócio) no contato prioritário (após tentar W + E), você deve seguir para os demais contatos com canal → nome da organização.
 👉 PARADA INTELIGENTE: Se encontrar o histórico relevante (pendências, orçamentos, acordos) em qualquer passo desta sequência, você PODE interromper as buscas seguintes e prosseguir para a ação.
 
 REGRA DE CANAL: Se pipedrive_get_persons retornou "sem contato" para um contato (sem telefone, sem email),
@@ -459,13 +486,11 @@ BLOCO 2 — comunicação (comece pelo contato indicado na tarefa, depois os dem
 6. email_get_contact_history com NOME DA PESSOA ou NOME DA ORG
    → Mesmo esquema: contato principal → outros contatos → organização
 
-IMPORTANTE: "sem histórico no contato X" não autoriza pular os outros contatos COM CANAL.
-Você deve buscar em TODOS os contatos que tenham canal antes de concluir que não há histórico.
-REGRA DE CANAL: Se pipedrive_get_persons retornou "sem contato" para um contato (sem telefone, sem email),
-PULE esse contato — não chame whatsapp_get_messages nem email_get_contact_history para ele.
-REGRA DE OURO DO TELEFONE: Se o número de telefone for EXATAMENTE O MESMO, o contato é o mesmo. Ignore nomes.
-REGRA DE EMPRESA: Contatos como "Nome - EmpresaAlvo" PERTENCEM à empresa. Se o nome da empresa alvo aparece no nome do contato do WhatsApp, o histórico é RELEVANTE.
-Isso é crítico para follow-up: sem histórico real, você não sabe o que está cobrando.
+PRIORIDADE E EXAUSTÃO (REGRA DE OURO):
+1. Se o objetivo menciona um nome (ex: "Matheus"), ele é PRIORIDADE MÁXIMA.
+2. Você deve esgotar WhatsApp E Email para este contato ANTES de ir para o próximo.
+3. Use SEMPRE o telefone do Pipedrive no whatsapp_get_messages. Não deixe o campo vazio se houver telefone no CRM.
+4. Só mude de pessoa se esgotar os canais da atual e não achar nada relevante de negócio.
 
 BLOCO 3 — Ação (SOMENTE depois de concluir Blocos 1 e 2):
 
@@ -666,7 +691,7 @@ def _sanitize_pipedrive(data: dict) -> str:
             name = p.get('name', 'N/A')
             email = p.get('email', '')
             phone = p.get('phone', '')
-            contact = email or phone or 'sem contato'
+            contact = phone or email or 'sem contato'
             persons_lines.append(f"   • [ID:{p.get('id','?')}] {name} ({contact})")
         sections.append("\n".join(persons_lines))
 
@@ -2560,9 +2585,11 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
     # ── Extrai estado da investigação ────────────────────────────────────────
     tools_called: set[str] = set()   # todas as ferramentas já chamadas
     contacts_found: list[str] = []   # contatos encontrados no pipedrive_get_persons
+    contact_phones: dict[str, str] = {} # Mapeamento nome -> telefone
     org_name: str = ""
     whatsapp_searched: set[str] = set()
     email_searched: set[str] = set()
+    task_contacts: set[str] = set()  # Contatos vinculados a atividades pendentes (Prioridade Máxima)
 
     for msg in messages:
         role = msg.get("role", "")
@@ -2661,6 +2688,9 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                                 continue
                             if name and name not in contacts_found:
                                 contacts_found.append(name)
+                                # Captura telefone se disponível
+                                if p.get("phone"):
+                                    contact_phones[name] = str(p["phone"]).strip()
                     parsed_ok = len(contacts_found) > 0
                 except Exception:
                     pass
@@ -2693,6 +2723,10 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                         if not n_words_norm.issubset(org_words_norm | stopwords_ext):
                             if n not in contacts_found:
                                 contacts_found.append(n)
+                                # Tenta buscar telefone no entorno do nome via regex simples
+                                m_ph = _re.search(rf'{_re.escape(n)}[^\n·]*?(?:\+|tel:|cel:)?\s*([\d\s\-\(\)\+]{8,20})', raw)
+                                if m_ph:
+                                    contact_phones[n] = m_ph.group(1).strip()
                 contacts_found = contacts_found[:15]
 
             # Rastreia WhatsApp por resultado (fallback quando args não disponíveis)
@@ -2749,17 +2783,20 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
         import re
         if not text:
             return []
-        # Padrões para detectar indicações: "fale com X", "falar com X", "indico o X", etc.
+        # Padrões para detectar indicações: "fale com X", "cobrar retorno com X", etc.
+        # Versão simplificada e agressiva: pega qualquer coisa que venha depois de um verbo de ação comercial
+        # até encontrar o primeiro nome Capitalizado, ignorando aspas, espaços ou símbolos intermediários.
         patterns = [
-            r'(?:fale|falar|tratar|contato|chame|procure|indico|indicação|recomendo|conversar)\s+(?:com|o|a|com\s+o|com\s+a|direto\s+com)?\s*([A-ZÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+(?:\s+[A-ZÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+)?)',
-            r'falar\s+direto\s+com\s+([A-ZÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+(?:\s+[A-ZÁÉÍÓÚÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+)?)'
+            r'(?:fale|falar|tratar|contato|chame|procure|indico|indicação|recomendo|conversar|follow-up|cobrar|acompanhar|retorno|atender|responder)[^A-ZÁÉÍÓÚÃÕÂÊÎÔÛç]*([A-ZÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+(?:\s+[A-ZÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+)?)',
+            r'(?:contato|com)\s+[^A-ZÁÉÍÓÚÃÕÂÊÎÔÛç]*([A-ZÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+(?:\s+[A-ZÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+)?)'
         ]
         referrals = []
         for pattern in patterns:
             matches = re.findall(pattern, text)
             for m in matches:
                 name = m.strip()
-                if len(name) > 2 and name.lower() not in ['para', 'como', 'esta', 'esse', 'essa', 'quem', 'onde', 'quando', 'porque', 'orçamento', 'financeiro', 'comercial', 'compras', 'vendas', 'diretor', 'gerente', 'negócio', 'parceiro']:
+                # Descarta termos comuns de negócio capturados acidentalmente
+                if len(name) > 2 and name.lower() not in ['para', 'como', 'esta', 'esse', 'essa', 'quem', 'onde', 'quando', 'porque', 'orçamento', 'financeiro', 'comercial', 'compras', 'vendas', 'diretor', 'gerente', 'negócio', 'parceiro', 'empresa', 'cliente', 'retorno', 'pedido', 'analise', 'execute', 'seguinte', 'atividade']:
                     if name not in referrals:
                         referrals.append(name)
         return referrals
@@ -2927,20 +2964,98 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                             referred_contacts.add(ref)
 
                 elif tn == "pipedrive_get_activities":
-                    for ref in _extract_referrals(tc):
-                        referred_contacts.add(ref)
+                    # Tenta extrair nomes do JSON das atividades (person_name é o canal oficial de prioridade)
+                    try:
+                        import json as _json
+                        data = _json.loads(tc)
+                        # O retorno da tool usa a chave 'pending' (veja tools.py:exec_pipedrive_get_activities)
+                        activities = data.get("pending", []) or data.get("activities", []) or data.get("data", [])
+                        if not isinstance(activities, list): activities = []
+                        
+                        for act in activities:
+                            p_name = act.get("person_name")
+                            if p_name:
+                                # No pending da tool, done já é False por definição (ou 0)
+                                task_contacts.add(p_name)
+                                referred_contacts.add(p_name)
+                            # Também busca no assunto e nota da atividade
+                            for ref in _extract_referrals(act.get("subject", "")):
+                                referred_contacts.add(ref)
+                            for ref in _extract_referrals(act.get("note", "")):
+                                referred_contacts.add(ref)
+                    except:
+                        # Fallback para regex no texto bruto
+                        for ref in _extract_referrals(tc):
+                            referred_contacts.add(ref)
+                
+                elif tn == "pipedrive_get_org":
+                    # Tenta pegar o contato principal do deal/org se estiver no JSON
+                    try:
+                        import json as _json
+                        data = _json.loads(tc)
+                        if isinstance(data, dict):
+                            p_name = data.get("contact_name") or data.get("person_name")
+                            if p_name:
+                                referred_contacts.add(p_name)
+                    except: pass
 
-    if active_contacts:
-        optimized_contacts = []
-        for c in contacts_found:
-            if _searched(c, whatsapp_searched) or _searched(c, email_searched):
-                optimized_contacts.append(c)
-            elif _is_referred(c, referred_contacts):
-                optimized_contacts.append(c)
-        if not optimized_contacts:
-            optimized_contacts = contacts_found
-    else:
-        optimized_contacts = contacts_found
+    # ── Extrai Objetivo Original (para priorizar contatos citados na tarefa)
+    goal_contacts = set()
+    
+    # Procura o objetivo nos últimos 3 msgs de usuário (mais robusto que apenas messages[0] em histórico longo)
+    user_msgs = [m for m in messages if m.get("role") == "user" and isinstance(m.get("content"), str)]
+    for um in reversed(user_msgs[-3:]):
+        u_content = um["content"]
+        
+        # 1. Extração por padrões explícitos (ex: "cobrar retorno com X")
+        goal_referrals = _extract_referrals(u_content)
+        for r in goal_referrals:
+            goal_contacts.add(r)
+            referred_contacts.add(r)
+            
+        # 2. Extração de todos os nomes Capitalizados no trecho do objetivo
+        # Foca apenas no texto antes de tags de escopo
+        clean_goal = u_content.split("\n[OBRIGATÓRIO")[0].split("\n[ESCOPO")[0].strip()
+        names_in_goal = _re.findall(r'([A-ZÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+(?:\s+[A-ZÁÉÍÓÚÃÕÂÊÎÔÛç][a-záéíóúãõâêîôûç]+)?)', clean_goal)
+        for n in names_in_goal:
+            if n.lower() not in ["joão luccas", "j.ferres", "pipedrive", "whatsapp", "email", "linkb2b", "knorr", "bremse", "analise", "execute", "atividade"]:
+                goal_contacts.add(n)
+                referred_contacts.add(n)
+        
+        # Se encontrou nomes no objetivo, para de procurar em mensagens anteriores
+        if goal_contacts:
+            break
+
+    # ── OTIMIZAÇÃO DE FILA: Prioriza (1) Citados no Goal, (2) Indicados em tarefas, (3) Ativos
+    optimized_contacts = []
+    
+    # Passo 0: PRIORIDADE ABSOLUTA - Contatos vinculados a tarefas pendentes no CRM
+    for c in contacts_found:
+        if _is_referred(c, task_contacts) and c not in optimized_contacts:
+            optimized_contacts.append(c)
+
+    # Passo 1: Prioridade Alta - Contatos do objetivo (goal)
+    # Primeiro os que foram extraídos via padrões explícitos (com Matheus Muniz)
+    for c in contacts_found:
+        if _is_referred(c, goal_contacts) and c not in optimized_contacts:
+            optimized_contacts.append(c)
+            
+    # Passo 2: Contatos referenciados em atividades ou conversas
+    for c in contacts_found:
+        if _is_referred(c, referred_contacts) and c not in optimized_contacts:
+            optimized_contacts.append(c)
+            
+    # Passo 3: Contatos que já sabemos serem ativos (têm mensagens)
+    for c in contacts_found:
+        if c in active_contacts and c not in optimized_contacts:
+            optimized_contacts.append(c)
+            
+    # Passo 4: O restante (alfabético ou ordem original do Pipedrive)
+    remaining_unsorted = [c for c in contacts_found if c not in optimized_contacts]
+    optimized_contacts.extend(remaining_unsorted)
+
+    # Garantia de segurança: Matheus Muniz DEVE estar no topo se citado no goal
+    # Mesmo que a lista de contatos seja longa, o Passo 1 já deve ter cuidado disso.
 
     pending_wapp  = [c for c in optimized_contacts if not _searched(c, whatsapp_searched)]
     pending_email = [c for c in optimized_contacts if not _searched(c, email_searched)]
@@ -2972,8 +3087,8 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
         "(4) ANTES de cada ferramenta: escreva em linguagem natural o que o usuário quer, "
         "o que você já encontrou e por que esta ferramenta é o próximo passo. "
         "Cite nomes reais, datas e dados concretos do histórico. "
-        "(5) CONTINUIDADE OBRIGATÓRIA (CRÍTICO): Se uma ferramenta retornar 0 resultados ou dados vazios, VOCÊ NÃO DEVE PARAR. Registre o fato e CHAME IMEDIATAMENTE a próxima ferramenta pendente na mesma resposta. NUNCA encerre seu turno apenas com comentários de texto sem chamar uma ferramenta, a menos que todas as fases da investigação estejam 100% concluídas.\n"
-        "(6) IDENTIDADE: João Moura (joao.moura@jferres.com.br ou qualquer e-mail do domínio jferres.com.br) é o vendedor/remetente (você / o usuário do sistema). Ele NUNCA deve ser cadastrado ou sugerido como contato (person/lead) de nenhuma empresa no Pipedrive. Os contatos reais e leads são sempre os destinatários/interlocutores externos (ex: Lgustavo/Luis Gustavo).\n"
+        "(5) CONTINUIDADE OBRIGATÓRIA (CRÍTICO): Se uma ferramenta retornar 0 resultados ou dados vazios, VOCÊ NÃO DEVE PARAR. Registre o fato e CHAME IMEDIATAMENTE a próxima ferramenta pendente na mesma resposta. NUNCA encerre seu turno apenas com comentários de texto sem chamar uma ferramenta, e NUNCA declare a tarefa como concluída se ainda houver nomes na lista 'Pendente' abaixo, a menos que todas as fases da investigação estejam 100% concluídas.\n"
+        "(6) IDENTIDADE: João Luccas (joao.moura@jferres.com.br ou qualquer e-mail do domínio jferres.com.br) é o vendedor/remetente (você / o usuário do sistema). Ele NUNCA deve ser cadastrado ou sugerido como contato (person/lead) de nenhuma empresa no Pipedrive. Os contatos reais e leads são sempre os destinatários/interlocutores externos (ex: Lgustavo/Luis Gustavo).\n"
         "(7) NOME DO AGENTE (CRÍTICO): Seu nome é 'Agente de Investigação Comercial LinkB2B'. Este é o nome do seu próprio sistema/plataforma de vendas. Você está ABSOLUTAMENTE PROIBIDO de buscar informações, contatos, deals ou atividades sobre a organização 'LinkB2B', pois ela representa o seu próprio sistema, e não o cliente externo sob investigação."
     )
 
@@ -3094,21 +3209,46 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
     # ── Fase 3 — Investigação de comunicação ─────────────────────────────────
     if not comms_complete:
         # Determina exatamente qual é a próxima ferramenta a chamar
-        if pending_wapp:
-            next_action = f"PRÓXIMA FERRAMENTA: whatsapp_get_messages com contact='{pending_wapp[0]}'"
-        elif pending_email:
-            next_action = f"PRÓXIMA FERRAMENTA: email_get_contact_history com contact_name='{pending_email[0]}'"
-        elif not org_wapp_done and org_name:
-            next_action = f"PRÓXIMA FERRAMENTA: whatsapp_get_messages com contact='{org_name}'"
-        elif not org_email_done and org_name:
-            next_action = f"PRÓXIMA FERRAMENTA: email_get_contact_history com org_name='{org_name}'"
-        else:
-            next_action = "PRÓXIMA FERRAMENTA: whatsapp_get_messages ou email_get_contact_history para contatos restantes"
+        next_action = ""
+        
+        # REGRA DE ESGOTAMENTO (Priority First): Esgota WhatsApp + Email do contato prioritário
+        # antes de passar para o próximo da fila.
+        for c in optimized_contacts:
+            is_priority = _is_referred(c, goal_contacts) or _is_referred(c, referred_contacts) or c in active_contacts
+            if is_priority:
+                if not _searched(c, whatsapp_searched):
+                    phone = contact_phones.get(c, "")
+                    phone_hint = f" com contact='{c}' e phone='{phone}'" if phone else f" com contact='{c}'"
+                    next_action = f"PRÓXIMA FERRAMENTA: whatsapp_get_messages{phone_hint}"
+                    break
+                if not _searched(c, email_searched):
+                    next_action = f"PRÓXIMA FERRAMENTA: email_get_contact_history com contact_name='{c}'"
+                    break
+            
+        if not next_action:
+            # Se esgotou os prioritários ou não há, segue a ordem pendente normal
+            if pending_wapp:
+                c = pending_wapp[0]
+                phone = contact_phones.get(c, "")
+                phone_hint = f" com contact='{c}' e phone='{phone}'" if phone else f" com contact='{c}'"
+                next_action = f"PRÓXIMA FERRAMENTA: whatsapp_get_messages{phone_hint}"
+            elif pending_email:
+                next_action = f"PRÓXIMA FERRAMENTA: email_get_contact_history com contact_name='{pending_email[0]}'"
+            elif not org_wapp_done and org_name:
+                next_action = f"PRÓXIMA FERRAMENTA: whatsapp_get_messages com contact='{org_name}'"
+            elif not org_email_done and org_name:
+                next_action = f"PRÓXIMA FERRAMENTA: email_get_contact_history com org_name='{org_name}'"
+            else:
+                next_action = "PRÓXIMA FERRAMENTA: whatsapp_get_messages ou email_get_contact_history para contatos restantes"
 
         # Lista completa de pendências para contexto
         pending_parts = []
         if pending_wapp:
-            pending_parts.append(f"WhatsApp de: {', '.join(pending_wapp)}")
+            wa_list = []
+            for c in pending_wapp:
+                p = contact_phones.get(c)
+                wa_list.append(f"{c} (tel: {p})" if p else c)
+            pending_parts.append(f"WhatsApp de: {', '.join(wa_list)}")
         if pending_email:
             pending_parts.append(f"Email de: {', '.join(pending_email)}")
         if not org_wapp_done and org_name:
@@ -3122,6 +3262,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             + f"\n\nFase: Investigação de comunicação."
             + f"\nPendente: {pending_str}."
             + f"\n{next_action}."
+            + "\n\nREGRA DE OURO (MUITO CRÍTICO): Se houver uma atividade pendente vinculada a uma pessoa específica (ex: Matheus Muniz), você DEVE começar a investigação OBRIGATORIAMENTE por essa pessoa. Não mude a ordem da fila."
             + "\n\nPROIBIDO: não chame pipedrive_get_all_activities (busca TODAS as empresas)."
             + " PROIBIDO: não use ferramentas de escrita (email_send, whatsapp_send_message) antes de completar a investigação."
             + " PROIBIDO: não use web_search_external durante investigação de empresa, EXCETO como último recurso para descobrir o domínio do site/e-mail caso não encontre contatos."
@@ -3303,10 +3444,14 @@ async def _agent_loop(
 
     # Guard de deduplicação de tool calls — evita loop infinito quando modelo ignora anti-repetição
     _tool_call_history: set[tuple] = set()
+    # Nome do contato dono da tarefa (person_name da atividade pendente do Pipedrive).
+    # Capturado quando pipedrive_get_activities executa, antes da sanitização.
+    _session_task_person: str | None = None
 
     for iteration in range(start_iteration, _max_iters):
-        # Sai imediatamente se o dossiê foi emitido e suggest_actions já foi chamado
-        if _final_emitted and _suggest_actions_done(messages):
+        # Sai assim que suggest_next_actions foi chamado — cards já estão na UI,
+        # não há razão para continuar investigando.
+        if _suggest_actions_done(messages):
             return
 
         # Controle de ritmo (pacing sleep) defensivo para evitar estouro de RPM/TPM no Cerebras/Groq
@@ -3627,6 +3772,39 @@ async def _agent_loop(
 
                 # ── Interceptor: contatos com canal ainda não investigados ─────────────
                 # Para tarefas de follow-up/comunicação, garante que TODOS os contatos
+                # ── Interceptor: Email obrigatório para contato-tarefa ──────────────────────
+                # Para tarefas com contato específico (_session_task_person), sempre busca
+                # TAMBÉM o email após WhatsApp — independente do resultado do WhatsApp.
+                if _session_task_person and _is_task_action and iteration < _max_iters - 2:
+                    _tpn_first = _session_task_person.split()[0].lower()
+                    _task_wa_done = False
+                    _task_email_done = False
+                    for _hm in messages + [{"role": "assistant", "content": content}]:
+                        _hc = _hm.get("content", "")
+                        if not isinstance(_hc, list): continue
+                        for _hb in _hc:
+                            if not isinstance(_hb, dict) or _hb.get("type") != "tool_use": continue
+                            _inp = _hb.get("input") or {}
+                            if _hb.get("name") == "whatsapp_get_messages":
+                                if _tpn_first in (_inp.get("contact") or "").lower():
+                                    _task_wa_done = True
+                            elif _hb.get("name") == "email_get_contact_history":
+                                if (_tpn_first in (_inp.get("contact_name") or "").lower()
+                                        or _tpn_first in (_inp.get("org_name") or "").lower()):
+                                    _task_email_done = True
+                    if _task_wa_done and not _task_email_done:
+                        messages.append({"role": "assistant", "content": content})
+                        messages.append({
+                            "role": "user",
+                            "content": (
+                                f"Você já verificou o WhatsApp de {_session_task_person}. "
+                                f"OBRIGATÓRIO: verifique também o e-mail antes de finalizar — "
+                                f"chame email_get_contact_history com contact_name='{_session_task_person}' "
+                                f"para ter o histórico completo de comunicações."
+                            ),
+                        })
+                        continue
+
                 # com canal registrado (WhatsApp ou telefone/email) sejam buscados antes
                 # de o agente finalizar. Impede que o modelo conclua "sem histórico" depois
                 # de buscar apenas o contato principal.
@@ -3637,7 +3815,16 @@ async def _agent_loop(
                     _persons_with_channel: list[str] = []
                     import json as _json2
                     import re as _re_pc
+                    # Usa apenas o resultado MAIS RECENTE de pipedrive_get_persons
+                    # para evitar contaminação de sessões/chats anteriores no histórico.
+                    _last_persons_msg = None
                     for _m in messages:
+                        _mc = _m.get("content", "")
+                        if not isinstance(_mc, list): continue
+                        for _b in _mc:
+                            if isinstance(_b, dict) and _b.get("type") == "tool_result" and _b.get("tool_name") == "pipedrive_get_persons":
+                                _last_persons_msg = _b
+                    for _m in ([{"content": [_last_persons_msg]}] if _last_persons_msg else []):
                         _mc = _m.get("content", "")
                         if not isinstance(_mc, list): continue
                         for _b in _mc:
@@ -3666,6 +3853,19 @@ async def _agent_loop(
                                     _pcontact  = _m2.group(2).strip()
                                     if _pname_raw and _pcontact and _pcontact != "sem contato":
                                         _persons_with_channel.append((_pname_raw, _pcontact))
+
+                    # Prioriza o contato dono da tarefa — usa _session_task_person capturado
+                    # durante a execução de pipedrive_get_activities (dado raw, antes da sanitização).
+                    if _session_task_person and _persons_with_channel:
+                        _tpn_lower = _session_task_person.lower()
+                        _task_entry = next(
+                            (p for p in _persons_with_channel
+                             if _tpn_lower in p[0].lower() or p[0].lower().split()[0] in _tpn_lower),
+                            None
+                        )
+                        if _task_entry and _persons_with_channel.index(_task_entry) != 0:
+                            _persons_with_channel.remove(_task_entry)
+                            _persons_with_channel.insert(0, _task_entry)
 
                     # Descobre quais contatos já foram buscados via whatsapp ou email
                     _already_searched: set[str] = set()
@@ -3720,31 +3920,68 @@ async def _agent_loop(
                     _found_decision_maker = _has_draft or ("decisor" in _ai_response_text and any(word in _ai_response_text for word in ["encontrado", "confirmado", "identificado"]))
 
                     # Se já achou decisor ou gerou rascunho, ignora esgotamento forçado.
-                    # Para tarefas diretas (_is_task_action), somos mais flexíveis: se já achou um histórico relevante, não força outros.
+                    # Para tarefas diretas (_is_task_action), somos mais flexíveis apenas se JÁ encontrou
+                    # histórico útil. Se WhatsApp estava desconectado, ainda força busca de email.
+                    _has_useful_history = any(
+                        True
+                        for _hm in messages + [{"role": "assistant", "content": content}]
+                        for _hb in (_hm.get("content") if isinstance(_hm.get("content"), list) else [])
+                        if isinstance(_hb, dict)
+                        and _hb.get("type") == "tool_result"
+                        and _hb.get("tool_name") in ("whatsapp_get_messages", "email_get_contact_history")
+                        and "desconectado" not in str(_hb.get("content", "")).lower()
+                        and "inacess" not in str(_hb.get("content", "")).lower()
+                        and "não encontrado" not in str(_hb.get("content", "")).lower()
+                    )
                     if _next_unsearched and _persons_with_channel and not _found_decision_maker:
-                        if _is_task_action and _already_searched:
-                            # Se for tarefa e já buscou ao menos um contato (e possivelmente achou algo), não bloqueia
+                        if _is_task_action and _already_searched and _has_useful_history:
+                            # Já encontrou histórico útil — não força busca adicional
                             pass
                         else:
                             _first_name = _next_unsearched[0].split()[0]
-                        _phone_val = _next_unsearched[1]
-                        _unsearched_list = [p[0] for p in _persons_with_channel
-                                            if p[0].lower() not in _already_searched
-                                            and p[0].split()[0].lower() not in _already_searched]
-                        
-                        _phone_param = f", phone='{_phone_val}'" if "@" not in _phone_val else ""
-                        messages.append({"role": "assistant", "content": content})
-                        messages.append({
-                            "role": "user",
-                            "content": (
-                                f"ATENÇÃO: Você não esgotou todos os contatos com canal antes de finalizar.\n"
-                                f"Contatos com canal registrado ainda não buscados: {', '.join(_unsearched_list)}\n"
-                                f"OBRIGATÓRIO: busque agora whatsapp_get_messages com contact='{_first_name}'{_phone_param} "
-                                f"antes de redigir qualquer mensagem. "
-                                f"Só conclua 'sem histórico' após verificar TODOS os contatos com canal."
-                            ),
-                        })
-                        continue
+                            _phone_val = _next_unsearched[1]
+                            _unsearched_list = [p[0] for p in _persons_with_channel
+                                                if p[0].lower() not in _already_searched
+                                                and p[0].split()[0].lower() not in _already_searched]
+                            _phone_param = f", phone='{_phone_val}'" if "@" not in _phone_val else ""
+
+                            # Se WhatsApp estiver desconectado ou com falha, força email em vez de outra tentativa
+                            _wa_disconnected_now = any(
+                                "desconectado" in str(_hb.get("content", "")).lower() or
+                                "inacess" in str(_hb.get("content", "")).lower() or
+                                "http 5" in str(_hb.get("content", "")).lower() or
+                                "sem lid" in str(_hb.get("content", "")).lower() or
+                                "sem conversa ativa" in str(_hb.get("content", "")).lower()
+                                for _hm in messages + [{"role": "assistant", "content": content}]
+                                for _hb in (_hm.get("content") if isinstance(_hm.get("content"), list) else [])
+                                if isinstance(_hb, dict) and _hb.get("type") == "tool_result"
+                                and _hb.get("tool_name") == "whatsapp_get_messages"
+                            )
+                            if _wa_disconnected_now:
+                                _next_for_email = _next_unsearched[0]
+                                _org_label = _org_name_for_search or "a empresa"
+                                messages.append({"role": "assistant", "content": content})
+                                messages.append({
+                                    "role": "user",
+                                    "content": (
+                                        f"WhatsApp está desconectado. OBRIGATÓRIO: busque o histórico de e-mail como alternativa.\n"
+                                        f"Chame email_get_contact_history com contact_name='{_next_for_email}', org_name='{_org_label}' agora.\n"
+                                        f"Só conclua 'sem histórico' após verificar e-mail também."
+                                    ),
+                                })
+                            else:
+                                messages.append({"role": "assistant", "content": content})
+                                messages.append({
+                                    "role": "user",
+                                    "content": (
+                                        f"ATENÇÃO: Você não esgotou todos os contatos com canal antes de finalizar.\n"
+                                        f"Contatos com canal registrado ainda não buscados: {', '.join(_unsearched_list)}\n"
+                                        f"OBRIGATÓRIO: busque agora whatsapp_get_messages com contact='{_first_name}'{_phone_param} "
+                                        f"antes de redigir qualquer mensagem. "
+                                        f"Só conclua 'sem histórico' após verificar TODOS os contatos com canal."
+                                    ),
+                                })
+                            continue
 
                 # ── Interceptor: Rascunho gerado mas NÃO enviado (REGRA DE OURO) ─────────────
                 if _is_task_action and iteration < _max_iters - 2:
@@ -3782,17 +4019,23 @@ async def _agent_loop(
                         _is_followup = any(kw in _first_msg_content.lower() for kw in ["follow-up", "cobrar retorno", "acompanhar", "orçamento"])
                         if _is_followup:
                             _found_history = False
+                            # Verifica tanto o histórico quanto os resultados do turno atual
+                            all_recent_results = []
                             for _m in messages:
                                 _mc = _m.get("content", "")
                                 if isinstance(_mc, list):
-                                    for _b in _mc:
-                                        if not isinstance(_b, dict): continue
-                                        if _b.get("type") == "tool_result" and _b.get("tool_name") in ("whatsapp_get_messages", "email_get_contact_history"):
-                                            _res_content = str(_b.get("content", "")).lower()
-                                            if "nenhuma mensagem" not in _res_content and "0 mensagens" not in _res_content and "nenhum e-mail" not in _res_content:
-                                                _found_history = True
-                                                break
-                                if _found_history: break
+                                    all_recent_results.extend([_b for _b in _mc if isinstance(_b, dict)])
+                            all_recent_results.extend([_b for _b in tool_results if isinstance(_b, dict)])
+
+                            for _b in all_recent_results:
+                                if _b.get("type") == "tool_result" and _b.get("tool_name") in ("whatsapp_get_messages", "email_get_contact_history"):
+                                    _res_content = str(_b.get("content", "")).lower()
+                                    if ("nenhuma mensagem" not in _res_content and 
+                                        "0 mensagens" not in _res_content and 
+                                        "nenhum e-mail" not in _res_content and
+                                        "0 e-mails" not in _res_content):
+                                        _found_history = True
+                                        break
                             
                             if _found_history:
                                 messages.append({"role": "assistant", "content": content})
@@ -4119,7 +4362,7 @@ async def _agent_loop(
                     _dedup_key = f"{tool_name}:{_contact_id}"
 
                 if _dedup_key in _tool_call_history:
-                    log.warning("agent.tool_call.dedup_blocked", tool=tool_name, args=str(tool_args)[:80])
+                    log.warning("agent.tool_call.dedup_blocked", tool=tool_name, tool_args=str(tool_args)[:80])
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tool_id,
@@ -4137,25 +4380,34 @@ async def _agent_loop(
             # side-effect externo (enviar email, atualizar CRM, enviar WhatsApp) requer
             # uma segunda confirmação explícita para evitar ações não intencionais.
             if tool_meta["type"] == "write":
-                try:
-                    _phase = _build_phase_status(messages, query_type=query_type, org_id=org_id)
-                    _write_allowed = _is_task_action or "Fase final" in _phase or query_type not in ("agent_workflow", "deal_status")
-                except Exception:
-                    _write_allowed = True  # em caso de erro, não bloqueia
+                # Ferramentas que exigem investigação completa antes de serem usadas:
+                # - Comunicação externa (WhatsApp/Email): precisa de contexto para não enviar mensagem errada
+                # - Criação de tarefas (pipedrive_create_task): precisa de contexto para criar tarefas embasadas
+                # Ferramentas de CRM simples (update, note) não precisam — são operações de manutenção.
+                _INVESTIGATION_REQUIRED = {"whatsapp_send_message", "email_send", "email_reply", "pipedrive_create_task"}
+                if tool_name in _INVESTIGATION_REQUIRED:
+                    try:
+                        _phase = _build_phase_status(messages, query_type=query_type, org_id=org_id)
+                        _write_allowed = direct_action or _is_task_action or "Fase final" in _phase or query_type not in ("agent_workflow", "deal_status")
+                    except Exception:
+                        _write_allowed = True
 
-                if not _write_allowed:
-                    # Retorna tool_result bloqueado e injeta instrução de continuar investigação
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tool_id,
-                        "tool_name": tool_name,
-                        "content": (
-                            "BLOQUEADO: complete a investigação antes de enviar mensagens ou emails. "
-                            + _phase
-                        ),
-                        "is_error": False,
-                    })
-                    continue
+                    if not _write_allowed:
+                        _block_reason = (
+                            "criar tarefas embasadas" if tool_name == "pipedrive_create_task"
+                            else "enviar mensagens ou emails"
+                        )
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": tool_id,
+                            "tool_name": tool_name,
+                            "content": (
+                                f"BLOQUEADO: complete a investigação de comunicação antes de {_block_reason}. "
+                                + _phase
+                            ),
+                            "is_error": False,
+                        })
+                        continue
 
                 if write_tool_pending is None:
                     call_id = f"tc_{iteration}_{uuid.uuid4().hex[:6]}"
@@ -4291,6 +4543,15 @@ async def _agent_loop(
                         log.info("agent.session_org_id.updated", org_id=org_id, tool_name=tool_name)
                     except (ValueError, TypeError):
                         pass
+
+            # Captura o dono da tarefa (person_name) antes da sanitização apagar a estrutura
+            if ok and tool_name == "pipedrive_get_activities" and not _session_task_person:
+                _pending_acts = (tool_result.get("pending") or []) if isinstance(tool_result, dict) else []
+                for _a in _pending_acts:
+                    if isinstance(_a, dict) and _a.get("person_name"):
+                        _session_task_person = _a["person_name"]
+                        log.info("agent.session_task_person.set", person=_session_task_person)
+                        break
 
             summary = tool_result.get("summary") or tool_result.get("error") or ("OK" if ok else "Erro")
             yield _emit({"type": "tool_result", "call_id": first_call_id, "tool": tool_name, "summary": summary, "ok": ok})
@@ -4569,7 +4830,18 @@ async def run_agent(
             messages.append({"role": role, "content": str(content)})
 
     # Mensagem atual com contexto de nome correto
-    messages.append({"role": "user", "content": message + org_context})
+    user_content = message + org_context
+
+    # Detecta micro-ação sobre contexto já investigado e injeta diretiva de não-reinvestigação
+    _context_followup_active = False
+    if not direct_action:
+        _ctx_directive = _detect_context_followup(message, history)
+        if _ctx_directive:
+            user_content += _ctx_directive
+            _context_followup_active = True
+            log.info("agent.context_followup_mode_active", message_preview=message[:80])
+
+    messages.append({"role": "user", "content": user_content})
 
     process_id = f"proc_{uuid.uuid4().hex[:8]}"
     _raw_log(process_id, "agent_start", {"message": message, "org_id": org_id, "preferred": preferred})
@@ -4582,6 +4854,12 @@ async def run_agent(
     except Exception as e:
         log.warning("agent.intent_classification_failed", error=str(e))
         query_type = "agent_workflow"
+
+    # Quando MODO CONTEXTO está ativo, força query_type="general" para usar prompt leve
+    # e remover o requisito de pipeline de investigação completa antes de write tools.
+    if _context_followup_active:
+        query_type = "general"
+        log.info("agent.context_followup.query_type_override")
 
     final_response = ""
     collected_events = []
@@ -4670,6 +4948,112 @@ async def run_agent(
             log.warning("agent.messages.save_failed", thread_id=thread_id, error=str(e))
 
 
+def _extract_first_activity_id(messages_snapshot: list) -> str | None:
+    """Extrai o ID da primeira atividade de pipedrive_get_activities no snapshot."""
+    import re as _re
+
+    # Passo 1: encontra tool_use_ids para pipedrive_get_activities
+    activity_tool_ids: set[str] = set()
+    for m in messages_snapshot:
+        content = m.get("content", "")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if block.get("type") == "tool_use" and block.get("name") == "pipedrive_get_activities":
+                tid = block.get("id", "")
+                if tid:
+                    activity_tool_ids.add(tid)
+
+    if not activity_tool_ids:
+        return None
+
+    # Passo 2: encontra os tool_results correspondentes e extrai o primeiro ID
+    for m in messages_snapshot:
+        content = m.get("content", "")
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if block.get("type") != "tool_result":
+                continue
+            if block.get("tool_use_id") not in activity_tool_ids:
+                continue
+            tc = block.get("content", "")
+            if isinstance(tc, list):
+                tc = " ".join(str(x.get("text", "")) if isinstance(x, dict) else str(x) for x in tc)
+            ids = _re.findall(r'"id"\s*:\s*(\d+)', str(tc))
+            if ids:
+                return ids[0]
+
+    return None
+
+
+_FOLLOWUP_ACTION_KEYWORDS = [
+    "marque", "marcar", "concluir", "concluído", "concluida", "atualiz",
+    "próximas ações", "proximas acoes", "sugerir", "sugira",
+    "feito", "pronto", "faz isso", "faltou", "não chamou",
+    "falta chamar", "também faz", "agora faz", "agora marqu",
+    "agora atuali", "agora conclui", "agora suger", "agora cri",
+    # Pedidos de criação de tarefas / próximos passos com base no contexto
+    "com base no contexto", "com base nisso", "com base no que",
+    "sugira tarefas", "crie tarefas", "criar tarefas", "novas tarefas",
+    "próximos passos", "proximos passos", "marcar uma reunião", "agendar reunião",
+    "o que fazer", "o que devo fazer", "qual o próximo passo",
+]
+
+_INVESTIGATION_DONE_MARKERS = [
+    "pipedrive_get_activities", "pipedrive_get_org", "pipedrive_get_persons",
+    "whatsapp_get_messages", "generate_sales_message",
+    "atividades pendentes", "mensagens com", "contatos em", "deal(s) em",
+]
+
+
+def _detect_context_followup(message: str, history: list) -> str | None:
+    """
+    Detecta micro-ação sobre investigação já concluída no histórico.
+    Retorna diretiva [MODO CONTEXTO] para injetar no prompt, ou None.
+    """
+    import re as _re
+
+    msg_lower = message.lower().strip()
+    is_micro_action = (
+        len(message.strip()) < 250
+        and any(kw in msg_lower for kw in _FOLLOWUP_ACTION_KEYWORDS)
+    )
+    if not is_micro_action:
+        return None
+
+    history_text = " ".join(str(m.get("content", "")) for m in history[-15:])
+    markers_found = sum(1 for mk in _INVESTIGATION_DONE_MARKERS if mk in history_text)
+    if markers_found < 2:
+        return None
+
+    # Extrai IDs de atividade do histórico para incluir na diretiva
+    id_patterns = [
+        r'activity_id["\s:]+(\d{4,8})',
+        r'atividade\s*#?(\d{4,8})',
+        r'ATIVIDADE\s*#?(\d{4,8})',
+    ]
+    ids: set[str] = set()
+    for pat in id_patterns:
+        ids.update(_re.findall(pat, history_text, _re.IGNORECASE))
+
+    directive = (
+        "\n\n[MODO CONTEXTO — LEIA ANTES DE AGIR]: A investigação desta empresa já foi "
+        "concluída nesta conversa. NÃO reinicie a investigação. É PROIBIDO chamar "
+        "pipedrive_get_org, pipedrive_get_persons, pipedrive_get_deals, "
+        "pipedrive_get_activities, whatsapp_get_messages ou email_get_contact_history — "
+        "todos esses dados já estão no histórico acima. Use o contexto coletado e execute "
+        "APENAS o que o usuário está pedindo agora. "
+        "Se precisar escrever uma nota em pipedrive_update_task, redija com base no "
+        "contexto de WhatsApp/Email que já aparece no histórico desta conversa — "
+        "não chame ferramentas de busca para isso."
+    )
+    if ids:
+        directive += f" IDs de atividade disponíveis no histórico: {', '.join(list(ids)[:3])}."
+
+    return directive
+
+
 async def resume_after_confirmation(
     action_id: str,
     approved: bool,
@@ -4722,26 +5106,46 @@ async def resume_after_confirmation(
     # Restaura conversa e adiciona os resultados
     messages = pending["messages_snapshot"]  # Já inclui a mensagem do assistente com tool_use blocks
     
-    # Se aprovado, adicionamos um nudge para o agente atualizar o Pipedrive
+    # Se aprovado, adicionamos um nudge para o agente continuar o fluxo
     system_nudge = ""
     if approved:
-        # Pega a mensagem que foi enviada para incluir na nota do Pipedrive
-        sent_msg_preview = ""
-        if tool_name == "whatsapp_send_message":
-            sent_msg_preview = pending.get("args", {}).get("message", "")
-        elif tool_name == "email_send":
-            sent_msg_preview = pending.get("args", {}).get("body", "")
+        if tool_name in ("whatsapp_send_message", "email_send", "email_reply"):
+            sent_msg_preview = pending.get("args", {}).get(
+                "message" if tool_name == "whatsapp_send_message" else "body", ""
+            )
+            channel_label = "WhatsApp" if tool_name == "whatsapp_send_message" else "Email"
 
-        system_nudge = (
-            f"\n\n[SISTEMA]: Ação executada com sucesso.\n"
-            f"MENSAGEM ENVIADA: \"{sent_msg_preview}\"\n\n"
-            f"Para concluir este fluxo, você DEVE agora obrigatoriamente chamar 'pipedrive_update_task' com:\n"
-            f"- activity_id: (o ID da tarefa de follow-up que você encontrou no início)\n"
-            f"- done: true\n"
-            f"- note: \"Mensagem enviada via WhatsApp: {sent_msg_preview}\"\n\n"
-            f"Após atualizar o CRM, chame 'suggest_next_actions' para apresentar ao João os próximos passos estratégicos personalizados.\n\n"
-            f"Não finalize sem realizar essas ações."
-        )
+            # Extrai o ID real da atividade do snapshot para não deixar o agente adivinhar
+            activity_id_val = _extract_first_activity_id(pending.get("messages_snapshot", []))
+            activity_id_str = (
+                str(activity_id_val)
+                if activity_id_val
+                else "use o ID encontrado em pipedrive_get_activities no histórico acima"
+            )
+
+            msg_short = sent_msg_preview[:120].replace('"', "'")
+
+            system_nudge = (
+                f"\n\n[SISTEMA]: {channel_label} enviado com sucesso.\n"
+                f"MENSAGEM ENVIADA: \"{msg_short}...\"\n\n"
+                f"OBRIGATÓRIO — execute estas 2 ferramentas AGORA, nesta ordem:\n\n"
+                f"1. pipedrive_update_task\n"
+                f"   activity_id: {activity_id_str}\n"
+                f"   done: true\n"
+                f"   note: redija uma nota curta (1-2 linhas) resumindo o contexto da conversa "
+                f"encontrado no histórico acima (último contato, pendências discutidas, o que foi enviado). "
+                f"Use o histórico de WhatsApp/Email já visível nesta conversa — NÃO chame ferramentas.\n\n"
+                f"2. suggest_next_actions — somente após o update acima.\n\n"
+                f"É PROIBIDO encerrar a tarefa sem executar ambas as ferramentas."
+            )
+
+        elif tool_name == "pipedrive_update_task":
+            system_nudge = (
+                "\n\n[SISTEMA]: Atividade do Pipedrive atualizada com sucesso.\n\n"
+                "ÚLTIMA ETAPA OBRIGATÓRIA: chame agora 'suggest_next_actions' para "
+                "apresentar ao usuário os próximos passos estratégicos com base em tudo "
+                "que foi encontrado nesta investigação. NÃO encerre sem exibir as sugestões."
+            )
 
     messages.append({
         "role": "user", 

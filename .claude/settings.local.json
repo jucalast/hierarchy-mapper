@@ -84,7 +84,11 @@
       "Bash(Get-Content \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\backend\\\\logs\\\\agent_v2_raw.log\" -Tail 50)",
       "Bash(Select-Object -Last 50)",
       "Bash(powershell *)",
-      "Bash(findstr /I \"mackee compressao laboratorio autoridade tecnica\" \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\services\\\\ai\\\\prompts.py\")"
+      "Bash(findstr /I \"mackee compressao laboratorio autoridade tecnica\" \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\services\\\\ai\\\\prompts.py\")",
+      "Bash(Select-Object FullName)",
+      "WebFetch(domain:github.com)",
+      "Bash(sh)",
+      "Bash(cargo install *)"
     ]
   }
 }
