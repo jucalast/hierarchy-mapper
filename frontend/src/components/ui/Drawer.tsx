@@ -14,12 +14,12 @@ import {
     User,
 } from 'lucide-react';
 import styles from './Drawer.module.css';
-import { HistoryTimeline } from '@/features/prospecting/components/HistoryTimeline';
-import { ContactList } from '@/features/prospecting/components/ContactList';
-import { OrgListItem } from '@/features/prospecting/components/OrgListItem';
+import { HistoryTimeline } from '../prospecting/HistoryTimeline';
+import { ContactList } from '../prospecting/ContactList';
+import { OrgListItem } from '../prospecting/OrgListItem';
 import type { NotificationType } from './Notification';
 import { organizations as orgsApi } from '@/services/api';
-import { Avatar, Button, Modal, Spinner, Badge } from '@/components/ui';
+import { Avatar, Button, Modal, Spinner, Badge } from './index';
 
 interface DrawerProps {
     showDrawer: boolean;

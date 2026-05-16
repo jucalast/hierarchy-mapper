@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './NetworkGraph.module.css';
 import { User, MapPin, Building2, Briefcase } from 'lucide-react';
-import { LinkedInIcon } from './icons/LinkedInIcon';
+import { LinkedInIcon } from '../icons/LinkedInIcon';
 import { buildProxyImageUrl } from '@/services/config';
 
 interface PersonaPreviewProps {
