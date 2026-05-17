@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Check } from 'lucide-react';
-import styles from './NetworkGraph.module.css';
+import styles from './styles/Toolbar.module.css';
 import { Avatar } from '../ui';
 import type { ProspectLead } from '@/hooks/useProspecting';
 

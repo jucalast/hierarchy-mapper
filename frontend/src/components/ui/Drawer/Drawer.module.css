@@ -115,6 +115,11 @@
     border-color: var(--sw-primary);
 }
 
+.inputIcon {
+    color: var(--sw-text-muted);
+    flex-shrink: 0;
+}
+
 .drawerInput {
     background: transparent;
     border: none;
@@ -367,6 +372,31 @@
     background: #34d17d4d;
 }
 
+.expandToggle.today::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1a1a1b;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.expandToggle.today:hover {
+    background: #34d17c;
+    color: #1a1a1b;
+}
+
+.expandToggle.today:hover::before {
+    opacity: 1;
+    background: #34d17d4d;
+}
+
 .expandToggle.overdue {
     position: absolute;
     top: 8px;
@@ -406,6 +436,31 @@
     background: rgba(239, 68, 68, 0.3);
 }
 
+.expandToggle.overdue::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1a1a1b;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.expandToggle.overdue:hover {
+    background: #ef4444;
+    color: #1a1a1b;
+}
+
+.expandToggle.overdue:hover::before {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.3);
+}
+
 .expandToggle.noTask {
     position: absolute;
     top: 8px;
@@ -418,6 +473,31 @@
     height: 24px;
     padding: 0;
     margin-left: 0;
+}
+
+.expandToggle.noTask::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1a1a1b;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.expandToggle.noTask:hover {
+    background: #f59e0b;
+    color: #1a1a1b;
+}
+
+.expandToggle.noTask:hover::before {
+    opacity: 1;
+    background: rgba(245, 158, 11, 0.3);
 }
 
 .expandToggle.noTask::before {
@@ -566,6 +646,19 @@
     cursor: not-allowed;
 }
 
+.spin {
+    animation: swSpin 1s linear infinite;
+}
+
+@keyframes swSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .dealOwner {
     font-size: 0.65rem;
     color: rgba(255, 255, 255, 0.4);
@@ -624,13 +717,14 @@
 
 /* Person Items */
 .personItem {
-    padding: 8px;
-    background: var(--sw-surface-raised);
-    border-radius: 6px;
+    padding: 10px 0;
+    background: transparent;
+    border-bottom: 1px solid var(--sw-border);
+    border-radius: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    border-left: 2px solid var(--sw-border-strong);
+    border-left: none;
 }
 
 .personInfo {
@@ -662,9 +756,10 @@
 
 /* Deal Items */
 .dealItem {
-    padding: 10px;
-    background: var(--sw-surface-raised);
-    border-radius: 6px;
+    padding: 10px 0;
+    background: transparent;
+    border-bottom: 1px solid var(--sw-border);
+    border-radius: 0;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -717,6 +812,7 @@
 .focusHeader {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     width: 100%;
 }
 
@@ -736,6 +832,70 @@
 
 .backToListBtn:hover {
     color: var(--sw-text-base);
+}
+
+.focusHeaderActions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    position: relative;
+    gap: 8px;
+    flex-wrap: nowrap;
+    min-width: fit-content;
+}
+
+.moreOptionsBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    border: none !important;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    padding: 6px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.moreOptionsBtn:hover {
+    color: var(--sw-text-base);
+    background: var(--sw-hover);
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--sw-surface-raised);
+    border: 1px solid var(--sw-border);
+    border-radius: 8px;
+    padding: 8px 0;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: var(--sw-text-base);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, color 0.2s;
+}
+
+.dropdownItem:hover {
+    background: var(--sw-hover);
 }
 
 .focusedOrgView {

@@ -1,0 +1,490 @@
+/* --- COMMAND BAR (FLOATING TOOLBAR STYLE) --- */
+.searchContainer {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.toolbarUnifiedWrapper {
+    position: relative;
+    width: fit-content;
+    max-width: 100%;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.toolbarUnifiedWrapper>* {
+    pointer-events: auto;
+}
+
+.refineTab {
+    display: flex;
+    align-items: center;
+    background: var(--sw-sidebar);
+    border: var(--sw-border-width) solid var(--sw-border-strong);
+    padding: 4px 6px;
+    border-radius: var(--radius-lg);
+    pointer-events: auto;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex-shrink: 1;
+    min-height: 44px;
+    height: auto;
+    gap: 4px;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(20px);
+    overflow: visible;
+}
+
+.refineTab.searching {
+    background: var(--sw-sidebar) !important;
+    border-color: var(--sw-border) !important;
+    box-shadow: none !important;
+}
+
+.refineTab.searching .inputGroup,
+.refineTab.searching .toolbarActions {
+    pointer-events: none;
+}
+
+.refineTab.searching .detectBtn {
+    border: none !important;
+}
+
+.refineTab.searching .loadingAnim {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.refineTabEnriching {
+    opacity: 1;
+}
+
+.inputGroup {
+    display: flex;
+    align-items: center;
+    height: 38px;
+    padding-right: 4px;
+    border-right: none;
+    flex: 1;
+    min-width: 0;
+}
+
+.inputGroupColumn {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    padding-right: 0;
+    flex: 1;
+    min-width: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 750px) {
+    .toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] .inputGroupColumn {
+        flex-direction: row;
+        align-items: center;
+        gap: 0;
+    }
+}
+
+.toolbarSegment {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    height: 34px;
+    border-radius: 8px;
+    transition: var(--transition-fast);
+    color: rgba(255, 255, 255, 0.4);
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.toolbarSegment:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.toolbarSegment:focus-within {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font-size: var(--font-sm);
+    width: 100%;
+    min-width: 60px;
+    max-width: 120px;
+    font-weight: 500;
+}
+
+.input::placeholder {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.inputIcon {
+    width: 14px;
+    height: 14px;
+    margin-right: 10px;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.inputAttention {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+.inputAttention .inputIcon {
+    color: #ef4444 !important;
+}
+
+.inputAttention .input {
+    color: #ef4444 !important;
+    font-weight: 500;
+}
+
+.inputAttention .input::placeholder {
+    color: #ef4444 !important;
+    opacity: 0.6;
+}
+
+.toolbarDivider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.areaSelectorContainer {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    height: 34px;
+    box-sizing: border-box;
+    border-radius: 10px;
+}
+
+.areaBtn {
+    background: transparent;
+    border: none;
+    padding: 0 12px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+}
+
+.areaBtn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.areaBtnActive {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.toolbarActions {
+    display: flex;
+    align-items: center;
+    padding-left: 12px;
+    gap: 8px;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+
+.detectBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    height: 34px;
+    background: #ffffff;
+    border: var(--sw-border-width) solid #ffffff;
+    border-radius: 8px;
+    color: #000000;
+    font-size: var(--font-sm);
+    font-weight: 500;
+    margin-left: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.detectBtn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.stopBtn {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    color: #ef4444 !important;
+    pointer-events: auto !important;
+}
+
+.stopBtn:hover {
+    background-color: rgba(239, 68, 68, 0.3) !important;
+    border-color: #ef4444 !important;
+    color: #ef4444 !important;
+}
+
+.optionsContainer {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--sw-sidebar);
+    border: var(--sw-border-width) solid var(--sw-border-strong);
+    border-bottom: none;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap !important;
+    gap: 10px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    animation: swSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes swSlideIn {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.optionsContainerClosing {
+    animation: swSlideOut 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes swSlideOut {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(8px); }
+}
+
+.brandCard {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 6px 12px;
+    gap: 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 200px;
+    flex-shrink: 0;
+}
+
+.brandCardActive { background: #1e1e1e !important; }
+
+.brandAvatarWrapper {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.brandInfo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    min-width: 0;
+    gap: 10px;
+}
+
+.brandNameLine {
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: #ffffff !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.brandFollowers {
+    font-size: var(--font-xs);
+    color: rgba(255, 255, 255, 0.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60px;
+}
+
+.cardQuickActions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.brandCard:hover .cardQuickActions { opacity: 1; }
+
+.approveBtn {
+    background: transparent;
+    border: 1px solid rgba(52, 209, 124, 0.3);
+    color: #34d17c;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.rejectBtn {
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.linkedinIcon {
+    width: 18px; height: 18px;
+    opacity: 0;
+    transition: all 0.2s;
+}
+
+.brandCard:hover .linkedinIcon { opacity: 0.7; }
+
+.prospectSlider {
+    -webkit-appearance: none;
+    width: 80px; height: 3px;
+    background: rgba(255, 255, 255, 0.12);
+    outline: none;
+}
+
+.cleanSearchBtn {
+    display: flex; align-items: center; justify-content: center;
+    background: transparent !important; border: none !important;
+    color: rgba(255, 255, 255, 0.3) !important;
+    cursor: pointer; padding: 0 8px; height: 34px;
+}
+
+.searchBox, .searchBoxTwoRows {
+    display: flex; align-items: center; flex: 1; width: 100%;
+}
+
+.confirmRow1, .confirmRow2 {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+}
+
+.backBtn {
+    background: transparent; color: var(--sw-text-muted);
+    border: none; cursor: pointer; width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+}
+
+.confirmIcon {
+    color: var(--sw-primary);
+}
+
+.selectedBrandPreview {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 0 12px !important;
+    height: 34px !important;
+    min-width: 100px !important;
+    max-width: 200px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    box-shadow: none !important;
+    flex: 0 1 auto !important;
+}
+
+.toolbarBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.4);
+    background: transparent;
+    border: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.toolbarBtn:hover {
+    color: #ffffff;
+}
+
+.toolbarBtn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.inputActionBtn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.divider {
+    width: 1px;
+    height: 16px;
+    background: var(--sw-border);
+    margin: 0 4px;
+}
+
+.miniLogoWrapper {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--sw-surface-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: var(--sw-border-width) solid var(--sw-border);
+}
+
+.brandInput {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--sw-text-base);
+    font-size: var(--font-base);
+    font-weight: 600;
+    width: 100%;
+    padding: 0 8px;
+}

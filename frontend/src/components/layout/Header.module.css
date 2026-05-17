@@ -1,11 +1,11 @@
 .header {
     height: 52px;
-    border-bottom: var(--sw-border-width) solid var(--sw-border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     padding: 0 24px;
     gap: 16px;
-    background: var(--sw-sidebar);
+    background: #131313;
     z-index: 50;
 }
 
@@ -15,8 +15,8 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    background: var(--sw-hover);
-    border: var(--sw-border-width) solid var(--sw-border);
+    background: rgba(255, 255, 255, 0.03);
+    border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
     border-radius: 6px;
     color: rgba(255, 255, 255, 0.4);
 }
@@ -55,5 +55,87 @@
     border-radius: 4px;
     background: #1E2145;
     color: #7A8BFF;
+    text-transform: uppercase;
+}
+
+.focusHeaderActions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-right: 16px;
+}
+
+.moreOptionsBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.moreOptionsBtn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: 100%;
+    right: 16px;
+    margin-top: 4px;
+    background: #1e1e1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px 0;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, color 0.2s;
+}
+
+.dropdownItem:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.globalHeader {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    background: linear-gradient(135deg, #1e2145 30%, #131313 80%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.globalHeaderTitle {
+    font-family: var(--font-primary);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
 }

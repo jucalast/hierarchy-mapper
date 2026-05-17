@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronRight, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Avatar, Spinner, Badge } from '../ui';
 import { getProxiedUrl } from '../../utils/avatarUtils';
-import styles from '../network-graph/NetworkGraph.module.css';
+import styles from './OrgListItem.module.css';
 
 interface TaskSummary {
     next_due_date: string;
@@ -106,6 +106,7 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                 })()}
                             </span>
 
+
                             {org.icp_tier && (
                                 <span
                                     title={`Score ICP: ${org.icp_score || 'N/A'}`}
@@ -119,7 +120,8 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         flexShrink: 0,
-                                        lineHeight: 1
+                                        lineHeight: 1,
+                                        marginLeft: isToday ? '0' : '6px'
                                     }}
                                 >
                                     {org.icp_tier}

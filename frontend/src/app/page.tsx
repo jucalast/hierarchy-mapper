@@ -7,6 +7,8 @@ import LoginView from '@/components/layout/LoginView';
 // Carrega dinamicamente o NetworkGraph no lado do cliente para evitar problemas de SSR (ReactFlow dependente)
 const NetworkGraph = dynamic(() => import('@/components/network-graph/NetworkGraph'), { ssr: false });
 
+import { NotificationProvider } from '@/contexts/NotificationContext';
+
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
@@ -49,12 +51,14 @@ export default function Home() {
   }
 
   return (
-    <main>
-      {isAuthenticated ? (
-        <NetworkGraph onLogout={handleLogout} />
-      ) : (
-        <LoginView onLoginSuccess={() => setIsAuthenticated(true)} />
-      )}
-    </main>
+    <NotificationProvider>
+      <main>
+        {isAuthenticated ? (
+          <NetworkGraph onLogout={handleLogout} />
+        ) : (
+          <LoginView onLoginSuccess={() => setIsAuthenticated(true)} />
+        )}
+      </main>
+    </NotificationProvider>
   );
 }

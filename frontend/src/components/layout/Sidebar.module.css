@@ -3,16 +3,13 @@
     height: 100%;
     flex-shrink: 0;
     width: 56px;
-    /* w-14 */
-    background: var(--sw-sidebar);
+    background: #131313;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 20px 0;
-    /* Standardized vertical padding */
     gap: 24px;
-    /* Harmonized gap */
-    border: var(--sw-border-width) solid var(--sw-border);
+    border-right: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
     z-index: 1000;
 }
 
@@ -22,22 +19,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--sw-text-muted);
+    color: rgba(255, 255, 255, 0.4);
     cursor: pointer;
     transition: var(--transition-fast);
     background: transparent;
     border-radius: 0;
-    /* Remove rounded background */
 }
 
 .navIcon:hover {
-    color: var(--sw-text-base);
+    color: #ffffff;
     background: transparent;
-    /* Clean hover, no background */
 }
 
 .navIconActive {
-    color: var(--sw-primary) !important;
+    color: #ffffff !important;
     background: transparent !important;
     position: relative;
     box-shadow: none !important;

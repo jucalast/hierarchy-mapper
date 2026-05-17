@@ -1,6 +1,6 @@
 import React from 'react';
 import { Loader2, Search, Navigation, RotateCcw } from 'lucide-react';
-import styles from './NetworkGraph.module.css';
+import styles from './styles/Toolbar.module.css';
 import type { ProspectSession, ProspectLead } from '@/hooks/useProspecting';
 import { ProspectLeadCard } from './ProspectLeadCard';
 

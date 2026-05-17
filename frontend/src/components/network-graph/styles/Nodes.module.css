@@ -1,0 +1,397 @@
+/* --- GRAPH NODES (SaaS PREMIUM CARDS) --- */
+.customNode {
+    background: #131313;
+    border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    width: 440px;
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    padding: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    cursor: grab;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    z-index: 1;
+    transform-style: preserve-3d;
+}
+
+.chatNode {
+    cursor: default !important;
+    will-change: auto !important;
+    transition: none !important;
+    transform-style: preserve-3d !important;
+}
+
+.customNode:hover {
+    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+    transform: none !important;
+}
+
+/* Level Borders on Hover */
+.level_6:hover {
+    border-color: #7A8BFF !important;
+}
+
+.level_5:hover {
+    border-color: #60A5FA !important;
+}
+
+.level_4:hover {
+    border-color: #2DD4BF !important;
+}
+
+.level_3:hover {
+    border-color: #4ADE80 !important;
+}
+
+.level_2:hover {
+    border-color: #FBBF24 !important;
+}
+
+.level_1:hover {
+    border-color: #A1A1AA !important;
+}
+
+.level_0:hover {
+    border-color: #F4F4F5 !important;
+}
+
+.handle {
+    width: 8px !important;
+    height: 8px !important;
+    background: #09090B !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    z-index: 100 !important;
+    transition: all 0.2s;
+}
+
+.handle:hover {
+    border-color: var(--sw-primary) !important;
+    transform: scale(1.4);
+}
+
+.handleTopLine,
+.handleBottomLine {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.nodeHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px 16px 0 0;
+    position: relative;
+    z-index: 2;
+}
+
+.seniorityWrapper {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    font-size: var(--font-xs);
+    font-weight: 500;
+    padding: 6px 16px 40px 16px;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transform: translateZ(-1px);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-bottom: none !important;
+}
+
+/* Seniority Badges */
+.badge_6 {
+    color: #1E2145 !important;
+    background: #7A8BFF !important;
+}
+
+.badge_5 {
+    color: #1E2D45 !important;
+    background: #60A5FA !important;
+}
+
+.badge_4 {
+    color: #11363B !important;
+    background: #2DD4BF !important;
+}
+
+.badge_3 {
+    color: #063720 !important;
+    background: #4ADE80 !important;
+}
+
+.badge_2 {
+    color: #372A10 !important;
+    background: #FBBF24 !important;
+}
+
+.badge_1 {
+    color: #27272A !important;
+    background: #A1A1AA !important;
+}
+
+.badge_0 {
+    color: #3F3F46 !important;
+    background: #F4F4F5 !important;
+}
+
+.nodeBody {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.nodeNameWrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nodeAvatarContainer {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    z-index: 2;
+}
+
+.nodeAvatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.avatarImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.nodeAvatarCompanyBadge {
+    position: absolute;
+    bottom: -10px;
+    right: -10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #131313;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.nodeAvatar:hover .nodeAvatarCompanyBadge {
+    transform: scale(1.2) rotate(5deg);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 1);
+}
+
+.companyBadgeImg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: transparent;
+    position: relative;
+    z-index: 1;
+}
+
+.nodeName {
+    font-size: var(--font-xl);
+    font-weight: 500;
+    color: #FFFFFF;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+}
+
+.roleWrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.roleDept {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #60A5FA;
+}
+
+.deptBadge {
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--font-xs);
+    font-weight: 500;
+    background: rgba(129, 140, 248, 0.08);
+    color: var(--sw-primary);
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: 1px solid rgba(129, 140, 248, 0.15);
+}
+
+.osintSection {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.osintLabel {
+    font-size: var(--font-xs);
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.15);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+}
+
+.osintBox {
+    display: flex;
+    flex-direction: column;
+}
+
+.osintLine {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.osintLine:last-child {
+    border-bottom: none;
+}
+
+.osintIcon {
+    width: 14px;
+    height: 14px;
+    color: rgba(255, 255, 255, 0.35);
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.osintText {
+    font-size: var(--font-sm);
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.5;
+    flex: 1;
+}
+
+.osintParagraph {
+    margin: 0;
+    font-size: var(--font-sm);
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+}
+
+.emailLine {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.emailText {
+    font-size: var(--font-sm);
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
+}
+
+.highlightPill {
+    font-size: 0.65rem;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.03);
+    border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.nodeActionFooter {
+    margin-top: 16px;
+    padding-top: 20px;
+    border-top: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+}
+
+.linkedinBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: var(--sw-border-width) solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.6) !important;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    text-decoration: none !important;
+    transition: var(--transition-fast);
+    padding: 12px;
+    width: 100%;
+}
+
+.linkedinBtn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+.linkedinMainBtn {
+    background: #0077b5;
+    color: #fff;
+    height: 48px;
+    border-radius: 14px;
+    font-size: var(--font-sm);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.linkedinMainBtn:hover {
+    background: #008cdc;
+    transform: translateY(-2px);
+}
+
+.linkedinIconImg {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.linkedinBtn:hover .linkedinIconImg {
+    opacity: 1;
+}

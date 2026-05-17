@@ -1,0 +1,180 @@
+.drawerHeader {
+    height: 52px;
+    padding: 0 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    gap: 8px;
+    background: var(--sw-sidebar);
+}
+
+.focusHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.backToListBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0;
+}
+
+.backToListBtn:hover {
+    color: var(--sw-text-base);
+}
+
+.focusHeaderActions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    position: relative;
+    gap: 12px;
+    flex-wrap: nowrap;
+    min-width: fit-content;
+}
+
+.moreOptionsBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    border: none !important;
+    color: var(--sw-text-muted) !important;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    padding: 6px;
+    border-radius: 4px;
+    line-height: 1;
+    outline: none;
+}
+
+.moreOptionsBtn:hover {
+    color: var(--sw-text-base) !important;
+    background: var(--sw-hover) !important;
+}
+
+.refreshBtn {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.refreshBtn:hover:not(:disabled) {
+    background: var(--sw-hover);
+    color: var(--sw-primary);
+}
+
+.refreshBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.spin {
+    animation: swSpin 1s linear infinite;
+}
+
+@keyframes swSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--sw-surface-raised);
+    border: 1px solid var(--sw-border);
+    border-radius: 8px;
+    padding: 8px 0;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: var(--sw-text-base);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, color 0.2s;
+}
+
+.dropdownItem:hover {
+    background: var(--sw-hover);
+}
+
+.drawerInputWrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: var(--sw-border-width) solid var(--sw-border);
+    transition: var(--transition-fast);
+    flex: 1;
+}
+
+.drawerInputWrapper:focus-within {
+    border-color: var(--sw-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.inputIcon {
+    color: var(--sw-text-muted);
+    flex-shrink: 0;
+}
+
+.drawerInput {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-base);
+    font-size: var(--font-sm);
+    outline: none;
+    width: 100%;
+}
+
+.backBtn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.backBtn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}

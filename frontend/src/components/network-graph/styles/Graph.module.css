@@ -1,0 +1,147 @@
+.container {
+    display: flex;
+    height: calc(100vh - 24px);
+    width: 100vw;
+    background-color: var(--sw-bg);
+    color: var(--sw-text-base);
+    font-family: var(--font-primary);
+    overflow: hidden;
+}
+
+/* --- MAIN WORKSPACE --- */
+.mainWrapper {
+    height: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: #1d1d1d;
+}
+
+.contentWrapper {
+    height: 100%;
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    overflow: hidden;
+}
+
+.mainContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: #1d1d1d;
+}
+
+.dottedBackground {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.6;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
+
+.graphWrapper {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.graphWrapper :global(.react-flow) {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+}
+
+/* React Flow Controls Integration */
+.graphWrapper :global(.react-flow__controls) {
+    background: var(--sw-sidebar);
+    border: var(--sw-border-width) solid var(--sw-border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--sw-shadow);
+    overflow: hidden;
+    padding: 2px;
+}
+
+.graphWrapper :global(.react-flow__controls-button) {
+    background: transparent;
+    border: none;
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
+    color: var(--sw-text-muted);
+    fill: currentColor;
+    transition: var(--transition-fast);
+}
+
+.graphWrapper :global(.react-flow__controls-button:last-child) {
+    border-bottom: none;
+}
+
+.graphWrapper :global(.react-flow__controls-button:hover) {
+    background: var(--sw-hover);
+    color: var(--sw-text-base);
+}
+
+.graphWrapper :global(.react-flow__controls-button svg) {
+    fill: currentColor;
+}
+
+.graphWrapper :global(.react-flow__attribution) {
+    display: none;
+}
+
+.loadingAnim {
+    animation: swSpin 1s linear infinite;
+}
+
+.loadingIconGray {
+    color: var(--sw-text-muted) !important;
+    animation: swSpin 1s linear infinite;
+    opacity: 0.6;
+}
+
+@keyframes swSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spinnerSmall {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: swSpin 1s linear infinite;
+}
+
+.helperText {
+    font-size: var(--font-xs);
+    color: #f59e0b;
+    position: absolute;
+    bottom: -18px;
+}
+
+.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    border: var(--sw-border-width) solid rgba(239, 68, 68, 0.2);
+    font-size: var(--font-sm);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}

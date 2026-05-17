@@ -12,7 +12,7 @@ import {
     Check,
     X,
 } from 'lucide-react';
-import styles from './NetworkGraph.module.css';
+import styles from './styles/Toolbar.module.css';
 import { Avatar } from '../ui';
 
 export interface NormalToolbarProps {

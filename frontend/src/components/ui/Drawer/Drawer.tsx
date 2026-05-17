@@ -1,25 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-    ChevronRight,
-    Search,
-    X,
-    Users,
-    Briefcase,
-    Clock,
-    DollarSign,
-    Trash2,
-    MoreHorizontal,
-    AlertTriangle,
-    RefreshCw,
-    User,
-} from 'lucide-react';
-import styles from '../../network-graph/NetworkGraph.module.css';
-import { HistoryTimeline } from '../../prospecting/HistoryTimeline';
-import { ContactList } from '../../prospecting/ContactList';
-import { OrgListItem } from '../../prospecting/OrgListItem';
-import type { NotificationType } from '../Notification';
+import styles from './Drawer.module.css';
+import { Spinner } from '../';
 import { organizations as orgsApi } from '@/services/api';
-import { Avatar, Button, Modal, Spinner, Badge } from '../';
+import type { NotificationType } from '../Notification';
+import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal } from './components';
 
 interface DrawerProps {
     showDrawer: boolean;
@@ -139,7 +123,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
     const [confirmBusy, setConfirmBusy] = useState<boolean>(false);
     const [scanningOrgId, setScanningOrgId] = useState<number | null>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -296,11 +280,6 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
-    const formatDate = (dateStr: string) => {
-        if (!dateStr) return '';
-        return new Date(dateStr).toLocaleDateString('pt-BR');
-    };
-
     // Filtra a organização que está em foco
     const focusedOrg = expandedOrgId ? filteredOrgs.find(o => Number(o.id) === expandedOrgId) : null;
 
@@ -308,78 +287,19 @@ export const Drawer: React.FC<DrawerProps> = ({
 
     return (
         <div className={styles.drawer}>
-            <div className={styles.drawerHeader}>
-                {expandedOrgId ? (
-                    <div className={styles.focusHeader}>
-                        <button onClick={() => setExpandedOrgId(null)} className={styles.backToListBtn}>
-                            <X size={14} />
-                            <span>Voltar para a lista</span>
-                        </button>
-
-                        <div className={styles.focusHeaderActions} ref={dropdownRef}>
-                            <button
-                                onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
-                                className={styles.moreOptionsBtn}
-                                title="Mais opções"
-                            >
-                                <MoreHorizontal size={20} />
-                            </button>
-
-                            <button
-                                onClick={() => fetchOrgDetails(expandedOrgId!, true)}
-                                className={styles.refreshBtn}
-                                title="Sincronizar agora"
-                                disabled={loadingDetails[expandedOrgId!]}
-                            >
-                                <RefreshCw size={14} className={loadingDetails[expandedOrgId!] ? styles.spin : ''} />
-                            </button>
-
-                            {showOptionsDropdown && (
-                                <div className={styles.dropdownMenu}>
-                                    <button
-                                        onClick={() => {
-                                            setShowOptionsDropdown(false);
-                                            setConfirmKind('reset');
-                                        }}
-                                        className={styles.dropdownItem}
-                                        style={{ color: '#f59e0b' }}
-                                    >
-                                        <Trash2 size={14} />
-                                        <span>Resetar Cache</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShowOptionsDropdown(false);
-                                            setConfirmKind('delete');
-                                        }}
-                                        className={styles.dropdownItem}
-                                        style={{ color: '#ef4444' }}
-                                    >
-                                        <X size={14} />
-                                        <span>Excluir Empresa</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <div className={styles.drawerInputWrapper}>
-                            <Search size={14} className={styles.inputIcon} />
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Pesquisar no Pipedrive..."
-                                className={styles.drawerInput}
-                            />
-                        </div>
-                        <button onClick={() => setShowDrawer(false)} className={styles.backBtn} title="Fechar">
-                            <X size={14} />
-                        </button>
-                    </>
-                )}
-            </div>
+            <DrawerHeader 
+                expandedOrgId={expandedOrgId}
+                setExpandedOrgId={setExpandedOrgId}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                setShowDrawer={setShowDrawer}
+                showOptionsDropdown={showOptionsDropdown}
+                setShowOptionsDropdown={setShowOptionsDropdown}
+                fetchOrgDetails={fetchOrgDetails}
+                loadingDetails={loadingDetails}
+                setConfirmKind={setConfirmKind}
+                dropdownRef={dropdownRef}
+            />
 
             <div className={styles.drawerList}>
                 {isLoading ? (
@@ -387,283 +307,46 @@ export const Drawer: React.FC<DrawerProps> = ({
                         <Spinner size={32} />
                     </div>
                 ) : expandedOrgId && focusedOrg ? (
-                    /* MODO FOCO TOTAL (UMA ÚNICA EMPRESA) */
-                    <div className={styles.focusedOrgView}>
-                        <div className={styles.focusedOrgHero}>
-                            <div className={styles.focusedOrgLogoWrapper}>
-                                <Avatar
-                                    kind="company"
-                                    src={focusedOrg.logo || (Number(focusedOrg.id) === selectedOrgId || Number(focusedOrg.local_id) === selectedOrgId ? selectedOrgLogo : undefined)}
-                                    name={focusedOrg.name}
-                                    data={focusedOrg}
-                                    size={48}
-                                />
-                            </div>
-                            <div className={styles.focusedOrgIdentity}>
-                                {editingNameOrgId === expandedOrgId ? (
-                                    <input
-                                        type="text"
-                                        value={editingNameValue}
-                                        onChange={(e) => setEditingNameValue(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleRenameOrg(expandedOrgId!);
-                                            } else if (e.key === 'Escape') {
-                                                setEditingNameOrgId(null);
-                                            }
-                                        }}
-                                        onBlur={() => handleRenameOrg(expandedOrgId!)}
-                                        autoFocus
-                                        className={styles.focusedOrgNameEdit}
-                                        placeholder="Nome da empresa..."
-                                    />
-                                ) : (
-                                    <h2
-                                        className={styles.focusedOrgName}
-                                        onDoubleClick={() => {
-                                            setEditingNameOrgId(expandedOrgId);
-                                            setEditingNameValue(focusedOrg.name);
-                                        }}
-                                        title="Clique duas vezes para renomear"
-                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', width: '100%', overflow: 'hidden' }}
-                                    >
-                                        <span style={{ 
-                                            whiteSpace: 'nowrap', 
-                                            overflow: 'hidden', 
-                                            textOverflow: 'ellipsis',
-                                            flex: '0 1 auto'
-                                        }}>
-                                            {focusedOrg.name}
-                                        </span>
-                                        {orgDetails[expandedOrgId]?.icp_tier && (
-                                            <Badge 
-                                                tone={orgDetails[expandedOrgId].icp_tier === 'A' ? 'success' : orgDetails[expandedOrgId].icp_tier === 'B' ? 'warning' : 'neutral'}
-                                                size="sm"
-                                                style={{ fontSize: '11px', padding: '2px 8px', flexShrink: 0 }}
-                                                title={`ICP Score: ${orgDetails[expandedOrgId].icp_score}`}
-                                            >
-                                                Tier {orgDetails[expandedOrgId].icp_tier} • {orgDetails[expandedOrgId].icp_score}%
-                                            </Badge>
-                                        )}
-                                        {scanningOrgId === expandedOrgId && (
-                                            <Spinner size={16} inline color="rgb(122, 139, 255)" />
-                                        )}
-                                    </h2>
-                                )}
-                                <div className={styles.focusedMetaRow}>
-                                    {focusedOrg.address && (
-                                        <span className={styles.focusedOrgAddress}>
-                                            {focusedOrg.address.toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}
-                                        </span>
-                                    )}
-                                    {orgDetails[expandedOrgId]?.org?.owner_name && (
-                                        <span className={styles.focusedOrgOwner} title="Responsável pela empresa">
-                                            <User size={12} style={{ marginRight: '4px', opacity: 0.6 }} />
-                                            {orgDetails[expandedOrgId].org.owner_name}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={styles.detailsPane}>
-                            {loadingDetails[expandedOrgId] ? (
-                                <div className={styles.detailsLoading}>
-                                    <Spinner size={16} inline />
-                                    <span>Sincronizando...</span>
-                                </div>
-                            ) : orgDetails[expandedOrgId] ? (
-                                <div className={styles.detailsContent}>
-                                    <div className={styles.mainNav}>
-                                        <button
-                                            className={activeTab === 'activities' ? styles.mainNavActive : styles.mainNavBtn}
-                                            onClick={() => setActiveTab('activities')}
-                                        >
-                                            <Clock size={16} /> Timeline
-                                        </button>
-                                        <button
-                                            className={activeTab === 'persons' ? styles.mainNavActive : styles.mainNavBtn}
-                                            onClick={() => setActiveTab('persons')}
-                                        >
-                                            <Users size={16} /> People
-                                        </button>
-                                        <button
-                                            className={activeTab === 'deals' ? styles.mainNavActive : styles.mainNavBtn}
-                                            onClick={() => setActiveTab('deals')}
-                                        >
-                                            <Briefcase size={16} /> Deals
-                                        </button>
-                                    </div>
-
-
-                                    <div className={styles.tabScrollAreaFocus}>
-                                        {activeTab === 'activities' && (
-                                            <HistoryTimeline
-                                                details={orgDetails[expandedOrgId]}
-                                                orgName={focusedOrg.name}
-                                            />
-                                        )}
-
-                                        {activeTab === 'persons' && (
-                                            <ContactList
-                                                persons={(() => {
-                                                    const seen = new Set();
-                                                    return (orgDetails[expandedOrgId].persons || []).filter((p: any) => {
-                                                        if (!p.id || seen.has(p.id)) return false;
-                                                        seen.add(p.id);
-                                                        return true;
-                                                    });
-                                                })()}
-                                            />
-                                        )}
-
-                                        {activeTab === 'deals' && (
-                                            <div className={styles.dealList}>
-                                                {orgDetails[expandedOrgId].deals.length === 0 && <div className={styles.emptyState}>Sem negócios.</div>}
-                                                {(() => {
-                                                    const seen = new Set();
-                                                    return (orgDetails[expandedOrgId].deals || [])
-                                                        .filter((d: any) => {
-                                                            if (!d.id || seen.has(d.id)) return false;
-                                                            seen.add(d.id);
-                                                            return true;
-                                                        })
-                                                        .map((d: any) => (
-                                                            <div key={d.id} className={styles.dealItem}>
-                                                                <div className={styles.dealTitle}>{d.title}</div>
-                                                                <div className={styles.dealOwner} title="Responsável pelo negócio">
-                                                                    <Users size={10} style={{ marginRight: '4px', opacity: 0.5 }} />
-                                                                    {d.user_id?.name || d.owner_name || 'Sem responsável'}
-                                                                </div>
-                                                                <div className={styles.dealMeta}>
-                                                                    <span className={styles.dealValue}>
-                                                                        <DollarSign size={10} /> {d.formatted_value || 'R$ 0'}
-                                                                    </span>
-                                                                    <span className={`${styles.dealStatus} ${styles[d.status]}`}>
-                                                                        {d.status === 'open' ? 'Aberto' : d.status === 'won' ? 'Ganho' : 'Perdido'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        ));
-                                                })()}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
+                    <FocusedOrgView 
+                        focusedOrg={focusedOrg}
+                        expandedOrgId={expandedOrgId}
+                        orgDetails={orgDetails}
+                        loadingDetails={loadingDetails}
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        editingNameOrgId={editingNameOrgId}
+                        editingNameValue={editingNameValue}
+                        setEditingNameValue={setEditingNameValue}
+                        setEditingNameOrgId={setEditingNameOrgId}
+                        handleRenameOrg={handleRenameOrg}
+                        scanningOrgId={scanningOrgId}
+                        selectedOrgId={selectedOrgId}
+                        selectedOrgLogo={selectedOrgLogo}
+                    />
                 ) : (
-                    /* MODO LISTA (PADRÃO) */
-                    filteredOrgs.map(org => {
-                        const orgId = Number(org.id);
-                        const isSelected = orgId === selectedOrgId || Number(org.local_id) === selectedOrgId;
-
-                        let displayPics = org.employee_pics || [];
-                        let displayCount = org.employee_count || 0;
-
-                        if (isSelected && graphEmployees.length > 0) {
-                            const validEmps = graphEmployees.filter(emp =>
-                                emp.id !== 'root_company' &&
-                                emp.department !== 'Quadro Societário' &&
-                                emp.department !== 'Quadro de Sócios (QSA)' &&
-                                emp.level !== 6 &&
-                                !String(emp.id).startsWith('partner_') &&
-                                emp.role !== 'Análise Humana'
-                            );
-
-                            const graphPics = validEmps
-                                .map(emp => emp.profile_pic || emp.avatar)
-                                .filter(pic => pic && pic.length > 10);
-
-                            // Sobrescreve sempre, para zerar as imagems caso comece um novo mapeamento
-                            displayPics = graphPics;
-                            displayCount = validEmps.length;
-                        }
-
-                        // Se o org está selecionado e não tem logo próprio, usa o confirmedLogo do estado
-                        const orgWithLogo = isSelected && !org.logo && selectedOrgLogo
-                            ? { ...org, logo: selectedOrgLogo }
-                            : org;
-
-                        return (
-                            <OrgListItem
-                                key={orgId}
-                                org={orgWithLogo}
-                                isSelected={isSelected}
-                                onClick={(clickedOrg) => {
-                                    onOrgClick(clickedOrg);
-                                    const clickedOrgId = Number(clickedOrg.id || clickedOrg.pipedrive_id);
-                                    setExpandedOrgId(clickedOrgId);
-                                    void fetchOrgDetails(clickedOrgId);
-                                }}
-                                onToggleExpand={toggleExpand}
-                                displayCount={displayCount}
-                                displayPics={displayPics}
-                                scanningOrgId={scanningOrgId}
-                            />
-                        );
-                    })
+                    <OrgList 
+                        filteredOrgs={filteredOrgs}
+                        selectedOrgId={selectedOrgId}
+                        selectedOrgLogo={selectedOrgLogo}
+                        graphEmployees={graphEmployees}
+                        onOrgClick={onOrgClick}
+                        setExpandedOrgId={setExpandedOrgId}
+                        fetchOrgDetails={fetchOrgDetails}
+                        toggleExpand={toggleExpand}
+                        scanningOrgId={scanningOrgId}
+                    />
                 )}
             </div>
 
-            {/* Modal de confirmação para resetar ou excluir */}
-            <Modal
-                isOpen={confirmKind !== null}
-                onClose={() => !confirmBusy && setConfirmKind(null)}
-                title={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <AlertTriangle
-                            size={18}
-                            color={confirmKind === 'delete' ? '#ef4444' : '#f59e0b'}
-                        />
-                        <span>
-                            {confirmKind === 'delete'
-                                ? 'Excluir empresa definitivamente'
-                                : 'Resetar dados da empresa'}
-                        </span>
-                    </div>
-                }
-                width={460}
-                closeOnOverlay={!confirmBusy}
-                closeOnEsc={!confirmBusy}
-                footer={
-                    <>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setConfirmKind(null)}
-                            disabled={confirmBusy}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            variant={confirmKind === 'delete' ? 'danger' : 'warning'}
-                            size="sm"
-                            loading={confirmBusy}
-                            onClick={() => {
-                                if (!expandedOrgId || !confirmKind) return;
-                                if (confirmKind === 'delete') void performDelete(expandedOrgId);
-                                else void performReset(expandedOrgId);
-                            }}
-                        >
-                            {confirmKind === 'delete' ? 'Excluir definitivamente' : 'Resetar tudo'}
-                        </Button>
-                    </>
-                }
-            >
-                {confirmKind === 'delete' ? (
-                    <p style={{ margin: 0, lineHeight: 1.5, color: '#d1d5db' }}>
-                        Esta ação <strong style={{ color: '#ef4444' }}>remove a empresa do Pipedrive</strong> e apaga
-                        todos os dados locais (hierarquia, cache, logos, layouts). Operação irreversível.
-                    </p>
-                ) : (
-                    <p style={{ margin: 0, lineHeight: 1.5, color: '#d1d5db' }}>
-                        Isso limpa o <strong>cache, hierarquia e layout</strong> salvos desta empresa, mantendo o
-                        registro no Pipedrive. O próximo mapeamento partirá do zero.
-                    </p>
-                )}
-            </Modal>
+            <ConfirmModal 
+                confirmKind={confirmKind}
+                confirmBusy={confirmBusy}
+                setConfirmKind={setConfirmKind}
+                performDelete={performDelete}
+                performReset={performReset}
+                expandedOrgId={expandedOrgId}
+            />
         </div>
     );
 };
+

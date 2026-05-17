@@ -1,5 +1,5 @@
 import React, { memo, useMemo } from 'react';
-import styles from '../network-graph/NetworkGraph.module.css';
+import styles from '../network-graph/styles/Nodes.module.css';
 import {
   MapPin,
   GraduationCap,
@@ -59,26 +59,25 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
 
       <div className={styles.nodeBody}>
       <div className={styles.nodeNameWrapper}>
-        {(data.linkedin || effectiveLevel === 0) && (
-          <div className={styles.nodeAvatar}>
-            {effectiveLevel === 0 ? (
-              <img 
-                src={getProxiedUrl(data.confirmedLogo || data.company_logo || data.logo || data.avatar || data.image || data.logo_url || data.brand_logo || (data.domain ? "https://unavatar.io/" + data.domain : null))} 
-                alt="Company" 
-                className={styles.avatarImg} 
-                style={{ objectFit: "contain", background: "#fff" }} 
-                loading="lazy" 
-                decoding="async" 
-                onError={(e) => { 
-                  const target = e.target as HTMLImageElement; 
-                  const fallbackName = data.name || data.company || "K"; 
-                  if (!target.src.includes("ui-avatars")) { 
-                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=000&color=fff`; 
-                  } 
-                }} 
-              />
-            ) : data.linkedin ? (
-              <>
+        {(data.linkedin || effectiveLevel === 0) && (          <div className={styles.nodeAvatarContainer}>
+            <div className={styles.nodeAvatar}>
+              {effectiveLevel === 0 ? (
+                <img 
+                  src={getProxiedUrl(data.confirmedLogo || data.company_logo || data.logo || data.avatar || data.image || data.logo_url || data.brand_logo || (data.domain ? "https://unavatar.io/" + data.domain : null))} 
+                  alt="Company" 
+                  className={styles.avatarImg} 
+                  style={{ objectFit: "contain", background: "#fff" }} 
+                  loading="lazy" 
+                  decoding="async" 
+                  onError={(e) => { 
+                    const target = e.target as HTMLImageElement; 
+                    const fallbackName = data.name || data.company || "K"; 
+                    if (!target.src.includes("ui-avatars")) { 
+                      target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=000&color=fff`; 
+                    } 
+                  }} 
+                />
+              ) : data.linkedin ? (
                 <img 
                   src={getProxiedUrl(avatarUrl)} 
                   alt={data.name} 
@@ -90,20 +89,25 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
                     target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=6366f1&color=fff&bold=true&rounded=true&size=128`; 
                   }} 
                 />
-                {effectiveLevel !== 6 && effectiveLevel !== 0 && (
-                  <div className={styles.nodeAvatarCompanyBadge}>
-                    <img 
-                      src={getProxiedUrl(data.company_logo || `https://unavatar.io/${data.domain || data.company || "knorr-bremse.com"}`)} 
-                      alt="Company" 
-                      className={styles.companyBadgeImg} 
-                      loading="lazy" 
-                      decoding="async" 
-                    />
-                  </div>
-                )}
-              </>
-            ) : null}
+              ) : null}
+            </div>
+            {effectiveLevel !== 0 && (data.linkedin || effectiveLevel === 6) && (
+              <div className={styles.nodeAvatarCompanyBadge}>
+                <img 
+                  src={getProxiedUrl(companyLogoUrl)} 
+                  alt="Company" 
+                  className={styles.companyBadgeImg} 
+                  loading="lazy" 
+                  decoding="async" 
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.company || "C")}&background=000&color=fff`;
+                  }}
+                />
+              </div>
+            )}
           </div>
+
         )}
         
         <div className={styles.nodeTitles}>

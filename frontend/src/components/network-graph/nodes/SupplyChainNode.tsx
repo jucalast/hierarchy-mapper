@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { Handle, Position } from 'reactflow';
-import styles from '../NetworkGraph.module.css';
+import styles from '../styles/Nodes.module.css';
 import { PersonaCard } from '../../prospecting/PersonaCard';
 
 function SupplyChainNodeBase({ data }: { data: any }) {
