@@ -16,7 +16,8 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    background: #1d1d1d;
+    background: var(--sw-graph-bg);
+    transition: background var(--transition-fast);
 }
 
 .contentWrapper {
@@ -35,7 +36,8 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    background: #1d1d1d;
+    background: var(--sw-graph-bg);
+    transition: background var(--transition-fast);
 }
 
 .dottedBackground {
@@ -45,8 +47,8 @@
     opacity: 0.6;
     pointer-events: none;
     background-image:
-        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        linear-gradient(var(--sw-grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--sw-grid-color) 1px, transparent 1px);
     background-size: 40px 40px;
 }
 
@@ -69,12 +71,20 @@
 
 /* React Flow Controls Integration */
 .graphWrapper :global(.react-flow__controls) {
+    position: absolute;
+    top: 16px;
+    bottom: auto !important;
+    left: 16px;
     background: var(--sw-sidebar);
-    border: var(--sw-border-width) solid var(--sw-border-strong);
+    border: var(--sw-border-width) solid var(--sw-border);
     border-radius: var(--radius-md);
     box-shadow: var(--sw-shadow);
     overflow: hidden;
     padding: 2px;
+}
+
+:global([data-theme='light']) .graphWrapper :global(.react-flow__controls) {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
 }
 
 .graphWrapper :global(.react-flow__controls-button) {
@@ -121,22 +131,22 @@
 .spinnerSmall {
     width: 20px;
     height: 20px;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-top-color: #ffffff;
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-top-color: var(--sw-text-base);
     border-radius: 50%;
     animation: swSpin 1s linear infinite;
 }
 
 .helperText {
     font-size: var(--font-xs);
-    color: #f59e0b;
+    color: var(--sw-status-warning);
     position: absolute;
     bottom: -18px;
 }
 
 .error {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    background: var(--sw-alert-bg);
+    color: var(--sw-status-danger);
     padding: 12px 16px;
     border-radius: var(--radius-md);
     border: var(--sw-border-width) solid rgba(239, 68, 68, 0.2);

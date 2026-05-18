@@ -5,7 +5,7 @@
     border-radius: 0 8px 8px 0;
     margin: 4px 0;
     background: transparent;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+
     box-shadow: inset 0px 0 0 0 var(--sw-primary);
     position: relative;
 }
@@ -44,7 +44,7 @@
 .orgName {
     font-size: var(--font-base);
     font-weight: 400;
-    color: #ffffff;
+    color: var(--sw-text-base);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -71,7 +71,7 @@
 
 .orgAddress {
     font-size: var(--font-xs);
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--sw-text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -84,7 +84,7 @@
 .expandToggle {
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--sw-text-muted);
     cursor: pointer;
     margin-left: auto;
     padding: 4px;
@@ -96,16 +96,16 @@
 }
 
 .expandToggle:hover {
-    background: #1a1a1b;
-    color: #34d17c;
+    background: var(--sw-hover);
+    color: var(--sw-primary);
 }
 
 .expandToggle.today {
     position: absolute;
     top: 8px;
     right: 8px;
-    color: #34d17c;
-    background: #1a1a1b;
+    color: var(--sw-status-success);
+    background: var(--sw-hover);
     border: none;
     border-radius: 50%;
     width: 24px;
@@ -123,28 +123,28 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #1a1a1b;
+    background: var(--sw-hover);
     z-index: -1;
     opacity: 0;
     transition: opacity 0.2s ease;
 }
 
 .expandToggle.today:hover {
-    background: #34d17c;
-    color: #1a1a1b;
+    background: var(--sw-status-success);
+    color: var(--sw-bg);
 }
 
 .expandToggle.today:hover::before {
     opacity: 1;
-    background: #34d17d4d;
+    background: rgba(52, 209, 124, 0.3);
 }
 
 .expandToggle.overdue {
     position: absolute;
     top: 8px;
     right: 8px;
-    color: #ef4444;
-    background: #1a1a1b;
+    color: var(--sw-status-danger);
+    background: var(--sw-hover);
     border: none;
     border-radius: 50%;
     width: 24px;
@@ -162,15 +162,15 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #1a1a1b;
+    background: var(--sw-hover);
     z-index: -1;
     opacity: 0;
     transition: opacity 0.2s ease;
 }
 
 .expandToggle.overdue:hover {
-    background: #ef4444;
-    color: #1a1a1b;
+    background: var(--sw-status-danger);
+    color: var(--sw-bg);
 }
 
 .expandToggle.overdue:hover::before {
@@ -182,8 +182,8 @@
     position: absolute;
     top: 8px;
     right: 8px;
-    color: #f59e0b;
-    background: #1a1a1b;
+    color: var(--sw-status-warning);
+    background: var(--sw-hover);
     border: none;
     border-radius: 50%;
     width: 24px;
@@ -201,15 +201,15 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #1a1a1b;
+    background: var(--sw-hover);
     z-index: -1;
     opacity: 0;
     transition: opacity 0.2s ease;
 }
 
 .expandToggle.noTask:hover {
-    background: #f59e0b;
-    color: #1a1a1b;
+    background: var(--sw-status-warning);
+    color: var(--sw-bg);
 }
 
 .expandToggle.noTask:hover::before {
@@ -234,10 +234,10 @@
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    border: 2px solid #131313;
+    border: 2px solid var(--sw-sidebar);
     object-fit: cover;
     margin-left: -8px;
-    background: #2a2a2a;
+    background: var(--sw-hover);
     transition: transform 0.2s, opacity 0.2s ease;
     opacity: 1;
 }
@@ -254,6 +254,6 @@
 .empCountBadge {
     font-size: 0.65rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--sw-text-muted);
     margin-left: 8px;
 }

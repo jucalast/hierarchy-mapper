@@ -135,16 +135,21 @@ export default function ProspectMap({
       attributionControl: false,
     });
 
-    // Tiles escuros (CartoDB Dark Matter)
+    // Detecta tema atual e escolhe os tiles correspondentes
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light' || document.body.getAttribute('data-theme') === 'light';
+    const tileUrl = isLight 
+      ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
     L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      tileUrl,
       { 
         maxZoom: 19,
-        opacity: 0.7,
+        opacity: 0.85,
       }
     ).addTo(map);
 
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.control.zoom({ position: 'topleft' }).addTo(map);
 
     map.on('click', (e: L.LeafletMouseEvent) => {
       onMapClickRef.current({ lat: e.latlng.lat, lng: e.latlng.lng });
@@ -341,7 +346,7 @@ export default function ProspectMap({
         style={{ 
           width: '100%', 
           height: '100%', 
-          background: '#1d1d1d',
+          background: 'var(--sw-graph-bg)',
           pointerEvents: disabled ? 'none' : 'auto',
           opacity: disabled ? 0.8 : 1
         }} 
@@ -356,10 +361,49 @@ export default function ProspectMap({
         .leaflet-tooltip.prospect-tooltip-rich:before {
           display: none !important;
         }
-        .leaflet-container { background: #1d1d1d !important; }
-        .leaflet-tile { filter: brightness(1.1) contrast(0.9) grayscale(0.2); }
-        .leaflet-control-zoom a { background: rgba(40,40,40,0.9) !important; border: 1px solid rgba(255,255,255,0.05) !important; color: rgba(255,255,255,0.5) !important; }
-        .leaflet-control-zoom a:hover { background: rgba(60,60,60,0.95) !important; color: #fff !important; }
+        .leaflet-container { background: var(--sw-graph-bg) !important; }
+        .leaflet-tile { 
+          filter: var(--sw-map-filter); 
+        }
+        .leaflet-bar,
+        .leaflet-control-zoom {
+          border: var(--sw-border-width) solid var(--sw-border) !important;
+          border-radius: var(--radius-md) !important;
+          box-shadow: var(--sw-shadow) !important;
+          background: var(--sw-sidebar) !important;
+          overflow: hidden !important;
+          padding: 2px !important;
+        }
+        .leaflet-top .leaflet-control-zoom {
+          margin-top: 16px !important;
+          margin-left: 16px !important;
+        }
+        [data-theme='light'] .leaflet-bar,
+        [data-theme='light'] .leaflet-control-zoom,
+        html[data-theme='light'] .leaflet-bar,
+        html[data-theme='light'] .leaflet-control-zoom {
+          box-shadow: 0 8px 32px rgba(255, 255, 255, 0.3) !important;
+        }
+        .leaflet-bar a,
+        .leaflet-control-zoom a { 
+          background: transparent !important; 
+          border: none !important;
+          border-bottom: var(--sw-border-width) solid var(--sw-border) !important; 
+          color: var(--sw-text-muted) !important; 
+          transition: var(--transition-fast) !important;
+          width: 30px !important;
+          height: 30px !important;
+          line-height: 30px !important;
+        }
+        .leaflet-bar a:last-child,
+        .leaflet-control-zoom a:last-child {
+          border-bottom: none !important;
+        }
+        .leaflet-bar a:hover,
+        .leaflet-control-zoom a:hover { 
+          background: var(--sw-hover) !important; 
+          color: var(--sw-text-base) !important; 
+        }
       `}</style>
     </>
   );

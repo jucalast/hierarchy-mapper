@@ -18,6 +18,7 @@ interface WhatsAppViewProps {
     chatName: string;
     chatId?: string;
     onBack: () => void;
+    theme?: string;
 }
 
 interface Message {
@@ -33,11 +34,13 @@ const formatTime = (tsSeconds?: number) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, onBack }) => {
+export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, onBack, theme = 'dark' }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    
+    const isDark = theme === 'dark';
 
     const fetchHistory = useCallback(async (isPolling = false) => {
         if (!chatId) return;
@@ -110,40 +113,43 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
             height: '100%',
             position: 'relative',
             overflow: 'hidden',
+            backgroundColor: isDark ? '#0b141a' : '#efeae2',
+            transition: 'background-color var(--transition-smooth)',
         }}>
-            {/* Wallpaper Padrão Pura sem cor de fundo */}
+            {/* Wallpaper Padrão Pura com opacidade sutil premium */}
             <div style={{
                 position: 'absolute',
                 inset: '0px',
                 backgroundImage: 'url("/wpp.png")',
                 backgroundRepeat: 'repeat',
                 backgroundSize: '600px',
-                opacity: 1,
+                opacity: isDark ? 0.06 : 0.08,
                 zIndex: 0,
                 pointerEvents: 'none'
             }} />
 
-            {/* Header Estilo waPreviewHeader (Mapeado exatamente do Chat Panel) */}
+            {/* Header Estilo waPreviewHeader */}
             <div style={{
                 padding: '8px 12px',
-                backgroundColor: '#171616',
+                backgroundColor: isDark ? '#1f2c34' : '#f0f2f5',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                zIndex: 10
+                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.08)',
+                zIndex: 10,
+                transition: 'background-color var(--transition-smooth), border-color var(--transition-smooth)',
             }}>
                 <button onClick={onBack} style={{
                     background: 'transparent',
                     border: 'none',
-                    color: '#868686',
+                    color: isDark ? '#868686' : '#54656f',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     padding: '4px',
                     borderRadius: '50%',
                     transition: 'background 0.2s'
-                }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                }} onMouseOver={e => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                     <ArrowLeft size={20} />
                 </button>
@@ -152,22 +158,22 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                     width: '36px',
                     height: '36px',
                     borderRadius: '50%',
-                    backgroundColor: '#dfe5e7',
+                    backgroundColor: isDark ? '#2a3942' : '#dfe5e7',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
                     overflow: 'hidden'
                 }}>
-                    <User2 size={22} color="#868686" />
+                    <User2 size={22} color={isDark ? '#868686' : '#54656f'} />
                 </div>
 
                 <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <div style={{ color: '#e9edef', fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatName}</div>
-                    <div style={{ color: '#868686', fontSize: '11px' }}>online</div>
+                    <div style={{ color: isDark ? '#e9edef' : '#111b21', fontWeight: 600, fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatName}</div>
+                    <div style={{ color: isDark ? '#868686' : '#667781', fontSize: '11px' }}>online</div>
                 </div>
 
-                <div style={{ color: '#868686', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div style={{ color: isDark ? '#868686' : '#54656f', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <MoreVertical size={18} />
                 </div>
             </div>
@@ -177,7 +183,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                 height: '100%',
                 overflowY: 'auto',
                 padding: '16px',
-                paddingTop: '0',
+                paddingTop: '16px',
                 paddingBottom: '100px', // Espaço para a barra flutuante
                 display: 'flex',
                 flexDirection: 'column',
@@ -198,8 +204,8 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                                     key={msg.id}
                                     style={{
                                         alignSelf: isMe ? 'flex-end' : 'flex-start',
-                                        backgroundColor: isMe ? '#0b6a3e' : '#131313',
-                                        color: '#e9edef',
+                                        backgroundColor: isMe ? (isDark ? '#005c4b' : '#d9fdd3') : (isDark ? '#202c33' : '#ffffff'),
+                                        color: isDark ? '#e9edef' : '#111b21',
                                         padding: '8px 12px 6px 14px',
                                         borderRadius: '10px',
                                         borderTopRightRadius: isMe ? '2px' : '10px',
@@ -207,9 +213,10 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                                         maxWidth: '85%',
                                         fontSize: '14.5px',
                                         position: 'relative',
-                                        boxShadow: '0 1px 1.5px rgba(0,0,0,0.12)',
+                                        boxShadow: isDark ? '0 1px 1.5px rgba(0,0,0,0.12)' : '0 1px 1.2px rgba(0,0,0,0.15)',
                                         minWidth: '70px',
-                                        lineHeight: '1.4'
+                                        lineHeight: '1.4',
+                                        transition: 'background-color var(--transition-fast), color var(--transition-fast)',
                                     }}
                                 >
                                     <div style={{ paddingRight: '45px', overflowWrap: 'break-word' }}>{msg.text}</div>
@@ -218,7 +225,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                                         alignItems: 'center',
                                         justifyContent: 'flex-end',
                                         fontSize: '11px',
-                                        color: '#868686',
+                                        color: isDark ? '#868686' : '#667781',
                                         marginTop: '-6px',
                                         gap: '3px',
                                         position: 'absolute',
@@ -250,21 +257,22 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
-                    backgroundColor: '#131313e8',
+                    backgroundColor: isDark ? '#1f2c34' : '#ffffff',
                     padding: '12px',
                     borderRadius: '18px',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                    backdropFilter: 'blur(12px)'
+                    boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.08)',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.08)',
+                    backdropFilter: 'blur(12px)',
+                    transition: 'background-color var(--transition-smooth), border-color var(--transition-smooth), box-shadow var(--transition-smooth)',
                 }}>
-                    <div style={{ display: 'flex', gap: '8px', color: '#868686' }}>
+                    <div style={{ display: 'flex', gap: '8px', color: isDark ? '#868686' : '#54656f' }}>
                         <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }}
-                            onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                            onMouseOver={e => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
                             onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                             <Smile size={22} />
                         </button>
                         <button style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }}
-                            onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                            onMouseOver={e => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
                             onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                             <Plus size={22} />
                         </button>
@@ -289,7 +297,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                                 border: 'none',
                                 background: 'transparent',
                                 outline: 'none',
-                                color: '#e4e4e7',
+                                color: isDark ? '#e4e4e7' : '#111b21',
                                 fontSize: '15px',
                                 fontFamily: 'inherit',
                                 transition: 'color 0.3s'
@@ -302,7 +310,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                             <button
                                 onClick={handleSendMessage}
                                 style={{
-                                    background: '#34d17c',
+                                    background: isDark ? '#00a884' : '#00a884',
                                     border: 'none',
                                     color: '#fff',
                                     cursor: 'pointer',
@@ -313,7 +321,7 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     transition: 'all 0.2s ease',
-                                    boxShadow: '0 4px 12px rgba(52, 209, 124, 0.3)'
+                                    boxShadow: '0 4px 12px rgba(0, 168, 132, 0.3)'
                                 }}
                                 onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
                                 onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -321,8 +329,8 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({ chatName, chatId, on
                                 <Send size={20} />
                             </button>
                         ) : (
-                            <button style={{ background: 'transparent', border: 'none', color: '#868686', cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }}
-                                onMouseOver={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                            <button style={{ background: 'transparent', border: 'none', color: isDark ? '#868686' : '#54656f', cursor: 'pointer', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }}
+                                onMouseOver={e => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
                                 onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}>
                                 <Mic size={22} />
                             </button>

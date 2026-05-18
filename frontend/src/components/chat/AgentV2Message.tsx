@@ -343,7 +343,7 @@ const ConfirmationCard: React.FC<{
                 alignItems: 'center', 
                 gap: 8, 
                 padding: '8px 12px', 
-                borderBottom: `1px solid ${channelConfig.border}`, 
+                borderBottom: '1px solid ${channelConfig.border}', 
                 background: channelConfig.headerBg 
             }}>
                 <img src={channelConfig.icon} alt="Channel" style={{ width: channelConfig.iconSize, height: channelConfig.iconSize, borderRadius: 3 }} />
@@ -386,7 +386,7 @@ const ConfirmationCard: React.FC<{
                             style={{
                                 flex: 1,
                                 background: 'rgba(255,255,255,0.05)',
-                                border: '1px solid rgba(255,255,255,0.08)',
+                                border: 'var(--sw-border-width) solid var(--sw-border)',
                                 borderRadius: 8,
                                 padding: '7px 10px',
                                 fontSize: 12,
@@ -406,7 +406,7 @@ const ConfirmationCard: React.FC<{
                                 gap: 4,
                                 padding: '7px 12px',
                                 background: 'rgba(255,255,255,0.06)',
-                                border: '1px solid rgba(255,255,255,0.1)',
+                                border: 'var(--sw-border-width) solid var(--sw-border)',
                                 borderRadius: 8,
                                 color: 'rgba(255,255,255,0.65)',
                                 fontSize: 12,
@@ -449,7 +449,7 @@ const ConfirmationCard: React.FC<{
                             flex: 1, 
                             padding: '8px 12px', 
                             borderRadius: 7, 
-                            border: '1px solid rgba(255,255,255,0.12)', 
+                            border: 'var(--sw-border-width) solid var(--sw-border)', 
                             background: 'transparent', 
                             color: 'rgba(255,255,255,0.55)', 
                             fontSize: 12, 
@@ -890,7 +890,7 @@ const SuggestedActionTask: React.FC<{
     return (
         <div style={{
             borderRadius: 10,
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: 'var(--sw-border-width) solid var(--sw-border)',
             background: 'transparent',
             overflow: 'hidden',
             marginBottom: isLast ? 0 : 10,
@@ -955,7 +955,7 @@ const SuggestedActionTask: React.FC<{
                         </div>
                         {isExpanded && (
                             <div
-                                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 8, padding: '10px 12px' }}
+                                style={{ background: 'rgba(255,255,255,0.02)', border: 'var(--sw-border-width) solid var(--sw-border)', borderRadius: 8, padding: '10px 12px' }}
                                 onClick={e => e.stopPropagation()}
                             >
                                 <InlineEventStream
@@ -1004,7 +1004,7 @@ const SuggestedActionTask: React.FC<{
                                 flex: 1,
                                 padding: '7px 12px',
                                 borderRadius: 7,
-                                border: '1px solid rgba(255,255,255,0.12)',
+                                border: 'var(--sw-border-width) solid var(--sw-border)',
                                 background: 'transparent',
                                 color: 'rgba(255,255,255,0.45)',
                                 fontSize: 12,

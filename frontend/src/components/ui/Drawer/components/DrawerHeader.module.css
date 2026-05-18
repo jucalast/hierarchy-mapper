@@ -4,7 +4,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
     gap: 8px;
     background: var(--sw-sidebar);
 }
@@ -103,7 +103,7 @@
     right: 0;
     margin-top: 4px;
     background: var(--sw-surface-raised);
-    border: 1px solid var(--sw-border);
+    border: var(--sw-border-width) solid var(--sw-border);
     border-radius: 8px;
     padding: 8px 0;
     min-width: 180px;

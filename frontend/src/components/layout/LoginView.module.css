@@ -59,7 +59,7 @@
 
 .logoIconContainer {
   background: var(--sw-primary-soft);
-  border: var(--sw-border-width) solid var(--sw-border-strong);
+  border: var(--sw-border-width) solid var(--sw-border);
   width: 42px;
   height: 42px;
   border-radius: var(--radius-md);
@@ -188,13 +188,14 @@
 /* --- PAINEL DO FORMULÁRIO (DIREITA) --- */
 .formPane {
   flex: 1;
-  background-color: #1d1d1d; /* Mesma cor de fundo do grafo de visualização */
+  background-color: var(--sw-bg); /* Mesma cor de fundo do grafo de visualização */
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 60px;
   position: relative;
+  transition: background-color var(--transition-smooth);
 }
 
 .formContainer {
@@ -226,7 +227,7 @@
 .title {
   font-size: var(--font-xl);
   font-weight: 700;
-  color: #ffffff;
+  color: var(--sw-text-base);
   letter-spacing: -0.5px;
   margin: 0;
 }
@@ -265,32 +266,32 @@
   height: 38px;
   border-radius: 8px;
   transition: var(--transition-fast);
-  color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.02);
-  border: none;
+  color: var(--sw-text-muted);
+  background: var(--sw-hover);
+  border: var(--sw-border-width) solid var(--sw-border);
 }
 
 .inputWrapper:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--sw-text-base);
+  border-color: var(--sw-border-strong);
 }
 
 .inputWrapper:focus-within {
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
-  border: none;
+  background: var(--sw-hover);
+  color: var(--sw-text-base);
+  border-color: var(--sw-primary);
 }
 
 .inputIcon {
   position: absolute;
   left: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--sw-text-muted);
   pointer-events: none;
   transition: color var(--transition-fast);
 }
 
 .inputWrapper:focus-within .inputIcon {
-  color: #ffffff;
+  color: var(--sw-primary);
 }
 
 .input {
@@ -300,14 +301,15 @@
   background: transparent;
   border: none;
   outline: none;
-  color: #ffffff;
+  color: var(--sw-text-base);
   font-size: var(--font-sm);
   font-weight: 500;
   transition: all var(--transition-fast) ease;
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.25);
+  color: var(--sw-text-muted);
+  opacity: 0.6;
 }
 
 .errorBadge {

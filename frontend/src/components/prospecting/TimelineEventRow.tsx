@@ -95,8 +95,8 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                             style={{ 
                                 padding: '4px 8px', 
                                 borderRadius: 4, 
-                                background: showMenu ? 'rgba(255,255,255,0.08)' : 'transparent',
-                                color: showMenu ? '#fff' : undefined,
+                                background: showMenu ? 'var(--sw-hover)' : 'transparent',
+                                color: showMenu ? 'var(--sw-text-base)' : undefined,
                             }}
                         >
                             •••
@@ -125,11 +125,11 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                                         right: 0,
                                         top: '100%',
                                         marginTop: 4,
-                                        background: 'rgba(20, 20, 20, 0.95)',
+                                        background: 'var(--sw-surface-overlay)',
                                         backdropFilter: 'blur(12px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                                        border: 'var(--sw-border-width) solid var(--sw-border-strong)',
                                         borderRadius: 8,
-                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
+                                        boxShadow: 'var(--sw-shadow)',
                                         zIndex: 1000,
                                         minWidth: 160,
                                         overflow: 'hidden',
@@ -139,19 +139,36 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                                     <button
                                         onClick={() => {
                                             setShowMenu(false);
-                                            // Mapeia títulos de atividade Pipedrive para instruções claras
-                                            const titleLower = event.title.toLowerCase();
-                                            let taskInstruction = `realizar a tarefa "${event.title}"`;
-                                            if (titleLower.includes('encontrar contato') || titleLower.includes('encontrar decisor')) {
-                                                taskInstruction = `encontrar o contato/decisor real da empresa${event.company ? ` ${event.company}` : ''}. Se não houver contato com canal válido cadastrado no CRM, abra o mapeador de hierarquia (open_hierarchy_drawer) para identificar o decisor`;
-                                            } else if (titleLower.includes('ligar') || titleLower.includes('ligação')) {
-                                                taskInstruction = `executar a ligação "${event.title}"${event.contact ? ` com ${event.contact}` : ''}`;
-                                            } else if (titleLower.includes('enviar') || titleLower.includes('email') || titleLower.includes('whatsapp')) {
-                                                taskInstruction = `executar o envio: "${event.title}"${event.contact ? ` para ${event.contact}` : ''}`;
-                                            } else if (titleLower.includes('follow') || titleLower.includes('retorno') || titleLower.includes('cobrança')) {
-                                                taskInstruction = `executar o follow-up "${event.title}"${event.contact ? ` com ${event.contact}` : ''}. Analise o histórico e execute a ação de comunicação mais adequada`;
+                                            const t = event.title.toLowerCase();
+                                            const org = event.company ? ` para a empresa ${event.company}` : '';
+                                            const contact = event.contact ? ` com ${event.contact}` : '';
+
+                                            let taskInstruction: string;
+
+                                            // Busca/encontrar/conseguir contato
+                                            if (['procurar contato','encontrar contato','conseguir contato','buscar contato','achar contato','identificar contato','localizar contato','contato na rodada','rodada de negócios'].some(k => t.includes(k))) {
+                                                taskInstruction = `encontrar o contato/decisor de compras da empresa${org}. Verifique primeiro se já existe contato com canal válido no CRM. Se não houver, abra o mapeador de hierarquia (open_hierarchy_drawer). NÃO crie nova tarefa no Pipedrive — a atividade já existe no CRM.`;
+                                            // Cobrar retorno / follow-up
+                                            } else if (['cobrar retorno','cobrar resposta','acompanhamento','follow-up','follow up','dar retorno','verificar retorno'].some(k => t.includes(k)) || (t.includes('retorno') && !t.includes('cobrar'))) {
+                                                taskInstruction = `executar o follow-up "${event.title}"${contact}${org}. Analise o histórico de comunicações e execute a ação de cobrança de retorno mais adequada pelo canal disponível`;
+                                            // Ligar / ligação
+                                            } else if (['ligar','ligação','telefonar','realizar ligação'].some(k => t.includes(k))) {
+                                                taskInstruction = `executar a ligação "${event.title}"${contact}${org}. Obtenha o número REAL do CRM antes de qualquer ação`;
+                                            // Agendar reunião / visita
+                                            } else if (['agendar reunião','marcar reunião','agendar visita','marcar visita','agendar apresentação'].some(k => t.includes(k))) {
+                                                taskInstruction = `agendar a reunião/visita "${event.title}"${contact}${org}. Identifique o decisor e proponha o agendamento pelo canal disponível`;
+                                            // Orçamento / cotação
+                                            } else if (['orçamento','cotação','proposta comercial','realizar orçamento','enviar proposta'].some(k => t.includes(k))) {
+                                                taskInstruction = `realizar o orçamento/cotação "${event.title}"${contact}${org}. Identifique o contato responsável e gere a proposta personalizada`;
+                                            // Envio de mensagem
+                                            } else if (['enviar mensagem','primeira mensagem','abordagem inicial','primeiro contato'].some(k => t.includes(k))) {
+                                                taskInstruction = `executar a abordagem "${event.title}"${contact}${org}. Identifique o canal disponível e gere a mensagem personalizada`;
+                                            // Genérico
+                                            } else {
+                                                taskInstruction = `realizar a atividade "${event.title}"${contact}${org}. Raciocine sobre o que a tarefa requer e use as ferramentas adequadas`;
                                             }
-                                            const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction}${event.company ? ` para a empresa ${event.company}` : ''}. Use as ferramentas para executar isso agora.`;
+
+                                            const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction}. Use as ferramentas disponíveis para executar isso agora.`;
                                             window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText } }));
                                         }}
                                         style={{
@@ -159,7 +176,7 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                                             padding: '10px 14px',
                                             background: 'transparent',
                                             border: 'none',
-                                            color: 'rgba(255, 255, 255, 0.9)',
+                                            color: 'var(--sw-text-base)',
                                             fontSize: '12px',
                                             fontWeight: 500,
                                             textAlign: 'left',
@@ -170,12 +187,12 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                                             transition: 'background 0.2s, color 0.2s',
                                         }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                                            e.currentTarget.style.color = '#fff';
+                                            e.currentTarget.style.background = 'var(--sw-hover)';
+                                            e.currentTarget.style.color = 'var(--sw-text-base)';
                                         }}
                                         onMouseLeave={(e) => {
                                             e.currentTarget.style.background = 'transparent';
-                                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)';
+                                            e.currentTarget.style.color = 'var(--sw-text-base)';
                                         }}
                                     >
                                         <Sparkles size={12} />

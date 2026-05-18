@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useReactFlow, ReactFlowProvider } from 'reactflow';
-import { Users, PanelRight, PanelRightOpen, LogOut } from 'lucide-react';
+import { PanelRight, PanelRightOpen, LogOut } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../../utils/avatarUtils';
 
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -20,6 +20,7 @@ import { useGraphPersistence } from '@/hooks/useGraphPersistence';
 import { useDiscoveryWorkflow } from '@/hooks/useDiscoveryWorkflow';
 import { usePipedriveSync } from '@/hooks/usePipedriveSync';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { NotificationContainer } from '../ui/Notification';
 
 // Components
 import { Sidebar } from '../layout/Sidebar';
@@ -29,9 +30,9 @@ import { Drawer } from '../ui/Drawer';
 import { ChatPanel } from '../chat/ChatPanel';
 import { WhatsAppView } from '../whatsapp/WhatsAppView';
 import { PreferencesView } from '../layout/PreferencesView';
-import { NotificationOverlay } from '../layout/NotificationOverlay';
 import { GraphCanvas } from './GraphCanvas';
 import { DiscoveryWorkflowOverlay } from './DiscoveryWorkflowOverlay';
+import { FloatingToolbar } from './FloatingToolbar';
 import { SmartBackground } from './components/SmartBackground';
 import { FitViewHandler } from './components/FitViewHandler';
 import { TriggerNotifications } from '../ui/TriggerNotifications';
@@ -57,7 +58,7 @@ const formatCnpj = (val: string) => {
 };
 
 function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
-    const { addNotification } = useNotifications();
+    const { addNotification, notifications, removeNotification } = useNotifications();
     const { saveGraphState, getStableId } = useGraphPersistence();
     const [theme, setTheme] = useState("dark");
     const [currentOrgId, setCurrentOrgId] = useState<number | null>(null);
@@ -320,9 +321,25 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         loadStoredHierarchy, setProductFocus, setAreaFocus, setShouldFitView
     ]);
 
+    const handleOrgReset = useCallback((orgId: number) => {
+        console.log(`[Graph] Resetando UI para organização ${orgId}...`);
+        setPipedriveOrgs(prev => prev.filter(org => Number(org.id) !== orgId && Number(org.local_id) !== orgId));
+        setNodes([]);
+        setEdges([]);
+        resetWorkflow();
+        resetHierarchy();
+    }, [setPipedriveOrgs, setNodes, setEdges, resetWorkflow, resetHierarchy]);
+
+    const handleNewCompany = useCallback(() => {
+        setActiveView('graph');
+        setNodes([]);
+        setEdges([]);
+        resetWorkflow();
+        resetHierarchy();
+    }, [setActiveView, setNodes, setEdges, resetWorkflow, resetHierarchy]);
+
     return (
         <div className={styles.container} data-theme={theme}>
-            <NotificationOverlay />
             
             <Sidebar
                 showDrawer={showDrawer}
@@ -334,7 +351,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     localStorage.setItem("preferred-theme", newTheme);
                     document.documentElement.setAttribute("data-theme", newTheme);
                 }}
-                onReset={resetWorkflow}
+                onReset={handleNewCompany}
                 onCopyData={() => {
                     const data = { nodes, edges };
                     navigator.clipboard.writeText(JSON.stringify(data, null, 2));
@@ -384,7 +401,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                     borderRadius: '8px',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    color: showChat ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.6)'
+                                    color: showChat ? 'var(--sw-text-base)' : 'var(--sw-text-muted)'
                                 }}
                                 title={showChat ? "Fechar Assistente" : "Abrir Assistente"}
                             >
@@ -403,7 +420,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                     borderRadius: '8px',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    color: 'rgba(255, 255, 255, 0.6)',
+                                    color: 'var(--sw-text-muted)',
                                     transition: 'all 0.2s ease',
                                 }}
                                 onMouseEnter={(e) => {
@@ -411,7 +428,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                     e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+                                    e.currentTarget.style.color = 'var(--sw-text-muted)';
                                     e.currentTarget.style.background = 'transparent';
                                 }}
                                 title="Sair da Conta"
@@ -423,19 +440,25 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 </header>
 
                 <div className={styles.contentWrapper}>
-                    <Drawer
-                        showDrawer={showDrawer}
-                        setShowDrawer={handleSetShowDrawer}
-                        filteredOrgs={filteredOrgs}
-                        isLoading={loadingOrgs}
-                        searchTerm={searchTerm}
-                        setSearchTerm={setSearchTerm}
-                        onOrgClick={handleOrgClick}
-                        selectedOrgId={currentOrgId}
-                        onOrgRenamed={handleOrgRenamed}
-                    />
+                    {showChat && (activeView === 'graph' || activeView === 'prospecting') && (
+                        <ChatPanel
+                            showChat={showChat}
+                            setShowChat={handleSetShowChat}
+                            selectedOrgId={currentOrgId}
+                            selectedOrgName={confirmedBrand || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.name || "Empresa"}
+                            theme={theme}
+                            onToggleTheme={() => {
+                                const newTheme = theme === "dark" ? "light" : "dark";
+                                setTheme(newTheme);
+                                localStorage.setItem("preferred-theme", newTheme);
+                                document.documentElement.setAttribute("data-theme", newTheme);
+                            }}
+                            selectedOrgLogo={confirmedLogo || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.logo || ""}
+                        />
+                    )}
 
                     <div className={styles.mainContent}>
+                        <NotificationContainer notifications={notifications} removeNotification={removeNotification} />
                         <Header
                             confirmedBrand={confirmedBrand}
                         />
@@ -488,24 +511,50 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                             addNotification('success', "Perfil aprovado.");
                                         }}
                                         rejectCandidate={(id) => setConfirmModal({ isOpen: true, empId: id })}
-                                        humanAnalysisContent={
-                                            rawEmployees.filter(e => e.role === 'Análise Humana').length > 0 && (
-                                                <div className={styles.humanAnalysisTrigger} onClick={() => {
-                                                    const isShowing = brandOptions.length > 0 && brandOptions[0]?.type === 'person';
-                                                    if (isShowing) { setBrandOptions([]); return; }
-                                                    const pending = rawEmployees.filter(e => e.role === 'Análise Humana').map(p => ({
-                                                        name: p.name, logo: getAvatarUrl(p), followers: p.department || 'Pendente',
-                                                        type: 'person', id: p.id, originalEmployee: p
-                                                    }));
-                                                    setBrandOptions(pending);
-                                                }}>
-                                                    <div className={styles.humanAnalysisNotification}>
-                                                        {rawEmployees.filter(e => e.role === 'Análise Humana').length}
+                                        humanAnalysisContent={(() => {
+                                            const pending = rawEmployees.filter(e => e.role === 'Análise Humana');
+                                            if (pending.length === 0) return null;
+                                            const layerClasses = [styles.stackLayer0, styles.stackLayer1, styles.stackLayer2];
+                                            return (
+                                                <div
+                                                    className={styles.humanAnalysisTrigger}
+                                                    onClick={() => {
+                                                        const isShowing = brandOptions.length > 0 && brandOptions[0]?.type === 'person';
+                                                        if (isShowing) { setBrandOptions([]); return; }
+                                                        setBrandOptions(pending.map(p => ({
+                                                            name: p.name, logo: getAvatarUrl(p), followers: p.department || 'Pendente',
+                                                            type: 'person', id: p.id, originalEmployee: p
+                                                        })));
+                                                    }}
+                                                >
+                                                    <div className={styles.humanAnalysisAvatarStack}>
+                                                        <div className={styles.humanAnalysisNotification}>
+                                                            {pending.length}
+                                                        </div>
+                                                        {pending.slice(0, 3).map((p, i) => {
+                                                            const avatarUrl = getAvatarUrl(p);
+                                                            return (
+                                                                <div
+                                                                    key={p.id}
+                                                                    className={`${styles.humanAnalysisStackedAvatar} ${layerClasses[i]}`}
+                                                                >
+                                                                    <img
+                                                                        src={avatarUrl || '/imagem_linkedin.png'}
+                                                                        alt={p.name}
+                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover', transform: avatarUrl ? 'none' : 'scale(1.6)' }}
+                                                                        onError={(e) => {
+                                                                            const img = e.currentTarget as HTMLImageElement;
+                                                                            img.src = '/imagem_linkedin.png';
+                                                                            img.style.transform = 'scale(1.6)';
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
-                                                    <Users size={20} />
                                                 </div>
-                                            )
-                                        }
+                                            );
+                                        })()}
                                     />
                                 </>
                             )}
@@ -515,25 +564,80 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                     chatName={activeChatInfo?.name || "WhatsApp"} 
                                     chatId={activeChatInfo?.id}
                                     onBack={() => setActiveView('graph')}
+                                    theme={theme}
                                 />
                             )}
                             {activeView === 'prospecting' && (
-                                <ProspectingView
-                                    coords={prospecting.coords}
-                                    onMapClick={prospecting.setCoords}
-                                    radiusKm={prospecting.radiusKm}
-                                    leads={prospecting.leads}
-                                    selectedLead={prospecting.selectedLead}
-                                    onLeadClick={(lead) => {
-                                        prospecting.setSelectedLead(lead);
-                                        // Opcional: Se quiser que ao clicar no lead ele mude para o grafo daquela org:
-                                        // handleOrgClick(lead); 
-                                    }}
-                                    onLeadClose={() => prospecting.setSelectedLead(null)}
-                                    onApproveLead={prospecting.approveLead}
-                                    onRejectLead={prospecting.rejectLead}
-                                    session={prospecting.session}
-                                />
+                                <>
+                                    <ProspectingView
+                                        coords={prospecting.coords}
+                                        onMapClick={prospecting.setCoords}
+                                        radiusKm={prospecting.radiusKm}
+                                        leads={prospecting.leads}
+                                        selectedLead={prospecting.selectedLead}
+                                        onLeadClick={(lead) => {
+                                            prospecting.setSelectedLead(lead);
+                                        }}
+                                        onLeadClose={() => prospecting.setSelectedLead(null)}
+                                        onApproveLead={prospecting.approveLead}
+                                        onRejectLead={prospecting.rejectLead}
+                                        session={prospecting.session}
+                                    />
+                                    <div className={styles.bottomToolbarRow}>
+                                        <FloatingToolbar
+                                            error={null}
+                                            handleSearch={() => {}}
+                                            cnpj=""
+                                            setCnpj={() => {}}
+                                            confirmedBrand=""
+                                            setConfirmedBrand={() => {}}
+                                            confirmedLogo=""
+                                            setConfirmedLogo={() => {}}
+                                            confirmedFollowers=""
+                                            setConfirmedFollowers={() => {}}
+                                            domainTarget=""
+                                            setDomainTarget={() => {}}
+                                            productFocus=""
+                                            setProductFocus={() => {}}
+                                            areaFocus="compras"
+                                            setAreaFocus={() => {}}
+                                            handleAutoEnrich={() => {}}
+                                            enrichingIds={new Set()}
+                                            discovering={false}
+                                            loading={false}
+                                            step="initial"
+                                            brandOptions={[]}
+                                            onBrandSelect={() => {}}
+                                            isSidebarOpen={showDrawer}
+                                            isChatOpen={showChat}
+                                            
+                                            // Modo Prospecção
+                                            isProspectingMode={true}
+                                            prospectCoords={prospecting.coords}
+                                            prospectRadiusKm={prospecting.radiusKm}
+                                            onProspectRadiusChange={prospecting.setRadiusKm}
+                                            onProspectGeolocate={prospecting.geolocate}
+                                            prospectGeoLoading={prospecting.geoLoading}
+                                            onProspectSearch={prospecting.startSearch}
+                                            onProspectStop={prospecting.stopSearch}
+                                            prospectSearching={prospecting.searching}
+                                            prospectSession={prospecting.session}
+                                            prospectLeadsCount={prospecting.leads.length}
+                                            prospectTierACount={prospecting.leads.filter(l => l.icp_tier === 'A').length}
+                                            prospectError={prospecting.error}
+                                            prospectCityName={prospecting.cityName}
+                                            onProspectCepLookup={prospecting.lookupCep}
+                                            prospectSelectedLead={prospecting.selectedLead}
+                                            prospectPendingLeads={prospecting.leads.filter(l => l.status === 'pending')}
+                                            onProspectSelectLead={prospecting.setSelectedLead}
+                                            onProspectApproveLead={prospecting.approveLead}
+                                            onProspectRejectLead={prospecting.rejectLead}
+                                            onProspectCloseLead={() => prospecting.setSelectedLead(null)}
+                                            prospectCep={prospecting.cep}
+                                            onProspectCepChange={prospecting.setCep}
+                                        />
+                                    </div>
+                                </>
                             )}
                             {activeView === 'preferences' && (
                                 <PreferencesView onBack={() => setActiveView('graph')} />
@@ -541,22 +645,23 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                         </div>
                     </div>
 
-                    {showChat && (activeView === 'graph' || activeView === 'prospecting') && (
-                        <ChatPanel
-                            showChat={showChat}
-                            setShowChat={handleSetShowChat}
-                            selectedOrgId={currentOrgId}
-                            selectedOrgName={confirmedBrand || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.name || "Empresa"}
-                            theme={theme}
-                            onToggleTheme={() => {
-                                const newTheme = theme === "dark" ? "light" : "dark";
-                                setTheme(newTheme);
-                                localStorage.setItem("preferred-theme", newTheme);
-                                document.documentElement.setAttribute("data-theme", newTheme);
-                            }}
-                            selectedOrgLogo={confirmedLogo || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.logo || ""}
-                        />
-                    )}
+                    <Drawer
+                        showDrawer={showDrawer}
+                        setShowDrawer={handleSetShowDrawer}
+                        filteredOrgs={filteredOrgs}
+                        isLoading={loadingOrgs}
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        onOrgClick={handleOrgClick}
+                        selectedOrgId={currentOrgId}
+                        onOrgRenamed={handleOrgRenamed}
+                        selectedOrgLogo={confirmedLogo}
+                        activeJobId={activeJobId}
+                        graphEmployees={rawEmployees}
+                        refreshDetailsTrigger={refreshDrawerTrigger}
+                        addNotification={addNotification}
+                        onOrgReset={handleOrgReset}
+                    />
                 </div>
             </div>
 

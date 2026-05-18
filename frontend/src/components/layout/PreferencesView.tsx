@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { 
     ChevronLeft,
     ChevronDown, 
@@ -567,14 +567,12 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
         };
 
         return (
-            <div className={styles.formGroup} style={{ gap: '8px' }}>
+            <div className={styles.formGroup}>
                 <label className={styles.label}>{label}</label>
                 {description && (
-                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginTop: '-2px', marginBottom: '4px', lineHeight: '1.4' }}>
-                        {description}
-                    </span>
+                    <p className={styles.fieldDesc}>{description}</p>
                 )}
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className={styles.addRow}>
                     <input
                         type="text"
                         className={styles.select}
@@ -582,43 +580,22 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); } }}
                         placeholder={placeholder || 'Adicionar item...'}
-                        style={{ flex: 1 }}
                     />
-                    <button 
-                        type="button" 
-                        onClick={handleAdd}
-                        className={styles.saveBtn}
-                        style={{ padding: '0 18px', borderRadius: '6px', height: '46px' }}
-                    >
+                    <button type="button" onClick={handleAdd} className={styles.saveBtn}>
                         <Plus size={16} />
                     </button>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                <div className={styles.tagList}>
                     {list.map((item, idx) => (
-                        <div 
-                            key={idx} 
-                            style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '8px', 
-                                backgroundColor: 'rgba(255,255,255,0.03)', 
-                                border: '1px solid rgba(255,255,255,0.08)', 
-                                borderRadius: '4px', 
-                                padding: '6px 12px', 
-                                fontSize: '12px',
-                                color: 'rgba(255,255,255,0.85)' 
-                            }}
-                        >
+                        <div key={idx} className={styles.tag}>
                             <span>{item}</span>
-                            <X 
-                                size={14} 
-                                onClick={() => handleRemove(idx)} 
-                                style={{ color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center' }} 
-                            />
+                            <button type="button" className={styles.tagRemove} onClick={() => handleRemove(idx)}>
+                                <X size={12} />
+                            </button>
                         </div>
                     ))}
                     {list.length === 0 && (
-                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>Nenhum item adicionado.</span>
+                        <span className={styles.tagEmpty}>Nenhum item adicionado.</span>
                     )}
                 </div>
             </div>
@@ -712,20 +689,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                     
                     {/* TOAST SYSTEM */}
                     {toast && (
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '16px 20px',
-                            borderRadius: '6px',
-                            border: `1px solid ${toast.type === 'success' ? 'rgba(52,209,124,0.15)' : 'rgba(239,68,68,0.15)'}`,
-                            backgroundColor: toast.type === 'success' ? 'rgba(52,209,124,0.05)' : 'rgba(239,68,68,0.05)',
-                            color: toast.type === 'success' ? '#34d17c' : '#ef4444',
-                            fontSize: '13px',
-                            fontFamily: 'var(--font-primary)',
-                            animation: 'fadeIn 0.2s ease',
-                            marginBottom: '12px'
-                        }}>
+                        <div className={`${styles.toastBar} ${styles[toast.type]}`}>
                             {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
                             <span>{toast.message}</span>
                         </div>
@@ -745,9 +709,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Modelo Preferido (Padrão do Sistema)</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         O cérebro de IA preferido para orquestrar as cadeias de agentes, ler biografias do LinkedIn, classificar cargos, estruturar hierarquias e redigir propostas de vendas.
-                                    </span>
+                                    </p>
                                     <select 
                                         className={styles.select}
                                         value={preferredModel}
@@ -764,7 +728,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                     onClick={() => setStrictMode(!strictMode)}
                                 >
                                     <div className={styles.checkbox}>
-                                        {strictMode && <CheckCircle2 size={12} color="#3b82f6" />}
+                                        {strictMode && <CheckCircle2 size={12} color="var(--sw-primary)" />}
                                     </div>
                                     <div className={styles.checkboxText}>
                                         <span className={styles.checkboxLabel}>Strict Mode (Forçar Modelo)</span>
@@ -809,7 +773,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 ) : (
                                     <div className={styles.providersList}>
                                         {Object.entries(quotas).map(([provKey, modelsMap]) => {
-                                            const meta = HUMAN_PROVIDERS[provKey] || { label: provKey, logo: "🤖", color: "#3b82f6" };
+                                            const meta = HUMAN_PROVIDERS[provKey] || { label: provKey, logo: "🤖", color: "var(--sw-primary)" };
                                             const isRateLimited = Object.values(modelsMap).some(m => m.status === 'rate_limited');
                                             const isAnyNoCredits = Object.values(modelsMap).some(m => m.status === 'no_credits');
                                             const isExpanded = expandedProviders[provKey] ?? false;
@@ -923,12 +887,12 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </span>
                             </h2>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div className={styles.grid2}>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Nome da Empresa</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         O nome oficial ou fantasia que a inteligência artificial mencionará nas mensagens ao falar em nome da sua empresa.
-                                    </span>
+                                    </p>
                                     <input 
                                         type="text" 
                                         className={styles.select}
@@ -939,9 +903,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Segmento / Atuação</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         O nicho específico de mercado que descreve a sua operação para dar contexto ao robô na prospecção.
-                                    </span>
+                                    </p>
                                     <input 
                                         type="text" 
                                         className={styles.select}
@@ -952,12 +916,12 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div className={styles.grid2}>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Nome do Vendedor Principal</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         Nome de quem assinará as mensagens de prospecção fria enviadas por e-mail ou WhatsApp.
-                                    </span>
+                                    </p>
                                     <input 
                                         type="text" 
                                         className={styles.select}
@@ -968,9 +932,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Cargo do Vendedor</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         Cargo institucional do remetente (Ex: Executivo de Contas, Diretor Comercial, etc.) para assinar os e-mails.
-                                    </span>
+                                    </p>
                                     <input 
                                         type="text" 
                                         className={styles.select}
@@ -1006,14 +970,14 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         ========================================================== */}
                     {activeTab === 'products' && (
                         <div className={styles.card}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h2 className={styles.cardTitle} style={{ margin: 0 }}>
+                            <div className={styles.cardTitleRow}>
+                                <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
                                         <Package size={18} /> Catálogo de Produtos e Serviços Ofertados
                                     </span>
                                 </h2>
                                 {!showProductForm && (
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setEditingProductIdx(null);
                                             setProdName('');
@@ -1022,7 +986,6 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                             setShowProductForm(true);
                                         }}
                                         className={styles.saveBtn}
-                                        style={{ padding: '8px 16px', fontSize: '12px' }}
                                     >
                                         <Plus size={14} /> Adicionar Produto
                                     </button>
@@ -1031,26 +994,19 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                             {/* Product Form */}
                             {showProductForm && (
-                                <div style={{ 
-                                    padding: '24px', 
-                                    border: '1px solid rgba(255,255,255,0.08)', 
-                                    borderRadius: '8px', 
-                                    backgroundColor: 'rgba(255,255,255,0.01)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '16px',
-                                    animation: 'fadeIn 0.2s ease'
-                                }}>
-                                    <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#fff', margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+                                <div className={styles.inlineForm}>
+                                    <h3 className={styles.inlineFormHeader}>
                                         <span>{editingProductIdx !== null ? "Editar Produto" : "Novo Produto"}</span>
-                                        <X size={16} style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => setShowProductForm(false)} />
+                                        <button type="button" className={styles.inlineFormClose} onClick={() => setShowProductForm(false)}>
+                                            <X size={16} />
+                                        </button>
                                     </h3>
 
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Nome do Produto / Serviço</label>
-                                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                        <p className={styles.fieldDesc}>
                                             O nome comercial do item ou serviço oferecido. A IA usará este termo exato ao elaborar as abordagens.
-                                        </span>
+                                        </p>
                                         <input 
                                             type="text" 
                                             className={styles.select}
@@ -1062,9 +1018,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Descrição Completa (Utilizada pela IA em ganchos)</label>
-                                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                        <p className={styles.fieldDesc}>
                                             Especificações técnicas, benefícios e materiais. A inteligência artificial lê este campo para entender as vantagens do produto e gerar ganchos altamente contextualizados.
-                                        </span>
+                                        </p>
                                         <textarea 
                                             className={styles.select}
                                             rows={4}
@@ -1083,20 +1039,11 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         description="Aplicações práticas ou cenários de uso do produto, permitindo que a IA monte ganchos de argumentação adaptados ao segmento de cada lead."
                                     />
 
-                                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                                        <button 
-                                            type="button"
-                                            className={styles.backBtn}
-                                            onClick={() => setShowProductForm(false)}
-                                        >
+                                    <div className={styles.inlineFormActions}>
+                                        <button type="button" className={styles.backBtn} onClick={() => setShowProductForm(false)}>
                                             Cancelar
                                         </button>
-                                        <button 
-                                            type="button"
-                                            className={styles.saveBtn}
-                                            onClick={handleAddOrUpdateProduct}
-                                            style={{ padding: '8px 20px', borderRadius: '4px' }}
-                                        >
+                                        <button type="button" className={styles.saveBtn} onClick={handleAddOrUpdateProduct}>
                                             {editingProductIdx !== null ? "Atualizar na Lista" : "Adicionar à Lista"}
                                         </button>
                                     </div>
@@ -1106,35 +1053,23 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             {/* Products Grid */}
                             <div className={styles.providersList}>
                                 {productsList.map((prod, idx) => (
-                                    <div key={idx} className={styles.providerCard} style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div style={{ flex: 1, paddingRight: '20px' }}>
-                                            <h4 style={{ fontSize: '15px', color: '#fff', fontWeight: 600, margin: '0 0 6px 0' }}>{prod.name}</h4>
-                                            <p style={{ fontSize: '13px', opacity: 0.7, lineHeight: '1.6', fontWeight: 300, margin: '0 0 12px 0' }}>{prod.description}</p>
+                                    <div key={idx} className={styles.dataCard}>
+                                        <div className={styles.dataCardBody}>
+                                            <h4 className={styles.dataCardTitle}>{prod.name}</h4>
+                                            <p className={styles.dataCardDesc}>{prod.description}</p>
                                             {prod.use_cases && prod.use_cases.length > 0 && (
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                                <div className={styles.tagList}>
                                                     {prod.use_cases.map((uc: string, uIdx: number) => (
-                                                        <span key={uIdx} style={{ fontSize: '10px', backgroundColor: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', color: '#3b82f6', padding: '3px 8px', borderRadius: '4px' }}>
-                                                            {uc}
-                                                        </span>
+                                                        <span key={uIdx} className={styles.useCaseTag}>{uc}</span>
                                                     ))}
                                                 </div>
                                             )}
                                         </div>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button 
-                                                onClick={() => handleEditProduct(idx)}
-                                                className={styles.backBtn} 
-                                                style={{ padding: '6px' }}
-                                                title="Editar"
-                                            >
+                                        <div className={styles.dataCardActions}>
+                                            <button onClick={() => handleEditProduct(idx)} className={styles.backBtn} title="Editar">
                                                 <Edit3 size={15} />
                                             </button>
-                                            <button 
-                                                onClick={() => handleDeleteProduct(idx)}
-                                                className={styles.backBtn} 
-                                                style={{ padding: '6px', color: '#ef4444' }}
-                                                title="Deletar"
-                                            >
+                                            <button onClick={() => handleDeleteProduct(idx)} className={styles.deleteBtn} title="Deletar">
                                                 <Trash2 size={15} />
                                             </button>
                                         </div>
@@ -1163,14 +1098,14 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         ========================================================== */}
                     {activeTab === 'references' && (
                         <div className={styles.card}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h2 className={styles.cardTitle} style={{ margin: 0 }}>
+                            <div className={styles.cardTitleRow}>
+                                <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
                                         <Users size={18} /> Clientes de Referência (Autoridade no Outreach)
                                     </span>
                                 </h2>
                                 {!showClientForm && (
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setEditingClientIdx(null);
                                             setClientName('');
@@ -1178,7 +1113,6 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                             setShowClientForm(true);
                                         }}
                                         className={styles.saveBtn}
-                                        style={{ padding: '8px 16px', fontSize: '12px' }}
                                     >
                                         <Plus size={14} /> Adicionar Cliente
                                     </button>
@@ -1187,27 +1121,20 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                             {/* Client Form */}
                             {showClientForm && (
-                                <div style={{ 
-                                    padding: '20px', 
-                                    border: '1px solid rgba(255,255,255,0.08)', 
-                                    borderRadius: '8px', 
-                                    backgroundColor: 'rgba(255,255,255,0.01)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '14px',
-                                    animation: 'fadeIn 0.2s ease'
-                                }}>
-                                    <h3 style={{ fontSize: '13px', fontWeight: 500, color: '#fff', margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+                                <div className={styles.inlineForm}>
+                                    <h3 className={styles.inlineFormHeader}>
                                         <span>{editingClientIdx !== null ? "Editar Cliente de Referência" : "Novo Cliente de Referência"}</span>
-                                        <X size={16} style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => setShowClientForm(false)} />
+                                        <button type="button" className={styles.inlineFormClose} onClick={() => setShowClientForm(false)}>
+                                            <X size={16} />
+                                        </button>
                                     </h3>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                    <div className={styles.grid2}>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Nome do Cliente (Marca/Empresa)</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Nome de uma marca de destaque que já seja seu cliente ativo para atuar como prova social.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="text" 
                                                 className={styles.select}
@@ -1218,9 +1145,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Segmento / Descrição de Par</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 O setor de atuação ou perfil do cliente. A IA lerá esta descrição para fazer matching de segmento com os novos leads analisados.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="text" 
                                                 className={styles.select}
@@ -1231,20 +1158,11 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '6px' }}>
-                                        <button 
-                                            type="button"
-                                            className={styles.backBtn}
-                                            onClick={() => setShowClientForm(false)}
-                                        >
+                                    <div className={styles.inlineFormActions}>
+                                        <button type="button" className={styles.backBtn} onClick={() => setShowClientForm(false)}>
                                             Cancelar
                                         </button>
-                                        <button 
-                                            type="button"
-                                            className={styles.saveBtn}
-                                            onClick={handleAddOrUpdateClient}
-                                            style={{ padding: '8px 20px', borderRadius: '4px' }}
-                                        >
+                                        <button type="button" className={styles.saveBtn} onClick={handleAddOrUpdateClient}>
                                             {editingClientIdx !== null ? "Atualizar na Lista" : "Adicionar à Lista"}
                                         </button>
                                     </div>
@@ -1254,26 +1172,16 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             {/* Clients list */}
                             <div className={styles.providersList}>
                                 {referenceClients.map((client, idx) => (
-                                    <div key={idx} className={styles.providerCard} style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <h4 style={{ fontSize: '14px', color: '#fff', fontWeight: 600, margin: 0 }}>{client.name}</h4>
-                                            <span style={{ fontSize: '12px', opacity: 0.5, fontWeight: 300 }}>{client.segment}</span>
+                                    <div key={idx} className={styles.dataCard} style={{ alignItems: 'center' }}>
+                                        <div className={styles.dataCardBody}>
+                                            <h4 className={styles.dataCardTitle}>{client.name}</h4>
+                                            <span className={styles.dataCardMeta}>{client.segment}</span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button 
-                                                onClick={() => handleEditClient(idx)}
-                                                className={styles.backBtn} 
-                                                style={{ padding: '6px' }}
-                                                title="Editar"
-                                            >
+                                        <div className={styles.dataCardActions}>
+                                            <button onClick={() => handleEditClient(idx)} className={styles.backBtn} title="Editar">
                                                 <Edit3 size={15} />
                                             </button>
-                                            <button 
-                                                onClick={() => handleDeleteClient(idx)}
-                                                className={styles.backBtn} 
-                                                style={{ padding: '6px', color: '#ef4444' }}
-                                                title="Deletar"
-                                            >
+                                            <button onClick={() => handleDeleteClient(idx)} className={styles.deleteBtn} title="Deletar">
                                                 <Trash2 size={15} />
                                             </button>
                                         </div>
@@ -1316,14 +1224,14 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 description="Lista de problemas que os clientes costumam vivenciar. O robô usará esses tópicos de forma consultiva para criar ganchos de dor hiper-relevantes nas abordagens."
                             />
 
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                <span className={styles.label} style={{ fontSize: '12px' }}>Textos de Propostas de Valor (Ângulos de Abordagem)</span>
+                            <div className={styles.sectionDivider}>
+                                <span className={styles.sectionLabel}>Textos de Propostas de Valor (Ângulos de Abordagem)</span>
                                 
                                 <div className={styles.formGroup}>
                                     <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 1: Plano B / Mitigação de Risco</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         Texto focado em posicionar sua empresa como fornecedora alternativa ou reserva estratégica (Plano B) para garantir a segurança da operação do lead.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1336,9 +1244,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                 <div className={styles.formGroup}>
                                     <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 2: Modelo Kanban / Estoque em Fábrica</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         Mensagem destacando soluções de entregas programadas sob demanda (Kanban) e estoque de segurança dedicado para evitar rupturas de fábrica.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1351,9 +1259,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                 <div className={styles.formGroup}>
                                     <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 3: Embalagens Manuais / Alta Customização</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         Mensagem direcionada para soluções sob medida, embalagens complexas ou pequenos lotes altamente customizados que grandes fornecedores não atendem.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1366,9 +1274,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                 <div className={styles.formGroup}>
                                     <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 4: Especialistas em CKD / Exportação</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         Texto voltado especificamente para indústrias exportadoras ou que utilizam sistemas de CKD (Complete Knock Down) exigindo alta resistência estrutural.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1381,9 +1289,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                 <div className={styles.formGroup}>
                                     <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 5: Just-In-Time / Agilidade Extrema</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         Discurso ressaltando flexibilidade operacional, velocidade de resposta rápida, lead times curtos e entregas ágeis no modelo Just-In-Time.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1458,8 +1366,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 description="Regras claras e restritivas que desqualificam um lead de forma automática, economizando o tempo de vendas com perfis indesejados."
                             />
 
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                <span className={styles.label} style={{ fontSize: '12px' }}>Pontuação de Lead (Keywords para Matching de Segmento)</span>
+                            <div className={styles.sectionDivider}>
+                                <span className={styles.sectionLabel}>Pontuação de Lead (Keywords para Matching de Segmento)</span>
                                 
                                 <StringListEditor 
                                     list={highFitKeywords}
@@ -1510,7 +1418,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             </h2>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                <span className={styles.label} style={{ fontSize: '12px' }}>Filtros de Veto Categórico (Para evitar cargos incorretos nos departamentos)</span>
+                                <span className={styles.sectionLabel}>Filtros de Veto Categórico (Para evitar cargos incorretos nos departamentos)</span>
                                 
                                 <StringListEditor 
                                     list={forbiddenKeywords.compras || []}
@@ -1529,8 +1437,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 />
                             </div>
 
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                <span className={styles.label} style={{ fontSize: '12px' }}>Termos de Busca Utilizados no Crawler de Contatos</span>
+                            <div className={styles.sectionDivider}>
+                                <span className={styles.sectionLabel}>Termos de Busca Utilizados no Crawler de Contatos</span>
 
                                 <StringListEditor 
                                     list={purchasingKeywords}
@@ -1576,16 +1484,16 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 
                                 {/* Pipedrive Section */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <img src="/pipedrive.png" alt="Pipedrive" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }} />
-                                        <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#38bdf8' }}>Integração CRM Pipedrive</h3>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                    <h3 className={styles.integrationTitle}>
+                                        <img src="/pipedrive.png" alt="Pipedrive" className={styles.integrationTitleIcon} />
+                                        Integração CRM Pipedrive
+                                    </h3>
+                                    <div className={styles.grid2}>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Pipedrive API Token</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Chave secreta usada para criar contatos e atualizar negócios direto no seu funil do Pipedrive CRM.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="password" 
                                                 className={styles.select} 
@@ -1596,9 +1504,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Pipedrive Default User ID</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 ID numérico do proprietário no Pipedrive que será o responsável pelos contatos criados no CRM.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="text" 
                                                 className={styles.select} 
@@ -1611,16 +1519,16 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 {/* WhatsApp Section */}
-                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <img src="/wppicon.png" alt="WhatsApp" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }} />
-                                        <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#22c55e' }}>Integração WhatsApp Service</h3>
-                                    </div>
+                                <div className={styles.sectionDivider}>
+                                    <h3 className={styles.integrationTitle}>
+                                        <img src="/wppicon.png" alt="WhatsApp" className={styles.integrationTitleIcon} />
+                                        Integração WhatsApp Service
+                                    </h3>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>WhatsApp Service URL (API)</label>
-                                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                        <p className={styles.fieldDesc}>
                                             URL de conexão do robô de WhatsApp responsável por disparar as abordagens e prospecções em lote.
-                                        </span>
+                                        </p>
                                         <input 
                                             type="text" 
                                             className={styles.select} 
@@ -1632,17 +1540,17 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 {/* Outlook Email Section */}
-                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <img src="/outlook.png" alt="Outlook" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }} />
-                                        <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#f59e0b' }}>Conexão Email SMTP & IMAP (Outlook)</h3>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                                <div className={styles.sectionDivider}>
+                                    <h3 className={styles.integrationTitle}>
+                                        <img src="/outlook.png" alt="Outlook" className={styles.integrationTitleIcon} />
+                                        Conexão Email SMTP & IMAP (Outlook)
+                                    </h3>
+                                    <div className={styles.grid3}>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>E-mail de Envio (User)</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Sua conta do Outlook. No Windows, o sistema se conecta diretamente ao seu aplicativo Outlook Desktop para enviar e ler e-mails. Se houver múltiplas contas configuradas, este campo escolhe qual conta utilizar.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="email" 
                                                 className={styles.select} 
@@ -1653,9 +1561,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Senha do E-mail</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Senha normal ou Senha de Aplicativo. Só é necessária para servidores SMTP de fallback se o aplicativo Outlook Desktop local estiver indisponível.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="password" 
                                                 className={styles.select} 
@@ -1666,9 +1574,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Porta SMTP</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Porta segura do servidor SMTP (Office 365) para conexões de fallback. O padrão TLS recomendado é 587.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="text" 
                                                 className={styles.select} 

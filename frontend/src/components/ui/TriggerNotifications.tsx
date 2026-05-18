@@ -359,7 +359,7 @@ export const TriggerNotifications: React.FC<TriggerNotificationsProps> = ({
     ] as const;
 
     return (
-        <div style={{ position: 'relative' }} ref={panelRef}>
+        <div style={{ position: 'relative', zIndex: 10001 }} ref={panelRef}>
             <button
                 onClick={() => setOpen(o => !o)}
                 className={`${styles.bellBtn} ${open ? styles.bellBtnActive : ''}`}

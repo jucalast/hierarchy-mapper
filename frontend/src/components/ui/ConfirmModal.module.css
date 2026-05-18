@@ -4,7 +4,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
@@ -14,14 +14,14 @@
 }
 
 .modal {
-    background: #1c1c1e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--sw-surface-base);
+    border: var(--sw-border-width) solid var(--sw-border);
     width: 100%;
     max-width: 400px;
     border-radius: 16px;
     padding: 24px;
     position: relative;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--sw-shadow);
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -31,13 +31,13 @@
     right: 16px;
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--sw-text-muted);
     cursor: pointer;
     transition: color 0.2s;
 }
 
 .closeBtn:hover {
-    color: #ffffff;
+    color: var(--sw-text-base);
 }
 
 .content {
@@ -57,8 +57,8 @@
 }
 
 .danger {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    background: var(--sw-alert-bg);
+    color: var(--sw-status-danger);
 }
 
 .textGroup {
@@ -70,14 +70,14 @@
 .title {
     margin: 0;
     font-size: var(--font-lg);
-    font-weight: 500;
-    color: #ffffff;
+    font-weight: 600;
+    color: var(--sw-text-base);
 }
 
 .message {
     margin: 0;
     font-size: var(--font-base);
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--sw-text-subtle);
     line-height: 1.5;
 }
 
@@ -89,19 +89,19 @@
 
 .cancelBtn {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    border: var(--sw-border-width) solid var(--sw-border);
+    color: var(--sw-text-base);
     padding: 8px 16px;
     border-radius: 8px;
-    font-size: 0.88rem;
+    font-size: var(--font-sm);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .cancelBtn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--sw-hover);
+    border-color: var(--sw-border-strong);
 }
 
 .confirmBtn {
@@ -109,18 +109,18 @@
     color: #ffffff;
     padding: 8px 16px;
     border-radius: 8px;
-    font-size: 0.88rem;
-    font-weight: 500;
+    font-size: var(--font-sm);
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .confirm-danger {
-    background: #ef4444;
+    background: var(--sw-status-danger);
 }
 
 .confirm-danger:hover {
-    background: #dc2626;
+    filter: brightness(0.88);
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 

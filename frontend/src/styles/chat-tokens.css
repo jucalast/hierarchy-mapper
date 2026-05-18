@@ -1,43 +1,44 @@
 /* === CHAT DESIGN SYSTEM TOKENS ===
    Alinhado ao design language do FloatingToolbar / NetworkGraph.
    Variáveis sw- usadas como fonte da verdade.
+   DARK MODE é o padrão (consistente com globals.css).
 ======================================= */
 
 :root {
-  /* ── Surfaces ─────────────────────────── */
-  --chat-bg-primary:   #f5f5f7;
-  --chat-bg-secondary: #ececef;
-  --chat-bg-tertiary:  #f9f9fb;
+  /* ── Surfaces (Dark default) ─────────────── */
+  --chat-bg-primary:   #131313;   /* sw-sidebar */
+  --chat-bg-secondary: rgba(255, 255, 255, 0.04);
+  --chat-bg-tertiary:  rgba(255, 255, 255, 0.02);
 
   /* ── Borders ──────────────────────────── */
-  --chat-border-color:  rgba(0, 0, 0, 0.10);   /* sw-border-strong light */
-  --chat-border-weak:   rgba(0, 0, 0, 0.06);   /* sw-border light */
-  --chat-border-width:  1.5px;                  /* sw-border-width */
+  --chat-border-color: rgba(255, 255, 255, 0.15);  /* sw-border-strong */
+  --chat-border-weak:  rgba(255, 255, 255, 0.08);  /* sw-border */
+  --chat-border-width: 1.5px;
 
   /* ── Text ─────────────────────────────── */
-  --chat-text-primary:   #111113;
-  --chat-text-secondary: #555560;
-  --chat-text-muted:     rgba(0, 0, 0, 0.38);
+  --chat-text-primary:   #e4e4e7;
+  --chat-text-secondary: rgba(255, 255, 255, 0.6);
+  --chat-text-muted:     rgba(255, 255, 255, 0.35);
 
   /* ── Accent ───────────────────────────── */
-  --chat-accent-color: #4f46e5;                 /* sw-primary light */
-  --chat-accent-soft:  rgba(79, 70, 229, 0.08); /* sw-primary-soft light */
-  --chat-accent-hover: #3d36c0;
+  --chat-accent-color: #818cf8;                    /* sw-primary dark */
+  --chat-accent-soft:  rgba(129, 140, 248, 0.12);  /* sw-primary-soft dark */
+  --chat-accent-hover: #a5b4fc;
 
   /* ── Channel colors ───────────────────── */
   --chat-whatsapp-green: #25D366;
   --chat-outlook-blue:   #0078D4;
 
-  /* ── Message bubbles — Light ──────────── */
-  --chat-user-msg-bg:   #111113;
-  --chat-user-msg-text: #ffffff;
-  --chat-ai-msg-bg:     #ffffff;
-  --chat-ai-msg-text:   #111113;
+  /* ── Message bubbles — Dark ───────────── */
+  --chat-user-msg-bg:   #ffffff;
+  --chat-user-msg-text: #000000;
+  --chat-ai-msg-bg:     rgba(255, 255, 255, 0.05);
+  --chat-ai-msg-text:   rgba(255, 255, 255, 0.88);
 
   /* ── Radii (matches sw-) ──────────────── */
-  --chat-radius-sm: 8px;    /* buttons, inputs  */
-  --chat-radius-md: 12px;   /* cards            */
-  --chat-radius-lg: 16px;   /* panels/containers */
+  --chat-radius-sm: 8px;
+  --chat-radius-md: 12px;
+  --chat-radius-lg: 16px;
 
   /* ── Spacing ──────────────────────────── */
   --space-4:  4px;
@@ -54,41 +55,41 @@
   --chat-transition-fast:   0.2s cubic-bezier(0.16, 1, 0.3, 1);
   --chat-transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* ── Shadows ──────────────────────────── */
-  --chat-shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
-  --chat-shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --chat-shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
-}
-
-/* ── Dark mode — exactamente o FloatingToolbar ── */
-[data-theme='dark'], .chatPanel.dark {
-  /* Surfaces */
-  --chat-bg-primary:   #131313;   /* sw-sidebar */
-  --chat-bg-secondary: rgba(255, 255, 255, 0.04);
-  --chat-bg-tertiary:  rgba(255, 255, 255, 0.02);
-
-  /* Borders */
-  --chat-border-color: rgba(255, 255, 255, 0.15);  /* sw-border-strong */
-  --chat-border-weak:  rgba(255, 255, 255, 0.08);  /* sw-border */
-
-  /* Text */
-  --chat-text-primary:   #ffffff;
-  --chat-text-secondary: rgba(255, 255, 255, 0.6);
-  --chat-text-muted:     rgba(255, 255, 255, 0.35);
-
-  /* Accent */
-  --chat-accent-color: #818cf8;                    /* sw-primary */
-  --chat-accent-soft:  rgba(129, 140, 248, 0.12);  /* sw-primary-soft */
-  --chat-accent-hover: #a5b4fc;
-
-  /* Message bubbles — Dark */
-  --chat-user-msg-bg:   #ffffff;
-  --chat-user-msg-text: #000000;
-  --chat-ai-msg-bg:     rgba(255, 255, 255, 0.05);
-  --chat-ai-msg-text:   rgba(255, 255, 255, 0.88);
-
-  /* Shadows */
+  /* ── Shadows (Dark) ───────────────────── */
   --chat-shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
   --chat-shadow-md: 0 4px 12px rgba(0,0,0,0.4);
   --chat-shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+}
+
+/* ── Light mode ─────────────────────────────── */
+[data-theme='light'] {
+  /* Surfaces */
+  --chat-bg-primary:   #ffffff;
+  --chat-bg-secondary: #ececef;
+  --chat-bg-tertiary:  #ffffff;
+
+  /* Borders */
+  --chat-border-color: rgba(0, 0, 0, 0.10);
+  --chat-border-weak:  rgba(0, 0, 0, 0.06);
+
+  /* Text */
+  --chat-text-primary:   #111113;
+  --chat-text-secondary: #555560;
+  --chat-text-muted:     rgba(0, 0, 0, 0.38);
+
+  /* Accent */
+  --chat-accent-color: #4f46e5;                 /* sw-primary light */
+  --chat-accent-soft:  rgba(79, 70, 229, 0.08); /* sw-primary-soft light */
+  --chat-accent-hover: #3d36c0;
+
+  /* Message bubbles — Light */
+  --chat-user-msg-bg:   #111113;
+  --chat-user-msg-text: #ffffff;
+  --chat-ai-msg-bg:     #ffffff;
+  --chat-ai-msg-text:   #111113;
+
+  /* Shadows */
+  --chat-shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --chat-shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --chat-shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
 }

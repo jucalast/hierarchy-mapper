@@ -124,7 +124,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
-    const [threadToDelete, setThreadToDelete] = useState<ThreadOut | null>(null);
+    const [threadsToDelete, setThreadsToDelete] = useState<ThreadOut[]>([]);
 
     // ─── External Task Runner State & Handlers ───────────────
     const [activeRunningTask, setActiveRunningTask] = useState<{
@@ -645,26 +645,27 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     // ─── Delete thread ───────────────────────────────────────
     const confirmDeleteThread = async () => {
-        if (!threadToDelete) return;
-        const targetId = threadToDelete.id;
+        if (!threadsToDelete.length) return;
+        const targetIds = threadsToDelete.map(t => t.id);
+        
         try {
-            await conversations.deleteThread(targetId);
-            setThreads(prev => prev.filter(t => t.id !== targetId));
-            if (activeThread?.id === targetId) {
+            await conversations.deleteThreadsBulk(targetIds);
+            setThreads(prev => prev.filter(t => !targetIds.includes(t.id)));
+            if (activeThread && targetIds.includes(activeThread.id)) {
                 handleBackToList();
             }
         } catch (err: any) {
             // Se for 404, já foi deletada, então removemos da UI também
             if (err.status === 404) {
-                setThreads(prev => prev.filter(t => t.id !== targetId));
-                if (activeThread?.id === targetId) {
+                setThreads(prev => prev.filter(t => !targetIds.includes(t.id)));
+                if (activeThread && targetIds.includes(activeThread.id)) {
                     handleBackToList();
                 }
             } else {
-                console.error('[ChatPanel] Erro ao deletar thread:', err);
+                console.error('[ChatPanel] Erro ao deletar thread(s):', err);
             }
         } finally {
-            setThreadToDelete(null);
+            setThreadsToDelete([]);
         }
     };
 
@@ -1363,7 +1364,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     style={{
                         background: 'transparent',
                         border: 'none',
-                        color: 'rgba(255, 255, 255, 0.6)',
+                        color: 'var(--sw-text-muted)',
                         cursor: 'pointer',
                         padding: '8px',
                         borderRadius: '8px',
@@ -1390,29 +1391,32 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     onNewThread={handleNewThread}
                     isCreating={isCreatingThread}
                     selectedOrgLogo={selectedOrgLogo}
-                    onDeleteThread={setThreadToDelete}
+                    onDeleteThread={(t) => setThreadsToDelete([t])}
+                    onDeleteThreadsBulk={setThreadsToDelete}
                     onCloseChat={() => setShowChat(false)}
                     onBackToChat={() => setView('chat')}
                 />
 
                 <Modal
-                    isOpen={!!threadToDelete}
-                    onClose={() => setThreadToDelete(null)}
-                    title="Excluir Conversa"
+                    isOpen={threadsToDelete.length > 0}
+                    onClose={() => setThreadsToDelete([])}
+                    title={threadsToDelete.length > 1 ? "Excluir Conversas" : "Excluir Conversa"}
                     width={400}
                     footer={
                         <>
-                            <Button variant="secondary" size="sm" onClick={() => setThreadToDelete(null)}>
+                            <Button variant="secondary" size="sm" onClick={() => setThreadsToDelete([])}>
                                 Cancelar
                             </Button>
                             <Button variant="danger" size="sm" onClick={confirmDeleteThread}>
-                                Excluir
+                                Excluir {threadsToDelete.length > 1 ? `(${threadsToDelete.length})` : ''}
                             </Button>
                         </>
                     }
                 >
                     <p style={{ margin: 0, color: 'var(--chat-text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
-                        Tem certeza que deseja excluir esta conversa? Esta ação removerá permanentemente todo o histórico e não poderá ser desfeita.
+                        {threadsToDelete.length > 1 
+                            ? `Tem certeza que deseja excluir as ${threadsToDelete.length} conversas selecionadas? Esta ação não poderá ser desfeita.`
+                            : 'Tem certeza que deseja excluir esta conversa? Esta ação removerá permanentemente todo o histórico e não poderá ser desfeita.'}
                     </p>
                 </Modal>
             </div>
@@ -1433,16 +1437,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     name={selectedOrgName}
                     size={32}
                     noInitialFallback={true}
-                    style={{ border: selectedOrgLogo ? '3px solid #272727ff' : 'none' }}
+                    style={{ border: selectedOrgLogo ? '1.5px solid var(--sw-border-strong)' : 'none' }}
                 />
                 <div className={styles.chatSubHeaderInfo} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0 }}>
-                    <span style={{ color: 'rgba(255, 255, 255, 0.5)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
+                    <span style={{ color: 'var(--sw-text-muted)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
                         {activeThread?.title || 'Nova conversa'}
                     </span>
-                    <span style={{ color: 'rgba(255, 255, 255, 0.15)', fontWeight: 300, fontSize: '0.88rem', flexShrink: 0 }}>/</span>
+                    <span style={{ color: 'var(--sw-border)', fontWeight: 300, fontSize: '0.88rem', flexShrink: 0 }}>/</span>
                     <span 
                         style={{ 
-                            color: '#ffffff', 
+                            color: 'var(--sw-text-base)', 
                             fontWeight: 600, 
                             fontSize: '0.88rem', 
                             whiteSpace: 'nowrap',

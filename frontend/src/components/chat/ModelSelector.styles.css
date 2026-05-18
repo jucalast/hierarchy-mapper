@@ -97,7 +97,7 @@
   left: 0;
   width: 280px;
   background: var(--sw-sidebar);
-  border: var(--sw-border-width) solid var(--sw-border-strong);
+  border: var(--sw-border-width) solid var(--sw-border);
   border-radius: var(--radius-lg);
   box-shadow: none !important;
   overflow: visible;
@@ -581,4 +581,46 @@
 
 [data-theme='light'] .modelSelectorStrictModeButton:focus {
   outline: none;
+}
+
+[data-theme='light'] .modelOptionName {
+  color: #111b21;
+}
+
+[data-theme='light'] .modelSelectorStrictModeIcon {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme='light'] .modelSelectorStrictModeButton.active .modelSelectorStrictModeIcon {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme='light'] .modelSelectorStrictModeTitle {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme='light'] .modelSelectorStrictModeButton.active .modelSelectorStrictModeTitle {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+[data-theme='light'] .modelSelectorStrictModeDesc {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme='light'] .modelSelectorStrictModeToggle {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='light'] .modelSelectorStrictModeButton.active .modelSelectorStrictModeToggle {
+  background: #5a5bd6;
+}
+
+[data-theme='light'] .agentModeV2 {
+  background: var(--sw-primary-soft) !important;
+  color: var(--sw-primary) !important;
+  border: none !important;
+}
+
+[data-theme='light'] .agentModeV2:hover {
+  background: rgba(79, 70, 229, 0.14) !important;
 }

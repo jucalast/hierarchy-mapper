@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
-  Loader2, CheckCircle, XCircle, ExternalLink,
+  Loader2, CheckCircle, XCircle,
   Building2, TrendingUp, Tag, ChevronDown, ChevronUp, X,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
@@ -86,7 +86,7 @@ function LeadSheet({ lead, onApprove, onReject, onClose }: {
                <div style={{
                  position: 'absolute', bottom: -2, right: -2,
                  width: 22, height: 22, borderRadius: 6, overflow: 'hidden',
-                 border: '2px solid rgba(16,16,16,0.97)', background: '#1d1d1d',
+                 border: 'var(--sw-border-width) solid var(--sw-border)', background: '#1d1d1d',
                  boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
                }}>
                  <img
@@ -105,9 +105,11 @@ function LeadSheet({ lead, onApprove, onReject, onClose }: {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{lead.name}</span>
               {lead.linkedin_url && (
-                <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer" style={{ color: '#60A5FA', display: 'inline-flex' }}>
-                  <ExternalLink size={11} />
-                </a>
+                <img
+                  src="/linkedin.png" alt="LinkedIn" title="Ver no LinkedIn"
+                  style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'contain', opacity: 0.6, cursor: 'pointer', flexShrink: 0 }}
+                  onClick={(e) => { e.stopPropagation(); window.open(lead.linkedin_url, '_blank'); }}
+                />
               )}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 }}>
@@ -149,7 +151,7 @@ function LeadSheet({ lead, onApprove, onReject, onClose }: {
             ))}
             {lead.outreach_angle && (
               <div style={{
-                background: 'rgba(122,139,255,0.07)', border: '1px solid rgba(122,139,255,0.15)',
+                background: 'rgba(122,139,255,0.07)', border: 'var(--sw-border-width) solid var(--sw-border)',
                 borderRadius: 8, padding: '7px 10px', fontSize: 11,
                 color: 'rgba(255,255,255,0.5)', lineHeight: 1.5, marginTop: 8,
               }}>
@@ -165,15 +167,11 @@ function LeadSheet({ lead, onApprove, onReject, onClose }: {
         {!isDone ? (
           <div style={{ display: 'flex', gap: 8 }}>
             {lead.linkedin_url && (
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<img src="/linkedin.png" alt="" style={{ width: 12, height: 12, borderRadius: 2 }} />}
+              <img
+                src="/linkedin.png" alt="LinkedIn" title="Ver no LinkedIn"
+                style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'contain', opacity: 0.6, cursor: 'pointer', flexShrink: 0, alignSelf: 'center' }}
                 onClick={() => window.open(lead.linkedin_url, '_blank')}
-                style={{ flex: 1, background: '#0077B5', color: '#fff', border: 'none' }}
-              >
-                LinkedIn
-              </Button>
+              />
             )}
             <Button variant="success" size="sm" loading={busy === 'approving'}
               leftIcon={<CheckCircle size={12} />} onClick={() => handle('approve')} style={{ flex: 2 }}>
@@ -187,15 +185,11 @@ function LeadSheet({ lead, onApprove, onReject, onClose }: {
         ) : (
           <div style={{ display: 'flex', gap: 8 }}>
             {lead.linkedin_url && (
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<img src="/linkedin.png" alt="" style={{ width: 12, height: 12, borderRadius: 2 }} />}
+              <img
+                src="/linkedin.png" alt="LinkedIn" title="Ver no LinkedIn"
+                style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'contain', opacity: 0.6, cursor: 'pointer', flexShrink: 0, alignSelf: 'center' }}
                 onClick={() => window.open(lead.linkedin_url, '_blank')}
-                style={{ flex: 1, background: '#0077B5', color: '#fff', border: 'none' }}
-              >
-                LinkedIn
-              </Button>
+              />
             )}
             <div style={{ flex: 2, textAlign: 'center' }}>
               {lead.status === 'created'
@@ -231,9 +225,12 @@ export function ProspectingView({
   onApproveLead, onRejectLead, onLeadHover,
   session,
 }: ProspectingViewProps) {
+  const activeTheme = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || 'dark' : 'dark';
+
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#1d1d1d' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--sw-graph-bg)' }}>
       <ProspectMap
+        key={activeTheme}
         centerLat={coords?.lat}
         centerLng={coords?.lng}
         radiusKm={radiusKm}

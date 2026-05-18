@@ -8030,3 +8030,309 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-17T22:08:13.638104",
+    "candidate": "Anderson Rezende Marinho",
+    "linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn",
+            "body": "Veja o perfil de Anderson Rezende Marinho no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Diretor na Cobaltech . Indaiatuba, São Paulo, Brasil . 321 seguidores 317 conexões."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-rezende-marinho-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-17T22:08:22.057530",
+    "candidate": "Anderson Rezende Marinho",
+    "linkedin": "https://www.linkedin.com/in/anderson-rezende-marinho-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Rezende Marinho - Proprietário - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experience: Cobaltech Comercio E Servicos · Education: CEUNSP · Location: Indaiatuba · 285 connections on LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/anderson-rezende-marinho-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-17T22:08:33.813674",
+    "candidate": "Anderson C. Rezende",
+    "linkedin": "https://www.linkedin.com/in/anderson-c-rezende-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "January 16, 2025 - Transformando a Indústria com Inovação e Experiência.💡🏭 #CobalTech #SoluçõesIndustriais #Inovação #usinagem ... Anderson C. Rezende ... Anderson C. Rezende shared this ... Anderson C. Rezende shared this · Descubra nossa variedade de produtos de usinagem! Visite nosso site. 🔧🛠️ #Usinagem #Ferramentas #Cobaltech"
+        },
+        "osint_metadata": {
+            "role": "cobaltech comercio e servicos",
+            "bio": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 350 conexões no LinkedIn. Veja o perfil de Anderson C. Rezende no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://www.linkedin.com/in/anderson-c-rezende-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-17T22:08:44.153585",
+    "candidate": "Anderson Scherrer",
+    "linkedin": "https://br.linkedin.com/in/anderson-scherrer-39624349",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Scherrer - Engenheiro de software",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "r",
+            "bio": "Experiência: R-Sys Softwares - Sistemas de Informação · Formação acadêmica: ISFACES - Instituto São Francisco de Assis · Localidade: Cascavel · 37 conexões no LinkedIn. Veja o perfil de Anderson Scherrer no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-scherrer-39624349",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-17T22:08:56.243636",
+    "candidate": "Anderson Caciator Ramos",
+    "linkedin": "https://br.linkedin.com/in/anderson-caciator-ramos-943a5217a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson Caciator Ramos - Técnico de TI",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "souza papaleo moldagem de concreto ltda",
+            "bio": "Experiência: Souza Papaleo Moldagem De Concreto Ltda · Formação acadêmica: Universidade do Sul de Santa Catarina · Localidade: Palhoça · 1 conexão no LinkedIn. Veja o perfil de Anderson Caciator Ramos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-caciator-ramos-943a5217a",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-17T22:09:04.601542",
+    "candidate": "Bissoli Ferramentas",
+    "linkedin": "https://br.linkedin.com/in/bissoli-ferramentas-74b193163",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bissoli Ferramentas - Americana, São Paulo, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "americana, são paulo, brasil",
+            "bio": "Localidade: Americana · 244 conexões no LinkedIn. Veja o perfil de Bissoli Ferramentas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/bissoli-ferramentas-74b193163",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-17T22:09:49.381954",
+    "candidate": "Anderson C. Rezende",
+    "linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anderson C. Rezende - Cobaltech Comercio E Servicos | LinkedIn",
+            "body": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 350 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cobaltech comercio e servicos",
+            "bio": "Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 350 conexões no LinkedIn. Veja o perfil de Anderson C. Rezende no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/anderson-c-rezende-7a026138",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-17T22:10:04.447323",
+    "candidate": "Sandro Galo",
+    "linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Sandro Galo - Cobaltech Ferramentas e Soluções de Usinagem ... Anderson Rezende Marinho - Diretor na Cobaltech | LinkedIn Cobaltech Ferramentas e Soluções de Usinagem no LinkedIn ... Cobaltech Ferramentas e Soluções de Usinagem posted on LinkedIn",
+            "body": "conhecimento em máquinas injetora.centro de usinagem.ferramentas em geral Retifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai · Localidade:... Diretor na Cobaltech · Distribuidor da SUMITOMO ELECTRIC HARDMETAL DO BRASIL · Experiência: Cobaltech Comercio E Servicos · Formação acadêmica: CEUNSP · Localidade: Indaiatuba · 329 conexões... Obrigado, @paulosofiati, pela visita à Cobaltech e pela reunião promissora para falar sobre nossos futuros negócios. Que honra ter participado da construção da história da Cobaltech Ferramentas e Soluções de Usinagem como consultor nos anos de 2017, 2018 e 2019 e ontem, dia 10/8/2023, ter participado..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "conhecimento em máquinas injetora.centro de usinagem.ferramentas em geral\nRetifica · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Senai · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Sandro Galo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/sandro-galo-61215b1a4",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-17T22:11:12.913164",
+    "candidate": "João Paulo Lopes",
+    "linkedin": "https://br.linkedin.com/in/joão-paulo-lopes-30a1bb20b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Paulo Lopes - Administração de empresas | LinkedIn",
+            "body": "Administração de empresas · Experiência: Cobaltech · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Indaiatuba · 44 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou Analista Administrativo, com bacharelado em Administração pela CEUNSP. Tenho… · Experiência: Cobaltech Ferramentas e Soluções de Usinagem · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Indaiatuba · 55 conexões no LinkedIn. Veja o perfil de João Paulo Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/joão-paulo-lopes-30a1bb20b",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------

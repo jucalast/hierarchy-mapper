@@ -8,11 +8,11 @@
 
   height: 100%;
 
-  background-color: #131313;
+  background-color: var(--sw-bg);
 
   /* Matches standard header/sidenav background */
 
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--sw-text-base);
 
   padding: 32px 40px;
 
@@ -25,6 +25,8 @@
   /* Explicit Nexa base */
 
   animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 
 }
 
@@ -94,7 +96,7 @@
 
   /* Nexa Heavy */
 
-  color: #ffffff;
+  color: var(--sw-text-base);
 
   display: flex;
 
@@ -118,7 +120,7 @@
 
   /* Nexa ExtraLight */
 
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--sw-text-muted);
 
   /* Clean muted metadata */
 
@@ -164,7 +166,7 @@
 
   border-color: transparent !important;
 
-  color: #ffffff;
+  color: var(--sw-text-base);
 
 }
 
@@ -216,7 +218,7 @@
 
   /* Nexa Heavy */
 
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--sw-text-muted);
 
   text-transform: uppercase;
 
@@ -270,7 +272,7 @@
 
   /* Nexa Heavy */
 
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--sw-text-muted);
 
   /* Matching standard metadata labels */
 
@@ -284,15 +286,15 @@
 
 .select {
 
-  background-color: #1a1a1a;
+  background-color: var(--sw-surface-base);
 
   /* Professional dark input field */
 
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: var(--sw-border-width) solid var(--sw-border);
 
   border-radius: 6px;
 
-  color: #ffffff;
+  color: var(--sw-text-base);
 
   padding: 12px;
 
@@ -316,9 +318,9 @@
 
 .select option {
 
-  background-color: #131313;
+  background-color: var(--sw-sidebar);
 
-  color: #ffffff;
+  color: var(--sw-text-base);
 
   font-family: var(--font-primary);
 
@@ -330,9 +332,9 @@
 
 .select:hover {
 
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: var(--sw-hover);
 
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--sw-border-strong);
 
 }
 
@@ -340,7 +342,7 @@
 
 .select:focus {
 
-  border-color: #3b82f6;
+  border-color: var(--sw-primary);
 
 }
 
@@ -356,7 +358,7 @@
 
   background-color: transparent;
 
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: var(--sw-border-width) solid var(--sw-border);
 
   padding: 16px;
 
@@ -376,9 +378,9 @@
 
 .checkboxContainer:hover {
 
-  background-color: rgba(255, 255, 255, 0.02);
+  background-color: var(--sw-hover);
 
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--sw-border-strong);
 
 }
 
@@ -392,7 +394,7 @@
 
   border-radius: 3px;
 
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border: var(--sw-border-width) solid var(--sw-border);
 
   cursor: pointer;
 
@@ -424,7 +426,7 @@
 
   font-size: var(--font-sm);
 
-  color: #ffffff;
+  color: var(--sw-text-base);
 
 }
 
@@ -440,7 +442,7 @@
 
   font-size: var(--font-xs);
 
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--sw-text-muted);
 
   line-height: 1.5;
 
@@ -450,7 +452,7 @@
 
 .saveBtn {
 
-  background: #3b82f6;
+  background: var(--sw-primary);
 
   color: #ffffff;
 
@@ -465,8 +467,6 @@
   font-family: var(--font-primary);
 
   font-weight: 500;
-
-  /* Nexa Heavy */
 
   cursor: pointer;
 
@@ -486,7 +486,7 @@
 
 .saveBtn:hover {
 
-  background: #2563eb;
+  background: var(--sw-primary-hover);
 
 }
 
@@ -518,7 +518,7 @@
 
   background-color: transparent !important;
 
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: var(--sw-border-width) solid var(--sw-border);
 
   border-radius: 8px;
 
@@ -532,7 +532,7 @@
 
 .providerCard:hover {
 
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--sw-border-strong);
 
 }
 
@@ -552,7 +552,7 @@
 
   background-color: transparent !important;
 
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: var(--sw-border-width) solid var(--sw-border);
 
 }
 
@@ -580,7 +580,7 @@
 
   /* Nexa Heavy */
 
-  color: #ffffff;
+  color: var(--sw-text-base);
 
   letter-spacing: 0.2px;
 
@@ -620,7 +620,7 @@
 
   background-color: transparent !important;
 
-  color: #34d17c;
+  color: var(--sw-status-success);
 
   border: none !important;
 
@@ -632,7 +632,7 @@
 
   background-color: transparent !important;
 
-  color: #f59e0b;
+  color: var(--sw-status-warning);
 
   border: none !important;
 
@@ -644,7 +644,7 @@
 
   background-color: transparent !important;
 
-  color: #ef4444;
+  color: var(--sw-status-danger);
 
   border: none !important;
 
@@ -684,7 +684,7 @@
 
   padding-bottom: 16px;
 
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: var(--sw-border-width) solid var(--sw-border);
 
 }
 
@@ -716,9 +716,9 @@
 
   font-size: var(--font-sm);
 
-  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-family: var(--font-mono);
 
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--sw-text-base);
 
   font-weight: 600;
 
@@ -736,7 +736,7 @@
 
   /* Nexa ExtraLight */
 
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--sw-text-muted);
 
 }
 
@@ -746,7 +746,7 @@
 
   font-family: var(--font-primary);
 
-  color: #ffffff;
+  color: var(--sw-text-base);
 
   font-weight: 500;
 
@@ -764,7 +764,7 @@
 
   height: 6px;
 
-  background-color: rgba(255, 255, 255, 0.04);
+  background-color: var(--sw-hover);
 
   border-radius: 3px;
 
@@ -788,7 +788,7 @@
 
 .progressGreen {
 
-  background-color: #34d17c;
+  background-color: var(--sw-status-success);
 
 }
 
@@ -796,7 +796,7 @@
 
 .progressOrange {
 
-  background-color: #f59e0b;
+  background-color: var(--sw-status-warning);
 
 }
 
@@ -804,7 +804,7 @@
 
 .progressRed {
 
-  background-color: #ef4444;
+  background-color: var(--sw-status-danger);
 
 }
 
@@ -820,7 +820,7 @@
 
   /* Nexa ExtraLight */
 
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--sw-text-muted);
 
   display: flex;
 
@@ -852,7 +852,7 @@
 
   /* Nexa Heavy */
 
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--sw-text-muted);
 
   text-transform: uppercase;
 
@@ -898,7 +898,7 @@
 
   /* Nexa ExtraLight */
 
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--sw-text-muted);
 
   text-align: center;
 
@@ -958,7 +958,7 @@
 
 .chevron {
 
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--sw-text-muted);
 
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
 
@@ -988,7 +988,7 @@
 
 .providerHeader:hover {
 
-  background-color: rgba(255, 255, 255, 0.02) !important;
+  background-color: var(--sw-hover) !important;
 
 }
 
@@ -996,7 +996,7 @@
 
 .providerHeader:hover .chevron {
 
-  color: #ffffff;
+  color: var(--sw-text-base);
 
 }
 
@@ -1004,7 +1004,7 @@
 
   font-family: var(--font-primary);
 
-  color: #ef4444;
+  color: var(--sw-status-danger);
 
   font-weight: 500;
 
@@ -1033,7 +1033,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: var(--sw-border-width) solid var(--sw-border);
   padding-right: 28px;
 }
 
@@ -1043,7 +1043,7 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--sw-text-muted);
   margin-bottom: 6px;
 }
 
@@ -1061,7 +1061,7 @@
   border-radius: 8px;
   font-family: var(--font-primary);
   font-size: var(--font-sm);
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--sw-text-muted);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid transparent;
@@ -1069,15 +1069,15 @@
 }
 
 .sidebarItemActive {
-  background-color: rgba(59, 130, 246, 0.08) !important;
-  color: #3b82f6 !important;
+  background-color: var(--sw-primary-soft) !important;
+  color: var(--sw-primary) !important;
   font-weight: 500;
-  border-color: rgba(59, 130, 246, 0.15) !important;
+  border-color: var(--sw-primary-border) !important;
 }
 
 .sidebarItem:hover:not(.sidebarItemActive) {
-  background-color: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.9);
+  background-color: var(--sw-hover);
+  color: var(--sw-text-base);
 }
 
 .settingsContent {
@@ -1086,4 +1086,314 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
+}
+
+/* ==========================================
+   Toast de feedback inline
+   ========================================== */
+.toastBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
+  font-family: var(--font-primary);
+  animation: fadeIn 0.2s ease;
+  margin-bottom: 8px;
+}
+
+.toastBar.success {
+  border: 1px solid rgba(52, 209, 124, 0.2);
+  background: rgba(52, 209, 124, 0.06);
+  color: var(--sw-status-success);
+}
+
+.toastBar.error {
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: var(--sw-alert-bg);
+  color: var(--sw-status-danger);
+}
+
+/* ==========================================
+   Descrição de campo
+   ========================================== */
+.fieldDesc {
+  font-size: var(--font-xs);
+  color: var(--sw-text-muted);
+  line-height: 1.45;
+  font-weight: 300;
+}
+
+/* ==========================================
+   Grids reutilizáveis
+   ========================================== */
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+/* ==========================================
+   Divisor de seção com título
+   ========================================== */
+.sectionDivider {
+  border-top: var(--sw-border-width) solid var(--sw-border);
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sectionLabel {
+  font-family: var(--font-primary);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sw-text-muted);
+}
+
+/* ==========================================
+   Formulário inline expansível
+   ========================================== */
+.inlineForm {
+  padding: 20px 24px;
+  border: var(--sw-border-width) solid var(--sw-border);
+  border-radius: var(--radius-md);
+  background: var(--sw-surface-base);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+.inlineFormHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--sw-text-base);
+  margin: 0;
+}
+
+.inlineFormClose {
+  background: transparent;
+  border: none;
+  color: var(--sw-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  padding: 0;
+}
+
+.inlineFormClose:hover {
+  opacity: 1;
+}
+
+.inlineFormActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+/* ==========================================
+   Cards de dados (produtos, clientes)
+   ========================================== */
+.dataCard {
+  border: var(--sw-border-width) solid var(--sw-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  transition: border-color var(--transition-fast);
+}
+
+.dataCard:hover {
+  border-color: var(--sw-border-strong);
+}
+
+.dataCardBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dataCardTitle {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--sw-text-base);
+  margin: 0;
+}
+
+.dataCardDesc {
+  font-size: var(--font-xs);
+  color: var(--sw-text-muted);
+  font-weight: 300;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.dataCardMeta {
+  font-size: var(--font-xs);
+  color: var(--sw-text-muted);
+  font-weight: 300;
+}
+
+.dataCardActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ==========================================
+   Tags de listas (StringListEditor)
+   ========================================== */
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sw-hover);
+  border: var(--sw-border-width) solid var(--sw-border);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font-size: var(--font-xs);
+  color: var(--sw-text-base);
+  font-weight: 300;
+  transition: border-color var(--transition-fast);
+}
+
+.tag:hover {
+  border-color: var(--sw-border-strong);
+}
+
+.tagRemove {
+  display: flex;
+  align-items: center;
+  color: var(--sw-text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.tagRemove:hover {
+  color: var(--sw-status-danger);
+}
+
+.tagEmpty {
+  font-size: var(--font-xs);
+  color: var(--sw-text-muted);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.useCaseTag {
+  font-size: var(--font-xs);
+  background: var(--sw-primary-soft);
+  border: 1px solid var(--sw-primary-border);
+  color: var(--sw-primary);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 300;
+}
+
+/* ==========================================
+   Botão de ação destrutiva (deletar)
+   ========================================== */
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--sw-text-muted);
+  border-radius: 6px;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.deleteBtn:hover {
+  color: var(--sw-status-danger);
+  background: rgba(239, 68, 68, 0.07);
+}
+
+/* ==========================================
+   Título de seção de integração
+   ========================================== */
+.integrationTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--sw-text-base);
+  font-family: var(--font-primary);
+  margin: 0;
+}
+
+.integrationTitleIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* ==========================================
+   Row de input + botão add
+   ========================================== */
+.addRow {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.addRow .select {
+  flex: 1;
+}
+
+.addRow .saveBtn {
+  padding: 0 16px;
+  height: auto;
+  align-self: stretch;
+  min-width: 44px;
+  flex-shrink: 0;
+}
+
+/* ==========================================
+   Header de card com ação
+   ========================================== */
+.cardTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.cardTitleRow .cardTitle {
+  margin: 0;
 }

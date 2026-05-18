@@ -155,6 +155,26 @@ async def delete_thread(
     log.info("conversation.thread.deleted", thread_id=thread_id)
 
 
+@router.delete("/threads/bulk", status_code=204)
+async def delete_threads_bulk(
+    thread_ids: List[str] = Query(..., description="Lista de IDs de threads a remover"),
+    session: AsyncSession = Depends(get_db),
+):
+    """Remove múltiplas threads e todas as suas mensagens de uma vez."""
+    q = select(ConversationThread).where(ConversationThread.id.in_(thread_ids))
+    result = await session.execute(q)
+    threads = result.scalars().all()
+    
+    if not threads:
+        raise HTTPException(status_code=404, detail="Nenhuma thread encontrada para remover")
+        
+    for thread in threads:
+        await session.delete(thread)
+    await session.commit()
+    log.info("conversation.threads.bulk_deleted", count=len(threads), thread_ids=thread_ids)
+
+
+
 @router.get("/{org_id}/activities", response_model=List[ActivityOut])
 async def list_activities(
     org_id: int,

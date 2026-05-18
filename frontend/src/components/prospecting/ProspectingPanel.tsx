@@ -6,7 +6,7 @@ import React, {
 import dynamic from 'next/dynamic';
 import {
   X, Loader2, CheckCircle, XCircle, MapPin, Radar,
-  ChevronDown, ChevronUp, ExternalLink, Building2,
+  ChevronDown, ChevronUp, Building2,
   TrendingUp, Tag, AlertCircle, Navigation,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
@@ -161,10 +161,11 @@ function LeadCard({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>{lead.name}</span>
               {lead.linkedin_url && (
-                <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer"
-                  style={{ color: '#60A5FA', display: 'inline-flex' }}>
-                  <ExternalLink size={11} />
-                </a>
+                <img
+                  src="/linkedin.png" alt="LinkedIn" title="Ver no LinkedIn"
+                  style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'contain', opacity: 0.6, cursor: 'pointer', flexShrink: 0 }}
+                  onClick={(e) => { e.stopPropagation(); window.open(lead.linkedin_url, '_blank'); }}
+                />
               )}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 5 }}>
@@ -215,7 +216,7 @@ function LeadCard({
             {lead.outreach_angle && (
               <div style={{
                 background: 'rgba(122,139,255,0.07)',
-                border: '1px solid rgba(122,139,255,0.18)',
+                border: 'var(--sw-border-width) solid var(--sw-border)',
                 borderRadius: 8, padding: '7px 10px',
                 fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 1.5,
               }}>
@@ -231,15 +232,11 @@ function LeadCard({
         {/* Actions */}
         <div style={{ display: 'flex', gap: 8 }}>
           {lead.linkedin_url && (
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<img src="/linkedin.png" alt="" style={{ width: 12, height: 12, borderRadius: 2 }} />}
+            <img
+              src="/linkedin.png" alt="LinkedIn" title="Ver no LinkedIn"
+              style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'contain', opacity: 0.6, cursor: 'pointer', flexShrink: 0, alignSelf: 'center' }}
               onClick={() => window.open(lead.linkedin_url, '_blank')}
-              style={{ flex: 1, background: '#0077B5', color: '#fff', border: 'none' }}
-            >
-              LinkedIn
-            </Button>
+            />
           )}
           {!isDone && (
             <Button variant="success" size="sm" loading={busy === 'approving'}
@@ -380,10 +377,12 @@ export const ProspectingPanel: React.FC<Props> = ({ onClose }) => {
   const pending = leads.filter(l => l.status === 'pending').length;
   const isRunning = session?.status === 'running';
 
+  const activeTheme = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || 'dark' : 'dark';
+
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 500,
-      background: '#0d0d0d',
+      background: 'var(--sw-graph-bg)',
       display: 'flex', flexDirection: 'column',
     }}>
       {/* ── Top bar ── */}
@@ -402,7 +401,7 @@ export const ProspectingPanel: React.FC<Props> = ({ onClose }) => {
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: 8,
           background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(255,255,255,0.09)',
+          border: 'var(--sw-border-width) solid var(--sw-border)',
           borderRadius: 8, padding: '5px 10px', cursor: 'pointer',
         }} onClick={requestLocation}>
           {geoLoading
@@ -480,6 +479,7 @@ export const ProspectingPanel: React.FC<Props> = ({ onClose }) => {
       {/* ── Mapa ── */}
       <div style={{ flex: 1, position: 'relative' }}>
         <Map
+          key={activeTheme}
           disabled={searching}
           centerLat={coords?.lat}
           centerLng={coords?.lng}
@@ -499,7 +499,7 @@ export const ProspectingPanel: React.FC<Props> = ({ onClose }) => {
             position: 'absolute', top: '50%', left: '50%',
             transform: 'translate(-50%,-50%)',
             background: 'rgba(20,20,20,0.9)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            border: 'var(--sw-border-width) solid var(--sw-border)',
             borderRadius: 12, padding: '16px 20px',
             textAlign: 'center', pointerEvents: 'none',
           }}>

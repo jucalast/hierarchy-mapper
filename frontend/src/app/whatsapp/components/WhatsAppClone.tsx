@@ -149,7 +149,7 @@ export default function WhatsAppClone() {
                       borderRadius: isMe ? '12px 0px 12px 12px' : '0px 12px 12px 12px',
                       maxWidth: '75%',
                       boxShadow: '0 1px 0.5px rgba(0,0,0,0.15)',
-                      border: '1px solid var(--border-color)',
+                      border: 'var(--sw-border-width) solid var(--sw-border)',
                       fontSize: '0.95rem',
                       lineHeight: '1.4',
                       position: 'relative'
@@ -182,7 +182,7 @@ export default function WhatsAppClone() {
               alignItems: 'center',
               padding: '6px 6px 6px 8px',
               backgroundColor: '#111111',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              border: 'var(--sw-border-width) solid var(--sw-border)',
               borderRadius: '14px',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
               margin: '16px 24px', // Margem para fazer flutuar
@@ -260,7 +260,7 @@ export default function WhatsAppClone() {
                     padding: '0 16px',
                     height: '38px',
                     background: '#ffffff',
-                    border: '1px solid #ffffff',
+                    border: 'var(--sw-border-width) solid var(--sw-border)',
                     borderRadius: '8px',
                     color: '#000000',
                     fontSize: '0.85rem',

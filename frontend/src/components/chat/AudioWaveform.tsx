@@ -50,6 +50,9 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({ analyserNode, isAc
 
             ctx.clearRect(0, 0, W, H);
 
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light' || document.body.getAttribute('data-theme') === 'light';
+            const barColor = isLight ? '29, 29, 29' : '255, 255, 255';
+
             const analyser = analyserNode.current;
             const barCount = Math.floor(W / (BAR_W + GAP));
 
@@ -60,7 +63,7 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({ analyserNode, isAc
                     const h = 2.5 + Math.sin(t + i * 0.45) * 1.5;
                     const x = i * (BAR_W + GAP);
                     const y = H / 2 - h / 2;
-                    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+                    ctx.fillStyle = `rgba(${barColor}, 0.18)`;
                     ctx.beginPath();
                     ctx.roundRect(x, y, BAR_W, h, 1);
                     ctx.fill();
@@ -86,7 +89,7 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({ analyserNode, isAc
                 // Opacidade mais alta no meio do espectro visual
                 const center = Math.abs(i / barCount - 0.5) * 2; // 0 no centro, 1 nas bordas
                 const alpha = 0.55 + (1 - center) * 0.45;
-                ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
+                ctx.fillStyle = `rgba(${barColor}, ${alpha.toFixed(2)})`;
 
                 ctx.beginPath();
                 ctx.roundRect(x, y, BAR_W, barH, 1.5);

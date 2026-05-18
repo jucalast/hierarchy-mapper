@@ -55,7 +55,7 @@
   left: 0;
   width: 280px;
   background: var(--chat-bg-primary);
-  border: var(--chat-border-width) solid var(--chat-border-color);
+  border: var(--sw-border-width) solid var(--sw-border);
   border-radius: var(--chat-radius-lg);
   box-shadow: var(--chat-shadow-lg);
   overflow: hidden;
@@ -262,7 +262,7 @@
   width: 32px;
   height: 18px;
   border-radius: 9px;
-  background: var(--chat-border-color);
+  background: var(--sw-border);
   position: relative;
   transition: background var(--chat-transition-fast);
   flex-shrink: 0;

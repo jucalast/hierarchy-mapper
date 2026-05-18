@@ -111,7 +111,23 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
         )}
         
         <div className={styles.nodeTitles}>
-          <h3 className={styles.nodeName}>{data.name || 'Professional'}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 className={styles.nodeName}>{data.name || 'Professional'}</h3>
+            {data.linkedin && (
+              <a
+                href={data.linkedin.startsWith('http') ? data.linkedin : `https://${data.linkedin}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nodrag"
+                onPointerDown={(e) => e.stopPropagation()}
+                style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.55, transition: 'opacity 0.2s', flexShrink: 0 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = '0.9'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = '0.55'; }}
+              >
+                <img src="/linkedin.png" alt="LinkedIn" style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 4 }} />
+              </a>
+            )}
+          </div>
           <div className={styles.roleWrapper}>
             <span className={styles.roleDept}>
               <Briefcase size={14} /> {data.headline || data.role || 'Professional'}
@@ -167,21 +183,6 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
         </div>
       </div>
 
-      {/* Action Footer */}
-      {data.linkedin && (
-        <div className={styles.nodeActionFooter}>
-          <a
-            href={data.linkedin.startsWith('http') ? data.linkedin : `https://${data.linkedin}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${styles.linkedinBtn} nodrag`}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <img src="/linkedin.png" alt="LinkedIn" className={styles.linkedinIconImg} />
-            <span>Ver Perfil no LinkedIn</span>
-          </a>
-        </div>
-      )}
       </div>
 
       {isNode && <div className={styles.handleBottomLine}></div>}

@@ -87,7 +87,7 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                     data={org}
                                     size={32}
                                     noInitialFallback={displayCount === 0}
-                                    style={{ border: hasLogo ? '3px solid #272727ff' : 'none' }}
+                                    style={{ border: hasLogo ? '3px solid var(--sw-border-strong)' : 'none' }}
                                 />
                             );
                         })()}
@@ -113,7 +113,7 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                     style={{
                                         fontSize: '13px',
                                         fontWeight: 500,
-                                        color: org.icp_tier === 'A' ? '#34d17c' : org.icp_tier === 'B' ? '#f59e0b' : 'rgba(255,255,255,0.4)',
+                                        color: org.icp_tier === 'A' ? '#34d17c' : org.icp_tier === 'B' ? '#f59e0b' : 'var(--sw-text-muted)',
                                         width: 20,
                                         height: 20,
                                         display: 'flex',
@@ -140,7 +140,7 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                     onClick={(e) => e.stopPropagation()}
                                     style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}
                                 >
-                                    <img src="/linkedin.png" alt="LinkedIn" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                                    <img src="/linkedin.png" alt="LinkedIn" style={{ width: 18, height: 18, objectFit: 'contain' }} />
                                 </a>
                             )}
                         </div>
@@ -185,24 +185,31 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                             <div style={{ display: 'flex', alignItems: 'center', marginRight: '8px' }}>
                                 {displayPics.length > 0 ? (
                                     displayPics.slice(0, 3).map((pic: string, i: number) => (
-                                        <img
+                                        <Avatar
                                             key={i}
-                                            src={getProxiedUrl(pic)}
-                                            alt=""
+                                            src={pic}
+                                            name="Pessoa"
+                                            kind="person"
+                                            size={20}
                                             className={styles.stackedAvatar}
-                                            style={{ zIndex: 3 - i }}
+                                            style={{ 
+                                                zIndex: 3 - i,
+                                                border: 'var(--sw-border-width) solid var(--sw-border)',
+                                                width: '20px',
+                                                height: '20px'
+                                            }}
                                         />
                                     ))
                                 ) : (
                                     [0, 1, 2].map((i) => (
                                         <div key={i} className={styles.stackedAvatar} style={{
-                                            background: i === 0 ? '#2a2a2a' : i === 1 ? '#333' : '#1a1a1a',
+                                            background: i === 0 ? 'var(--sw-surface-raised)' : i === 1 ? 'var(--sw-hover)' : 'var(--sw-border-strong)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             zIndex: 3 - i
                                         }}>
-                                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+                                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--sw-text-muted)', opacity: 0.3 }} />
                                         </div>
                                     ))
                                 )}

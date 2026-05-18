@@ -125,7 +125,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                         width: 5,
                         height: 5,
                         borderRadius: '50%',
-                        background: i <= speed ? accentColor : 'var(--chat-border-color)',
+                        background: i <= speed ? accentColor : 'var(--sw-border)',
                         transition: `background var(--chat-transition-fast)`,
                     }}
                 />

@@ -141,7 +141,7 @@ export default function EmailDashboard() {
             
             {tab === 'compose' ? (
               <div style={{ maxWidth: '800px', margin: '40px auto', padding: '0 24px' }}>
-                <div style={{ background: '#131313', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.05)', padding: '32px', boxShadow: '0 12px 30px rgba(0,0,0,0.3)' }}>
+                <div style={{ background: '#131313', borderRadius: '16px', border: 'var(--sw-border-width) solid var(--sw-border)', padding: '32px', boxShadow: '0 12px 30px rgba(0,0,0,0.3)' }}>
                   <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '8px', color: '#fff' }}>Compor Cadência</h1>
                   <p style={{ color: 'rgba(255, 255, 255, 0.5)', marginBottom: '32px', fontSize: '0.9rem' }}>
                     O e-mail será enviado com o sistema de tracking autônomo. O atraso humano de (2 a 5s) será aplicado nativamente antes do despacho final para preservar a reputação do IP.
@@ -157,7 +157,7 @@ export default function EmailDashboard() {
                         onChange={e => setComposer({ ...composer, to: e.target.value })}
                         placeholder="lead.compras@empresa.com"
                         style={{
-                          width: '100%', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                          width: '100%', background: 'rgba(255, 255, 255, 0.02)', border: 'var(--sw-border-width) solid var(--sw-border)',
                           padding: '12px 16px', borderRadius: '8px', color: '#fff', outline: 'none', transition: 'border-color 0.2s', fontSize: '0.95rem'
                         }}
                       />
@@ -172,7 +172,7 @@ export default function EmailDashboard() {
                         onChange={e => setComposer({ ...composer, subject: e.target.value })}
                         placeholder="Solução para Gargalo Opex - Dúvida rápida"
                         style={{
-                          width: '100%', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                          width: '100%', background: 'rgba(255, 255, 255, 0.02)', border: 'var(--sw-border-width) solid var(--sw-border)',
                           padding: '12px 16px', borderRadius: '8px', color: '#fff', outline: 'none', transition: 'border-color 0.2s', fontSize: '0.95rem'
                         }}
                       />
@@ -186,7 +186,7 @@ export default function EmailDashboard() {
                         onChange={e => setComposer({ ...composer, body: e.target.value })}
                         placeholder="Olá, percebi que você está na cadeira de Suprimentos...\n\nO tracking do pixel (gif transparente) será injetado automaticamente no rodapé..."
                         style={{
-                          width: '100%', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                          width: '100%', background: 'rgba(255, 255, 255, 0.02)', border: 'var(--sw-border-width) solid var(--sw-border)',
                           padding: '16px', borderRadius: '8px', color: '#fff', outline: 'none', transition: 'border-color 0.2s', fontSize: '0.95rem',
                           minHeight: '200px', resize: 'vertical'
                         }}
@@ -224,7 +224,7 @@ export default function EmailDashboard() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {metrics.length === 0 ? (
-                    <div style={{ background: '#131313', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.05)', padding: '32px' }}>
+                    <div style={{ background: '#131313', borderRadius: '16px', border: 'var(--sw-border-width) solid var(--sw-border)', padding: '32px' }}>
                       <EmptyState
                         icon={<Activity size={40} />}
                         title="Nenhum e-mail disparado ainda"
@@ -244,7 +244,7 @@ export default function EmailDashboard() {
                   ) : (
                     metrics.map((m) => (
                       <div key={m.tracking_id} style={{ 
-                        background: '#131313', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)', 
+                        background: '#131313', borderRadius: '12px', border: 'var(--sw-border-width) solid var(--sw-border)', 
                         padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', overflow: 'hidden'
                       }}>
                         {m.open_count > 0 && (

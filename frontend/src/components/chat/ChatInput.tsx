@@ -151,7 +151,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const consoleBg = theme === 'dark' ? '#1e1e1e' : 'var(--chat-bg-primary)';
 
     const taskStyle = (hasRunningTask && !isExpandedRunningTask) ? {
-        border: 'var(--chat-border-width) solid var(--chat-border-weak)',
+        border: 'var(--sw-border-width) solid var(--chat-border-weak)',
         background: consoleBg,
         borderRadius: 16,
         pointerEvents: 'auto' as const,
@@ -171,7 +171,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     } : {};
 
     const expandedTaskStyle = isExpandedRunningTask ? {
-        border: 'var(--chat-border-width) solid var(--chat-border-weak)',
+        border: 'var(--sw-border-width) solid var(--chat-border-weak)',
         background: consoleBg,
         borderRadius: 16,
         pointerEvents: 'auto' as const,
@@ -450,7 +450,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                                         className={styles.stopRecordingBtn}
                                         onClick={stopListening}
                                         title="Parar gravação"
-                                    />
+                                    >
+                                        <Loader2 size={18} className={styles.spinner} />
+                                        Parar
+                                    </button>
                                 </div>
                             ) : (
                                 /* ── Modo normal ── */

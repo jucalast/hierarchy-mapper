@@ -94,7 +94,15 @@
       "Bash(rm frontend/src/components/ChatPanel.tsx frontend/src/components/ChatPanel.module.css)",
       "Bash(rm backend/services/ai/chat_service.py backend/services/ai/chat_service_tmp.py backend/services/ai/agent_service.py)",
       "Bash(git rm *)",
-      "Bash(git status *)"
+      "Bash(git status *)",
+      "Bash(rtk git *)",
+      "Bash(rtk grep *)",
+      "Bash(rtk read *)",
+      "Bash(rtk find *)",
+      "Bash(rtk wc *)",
+      "Bash(rtk ls *)",
+      "Bash(Select-String -Pattern \"linkedin|imagem\" -CaseInsensitive)",
+      "Bash(Test-Path *)"
     ]
   }
 }

@@ -1,12 +1,13 @@
 .header {
     height: 52px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
     display: flex;
     align-items: center;
     padding: 0 24px;
     gap: 16px;
-    background: #131313;
+    background: var(--sw-sidebar);
     z-index: 50;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .headerIconWrapper {
@@ -15,10 +16,11 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    background: rgba(255, 255, 255, 0.03);
-    border: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+    background: var(--sw-hover);
+    border: var(--sw-border-width) solid var(--sw-border);
     border-radius: 6px;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--sw-text-muted);
+    transition: all var(--transition-fast);
 }
 
 .headerIcon {
@@ -34,17 +36,17 @@
 
 .breadcrumbItem {
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--sw-text-muted);
 }
 
 .breadcrumbDivider {
-    color: rgba(255, 255, 255, 0.08);
+    color: var(--sw-border);
     font-weight: 300;
 }
 
 .breadcrumbActive {
     font-weight: 600;
-    color: #ffffff;
+    color: var(--sw-text-base);
 }
 
 .statusBadge {
@@ -53,8 +55,8 @@
     letter-spacing: 0.05em;
     padding: 2px 8px;
     border-radius: 4px;
-    background: #1E2145;
-    color: #7A8BFF;
+    background: var(--sw-primary-soft);
+    color: var(--sw-primary);
     text-transform: uppercase;
 }
 
@@ -72,7 +74,7 @@
     justify-content: center;
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--sw-text-muted);
     cursor: pointer;
     transition: color 0.2s, background 0.2s;
     padding: 8px;
@@ -80,8 +82,8 @@
 }
 
 .moreOptionsBtn:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
+    color: var(--sw-text-base);
+    background: var(--sw-hover);
 }
 
 .dropdownMenu {
@@ -89,12 +91,12 @@
     top: 100%;
     right: 16px;
     margin-top: 4px;
-    background: #1e1e1e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--sw-surface-base);
+    border: var(--sw-border-width) solid var(--sw-border);
     border-radius: 8px;
     padding: 8px 0;
     min-width: 180px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--sw-shadow);
     z-index: 1000;
 }
 
@@ -106,7 +108,7 @@
     padding: 10px 16px;
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--sw-text-subtle);
     font-size: var(--font-sm);
     font-weight: 500;
     cursor: pointer;
@@ -115,8 +117,8 @@
 }
 
 .dropdownItem:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: var(--sw-hover);
+    color: var(--sw-text-base);
 }
 
 .globalHeader {
@@ -126,16 +128,27 @@
     justify-content: space-between;
     padding: 0 24px;
     background: linear-gradient(135deg, #1e2145 30%, #131313 80%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
     flex-shrink: 0;
     z-index: 10;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+:global([data-theme="light"]) .globalHeader {
+    background: linear-gradient(135deg, #e0e7ff 30%, #ffffff 80%);
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
 }
 
 .globalHeaderTitle {
     font-family: var(--font-primary);
     font-size: var(--font-sm);
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--sw-text-muted);
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+:global([data-theme="light"]) .globalHeaderTitle {
+    color: var(--sw-primary);
+    opacity: 0.6;
 }

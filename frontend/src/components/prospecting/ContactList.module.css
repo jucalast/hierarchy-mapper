@@ -8,7 +8,7 @@
 .empty {
     padding: 60px 0;
     text-align: center;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--sw-text-muted);
     font-size: var(--font-sm);
     font-style: italic;
 }
@@ -18,7 +18,7 @@
     gap: 16px;
     align-items: center;
     padding: 4px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
 }
 
 .contactRow:last-child {
@@ -33,7 +33,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--sw-text-muted);
     flex-shrink: 0;
 }
 
@@ -53,13 +53,13 @@
 .name {
     font-size: var(--font-sm);
     font-weight: 500;
-    color: #fff;
+    color: var(--sw-text-base);
     margin: 0;
 }
 
 .role {
     font-size: var(--font-xs);
-    color: #7a8bff; /* Lavender from your callNote */
+    color: var(--sw-primary);
     font-weight: 500;
     margin-top: 2px;
 }
@@ -76,12 +76,12 @@
     align-items: center;
     gap: 8px;
     font-size: var(--font-xs);
-    color: rgba(255, 255, 255, 0.35);
+    color: var(--sw-text-muted);
     transition: color 0.2s;
 }
 
 .metaItem:hover {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--sw-text-subtle);
 }
 
 .metaItem svg {
@@ -108,12 +108,12 @@
 .actionBtn {
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.15);
+    color: var(--sw-border-strong);
     cursor: pointer;
     padding: 0;
     transition: color 0.2s;
 }
 
 .actionBtn:hover {
-    color: #fff;
+    color: var(--sw-text-base);
 }

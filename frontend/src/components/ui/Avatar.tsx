@@ -97,9 +97,10 @@ function AvatarBase({
     setRetryUrl(null);
   }, [proxiedUrl]);
 
-  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    resolvedName,
-  )}&background=${fallbackBg}&color=${fallbackColor}&bold=true&rounded=true&size=128`;
+  // Imagem de silhueta genérica e elegante
+  const genericPersonFallback = "/imagem_linkedin.png";
+
+  const fallback = genericPersonFallback;
 
   const baseStyle: React.CSSProperties = {
     width: pxSize,
@@ -147,7 +148,7 @@ function AvatarBase({
           alt={alt || resolvedName}
           width={pxSize}
           height={pxSize}
-          style={{ width: '100%', height: '100%', objectFit: defaultFit, position: 'relative', zIndex: 1 }}
+          style={{ width: '100%', height: '100%', objectFit: defaultFit, position: 'relative', zIndex: 1, backgroundColor: 'transparent' }}
           loading="lazy"
           decoding="async"
           onError={(e) => {

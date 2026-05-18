@@ -13,7 +13,7 @@ export const SmartBackground = () => {
             variant={BackgroundVariant.Lines}
             gap={effectiveGap}
             size={1}
-            color="rgba(255, 255, 255, 0.05)"
+            color="var(--sw-grid-color)"
         />
     );
 };

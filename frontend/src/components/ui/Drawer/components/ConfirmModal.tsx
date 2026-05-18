@@ -65,12 +65,12 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             }
         >
             {confirmKind === 'delete' ? (
-                <p style={{ margin: 0, lineHeight: 1.5, color: '#d1d5db' }}>
+                <p style={{ margin: 0, lineHeight: 1.5, color: 'var(--sw-text-subtle)' }}>
                     Esta ação <strong style={{ color: '#ef4444' }}>remove a empresa do Pipedrive</strong> e apaga
                     todos os dados locais (hierarquia, cache, logos, layouts). Operação irreversível.
                 </p>
             ) : (
-                <p style={{ margin: 0, lineHeight: 1.5, color: '#d1d5db' }}>
+                <p style={{ margin: 0, lineHeight: 1.5, color: 'var(--sw-text-subtle)' }}>
                     Isso limpa o <strong>cache, hierarquia e layout</strong> salvos desta empresa, mantendo o
                     registro no Pipedrive. O próximo mapeamento partirá do zero.
                 </p>

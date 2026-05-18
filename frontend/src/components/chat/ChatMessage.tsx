@@ -72,7 +72,7 @@ const SuggestedActionChips = ({
                         fontWeight: 500,
                         color: 'var(--chat-text-secondary)',
                         background: 'var(--chat-bg-secondary)',
-                        border: '1px solid var(--chat-border-color)',
+                        border: 'var(--sw-border-width) solid var(--sw-border)',
                         borderRadius: '20px',
                         cursor: 'pointer',
                         transition: 'all 0.15s ease',
@@ -90,7 +90,7 @@ const SuggestedActionChips = ({
                     onMouseLeave={e => {
                         const el = e.currentTarget;
                         el.style.color = 'var(--chat-text-secondary)';
-                        el.style.borderColor = 'var(--chat-border-color)';
+                        el.style.borderColor = 'var(--sw-border)';
                         el.style.background = 'var(--chat-bg-secondary)';
                     }}
                     title={action.prompt}

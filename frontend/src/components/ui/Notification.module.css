@@ -82,14 +82,14 @@
 }
 
 /* SUCCESS THEME */
-.success { background: #10b981; }
+.success { background: var(--sw-status-success); }
 .success .iconWrapper { color: #022c22; }
 .success .message { color: #022c22; }
 .success .closeBtn { color: rgba(2, 44, 34, 0.6); }
 .success .closeBtn:hover { background: rgba(2, 44, 34, 0.1); color: #022c22; }
 
 /* ERROR THEME */
-.error { background: #ef4444; }
+.error { background: var(--sw-status-danger); }
 .error .iconWrapper { color: #450a0a; }
 .error .message { color: #450a0a; }
 .error .closeBtn { color: rgba(69, 10, 10, 0.6); }
@@ -103,7 +103,7 @@
 .info .closeBtn:hover { background: rgba(19, 20, 21, 0.1); color: #131415; }
 
 /* WARNING THEME */
-.warning { background: #f59e0b; }
+.warning { background: var(--sw-status-warning); }
 .warning .iconWrapper { color: #451a03; }
 .warning .message { color: #451a03; }
 .warning .closeBtn { color: rgba(69, 26, 3, 0.6); }

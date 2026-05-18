@@ -72,14 +72,14 @@ export const Modal: React.FC<ModalProps> = ({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#131313',
-          color: '#e9edef',
+          background: 'var(--sw-surface-base)',
+          color: 'var(--sw-text-base)',
           width,
           maxWidth: '100%',
           maxHeight: '90vh',
           borderRadius: '14px',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.45)',
+          border: 'var(--sw-border-width) solid var(--sw-border)',
+          boxShadow: 'var(--sw-shadow)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -92,7 +92,7 @@ export const Modal: React.FC<ModalProps> = ({
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '14px 18px',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              borderBottom: 'var(--sw-border-width) solid var(--sw-border)',
             }}
           >
             {typeof title === 'string' ? (
@@ -107,7 +107,7 @@ export const Modal: React.FC<ModalProps> = ({
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#868686',
+                  color: 'var(--sw-text-muted)',
                   cursor: 'pointer',
                   borderRadius: 6,
                   padding: 4,
@@ -123,7 +123,7 @@ export const Modal: React.FC<ModalProps> = ({
           <div
             style={{
               padding: '12px 18px',
-              borderTop: '1px solid rgba(255,255,255,0.05)',
+              borderTop: 'var(--sw-border-width) solid var(--sw-border)',
               display: 'flex',
               gap: 8,
               justifyContent: 'flex-end',

@@ -45,7 +45,7 @@ const CompactEmployeeCardBase: React.FC<CompactEmployeeCardProps> = ({ data }) =
             backgroundColor: 'transparent', // Sem background como solicitado
             padding: '10px 14px',
             borderRadius: '12px',
-            border: '1px solid rgba(150, 150, 150, 0.15)',
+            border: 'var(--sw-border-width) solid var(--sw-border)',
             transition: 'all 0.2s ease',
             cursor: 'default',
             width: '100%',

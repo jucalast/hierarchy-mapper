@@ -51,6 +51,12 @@ export function deleteThread(threadId: string): Promise<void> {
     return api.delete(`/conversations/thread/${threadId}`);
 }
 
+export function deleteThreadsBulk(threadIds: string[]): Promise<void> {
+    const params = new URLSearchParams();
+    threadIds.forEach(id => params.append('thread_ids', id));
+    return api.delete(`/conversations/threads/bulk?${params.toString()}`);
+}
+
 export function listActivities(orgId: number, limit = 30): Promise<ActivityOut[]> {
     return api.get<ActivityOut[]>(`/conversations/${orgId}/activities?limit=${limit}`);
 }

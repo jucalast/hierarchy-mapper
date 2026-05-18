@@ -110,6 +110,8 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
     };
 
     return (
+        <>
+        {children}
         <div
             className={styles.toolbarUnifiedWrapper}
             data-sidebar-open={isSidebarOpen}
@@ -119,73 +121,104 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
 
             {displayOptions.length > 0 && (
                 <div className={`${styles.optionsContainer} ${isClosing ? styles.optionsContainerClosing : ''}`}>
-                    {displayOptions.map((opt: any, idx: number) => (
-                        <div
-                            key={`brand-opt-${idx}-${opt.url || opt.name}`}
-                            className={`${styles.brandCard} ${(confirmedBrand === (opt.name || opt.url) || localSelected === (opt.name || opt.url)) ? styles.brandCardActive : ''}`}
-                            onClick={() => handleLocalSelect(opt)}
-                        >
-                            <div className={styles.brandAvatarWrapper}>
-                                <Avatar
-                                    kind={opt.type === 'person' ? 'person' : 'company'}
-                                    data={opt}
-                                    size={36}
-                                    className={styles.brandAvatar}
-                                />
-                            </div>
-                            <div className={styles.brandInfo}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <div className={styles.brandNameLine}>{opt.name}</div>
-                                    <img
-                                        src="/linkedin.png"
-                                        alt="LinkedIn"
-                                        className={styles.linkedinIcon}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            const linkedin = opt.originalEmployee?.linkedin || opt.url || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(opt.name)}`;
+                    {displayOptions.map((opt: any, idx: number) => {
+                        const isPerson = opt.type === 'person';
+                        const isActive = confirmedBrand === (opt.name || opt.url) || localSelected === (opt.name || opt.url);
+                        const prevIsPerson = idx > 0 && displayOptions[idx - 1]?.type === 'person';
+                        const nextIsPerson = idx < displayOptions.length - 1 && displayOptions[idx + 1]?.type === 'person';
+                        const showDivider = idx > 0 && isPerson !== prevIsPerson;
+                        return (
+                            <React.Fragment key={`brand-opt-${idx}-${opt.url || opt.name}`}>
+                                {showDivider && <div className={styles.toolbarDivider} />}
+                                <div
+                                    className={`${styles.brandCard} ${isPerson ? styles.personCard : ''} ${isActive ? styles.brandCardActive : ''}`}
+                                    onClick={() => {
+                                        if (isPerson) {
+                                            const linkedin = opt.originalEmployee?.linkedin_url
+                                                || opt.originalEmployee?.linkedin
+                                                || opt.url
+                                                || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(opt.name)}`;
                                             window.open(linkedin, '_blank');
-                                        }}
-                                        title="Ver no LinkedIn"
-                                    />
-                                </div>
-                                {opt.followers && (
-                                    <div className={styles.brandFollowers}>{opt.followers} seguidores</div>
-                                )}
-                            </div>
+                                        } else {
+                                            handleLocalSelect(opt);
+                                        }
+                                    }}
+                                    title={isPerson ? 'Ver perfil no LinkedIn' : undefined}
+                                    style={isPerson ? { cursor: 'pointer' } : undefined}
+                                >
+                                    {isPerson ? (
+                                        <div className={styles.personAvatarWrapper}>
+                                            <Avatar kind="person" data={opt} size={28} style={{ borderRadius: '8px' }} />
+                                        </div>
+                                    ) : (
+                                        <div className={styles.brandAvatarWrapper}>
+                                            <Avatar kind="company" data={opt} size={28} />
+                                        </div>
+                                    )}
 
-                            {opt.type === 'person' && (
-                                <div className={styles.cardQuickActions}>
-                                    <button
-                                        type="button"
-                                        className={styles.rejectBtn}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onRejectCandidate) onRejectCandidate(opt.id);
-                                        }}
-                                        title="Reprovar e Descartar"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={styles.approveBtn}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (onApproveCandidate) onApproveCandidate(opt.id);
-                                        }}
-                                        title="Aprovar Perfil"
-                                    >
-                                        <Check size={14} />
-                                    </button>
+                                    <div className={styles.brandInfo}>
+                                        <div className={styles.brandNameLine}>{opt.name}</div>
+                                        {opt.followers && (
+                                            <div className={styles.brandFollowers}>{opt.followers}</div>
+                                        )}
+                                    </div>
+
+                                    {isPerson ? (
+                                        <>
+                                            <img
+                                                src="/linkedin.png"
+                                                alt="LinkedIn"
+                                                title="Ver no LinkedIn"
+                                                style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 4, opacity: 0.55, cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.2s' }}
+                                                onMouseEnter={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.9'; }}
+                                                onMouseLeave={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0.55'; }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const linkedin = opt.originalEmployee?.linkedin_url || opt.originalEmployee?.linkedin || opt.url || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(opt.name)}`;
+                                                    window.open(linkedin, '_blank');
+                                                }}
+                                            />
+                                            <div className={styles.cardQuickActions}>
+                                                <button
+                                                    type="button"
+                                                    className={styles.rejectBtn}
+                                                    onClick={(e) => { e.stopPropagation(); if (onRejectCandidate) onRejectCandidate(opt.id); }}
+                                                    title="Reprovar"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={styles.approveBtn}
+                                                    onClick={(e) => { e.stopPropagation(); if (onApproveCandidate) onApproveCandidate(opt.id); }}
+                                                    title="Aprovar"
+                                                >
+                                                    <Check size={12} />
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <img
+                                            src="/linkedin.png"
+                                            alt="LinkedIn"
+                                            className={styles.linkedinIcon}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const linkedin = opt.originalEmployee?.linkedin || opt.url || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(opt.name)}`;
+                                                window.open(linkedin, '_blank');
+                                            }}
+                                            title="Ver no LinkedIn"
+                                        />
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    ))}
+                            </React.Fragment>
+                        );
+                    })}
                 </div>
             )}
 
             <div
-                className={`${styles.refineTab} ${isSearching ? styles.searching : ''} ${enrichingIds.has(999) ? styles.refineTabEnriching : ''}`}
+                className={`${styles.refineTab} ${isSearching ? styles.searching : ''} ${enrichingIds.has(999) ? styles.refineTabEnriching : ''} ${displayOptions.length > 0 ? styles.refineTabConnected : ''}`}
                 title="Intelligence Controller"
             >
                 {step === 'input' ? (
@@ -273,8 +306,7 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
                                             src={confirmedLogo}
                                             name={confirmedBrand}
                                             data={{ domain: domainTarget }}
-                                            size={32}
-                                            className={styles.brandAvatar}
+                                            size={28}
                                         />
                                     </div>
                                     <div className={styles.brandInfo}>
@@ -356,7 +388,7 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
                     </div>
                 )}
             </div>
-            {children}
         </div>
+        </>
     );
 };

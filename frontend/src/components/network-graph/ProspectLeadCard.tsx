@@ -49,7 +49,7 @@ export const ProspectLeadCard: React.FC<ProspectLeadCardProps> = ({
                     style={{
                         background: '#fff',
                         borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        border: 'var(--sw-border-width) solid var(--sw-border)',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                     }}
                 />
@@ -67,7 +67,7 @@ export const ProspectLeadCard: React.FC<ProspectLeadCardProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '2px solid #141414',
+                    border: 'var(--sw-border-width) solid var(--sw-border)',
                     zIndex: 5,
                 }}>
                     {lead.icp_tier}
@@ -109,7 +109,7 @@ export const ProspectLeadCard: React.FC<ProspectLeadCardProps> = ({
                         background: 'rgba(255,255,255,0.06)',
                         padding: '2px 6px',
                         borderRadius: '5px',
-                        border: '1px solid rgba(255,255,255,0.03)',
+                        border: 'var(--sw-border-width) solid var(--sw-border)',
                     }}>
                         {lead.icp_score} pts
                     </span>
@@ -121,7 +121,7 @@ export const ProspectLeadCard: React.FC<ProspectLeadCardProps> = ({
                             background: 'rgba(255,255,255,0.06)',
                             padding: '2px 8px',
                             borderRadius: '5px',
-                            border: '1px solid rgba(255,255,255,0.03)',
+                            border: 'var(--sw-border-width) solid var(--sw-border)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.02em',
                         }}>
@@ -135,7 +135,7 @@ export const ProspectLeadCard: React.FC<ProspectLeadCardProps> = ({
                             background: 'rgba(255,255,255,0.06)',
                             padding: '2px 8px',
                             borderRadius: '5px',
-                            border: '1px solid rgba(255,255,255,0.03)',
+                            border: 'var(--sw-border-width) solid var(--sw-border)',
                         }}>
                             <img src="/pipedrive.png" alt="P" style={{ width: 10, height: 10, filter: 'grayscale(0.3)' }} />
                             <span style={{

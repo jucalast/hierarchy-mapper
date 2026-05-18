@@ -6,9 +6,9 @@
   height: 24px;
   /* Matching Drawer/Sidebar color */
   background: var(--sw-sidebar);
-  border-top: 1px solid var(--sw-border);
+  border-top: var(--sw-border-width) solid var(--sw-border);
   color: var(--sw-text-muted);
-  font-family: 'Nexa', var(--font-primary);
+  font-family: var(--font-primary);
   font-size: var(--font-xs);
   font-weight: 600;
   letter-spacing: 0.05em;

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Plus, MessageSquare, Loader2, Clock, Trash2, PanelRightClose } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, MessageSquare, Loader2, Clock, Trash2, PanelRightClose, CheckSquare, Square } from 'lucide-react';
 import { Avatar } from '../ui';
 import type { ThreadOut } from '@/services/api/conversations';
 import styles from './ChatPanel.module.css';
@@ -14,6 +14,7 @@ interface ThreadListProps {
     isCreating: boolean;
     selectedOrgLogo?: string;
     onDeleteThread?: (thread: ThreadOut) => void;
+    onDeleteThreadsBulk?: (threads: ThreadOut[]) => void;
     onBackToChat?: () => void;
 }
 
@@ -46,48 +47,136 @@ export const ThreadList: React.FC<ThreadListProps> = ({
     isCreating,
     selectedOrgLogo,
     onDeleteThread,
+    onDeleteThreadsBulk,
     onBackToChat,
 }) => {
+    const [selectedThreads, setSelectedThreads] = useState<Set<string>>(new Set());
+
+    const isAllSelected = threads.length > 0 && selectedThreads.size === threads.length;
+
+    const toggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedThreads(new Set());
+        } else {
+            setSelectedThreads(new Set(threads.map(t => t.id)));
+        }
+    };
+
+    const toggleSelectThread = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const next = new Set(selectedThreads);
+        if (next.has(id)) {
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        setSelectedThreads(next);
+    };
+
+    const handleDeleteSelected = () => {
+        if (!onDeleteThreadsBulk || selectedThreads.size === 0) return;
+        const selected = threads.filter(t => selectedThreads.has(t.id));
+        onDeleteThreadsBulk(selected);
+        setSelectedThreads(new Set());
+    };
+
     return (
         <div className={styles.threadListPanel}>
             {/* Header */}
-            <div className={styles.tlHeader}>
-                <div className={styles.tlHeaderAvatar}>
-                    <Avatar 
-                        kind="company"
-                        src={selectedOrgLogo}
-                        name={orgName}
-                        size={32}
-                        noInitialFallback={true}
-                        style={{ border: '3px solid #272727ff' }}
-                    />
-                </div>
-                <div className={styles.tlHeaderInfo}>
-                    <span className={styles.tlOrgName}>{orgName || 'Geral'}</span>
-                    <span className={styles.tlSubtitle}>Workspace</span>
-                </div>
-                {threads.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button
-                            className={styles.tlNewBtn}
-                            onClick={onNewThread}
-                            disabled={isCreating}
-                            title="Nova conversa"
-                        >
-                            {isCreating
-                                ? <Loader2 size={14} className={styles.spinner} />
-                                : <Plus size={14} />
-                            }
-                            <span>Nova</span>
-                        </button>
-                        <button
-                            className={`${styles.chatHeaderIconBtn} ${styles.chatHeaderIconBtnActive}`}
-                            onClick={onBackToChat}
-                            title="Fechar histórico"
-                        >
-                            <Clock size={20} />
-                        </button>
-                    </div>
+            <div className={styles.tlHeader} style={{ paddingLeft: '16px', gap: '12px' }}>
+                {selectedThreads.size > 0 ? (
+                    <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={toggleSelectAll}>
+                            <CheckSquare size={18} color="var(--sw-primary, #000)" />
+                            <span style={{ color: 'var(--sw-text-base)', fontWeight: 600, fontSize: '0.88rem' }}>
+                                {selectedThreads.size} {selectedThreads.size === 1 ? 'selecionada' : 'selecionadas'}
+                            </span>
+                        </div>
+                        <div style={{ flex: 1 }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '12px' }}>
+                            <button
+                                className={styles.tlItemDelete}
+                                onClick={handleDeleteSelected}
+                                title="Excluir selecionadas"
+                                style={{ width: 'auto', padding: '0 12px', height: '32px', display: 'flex', gap: '6px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '6px' }}
+                            >
+                                <Trash2 size={14} />
+                                <span style={{ fontSize: '13px', fontWeight: 500 }}>Excluir</span>
+                            </button>
+                            <button
+                                className={`${styles.chatHeaderIconBtn}`}
+                                onClick={() => setSelectedThreads(new Set())}
+                                title="Cancelar"
+                                style={{ width: 'auto', padding: '0 12px', height: '32px', fontSize: '13px', fontWeight: 500, color: 'var(--sw-text-muted)' }}
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <Avatar 
+                            kind="company"
+                            src={selectedOrgLogo}
+                            name={orgName}
+                            size={32}
+                            noInitialFallback={true}
+                            style={{ border: selectedOrgLogo ? '1.5px solid var(--sw-border-strong)' : 'none' }}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0 }}>
+                            <span style={{ color: 'var(--sw-text-muted)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
+                                Histórico
+                            </span>
+                            <span style={{ color: 'var(--sw-border)', fontWeight: 300, fontSize: '0.88rem', flexShrink: 0 }}>/</span>
+                            <span 
+                                style={{ 
+                                    color: 'var(--sw-text-base)', 
+                                    fontWeight: 600, 
+                                    fontSize: '0.88rem', 
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: '180px',
+                                    flexShrink: 1
+                                }}
+                                title={orgName || 'Geral'}
+                            >
+                                {orgName || 'Geral'}
+                            </span>
+                        </div>
+                        <div style={{ flex: 1 }} />
+                        {threads.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '12px' }}>
+                                <button
+                                    className={`${styles.chatHeaderIconBtn}`}
+                                    onClick={toggleSelectAll}
+                                    title="Selecionar várias conversas"
+                                >
+                                    <CheckSquare size={16} />
+                                </button>
+                                <button
+                                    className={styles.tlNewBtn}
+                                    onClick={onNewThread}
+                                    disabled={isCreating}
+                                    title="Nova conversa"
+                                    style={{ height: '32px', padding: '0 12px', fontSize: '12px' }}
+                                >
+                                    {isCreating
+                                        ? <Loader2 size={14} className={styles.spinner} />
+                                        : <Plus size={14} />
+                                    }
+                                    <span>Nova</span>
+                                </button>
+                                <button
+                                    className={`${styles.chatHeaderIconBtn} ${styles.chatHeaderIconBtnActive}`}
+                                    onClick={onBackToChat}
+                                    title="Fechar histórico"
+                                >
+                                    <Clock size={20} />
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 
@@ -110,8 +199,8 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                             Inicie uma nova conversa com o agente sobre {orgName || 'todos os seus negócios'}.
                         </div>
                         <button className={styles.tlEmptyNewBtn} onClick={onNewThread} disabled={isCreating}>
-                            {isCreating ? <Loader2 size={13} className={styles.spinner} /> : <Plus size={13} />}
-                            <span>Iniciar conversa</span>
+                            {isCreating ? <Loader2 size={15} className={styles.spinner} /> : <Plus size={16} strokeWidth={2.5} />}
+                            <span style={{ lineHeight: 1 }}>Iniciar conversa</span>
                         </button>
                     </div>
                 )}
@@ -119,9 +208,19 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                 {!isLoading && threads.map((thread) => (
                     <div
                         key={thread.id}
-                        className={styles.tlItem}
+                        className={`${styles.tlItem} ${selectedThreads.has(thread.id) ? styles.tlItemSelected : ''}`}
                         onClick={() => onSelectThread(thread)}
                     >
+                        <div 
+                            className={styles.tlItemCheckbox} 
+                            onClick={(e) => toggleSelectThread(thread.id, e)}
+                        >
+                            {selectedThreads.has(thread.id) 
+                                ? <CheckSquare size={16} color="var(--sw-primary, #000)" /> 
+                                : <Square size={16} color="var(--sw-text-muted)" />
+                            }
+                        </div>
+                        
                         {/* Icon */}
                         <div className={styles.tlItemIcon}>
                             <MessageSquare size={14} strokeWidth={1.5} />
