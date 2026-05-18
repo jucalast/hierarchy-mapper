@@ -148,7 +148,7 @@ function AvatarBase({
           alt={alt || resolvedName}
           width={pxSize}
           height={pxSize}
-          style={{ width: '100%', height: '100%', objectFit: defaultFit, position: 'relative', zIndex: 1, backgroundColor: 'transparent' }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'relative', zIndex: 1, backgroundColor: 'transparent', transform: 'scale(1.2)' }}
           loading="lazy"
           decoding="async"
           onError={(e) => {

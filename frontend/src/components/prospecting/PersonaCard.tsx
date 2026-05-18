@@ -8,12 +8,27 @@ import {
   Building2,
   Phone,
   ShieldCheck,
-  Layers
+  Layers,
+  X,
+  Trash2
 } from 'lucide-react';
 
 import { getAvatarUrl, getCompanyLogoUrl, getProxiedUrl } from '../../utils/avatarUtils';
+import { useHierarchy } from '../../hooks/useHierarchy';
+import { Dropdown } from '../ui/Dropdown';
 
 function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: number, isNode?: boolean }) {
+  const { deleteEmployee } = useHierarchy();
+
+  const dropdownItems = useMemo(() => [
+    {
+      label: 'Excluir Perfil',
+      onClick: () => deleteEmployee(data.id),
+      icon: <Trash2 size={14} />,
+      danger: true
+    }
+  ], [deleteEmployee, data.id]);
+
   // Prioriza o nível vindo dos dados (backend) sobre o default do componente
   const effectiveLevel = data.seniority !== undefined ? Number(data.seniority) : (level ?? 5);
   
@@ -50,11 +65,23 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
           <Layers size={14} />
           <span>Tier {effectiveLevel}</span>
         </div>
-        {data.matching_score > 0 && (
-          <div className={styles.scoreBadge} title="IA Matching Score">
-            {data.matching_score}%
-          </div>
-        )}
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {data.matching_score > 0 && (
+            <div className={styles.scoreBadge} title="IA Matching Score">
+              {data.matching_score}%
+            </div>
+          )}
+
+          {isNode && !data.isRoot && (
+            <Dropdown 
+              items={dropdownItems}
+              iconType="vertical"
+              iconSize={16}
+              title="Mais opções"
+            />
+          )}
+        </div>
       </div>
 
       <div className={styles.nodeBody}>

@@ -48,6 +48,9 @@
   --space-24: 24px;
   --space-32: 32px;
 
+  /* ── Grid ─────────────────────────────── */
+  --chat-grid-color: rgba(255, 255, 255, 0.05);
+
   /* ── Touch target ─────────────────────── */
   --touch-target: 40px;
 
@@ -87,6 +90,9 @@
   --chat-user-msg-text: #ffffff;
   --chat-ai-msg-bg:     #ffffff;
   --chat-ai-msg-text:   #111113;
+
+  /* Grid */
+  --chat-grid-color: rgba(0, 0, 0, 0.04);
 
   /* Shadows */
   --chat-shadow-sm: 0 1px 2px rgba(0,0,0,0.06);

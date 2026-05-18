@@ -10,8 +10,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
-  animation: slideInLeft var(--chat-transition-smooth);
+  border-left: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+  animation: slideInRight var(--chat-transition-smooth);
   transition: background var(--chat-transition-fast), border-color var(--chat-transition-fast);
 }
 
@@ -29,9 +29,9 @@
   color: var(--chat-text-primary);
 }
 
-@keyframes slideInLeft {
+@keyframes slideInRight {
   from {
-    transform: translateX(-100%);
+    transform: translateX(100%);
     opacity: 0;
   }
 
@@ -1450,8 +1450,8 @@
   height: 34px;
   padding: 0 16px;
   border-radius: 8px;
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.15);
+  border: none;
   color: var(--sw-status-danger);
   cursor: pointer;
   display: flex;
@@ -1460,12 +1460,12 @@
   gap: 8px;
   font-size: var(--font-sm);
   font-weight: 600;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
+  transition: background var(--transition-fast), transform var(--transition-fast);
 }
 
 .stopRecordingBtn:hover {
-  background: rgba(239, 68, 68, 0.3);
-  border-color: var(--sw-status-danger);
+  background: rgba(239, 68, 68, 0.25);
+  border: none;
 }
 
 .stopRecordingBtn:active {
@@ -4100,6 +4100,79 @@
   box-sizing: border-box;
   animation: fadeIn 0.3s ease;
   flex: 1;
+
+  /* Background color setup */
+  position: relative;
+  overflow: hidden;
+  background-color: var(--chat-bg-primary);
+}
+
+/* Animated purple grid highlights - Multiple areas */
+.emptyWelcomeContainer::before,
+.emptyWelcomeContainer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  
+  /* Use system standard purple (var(--chat-accent-color)) */
+  background-image: 
+    linear-gradient(var(--chat-accent-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--chat-accent-color) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+  opacity: 0.4;
+
+  /* Smaller spotlight mask */
+  -webkit-mask-image: radial-gradient(circle, black 0%, transparent 70%);
+  mask-image: radial-gradient(circle, black 0%, transparent 70%);
+  -webkit-mask-size: 280px 280px;
+  mask-size: 280px 280px;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.emptyWelcomeContainer::before {
+  animation: movePurpleSpotlight1 25s infinite ease-in-out;
+}
+
+.emptyWelcomeContainer::after {
+  animation: movePurpleSpotlight2 30s infinite ease-in-out;
+  animation-delay: -5s;
+  opacity: 0.3; /* Slightly different opacity for depth */
+}
+
+@keyframes movePurpleSpotlight1 {
+  0%   { -webkit-mask-position: 5% 5%; mask-position: 5% 5%; }
+  20%  { -webkit-mask-position: 85% 15%; mask-position: 85% 15%; }
+  40%  { -webkit-mask-position: 15% 75%; mask-position: 15% 75%; }
+  60%  { -webkit-mask-position: 75% 85%; mask-position: 75% 85%; }
+  80%  { -webkit-mask-position: 50% 30%; mask-position: 50% 30%; }
+  100% { -webkit-mask-position: 5% 5%; mask-position: 5% 5%; }
+}
+
+@keyframes movePurpleSpotlight2 {
+  0%   { -webkit-mask-position: 90% 90%; mask-position: 90% 90%; }
+  25%  { -webkit-mask-position: 10% 80%; mask-position: 10% 80%; }
+  50%  { -webkit-mask-position: 40% 10%; mask-position: 40% 10%; }
+  75%  { -webkit-mask-position: 85% 40%; mask-position: 85% 40%; }
+  100% { -webkit-mask-position: 90% 90%; mask-position: 90% 90%; }
+}
+
+/* Light mode specific */
+.chatPanel.light .emptyWelcomeContainer {
+  background-color: #ffffff;
+}
+
+.chatPanel.light .emptyWelcomeContainer::before,
+.chatPanel.light .emptyWelcomeContainer::after {
+  opacity: 0.6; /* More visible in light mode */
+}
+
+/* Dark mode specific */
+.chatPanel.dark .emptyWelcomeContainer {
+  background-color: #131313;
 }
 
 .emptyWelcomeText {
@@ -4112,11 +4185,15 @@
   letter-spacing: -0.012em;
   max-width: 440px;
   animation: fadeIn 0.4s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .emptyInputWrapper {
   width: 100%;
   max-width: 440px;
+  position: relative;
+  z-index: 1;
 }
 
 .emptyInputWrapper .inputContainer {

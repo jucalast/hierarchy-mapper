@@ -128,19 +128,31 @@ async def stop_scan(job_id: str):
         redis = await create_pool(redis_settings)
         job = Job(job_id, redis=redis)
         
+        # Define a chave de cancelamento do Redis para o worker escutar
+        await redis.set(f"job_cancelled_{job_id}", "true", ex=600)
+        
         status = await job.status()
         if not status or status.value == "not_found":
-            return {"status": "not_found", "message": "Job não encontrado ou já finalizado."}
-            
-        success = await job.abort()
-        if success:
+            # Mesmo que não ache no ARQ, publica para limpar o WS e retorna sucesso
             await redis.publish(f"job_updates_{job_id}", json.dumps({
                 "type": "error",
                 "message": "Operação cancelada com sucesso na interface."
             }))
-            return {"job_id": job_id, "status": "aborted", "message": "Scan abortado pelo usuário"}
-        else:
-            return {"job_id": job_id, "status": "failed", "message": "Não foi possível abortar o scan"}
+            return {"status": "aborted", "message": "Job cancelado pelo usuário."}
+            
+        # Tenta abortar via ARQ
+        try:
+            await job.abort()
+        except Exception as abort_err:
+            print(f"[Stop API] Erro secundário ao chamar job.abort(): {abort_err}")
+            
+        # Sempre envia a mensagem de erro/cancelado para forçar o WS a fechar
+        await redis.publish(f"job_updates_{job_id}", json.dumps({
+            "type": "error",
+            "message": "Operação cancelada com sucesso na interface."
+        }))
+        
+        return {"job_id": job_id, "status": "aborted", "message": "Scan abortado pelo usuário"}
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao tentar parar o job: {str(e)}")

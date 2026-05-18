@@ -92,7 +92,7 @@ export function useNetworkFlow({
                             source: parentNode.id,
                             target: childNode.id,
                             animated: false,
-                            style: { stroke: '#6e7681', strokeWidth: 1.5 },
+                            style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 },
                         });
                     }
                 }
@@ -147,7 +147,7 @@ export function useNetworkFlow({
             setEdges((eds) => {
                 const filteredEdges = eds.filter((e) => e.target !== params.target);
                 return addEdge(
-                    { ...params, animated: false, style: { stroke: '#6e7681', strokeWidth: 1.5 } },
+                    { ...params, animated: false, style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 } },
                     filteredEdges
                 );
             });

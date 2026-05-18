@@ -6,7 +6,7 @@
     /* w-80 */
     flex-shrink: 0;
     background: var(--sw-sidebar);
-    border-left: var(--sw-border-width) solid var(--sw-border);
+    border-right: var(--sw-border-width) solid var(--sw-border);
     z-index: 400;
     display: flex;
     flex-direction: column;
@@ -15,7 +15,7 @@
 
 @keyframes swSlideIn {
     from {
-        transform: translateX(20px);
+        transform: translateX(-20px);
         opacity: 0;
     }
 

@@ -28,23 +28,14 @@
     display: flex;
     align-items: center;
     background: var(--sw-sidebar);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: var(--sw-border-width) solid var(--sw-border);
-    padding: 4px 6px;
+    padding: 6px 12px;
     border-radius: var(--radius-lg);
     pointer-events: auto;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    flex-shrink: 1;
-    min-height: 44px;
-    height: auto;
-    gap: 4px;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(20px);
-    overflow: visible;
+    box-shadow: var(--sw-shadow);
 }
 
 :global([data-theme='light']) .refineTab {
@@ -71,8 +62,13 @@
 }
 
 @keyframes swSpin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .refineTab.searching .loadingAnim {
@@ -183,7 +179,7 @@
 .toolbarDivider {
     width: 1px;
     height: 18px;
-    background: var(--sw-border);
+    background: var(--sw-border-strong);
     flex-shrink: 0;
 }
 
@@ -255,15 +251,20 @@
 }
 
 .stopBtn {
-    background-color: rgba(239, 68, 68, 0.2) !important;
-    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    border: none !important;
     color: var(--sw-status-danger) !important;
     pointer-events: auto !important;
 }
 
+.refineTab.searching .stopBtn .loadingAnim,
+.stopBtn .loadingAnim {
+    color: var(--sw-status-danger) !important;
+}
+
 .stopBtn:hover {
-    background-color: rgba(239, 68, 68, 0.3) !important;
-    border-color: var(--sw-status-danger) !important;
+    background-color: rgba(239, 68, 68, 0.25) !important;
+    border: none !important;
     color: var(--sw-status-danger) !important;
 }
 
@@ -272,125 +273,105 @@
     border-top: none !important;
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
+    width: 100% !important; /* Força largura idêntica para alinhamento perfeito */
+    box-shadow: none !important; /* Remove o box shadow que sangra para cima no carrossel */
 }
 
-/* Carrossel — mesmos tokens que refineTab para parecer uma continuação */
+/* Carrossel — Ultra Minimalist Glassmorphism (Idêntico ao refineTab) */
 .optionsContainer {
     width: 100%;
     box-sizing: border-box;
     background: var(--sw-sidebar);
-    border: 1px solid var(--sw-border-strong);
-    border-bottom: 1px solid var(--sw-border);
-    padding: 6px 10px;
-    min-height: 52px;
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-bottom: none;
+    padding: 6px 12px; /* Padding idêntico ao do floating toolbar */
+    min-height: 56px; /* Altura compacta elegante */
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap !important;
     align-items: center;
-    gap: 4px;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    gap: 8px; /* Espaçamento idêntico ao do floating toolbar */
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0; /* Radius do topo idêntico ao do floating toolbar */
     overflow-x: auto;
     scrollbar-width: none;
-    backdrop-filter: blur(20px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    animation: swSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    box-shadow: var(--sw-shadow);
+    animation: swSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-:global([data-theme='light']) .optionsContainer {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-}
-
-@keyframes swSlideIn {
-    0% { opacity: 0; transform: translateY(-6px); }
-    100% { opacity: 1; transform: translateY(0); }
-}
-
-.optionsContainerClosing {
-    animation: swSlideOut 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
-}
-
-@keyframes swSlideOut {
-    0% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-6px); }
-}
-
-/* Card base — flat, sem borda, padrão toolbarSegment */
+/* Cards do Carrossel — Mini Floating Toolbars (Glassmorphism e propriedades idênticas) */
 .brandCard {
     display: flex;
     flex-direction: row;
     align-items: center;
-    height: 38px;
-    padding: 0 14px;
+    min-width: 200px;
+    max-width: 260px;
+    padding: 6px 12px; /* Padding idêntico ao do floating toolbar */
     gap: 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-lg); /* Radius idêntico ao do floating toolbar */
     cursor: pointer;
-    transition: background var(--transition-fast);
+    transition: all 0.2s ease;
     flex-shrink: 0;
-    background: transparent;
-    border: none;
-}
 
-.brandCard:hover { background: var(--sw-hover); }
-.brandCardActive { background: var(--sw-hover) !important; }
-
-/* Avatar quadrado arredondado para empresas — igual ao orgLogoWrapper do drawer */
-.brandAvatarWrapper {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
+    background: transparent; /* Usa o mesmo BG do container por transparência */
+    border: none; /* Ultra-minimalista sem borda por padrão */
+    position: relative;
     overflow: hidden;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-/* Avatar quadrado-arredondado para pessoas */
+.brandCard:hover,
+.brandCardHovered {
+    background: var(--sw-hover) !important;
+    border-color: var(--sw-border-strong) !important;
+}
+
+.brandCardActive {
+    background: var(--sw-primary-soft) !important;
+    border-color: var(--sw-primary) !important;
+    box-shadow: 0 0 0 1px var(--sw-primary) !important;
+}
+
+.brandAvatarWrapper,
 .personAvatarWrapper {
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
     border-radius: 8px;
     overflow: hidden;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--sw-hover);
+    background: var(--sw-bg);
+    border: var(--sw-border-width) solid var(--sw-border);
 }
 
 .brandInfo {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    gap: 1px;
+    gap: 2px;
+    flex: 1;
 }
 
 .brandNameLine {
-    font-size: var(--font-sm);
+    font-size: 13px;
     font-weight: 500;
     color: var(--sw-text-base) !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    letter-spacing: -0.01em;
 }
 
 .brandFollowers {
-    font-size: var(--font-xs);
+    font-size: 11px;
     color: var(--sw-text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 1.2;
 }
 
-/* Classe extra só para pessoa — sem efeito adicional no card, visual identico */
-.personCard {
-    border: none !important;
-    background: transparent !important;
-    min-width: 0;
-}
-
-/* Botões de aprovação — compactos, sem borda visível por padrão */
 .cardQuickActions {
     display: flex;
     align-items: center;
@@ -412,14 +393,15 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    background: var(--sw-hover);
-    border: none;
-    color: var(--sw-status-success);
-    transition: background var(--transition-fast);
+    background: transparent !important;
+    border: none !important;
+    color: var(--sw-text-muted) !important;
+    transition: all 0.2s ease;
 }
 
 .approveBtn:hover {
-    background: rgba(52, 209, 124, 0.15);
+    background: rgba(34, 197, 94, 0.15) !important;
+    color: var(--sw-status-success) !important;
 }
 
 .rejectBtn {
@@ -430,50 +412,75 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    background: var(--sw-hover);
-    border: none;
-    color: var(--sw-status-danger);
-    transition: background var(--transition-fast);
+    background: transparent !important;
+    border: none !important;
+    color: var(--sw-text-muted) !important;
+    transition: all 0.2s ease;
 }
 
 .rejectBtn:hover {
-    background: rgba(239, 68, 68, 0.12);
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: var(--sw-status-danger) !important;
 }
 
 .linkedinIcon {
-    width: 18px; height: 18px;
-    opacity: 0;
+    width: 16px;
+    height: 16px;
+    opacity: 0.5;
     transition: all 0.2s;
 }
 
-.brandCard:hover .linkedinIcon { opacity: 0.7; }
+.brandCard:hover .linkedinIcon {
+    opacity: 1;
+}
 
 .prospectSlider {
     -webkit-appearance: none;
-    width: 80px; height: 3px;
+    width: 80px;
+    height: 3px;
     background: var(--sw-border);
     outline: none;
 }
 
 .cleanSearchBtn {
-    display: flex; align-items: center; justify-content: center;
-    background: transparent !important; border: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    border: none !important;
     color: var(--sw-text-muted) !important;
-    cursor: pointer; padding: 0 8px; height: 34px;
+    cursor: pointer;
+    padding: 0 8px;
+    height: 34px;
 }
 
-.searchBox, .searchBoxTwoRows {
-    display: flex; align-items: center; flex: 1; width: 100%;
+.searchBox,
+.searchBoxTwoRows {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    gap: 12px;
 }
 
-.confirmRow1, .confirmRow2 {
-    display: flex; align-items: center; gap: 8px; width: 100%;
+.confirmRow1,
+.confirmRow2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
 }
 
 .backBtn {
-    background: transparent; color: var(--sw-text-muted);
-    border: none; cursor: pointer; width: 34px; height: 34px;
-    display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    color: var(--sw-text-muted);
+    border: none;
+    cursor: pointer;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 50%;
 }
 
@@ -611,6 +618,18 @@
     transform: scale(1.2);
     background: var(--sw-primary);
     box-shadow: 0 0 0 3px var(--sw-sidebar), 0 0 12px var(--sw-primary);
+}
+
+.inputActionBtn:hover {
+    background: var(--sw-hover);
+    color: var(--sw-primary);
+}
+
+.toolbarDivider {
+    width: 1px;
+    height: 18px;
+    background: var(--sw-border-strong);
+    margin: 0 8px;
 }
 
 .rangeSlider::-webkit-slider-thumb:active {

@@ -539,8 +539,20 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     timestamp: new Date(),
                 }]);
             } else {
-                setMessages(msgs.map((m: MessageOut) => {
+                let hasActiveJobLoading = false;
+                const mappedMsgs = msgs.map((m: MessageOut) => {
                     const isV2 = !!(m.logs && Array.isArray(m.logs) && m.logs.some((l: any) => l.type === 'tool_call' || l.type === 'thinking' || l.type === 'final'));
+                    let forceV2Streaming = false;
+                    if (isV2 && m.logs && Array.isArray(m.logs)) {
+                        const hasMapping = m.logs.some((l: any) => l.type === 'hierarchy_mapping_required');
+                        if (hasMapping && typeof window !== 'undefined') {
+                            const activeJob = window.localStorage.getItem('active-discovery-job');
+                            if (activeJob) {
+                                forceV2Streaming = true;
+                                hasActiveJobLoading = true;
+                            }
+                        }
+                    }
                     return {
                         id: m.id,
                         role: m.role as 'user' | 'assistant',
@@ -551,8 +563,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         logs: m.logs ?? undefined,
                         isV2: isV2,
                         v2Events: isV2 ? (m.logs ?? undefined) : undefined,
+                        v2Streaming: forceV2Streaming ? true : undefined,
                     };
-                }));
+                });
+
+                if (hasActiveJobLoading) {
+                    setIsLoading(true);
+                    setV2Streaming(true);
+                }
+                setMessages(mappedMsgs);
             }
         } catch (err) {
             console.error('[ChatPanel] Erro ao carregar mensagens:', err);

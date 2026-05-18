@@ -101,9 +101,9 @@ export const ProspectingToolbar: React.FC<ProspectingToolbarProps> = ({
                 </div>
             )}
 
-            <div className={styles.refineTab} style={{
+            <div className={`${styles.refineTab} ${prospectPendingLeads.length > 0 ? styles.refineTabConnected : ''}`} style={{
                 position: 'relative', overflow: 'visible', zIndex: 30,
-                ...(prospectPendingLeads.length > 0 ? { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none' } : {}),
+                ...(prospectPendingLeads.length > 0 ? { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none', boxShadow: 'none' } : {}),
             }}>
                 <div className={styles.searchBox}>
                     <div className={styles.inputGroup} style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 0 }}>

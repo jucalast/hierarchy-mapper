@@ -172,12 +172,40 @@ const HierarchyMappingCard: React.FC<{
     onMappingDone: (contacts: MappedContact[]) => void;
     isStreaming?: boolean;
 }> = ({ event, onMappingDone, isStreaming }) => {
-    const [status, setStatus] = useState<MappingStatus>('waiting');
+    const [status, setStatus] = useState<MappingStatus>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem('active-discovery-job');
+            if (saved) {
+                try {
+                    const jobData = JSON.parse(saved);
+                    if (jobData && (jobData.orgId === event.org_id || Number(jobData.orgId) === Number(event.org_id))) {
+                        return 'scanning';
+                    }
+                } catch { /* ignore */ }
+            }
+        }
+        return isStreaming ? 'waiting' : 'done';
+    });
     const [contactCount, setContactCount] = useState(0);
     const doneCalledRef = useRef(false);
 
     useEffect(() => {
-        if (!isStreaming) {
+        // Verifica se o job correspondente está rodando ativamente no localStorage
+        let isActiveJobRunning = false;
+        if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem('active-discovery-job');
+            if (saved) {
+                try {
+                    const jobData = JSON.parse(saved);
+                    if (jobData && (jobData.orgId === event.org_id || Number(jobData.orgId) === Number(event.org_id))) {
+                        isActiveJobRunning = true;
+                    }
+                } catch { /* ignore */ }
+            }
+        }
+
+        // Só marcamos como concluído imediatamente se não estiver em streaming AND não houver job rodando em background
+        if (!isStreaming && !isActiveJobRunning) {
             setStatus('done');
             return;
         }
@@ -218,7 +246,7 @@ const HierarchyMappingCard: React.FC<{
                 <>
                     <Network size={12} style={{ color, flexShrink: 0 }} />
                     <span>
-                        Mapeamento de Hierarquia · <strong style={{ color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>{event.org_name}</strong>
+                        Mapeamento de Hierarquia · <strong style={{ color: 'var(--sw-text-base)', fontWeight: 500 }}>{event.org_name}</strong>
                         <span style={{ opacity: 0.5, marginLeft: 5 }}>· empresa aberta, insira o CNPJ para mapear</span>
                     </span>
                 </>
@@ -227,7 +255,7 @@ const HierarchyMappingCard: React.FC<{
                 <>
                     <Loader2 size={12} className={styles.spinner} style={{ color, flexShrink: 0 }} />
                     <span>
-                        Mapeamento de Hierarquia · <strong style={{ color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>{event.org_name}</strong>
+                        Mapeamento de Hierarquia · <strong style={{ color: 'var(--sw-text-base)', fontWeight: 500 }}>{event.org_name}</strong>
                         <span style={{ opacity: 0.5, marginLeft: 5 }}>· mapeando...</span>
                     </span>
                 </>
@@ -236,7 +264,7 @@ const HierarchyMappingCard: React.FC<{
                 <>
                     <CheckCircle2 size={12} style={{ color: '#10b981', flexShrink: 0 }} />
                     <span>
-                        Mapeamento de Hierarquia concluído · <strong style={{ color: 'rgba(255, 255, 255, 0.85)', fontWeight: 500 }}>{event.org_name}</strong>
+                        Mapeamento de Hierarquia concluído · <strong style={{ color: 'var(--sw-text-base)', fontWeight: 500 }}>{event.org_name}</strong>
                         <span style={{ opacity: 0.5, marginLeft: 5 }}>· {contactCount} contatos mapeados · analisando…</span>
                     </span>
                 </>
@@ -258,7 +286,7 @@ const renderMarkdown = (text: string): React.ReactNode => {
     if (!text) return null;
     return text.split('\n').map((line, idx) => {
         if (line.trim() === '---')
-            return <hr key={idx} style={{ margin: '10px 0', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />;
+            return <hr key={idx} style={{ margin: '10px 0', border: 'none', borderTop: 'var(--sw-border-width) solid var(--sw-border)' }} />;
         if (line.startsWith('### '))
             return <h3 key={idx} style={{ fontSize: '15px', fontWeight: 700, margin: '4px 0 8px' }}>{renderInline(line.slice(4))}</h3>;
         if (line.startsWith('## '))
@@ -302,12 +330,12 @@ const ConfirmationCard: React.FC<{
     // Configurações visuais por canal
     const channelConfig = {
         bg: 'transparent',
-        border: 'rgba(255, 255, 255, 0.1)',
-        headerBg: 'transparent',
+        border: 'var(--sw-border)',
+        headerBg: 'var(--sw-hover)',
         icon: isEmail ? '/outlook.png' : isPipedrive ? '/pipedrive.png' : '/wppicon.png',
         iconSize: isEmail ? 16 : isPipedrive ? 16 : 14,
         accentColor: isEmail ? '#0078d4' : isPipedrive ? '#f36e21' : '#22c55e',
-        labelColor: 'rgba(255,255,255,0.4)',
+        labelColor: 'var(--sw-text-muted)',
     };
 
     if (decided) {
@@ -315,7 +343,7 @@ const ConfirmationCard: React.FC<{
             <div className={styles.logLine} style={{ marginBottom: 8 }}>
                 {approvedResult
                     ? <CheckCircle2 size={12} style={{ color: channelConfig.accentColor, flexShrink: 0 }} />
-                    : <XCircle size={12} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+                    : <XCircle size={12} style={{ color: 'var(--sw-text-muted)', opacity: 0.5, flexShrink: 0 }} />
                 }
                 <span>{approvedResult ? 'Ação aprovada' : 'Ação cancelada'}</span>
                 <span style={{ opacity: 0.4 }}>· {event.label}</span>
@@ -332,8 +360,8 @@ const ConfirmationCard: React.FC<{
     return (
         <div style={{ 
             borderRadius: 10, 
-            border: `1px solid ${channelConfig.border}`, 
-            background: channelConfig.bg, 
+            border: `var(--sw-border-width) solid var(--sw-border)`, 
+            background: 'transparent', 
             overflow: 'hidden', 
             marginBottom: 12,
             transition: 'all 0.3s ease'
@@ -343,11 +371,11 @@ const ConfirmationCard: React.FC<{
                 alignItems: 'center', 
                 gap: 8, 
                 padding: '8px 12px', 
-                borderBottom: '1px solid ${channelConfig.border}', 
-                background: channelConfig.headerBg 
+                borderBottom: 'var(--sw-border-width) solid var(--sw-border)', 
+                background: 'var(--sw-hover)' 
             }}>
                 <img src={channelConfig.icon} alt="Channel" style={{ width: channelConfig.iconSize, height: channelConfig.iconSize, borderRadius: 3 }} />
-                <span style={{ fontSize: 'var(--font-xs)', color: channelConfig.labelColor, letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>
+                <span style={{ fontSize: 'var(--font-xs)', color: 'var(--sw-text-muted)', letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>
                     {isEmail ? 'CONFIRMAR E-MAIL' : isPipedrive ? 'CONFIRMAR PIPEDRIVE' : 'CONFIRMAR WHATSAPP'}
                 </span>
                 {hasAttachment && (
@@ -363,7 +391,8 @@ const ConfirmationCard: React.FC<{
                 {previewText && (
                     <div style={{
                         fontSize: 'var(--font-md)',
-                        color: 'rgba(255, 255, 255, 0.85)',
+                        color: 'var(--sw-text-base)',
+                        opacity: 0.85,
                         padding: '6px 0',
                         borderRadius: 6,
                         fontStyle: 'italic',
@@ -385,12 +414,12 @@ const ConfirmationCard: React.FC<{
                             disabled={isRefining}
                             style={{
                                 flex: 1,
-                                background: 'rgba(255,255,255,0.05)',
+                                background: 'var(--sw-hover)',
                                 border: 'var(--sw-border-width) solid var(--sw-border)',
                                 borderRadius: 8,
                                 padding: '7px 10px',
                                 fontSize: 12,
-                                color: 'rgba(255,255,255,0.8)',
+                                color: 'var(--sw-text-base)',
                                 outline: 'none',
                                 minWidth: 0,
                                 opacity: isRefining ? 0.4 : 1,
@@ -405,16 +434,18 @@ const ConfirmationCard: React.FC<{
                                 alignItems: 'center',
                                 gap: 4,
                                 padding: '7px 12px',
-                                background: 'rgba(255,255,255,0.06)',
+                                background: 'var(--sw-hover)',
                                 border: 'var(--sw-border-width) solid var(--sw-border)',
                                 borderRadius: 8,
-                                color: 'rgba(255,255,255,0.65)',
+                                color: 'var(--sw-text-subtle)',
                                 fontSize: 12,
                                 cursor: isRefining || !refineText.trim() ? 'not-allowed' : 'pointer',
                                 opacity: isRefining || !refineText.trim() ? 0.4 : 1,
                                 whiteSpace: 'nowrap',
                                 transition: 'all 0.18s ease',
                             }}
+                            onMouseEnter={e => { if (!refineText.trim()) return; e.currentTarget.style.color = 'var(--sw-text-base)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--sw-text-subtle)'; }}
                         >
                             {isRefining ? <Loader2 size={12} className={styles.spinner} /> : <Wand2 size={12} />}
                             <span>{isRefining ? 'Refinando...' : 'Refinar'}</span>
@@ -451,14 +482,17 @@ const ConfirmationCard: React.FC<{
                             borderRadius: 7, 
                             border: 'var(--sw-border-width) solid var(--sw-border)', 
                             background: 'transparent', 
-                            color: 'rgba(255,255,255,0.55)', 
+                            color: 'var(--sw-text-subtle)', 
                             fontSize: 12, 
                             cursor: 'pointer', 
                             display: 'flex', 
                             alignItems: 'center', 
                             justifyContent: 'center', 
-                            gap: 5 
+                            gap: 5,
+                            transition: 'all 0.15s ease'
                         }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--sw-text-base)'; e.currentTarget.style.background = 'var(--sw-hover)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--sw-text-subtle)'; e.currentTarget.style.background = 'transparent'; }}
                     >
                         <X size={13} /> Cancelar
                     </button>
@@ -481,7 +515,7 @@ const RateWaitBadge: React.FC<{ event: V2Event; isStreaming: boolean }> = ({ eve
     const label = event.reason === 'TPM' ? 'tokens/min' : 'req/min';
     const done = remaining <= 0;
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: done ? 'rgba(255,255,255,0.3)' : '#f59e0b', margin: '3px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: done ? 'var(--sw-text-muted)' : '#f59e0b', margin: '3px 0' }}>
             {done ? <CheckCircle2 size={11} style={{ color: '#10b981', flexShrink: 0 }} /> : <Clock size={11} style={{ flexShrink: 0 }} />}
             <span>{done ? `Cota ${label} liberada — retomando` : `Aguardando cota ${label} (${remaining}s) · ${event.model}`}</span>
         </div>
@@ -489,7 +523,7 @@ const RateWaitBadge: React.FC<{ event: V2Event; isStreaming: boolean }> = ({ eve
 };
 
 const ContextOverflowBadge: React.FC<{ event: V2Event }> = ({ event }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '3px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--sw-text-subtle)', margin: '3px 0' }}>
         <AlertCircle size={11} style={{ flexShrink: 0, color: '#f59e0b' }} />
         <span>{event.model} não suporta {event.estimated_tokens?.toLocaleString()} tokens (limite {event.limit?.toLocaleString()}) · usando modelo maior</span>
     </div>
@@ -879,7 +913,7 @@ const SuggestedActionTask: React.FC<{
                     ? <CheckCircle2 size={12} style={{ color: accentColor, flexShrink: 0 }} />
                     : status === 'error'
                         ? <XCircle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />
-                        : <XCircle size={12} style={{ color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                        : <XCircle size={12} style={{ color: 'var(--sw-text-muted)', opacity: 0.4, flexShrink: 0 }} />
                 }
                 <span style={{ opacity: status === 'rejected' ? 0.35 : 1 }}>{action.label}</span>
                 <span style={{ opacity: 0.3 }}>· {status === 'done' ? 'executado' : status === 'rejected' ? 'ignorado' : 'erro'}</span>
@@ -902,13 +936,14 @@ const SuggestedActionTask: React.FC<{
                 alignItems: 'center',
                 gap: 8,
                 padding: '8px 12px',
-                borderBottom: '1px solid rgba(255,255,255,0.08)',
+                borderBottom: 'var(--sw-border-width) solid var(--sw-border)',
+                background: 'var(--sw-hover)',
             }}>
                 {channelCfg.img
                     ? <img src={channelCfg.img} alt={channelCfg.label} style={{ width: 14, height: 14, borderRadius: 2, objectFit: 'contain' }} />
                     : <span style={{ color: accentColor, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{catCfg.icon}</span>
                 }
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.07em', fontWeight: 700, textTransform: 'uppercase' }}>
+                <span style={{ fontSize: 10, color: 'var(--sw-text-muted)', letterSpacing: '0.07em', fontWeight: 700, textTransform: 'uppercase' }}>
                     {channelCfg.label}
                 </span>
                 {isManual && (
@@ -918,7 +953,7 @@ const SuggestedActionTask: React.FC<{
                 )}
                 {/* Status badge (execução ativa) */}
                 {(status === 'streaming' || status === 'awaiting_confirm' || status === 'awaiting_mapping') && (
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: status === 'awaiting_confirm' ? '#f59e0b' : status === 'awaiting_mapping' ? '#818cf8' : 'rgba(255,255,255,0.5)' }}>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: status === 'awaiting_confirm' ? '#f59e0b' : status === 'awaiting_mapping' ? '#818cf8' : 'var(--sw-text-muted)' }}>
                         {status === 'streaming'
                             ? <><Loader2 size={10} className={styles.spinner} /><span>Executando...</span></>
                             : status === 'awaiting_confirm'
@@ -932,13 +967,13 @@ const SuggestedActionTask: React.FC<{
             {/* Body */}
             <div style={{ padding: '10px 12px' }}>
                 {/* Título da ação — sem prefixo de canal */}
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.92)', marginBottom: action.razao ? 6 : 0, lineHeight: 1.4 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--sw-text-base)', marginBottom: action.razao ? 6 : 0, lineHeight: 1.4 }}>
                     {cleanLabel}
                 </div>
 
                 {/* Razão — itálico, como preview no ConfirmationCard */}
                 {action.razao && (
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 12, color: 'var(--sw-text-subtle)', fontStyle: 'italic', lineHeight: 1.5 }}>
                         {action.razao}
                     </div>
                 )}
@@ -949,13 +984,13 @@ const SuggestedActionTask: React.FC<{
                         style={{ marginTop: 10, cursor: 'pointer' }}
                         onClick={() => setIsExpanded(e => !e)}
                     >
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ fontSize: 10, color: 'var(--sw-text-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span style={{ display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}>▶</span>
                             {isExpanded ? 'ocultar detalhes' : 'ver detalhes'}
                         </div>
                         {isExpanded && (
                             <div
-                                style={{ background: 'rgba(255,255,255,0.02)', border: 'var(--sw-border-width) solid var(--sw-border)', borderRadius: 8, padding: '10px 12px' }}
+                                style={{ background: 'var(--sw-hover)', border: 'var(--sw-border-width) solid var(--sw-border)', borderRadius: 8, padding: '10px 12px' }}
                                 onClick={e => e.stopPropagation()}
                             >
                                 <InlineEventStream
@@ -1006,17 +1041,17 @@ const SuggestedActionTask: React.FC<{
                                 borderRadius: 7,
                                 border: 'var(--sw-border-width) solid var(--sw-border)',
                                 background: 'transparent',
-                                color: 'rgba(255,255,255,0.45)',
+                                color: 'var(--sw-text-subtle)',
                                 fontSize: 12,
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: 5,
-                                transition: 'opacity 0.15s',
+                                transition: 'all 0.15s ease',
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)'; }}
+                            onMouseEnter={e => { e.currentTarget.style.color = 'var(--sw-text-base)'; e.currentTarget.style.background = 'var(--sw-hover)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = 'var(--sw-text-subtle)'; e.currentTarget.style.background = 'transparent'; }}
                         >
                             <X size={12} strokeWidth={2.5} />
                             Ignorar
@@ -1152,7 +1187,7 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
                         >
                             <summary style={{
                                 fontSize: 10,
-                                color: ok ? 'rgba(255,255,255,0.3)' : 'rgba(239,68,68,0.7)',
+                                color: ok ? 'var(--sw-text-muted)' : 'rgba(239,68,68,0.7)',
                                 cursor: 'pointer',
                                 userSelect: 'none',
                                 letterSpacing: '0.03em',
@@ -1160,7 +1195,7 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 4,
-                            }}>
+                             }}>
                                 <span style={{
                                     display: 'inline-block',
                                     width: 12,
@@ -1176,7 +1211,7 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
                                 fontFamily: 'monospace',
                                 fontSize: 10,
                                 lineHeight: 1.5,
-                                color: 'rgba(255,255,255,0.45)',
+                                color: 'var(--sw-text-subtle)',
                             }}>
                                 {ev.args && Object.keys(ev.args).length > 0 && (
                                     <div style={{ marginBottom: 4 }}>

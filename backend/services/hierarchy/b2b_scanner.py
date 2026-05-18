@@ -37,7 +37,8 @@ async def discover_employees_stream(
     product_focus: Optional[str] = None, 
     area_focus: Optional[str] = "compras",
     email_api_key: str = None, 
-    max_results: int = 100
+    max_results: int = 100,
+    job_id: Optional[str] = None
 ) -> AsyncGenerator[List[Dict], None]:
     """
     Motor B2B Streaming Orquestrado (Modular).
@@ -251,11 +252,41 @@ async def discover_employees_stream(
         except Exception as e:
             print(f"[B2B Engine/Pipedrive] Erro ao processar pessoas via CRM: {str(e)}")
 
+    # Helper to check if job is cancelled
+    async def is_cancelled() -> bool:
+        if not job_id:
+            return False
+        try:
+            from arq import create_pool
+            from core.redis_config import redis_settings
+            redis = await create_pool(redis_settings)
+            if await redis.exists(f"job_cancelled_{job_id}") or await redis.exists(f"arq:abort:{job_id}"):
+                print(f"[B2B Engine] ⏹️ Cancelamento detectado para o job {job_id}!")
+                return True
+        except Exception as e:
+            print(f"[B2B Engine] Erro ao verificar cancelamento: {e}")
+        return False
+
     for idx, query in enumerate(base_queries[:12]):
+        if await is_cancelled():
+            print(f"[B2B Engine] ⏹️ Parando escaneamento devido a cancelamento do job {job_id}.")
+            break
+
         if idx > 0: 
             wait_time = random.uniform(20.0, 30.0) # Aumentado para segurança total
             print(f"      [B2B Engine] Aguardando {wait_time:.1f}s para a próxima busca...")
-            await asyncio.sleep(wait_time)
+            
+            # Dorme em passos de 1 segundo para responder instantaneamente ao cancelamento
+            slept = 0.0
+            while slept < wait_time:
+                if await is_cancelled():
+                    break
+                await asyncio.sleep(1.0)
+                slept += 1.0
+            
+            if await is_cancelled():
+                print(f"[B2B Engine] ⏹️ Parando escaneamento devido a cancelamento do job {job_id}.")
+                break
         
         log_query_start(query)
         results = await get_duck_results(query, max_results=30)

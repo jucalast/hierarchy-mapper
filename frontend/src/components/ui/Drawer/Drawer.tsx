@@ -82,6 +82,33 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
+    // Sincroniza estado de expansão quando o localStorage é alterado externamente (ex: botão "+" no Sidebar)
+    useEffect(() => {
+        if (!showDrawer) return;
+
+        const checkExpansion = () => {
+            const saved = window.localStorage.getItem('drawer-expanded-org-id');
+            const currentId = saved ? Number(saved) : null;
+            if (currentId !== expandedOrgId) {
+                setExpandedOrgIdState(currentId);
+            }
+        };
+
+        // Verifica imediatamente ao abrir
+        checkExpansion();
+
+        // Escuta eventos de storage para sincronizar entre abas ou ações locais que limpam o storage
+        window.addEventListener('storage', checkExpansion);
+        
+        // Custom event para quando clicamos no "+" (já que 'storage' não dispara na mesma aba)
+        window.addEventListener('drawer_reset_expansion', checkExpansion);
+
+        return () => {
+            window.removeEventListener('storage', checkExpansion);
+            window.removeEventListener('drawer_reset_expansion', checkExpansion);
+        };
+    }, [showDrawer, expandedOrgId]);
+
     const [orgDetails, setOrgDetails] = useState<Record<number, any>>(() => {
         if (typeof window !== 'undefined' && expandedOrgId) {
             const cached = window.localStorage.getItem(`org-${expandedOrgId}-details`);
@@ -119,25 +146,9 @@ export const Drawer: React.FC<DrawerProps> = ({
 
     const [editingNameOrgId, setEditingNameOrgId] = useState<number | null>(null);
     const [editingNameValue, setEditingNameValue] = useState<string>('');
-    const [showOptionsDropdown, setShowOptionsDropdown] = useState<boolean>(false);
     const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
     const [confirmBusy, setConfirmBusy] = useState<boolean>(false);
     const [scanningOrgId, setScanningOrgId] = useState<number | null>(null);
-    const dropdownRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-                setShowOptionsDropdown(false);
-            }
-        };
-        if (showOptionsDropdown) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [showOptionsDropdown]);
 
     const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false) => {
         if (!force && orgDetails[orgId]) return; // Já carregado
@@ -293,12 +304,9 @@ export const Drawer: React.FC<DrawerProps> = ({
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 setShowDrawer={setShowDrawer}
-                showOptionsDropdown={showOptionsDropdown}
-                setShowOptionsDropdown={setShowOptionsDropdown}
                 fetchOrgDetails={fetchOrgDetails}
                 loadingDetails={loadingDetails}
                 setConfirmKind={setConfirmKind}
-                dropdownRef={dropdownRef}
             />
 
             <div className={styles.drawerList}>

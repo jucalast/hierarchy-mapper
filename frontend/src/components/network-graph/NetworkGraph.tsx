@@ -331,6 +331,13 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     }, [setPipedriveOrgs, setNodes, setEdges, resetWorkflow, resetHierarchy]);
 
     const handleNewCompany = useCallback(() => {
+        // Abre o drawer e garante que ele volte para a lista (limpando cache de expansão)
+        handleSetShowDrawer(true);
+        localStorage.removeItem('drawer-expanded-org-id');
+        
+        // Notifica o Drawer para resetar o estado interno de expansão
+        window.dispatchEvent(new CustomEvent('drawer_reset_expansion'));
+        
         setActiveView('graph');
         setNodes([]);
         setEdges([]);
@@ -440,22 +447,23 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 </header>
 
                 <div className={styles.contentWrapper}>
-                    {showChat && (activeView === 'graph' || activeView === 'prospecting') && (
-                        <ChatPanel
-                            showChat={showChat}
-                            setShowChat={handleSetShowChat}
-                            selectedOrgId={currentOrgId}
-                            selectedOrgName={confirmedBrand || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.name || "Empresa"}
-                            theme={theme}
-                            onToggleTheme={() => {
-                                const newTheme = theme === "dark" ? "light" : "dark";
-                                setTheme(newTheme);
-                                localStorage.setItem("preferred-theme", newTheme);
-                                document.documentElement.setAttribute("data-theme", newTheme);
-                            }}
-                            selectedOrgLogo={confirmedLogo || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.logo || ""}
-                        />
-                    )}
+                    <Drawer
+                        showDrawer={showDrawer}
+                        setShowDrawer={handleSetShowDrawer}
+                        filteredOrgs={filteredOrgs}
+                        isLoading={loadingOrgs}
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        onOrgClick={handleOrgClick}
+                        selectedOrgId={currentOrgId}
+                        onOrgRenamed={handleOrgRenamed}
+                        selectedOrgLogo={confirmedLogo}
+                        activeJobId={activeJobId}
+                        graphEmployees={rawEmployees}
+                        refreshDetailsTrigger={refreshDrawerTrigger}
+                        addNotification={addNotification}
+                        onOrgReset={handleOrgReset}
+                    />
 
                     <div className={styles.mainContent}>
                         <NotificationContainer notifications={notifications} removeNotification={removeNotification} />
@@ -543,9 +551,9 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                                                         alt={p.name}
                                                                         style={{ width: '100%', height: '100%', objectFit: 'cover', transform: avatarUrl ? 'none' : 'scale(1.6)' }}
                                                                         onError={(e) => {
-                                                                            const img = e.currentTarget as HTMLImageElement;
-                                                                            img.src = '/imagem_linkedin.png';
-                                                                            img.style.transform = 'scale(1.6)';
+                                                                             const img = e.currentTarget as HTMLImageElement;
+                                                                             img.src = '/imagem_linkedin.png';
+                                                                             img.style.transform = 'scale(1.6)';
                                                                         }}
                                                                     />
                                                                 </div>
@@ -645,23 +653,22 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                         </div>
                     </div>
 
-                    <Drawer
-                        showDrawer={showDrawer}
-                        setShowDrawer={handleSetShowDrawer}
-                        filteredOrgs={filteredOrgs}
-                        isLoading={loadingOrgs}
-                        searchTerm={searchTerm}
-                        setSearchTerm={setSearchTerm}
-                        onOrgClick={handleOrgClick}
-                        selectedOrgId={currentOrgId}
-                        onOrgRenamed={handleOrgRenamed}
-                        selectedOrgLogo={confirmedLogo}
-                        activeJobId={activeJobId}
-                        graphEmployees={rawEmployees}
-                        refreshDetailsTrigger={refreshDrawerTrigger}
-                        addNotification={addNotification}
-                        onOrgReset={handleOrgReset}
-                    />
+                    {showChat && (activeView === 'graph' || activeView === 'prospecting') && (
+                        <ChatPanel
+                            showChat={showChat}
+                            setShowChat={handleSetShowChat}
+                            selectedOrgId={currentOrgId}
+                            selectedOrgName={confirmedBrand || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.name || "Empresa"}
+                            theme={theme}
+                            onToggleTheme={() => {
+                                const newTheme = theme === "dark" ? "light" : "dark";
+                                setTheme(newTheme);
+                                localStorage.setItem("preferred-theme", newTheme);
+                                document.documentElement.setAttribute("data-theme", newTheme);
+                            }}
+                            selectedOrgLogo={confirmedLogo || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.logo || ""}
+                        />
+                    )}
                 </div>
             </div>
 

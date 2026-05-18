@@ -83,28 +83,36 @@
 
 /* SUCCESS THEME */
 .success { background: var(--sw-status-success); }
-.success .iconWrapper { color: #022c22; }
-.success .message { color: #022c22; }
-.success .closeBtn { color: rgba(2, 44, 34, 0.6); }
-.success .closeBtn:hover { background: rgba(2, 44, 34, 0.1); color: #022c22; }
+.success .iconWrapper, 
+.success .message,
+.success .closeBtn { color: #ffffff; }
+.success .closeBtn:hover { background: rgba(255, 255, 255, 0.15); }
 
 /* ERROR THEME */
 .error { background: var(--sw-status-danger); }
-.error .iconWrapper { color: #450a0a; }
-.error .message { color: #450a0a; }
-.error .closeBtn { color: rgba(69, 10, 10, 0.6); }
-.error .closeBtn:hover { background: rgba(69, 10, 10, 0.1); color: #450a0a; }
+.error .iconWrapper,
+.error .message,
+.error .closeBtn { color: #ffffff; }
+.error .closeBtn:hover { background: rgba(255, 255, 255, 0.15); }
 
 /* INFO THEME */
 .info { background: var(--sw-primary); }
-.info .iconWrapper { color: #131415; } 
-.info .message { color: #131415; }
-.info .closeBtn { color: rgba(19, 20, 21, 0.6); }
-.info .closeBtn:hover { background: rgba(19, 20, 21, 0.1); color: #131415; }
+.info .iconWrapper,
+.info .message,
+.info .closeBtn { color: #ffffff; }
+.info .closeBtn:hover { background: rgba(255, 255, 255, 0.15); }
 
 /* WARNING THEME */
 .warning { background: var(--sw-status-warning); }
-.warning .iconWrapper { color: #451a03; }
-.warning .message { color: #451a03; }
-.warning .closeBtn { color: rgba(69, 26, 3, 0.6); }
-.warning .closeBtn:hover { background: rgba(69, 26, 3, 0.1); color: #451a03; }
+.warning .iconWrapper,
+.warning .message,
+.warning .closeBtn { color: #ffffff; }
+.warning .closeBtn:hover { background: rgba(255, 255, 255, 0.15); }
+
+/* Theme-specific adjustments for light mode if needed */
+[data-theme='light'] .success,
+[data-theme='light'] .error,
+[data-theme='light'] .info,
+[data-theme='light'] .warning {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}

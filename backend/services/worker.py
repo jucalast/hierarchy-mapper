@@ -220,7 +220,8 @@ async def run_b2b_discovery_task(
         product_focus=product_focus,
         area_focus=area_focus,
         email_api_key=email_api_key,
-        max_results=max_results
+        max_results=max_results,
+        job_id=ctx['job_id']
     ):
         # Publica o progresso via Redis Pub/Sub para o WebSocket
         if isinstance(batch, list) and len(batch) > 0:

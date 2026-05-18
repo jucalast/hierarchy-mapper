@@ -16,7 +16,7 @@
     overflow: visible;
     z-index: 1;
     transform-style: preserve-3d;
-    box-shadow: var(--sw-shadow);
+
 }
 
 .chatNode {
@@ -27,7 +27,7 @@
 }
 
 .customNode:hover {
-    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+
     transform: none !important;
 }
 
@@ -93,11 +93,52 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 20px;
-    background: var(--sw-hover);
     border-bottom: var(--sw-border-width) solid var(--sw-border);
     border-radius: 16px 16px 0 0;
     position: relative;
     z-index: 2;
+}
+
+.levelBadge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-xs);
+    font-weight: 500;
+    color: var(--sw-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.scoreBadge {
+    font-size: var(--font-xs);
+    font-weight: 600;
+    color: var(--sw-status-success);
+    background: rgba(52, 209, 124, 0.1);
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(52, 209, 124, 0.2);
+}
+
+.deleteBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+}
+
+.deleteBtn:hover {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.1);
 }
 
 .seniorityWrapper {
@@ -339,4 +380,3 @@
     border-radius: 6px;
     color: var(--sw-text-muted);
 }
-

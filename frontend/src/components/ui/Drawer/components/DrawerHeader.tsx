@@ -1,6 +1,7 @@
 import React from 'react';
-import { Search, X, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { Search, X, RefreshCw } from 'lucide-react';
 import styles from './DrawerHeader.module.css';
+import { Dropdown } from '../../Dropdown';
 
 interface DrawerHeaderProps {
     expandedOrgId: number | null;
@@ -8,12 +9,9 @@ interface DrawerHeaderProps {
     searchTerm: string;
     setSearchTerm: (term: string) => void;
     setShowDrawer: (show: boolean) => void;
-    showOptionsDropdown: boolean;
-    setShowOptionsDropdown: (show: boolean) => void;
     fetchOrgDetails: (orgId: number, force?: boolean) => Promise<void>;
     loadingDetails: Record<number, boolean>;
     setConfirmKind: (kind: 'reset' | 'delete' | null) => void;
-    dropdownRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
@@ -22,13 +20,25 @@ export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
     searchTerm,
     setSearchTerm,
     setShowDrawer,
-    showOptionsDropdown,
-    setShowOptionsDropdown,
     fetchOrgDetails,
     loadingDetails,
     setConfirmKind,
-    dropdownRef,
 }) => {
+    const dropdownItems = React.useMemo(() => [
+        {
+            label: 'Resetar Cache',
+            onClick: () => setConfirmKind('reset'),
+            icon: <Search size={14} />,
+            style: { color: '#f59e0b' }
+        },
+        {
+            label: 'Excluir Empresa',
+            onClick: () => setConfirmKind('delete'),
+            icon: <X size={14} />,
+            danger: true
+        }
+    ], [setConfirmKind]);
+
     return (
         <div className={styles.drawerHeader}>
             {expandedOrgId ? (
@@ -38,14 +48,13 @@ export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
                         <span>Voltar para a lista</span>
                     </button>
 
-                    <div className={styles.focusHeaderActions} ref={dropdownRef}>
-                        <button
-                            onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
-                            className={styles.moreOptionsBtn}
+                    <div className={styles.focusHeaderActions}>
+                        <Dropdown
+                            items={dropdownItems}
+                            iconType="horizontal"
+                            iconSize={20}
                             title="Mais opções"
-                        >
-                            <MoreHorizontal size={20} />
-                        </button>
+                        />
 
                         <button
                             onClick={() => fetchOrgDetails(expandedOrgId, true)}
@@ -55,33 +64,6 @@ export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
                         >
                             <RefreshCw size={14} className={loadingDetails[expandedOrgId] ? styles.spin : ''} />
                         </button>
-
-                        {showOptionsDropdown && (
-                            <div className={styles.dropdownMenu}>
-                                <button
-                                    onClick={() => {
-                                        setShowOptionsDropdown(false);
-                                        setConfirmKind('reset');
-                                    }}
-                                    className={styles.dropdownItem}
-                                    style={{ color: '#f59e0b' }}
-                                >
-                                    <Search size={14} />
-                                    <span>Resetar Cache</span>
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setShowOptionsDropdown(false);
-                                        setConfirmKind('delete');
-                                    }}
-                                    className={styles.dropdownItem}
-                                    style={{ color: '#ef4444' }}
-                                >
-                                    <X size={14} />
-                                    <span>Excluir Empresa</span>
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </div>
             ) : (

@@ -13,7 +13,7 @@ export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
         source: e.source,
         target: e.target,
         animated: false,
-        style: { stroke: '#6e7681', strokeWidth: 1.5 },
+        style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 },
       });
       processedTargets.add(e.target);
     });
@@ -63,7 +63,7 @@ export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
         source: bestParent.id,
         target: child.id,
         animated: false,
-        style: { stroke: '#8b949e', strokeWidth: 1.5 },
+        style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 },
       });
       processedTargets.add(child.id);
     }

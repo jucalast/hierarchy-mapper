@@ -148,11 +148,11 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
                                 >
                                     {isPerson ? (
                                         <div className={styles.personAvatarWrapper}>
-                                            <Avatar kind="person" data={opt} size={28} style={{ borderRadius: '8px' }} />
+                                            <Avatar kind="person" data={opt} size={34} style={{ borderRadius: '8px' }} />
                                         </div>
                                     ) : (
                                         <div className={styles.brandAvatarWrapper}>
-                                            <Avatar kind="company" data={opt} size={28} />
+                                            <Avatar kind="company" data={opt} size={34} />
                                         </div>
                                     )}
 
@@ -306,7 +306,7 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
                                             src={confirmedLogo}
                                             name={confirmedBrand}
                                             data={{ domain: domainTarget }}
-                                            size={28}
+                                            size={34}
                                         />
                                     </div>
                                     <div className={styles.brandInfo}>

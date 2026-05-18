@@ -810,6 +810,31 @@ export const useHierarchy = () => {
     const approveCandidate = useCallback((id: string) => handleCandidateAction(id, 'approve'), []);
     const rejectCandidate = useCallback((id: string) => handleCandidateAction(id, 'reject'), []);
 
+    const deleteEmployee = useCallback(async (id: string) => {
+        // Se for um nó persistido no banco (ID começa com node_), avisamos o backend
+        if (String(id).startsWith('node_')) {
+            try {
+                await hierarchyApi.candidateAction(id, 'reject');
+                console.log(`[useHierarchy] Funcionário ${id} removido e marcado como reprovado no banco.`);
+            } catch (e) {
+                console.error(`[useHierarchy] Erro ao sincronizar remoção com backend:`, e);
+            }
+        }
+
+        setRawEmployees(prev => {
+            const next = prev.filter(emp => String(emp.id) !== String(id));
+            currentEmployeesRef.current = next;
+            return next;
+        });
+        
+        setRawBackendEdges(prev => {
+            return prev.filter(edge => 
+                String(edge.source) !== String(id) && 
+                String(edge.target) !== String(id)
+            );
+        });
+    }, []);
+
     return { 
         rawEmployees, 
         rawBackendEdges, 
@@ -834,6 +859,7 @@ export const useHierarchy = () => {
         setBrandOptions,
         resetHierarchy,
         approveCandidate,
-        rejectCandidate
+        rejectCandidate,
+        deleteEmployee
     };
 };

@@ -221,10 +221,15 @@ async def _process_result(
         log.info("prospect.skip.already_processed", company=company_name)
         return False
 
-    # Dedup no Pipedrive global
+    # Empresa descartada localmente (reject_lead marca is_excluded=1)
+    if await _is_org_excluded(company_name, domain=domain):
+        log.info("prospect.skip.excluded", company=company_name)
+        return False
+
+    # Dedup no Pipedrive global — qualquer empresa já cadastrada é ignorada
     dedup = await check_pipedrive_duplicate(company_name, domain=domain)
-    if dedup["status"] == "active":
-        log.info("prospect.skip.active", company=company_name)
+    if dedup["status"] != "new":
+        log.info("prospect.skip.in_pipedrive", company=company_name, status=dedup["status"])
         return False
 
     # Qualifica com IA + ICP scoring
@@ -578,6 +583,21 @@ async def _lead_already_processed(company_name: str, domain: Optional[str] = Non
                 ProspectLead.status.in_(["rejected", "created"]),
                 cond,
             )
+        )
+        return res.scalars().first() is not None
+
+
+async def _is_org_excluded(company_name: str, domain: Optional[str] = None) -> bool:
+    """Verifica se a empresa foi descartada via Organization.is_excluded."""
+    from sqlalchemy import func, or_
+    async with async_session() as db:
+        name_cond = func.lower(Organization.name) == company_name.lower()
+        if domain:
+            cond = or_(name_cond, Organization.domain == domain)
+        else:
+            cond = name_cond
+        res = await db.execute(
+            select(Organization).where(Organization.is_excluded == 1, cond)
         )
         return res.scalars().first() is not None
 

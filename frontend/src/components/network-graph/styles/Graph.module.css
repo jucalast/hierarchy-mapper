@@ -16,7 +16,7 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    background: var(--sw-graph-bg);
+    background: var(--sw-graph-purple-bg);
     transition: background var(--transition-fast);
 }
 
@@ -36,8 +36,16 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    background: var(--sw-graph-bg);
+    background: #202020;
     transition: background var(--transition-fast);
+}
+
+:global([data-theme='dark']) .mainContent {
+    background: #202020;
+}
+
+:global([data-theme='light']) .mainContent {
+    background: #d9d9d9;
 }
 
 .dottedBackground {
