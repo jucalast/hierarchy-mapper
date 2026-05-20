@@ -4080,6 +4080,41 @@ async def _agent_loop(
                                 })
                             continue
 
+                    # ── Interceptor: sem canal → forçar open_hierarchy_drawer (anti-alucinação) ──
+                    # O LLM tende a escrever "abri o mapeador" em texto em vez de chamar a tool.
+                    # Condição: investigação concluída + zero contatos com canal + tarefa é encontrar decisor.
+                    _is_find_decisor_task = any(kw in _first_msg_content.lower() for kw in [
+                        "encontrar contato", "encontrar decisor", "open_hierarchy_drawer",
+                        "encontrar o contato", "identificar contato", "localizar contato",
+                    ])
+                    _hierarchy_already_called = any(
+                        isinstance(_b, dict) and (
+                            (_b.get("type") == "tool_use" and _b.get("name") == "open_hierarchy_drawer") or
+                            (_b.get("type") == "tool_result" and _b.get("tool_name") == "open_hierarchy_drawer")
+                        )
+                        for _m in messages + [{"role": "assistant", "content": content}]
+                        for _b in (_m.get("content") if isinstance(_m.get("content"), list) else [])
+                    )
+                    if (
+                        _is_find_decisor_task
+                        and not _persons_with_channel
+                        and not _missing_core
+                        and not _hierarchy_already_called
+                    ):
+                        _org_hint = _org_name_for_search or ""
+                        messages.append({"role": "assistant", "content": content})
+                        messages.append({
+                            "role": "user",
+                            "content": (
+                                f"AÇÃO OBRIGATÓRIA: Investigação concluída — nenhum contato com canal válido encontrado.\n"
+                                f"NÃO descreva esta ação em texto — CHAME A FERRAMENTA DIRETAMENTE AGORA.\n"
+                                f"Chame: open_hierarchy_drawer"
+                                + (f" com org_name='{_org_hint}'" if _org_hint else "")
+                                + f"\nProibido escrever 'abri o mapeador' sem chamar a tool."
+                            ),
+                        })
+                        continue
+
                 # ── Interceptor: Rascunho gerado mas NÃO enviado (REGRA DE OURO) ─────────────
                 if _is_task_action and iteration < _max_iters - 2:
                     _has_draft_now = False

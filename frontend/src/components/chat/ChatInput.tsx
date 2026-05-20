@@ -145,7 +145,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
     const OrgIcon = () => <Building2 size={16} className="shrink-0 opacity-40" />;
 
-    const notice = getNoticeStyle(modelActivity || []);
+    const notice = getNoticeStyle(modelActivity || [], undefined, theme);
     const hasRunningTask = !!activeRunningTask;
 
     const consoleBg = theme === 'dark' ? '#1e1e1e' : 'var(--chat-bg-primary)';
@@ -261,7 +261,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     return (
         <div className={styles.inputContainer} style={inputContainerStyle}>
             <div style={containerStyle}>
-                {notice && <ModelActivityBar events={modelActivity || []} />}
+                {notice && <ModelActivityBar events={modelActivity || []} theme={theme} />}
                 {hasRunningTask && renderTaskMinimizedBar()}
                 {isExpandedRunningTask && (
                     <ActiveTaskConsole

@@ -14,20 +14,17 @@ import {
 } from 'lucide-react';
 
 import { getAvatarUrl, getCompanyLogoUrl, getProxiedUrl } from '../../utils/avatarUtils';
-import { useHierarchy } from '../../hooks/useHierarchy';
 import { Dropdown } from '../ui/Dropdown';
 
 function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: number, isNode?: boolean }) {
-  const { deleteEmployee } = useHierarchy();
-
   const dropdownItems = useMemo(() => [
     {
       label: 'Excluir Perfil',
-      onClick: () => deleteEmployee(data.id),
+      onClick: () => data.onDelete?.(data.id),
       icon: <Trash2 size={14} />,
       danger: true
     }
-  ], [deleteEmployee, data.id]);
+  ], [data.onDelete, data.id]);
 
   // Prioriza o nível vindo dos dados (backend) sobre o default do componente
   const effectiveLevel = data.seniority !== undefined ? Number(data.seniority) : (level ?? 5);

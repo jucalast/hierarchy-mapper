@@ -157,15 +157,18 @@ export interface MappedContact {
     name: string;
     role: string;
     email?: string;
+    phone?: string;
     department?: string;
     temperature?: string;
     level?: number;
+    decision_maker?: boolean;
 }
 
 /**
  * Card de status do mapeamento de hierarquia.
  * NÃO inicia o scan — apenas abre a empresa no Drawer (via CustomEvent) e aguarda
  * o sinal `hierarchy_scan_done` disparado pelo useHierarchy quando o worker termina.
+ * Os contatos recebidos já passaram pelo carrossel "Análise Humana" do grafo.
  */
 const HierarchyMappingCard: React.FC<{
     event: V2Event;
@@ -188,9 +191,11 @@ const HierarchyMappingCard: React.FC<{
     });
     const [contactCount, setContactCount] = useState(0);
     const doneCalledRef = useRef(false);
+    // Marcado true assim que open_org_in_drawer é disparado — impede que o fim
+    // do stream do agente encerre o card antes do worker terminar.
+    const drawerOpenedRef = useRef(false);
 
     useEffect(() => {
-        // Verifica se o job correspondente está rodando ativamente no localStorage
         let isActiveJobRunning = false;
         if (typeof window !== 'undefined') {
             const saved = window.localStorage.getItem('active-discovery-job');
@@ -204,30 +209,33 @@ const HierarchyMappingCard: React.FC<{
             }
         }
 
-        // Só marcamos como concluído imediatamente se não estiver em streaming AND não houver job rodando em background
-        if (!isStreaming && !isActiveJobRunning) {
+        // Só encerra prematuramente se: não está em streaming, sem job ativo no
+        // localStorage E o drawer nunca foi aberto nesta sessão do componente.
+        if (!isStreaming && !isActiveJobRunning && !drawerOpenedRef.current) {
             setStatus('done');
             return;
         }
 
-        // Abre a org no background graph (sem forçar a abertura do Drawer lateral)
-        const payload = { org_id: event.org_id, org_name: event.org_name, openDrawer: false };
-        setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('open_org_in_drawer', { detail: payload }));
-        }, 800);
+        // Abre a org no background graph apenas uma vez
+        if (!drawerOpenedRef.current) {
+            drawerOpenedRef.current = true;
+            const payload = { org_id: event.org_id, org_name: event.org_name, openDrawer: false };
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('open_org_in_drawer', { detail: payload }));
+            }, 800);
+        }
 
-        // Ouve o sinal do worker quando o mapeamento terminar
         const handleScanDone = (e: Event) => {
             const contacts: MappedContact[] = (e as CustomEvent).detail?.contacts || [];
             setContactCount(contacts.length);
             setStatus('done');
             if (!doneCalledRef.current) {
                 doneCalledRef.current = true;
-                setTimeout(() => onMappingDone(contacts), 800);
+                // Pequeno delay para o grafo processar os aprovados antes do agente agir
+                setTimeout(() => onMappingDone(contacts), 600);
             }
         };
 
-        // Atualiza para 'scanning' quando o worker inicia
         const handleScanStart = () => setStatus('scanning');
 
         window.addEventListener('hierarchy_scan_done', handleScanDone);
@@ -264,8 +272,8 @@ const HierarchyMappingCard: React.FC<{
                 <>
                     <CheckCircle2 size={12} style={{ color: '#10b981', flexShrink: 0 }} />
                     <span>
-                        Mapeamento de Hierarquia concluído · <strong style={{ color: 'var(--sw-text-base)', fontWeight: 500 }}>{event.org_name}</strong>
-                        <span style={{ opacity: 0.5, marginLeft: 5 }}>· {contactCount} contatos mapeados · analisando…</span>
+                        Mapeamento concluído · <strong style={{ color: 'var(--sw-text-base)', fontWeight: 500 }}>{event.org_name}</strong>
+                        <span style={{ opacity: 0.5, marginLeft: 5 }}>· {contactCount} contato(s) aprovados · analisando…</span>
                     </span>
                 </>
             )}

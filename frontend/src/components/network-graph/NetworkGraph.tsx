@@ -78,7 +78,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         rawEmployees, rawBackendEdges, loading, discovering, brandOptions, setBrandOptions,
         activeJobId, stopHierarchyScan, cancelDiscovery, resetHierarchy,
         reconnectToActiveJob, approveCandidate, refineHierarchy, smartSyncPipedrive,
-        loadStoredHierarchy
+        loadStoredHierarchy, deleteEmployee
     } = hierarchy;
 
     // Discovery Workflow
@@ -111,7 +111,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         currentOrgId,
         confirmedBrand,
         confirmedLogo,
-        getStableId
+        getStableId,
+        deleteEmployee,
     });
 
     // UI States
@@ -207,7 +208,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
             if (jobDataStr && jobDataStr !== "NaN" && jobDataStr !== "undefined") {
                 try {
                     const jobData = JSON.parse(jobDataStr);
-                    const { job_id, brand, logo, domain, orgId } = jobData;
+                    const { job_id, brand, logo, domain, orgId, cnpj } = jobData;
                     console.log(`[Job Check] Detectado Job Ativo para ${brand}. Carregando dados prévios...`);
 
                     if (orgId) {
@@ -219,6 +220,14 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
 
                     setStep("scanning");
                     setConfirmedBrand(brand);
+                    if (logo) setConfirmedLogo(logo);
+                    if (domain) setDomainTarget(domain);
+                    if (cnpj) {
+                        const onlyNums = cnpj.replace(/\D/g, '');
+                        if (onlyNums.length >= 5) {
+                            setCnpj(formatCnpj(cnpj));
+                        }
+                    }
                     if (orgId) {
                         setCurrentOrgId(orgId);
                         setChatOrgId(orgId);

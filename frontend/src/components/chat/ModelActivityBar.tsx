@@ -47,14 +47,16 @@ function formatWait(sec: number): string {
     return sec >= 60 ? `${Math.round(sec / 60)}min` : `${Math.round(sec)}s`;
 }
 
-export function getNoticeStyle(events: ModelActivityEvent[], remainingSeconds?: number): NoticeStyle | null {
+export function getNoticeStyle(events: ModelActivityEvent[], remainingSeconds?: number, theme?: string): NoticeStyle | null {
     if (events.length === 0) return null;
     const ev = events[events.length - 1];
     const modelLabel = ev.model ?? ev.provider ?? '—';
     const providerColor = ev.provider ? (MODEL_COLORS[ev.provider] ?? '#64748b') : '#64748b';
 
-    const GRAY_BG = '#1e1e1e';
-    const GRAY_BORDER = 'rgba(255, 255, 255, 0.1)';
+    const isLight = theme === 'light';
+    const GRAY_BG = isLight ? '#e5e7eb' : '#1e1e1e';
+    const GRAY_BORDER = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.1)';
+    const DEFAULT_COLOR = isLight ? '#374151' : 'rgba(255, 255, 255, 0.75)';
 
     if (ev.type === 'rate_wait') {
         const sec = remainingSeconds !== undefined ? remainingSeconds : (ev.wait_sec || 0);
@@ -94,7 +96,7 @@ export function getNoticeStyle(events: ModelActivityEvent[], remainingSeconds?: 
     return {
         bg: GRAY_BG,
         border: GRAY_BORDER,
-        color: 'rgba(255, 255, 255, 0.75)',
+        color: DEFAULT_COLOR,
         text: `Usando ${ev.provider}${ev.model && ev.model !== ev.provider ? ` · ${modelLabel}` : ''}`,
         logo: undefined,
         invert: false,
@@ -104,9 +106,10 @@ export function getNoticeStyle(events: ModelActivityEvent[], remainingSeconds?: 
 
 interface ModelActivityBarProps {
     events: ModelActivityEvent[];
+    theme?: string;
 }
 
-export const ModelActivityBar: React.FC<ModelActivityBarProps> = ({ events }) => {
+export const ModelActivityBar: React.FC<ModelActivityBarProps> = ({ events, theme }) => {
     const ev = events[events.length - 1];
     const [remaining, setRemaining] = React.useState(ev?.wait_sec || 0);
 
@@ -127,7 +130,7 @@ export const ModelActivityBar: React.FC<ModelActivityBarProps> = ({ events }) =>
 
     if (!ev) return null;
 
-    const notice = getNoticeStyle(events, remaining);
+    const notice = getNoticeStyle(events, remaining, theme);
     if (!notice) return null;
 
     return (

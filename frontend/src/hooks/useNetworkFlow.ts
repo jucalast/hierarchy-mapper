@@ -18,6 +18,7 @@ interface UseNetworkFlowProps {
     confirmedBrand: string;
     confirmedLogo: string;
     getStableId: (n: any) => string;
+    deleteEmployee?: (id: string) => void;
 }
 
 export function useNetworkFlow({
@@ -26,7 +27,8 @@ export function useNetworkFlow({
     currentOrgId,
     confirmedBrand,
     confirmedLogo,
-    getStableId
+    getStableId,
+    deleteEmployee,
 }: UseNetworkFlowProps) {
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
@@ -53,10 +55,11 @@ export function useNetworkFlow({
             return {
                 id: emp.id.toString(),
                 type: 'supplyChain',
-                data: { 
-                    ...emp, 
-                    isRoot: isRootNode, 
-                    confirmedLogo: confirmedLogo // Passa para todos para o badge de empresa
+                data: {
+                    ...emp,
+                    isRoot: isRootNode,
+                    confirmedLogo: confirmedLogo,
+                    onDelete: deleteEmployee,
                 },
                 position: { x: 0, y: 0 }, // Dagre vai calcular
             };

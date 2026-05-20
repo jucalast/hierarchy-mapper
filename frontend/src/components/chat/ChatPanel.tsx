@@ -150,10 +150,20 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     }, [activeRunningTask?.logs, activeRunningTask?.isExpanded]);
 
     // ─── Recover: retoma mapeamento após reload de página ───────────────────
+    // ATENÇÃO: este path só deve ser ativo em sessão de RELOAD.
+    // Durante sessão normal o HierarchyMappingCard tem seu próprio listener e
+    // chama handleMainChatMappingDone via onMappingDone — não usar aqui.
     useEffect(() => {
         const pending = localStorage.getItem('pending-hierarchy-continuation');
         const activeJob = localStorage.getItem('active-discovery-job');
         if (!pending || !activeJob) return;
+
+        // Valida se realmente é um reload: messages ainda não foram carregadas
+        // (se o chat já tem mensagens renderizadas com o event, o card cuida disso)
+        // Usamos um flag de "fresh mount" via sessionStorage para distinguir reload de navegação normal
+        const isReload = !sessionStorage.getItem('chat-session-active');
+        sessionStorage.setItem('chat-session-active', '1');
+        if (!isReload) return;
 
         let ctx: any;
         try { ctx = JSON.parse(pending); } catch { return; }
@@ -981,23 +991,74 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const handleMainChatMappingDone = async (contacts: any[], event?: V2Event) => {
         // Limpa contexto persistido — mapeamento concluído com sucesso
         localStorage.removeItem('pending-hierarchy-continuation');
-        const contactsSummary = contacts.length > 0 
-            ? `Contatos mapeados:\n${contacts.map(c => `- ${c.name} (Level: ${c.level}, Email: ${c.email}, Phone: ${c.phone}, Decisor: ${c.decision_maker ? 'Sim' : 'Não'}, Temp: ${c.temperature})`).join('\n')}`
-            : 'Nenhum contato retornado pelo mapeamento.';
+        const orgId = selectedOrgId || event?.org_id;
+        const orgName = event?.org_name || 'a empresa';
 
         const preTaskClause = event?.pre_task_id
             ? `Marque a tarefa de rastreamento pre_task_id=${event.pre_task_id} como concluída com pipedrive_update_task done=true. `
             : '';
+        const activityClause = event?.activity_id
+            ? ` A atividade original activity_id=${event.activity_id} NÃO deve ser marcada como concluída.`
+            : '';
+        const dealClause = event?.deal_id ? ` atrelado ao negócio deal_id=${event.deal_id}` : '';
 
-        const orgName = event?.org_name || 'a empresa';
+        // Detecta decisores de compras/logística pelo cargo
+        const isBuyingDecisionMaker = (role: string) => {
+            const r = (role || '').toLowerCase();
+            return ['compras', 'procurement', 'suprimentos', 'logística', 'logistica',
+                    'supply chain', 'supply', 'materiais', 'aquisição', 'aquisicao',
+                    'estoque', 'sourcing'].some(k => r.includes(k));
+        };
+
+        const contactsSummary = contacts.length > 0
+            ? contacts.map((c: any) => `- ${c.name} (${c.role}${c.department ? ', ' + c.department : ''}${c.email ? ', ' + c.email : ''}${c.temperature ? ', temp=' + c.temperature : ''}${c.decision_maker ? ', DECISOR' : ''})`).join('\n')
+            : '';
+
+        const baseProhibition = `REGRA CRÍTICA: Estes contatos são leads frios do LinkedIn — PROIBIDO chamar whatsapp_get_messages, email_get_contact_history ou whatsapp_list_chats para eles.\n`;
+
+        let taskInstruction: string;
+
+        if (contacts.length === 0) {
+            // Cenário C: nenhum contato aprovado pelo usuário
+            taskInstruction =
+                `Nenhum contato foi aprovado pelo usuário no carrossel de revisão.\n` +
+                `Chame find_company_contact com org_name="${orgName}" para buscar o telefone geral/PABX da empresa. ` +
+                `Se encontrar dados, crie um contato genérico no Pipedrive com pipedrive_create_person (org_id=${orgId}${dealClause}) ` +
+                `e prossiga executando a tarefa original. ` +
+                `Se não encontrar nada, informe ao João e sugira próximas ações.`;
+        } else {
+            const decisionMakers = contacts.filter((c: any) => c.decision_maker || isBuyingDecisionMaker(c.role));
+            const best = decisionMakers[0] || contacts[0];
+
+            const contactsBlock = `Contatos aprovados pelo usuário (${contacts.length}):\n${contactsSummary}`;
+            const createCmd =
+                `Cadastre ${best.name} no Pipedrive chamando pipedrive_create_person ` +
+                `(org_id=${orgId}${dealClause}${best.email ? `, email="${best.email}"` : ''}). ` +
+                `Após cadastrar, execute a tarefa original com esse contato.`;
+
+            if (decisionMakers.length > 0) {
+                // Cenário A: decisor de compras/logística encontrado
+                taskInstruction =
+                    `${contactsBlock}\n\n` +
+                    `ANÁLISE: ${best.name} (${best.role}) é decisor de compras/logística — contato ideal para a prospecção.\n` +
+                    createCmd;
+            } else {
+                // Cenário B: contatos encontrados mas sem decisor direto de compras
+                taskInstruction =
+                    `${contactsBlock}\n\n` +
+                    `ANÁLISE: Nenhum aprovado tem cargo de compras/logística. ` +
+                    `${best.name} (${best.role}) é o contato mais relevante disponível. ` +
+                    `Nota para tarefas de prospecção: ${best.name} pode servir como porta de entrada para chegar ao decisor de compras via indicação interna.\n` +
+                    createCmd;
+            }
+        }
+
         const continuation = (
-            `[SISTEMA]: Mapeamento de hierarquia concluído para "${orgName}". ${contactsSummary}\n` +
-            `REGRA DE INTELIGÊNCIA CRÍTICA: Os contatos acima foram recém-mapeados do LinkedIn (cold leads) e são 100% novos. Como todo o histórico de comunicação da empresa já foi verificado antes do mapeamento e nada foi encontrado, VOCÊ ESTÁ ESTRITAMENTE PROIBIDO de chamar 'whatsapp_get_messages', 'email_get_contact_history' ou 'whatsapp_list_chats' para qualquer um desses novos contatos, pois o histórico deles é inexistente. Não faça novas varreduras de mensagens.\n` +
-            `ANÁLISE E EXECUÇÃO DE TAREFA ("Encontrar contato"): Analise a lista de contatos mapeados e selecione a melhor pessoa para focar a prospecção (priorizando decisores de compras, cargos de liderança ou alta temperatura). Para concluir a tarefa com sucesso, CHAME IMEDIATAMENTE a ferramenta 'pipedrive_create_person' para cadastrar esse contato no Pipedrive na empresa org_id=${selectedOrgId || event?.org_id}` +
-            (event?.deal_id ? ` e atrelado ao negócio deal_id=${event.deal_id}` : '') + `.\n` +
-            `Após criar o contato, caso o usuário tenha pedido expressamente um plano de prospecção ou dossiê final, gere-o. Caso contrário, finalize a resposta.` +
-            (preTaskClause ? ` ${preTaskClause}` : '') +
-            (event?.activity_id ? ` A atividade original activity_id=${event.activity_id} NÃO deve ser marcada como concluída.` : '')
+            `[SISTEMA]: Mapeamento de hierarquia concluído para "${orgName}". ${contacts.length} contato(s) aprovados pelo usuário.\n` +
+            baseProhibition +
+            taskInstruction +
+            (preTaskClause ? `\n${preTaskClause}` : '') +
+            activityClause
         );
 
         const targetMsg = messages.find(m => m.v2Events && m.v2Events.some(e => e.type === 'hierarchy_mapping_required'));
