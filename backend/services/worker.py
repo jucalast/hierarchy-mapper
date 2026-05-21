@@ -3,8 +3,8 @@ import json
 from typing import Optional
 from arq import create_pool
 from sqlalchemy import select
-from core.redis_config import redis_settings
-from services.hierarchy.b2b_scanner import discover_employees_stream
+from core.infra.redis_config import redis_settings
+from modules.hierarchy.service.b2b_scanner import discover_employees_stream
 
 async def run_b2b_discovery_task(
     ctx, 
@@ -24,7 +24,7 @@ async def run_b2b_discovery_task(
     print(f"         Args: domain={domain}, cnpj={cnpj}, brand={confirmed_brand}, logo={confirmed_logo}, area={area_focus}")
     
     # 🕵️ Passo 0: Check Rápido no Banco (Para resposta instantânea)
-    from core.database import async_session
+    from core.infra.database import async_session
     from models import Organization, Employee
     
     fast_nodes = []
@@ -53,7 +53,7 @@ async def run_b2b_discovery_task(
                 
                 # Se o nome mudou na mão, vamos atualizar também no Pipedrive para não duplicar!
                 if confirmed_brand and db_org.name != confirmed_brand and db_org.pipedrive_id:
-                    from services.pipedrive.pipedrive_service import PipedriveService
+                    from modules.crm.service.pipedrive_service import PipedriveService
                     svc = PipedriveService()
                     try:
                         import asyncio
@@ -116,7 +116,7 @@ async def run_b2b_discovery_task(
                 )
 
     # 🕵️ 1. Descoberta Completa (PULA se já tivermos a confirmação do usuário)
-    from services.intelligence.brand_discovery import discover_company_brand
+    from modules.intelligence.service.brand_discovery import discover_company_brand
     
     # Se o frontend mandou confirmed_brand, NÃO PRECISAMOS de descoberta de perfil. 
     needs_discovery = (db_org is None) and (confirmed_brand is None)

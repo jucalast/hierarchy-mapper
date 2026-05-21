@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Loader2, ChevronRight, Sparkles, ArrowLeft, PanelRightOpen, PanelRightClose, Clock, Trash2, Plus, CheckCircle2, XCircle, AlertTriangle, Maximize2, Minimize2, Terminal, Check, X } from 'lucide-react';
+import { Loader2, Sparkles, ArrowLeft, PanelRightOpen, PanelRightClose, Clock, Trash2, Plus, CheckCircle2, XCircle, AlertTriangle, Maximize2, Minimize2, Terminal, Check, X } from 'lucide-react';
 import styles from './ChatPanel.module.css';
 
 import { Message, CompanyResult } from './ChatInterfaces';
 import { ChatInput } from './ChatInput';
 import { AIModel, ModelSelector } from './ModelSelector';
-import { ChatMessage, RichLogRenderer } from './ChatMessage';
-import { AgentV2Message, V2Event, TaskStatus, InlineEventStream, MappedContact } from './AgentV2Message';
+import { ChatMessage } from './ChatMessage';
+import { AgentMessage, AgentEvent, TaskStatus, InlineEventStream, MappedContact } from './AgentV2Message';
 import { ModelActivityEvent } from './ModelActivityBar';
 import { ActivitySidebar } from './ActivitySidebar';
 import { ThreadList } from './ThreadList';
@@ -15,8 +15,8 @@ import { Avatar, Modal, Button } from '../ui';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { ai, communication, conversations } from '@/services/api';
 
-const V2_STREAM_URL = ai.getV2ChatStreamUrl();
-const V2_CONFIRM_URL = ai.getV2ConfirmStreamUrl();
+const AGENT_STREAM_URL = ai.getAgentChatStreamUrl();
+const AGENT_CONFIRM_URL = ai.getAgentConfirmStreamUrl();
 import type { ThreadOut, ActivityOut, MessageOut } from '@/services/api/conversations';
 
 interface ChatPanelProps {
@@ -72,7 +72,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [selectedCompanies, setSelectedCompanies] = useState<CompanyResult[]>([]);
-    const [currentLogs, setCurrentLogs] = useState<any[]>([]);
     const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>>({});
     const [model, setModel] = useState<AIModel>(() => {
         const saved = localStorage.getItem('ai_preferred_model');
@@ -88,13 +87,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const modelActivityIdRef = useRef(0);
     const [pipedriveCooldown, setPipedriveCooldown] = useState<number>(0);
 
-    // ─── Agent mode (v1 = padrão, v2 = agente autônomo) ─────
-    const [agentMode, setAgentMode] = useState<'v1' | 'v2'>('v2');
-    // v2: eventos em streaming para a mensagem sendo construída
-    const [v2Events, setV2Events] = useState<any[]>([]);
-    const [v2Streaming, setV2Streaming] = useState(false);
-    // v2: confirmações já decididas { action_id -> approved }
-    const [v2ConfirmedActions, setV2ConfirmedActions] = useState<Record<string, boolean>>({});
+    // ─── Agente: eventos em streaming para a mensagem sendo construída ──────────
+    const [agentEvents, setAgentEvents] = useState<any[]>([]);
+    const [agentStreaming, setAgentStreaming] = useState(false);
+    // Confirmações já decididas { action_id -> approved }
+    const [agentConfirmedActions, setAgentConfirmedActions] = useState<Record<string, boolean>>({});
     const abortControllerRef = useRef<AbortController | null>(null);
 
     const handleStopStreaming = useCallback(() => {
@@ -103,7 +100,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             abortControllerRef.current = null;
         }
         setIsLoading(false);
-        setV2Streaming(false);
+        setAgentStreaming(false);
         setActiveRunningTask(prev => prev?.status === 'streaming' ? { ...prev, status: 'done' } : prev);
         setLiveModel(null);
         setModelActivity([]);
@@ -131,7 +128,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         label: string;
         prompt: string;
         status: TaskStatus;
-        logs: V2Event[];
+        logs: AgentEvent[];
         isExpanded: boolean;
         orgId?: number | null;
         threadId?: string;
@@ -170,12 +167,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         // Mostra estado de loading enquanto o worker ainda roda
         setIsLoading(true);
-        setV2Streaming(true);
+        setAgentStreaming(true);
 
         const handleScanDone = (e: Event) => {
             window.removeEventListener('hierarchy_scan_done', handleScanDone);
             const contacts = (e as CustomEvent).detail?.contacts || [];
-            handleMainChatMappingDone(contacts, ctx.event as V2Event);
+            handleMainChatMappingDone(contacts, ctx.event as AgentEvent);
         };
 
         window.addEventListener('hierarchy_scan_done', handleScanDone);
@@ -190,7 +187,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
 
     const streamTaskInto = async (url: string, body: object, initialTaskState: typeof activeRunningTask) => {
-        const collected: V2Event[] = [];
+        const collected: AgentEvent[] = [];
         
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -220,7 +217,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 for (const line of lines) {
                     if (!line.trim()) continue;
                     try {
-                        const ev: V2Event = JSON.parse(line);
+                        const ev: AgentEvent = JSON.parse(line);
                         collected.push(ev);
                         setActiveRunningTask(prev => {
                             if (!prev) return null;
@@ -258,7 +255,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             label: action.label,
             prompt: action.prompt,
             status: 'streaming' as const,
-            logs: [] as V2Event[],
+            logs: [] as AgentEvent[],
             isExpanded: true, // Autoexpand upon approval for immersive execution Console!
             orgId: selectedOrgId,
             threadId: activeThread?.id,
@@ -270,7 +267,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setTaskInlineConfirmed({});
 
         try {
-            const collected = await streamTaskInto(V2_STREAM_URL, {
+            const collected = await streamTaskInto(AGENT_STREAM_URL, {
                 message: action.prompt,
                 org_id: selectedOrgId,
                 thread_id: activeThread?.id,
@@ -329,7 +326,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
 
         try {
-            const collected = await streamTaskInto(V2_CONFIRM_URL, {
+            const collected = await streamTaskInto(AGENT_CONFIRM_URL, {
                 action_id,
                 approved: true,
                 thread_id: activeThread?.id,
@@ -392,7 +389,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         );
 
         try {
-            const newEvents = await streamTaskInto(V2_STREAM_URL, {
+            const newEvents = await streamTaskInto(AGENT_STREAM_URL, {
                 message: continuation,
                 org_id: selectedOrgId,
                 thread_id: activeThread?.id,
@@ -464,8 +461,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             analyserNode={analyserNode}
             theme={theme}
             pipedriveCooldown={pipedriveCooldown}
-            agentMode={agentMode}
-            setAgentMode={setAgentMode}
             onStop={handleStopStreaming}
             activeRunningTask={activeRunningTask}
             setActiveRunningTask={setActiveRunningTask}
@@ -487,7 +482,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         if (isAtBottom) {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [messages, currentLogs, isAtBottom]);
+    }, [messages, isAtBottom]);
 
     // ─── Voice input ─────────────────────────────────────────
     useEffect(() => {
@@ -536,7 +531,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             window.localStorage.setItem(`active-thread-id-${targetOrgId}`, thread.id);
             window.localStorage.setItem('chat-panel-view', 'chat');
         }
-        setCurrentLogs([]);
         setView('chat');
 
         try {
@@ -551,14 +545,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             } else {
                 let hasActiveJobLoading = false;
                 const mappedMsgs = msgs.map((m: MessageOut) => {
-                    const isV2 = !!(m.logs && Array.isArray(m.logs) && m.logs.some((l: any) => l.type === 'tool_call' || l.type === 'thinking' || l.type === 'final'));
-                    let forceV2Streaming = false;
-                    if (isV2 && m.logs && Array.isArray(m.logs)) {
+                    const isAgent = !!(m.logs && Array.isArray(m.logs) && m.logs.some((l: any) => l.type === 'tool_call' || l.type === 'thinking' || l.type === 'final'));
+                    let forceAgentStreaming = false;
+                    if (isAgent && m.logs && Array.isArray(m.logs)) {
                         const hasMapping = m.logs.some((l: any) => l.type === 'hierarchy_mapping_required');
                         if (hasMapping && typeof window !== 'undefined') {
                             const activeJob = window.localStorage.getItem('active-discovery-job');
                             if (activeJob) {
-                                forceV2Streaming = true;
+                                forceAgentStreaming = true;
                                 hasActiveJobLoading = true;
                             }
                         }
@@ -571,15 +565,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         ui_module: (m.ui_module as any) ?? undefined,
                         data: m.data ?? undefined,
                         logs: m.logs ?? undefined,
-                        isV2: isV2,
-                        v2Events: isV2 ? (m.logs ?? undefined) : undefined,
-                        v2Streaming: forceV2Streaming ? true : undefined,
+                        isAgent: isAgent,
+                        agentEvents: isAgent ? (m.logs ?? undefined) : undefined,
+                        agentStreaming: forceAgentStreaming ? true : undefined,
                     };
                 });
 
                 if (hasActiveJobLoading) {
                     setIsLoading(true);
-                    setV2Streaming(true);
+                    setAgentStreaming(true);
                 }
                 setMessages(mappedMsgs);
             }
@@ -667,7 +661,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
         setActiveThread(null);
         setMessages([]);
-        setCurrentLogs([]);
         // Refresh thread list to show updated message counts
         void loadThreads();
     };
@@ -731,125 +724,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
     };
 
-    // ─── Core Chat Workflow ──────────────────────────────────
-    const executeChatWorkflow = async (
-        text: string,
-        companiesSelected: CompanyResult[],
-        threadId: string,
-        historyForApi: { role: string, content: string }[],
-        isSuggestedAction: boolean = false
-    ) => {
+    // ─── Agente: executar workflow ────────────────────────────
+    const executeAgent = async (text: string, threadId: string, historyForApi: any[]) => {
         setIsLoading(true);
-        setCurrentLogs([]);
-
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-        const controller = new AbortController();
-        abortControllerRef.current = controller;
-
-        try {
-            const response = await fetch(ai.getChatStreamUrl(), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: text,
-                    orgId: selectedOrgId,
-                    selectedCompanies: companiesSelected,
-                    context: 'hierarchy_analysis',
-                    model,
-                    thread_id: threadId,
-                    history: historyForApi,
-                    suggested_action: isSuggestedAction,
-                }),
-                signal: controller.signal,
-            });
-
-            if (!response.ok) {
-                let errorMsg = `Erro ${response.status}`;
-                try { const e = await response.json(); errorMsg = e?.detail || e?.error?.message || errorMsg; } catch { /* ignore */ }
-                setMessages(prev => [...prev, {
-                    id: (Date.now() + 1).toString(),
-                    role: 'assistant',
-                    content: `Não consegui processar sua mensagem. ${errorMsg}`,
-                    timestamp: new Date(),
-                }]);
-                return;
-            }
-
-            const contentType = response.headers.get('content-type');
-            if (contentType?.includes('application/x-ndjson') && response.body) {
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-                const sessionLogs: any[] = [];
-
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    buffer += decoder.decode(value, { stream: true });
-                    const lines = buffer.split('\n');
-                    buffer = lines.pop() || '';
-
-                    for (const line of lines) {
-                        if (!line.trim()) continue;
-                        try {
-                            const chunk = JSON.parse(line);
-                            if (['log','thought','status','data_found','warning','stage_blocked','stage_ok'].includes(chunk.type)) {
-                                sessionLogs.push(chunk);
-                                setCurrentLogs([...sessionLogs]);
-                                if (chunk.pipedrive_cooldown) setPipedriveCooldown(chunk.pipedrive_cooldown);
-                            } else if (chunk.type === 'final') {
-                                if (chunk.pipedrive_cooldown) setPipedriveCooldown(chunk.pipedrive_cooldown);
-                                setMessages(prev => [...prev, {
-                                    id: (Date.now() + 1).toString(),
-                                    role: 'assistant',
-                                    content: chunk.response || 'Finalizado.',
-                                    timestamp: new Date(),
-                                    ui_module: chunk.ui_module,
-                                    data: chunk.data,
-                                    logs: [...sessionLogs],
-                                    pending_approvals: chunk.data?.pending_approvals || [],
-                                    suggested_actions: chunk.data?.suggested_actions || [],
-                                }]);
-                                // Refresh thread title/count silently
-                                const targetOrgId = selectedOrgId || 0;
-                                conversations.listThreads(targetOrgId).then(setThreads).catch(() => {});
-                            }
-                        } catch { /* ignore */ }
-                    }
-                }
-            } else {
-                const data = await response.json();
-                if (data.pipedrive_cooldown) setPipedriveCooldown(data.pipedrive_cooldown);
-                setMessages(prev => [...prev, {
-                    id: (Date.now() + 1).toString(),
-                    role: 'assistant',
-                    content: data.response,
-                    timestamp: new Date(),
-                    ui_module: data.ui_module,
-                    data: data.data,
-                }]);
-            }
-        } catch (error) {
-            if ((error as any)?.name === 'AbortError') {
-                console.log('[Chat] Stream cancelado pelo usuário');
-            } else {
-                console.error('Erro ao executar workflow:', error);
-            }
-        } finally {
-            if (abortControllerRef.current === controller) {
-                abortControllerRef.current = null;
-            }
-            setIsLoading(false);
-        }
-    };
-
-    // ─── V2: executar workflow do agente autônomo ────────────
-    const executeAgentV2 = async (text: string, threadId: string, historyForApi: any[]) => {
-        setIsLoading(true);
-        setV2Events([]);
-        setV2Streaming(true);
+        setAgentEvents([]);
+        setAgentStreaming(true);
 
         const msgId = (Date.now() + 1).toString();
 
@@ -859,8 +738,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             role: 'assistant' as const,
             content: '',
             timestamp: new Date(),
-            v2Events: [] as any[],
-            isV2: true,
+            agentEvents: [] as any[],
+            isAgent: true,
         }]);
 
         if (abortControllerRef.current) {
@@ -873,7 +752,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         let hasConfirmationRequired = false;
 
         try {
-            const response = await fetch(ai.getV2ChatStreamUrl(), {
+            const response = await fetch(AGENT_STREAM_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: text, history: historyForApi, org_id: selectedOrgId, thread_id: threadId }),
@@ -883,7 +762,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (!response.ok || !response.body) {
                 const errText = response.ok ? 'Sem corpo na resposta' : `Erro ${response.status}`;
                 setMessages(prev => prev.map(m =>
-                    m.id === msgId ? { ...m, content: `Não consegui processar: ${errText}`, v2Streaming: false } : m
+                    m.id === msgId ? { ...m, content: `Não consegui processar: ${errText}`, agentStreaming: false } : m
                 ));
                 return;
             }
@@ -932,7 +811,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
                         // Atualiza a mensagem em tempo real
                         setMessages(prev => prev.map(m =>
-                            m.id === msgId ? { ...m, v2Events: [...collectedEvents] } : m
+                            m.id === msgId ? { ...m, agentEvents: [...collectedEvents] } : m
                         ));
                     } catch { /* ignore */ }
                 }
@@ -961,13 +840,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             } else {
                 setModelActivity([]);
             }
-            // Não alteramos o v2Streaming aqui pois faremos isso no finally com base na variável hasMappingRequired
+            // Não alteramos agentStreaming aqui; faremos no finally com base em hasMappingRequired
 
         } catch (err) {
             if ((err as any)?.name === 'AbortError') {
-                console.log('[AgentV2] Stream cancelado pelo usuário');
+                console.log('[Agent] Stream cancelado pelo usuário');
             } else {
-                console.error('[AgentV2] Erro:', err);
+                console.error('[Agent] Erro:', err);
             }
         } finally {
             if (abortControllerRef.current === controller) {
@@ -976,19 +855,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             
             
             setMessages(prev => prev.map(m =>
-                m.id === msgId ? { ...m, v2Streaming: hasMappingRequired ? true : false } : m
+                m.id === msgId ? { ...m, agentStreaming: hasMappingRequired ? true : false } : m
             ));
-            
+
             if (!hasMappingRequired && !hasConfirmationRequired) {
                 setIsLoading(false);
-                setV2Streaming(false);
+                setAgentStreaming(false);
             }
         }
     };
 
-    // ─── V2: lidar com finalização de mapeamento no chat principal
-    // ─── V2: lidar com finalização de mapeamento no chat principal
-    const handleMainChatMappingDone = async (contacts: any[], event?: V2Event) => {
+    // ─── Agente: lidar com finalização de mapeamento no chat principal ──────────
+    const handleMainChatMappingDone = async (contacts: any[], event?: AgentEvent) => {
         // Limpa contexto persistido — mapeamento concluído com sucesso
         localStorage.removeItem('pending-hierarchy-continuation');
         const orgId = selectedOrgId || event?.org_id;
@@ -1061,21 +939,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             activityClause
         );
 
-        const targetMsg = messages.find(m => m.v2Events && m.v2Events.some(e => e.type === 'hierarchy_mapping_required'));
+        const targetMsg = messages.find(m => m.agentEvents && m.agentEvents.some(e => e.type === 'hierarchy_mapping_required'));
         if (!targetMsg || !targetMsg.id) {
             // Fallback se não encontrar a mensagem anterior
             setIsLoading(false);
-            setV2Streaming(false);
+            setAgentStreaming(false);
             setTimeout(() => handleSendMessage(continuation, [], true), 0);
             return;
         }
 
         const targetMsgId = targetMsg.id;
-        const existingEvents = targetMsg.v2Events || [];
+        const existingEvents = targetMsg.agentEvents || [];
 
         setIsLoading(true);
-        setV2Streaming(true);
-        setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, v2Streaming: true } : m));
+        setAgentStreaming(true);
+        setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: true } : m));
 
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -1086,7 +964,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const threadId = activeThread?.id || '';
 
         try {
-            const response = await fetch(V2_STREAM_URL, {
+            const response = await fetch(AGENT_STREAM_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: continuation, direct_action: true, org_id: selectedOrgId, thread_id: threadId }),
@@ -1094,9 +972,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             });
 
             if (!response.ok || !response.body) {
-                setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, v2Streaming: false } : m));
+                setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: false } : m));
                 setIsLoading(false);
-                setV2Streaming(false);
+                setAgentStreaming(false);
                 return;
             }
 
@@ -1139,7 +1017,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         }
 
                         setMessages(prev => prev.map(m =>
-                            m.id === targetMsgId ? { ...m, v2Events: [...existingEvents, ...collectedEvents] } : m
+                            m.id === targetMsgId ? { ...m, agentEvents: [...existingEvents, ...collectedEvents] } : m
                         ));
                     } catch { /* ignore */ }
                 }
@@ -1153,27 +1031,27 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 setModelActivity([]);
             }
         } catch (err) {
-            console.error('[AgentV2 Continuation] Erro:', err);
+            console.error('[Agent Continuation] Erro:', err);
         } finally {
             if (abortControllerRef.current === controller) {
                 abortControllerRef.current = null;
             }
-            setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, v2Streaming: false } : m));
+            setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: false } : m));
             setIsLoading(false);
-            setV2Streaming(false);
+            setAgentStreaming(false);
         }
     };
 
-    // ─── V2: lidar com confirmação de ação ───────────────────
-    const handleV2Confirm = async (action_id: string, approved: boolean) => {
-        setV2ConfirmedActions(prev => ({ ...prev, [action_id]: approved }));
+    // ─── Agente: lidar com confirmação de ação ───────────────
+    const handleAgentConfirm = async (action_id: string, approved: boolean) => {
+        setAgentConfirmedActions(prev => ({ ...prev, [action_id]: approved }));
 
         // Marca todas as mensagens com esse action_id
         setMessages(prev => prev.map(m => {
-            if (!m.isV2 || !m.v2Events) return m;
-            const hasAction = m.v2Events.some((e: any) => e.action_id === action_id);
+            if (!m.isAgent || !m.agentEvents) return m;
+            const hasAction = m.agentEvents.some((e: any) => e.action_id === action_id);
             if (!hasAction) return m;
-            return { ...m, v2ConfirmedActions: { ...(m.v2ConfirmedActions || {}), [action_id]: approved } };
+            return { ...m, agentConfirmedActions: { ...(m.agentConfirmedActions || {}), [action_id]: approved } };
         }));
 
         if (!approved) return;
@@ -1181,7 +1059,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         // Chama o endpoint de confirmação e faz streaming do resultado
         const threadId = activeThread?.id || '';
         setIsLoading(true);
-        setV2Streaming(true);
+        setAgentStreaming(true);
 
         const msgId = (Date.now() + 2).toString();
         setMessages(prev => [...prev, {
@@ -1189,8 +1067,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             role: 'assistant' as const,
             content: '',
             timestamp: new Date(),
-            v2Events: [],
-            isV2: true,
+            agentEvents: [],
+            isAgent: true,
         }]);
 
         if (abortControllerRef.current) {
@@ -1200,7 +1078,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         abortControllerRef.current = controller;
 
         try {
-            const response = await fetch(ai.getV2ConfirmStreamUrl(), {
+            const response = await fetch(AGENT_CONFIRM_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action_id, approved, thread_id: threadId }),
@@ -1210,7 +1088,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (!response.ok || !response.body) {
                 const errText = response.ok ? 'Sem corpo na resposta' : `Erro ${response.status}`;
                 setMessages(prev => prev.map(m =>
-                    m.id === msgId ? { ...m, content: `Falha ao confirmar ação: ${errText}`, v2Streaming: false } : m
+                    m.id === msgId ? { ...m, content: `Falha ao confirmar ação: ${errText}`, agentStreaming: false } : m
                 ));
                 return;
             }
@@ -1233,27 +1111,27 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         const event = JSON.parse(line);
                         collectedEvents.push(event);
                         setMessages(prev => prev.map(m =>
-                            m.id === msgId ? { ...m, v2Events: [...collectedEvents] } : m
+                            m.id === msgId ? { ...m, agentEvents: [...collectedEvents] } : m
                         ));
                     } catch { /* ignore */ }
                 }
             }
 
             setMessages(prev => prev.map(m =>
-                m.id === msgId ? { ...m, v2Events: [...collectedEvents], v2Streaming: false } : m
+                m.id === msgId ? { ...m, agentEvents: [...collectedEvents], agentStreaming: false } : m
             ));
         } catch (err) {
             if ((err as any)?.name === 'AbortError') {
-                console.log('[AgentV2 Confirm] Stream cancelado pelo usuário');
+                console.log('[Agent Confirm] Stream cancelado pelo usuário');
             } else {
-                console.error('[AgentV2] Confirm error:', err);
+                console.error('[Agent] Confirm error:', err);
             }
         } finally {
             if (abortControllerRef.current === controller) {
                 abortControllerRef.current = null;
             }
             setIsLoading(false);
-            setV2Streaming(false);
+            setAgentStreaming(false);
         }
     };
 
@@ -1282,11 +1160,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setInputValue('');
         setSelectedCompanies([]);
 
-        if (agentMode === 'v2') {
-            await executeAgentV2(text, threadId, historyForApi);
-        } else {
-            await executeChatWorkflow(text, companiesSelected, threadId, historyForApi, isSuggestedAction);
-        }
+        await executeAgent(text, threadId, historyForApi);
     };
 
     useEffect(() => {
@@ -1337,11 +1211,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const historyForApi = messagesIncludingLastAssistant.slice(-6).map(m => ({ role: m.role, content: m.content }));
         
         setMessages(newHistory);
-        if (agentMode === 'v2') {
-            await executeAgentV2(lastUserMsg.content, threadId, historyForApi);
-        } else {
-            await executeChatWorkflow(lastUserMsg.content, lastUserMsg.selectedCompanies || [], threadId, historyForApi);
-        }
+        await executeAgent(lastUserMsg.content, threadId, historyForApi);
     };
 
     // ─── Approve / Reject ────────────────────────────────────
@@ -1595,21 +1465,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             onScroll={handleScroll}
                         >
                             {messages.map(message => {
-                                if (message.isV2 && message.role === 'assistant') {
+                                if (message.isAgent && message.role === 'assistant') {
                                     return (
-                                        <AgentV2Message
+                                        <AgentMessage
                                             key={message.id}
                                             messageId={message.id}
-                                            events={message.v2Events || []}
-                                            isStreaming={message.v2Streaming !== false && v2Streaming}
-                                            onConfirm={handleV2Confirm}
-                                            confirmedActions={message.v2ConfirmedActions || {}}
+                                            events={message.agentEvents || []}
+                                            isStreaming={message.agentStreaming !== false && agentStreaming}
+                                            onConfirm={handleAgentConfirm}
+                                            confirmedActions={message.agentConfirmedActions || {}}
                                             onRegenerate={() => handleRegenerate(message.id)}
                                             onAction={(prompt: string) => handleSendMessage(prompt, [], true)}
-                                            streamV2Url={V2_STREAM_URL}
-                                            confirmV2Url={V2_CONFIRM_URL}
+                                            streamV2Url={AGENT_STREAM_URL}
+                                            confirmV2Url={AGENT_CONFIRM_URL}
                                             orgId={selectedOrgId}
-                                             selectedOrgName={cleanOrgName}
+                                            selectedOrgName={cleanOrgName}
                                             threadId={activeThread?.id}
                                             approvedSuggestedActions={approvedSuggestedActions}
                                             onApproveSuggestedAction={handleApproveSuggestedAction}
@@ -1632,24 +1502,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                     />
                                 );
                             })}
-
-                            {/* Thinking panel */}
-                            {isLoading && agentMode === 'v1' && (
-                                <div className={styles.debugPanel}>
-                                    <details className={styles.debugSection} style={{ border: 'none', background: 'transparent' }} open>
-                                        <summary className={styles.debugSummary}>
-                                            <span>Agente está pensando...</span>
-                                            <ChevronRight size={12} className={styles.chevron} />
-                                        </summary>
-                                        <div className={styles.streamingLogs}>
-                                            {currentLogs.length === 0
-                                                ? <div className={styles.logLine}><Loader2 size={12} className={styles.spinner} /> <span>Iniciando pipeline...</span></div>
-                                                : currentLogs.map((log, i) => <RichLogRenderer key={i} log={log} onOpenWhatsApp={onOpenWhatsApp} />)
-                                            }
-                                        </div>
-                                    </details>
-                                </div>
-                            )}
                             <div ref={messagesEndRef} />
                         </div>
                         {renderChatInput()}

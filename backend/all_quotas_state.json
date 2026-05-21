@@ -30,7 +30,7 @@
       "tokens_limit": 30000,
       "tokens_remaining": 29988,
       "tokens_pct": 100.0,
-      "updated_at": 1779152781.2280707,
+      "updated_at": 1779363722.8003151,
       "status": "healthy"
     },
     "qwen/qwen3-32b": {
@@ -85,7 +85,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1779152781.7708037,
+      "updated_at": 1779363723.2496414,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -95,7 +95,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1779152782.3391452,
+      "updated_at": 1779363723.5185838,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -107,7 +107,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1779152785.7348669,
+      "updated_at": 1779363726.040361,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"

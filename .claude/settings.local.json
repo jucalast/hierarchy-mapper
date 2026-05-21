@@ -102,7 +102,23 @@
       "Bash(rtk wc *)",
       "Bash(rtk ls *)",
       "Bash(Select-String -Pattern \"linkedin|imagem\" -CaseInsensitive)",
-      "Bash(Test-Path *)"
+      "Bash(Test-Path *)",
+      "Bash(git -C \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\" diff --stat HEAD)",
+      "Bash(powershell.exe -Command \"Select-String -Path 'C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\services\\\\ai\\\\agent_v2\\\\agent.py' -Pattern '^\\(async def|def \\)' | Select-Object LineNumber,Line | Format-Table -AutoSize\")",
+      "Bash(powershell.exe *)",
+      "Bash(New-Item -ItemType Directory -Force \"backend\\\\services\\\\ai\\\\utils\")",
+      "Bash(Out-Null)",
+      "Bash(New-Item -ItemType Directory -Force \"backend\\\\services\\\\ai\\\\llm\")",
+      "Bash(Set-Content -Path \"backend\\\\services\\\\ai\\\\utils\\\\__init__.py\" -Value \"from services.ai.utils.helpers import *\")",
+      "Bash(Write-Host \"Diretórios criados.\")",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\services\\\\external\" -Recurse | ForEach-Object { $_.FullName })",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\api\\\\v1\\\\routers\\\\agent.py\" -Pattern \"v2/chat|v2/confirm\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\modules\\\\prospecting\\\\service\\\\prospect.py\" -Pattern \"^from \\\\.|^import \\\\.|services\\\\.prospecting\\\\.\" | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line\\)\" })",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\modules\\\\prospecting\\\\service\\\\prospect.py\" -Pattern \"^from |^import \" | Select-Object -First 20 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line\\)\" })",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\core\\\\infra\\\\database.py\" -Pattern \"bc\\\\.\" | Select-Object -First 5 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\services\\\\ai\\\\pipeline\\\\data_fetcher.py\" -Pattern \"^from |^import \" | Select-Object -First 25 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\core\\\\llm\\\\router.py\" -Pattern \"logging_config|logging\" | Select-Object -First 5 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
+      "Bash(git ls-tree *)"
     ]
   }
 }

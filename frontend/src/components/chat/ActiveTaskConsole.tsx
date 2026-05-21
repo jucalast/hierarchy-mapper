@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { InlineEventStream, MappedContact } from './AgentV2Message';
+import { InlineEventStream, MappedContact } from './AgentV2Message'; // AgentV2Message.tsx mantém esse nome de arquivo; componente exportado agora como AgentMessage
 import { AIModel } from './ModelSelector';
 
 interface ActiveTaskConsoleProps {

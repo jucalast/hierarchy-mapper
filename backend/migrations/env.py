@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # Importa Base + models para autogenerate
 from core.config import settings
-from core.database import Base
+from core.infra.database import Base
 from models import AutomatedAction, Employee, Organization  # noqa: F401
 
 config = context.config

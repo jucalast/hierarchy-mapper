@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Type, TypeVar
 
 from core.config import settings
-from core.logging_config import get_logger
+from core.observability.logging_config import get_logger
 
 log = get_logger(__name__)
 

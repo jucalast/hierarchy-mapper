@@ -1,25 +1,14 @@
-import type { ChatPayload, ChatResponse } from '@/types';
 import { api } from './client';
-import { API_V1_URL, TIMEOUTS } from '../config';
+import { API_V1_URL } from '../config';
 
-/** Chat padrão (sem stream). Para stream do agent_workflow, use getChatStreamUrl. */
-export function chat(payload: ChatPayload) {
-  return api.post<ChatResponse>('/ai/chat', payload, { timeout: TIMEOUTS.long });
+/** URL do endpoint de streaming do Agente (NDJSON). */
+export function getAgentChatStreamUrl(): string {
+  return `${API_V1_URL}/agent/chat`;
 }
 
-/** URL do endpoint de streaming (NDJSON). Consumir via `useJobStream` ou fetch manual. */
-export function getChatStreamUrl(): string {
-  return `${API_V1_URL}/ai/chat`;
-}
-
-/** URL do endpoint de streaming do agente V2. */
-export function getV2ChatStreamUrl(): string {
-  return `${API_V1_URL}/ai/v2/chat`;
-}
-
-/** URL do endpoint de confirmação de ação do agente V2. */
-export function getV2ConfirmStreamUrl(): string {
-  return `${API_V1_URL}/ai/v2/confirm`;
+/** URL do endpoint de confirmação de ação do Agente. */
+export function getAgentConfirmStreamUrl(): string {
+  return `${API_V1_URL}/agent/confirm`;
 }
 
 export interface AgentActionPayload {

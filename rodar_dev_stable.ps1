@@ -80,12 +80,16 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
 
 # 6. Iniciar WhatsApp Service
 Write-Host "💬 Iniciando Servico WhatsApp (Porta 8001)..." -ForegroundColor Cyan
-$whatsappPath = Join-Path $PSScriptRoot "backend\services\whatsapp-service"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "
-    `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-WhatsApp'
-    Set-Location '$whatsappPath'
-    npm start
-"
+$whatsappPath = Join-Path $PSScriptRoot "backend\whatsapp-service"
+if (Test-Path $whatsappPath) {
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "
+        `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-WhatsApp'
+        Set-Location '$whatsappPath'
+        npm start
+    "
+} else {
+    Write-Host "WhatsApp service nao encontrado em $whatsappPath" -ForegroundColor Yellow
+}
 
 # 7. Iniciar Email Service (Python)
 Write-Host "📧 Iniciando Servico de Email (Porta 8002)..." -ForegroundColor Cyan

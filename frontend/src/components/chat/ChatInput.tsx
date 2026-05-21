@@ -9,6 +9,8 @@ import { ModelSelector, AIModel } from './ModelSelector';
 import { ModelActivityBar, ModelActivityEvent, getNoticeStyle } from './ModelActivityBar';
 import { AudioWaveform } from './AudioWaveform';
 import { InlineEventStream, MappedContact } from './AgentV2Message';
+// AgentEvent re-exported for consumers
+export type { AgentEvent } from './AgentV2Message';
 import { ActiveTaskConsole } from './ActiveTaskConsole';
 
 interface ChatInputProps {
@@ -43,9 +45,6 @@ interface ChatInputProps {
     isStreamingActivity?: boolean;
     // Cooldown props
     pipedriveCooldown?: number;
-    // Agent mode
-    agentMode?: 'v1' | 'v2';
-    setAgentMode?: (mode: 'v1' | 'v2') => void;
     // Styling
     theme: string;
     onStop?: () => void;
@@ -69,8 +68,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     modelActivity = [],
     isStreamingActivity = false,
     pipedriveCooldown = 0,
-    agentMode = 'v1',
-    setAgentMode,
     theme,
     onStop,
     activeRunningTask,
@@ -458,21 +455,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                             ) : (
                                 /* ── Modo normal ── */
                                 <div className={styles.inputLeftControls}>
-                                    {setAgentMode && (
-                                        <div className={styles.agentModeToggle}>
-                                            {(['v1', 'v2'] as const).map(mode => (
-                                                <button
-                                                    key={mode}
-                                                    onClick={() => setAgentMode(mode)}
-                                                    title={mode === 'v1' ? 'Modo padrão' : 'Agente autônomo com ferramentas'}
-                                                    className={`${styles.agentModeButton} ${agentMode === mode ? styles.agentModeButtonActive : ''} ${mode === 'v2' && agentMode === 'v2' ? 'agentModeV2' : ''}`}
-                                                >
-                                                    {mode.toUpperCase()}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                    <div className={styles.dividerSmall}>|</div>
                                     <ModelSelector
                                         model={model}
                                         setModel={setModel}

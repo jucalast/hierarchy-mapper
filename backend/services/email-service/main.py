@@ -7,7 +7,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 # Adicionar o root ao path para localizar os módulos de serviços
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from services.communication.email_client import EmailClient
+from modules.communication.service.email.client import EmailClient
 
 app = FastAPI(title="Email Discovery Service (Outlook Integrated)")
 

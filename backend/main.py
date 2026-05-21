@@ -24,17 +24,16 @@ from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from api.v1.api import api_router
-from api.v1.endpoints.communication import router as comm_router
+from api.v1.router import api_router
 from core.config import settings
-from core.http_client import close_http_client, init_http_client
-from core.logging_config import (
+from core.infra.http_client import close_http_client, init_http_client
+from core.observability.logging_config import (
     RequestIDMiddleware,
     configure_logging,
     get_logger,
     get_request_id,
 )
-from core.metrics import render_metrics
+from core.observability.metrics import render_metrics
 from core.rate_limiter import limiter
 
 log = get_logger(__name__)
@@ -51,6 +50,19 @@ _background_tasks: set[asyncio.Task] = set()
 async def lifespan(app: FastAPI):
     """Ciclo de vida: startup → yield → shutdown."""
     configure_logging()
+
+    # Avisa se o JWT secret padrão está sendo usado em produção
+    try:
+        from core.security import SECRET_KEY
+        _DEFAULT_JWT = "linkb2b-super-secret-jwt-key-for-saas-2026"
+        if settings.is_production and SECRET_KEY == _DEFAULT_JWT:
+            log.error(
+                "security.jwt_secret.default_in_production",
+                message="JWT_SECRET está com valor padrão em produção! Defina JWT_SECRET no ambiente.",
+            )
+    except Exception:
+        pass
+
     log.info(
         "server.startup",
         env=settings.environment,
@@ -69,7 +81,7 @@ async def lifespan(app: FastAPI):
 
     # Database
     try:
-        from core.database import init_db
+        from core.infra.database import init_db
         await init_db()
         log.info("database.initialized")
     except Exception as e:
@@ -77,14 +89,14 @@ async def lifespan(app: FastAPI):
 
     # Scheduler de e-mail (IMAP)
     try:
-        from services.communication.scheduler import start_email_scheduler
+        from modules.communication.service.email.scheduler import start_email_scheduler
         await start_email_scheduler()
     except Exception as e:
         log.warning("scheduler.start_failed", error=str(e))
 
     # Sync hub em background
     try:
-        from services.intelligence.sync_hub import SyncIntelligenceHub
+        from modules.intelligence.service.sync_hub import SyncIntelligenceHub
         task = asyncio.create_task(
             SyncIntelligenceHub().sync_all(), name="sync_intelligence_hub"
         )
@@ -96,7 +108,7 @@ async def lifespan(app: FastAPI):
 
     # Trigger Service — monitora respostas de clientes (email + WhatsApp)
     try:
-        from services.ai.trigger_service import TriggerService
+        from modules.triggers.service.trigger_service import TriggerService
         _trigger_svc = TriggerService()
         trigger_task = asyncio.create_task(
             _trigger_svc.start_polling(), name="trigger_service"
@@ -109,7 +121,7 @@ async def lifespan(app: FastAPI):
 
     # LLM Proactive Preemptive Healthcheck task
     try:
-        from services.ai.llm.router import run_llm_preemptive_healthcheck
+        from core.llm.router import run_llm_preemptive_healthcheck
         healthcheck_task = asyncio.create_task(
             run_llm_preemptive_healthcheck(), name="llm_preemptive_healthcheck"
         )
@@ -135,7 +147,7 @@ async def lifespan(app: FastAPI):
 
         # Para scheduler
         try:
-            from services.communication.scheduler import stop_email_scheduler
+            from modules.communication.service.email.scheduler import stop_email_scheduler
             await stop_email_scheduler()
         except Exception as e:
             log.warning("scheduler.stop_failed", error=str(e))
@@ -149,7 +161,7 @@ async def lifespan(app: FastAPI):
 
         # Dispose do engine
         try:
-            from core.database import engine
+            from core.infra.database import engine
             await engine.dispose()
             log.info("database.disposed")
         except Exception as e:
@@ -254,7 +266,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 # Routers
 # =============================================================================
 
-app.include_router(comm_router, prefix="/api/v1/communication", tags=["communication"])
 app.include_router(api_router, prefix="/api/v1")
 
 
@@ -286,7 +297,7 @@ async def ready():
 
     # DB
     try:
-        from core.database import async_session
+        from core.infra.database import async_session
         from sqlalchemy import text
 
         async with async_session() as session:

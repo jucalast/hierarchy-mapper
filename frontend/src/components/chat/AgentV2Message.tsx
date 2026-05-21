@@ -12,7 +12,7 @@ import { refineMessage } from '../../services/api/ai';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface V2Event {
+export interface AgentEvent {
     type: 'thinking' | 'tool_call' | 'tool_result' | 'confirmation_required' | 'final' | 'error' | 'context_saved' | 'rate_wait' | 'context_overflow' | 'suggested_actions' | 'hierarchy_mapping_required';
     content?: string;
     call_id?: string;
@@ -43,9 +43,9 @@ export interface V2Event {
 
 import { AIModel } from './ModelSelector';
 
-export interface AgentV2MessageProps {
+export interface AgentMessageProps {
     messageId?: string;
-    events: V2Event[];
+    events: AgentEvent[];
     isStreaming?: boolean;
     onConfirm?: (action_id: string, approved: boolean) => void;
     confirmedActions?: Record<string, boolean>;
@@ -59,7 +59,7 @@ export interface AgentV2MessageProps {
     threadId?: string;
     approvedSuggestedActions?: Record<string, 'pending' | 'streaming' | 'awaiting_confirm' | 'awaiting_mapping' | 'done' | 'rejected' | 'error'>;
     onApproveSuggestedAction?: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => void;
-    onHierarchyMappingDone?: (contacts: any[], event?: V2Event) => void;
+    onHierarchyMappingDone?: (contacts: any[], event?: AgentEvent) => void;
     model: AIModel;
 }
 
@@ -171,7 +171,7 @@ export interface MappedContact {
  * Os contatos recebidos já passaram pelo carrossel "Análise Humana" do grafo.
  */
 const HierarchyMappingCard: React.FC<{
-    event: V2Event;
+    event: AgentEvent;
     onMappingDone: (contacts: MappedContact[]) => void;
     isStreaming?: boolean;
 }> = ({ event, onMappingDone, isStreaming }) => {
@@ -306,7 +306,7 @@ const renderMarkdown = (text: string): React.ReactNode => {
 // ─── ConfirmationCard ─────────────────────────────────────────────────────────
 
 const ConfirmationCard: React.FC<{
-    event: V2Event;
+    event: AgentEvent;
     onConfirm: (action_id: string, approved: boolean) => void;
     decided?: boolean;
     approvedResult?: boolean;
@@ -513,7 +513,7 @@ const ConfirmationCard: React.FC<{
 
 // ─── RateWaitBadge ────────────────────────────────────────────────────────────
 
-const RateWaitBadge: React.FC<{ event: V2Event; isStreaming: boolean }> = ({ event, isStreaming }) => {
+const RateWaitBadge: React.FC<{ event: AgentEvent; isStreaming: boolean }> = ({ event, isStreaming }) => {
     const [remaining, setRemaining] = useState(event.wait_sec || 0);
     React.useEffect(() => {
         if (!isStreaming || remaining <= 0) return;
@@ -530,7 +530,7 @@ const RateWaitBadge: React.FC<{ event: V2Event; isStreaming: boolean }> = ({ eve
     );
 };
 
-const ContextOverflowBadge: React.FC<{ event: V2Event }> = ({ event }) => (
+const ContextOverflowBadge: React.FC<{ event: AgentEvent }> = ({ event }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--sw-text-subtle)', margin: '3px 0' }}>
         <AlertCircle size={11} style={{ flexShrink: 0, color: '#f59e0b' }} />
         <span>{event.model} não suporta {event.estimated_tokens?.toLocaleString()} tokens (limite {event.limit?.toLocaleString()}) · usando modelo maior</span>
@@ -540,14 +540,14 @@ const ContextOverflowBadge: React.FC<{ event: V2Event }> = ({ event }) => (
 // ─── Renderizador inline de eventos (reutilizado no accordion) ────────────────
 
 export const InlineEventStream: React.FC<{
-    events: V2Event[];
+    events: AgentEvent[];
     isStreaming: boolean;
     inlineConfirmed: Record<string, boolean>;
     onInlineConfirm: (action_id: string, approved: boolean) => void;
     onHierarchyMappingDone?: (contacts: MappedContact[]) => void;
     model: AIModel;
 }> = ({ events, isStreaming, inlineConfirmed, onInlineConfirm, onHierarchyMappingDone, model }) => {
-    const resultMap: Record<string, V2Event> = {};
+    const resultMap: Record<string, AgentEvent> = {};
     for (const ev of events) {
         if (ev.type === 'tool_result' && ev.call_id) resultMap[ev.call_id] = ev;
     }
@@ -692,7 +692,7 @@ const getCompanyFromLabel = (label: string): string => {
 };
 
 const SuggestedActionTask: React.FC<{
-    action: { label: string; prompt: string; razao?: string; categoria?: string; status?: TaskStatus; logs?: V2Event[] };
+    action: { label: string; prompt: string; razao?: string; categoria?: string; status?: TaskStatus; logs?: AgentEvent[] };
     streamV2Url: string;
     confirmV2Url: string;
     orgId?: number | null;
@@ -710,7 +710,7 @@ const SuggestedActionTask: React.FC<{
     const externalStatus = approvedSuggestedActions[taskKey];
     const [localStatus, setLocalStatus] = useState<TaskStatus>(action.status || 'pending');
     const status = externalStatus || localStatus;
-    const [taskEvents, setTaskEvents] = useState<V2Event[]>(() => {
+    const [taskEvents, setTaskEvents] = useState<AgentEvent[]>(() => {
         if (!action.logs) return [];
         if (typeof action.logs === 'string') {
             try {
@@ -758,8 +758,8 @@ const SuggestedActionTask: React.FC<{
     });
     const [isRowHovered, setIsRowHovered] = useState(false);
 
-    const streamInto = async (url: string, body: object): Promise<V2Event[]> => {
-        const collected: V2Event[] = [];
+    const streamInto = async (url: string, body: object): Promise<AgentEvent[]> => {
+        const collected: AgentEvent[] = [];
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -781,7 +781,7 @@ const SuggestedActionTask: React.FC<{
                 for (const line of lines) {
                     if (!line.trim()) continue;
                     try {
-                        const ev: V2Event = JSON.parse(line);
+                        const ev: AgentEvent = JSON.parse(line);
                         collected.push(ev);
                         setTaskEvents(prev => [...prev, ev]);
                     } catch { /* ignore */ }
@@ -1104,9 +1104,9 @@ const AIAsterisk = ({ model }: { model: string }) => {
     );
 };
 
-// ─── AgentV2Message — componente principal ────────────────────────────────────
+// ─── AgentMessage — componente principal ─────────────────────────────────────
 
-export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
+export const AgentMessage: React.FC<AgentMessageProps> = ({
     messageId,
     events,
     isStreaming = false,
@@ -1126,7 +1126,7 @@ export const AgentV2Message: React.FC<AgentV2MessageProps> = ({
 }) => {
     const [copied, setCopied] = useState(false);
 
-    const resultMap: Record<string, V2Event> = {};
+    const resultMap: Record<string, AgentEvent> = {};
     for (const ev of events) {
         if (ev.type === 'tool_result' && ev.call_id) resultMap[ev.call_id] = ev;
     }

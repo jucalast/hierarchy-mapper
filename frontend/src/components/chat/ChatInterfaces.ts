@@ -24,10 +24,10 @@ export interface Message {
         full_prompt?: string;
     };
     showDebug?: boolean;
-    isV2?: boolean;
-    v2Events?: any[];
-    v2Streaming?: boolean;
-    v2ConfirmedActions?: Record<string, boolean>;
+    isAgent?: boolean;
+    agentEvents?: any[];
+    agentStreaming?: boolean;
+    agentConfirmedActions?: Record<string, boolean>;
 }
 
 export interface CompanyResult {

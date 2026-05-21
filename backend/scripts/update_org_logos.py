@@ -7,9 +7,9 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.append(str(backend_dir))
 
-from core.database import async_session
+from core.infra.database import async_session
 from models.organization import Organization
-from services.intelligence.brand_discovery import fetch_linkedin_logo
+from modules.intelligence.service.brand_discovery import fetch_linkedin_logo
 from sqlalchemy import select
 
 async def update_all_logos():
