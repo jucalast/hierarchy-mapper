@@ -1,3 +1,11 @@
+"""
+models.crm.integration
+=======================
+Credenciais e configuracoes de integracoes externas por Tenant.
+
+O campo credentials_encrypted armazena JSON com tokens/senhas.
+Integracoes suportadas: pipedrive | whatsapp | outlook | google_workspace
+"""
 import uuid
 from sqlalchemy import Column, String, ForeignKey, JSON
 from sqlalchemy.orm import relationship

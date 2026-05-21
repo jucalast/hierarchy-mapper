@@ -1,6 +1,17 @@
+"""
+modules.agent.service.core.phase_tracker
+=========================================
+Construção do system prompt dinâmico por fase da investigação do agente.
+
+_build_phase_status analisa o histórico de mensagens para determinar em qual
+fase do workflow o agente está (Mapeamento Pipedrive → Comunicação → Dossiê → Final)
+e gera o system prompt com apenas as instruções necessárias para aquela fase —
+economizando tokens e reduzindo confusão do modelo.
+"""
 from __future__ import annotations
 from datetime import datetime
 from typing import Optional
+
 from core.observability.logging_config import get_logger
 from modules.agent.service.prompts import SYSTEM_PROMPT_POWERFUL
 
@@ -45,7 +56,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                         content = _ast.literal_eval(content_trimmed)
                     except Exception:
                         pass
-
+            
             # Fallback robusto se ainda for string simples (extração por substring)
             if isinstance(content, str):
                 for t_name in [
@@ -116,9 +127,9 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                             name = p["name"].strip()
                             name_lower = name.lower()
                             is_company = any(suffix in name_lower for suffix in [
-                                "gmbh", "ltda", "s.a", "sa", "participaco", "participaço",
-                                "holding", "corp", "s/a", "industria", "indústria",
-                                "comercio", "comércio", "servico", "serviço", "eireli",
+                                "gmbh", "ltda", "s.a", "sa", "participaco", "participaço", 
+                                "holding", "corp", "s/a", "industria", "indústria", 
+                                "comercio", "comércio", "servico", "serviço", "eireli", 
                                 "me", "epp", "grupo"
                             ])
                             if is_company:
@@ -147,9 +158,9 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                     for n in names:
                         n_lower = n.lower()
                         is_company = any(suffix in n_lower for suffix in [
-                            "gmbh", "ltda", "s.a", "sa", "participaco", "participaço",
-                            "holding", "corp", "s/a", "industria", "indústria",
-                            "comercio", "comércio", "servico", "serviço", "eireli",
+                            "gmbh", "ltda", "s.a", "sa", "participaco", "participaço", 
+                            "holding", "corp", "s/a", "industria", "indústria", 
+                            "comercio", "comércio", "servico", "serviço", "eireli", 
                             "me", "epp", "grupo"
                         ])
                         if is_company:
@@ -164,7 +175,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                                 m_ph = _re.search(rf'{_re.escape(n)}[^\n·]*?(?:\+|tel:|cel:)?\s*([\d\s\-\(\)\+]{8,20})', raw)
                                 if m_ph:
                                     contact_phones[n] = m_ph.group(1).strip()
-                    contacts_found = contacts_found[:15]
+                contacts_found = contacts_found[:15]
 
             # Rastreia WhatsApp por resultado (fallback quando args não disponíveis)
             if tn == "whatsapp_get_messages" and not any(True for _ in []):
@@ -207,7 +218,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
     # ── Determina fase ───────────────────────────────────────────────────────
     if "pipedrive_get_all_activities" in tools_called:
         tools_called.add("pipedrive_get_activities")
-
+        
     _pd_required = {"pipedrive_get_org", "pipedrive_get_persons",
                     "pipedrive_get_deals", "pipedrive_get_activities"}
     pipedrive_complete = _pd_required.issubset(tools_called)
@@ -319,7 +330,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                         has_active = False
                         msg_count = 0
                         has_reply = False
-
+                        
                         try:
                             import json as _json
                             import ast
@@ -331,7 +342,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                                     data = ast.literal_eval(tc)
                                 except Exception:
                                     pass
-
+                                    
                             if isinstance(data, dict) and data.get("ok"):
                                 msg_count = data.get("count", 0)
                                 if tn == "whatsapp_get_messages":
@@ -373,10 +384,10 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                                 m_text_count = _re.search(r'(\d+)\s*(?:mensagens|e-mails|emails|conversas)', tc, _re.IGNORECASE)
                                 if m_text_count:
                                     msg_count = int(m_text_count.group(1))
-
+                                    
                             # 2. Busca se há resposta do contato externo (que não é Você ou joao.moura)
                             has_reply = bool(_re.search(r'\[(?!Você)(?!joao\.moura)[^\]]+\]:', tc))
-
+                            
                             if tn == "whatsapp_get_messages":
                                 if msg_count >= 10 and has_reply:
                                     has_active = True
@@ -408,7 +419,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                         # O retorno da tool usa a chave 'pending' (veja tools.py:exec_pipedrive_get_activities)
                         activities = data.get("pending", []) or data.get("activities", []) or data.get("data", [])
                         if not isinstance(activities, list): activities = []
-
+                        
                         for act in activities:
                             p_name = act.get("person_name")
                             if p_name:
@@ -424,7 +435,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                         # Fallback para regex no texto bruto
                         for ref in _extract_referrals(tc):
                             referred_contacts.add(ref)
-
+                
                 elif tn == "pipedrive_get_org":
                     # Tenta pegar o contato principal do deal/org se estiver no JSON
                     try:
@@ -438,18 +449,18 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
 
     # ── Extrai Objetivo Original (para priorizar contatos citados na tarefa)
     goal_contacts = set()
-
+    
     # Procura o objetivo nos últimos 3 msgs de usuário (mais robusto que apenas messages[0] em histórico longo)
     user_msgs = [m for m in messages if m.get("role") == "user" and isinstance(m.get("content"), str)]
     for um in reversed(user_msgs[-3:]):
         u_content = um["content"]
-
+        
         # 1. Extração por padrões explícitos (ex: "cobrar retorno com X")
         goal_referrals = _extract_referrals(u_content)
         for r in goal_referrals:
             goal_contacts.add(r)
             referred_contacts.add(r)
-
+            
         # 2. Extração de todos os nomes Capitalizados no trecho do objetivo
         # Foca apenas no texto antes de tags de escopo
         clean_goal = u_content.split("\n[OBRIGATÓRIO")[0].split("\n[ESCOPO")[0].strip()
@@ -458,14 +469,14 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             if n.lower() not in ["joão luccas", "j.ferres", "pipedrive", "whatsapp", "email", "linkb2b", "knorr", "bremse", "analise", "execute", "atividade"]:
                 goal_contacts.add(n)
                 referred_contacts.add(n)
-
+        
         # Se encontrou nomes no objetivo, para de procurar em mensagens anteriores
         if goal_contacts:
             break
 
     # ── OTIMIZAÇÃO DE FILA: Prioriza (1) Citados no Goal, (2) Indicados em tarefas, (3) Ativos
     optimized_contacts = []
-
+    
     # Passo 0: PRIORIDADE ABSOLUTA - Contatos vinculados a tarefas pendentes no CRM
     for c in contacts_found:
         if _is_referred(c, task_contacts) and c not in optimized_contacts:
@@ -476,17 +487,17 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
     for c in contacts_found:
         if _is_referred(c, goal_contacts) and c not in optimized_contacts:
             optimized_contacts.append(c)
-
+            
     # Passo 2: Contatos referenciados em atividades ou conversas
     for c in contacts_found:
         if _is_referred(c, referred_contacts) and c not in optimized_contacts:
             optimized_contacts.append(c)
-
+            
     # Passo 3: Contatos que já sabemos serem ativos (têm mensagens)
     for c in contacts_found:
         if c in active_contacts and c not in optimized_contacts:
             optimized_contacts.append(c)
-
+            
     # Passo 4: O restante (alfabético ou ordem original do Pipedrive)
     remaining_unsorted = [c for c in contacts_found if c not in optimized_contacts]
     optimized_contacts.extend(remaining_unsorted)
@@ -647,7 +658,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
     if not comms_complete:
         # Determina exatamente qual é a próxima ferramenta a chamar
         next_action = ""
-
+        
         # REGRA DE ESGOTAMENTO (Priority First): Esgota WhatsApp + Email do contato prioritário
         # antes de passar para o próximo da fila.
         for c in optimized_contacts:
@@ -661,7 +672,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                 if not _searched(c, email_searched):
                     next_action = f"PRÓXIMA FERRAMENTA: email_get_contact_history com contact_name='{c}'"
                     break
-
+            
         if not next_action:
             # Se esgotou os prioritários ou não há, segue a ordem pendente normal
             if pending_wapp:
@@ -730,14 +741,3 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
         "\n- NÃO chame nenhuma ferramenta agora. Apenas escreva o dossiê."
         "\n- Finalize no ponto 3."
     )
-
-
-def _suggest_actions_done(messages: list) -> bool:
-    """Retorna True se suggest_next_actions já foi chamado em alguma mensagem do histórico."""
-    for msg in messages:
-        content = msg.get("content", "")
-        if isinstance(content, list):
-            for block in content:
-                if block.get("type") == "tool_use" and block.get("name") == "suggest_next_actions":
-                    return True
-    return False

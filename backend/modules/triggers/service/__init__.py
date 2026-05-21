@@ -1,3 +1,4 @@
+"""Camada de serviço de triggers e executores de ações."""
 from .trigger_service import (
     TriggerService,
     get_pending_triggers,

@@ -1,3 +1,13 @@
+"""
+modules.agent.service.sanitizers
+=================================
+Limpeza e compactacao de resultados de ferramentas para consumo por LLM.
+
+Converte respostas brutas (Pipedrive, WhatsApp, Email) em narrativas compactas,
+reduzindo tokens sem perder informacao relevante para o raciocinio do agente.
+
+Funcao publica: _sanitize_result(tool_name, result) -> Any
+"""
 from __future__ import annotations
 from typing import Any
 from core.observability.logging_config import get_logger

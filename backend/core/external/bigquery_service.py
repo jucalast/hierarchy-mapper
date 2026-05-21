@@ -1,3 +1,14 @@
+"""
+core.external.bigquery_service
+==============================
+Busca de empresas na base publica da Receita Federal via Google BigQuery.
+
+Usa basedosdados.br_me_cnpj, filtrando situacao_cadastral=2 (ATIVA).
+Queries executadas em run_in_executor (cliente BigQuery e sincrono).
+
+Requer: google-cloud-key.json com service account GCP no diretorio core/
+Singleton: bigquery_service
+"""
 import asyncio
 import os
 from typing import Dict, List, Optional

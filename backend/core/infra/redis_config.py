@@ -1,3 +1,14 @@
+"""
+core.infra.redis_config
+=======================
+Cliente Redis sincrono para cache de imagens e settings ARQ para o worker.
+
+O redis_client e sincrono intencionalmente -- chamadas async usam
+asyncio.to_thread() nos routers para nao bloquear o event loop.
+Se a conexao falhar, redis_client e None e o cache de imagens fica desabilitado.
+
+Exportacoes: redis_client (redis.Redis | None), redis_settings (arq.RedisSettings)
+"""
 import redis
 from arq.connections import RedisSettings
 

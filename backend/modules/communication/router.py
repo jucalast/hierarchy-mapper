@@ -1,3 +1,14 @@
+"""
+modules.communication.router
+=============================
+Endpoints de comunicacao: email, WhatsApp e rastreamento de abertura.
+
+Rotas:
+    POST /communication/send-email    -> envia via EmailClient (Outlook/SMTP)
+    POST /communication/send-whatsapp -> envia via bridge WhatsApp
+    GET  /communication/track?id=     -> pixel de rastreamento 1x1
+    GET  /communication/email/contacts -> lista contatos do Outlook
+"""
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel

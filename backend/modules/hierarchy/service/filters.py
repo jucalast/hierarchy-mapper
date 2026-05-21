@@ -1,3 +1,17 @@
+"""
+modules.hierarchy.service.filters
+==================================
+Filtros e classificadores de candidatos B2B por departamento-foco.
+
+Carrega listas de keywords dinamicamente do banco (SystemSetting) com
+fallback para defaults. apply_strict_filters elimina cargos fora do
+departamento configurado no Tenant (compras | logistica).
+
+Funcoes publicas:
+    get_seniority_level(role) -> int  (0-6)
+    get_department_tag(role) -> str
+    apply_strict_filters(candidate, area) -> bool
+"""
 import re
 import unicodedata
 from modules.ai.service.context.business_context_service import BusinessContextService

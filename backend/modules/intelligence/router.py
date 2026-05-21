@@ -1,3 +1,12 @@
+"""
+modules.intelligence.router
+============================
+Endpoints de inteligencia: enriquecimento de organizacao e sync manual.
+
+Rotas:
+    POST /intelligence/enrich-org/{org_id} -> enriquece logo, dominio, LinkedIn
+    POST /intelligence/sync                -> dispara sync manual do Pipedrive
+"""
 from fastapi import APIRouter, Query, HTTPException
 from typing import Optional
 from sqlalchemy import select, delete, func

@@ -1,3 +1,4 @@
+"""Serviços de discovery e construção de hierarquia B2B."""
 from .b2b_scanner import discover_employees, discover_employees_stream
 from .graph_builder import build_root_node, build_socio_nodes, assign_managers, reparent_subordinates
 from .filters import get_seniority_level, get_department_tag, apply_strict_filters

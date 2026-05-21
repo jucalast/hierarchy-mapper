@@ -1,3 +1,8 @@
+"""
+modules.prospecting.schemas
+============================
+Schemas Pydantic para os endpoints de prospeccao geolocalizada.
+"""
 from pydantic import BaseModel, field_validator
 
 

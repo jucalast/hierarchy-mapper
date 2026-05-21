@@ -1,3 +1,19 @@
+"""
+api.v1.routers.settings
+========================
+CRUD de configuracoes do Tenant: perfil, produtos, ICP e hierarquia.
+
+Dois grupos de endpoints:
+    v1 -- leitura simples de SystemSetting (key->value)
+    v2 -- contexto completo + atualizacao granular por entidade
+
+Rotas principais:
+    GET  /settings              -> todos os SystemSettings
+    GET  /settings/v2/context   -> contexto completo do Tenant
+    POST /settings/v2/profile   -> atualiza perfil + vendedor
+    POST /settings/v2/products  -> substitui lista de produtos
+    POST /settings/v2/icp       -> atualiza ICPConfig e scoring rules
+"""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select

@@ -1,11 +1,27 @@
-from fastapi import APIRouter, Depends, Query, HTTPException, WebSocket, WebSocketDisconnect
-from arq import create_pool
-from core.infra.redis_config import redis_settings
-from typing import Optional
-import json
+"""
+api.v1.routers.jobs
+====================
+Endpoints de gerenciamento de background jobs (ARQ + Redis).
+
+POST /jobs/start-scan        → enfileira job de B2B discovery no ARQ
+GET  /jobs/status/{job_id}   → consulta estado do job no Redis
+POST /jobs/stop/{job_id}     → cancela job em andamento
+WS   /jobs/ws/{job_id}       → WebSocket com progresso em tempo real (pub/sub Redis)
+
+O worker que executa os jobs está em services/worker.py.
+"""
 import asyncio
+import json
+from typing import Optional
+
+from arq import create_pool
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+
+from core.infra.redis_config import redis_settings
+from core.observability.logging_config import get_logger
 
 router = APIRouter()
+log = get_logger(__name__)
 
 @router.websocket("/ws/{job_id}")
 async def job_websocket(websocket: WebSocket, job_id: str):
@@ -14,37 +30,33 @@ async def job_websocket(websocket: WebSocket, job_id: str):
     Escuta um canal no Redis para este job_id.
     """
     await websocket.accept()
-    print(f"[WS] Cliente conectado para monitorar Job: {job_id}")
-    
+    log.info("jobs.ws.connected", job_id=job_id)
+
     redis = await create_pool(redis_settings)
     pubsub = redis.pubsub()
     channel_name = f"job_updates_{job_id}"
-    
+
     await pubsub.subscribe(channel_name)
-    
+
     try:
-        # 🎯 Usar listen() em vez de get_message() para garantir que mensagens não sejam perdidas
         async for message in pubsub.listen():
             if message and message['type'] == 'message':
                 data = message['data']
                 if isinstance(data, bytes):
                     data = data.decode('utf-8')
-                
-                print(f"[WS] Enviando para frontend ({job_id}): {data[:100]}")
+
                 await websocket.send_text(data)
-                
-                # Se recebeu "done", pode encerrar
+
                 try:
                     msg_obj = json.loads(data)
                     if msg_obj.get('type') == 'done':
-                        print(f"[WS] Job {job_id} finished, closing connection.")
-                        import asyncio
-                        await asyncio.sleep(0.5) # Dá tempo pro Uvicorn fazer flush no socket
+                        log.info("jobs.ws.job_done", job_id=job_id)
+                        await asyncio.sleep(0.5)
                         break
-                except:
+                except (json.JSONDecodeError, AttributeError):
                     pass
     except WebSocketDisconnect:
-        print(f"[WS] Cliente desconectado para Job: {job_id}")
+        log.info("jobs.ws.disconnected", job_id=job_id)
     finally:
         await pubsub.unsubscribe(channel_name)
 
@@ -144,7 +156,7 @@ async def stop_scan(job_id: str):
         try:
             await job.abort()
         except Exception as abort_err:
-            print(f"[Stop API] Erro secundário ao chamar job.abort(): {abort_err}")
+            log.warning("jobs.stop.abort_failed", job_id=job_id, error=str(abort_err))
             
         # Sempre envia a mensagem de erro/cancelado para forçar o WS a fechar
         await redis.publish(f"job_updates_{job_id}", json.dumps({

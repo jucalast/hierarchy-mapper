@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
     ChevronLeft,
     ChevronDown, 
@@ -21,9 +21,11 @@ import {
     Plus,
     Trash2,
     Edit3,
-    X
+    X,
+    Check
 } from 'lucide-react';
 import { ai } from '@/services/api';
+import { ModelSelector, AIModel } from '@/components/chat/ModelSelector';
 import styles from './PreferencesView.module.css';
 
 interface PreferencesViewProps {
@@ -87,6 +89,46 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
     // LLM Tab hooks
     const [preferredModel, setPreferredModel] = useState('gemini-2.5-flash');
     const [strictMode, setStrictMode] = useState(false);
+    const [subModelDropdownOpen, setSubModelDropdownOpen] = useState(false);
+    const subModelDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close sub-model dropdown on outside click
+    useEffect(() => {
+        if (!subModelDropdownOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (subModelDropdownRef.current && !subModelDropdownRef.current.contains(e.target as Node)) {
+                setSubModelDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [subModelDropdownOpen]);
+
+    const getBaseModelFromFullString = (fullModel: string): AIModel => {
+        const lower = fullModel.toLowerCase();
+        if (lower.includes('gemini')) return 'gemini';
+        if (lower.includes('claude')) return 'claude';
+        if (lower.includes('cerebras') || lower.includes('llama3.1-8b') || lower.includes('qwen-3-235b') || lower.includes('gpt-oss') || lower.includes('zai-glm')) return 'cerebras';
+        if (lower.includes('sambanova') || lower.includes('meta-llama-3.3-70b-instruct') || lower.includes('llama-4-scout')) return 'sambanova';
+        if (lower.includes('deepseek')) return 'deepseek';
+        if (lower.includes('groq') || lower.includes('llama') || lower.includes('qwen') || lower.includes('mixtral')) return 'groq';
+        return 'gemini';
+    };
+
+    const handleBaseModelChange = (baseModel: AIModel) => {
+        let defaultModel = 'gemini-2.5-flash';
+        if (baseModel === 'gemini') defaultModel = 'gemini-2.5-flash';
+        else if (baseModel === 'groq') defaultModel = 'llama-3.3-70b-versatile';
+        else if (baseModel === 'claude') defaultModel = 'claude-3-5-sonnet-latest';
+        else if (baseModel === 'sambanova') defaultModel = 'Meta-Llama-3.3-70B-Instruct';
+        else if (baseModel === 'deepseek') defaultModel = 'deepseek-chat';
+        else if (baseModel === 'cerebras') defaultModel = 'llama-3.3-70b';
+        setPreferredModel(defaultModel);
+    };
+
+    const getFilteredSubModels = (baseModel: AIModel) => {
+        return HUMAN_MODELS.filter(m => getBaseModelFromFullString(m.value) === baseModel);
+    };
     const [quotas, setQuotas] = useState<QuotasResponse>({});
     const [loadingQuotas, setLoadingQuotas] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -95,6 +137,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
     const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({
         gemini: true,
     });
+    const [openQuotaModelDropdown, setOpenQuotaModelDropdown] = useState<string | null>(null);
+    const [quotaSelectedModel, setQuotaSelectedModel] = useState<Record<string, string>>({});
+    const quotaDropdownRef = useRef<Record<string, HTMLDivElement | null>>({});
 
     // Navigation state
     const [activeTab, setActiveTab] = useState<'llm' | 'profile' | 'products' | 'references' | 'value_props' | 'icp' | 'hierarchy' | 'integrations'>('llm');
@@ -582,7 +627,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         placeholder={placeholder || 'Adicionar item...'}
                     />
                     <button type="button" onClick={handleAdd} className={styles.saveBtn}>
-                        <Plus size={16} />
+                        <Plus size={13} />
                     </button>
                 </div>
                 <div className={styles.tagList}>
@@ -608,14 +653,14 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
             <header className={styles.header}>
                 <div className={styles.titleArea}>
                     <h1 className={styles.title}>
-                        <Settings2 size={24} /> Configurações do Sistema
+                        <Settings2 size={18} /> Configurações do Sistema
                     </h1>
                     <span className={styles.subtitle}>
                         Gerencie as preferências de IA, perfil do negócio, dores, propostas de valor, ICP de leads e regras de mapeamento no DB.
                     </span>
                 </div>
                 <button className={styles.backBtn} onClick={onBack}>
-                    <ChevronLeft size={16} /> Voltar
+                    <ChevronLeft size={14} /> Voltar
                 </button>
             </header>
 
@@ -629,56 +674,56 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             className={`${styles.sidebarItem} ${activeTab === 'llm' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('llm')}
                         >
-                            <Sparkles size={16} />
+                            <Sparkles size={14} />
                             <span>Preferências & Limites LLM</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'profile' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('profile')}
                         >
-                            <Briefcase size={16} />
+                            <Briefcase size={14} />
                             <span>Perfil Comercial</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'products' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('products')}
                         >
-                            <Package size={16} />
+                            <Package size={14} />
                             <span>Catálogo de Produtos</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'references' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('references')}
                         >
-                            <Users size={16} />
+                            <Users size={14} />
                             <span>Clientes de Referência</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'value_props' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('value_props')}
                         >
-                            <Flame size={16} />
+                            <Flame size={14} />
                             <span>Dores & Propostas de Valor</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'icp' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('icp')}
                         >
-                            <Target size={16} />
+                            <Target size={14} />
                             <span>Regras de ICP & Qualificação</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'hierarchy' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('hierarchy')}
                         >
-                            <GitFork size={16} />
+                            <GitFork size={14} />
                             <span>Regras de Hierarquia</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'integrations' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('integrations')}
                         >
-                            <Database size={16} />
+                            <Database size={14} />
                             <span>Conexões & Integrações</span>
                         </div>
                     </nav>
@@ -690,7 +735,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                     {/* TOAST SYSTEM */}
                     {toast && (
                         <div className={`${styles.toastBar} ${styles[toast.type]}`}>
-                            {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                            {toast.type === 'success' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
                             <span>{toast.message}</span>
                         </div>
                     )}
@@ -703,40 +748,124 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             <div className={styles.card}>
                                 <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
-                                        <Cpu size={18} /> Modelos & Preferências de IA
+                                        <Cpu size={15} /> Modelos & Preferências de IA
                                     </span>
                                 </h2>
 
-                                <div className={styles.formGroup}>
-                                    <label className={styles.label}>Modelo Preferido (Padrão do Sistema)</label>
+                                <div className={styles.formGroup} style={{ marginBottom: '16px' }}>
+                                    <label className={styles.label} style={{ marginBottom: '8px', display: 'block' }}>Provedor & Modelo Favorito (Padrão do Sistema)</label>
                                     <p className={styles.fieldDesc}>
                                         O cérebro de IA preferido para orquestrar as cadeias de agentes, ler biografias do LinkedIn, classificar cargos, estruturar hierarquias e redigir propostas de vendas.
                                     </p>
-                                    <select 
-                                        className={styles.select}
-                                        value={preferredModel}
-                                        onChange={(e) => setPreferredModel(e.target.value)}
-                                    >
-                                        {HUMAN_MODELS.map(m => (
-                                            <option key={m.value} value={m.value}>{m.label}</option>
-                                        ))}
-                                    </select>
+                                    <ModelSelector 
+                                        model={getBaseModelFromFullString(preferredModel)} 
+                                        setModel={handleBaseModelChange} 
+                                        strictMode={strictMode} 
+                                        setStrictMode={setStrictMode} 
+                                        theme="dark"
+                                    />
                                 </div>
 
-                                <div 
-                                    className={styles.checkboxContainer}
-                                    onClick={() => setStrictMode(!strictMode)}
-                                >
-                                    <div className={styles.checkbox}>
-                                        {strictMode && <CheckCircle2 size={12} color="var(--sw-primary)" />}
+                                <div className={styles.formGroup} style={{ marginBottom: '20px' }}>
+                                    <label className={styles.label}>Modelo Específico do Provedor</label>
+                                    <p className={styles.fieldDesc}>
+                                        Escolha a versão ou variante de modelo exata para o provedor de IA selecionado acima.
+                                    </p>
+                                    {/* Premium Sub-Model Dropdown */}
+                                    <div className={styles.subModelWrapper} ref={subModelDropdownRef}>
+                                        {(() => {
+                                            const subModels = getFilteredSubModels(getBaseModelFromFullString(preferredModel));
+                                            const selectedSub = subModels.find(m => m.value === preferredModel) || subModels[0];
+                                            const providerInfo = HUMAN_PROVIDERS[getBaseModelFromFullString(preferredModel) as keyof typeof HUMAN_PROVIDERS];
+                                            return (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.subModelTrigger}
+                                                        onClick={() => setSubModelDropdownOpen(v => !v)}
+                                                    >
+                                                        {providerInfo?.image && (
+                                                            <img
+                                                                src={providerInfo.image}
+                                                                alt={providerInfo.label}
+                                                                className={styles.subModelTriggerLogo}
+                                                            />
+                                                        )}
+                                                        <span className={styles.subModelTriggerLabel}>
+                                                            {selectedSub?.label || preferredModel}
+                                                        </span>
+                                                        {selectedSub?.description && (
+                                                            <span className={styles.subModelTriggerDesc}>
+                                                                {selectedSub.description}
+                                                            </span>
+                                                        )}
+                                                        <ChevronDown
+                                                            size={14}
+                                                            className={`${styles.subModelChevron}${subModelDropdownOpen ? ' ' + styles.open : ''}`}
+                                                        />
+                                                    </button>
+
+                                                    {subModelDropdownOpen && (
+                                                        <div className={styles.subModelDropdown}>
+                                                            <div className={styles.subModelOptions}>
+                                                                {subModels.map(m => {
+                                                                    const isSelected = m.value === preferredModel;
+                                                                    return (
+                                                                        <button
+                                                                            key={m.value}
+                                                                            type="button"
+                                                                            className={`${styles.subModelOption}${isSelected ? ' ' + styles.selected : ''}`}
+                                                                            onClick={() => {
+                                                                                setPreferredModel(m.value);
+                                                                                setSubModelDropdownOpen(false);
+                                                                            }}
+                                                                        >
+                                                                            {providerInfo?.image && (
+                                                                                <img
+                                                                                    src={providerInfo.image}
+                                                                                    alt={providerInfo.label}
+                                                                                    className={styles.subModelOptionLogo}
+                                                                                />
+                                                                            )}
+                                                                            <div className={styles.subModelOptionInfo}>
+                                                                                <span className={styles.subModelOptionName}>{m.label}</span>
+                                                                                {m.description && (
+                                                                                    <span className={styles.subModelOptionDesc}>{m.description}</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className={styles.subModelOptionCheck}>
+                                                                                {isSelected && <Check size={13} />}
+                                                                            </div>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </div>
-                                    <div className={styles.checkboxText}>
-                                        <span className={styles.checkboxLabel}>Strict Mode (Forçar Modelo)</span>
-                                        <span className={styles.checkboxSub}>
-                                            Se ativado, o sistema sempre tentará usar o modelo acima com retries agressivos, 
-                                            desativando o fallback automático para outros provedores em caso de falha.
-                                        </span>
-                                    </div>
+                                </div>
+
+                                <div className={styles.switchWrapper} style={{ marginBottom: '20px' }}>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setStrictMode(!strictMode)} 
+                                        className={`${styles.switchButton} ${strictMode ? styles.switchActive : ''}`}
+                                    >
+                                        <div className={styles.switchInfo}>
+                                            <span className={styles.switchTitle}>{strictMode ? "Strict Mode Ativo" : "Strict Mode Inativo"}</span>
+                                            <span className={styles.switchDesc}>
+                                                {strictMode 
+                                                    ? "Forçando o uso exclusivo do modelo preferido com retries agressivos" 
+                                                    : "Permite fallback automático para outros provedores se houver rate-limiting"}
+                                             </span>
+                                        </div>
+                                        <div className={styles.switchToggle}>
+                                            <div className={styles.switchKnob} />
+                                        </div>
+                                    </button>
                                 </div>
 
                                 <button 
@@ -744,7 +873,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                     onClick={handleSaveLLM}
                                     disabled={saving}
                                 >
-                                    {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                    {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                     {saving ? "Salvando..." : "Salvar Preferências"}
                                 </button>
                             </div>
@@ -755,11 +884,11 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             <div className={styles.card}>
                                 <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
-                                        <Activity size={18} /> Limites de Cotas em Tempo Real
+                                        <Activity size={15} /> Limites de Cotas em Tempo Real
                                     </span>
                                     {isRefreshing && (
                                         <div className={styles.refreshingIndicator}>
-                                            <RefreshCw size={14} className={styles.spin} />
+                                            <RefreshCw size={13} className={styles.spin} />
                                             <span style={{ fontSize: '11px' }}>atualizando...</span>
                                         </div>
                                     )}
@@ -767,7 +896,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                 {loadingQuotas ? (
                                     <div className={styles.noDataText} style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                                        <RefreshCw size={24} className={styles.spin} />
+                                        <RefreshCw size={18} className={styles.spin} />
                                         <span>Sincronizando quotas com os provedores de IA...</span>
                                     </div>
                                 ) : (
@@ -779,13 +908,13 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                             const isExpanded = expandedProviders[provKey] ?? false;
 
                                             return (
-                                                <div key={provKey} className={styles.providerCard}>
+                                                <div key={provKey} className={styles.section}>
                                                     <div 
-                                                        className={styles.providerHeader}
+                                                        className={styles.sectionHeader}
                                                         onClick={() => toggleProvider(provKey)}
                                                         style={{ cursor: 'pointer', userSelect: 'none' }}
                                                     >
-                                                        <div className={styles.providerBrand}>
+                                                        <div className={styles.sectionHeaderLeft}>
                                                             {meta.image ? (
                                                                 <img 
                                                                     src={meta.image} 
@@ -797,74 +926,72 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                                             )}
                                                             <span className={styles.providerName}>{meta.label}</span>
                                                         </div>
-                                                        <div className={styles.providerHeaderRight}>
+                                                        <div className={styles.sectionHeaderRight}>
                                                             <div className={`${styles.providerBadge} ${(isRateLimited || isAnyNoCredits) ? styles.badgeCritical : styles.badgeHealthy}`}>
                                                                 {isRateLimited ? (
                                                                     <>
                                                                         <AlertTriangle size={12} />
-                                                                        <span>RATE LIMITED / COOLDOWN</span>
+                                                                        <span>COOLDOWN</span>
                                                                     </>
                                                                 ) : isAnyNoCredits ? (
                                                                     <>
                                                                         <AlertTriangle size={12} />
-                                                                        <span>SEM CRÉDITOS</span>
+                                                                        <span>SEM SALDO</span>
                                                                     </>
                                                                 ) : (
                                                                     <>
                                                                         <CheckCircle2 size={12} />
-                                                                        <span>ATIVO E DISPONÍVEL</span>
+                                                                        <span>ATIVO</span>
                                                                     </>
                                                                 )}
                                                             </div>
                                                             <ChevronDown 
-                                                                size={16} 
+                                                                size={14} 
                                                                 className={`${styles.chevron} ${isExpanded ? styles.chevronExpanded : ''}`}
                                                             />
                                                         </div>
                                                     </div>
 
                                                     {isExpanded && (
-                                                        <div className={styles.providerContent}>
+                                                        <div className={styles.modelQuotaList}>
+                                                            {/* Quota Rows — ModelSelector-style */}
                                                             {Object.entries(modelsMap).length === 0 ? (
                                                                 <div className={styles.noDataText}>Nenhum modelo registrado.</div>
-                                                            ) : (
-                                                                Object.entries(modelsMap).map(([modelName, detail]) => {
-                                                                    const isModelRateLimited = detail.status === 'rate_limited' || detail.status === 'cooldown';
-                                                                    const isNoCredits = detail.status === 'no_credits';
-                                                                    const pct = (isModelRateLimited || isNoCredits) ? 0 : detail.pct;
-
-                                                                    return (
-                                                                        <div key={modelName} className={styles.modelRow}>
-                                                                            <div className={styles.modelInfo}>
-                                                                                <span className={styles.modelName}>{modelName}</span>
-                                                                                <span className={styles.modelStats}>
-                                                                                    {isModelRateLimited ? (
-                                                                                        <span className={styles.modelStatsCritical}>COOLDOWN (RATE LIMITED)</span>
-                                                                                    ) : isNoCredits ? (
-                                                                                        <span className={styles.modelStatsCritical}>INDISPONÍVEL (SEM SALDO)</span>
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            Disponível: <span className={styles.modelStatsHighlight}>{pct}%</span> ({detail.remaining} / {detail.limit} reqs)
-                                                                                        </>
-                                                                                    )}
+                                                            ) : Object.entries(modelsMap).map(([modelName, detail]) => {
+                                                                const isRL = detail.status === 'rate_limited' || detail.status === 'cooldown';
+                                                                const isNC = detail.status === 'no_credits';
+                                                                const pct = (isRL || isNC) ? 0 : detail.pct;
+                                                                const descLine = isRL
+                                                                    ? 'Rate limited — em cooldown'
+                                                                    : isNC
+                                                                        ? 'Sem créditos disponíveis'
+                                                                        : `${detail.remaining} / ${detail.limit} req${detail.tokens_limit ? ` · ${detail.tokens_pct}% tokens (${Math.round((detail.tokens_remaining || 0) / 1000)}k/${Math.round(detail.tokens_limit / 1000)}k)` : ''}`;
+                                                                return (
+                                                                    <div key={modelName} className={styles.quotaModelRow}>
+                                                                        <div className={styles.quotaModelRowIcon}>
+                                                                            {meta.image
+                                                                                ? <img src={meta.image} alt={meta.label} className={styles.quotaModelRowLogo} />
+                                                                                : <span style={{ fontSize: '14px' }}>{meta.logo}</span>
+                                                                            }
+                                                                        </div>
+                                                                        <div className={styles.quotaModelRowInfo}>
+                                                                            <div className={styles.quotaModelRowNameRow}>
+                                                                                <span className={styles.quotaModelRowName}>{modelName}</span>
+                                                                                <span className={`${styles.quotaModelRowBadge} ${isRL || isNC ? styles.quotaModelRowBadgeCritical : styles.quotaModelRowBadgeOk}`}>
+                                                                                    {isRL ? 'COOLDOWN' : isNC ? 'SEM SALDO' : `${pct}%`}
                                                                                 </span>
                                                                             </div>
-                                                                            <div className={styles.progressContainer}>
-                                                                                <div 
-                                                                                    className={`${styles.progressBar} ${(isModelRateLimited || isNoCredits) ? styles.progressRed : getProgressColorClass(pct)}`}
+                                                                            <span className={styles.quotaModelRowDesc}>{descLine}</span>
+                                                                            <div className={styles.quotaModelRowBar}>
+                                                                                <div
+                                                                                    className={`${styles.quotaModelRowBarFill} ${(isRL || isNC) ? styles.progressRed : getProgressColorClass(pct)}`}
                                                                                     style={{ width: `${pct}%` }}
                                                                                 />
                                                                             </div>
-                                                                            {detail.tokens_limit ? (
-                                                                                <div className={styles.tokenStats}>
-                                                                                    <Database size={10} />
-                                                                                    <span>Tokens: {detail.tokens_pct}% ({Math.round((detail.tokens_remaining || 0) / 1000)}k / {Math.round(detail.tokens_limit / 1000)}k restantes)</span>
-                                                                                </div>
-                                                                            ) : null}
                                                                         </div>
-                                                                    );
-                                                                })
-                                                            )}
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     )}
                                                 </div>
@@ -883,7 +1010,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}>
                                 <span className={styles.cardTitleText}>
-                                    <Briefcase size={18} /> Identidade & Perfil Comercial da Empresa
+                                    <Briefcase size={15} /> Identidade & Perfil Comercial da Empresa
                                 </span>
                             </h2>
 
@@ -959,7 +1086,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '12px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Perfil Comercial"}
                             </button>
                         </div>
@@ -973,7 +1100,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             <div className={styles.cardTitleRow}>
                                 <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
-                                        <Package size={18} /> Catálogo de Produtos e Serviços Ofertados
+                                        <Package size={15} /> Catálogo de Produtos e Serviços Ofertados
                                     </span>
                                 </h2>
                                 {!showProductForm && (
@@ -987,7 +1114,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         }}
                                         className={styles.saveBtn}
                                     >
-                                        <Plus size={14} /> Adicionar Produto
+                                        <Plus size={13} /> Adicionar Produto
                                     </button>
                                 )}
                             </div>
@@ -998,7 +1125,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                     <h3 className={styles.inlineFormHeader}>
                                         <span>{editingProductIdx !== null ? "Editar Produto" : "Novo Produto"}</span>
                                         <button type="button" className={styles.inlineFormClose} onClick={() => setShowProductForm(false)}>
-                                            <X size={16} />
+                                            <X size={14} />
                                         </button>
                                     </h3>
 
@@ -1051,28 +1178,37 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             )}
 
                             {/* Products Grid */}
-                            <div className={styles.providersList}>
+                            <div className={styles.settingsList}>
                                 {productsList.map((prod, idx) => (
-                                    <div key={idx} className={styles.dataCard}>
-                                        <div className={styles.dataCardBody}>
-                                            <h4 className={styles.dataCardTitle}>{prod.name}</h4>
-                                            <p className={styles.dataCardDesc}>{prod.description}</p>
-                                            {prod.use_cases && prod.use_cases.length > 0 && (
-                                                <div className={styles.tagList}>
-                                                    {prod.use_cases.map((uc: string, uIdx: number) => (
-                                                        <span key={uIdx} className={styles.useCaseTag}>{uc}</span>
-                                                    ))}
-                                                </div>
-                                            )}
+                                    <div key={idx} className={styles.productCard}>
+                                        <div className={styles.productCardHeader}>
+                                            <div className={styles.productTitleArea}>
+                                                <Package size={14} className={styles.productIcon} />
+                                                <span className={styles.productTitle}>{prod.name}</span>
+                                            </div>
+                                            <div className={styles.productActions}>
+                                                <button onClick={() => handleEditProduct(idx)} className={styles.editBtn} title="Editar">
+                                                    <Edit3 size={13} />
+                                                </button>
+                                                <button onClick={() => handleDeleteProduct(idx)} className={styles.deleteBtn} title="Deletar">
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className={styles.dataCardActions}>
-                                            <button onClick={() => handleEditProduct(idx)} className={styles.backBtn} title="Editar">
-                                                <Edit3 size={15} />
-                                            </button>
-                                            <button onClick={() => handleDeleteProduct(idx)} className={styles.deleteBtn} title="Deletar">
-                                                <Trash2 size={15} />
-                                            </button>
-                                        </div>
+                                        
+                                        {prod.description && (
+                                            <div className={styles.productDescription}>
+                                                {prod.description}
+                                            </div>
+                                        )}
+
+                                        {prod.use_cases && prod.use_cases.length > 0 && (
+                                            <div className={styles.productUseCases}>
+                                                {prod.use_cases.map((uc: string, uIdx: number) => (
+                                                    <span key={uIdx} className={styles.useCaseTag}>{uc}</span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
 
@@ -1087,7 +1223,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '16px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Catálogo de Produtos"}
                             </button>
                         </div>
@@ -1101,7 +1237,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             <div className={styles.cardTitleRow}>
                                 <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
-                                        <Users size={18} /> Clientes de Referência (Autoridade no Outreach)
+                                        <Users size={15} /> Clientes de Referência (Autoridade no Outreach)
                                     </span>
                                 </h2>
                                 {!showClientForm && (
@@ -1114,7 +1250,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         }}
                                         className={styles.saveBtn}
                                     >
-                                        <Plus size={14} /> Adicionar Cliente
+                                        <Plus size={13} /> Adicionar Cliente
                                     </button>
                                 )}
                             </div>
@@ -1125,7 +1261,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                     <h3 className={styles.inlineFormHeader}>
                                         <span>{editingClientIdx !== null ? "Editar Cliente de Referência" : "Novo Cliente de Referência"}</span>
                                         <button type="button" className={styles.inlineFormClose} onClick={() => setShowClientForm(false)}>
-                                            <X size={16} />
+                                            <X size={14} />
                                         </button>
                                     </h3>
 
@@ -1170,20 +1306,24 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             )}
 
                             {/* Clients list */}
-                            <div className={styles.providersList}>
+                            <div className={styles.settingsList}>
                                 {referenceClients.map((client, idx) => (
-                                    <div key={idx} className={styles.dataCard} style={{ alignItems: 'center' }}>
-                                        <div className={styles.dataCardBody}>
-                                            <h4 className={styles.dataCardTitle}>{client.name}</h4>
-                                            <span className={styles.dataCardMeta}>{client.segment}</span>
-                                        </div>
-                                        <div className={styles.dataCardActions}>
-                                            <button onClick={() => handleEditClient(idx)} className={styles.backBtn} title="Editar">
-                                                <Edit3 size={15} />
-                                            </button>
-                                            <button onClick={() => handleDeleteClient(idx)} className={styles.deleteBtn} title="Deletar">
-                                                <Trash2 size={15} />
-                                            </button>
+                                    <div key={idx} className={styles.clientCard}>
+                                        <div className={styles.clientCardHeader}>
+                                            <div className={styles.clientTitleArea}>
+                                                <Users size={14} className={styles.clientIcon} />
+                                                <span className={styles.clientTitle}>{client.name}</span>
+                                                <span className={styles.clientSeparator}>•</span>
+                                                <span className={styles.clientSegment}>{client.segment}</span>
+                                            </div>
+                                            <div className={styles.clientActions}>
+                                                <button onClick={() => handleEditClient(idx)} className={styles.editBtn} title="Editar">
+                                                    <Edit3 size={13} />
+                                                </button>
+                                                <button onClick={() => handleDeleteClient(idx)} className={styles.deleteBtn} title="Deletar">
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -1199,7 +1339,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '16px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Clientes de Referência"}
                             </button>
                         </div>
@@ -1228,7 +1368,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 <span className={styles.sectionLabel}>Textos de Propostas de Valor (Ângulos de Abordagem)</span>
                                 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 1: Plano B / Mitigação de Risco</label>
+                                    <label className={styles.label}>Abordagem 1: Plano B / Mitigação de Risco</label>
                                     <p className={styles.fieldDesc}>
                                         Texto focado em posicionar sua empresa como fornecedora alternativa ou reserva estratégica (Plano B) para garantir a segurança da operação do lead.
                                     </p>
@@ -1243,7 +1383,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 2: Modelo Kanban / Estoque em Fábrica</label>
+                                    <label className={styles.label}>Abordagem 2: Modelo Kanban / Estoque em Fábrica</label>
                                     <p className={styles.fieldDesc}>
                                         Mensagem destacando soluções de entregas programadas sob demanda (Kanban) e estoque de segurança dedicado para evitar rupturas de fábrica.
                                     </p>
@@ -1258,7 +1398,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 3: Embalagens Manuais / Alta Customização</label>
+                                    <label className={styles.label}>Abordagem 3: Embalagens Manuais / Alta Customização</label>
                                     <p className={styles.fieldDesc}>
                                         Mensagem direcionada para soluções sob medida, embalagens complexas ou pequenos lotes altamente customizados que grandes fornecedores não atendem.
                                     </p>
@@ -1273,7 +1413,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 4: Especialistas em CKD / Exportação</label>
+                                    <label className={styles.label}>Abordagem 4: Especialistas em CKD / Exportação</label>
                                     <p className={styles.fieldDesc}>
                                         Texto voltado especificamente para indústrias exportadoras ou que utilizam sistemas de CKD (Complete Knock Down) exigindo alta resistência estrutural.
                                     </p>
@@ -1288,7 +1428,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 5: Just-In-Time / Agilidade Extrema</label>
+                                    <label className={styles.label}>Abordagem 5: Just-In-Time / Agilidade Extrema</label>
                                     <p className={styles.fieldDesc}>
                                         Discurso ressaltando flexibilidade operacional, velocidade de resposta rápida, lead times curtos e entregas ágeis no modelo Just-In-Time.
                                     </p>
@@ -1309,7 +1449,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '12px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Dores e Propostas"}
                             </button>
                         </div>
@@ -1322,7 +1462,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}>
                                 <span className={styles.cardTitleText}>
-                                    <Target size={18} /> Parametrizadores de ICP e Pontuação de Leads (0-100)
+                                    <Target size={15} /> Parametrizadores de ICP e Pontuação de Leads (0-100)
                                 </span>
                             </h2>
 
@@ -1400,7 +1540,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '12px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Configurações de ICP"}
                             </button>
                         </div>
@@ -1413,7 +1553,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}>
                                 <span className={styles.cardTitleText}>
-                                    <GitFork size={18} /> Filtros de Contato e Regras de Hierarquia
+                                    <GitFork size={15} /> Filtros de Contato e Regras de Hierarquia
                                 </span>
                             </h2>
 
@@ -1463,7 +1603,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '12px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Regras de Hierarquia"}
                             </button>
                         </div>
@@ -1476,7 +1616,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}>
                                 <span className={styles.cardTitleText}>
-                                    <Database size={18} /> Chaves de Conexão & Integrações SaaS
+                                    <Database size={15} /> Chaves de Conexão & Integrações SaaS
                                 </span>
                             </h2>
 
@@ -1596,7 +1736,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '24px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Chaves & Conexões"}
                             </button>
                         </div>

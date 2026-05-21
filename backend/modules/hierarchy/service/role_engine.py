@@ -1,3 +1,14 @@
+"""
+modules.hierarchy.service.role_engine
+======================================
+Classificador de cargos com LLM (Groq) e tabela de veto categorico.
+
+FORBIDDEN_KEYWORDS garante que cargos de Vendas nunca sejam classificados
+como Compras -- problema critico que causava falsos positivos no scanner.
+LLM e chamado apenas quando os filtros mecanicos sao inconclusivos.
+
+Singleton: role_engine
+"""
 import re
 import html
 import random

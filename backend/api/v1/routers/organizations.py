@@ -1,17 +1,23 @@
-from fastapi import APIRouter, Query, Depends
-from sqlalchemy import select, or_, func
-from sqlalchemy.ext.asyncio import AsyncSession
-from core.infra.database import get_db
-from models import Organization
+"""
+api.v1.routers.organizations
+=============================
+Endpoints CRUD para organizações locais (espelho enriquecido do Pipedrive).
+
+GET /organizations/search    → busca por nome ou domínio (autocomplete)
+GET /organizations/{org_id}  → detalhes de uma organização
+"""
 from typing import List, Optional
 
-router = APIRouter()
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-class OrgSearchResult:
-    def __init__(self, id: int, name: str, domain: Optional[str] = None):
-        self.id = id
-        self.name = name
-        self.domain = domain
+from core.infra.database import get_db
+from core.observability.logging_config import get_logger
+from models import Organization
+
+router = APIRouter()
+log = get_logger(__name__)
 
 @router.get("/search")
 async def search_organizations(
@@ -53,7 +59,7 @@ async def search_organizations(
         return {"results": results, "total": len(results)}
     
     except Exception as e:
-        print(f"[Organizations Search] Erro: {str(e)}")
+        log.warning("organizations.search.failed", query=q, error=str(e))
         return {"results": [], "total": 0}
 
 
@@ -86,5 +92,5 @@ async def get_organization(
         }
     
     except Exception as e:
-        print(f"[Organization Get] Erro: {str(e)}")
-        return {"error": str(e)}
+        log.warning("organizations.get.failed", org_id=org_id, error=str(e))
+        raise HTTPException(status_code=500, detail="Erro ao buscar organização.")

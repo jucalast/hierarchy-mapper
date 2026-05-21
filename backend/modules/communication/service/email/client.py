@@ -1,3 +1,20 @@
+"""
+modules.communication.service.email.client
+==========================================
+Cliente de e-mail com suporte a Outlook (pywin32) e fallback SMTP/IMAP.
+
+Grupos de responsabilidade na classe EmailClient:
+    COM setup      → _get_outlook_instance, _handle_com_error
+    Envio          → send_outbound_email, reply_to_email
+    Leitura        → scan_inbound_replies, get_messages_from, mark_as_read
+    Contatos       → _refresh_contacts_cache, search_contacts, list_folders
+    Utilitários    → _normalize_str, get_default_signature
+
+Estado de classe (cache compartilhado entre instâncias):
+    _contacts_cache    → lista de contatos do Outlook em memória (TTL 5 min)
+    _signature_cache   → assinatura HTML padrão do usuário
+    _cache_timestamp   → timestamp da última atualização do cache de contatos
+"""
 import os
 import time
 import random
@@ -81,7 +98,7 @@ class EmailClient:
                 
             return outlook
         except Exception as e:
-            print(f"[EmailClient] Erro ao obter instância do Outlook: {e}")
+            log.error("email.outlook.get_instance_failed", error=str(e))
             return None
 
     def _handle_com_error(self, e, context_msg):
@@ -702,7 +719,7 @@ class EmailClient:
                         except Exception as fe:
                             # Ignora erro silenciosamente se for apenas falta de propriedade
                             if "ReceivedTime" not in str(fe):
-                                print(f"[EmailClient] Erro ao filtrar pasta {getattr(f, 'Name', 'Unknown')}: {fe}")
+                                log.warning("email.outlook.folder_filter_error", folder=getattr(f, 'Name', 'Unknown'), error=str(fe))
                     
                     # Ordernar todos os itens localmente por tempo recebido (descendente)
                     try:
@@ -854,7 +871,7 @@ class EmailClient:
             
             return sig_html
         except Exception as e:
-            print(f"[EmailClient] Erro ao capturar assinatura para preview: {e}")
+            log.warning("email.outlook.signature_capture_failed", error=str(e))
             return ""
 
     def mark_as_read(self, entry_id: str):
@@ -873,5 +890,5 @@ class EmailClient:
                 item.Save()
                 return True
             except Exception as e:
-                print(f"[EmailClient] ERROR (Mark as Read): {e}")
+                log.error("email.outlook.mark_as_read_failed", error=str(e))
         return False

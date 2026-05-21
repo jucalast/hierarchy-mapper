@@ -1,3 +1,14 @@
+"""
+api.v1.routers.search
+=====================
+Busca global entre entidades locais e fontes externas em paralelo.
+
+Agrega resultados de Organization, Employee e contatos externos
+via asyncio.gather. Resultados sao deduplicados por ID antes de retornar.
+
+Rotas:
+    GET /search?q=&type= -> lista de entidades (empresas, pessoas, contatos)
+"""
 import asyncio
 import re
 from typing import Any, Dict, List, Optional

@@ -1,3 +1,15 @@
+"""
+models.organization.organization
+==================================
+Model SQLAlchemy para empresas descobertas/sincronizadas do Pipedrive ou B2B scanner.
+
+Nota sobre campos:
+    source       → origem do registro ('pipedrive' | 'outlook' | 'manual' | 'discovery')
+    icp_score    → score de 0 a 100 calculado pelo ICPConfig do Tenant
+    icp_tier     → classificação derivada do score (A | B | C)
+    is_excluded  → 1 = oculta do UI (soft-delete)
+    last_enrichment → timestamp do último enriquecimento de dados
+"""
 from sqlalchemy import Column, DateTime, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

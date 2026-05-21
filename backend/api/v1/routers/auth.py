@@ -1,3 +1,17 @@
+"""
+api.v1.routers.auth
+===================
+Autenticacao JWT: login, token e dependencia get_current_user_from_token.
+
+O fallback sem token (retorna primeiro usuario do banco) e habilitado APENAS
+em settings.is_development -- em producao retorna 401 Unauthorized.
+
+Rotas:
+    POST /auth/login -> TokenResponse
+    GET  /auth/me    -> perfil do usuario autenticado
+
+Dependencia publica: get_current_user_from_token (use em Depends())
+"""
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer

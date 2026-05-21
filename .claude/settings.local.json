@@ -118,7 +118,8 @@
       "PowerShell(Select-String -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\core\\\\infra\\\\database.py\" -Pattern \"bc\\\\.\" | Select-Object -First 5 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
       "PowerShell(Select-String -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\services\\\\ai\\\\pipeline\\\\data_fetcher.py\" -Pattern \"^from |^import \" | Select-Object -First 25 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
       "PowerShell(Select-String -Path \"C:\\\\Users\\\\João Luccas\\\\Desktop\\\\LINKB2B\\\\hierarchy-mapper\\\\backend\\\\core\\\\llm\\\\router.py\" -Pattern \"logging_config|logging\" | Select-Object -First 5 | ForEach-Object { \"$\\($_.LineNumber\\): $\\($_.Line.Trim\\(\\)\\)\" })",
-      "Bash(git ls-tree *)"
+      "Bash(git ls-tree *)",
+      "Bash(Select-Object Name)"
     ]
   }
 }

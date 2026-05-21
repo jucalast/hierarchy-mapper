@@ -1,3 +1,11 @@
+"""
+models.system.automated_action
+==============================
+Registro de acoes automatizadas pelo agente para auditoria.
+
+Armazena tipo de acao, payload, resposta, timestamps e status.
+Permite revisao humana do que o agente executou em cada sessao.
+"""
 from sqlalchemy import Column, Integer, String, DateTime, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from core.infra.database import Base

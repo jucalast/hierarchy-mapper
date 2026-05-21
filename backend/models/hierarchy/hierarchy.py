@@ -1,3 +1,11 @@
+"""
+models.hierarchy.hierarchy
+===========================
+Configuracao de mapeamento de hierarquia organizacional por Tenant.
+
+Define departamento-foco (compras|logistica), keywords proibidas,
+whitelist de cargos, regras de senioridade e mapeamento de departamento.
+"""
 import uuid
 from sqlalchemy import Column, String, ForeignKey, JSON
 from sqlalchemy.orm import relationship

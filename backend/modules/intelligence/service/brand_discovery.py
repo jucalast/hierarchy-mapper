@@ -1,3 +1,13 @@
+"""
+modules.intelligence.service.brand_discovery
+=============================================
+Descoberta de marca institucional via CNPJ, dominio e LinkedIn.
+
+Pipeline: BigQuery (Receita Federal) -> LinkedIn via DuckDuckGo -> QSA
+          -> dominio via Clearbit/heuristica -> logo via favicon.
+
+Funcao publica: discover_company_brand(cnpj, domain, raw_name, force) -> dict
+"""
 import re
 import html
 from typing import List, Dict, Optional

@@ -1,3 +1,13 @@
+"""
+modules.intelligence.service.sync_hub
+======================================
+Hub de sincronizacao background: Pipedrive + WhatsApp + Email -> SQLite.
+
+Executado como asyncio.Task no startup. Aguarda servicos externos ficarem
+online (WhatsApp :8001, Email :8002) com timeout configuravel.
+
+Classe: SyncIntelligenceHub | Metodo principal: sync_all()
+"""
 import asyncio
 import httpx
 from sqlalchemy.future import select

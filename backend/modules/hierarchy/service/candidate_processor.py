@@ -1,3 +1,14 @@
+"""
+modules.hierarchy.service.candidate_processor
+=============================================
+Validacao e enriquecimento de candidatos encontrados no LinkedIn.
+
+Para cada candidato bruto: verifica cargo via RoleEngine, extrai email
+por padroes de nome+dominio, e faz deep_research() quando dados sao
+insuficientes para uma decisao confiavel.
+
+Classe: CandidateProcessor(brand, domain, area, location, product)
+"""
 import re
 import html
 import asyncio

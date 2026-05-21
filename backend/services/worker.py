@@ -1,10 +1,32 @@
+"""
+services.worker
+===============
+ARQ worker — executor de background jobs pesados de B2B discovery.
+
+Para iniciar o worker:
+    python -m arq services.worker.WorkerSettings
+
+Fluxo de run_b2b_discovery_task():
+    1. Check rápido no banco (nós imediatos via pub/sub)
+    2. Descoberta de marca institucional (se necessária)
+    3. Streaming de funcionários via b2b_scanner
+    4. Publicação de progresso no canal Redis `job_updates_{job_id}`
+
+O frontend conecta ao WebSocket /api/v1/jobs/ws/{job_id} para receber as atualizações.
+"""
 import asyncio
 import json
 from typing import Optional
+
 from arq import create_pool
 from sqlalchemy import select
+
 from core.infra.redis_config import redis_settings
+from core.observability.logging_config import get_logger
 from modules.hierarchy.service.b2b_scanner import discover_employees_stream
+
+log = get_logger(__name__)
+
 
 async def run_b2b_discovery_task(
     ctx, 
@@ -20,8 +42,7 @@ async def run_b2b_discovery_task(
     max_results: int = 100
 ):
     import urllib.parse
-    print(f"[Worker] TASK INVOKED: run_b2b_discovery_task for {company_name}")
-    print(f"         Args: domain={domain}, cnpj={cnpj}, brand={confirmed_brand}, logo={confirmed_logo}, area={area_focus}")
+    log.info("worker.task.started", company=company_name, domain=domain, area=area_focus)
     
     # 🕵️ Passo 0: Check Rápido no Banco (Para resposta instantânea)
     from core.infra.database import async_session
@@ -49,7 +70,7 @@ async def run_b2b_discovery_task(
             
             # Se já temos no banco mas o nome mudou visivelmente ou falta o logo, atualiza
             if db_org and ((confirmed_logo and not db_org.logo_url) or (confirmed_brand and db_org.name != confirmed_brand)):
-                print(f"[Worker] ⚡ Atualizando metadados da Organização {db_org.name} -> {confirmed_brand}")
+                log.info("worker.org.metadata_update", org=db_org.name, new_brand=confirmed_brand)
                 
                 # Se o nome mudou na mão, vamos atualizar também no Pipedrive para não duplicar!
                 if confirmed_brand and db_org.name != confirmed_brand and db_org.pipedrive_id:
@@ -59,7 +80,7 @@ async def run_b2b_discovery_task(
                         import asyncio
                         asyncio.create_task(svc.update_organization(db_org.pipedrive_id, {"name": confirmed_brand}))
                     except Exception as pe:
-                        print(f"[Worker] Falha ao refletir novo nome no Pipedrive: {pe}")
+                        log.warning("worker.pipedrive.name_sync_failed", error=str(pe))
 
                 async with async_session() as session:
                     target = await session.get(Organization, db_org.id)
@@ -71,9 +92,9 @@ async def run_b2b_discovery_task(
                 if confirmed_brand: db_org.name = confirmed_brand
             else:
                 if not is_valid:
-                    print(f"[Worker] Cache de Organização utilizado mesmo com leve divergência: {db_org.name} vs {company_name}")
+                    log.debug("worker.org_cache.name_divergence", cached=db_org.name, requested=company_name)
                 else:
-                    print(f"[Worker] ⚡ Encontro rápido no banco! Enviando nós imediatos para {db_org.name}")
+                    log.info("worker.org_cache.hit", org=db_org.name)
 
             logo_url = confirmed_logo or db_org.logo_url
             if logo_url and "http" in logo_url and "ui-avatars" not in logo_url:
@@ -123,11 +144,11 @@ async def run_b2b_discovery_task(
 
     if not needs_discovery:
         display_name = confirmed_brand or (db_org.name if db_org else "Empresa Selecionada")
-        print(f"[Worker] Pulando descoberta de marca institucional. Usando: {display_name}")
+        log.info("worker.brand_discovery.skipped", brand=display_name)
     
     if needs_discovery:
         try:
-            print(f"[Worker] 🔎 Localizando marca oficial para {company_name}...")
+            log.info("worker.brand_discovery.started", company=company_name)
             brand_data = await discover_company_brand(cnpj=cnpj or "", domain=domain, raw_name=company_name)
             if brand_data:
                 # Se achamos a marca, vamos garantir que ela está vinculada agora
@@ -196,10 +217,10 @@ async def run_b2b_discovery_task(
                     json.dumps({"type": "initial", "nodes": update_nodes}, ensure_ascii=False)
                 )
         except Exception as e:
-            print(f"[Worker] Erro na descoberta completa: {e}")
+            log.exception("worker.brand_discovery.failed", company=company_name, error=str(e))
     else:
         display_name = confirmed_brand or (db_org.name if db_org else "Empresa Selecionada")
-        print(f"[Worker] Marca já confirmada ({display_name}). Pulando descoberta de perfil.")
+        log.info("worker.brand_confirmed.using_existing", brand=display_name)
         
         # Se temos o logo (confirmado ou no banco), vamos enviar uma atualização final para garantir que o UI tenha ele
         target_logo = confirmed_logo or (db_org.logo_url if db_org else None)
@@ -237,23 +258,27 @@ async def run_b2b_discovery_task(
             )
             
             count += len(batch)
-            print(f"[Worker] Found {count} employees so far for {company_name}...")
 
-    print(f"[Worker] Job completed for {company_name}. Total found: {count}")
+    log.info("worker.task.completed", company=company_name, total=count)
     
     # 🏁 ÚLTIMO ESFORÇO: Garante que o Front-End saiba que ACABOU, 
     # mesmo que o loop tenha vindo vazio.
     try:
         await ctx['redis'].publish(f"job_updates_{ctx['job_id']}", json.dumps({"type": "done"}))
-    except: pass
+    except Exception as e:
+        log.warning("worker.task.final_publish_failed", error=str(e))
 
     return {"status": "completed", "count": count}
 
+
 async def startup(ctx):
-    print("[Worker] Worker started. Ready for heavy lifting...")
+    """Hook executado quando o worker ARQ inicia."""
+    log.info("worker.started")
+
 
 async def shutdown(ctx):
-    print("[Worker] Worker shutting down...")
+    """Hook executado quando o worker ARQ encerra."""
+    log.info("worker.shutdown")
 
 class WorkerSettings:
     functions = [run_b2b_discovery_task]

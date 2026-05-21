@@ -1,3 +1,18 @@
+"""
+core.security
+=============
+Autenticação JWT e hash de senhas com PBKDF2-SHA256.
+
+O SECRET_KEY tem fallback hardcoded só para desenvolvimento. Em produção
+o app loga nível ERROR no startup se o valor padrão for detectado.
+
+Funções públicas:
+    hash_password(password) -> str
+    verify_password(plain, hashed) -> bool
+    create_access_token(data, expires_delta) -> str
+
+Variável de ambiente: JWT_SECRET (obrigatória em produção)
+"""
 import os
 import hashlib
 import binascii

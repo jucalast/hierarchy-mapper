@@ -1,3 +1,16 @@
+"""
+modules.agent.service.llm.adapters
+==================================
+Conversores de formato de mensagens e ferramentas entre providers LLM.
+
+Cada provider usa representacao diferente de tool calls e historico.
+Este modulo normaliza para o formato interno e converte na resposta.
+
+Funcoes por provider:
+    OpenAI/Groq  -> _tools_to_openai, _messages_to_openai, _response_from_openai
+    Gemini       -> _tools_to_gemini, _messages_to_gemini, _response_from_gemini
+    Ollama       -> _messages_to_ollama_native
+"""
 from __future__ import annotations
 import json
 import uuid

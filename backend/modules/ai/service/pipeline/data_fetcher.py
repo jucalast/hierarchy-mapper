@@ -1,183 +1,42 @@
 """
-Orquestração de busca de dados contextuais.
-Resolve organização, busca dados do Pipedrive, ContextService e OSINT.
+Orquestração central de busca de dados contextuais para o pipeline de IA.
+
+Responsabilidade única: fetch_contextual_data — monta o internal_context
+com base nos escopos definidos pelo intent_classifier.
+
+Funções auxiliares extraídas para sub-módulos:
+    _sanitizers.py     → sanitize_email_body
+    _resolvers.py      → resolve_organization
+    _osint.py          → execute_osint_enrichment
+    _tasks_fetcher.py  → _fetch_tasks
 """
-from typing import Optional, Dict, Any, List
+from __future__ import annotations
+
 import asyncio
 import json
+from typing import Any, Dict, List, Optional
+
 import httpx
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select, or_, and_
 
+from core.observability.logging_config import get_logger
 
-def sanitize_email_body(body: str) -> str:
-    """Limpeza robusta de e-mails para reduzir ruído e tokens."""
-    if not body: return ""
-    import re
-    
-    # 1. Remove HTML
-    body = re.sub(r'<[^>]+>', ' ', body)
-    
-    # 2. Corta em delimitadores de resposta (Forward/Reply)
-    delimiters = [
-        "________________________________", "From:", "De:", "Enviada:", "Subject:", "Assunto:",
-        "--- Mensagem Original ---", "Sent from my iPhone", "Enviado do meu iPhone",
-        "Obter o Outlook para", "Get Outlook for"
-    ]
-    for d in delimiters:
-        if d in body:
-            body = body.split(d)[0]
-    
-    # 3. Remove Links e Disclaimers
-    body = re.sub(r'https?://[^\s]+', '', body)
-    disclaimers = ["confidencial", "destinatário", "notify the sender", "error in transmission", "legal notice"]
-    lines = body.split('\n')
-    clean_lines = [l for l in lines if not any(d in l.lower() for d in disclaimers) and len(l.strip()) > 2]
-    
-    # 4. Normaliza espaços e limita tamanho
-    text = " ".join(clean_lines)
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()[:800]
+# Re-exportados para backward compatibility — importações externas não precisam mudar
+from modules.ai.service.pipeline._sanitizers import sanitize_email_body
+from modules.ai.service.pipeline._resolvers import resolve_organization
+from modules.ai.service.pipeline._osint import execute_osint_enrichment
+from modules.ai.service.pipeline._tasks_fetcher import _fetch_tasks
 
+log = get_logger(__name__)
 
-
-async def resolve_organization(
-    payload_org_id: Optional[Any],
-    selected_companies: list,
-    extracted_name: Optional[str],
-    message: str,
-    session: AsyncSession,
-    log_queue: Optional[asyncio.Queue] = None
-) -> Optional[int]:
-    """
-    Resolve o org_id a partir das fontes disponíveis:
-    1. selectedCompanies da UI
-    2. Nome extraído pela IA
-    3. Regex fallback
-    """
-    from modules.context.service.service import ContextService
-    
-    def log_ev(msg, type="thought"):
-        print(f"[AI Chat] {msg}")
-        if log_queue:
-            try: log_queue.put_nowait({"type": type, "content": msg})
-            except: pass
-
-    org_id = payload_org_id
-    
-    # Se temos uma empresa explícita na UI, usamos ela
-    if selected_companies and len(selected_companies) > 0:
-        org_id = selected_companies[0].id
-        log_ev(f"Usando empresa da UI: {selected_companies[0].name}")
-    # Se não temos orgId das props UI, mas a IA extraiu do texto e não havia orgId
-    elif not org_id and extracted_name:
-        log_ev(f"Buscando empresa inferida pela IA: {extracted_name}")
-        org_data_resolved = await ContextService.fetch_organization_by_name(session, extracted_name)
-        if org_data_resolved:
-            org_id = org_data_resolved.id
-        else:
-            # NOVIDADE: Se não achou no banco local, tenta buscar direto no Pipedrive
-            try:
-                from modules.crm.service.pipedrive_service import pipedrive_service
-                log_ev(f"Empresa '{extracted_name}' não encontrada localmente. Buscando no Pipedrive...")
-                pd_orgs = await pipedrive_service.search_organization(extracted_name)
-                if pd_orgs:
-                    # Se achou no Pipedrive, o org_id continuará sendo None aqui (pois não está no banco local),
-                    # mas o ContextService (ou o fetch posterior) pode usar o nome.
-                    # No momento, o fetch_contextual_data trata o target_company se org_id for None.
-                    pass
-            except Exception as e:
-                log_ev(f"Erro ao buscar empresa no Pipedrive: {e}", type="log")
-            
-    # Se ainda não temos org_id, tentamos último recurso (Regex antigo)
-    if not org_id:
-        org_name_regex = await ContextService.extract_organization_name(message)
-        if org_name_regex:
-            org_data_regex = await ContextService.fetch_organization_by_name(session, org_name_regex)
-            if org_data_regex:
-                org_id = org_data_regex.id
-
-    return org_id
-
-
-async def execute_osint_enrichment(
-    intent_info: dict,
-    org_id: Optional[int],
-    session: AsyncSession,
-    log_queue: Optional[asyncio.Queue] = None
-) -> Optional[Dict[str, Any]]:
-    """
-    Executa enriquecimento OSINT para um lead específico.
-    Retorna o contexto OSINT para injeção no pipeline.
-    """
-    from modules.context.service.service import ContextService
-    from core.external.osint_service import osint_service
-    from models.people.employee import Employee
-    
-    target_person = intent_info.get("extracted_person_name")
-    target_company = intent_info.get("extracted_company_name")
-    
-    # Se não extraiu a empresa, mas temos um org_id resolvido, tentamos pegar o nome real
-    if not target_company and org_id:
-        org_data_overview = await ContextService.fetch_organization_overview(session, org_id)
-        target_company = org_data_overview.get("organization", {}).get("name")
-    
-    if target_person and target_company:
-        # Tenta pegar o domínio e CNPJ oficiais da empresa se estiver no banco
-        target_domain = None
-        target_cnpj = None
-        if org_id:
-            org_data_overview = await ContextService.fetch_organization_overview(session, org_id)
-            org_obj = org_data_overview.get("organization", {})
-            target_domain = org_obj.get("domain")
-            target_cnpj = org_obj.get("cnpj")
-        
-        def log_ev(msg, type="thought"):
-            print(f"[AI Chat] {msg}")
-            if log_queue:
-                try: log_queue.put_nowait({"type": type, "content": msg})
-                except: pass
-
-        log_ev(f"Executando Enriquecimento OSINT para {target_person} na {target_company}...")
-        osint_data = await osint_service.enrich_lead(target_person, target_company, domain=target_domain, cnpj=target_cnpj)
-        if osint_data and "error" not in osint_data:
-            osint_context = {
-                "osint_result": osint_data,
-                "status": "success"
-            }
-            log_ev(f"Enriquecimento concluído: {osint_data.get('whatsapp', {}).get('numero')}")
-            
-            # Salva os dados enriquecidos localmente para consultas futuras
-            try:
-                emp_q = select(Employee).where(
-                    Employee.company_id == org_id,
-                    func.lower(Employee.name).like(f"%{target_person.lower()}%")
-                )
-                emp_res = await session.execute(emp_q)
-                emp = emp_res.scalars().first()
-                if emp:
-                    # Atualiza email se não existir ou se OSINT for melhor
-                    if osint_data.get("emailProvavel"):
-                        emp.email = osint_data.get("emailProvavel")
-                    
-                    # Atualiza telefones
-                    wp = osint_data.get("whatsapp", {}).get("numero")
-                    if wp: emp.whatsapp_number = wp
-                    
-                    pabx = osint_data.get("pabx")
-                    if pabx: emp.phone = pabx
-                    
-                    session.add(emp)
-                    await session.commit()
-                    print(f"[AI Chat] 💾 Contato {emp.name} atualizado no banco local com OSINT.")
-            except Exception as e:
-                print(f"[AI Chat] ⚠️ Aviso: Não foi possível salvar OSINT no banco local: {e}")
-                
-            return osint_context
-        else:
-            return {"error": osint_data.get("error", "Falha na pesquisa externa.")}
-    else:
-        return {"error": "Não consegui identificar o nome da pessoa ou da empresa para pesquisar."}
+__all__ = [
+    "fetch_contextual_data",
+    "sanitize_email_body",
+    "resolve_organization",
+    "execute_osint_enrichment",
+    "_fetch_tasks",
+]
 
 
 async def fetch_contextual_data(
@@ -857,217 +716,4 @@ async def fetch_contextual_data(
     internal_context["selected_entities"] = selected_entities
     return internal_context
 
-
-async def _fetch_tasks(intent_info: dict, internal_context: dict, pipedrive_org_id, message: str):
-    """Busca tarefas/atividades do Pipedrive com filtros inteligentes."""
-    import httpx
-    from datetime import date, timedelta
-    
-    date_f = intent_info.get("activity_date_filter", "today")
-    target_company = intent_info.get("extracted_company_name")
-    filter_msg = f"para Empresa ID {pipedrive_org_id}" if pipedrive_org_id else (f"para '{target_company}'" if target_company else "Global")
-    print(f"[AI Pipeline] 📅 Buscando tarefas ({date_f}) {filter_msg}...")
-    
-    try:
-        from modules.crm.service.pipedrive_service import pipedrive_service
-        
-        today = date.today().isoformat()
-        
-        # Detecção de Escopo: Padrão é sempre o usuário logado (Eu).
-        # Só abre visão global se houver um comando explícito de gestão/equipe.
-        global_triggers = [
-            "todo o pipedrive", "da equipe", "do time", "geral da empresa", 
-            "de todos os usuários", "dos vendedores", "empresa inteira",
-            "visão global", "visão geral"
-        ]
-        msg_lower = message.lower()
-        is_global_request = any(trigger in msg_lower for trigger in global_triggers)
-        
-        # REFORÇO: Se o usuário escreveu "meu", "minha", "pra mim", "comigo", força o filtro de usuário
-        has_my_filter = any(me in msg_lower for me in ["meu", "minha", "pra mim", "comigo", "meus", "minhas"])
-        if has_my_filter:
-            is_global_request = False
-        
-        all_activities = []
-        # PRIORIDADE 1: Buscar a agenda do PRÓPRIO usuário (Sem limite de 500 escondendo as dele)
-        r_agenda = await pipedrive_service.make_request("GET", f"activities?user_id={pipedrive_service.user_id}&done=0&limit=500")
-        if r_agenda and r_agenda.status_code == 200:
-            all_activities.extend(r_agenda.json().get("data") or [])
-            print(f"[AI Pipeline] 📅 Agenda: Coletadas {len(all_activities)} tarefas diretas de João Luccas.")
-
-        # PRIORIDADE 2: Buscar tarefas ligadas aos negócios da etapa (Se houver etapa)
-        deals_in_stage = internal_context.get("deals_in_stage", [])
-        if deals_in_stage:
-            print(f"[AI Pipeline] 🔍 Otimizando busca: Coletando atividades globais para {len(deals_in_stage)} negócios da etapa...")
-            # Em vez de fazer 100 requests (uma por deal), fazemos 1 request global e filtramos em memória.
-            # Isso evita estouro de Rate Limit (429) do Pipedrive.
-            r_global = await pipedrive_service.make_request("GET", f"activities?user_id=0&done=0&limit=500")
-            if r_global and r_global.status_code == 200:
-                global_activities = r_global.json().get("data") or []
-                stage_deal_ids = {d["id"] for d in deals_in_stage}
-                
-                tasks_found = [a for a in global_activities if (a.get("deal_id").get("value") if isinstance(a.get("deal_id"), dict) else a.get("deal_id")) in stage_deal_ids]
-                all_activities.extend(tasks_found)
-                print(f"[AI Pipeline] 🎯 Filtro Global: Encontradas {len(tasks_found)} tarefas nos 500 itens mais recentes do Pipedrive.")
-                
-                # Se encontramos poucas tarefas e temos muitos negócios, talvez valha a pena buscar individualmente os top 5?
-                # (Apenas como fallback de segurança para garantir que os principais deals tenham dados)
-                if len(tasks_found) < 5 and len(deals_in_stage) > 0:
-                    import asyncio
-                    async def fetch_deal_acts(deal_id):
-                        r = await pipedrive_service.make_request("GET", f"deals/{deal_id}/activities?done=0&limit=10")
-                        return r.json().get("data") or [] if r and r.status_code == 200 else []
-                    
-                    print(f"[AI Pipeline] ⚠️ Poucas tarefas encontradas no global. Buscando individualmente para os top 10 deals da etapa...")
-                    fallback_tasks = [fetch_deal_acts(d["id"]) for d in deals_in_stage[:10]]
-                    fallback_results = await asyncio.gather(*fallback_tasks)
-                    for res in fallback_results:
-                        all_activities.extend(res)
-            
-        # PRIORIDADE 3: Busca por Organização (Se houver empresa específica)
-        if pipedrive_org_id:
-            r_org = await pipedrive_service.make_request("GET", f"organizations/{pipedrive_org_id}/activities?done=0")
-            if r_org and r_org.status_code == 200:
-                all_activities.extend(r_org.json().get("data") or [])
-        
-        # DEDUPLICAÇÃO: Evita duplicar tarefas que aparecem em múltiplas fontes
-        if all_activities:
-            seen_ids = set()
-            unique_activities = []
-            for act in all_activities:
-                act_id = act.get("id")
-                if act_id and act_id not in seen_ids:
-                    seen_ids.add(act_id)
-                    unique_activities.append(act)
-            all_activities = unique_activities
-            print(f"[AI Pipeline] 📅 Total de {len(all_activities)} tarefas únicas consolidadas.")
-
-        # --- FILTRAGEM POR ORGANIZAÇÃO (Foco Contextual) ---
-        if not is_global_request:
-            if pipedrive_org_id:
-                print(f"[AI Pipeline] 🛡️ Filtrando por Organização ID: {pipedrive_org_id}")
-                all_activities = [
-                    a for a in all_activities
-                    if str(a.get("org_id").get("value") if isinstance(a.get("org_id"), dict) else a.get("org_id")) == str(pipedrive_org_id)
-                ]
-            elif target_company and target_company.lower() not in ["null", "none"]:
-                print(f"[AI Pipeline] 🛡️ Filtrando por Nome da Organização: {target_company}")
-                all_activities = [
-                    a for a in all_activities
-                    if target_company.lower() in str(a.get("org_name", "")).lower()
-                ]
-        
-        tasks_to_return = []
-        
-        if all_activities:
-            # --- FILTRAGEM GLOBAL: Somente tarefas vinculadas a NEGÓCIOS (Deals) ---
-            initial_count = len(all_activities)
-            deal_only_activities = []
-            for act in all_activities:
-                d_id_raw = act.get("deal_id")
-                if d_id_raw:
-                    d_val = d_id_raw.get("value") if isinstance(d_id_raw, dict) else d_id_raw
-                    if d_val:
-                        deal_only_activities.append(act)
-            
-            all_activities = deal_only_activities
-            if len(all_activities) < initial_count:
-                print(f"[AI Pipeline] 🛡️ Filtro Global: Removidas {initial_count - len(all_activities)} tarefas que não estavam vinculadas a nenhum negócio.")
-            # 2.5 Filtragem por ETAPA (Se solicitada)
-            deals_in_stage = internal_context.get("deals_in_stage", [])
-            if deals_in_stage:
-                stage_deal_ids = {d.get("id") for d in deals_in_stage}
-                
-                # Extração segura de Org IDs (Pipedrive pode retornar int ou dict)
-                stage_org_ids = set()
-                for d in deals_in_stage:
-                    oid = d.get("org_id")
-                    if isinstance(oid, dict):
-                        stage_org_ids.add(oid.get("value"))
-                    elif oid:
-                        stage_org_ids.add(oid)
-                
-                safe_activities = []
-                for act in all_activities:
-                    a_deal = act.get("deal_id")
-                    a_deal_id = a_deal.get("value") if isinstance(a_deal, dict) else a_deal
-                    
-                    # FILTRO CRÍTICO: Só queremos tarefas ligadas a NEGÓCIOS (Deals)
-                    if a_deal_id and a_deal_id in stage_deal_ids:
-                        safe_activities.append(act)
-                        
-                all_activities = safe_activities
-                print(f"[AI Pipeline] 📊 Filtro de Etapa: Mantive {len(all_activities)} tarefas vinculadas a NEGÓCIOS da etapa solicitada.")
-
-            # 3. Filtragem Manual de Segurança (Python-side) e Filtro de Negócios Perdidos
-            if not is_global_request:
-                user_filtered = []
-                target_id = str(pipedrive_service.user_id)
-                for act in all_activities:
-                    u1 = act.get("user_id") or {}
-                    u1_id = str(u1.get("value") if isinstance(u1, dict) else u1)
-                    u1_name = str(u1.get("name", "")).lower() if isinstance(u1, dict) else ""
-                    
-                    u2 = act.get("assigned_to_user_id") or {}
-                    u2_id = str(u2.get("value") if isinstance(u2, dict) else u2)
-                    u2_name = str(u2.get("name", "")).lower() if isinstance(u2, dict) else ""
-                    
-                    # Verifica por ID ou por Nome (Backup de segurança)
-                    is_me = (u1_id == target_id or u2_id == target_id or 
-                             "joao" in u1_name or "luccas" in u1_name or
-                             "joao" in u2_name or "luccas" in u2_name)
-                    
-                    if is_me:
-                        user_filtered.append(act)
-                    else:
-                        # Log para entender quem está furando o filtro
-                        pass
-                
-                if len(all_activities) != len(user_filtered):
-                    # --- FILTRAGEM DE NEGÓCIOS (Perdidos ou de Terceiros) ---
-                    # Removido filtro redundante que re-validava o status 'open' individualmente.
-                    # Já garantimos que são negócios abertos no filtro de ETAPA inicial.
-                    pass
-                
-                all_activities = user_filtered
-                
-            # --- FINALIZAÇÃO: Limpeza e Formato Final ---
-            date_filter = intent_info.get("activity_date_filter", "today")
-            
-            if all_activities:
-                today_date = date.today()
-                tomorrow_date = today_date + timedelta(days=1)
-                
-                for act in all_activities:
-                    due = act.get("due_date")
-                    if not due:
-                        if date_filter == "all": tasks_to_return.append(act)
-                        continue
-                    
-                    due_date = date.fromisoformat(due)
-                    
-                    if date_filter == "today" and due_date == today_date:
-                        tasks_to_return.append(act)
-                    elif date_filter == "tomorrow" and due_date == tomorrow_date:
-                        tasks_to_return.append(act)
-                    elif date_filter == "overdue" and due_date < today_date:
-                        tasks_to_return.append(act)
-                    elif date_filter == "future" and due_date >= today_date:
-                        tasks_to_return.append(act)
-                    elif date_filter == "all":
-                        tasks_to_return.append(act)
-                    elif not date_filter:
-                        tasks_to_return.append(act)
-        
-        internal_context["today_tasks"] = tasks_to_return
-        
-        filter_msg = f"({date_f})"
-        if pipedrive_org_id:
-            filter_msg += f" da empresa {pipedrive_org_id}"
-        
-        print(f"[AI Pipeline] Encontradas {len(tasks_to_return)} tarefas {filter_msg}.")
-
-    except Exception as e_tasks:
-        print(f"[AI Pipeline] [WARNING] Erro ao buscar tarefas: {e_tasks}")
-
-    return internal_context
+# _fetch_tasks foi extraído para _tasks_fetcher.py — importado no topo do arquivo.

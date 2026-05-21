@@ -456,29 +456,33 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 </header>
 
                 <div className={styles.contentWrapper}>
-                    <Drawer
-                        showDrawer={showDrawer}
-                        setShowDrawer={handleSetShowDrawer}
-                        filteredOrgs={filteredOrgs}
-                        isLoading={loadingOrgs}
-                        searchTerm={searchTerm}
-                        setSearchTerm={setSearchTerm}
-                        onOrgClick={handleOrgClick}
-                        selectedOrgId={currentOrgId}
-                        onOrgRenamed={handleOrgRenamed}
-                        selectedOrgLogo={confirmedLogo}
-                        activeJobId={activeJobId}
-                        graphEmployees={rawEmployees}
-                        refreshDetailsTrigger={refreshDrawerTrigger}
-                        addNotification={addNotification}
-                        onOrgReset={handleOrgReset}
-                    />
+                    {activeView !== 'preferences' && (
+                        <Drawer
+                            showDrawer={showDrawer}
+                            setShowDrawer={handleSetShowDrawer}
+                            filteredOrgs={filteredOrgs}
+                            isLoading={loadingOrgs}
+                            searchTerm={searchTerm}
+                            setSearchTerm={setSearchTerm}
+                            onOrgClick={handleOrgClick}
+                            selectedOrgId={currentOrgId}
+                            onOrgRenamed={handleOrgRenamed}
+                            selectedOrgLogo={confirmedLogo}
+                            activeJobId={activeJobId}
+                            graphEmployees={rawEmployees}
+                            refreshDetailsTrigger={refreshDrawerTrigger}
+                            addNotification={addNotification}
+                            onOrgReset={handleOrgReset}
+                        />
+                    )}
 
                     <div className={styles.mainContent}>
                         <NotificationContainer notifications={notifications} removeNotification={removeNotification} />
-                        <Header
-                            confirmedBrand={confirmedBrand}
-                        />
+                        {activeView !== 'preferences' && (
+                            <Header
+                                confirmedBrand={confirmedBrand}
+                            />
+                        )}
 
                         <div className={styles.graphWrapper}>
                             {activeView === 'graph' && (

@@ -1,3 +1,17 @@
+"""
+models.people.employee
+=======================
+Model SQLAlchemy para pessoas (funcionários/contatos) vinculadas a organizações.
+
+Campos relevantes para regras de negócio:
+    seniority    → nível hierárquico (0=desconhecido, 2=analista, 3=coordenador,
+                   4=gerente, 5=diretor, 6=sócio/C-level)
+    department   → departamento normalizado ('compras', 'logistica', etc.)
+    temperature  → classificação de relacionamento ('cold' | 'warm' | 'hot')
+    is_discovery → 1 se o contato foi descoberto via B2B scanner (não do Pipedrive)
+    source       → 'pipedrive' | 'discovery' | 'manual'
+    matching_score → relevância ICP calculada pelo qualifier
+"""
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func

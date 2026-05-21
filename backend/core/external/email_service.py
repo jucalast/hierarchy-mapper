@@ -1,3 +1,18 @@
+"""
+core.external.email_service
+===========================
+Descoberta e validacao de e-mails corporativos brasileiros.
+
+Gera combinacoes de padrao nome+dominio (12 padroes: first.last, flast, etc.)
+e valida via MX record + SMTP probe sem autenticacao.
+
+Funcoes publicas:
+    discover_and_validate_email(first, last, domain, known_pattern, smtp) -> dict
+    generate_all_patterns(first, last, domain) -> list[str]
+    apply_pattern(first, last, domain, pattern) -> str
+    get_mx_record(domain) -> str | None
+    smtp_probe(email, mx_host, timeout) -> str
+"""
 import re
 import socket
 import smtplib

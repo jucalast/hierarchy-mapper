@@ -1,3 +1,13 @@
+"""
+modules.hierarchy.service.search_engine
+========================================
+Motor de busca DuckDuckGo com rotation de User-Agent e retry com jitter.
+
+Executa o ddg_runner.py em subprocess para evitar conflitos de event loop.
+is_company=True ativa filtros especificos para nomes de empresa.
+
+Funcao publica: get_duck_results(query, max_results, is_company) -> list[dict]
+"""
 import asyncio
 import random
 import re

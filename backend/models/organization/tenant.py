@@ -1,3 +1,12 @@
+"""
+models.organization.tenant
+==========================
+Multi-tenancy: Tenant (conta SaaS) e User (usuario do sistema).
+
+user_role define permissao: admin | seller | viewer.
+signature_html armazena a assinatura HTML capturada do Outlook para
+reuso em emails enviados pelo agente sem abrir popup de composicao.
+"""
 import uuid
 from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship

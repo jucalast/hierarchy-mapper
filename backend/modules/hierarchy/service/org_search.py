@@ -1,3 +1,13 @@
+"""
+modules.hierarchy.service.org_search
+=====================================
+Busca de dados organizacionais complementares via The Org e LinkedIn.
+
+get_theorg_role() consulta o organograma publico do The Org para validar
+cargo e departamento quando dados do LinkedIn sao insuficientes.
+
+Classe: OrgSearch | Singleton: org_search
+"""
 import httpx
 import re
 import html

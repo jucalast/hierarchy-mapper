@@ -1,3 +1,14 @@
+"""
+core.external.osint_service
+===========================
+Enriquecimento de leads via toolkit OSINT externo (Node.js subprocess).
+
+Executa scripts/osint-toolkit de forma assincrona via create_subprocess_exec,
+passando nome+empresa e recebendo JSON com email provavel, WhatsApp e PABX.
+
+Singleton: osint_service
+Funcao publica: enrich_lead(name, company, domain, cnpj) -> dict
+"""
 import subprocess
 import json
 import os

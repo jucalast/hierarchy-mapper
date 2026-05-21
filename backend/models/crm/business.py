@@ -1,3 +1,13 @@
+"""
+models.crm.business
+===================
+Modelos ORM para dados de negocio do Tenant.
+
+Classes:
+    BusinessProfile  -- segmento, diferenciais, metodologia, value propositions
+    Product          -- produto com nome, descricao e casos de uso
+    ReferenceClient  -- cliente de referencia com segmento e dor resolvida
+"""
 import uuid
 from sqlalchemy import Column, String, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship

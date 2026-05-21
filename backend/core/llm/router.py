@@ -94,7 +94,15 @@ _request_strict_mode: ContextVar[Optional[bool]] = ContextVar(
 )
 
 def set_preferred_model(model: Optional[str], strict_mode: bool = False) -> None:
-    """Registra o modelo preferido e persiste como padrão global."""
+    """
+    Registra o modelo preferido para o request atual e persiste globalmente.
+
+    Args:
+        model: ID do modelo (ex: 'gemini-2.5-flash', 'claude-sonnet-4-5').
+               None limpa a preferência do request atual (usa o global).
+        strict_mode: Se True, desativa fallback — usa somente o modelo escolhido.
+                     Útil para cenários onde o usuário explicitamente selecionou um modelo.
+    """
     _request_preferred_model.set(model or None)
     _request_strict_mode.set(strict_mode)
     if model:
@@ -104,7 +112,12 @@ def set_preferred_model(model: Optional[str], strict_mode: bool = False) -> None
         _save_global_preference(model, strict_mode)
 
 def get_preferred_model() -> Optional[str]:
-    """Retorna o modelo preferido do request atual ou a última escolha global."""
+    """
+    Retorna o modelo preferido para a chamada LLM atual.
+
+    Prioridade: preferência do request atual (ContextVar) → última escolha global
+    persistida em ai_preference.json.
+    """
     return _request_preferred_model.get() or _app_global_preferred_model
 
 def get_strict_mode_preference() -> bool:

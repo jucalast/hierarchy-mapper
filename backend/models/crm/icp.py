@@ -1,3 +1,13 @@
+"""
+models.crm.icp
+==============
+Ideal Customer Profile com regras de scoring dinamicas por padrao.
+
+ICPConfig define criterios qualitativos (industrias, tamanho, pain points).
+ICPScoreRule aplica pesos numericos para calcular icp_score (0-100) por org.
+
+Classes: ICPConfig, ICPScoreRule
+"""
 import uuid
 from sqlalchemy import Column, String, Integer, ForeignKey, JSON
 from sqlalchemy.orm import relationship

@@ -1,3 +1,15 @@
+"""
+modules.hierarchy.service.b2b_scanner
+======================================
+Motor principal de discovery B2B via DuckDuckGo + perfis LinkedIn.
+
+Emite lotes de nos via async generator para o ARQ worker publicar
+no canal Redis e o frontend receber via WebSocket em tempo real.
+
+Funcoes publicas:
+    discover_employees_stream(company, domain, ...) -> AsyncGenerator
+    discover_employees(company, domain, ...) -> list[dict]
+"""
 import re
 import html
 import os

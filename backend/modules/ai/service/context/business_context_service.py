@@ -1,3 +1,14 @@
+"""
+modules.ai.service.context.business_context_service
+====================================================
+Contexto de negocio do Tenant: carrega e cacheia dados para o agente.
+
+Combina banco (BusinessProfile, Products, ReferenceClients, ICP) com
+fallbacks para business_context.py estatico quando banco nao esta populado.
+
+Classe: BusinessContextService (metodos de classe, sem instanciacao necessaria)
+Metodo principal: get_tenant_context() -> dict
+"""
 import logging
 from typing import Dict, List, Optional, Any
 from sqlalchemy import select

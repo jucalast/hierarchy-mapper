@@ -1,3 +1,4 @@
+"""Serviços de contexto de negócio para o agente."""
 from .business_context_service import BusinessContextService
 from . import business_context
 from .business_context import (

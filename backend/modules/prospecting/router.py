@@ -1,3 +1,14 @@
+"""
+modules.prospecting.router
+===========================
+Endpoints de prospeccao geolocalizada com qualificacao ICP automatica.
+
+Rotas:
+    POST /prospecting/start              -> inicia sessao de busca por 7 segmentos
+    GET  /prospecting/sessions/{id}/leads -> polling de leads encontrados
+    POST /prospecting/leads/{id}/approve  -> cria no Pipedrive
+    POST /prospecting/leads/{id}/reject   -> descarta o lead
+"""
 from fastapi import APIRouter, HTTPException, Query
 
 from .schemas import SearchRequest

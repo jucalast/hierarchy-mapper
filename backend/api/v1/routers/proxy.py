@@ -1,3 +1,16 @@
+"""
+api.v1.routers.proxy
+====================
+Proxy de imagens externas e URL preview com cache em dois niveis.
+
+Cache de imagens: disco local (permanente) -> Redis 7 dias (backup).
+Chamadas Redis sao feitas via asyncio.to_thread() para nao bloquear o loop.
+Fallback para unavatar.io quando LinkedIn retorna 404/403.
+
+Rotas:
+    GET /proxy/image?url=   -> FileResponse com imagem cacheada
+    GET /proxy/preview?url= -> metadados Open Graph
+"""
 import asyncio
 import hashlib
 import os

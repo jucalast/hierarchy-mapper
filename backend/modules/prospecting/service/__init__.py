@@ -1,3 +1,4 @@
+"""Serviços de prospecção, qualificação e deduplicação de leads."""
 from .prospect import (
     start_prospect_search,
     get_session,

@@ -1,3 +1,4 @@
+"""Camada de serviços de inteligência."""
 from .intelligence_service import IntelligenceService, intelligence_service
 from .brand_discovery import discover_company_brand, get_corporate_data
 from .brand_discovery_stream import discover_company_brand_stream

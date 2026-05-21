@@ -1,3 +1,13 @@
+"""
+modules.intelligence.service.preview_service
+=============================================
+Extracao de metadados Open Graph de URLs para pre-visualizacao de links.
+
+Tenta em ordem: og:* -> twitter:* -> title/description padrao HTML.
+role_hint e company_hint permitem inferir dados quando OG nao existe.
+
+Funcao publica: get_url_preview(url, role_hint, company_hint) -> dict
+"""
 import httpx
 import re
 import base64

@@ -1,3 +1,12 @@
+"""
+modules.hierarchy.service.ddg_runner
+=====================================
+Script CLI isolado para executar buscas DuckDuckGo em subprocess separado.
+
+Executado via asyncio.create_subprocess_exec() para isolar o event loop
+do duckduckgo_search (incompativel com o loop principal do FastAPI).
+Retorna JSON no stdout; erros vao para stderr com sys.exit(1).
+"""
 
 import json
 import sys

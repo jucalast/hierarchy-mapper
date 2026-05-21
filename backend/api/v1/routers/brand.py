@@ -1,3 +1,14 @@
+"""
+api.v1.routers.brand
+====================
+Descoberta de marca institucional antes do B2B scan.
+
+Suporta dois modos: sincronizado (retorna tudo de uma vez) e streaming
+(SSE com cada candidato chegando conforme e descoberto).
+
+Rotas:
+    GET /brand/discover?cnpj=&domain=&stream= -> BrandResult | SSE stream
+"""
 from fastapi import APIRouter, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from typing import Optional, AsyncGenerator

@@ -1,3 +1,13 @@
+"""
+modules.intelligence.service.intelligence_service
+==================================================
+Enriquecimento avancado de organizacoes: dominio, logo e persistencia local.
+
+IntelligenceService.enrich_organization() busca dados via BigQuery, Clearbit
+e DuckDuckGo e persiste na tabela organizations do SQLite.
+
+Classe: IntelligenceService
+"""
 import re
 import httpx
 from typing import Dict, Optional, Any, List

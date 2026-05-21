@@ -1,3 +1,14 @@
+"""
+api.v1.schemas
+==============
+Schemas Pydantic compartilhados entre routers e o modulo hierarchy.
+
+Inclui schemas para o scanner B2B (EmployeeNode, HierarchyResponse,
+ConfirmEnrichRequest) e configuracao do Tenant (BusinessProfileSchema,
+ICPConfigSchema, HierarchyConfigSchema).
+
+Utilitario: clean_cnpj(val) -> str  -- extrai apenas digitos do CNPJ
+"""
 from pydantic import BaseModel
 from typing import List, Optional, Any
 import re

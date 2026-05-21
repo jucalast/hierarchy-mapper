@@ -1,3 +1,18 @@
+"""
+core.infra.database
+===================
+Engine SQLAlchemy assíncrono, session factory e seeds de dados iniciais.
+
+Resolve o caminho do SQLite dinamicamente (relativo → absoluto) para funcionar
+tanto ao rodar de backend/ quanto da raiz do projeto.
+
+Exportações públicas:
+    Base, engine, async_session, get_db(), init_db()
+
+Seeds executados uma única vez na primeira inicialização:
+    seed_system_settings() -- SystemSetting defaults
+    seed_tenant_data()     -- Tenant, User e integracoes padrao
+"""
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import text

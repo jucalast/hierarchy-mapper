@@ -1,3 +1,15 @@
+"""
+modules.crm.router
+==================
+Endpoints de sincronizacao CRM com Pipedrive.
+
+Inclui protecao contra rate limit (cooldown detectado antes do sync)
+e smart reschedule de atividades vencidas por stage queue.
+
+Rotas:
+    POST /pipedrive_sync       -> sync completo (orgs + atividades)
+    POST /pipedrive_smart_sync -> reagendamento inteligente por etapa
+"""
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 from datetime import datetime, timezone, timedelta

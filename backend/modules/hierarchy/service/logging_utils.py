@@ -1,3 +1,14 @@
+"""
+modules.hierarchy.service.logging_utils
+========================================
+Logger de sessao do scanner B2B em arquivo texto (engine_raw.log).
+
+Registra queries DuckDuckGo, candidatos rejeitados com motivo e dados brutos
+para debugging de falsos positivos/negativos no discovery B2B.
+
+Funcoes: log_session_start, log_query_start, log_candidate_rejection,
+         log_candidate_analysis, register_raw_data
+"""
 import os
 from datetime import datetime
 

@@ -1,3 +1,12 @@
+"""
+models.people.prospect
+======================
+Prospeccao geolocalizada: sessoes de busca e leads encontrados.
+
+ProspectSession registra cada busca (lat/lng, raio, segmentos ICP).
+ProspectLead armazena cada empresa com qualificacao, coordenadas para
+o mapa Leaflet e status de integracao com Pipedrive.
+"""
 import uuid
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text, JSON
 from sqlalchemy.orm import relationship

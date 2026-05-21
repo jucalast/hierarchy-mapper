@@ -1,3 +1,29 @@
+"""
+api.v1.router
+=============
+Agregador central de todos os routers da API v1.
+
+Cada domínio de negócio expõe um router próprio que é incluído aqui com seu prefixo.
+Para adicionar um novo domínio: crie o router no módulo correspondente e inclua abaixo.
+
+Prefixos canônicos:
+    /auth           → autenticação JWT
+    /settings       → configurações do sistema/Tenant
+    /jobs           → background jobs (ARQ / WebSocket)
+    /proxy          → proxy de imagens e URL preview
+    /ai             → preferência de modelo, quotas, transcrição
+    /brand          → descoberta de marca institucional
+    /hierarchy      → B2B scanner e grafo de hierarquia
+    /organizations  → CRUD de organizações locais
+    /intelligence   → sync hub e inteligência de mercado
+    /search         → busca global entre entidades
+    /conversations  → histórico de chat e atividades
+    /triggers       → ações automáticas (respostas email/WhatsApp)
+    /agent          → orquestração do agente autônomo
+    /prospecting    → prospecção geolocalizada
+    /communication  → envio de email e WhatsApp
+    (sem prefixo)   → CRM/Pipedrive sync
+"""
 from fastapi import APIRouter
 from api.v1.routers import proxy, brand, jobs, ai, organizations, search, conversations, agent, settings, auth
 from modules.prospecting   import router as prospecting_router
