@@ -3,6 +3,7 @@ Ferramentas de comunicação (WhatsApp + Email) do Agente V2.
 """
 from __future__ import annotations
 
+import asyncio
 import httpx
 from typing import Any, Dict
 from core.observability.logging_config import get_logger
@@ -16,11 +17,12 @@ from ._utils import (
     _extract_org_domain,
     _log_activity_bg,
 )
+from ._message_cache import cache_wa_messages, cache_email_messages
 
 log = get_logger(__name__)
 
 
-async def exec_whatsapp_get_messages(args: Dict[str, Any]) -> Dict[str, Any]:
+async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = None) -> Dict[str, Any]:
     import re as _re
     contact = args.get("contact", "")
     # Rejeita buscas com valores inválidos que o LLM às vezes gera ao perder o contexto
@@ -42,6 +44,30 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any]) -> Dict[str, Any]:
         phone_digits_arg = _re.sub(r'\D', '', phone_arg)
         if phone_digits_arg and len(phone_digits_arg) > 13:
             lid_chat_id = f"{phone_digits_arg}@lid"
+
+            # Verifica cache ANTES de chamar o WA service — poupa round-trip externo
+            from ._message_cache import get_cached_messages
+            from models.communication.contact_cache import CHANNEL_WHATSAPP
+            cached_lid = await get_cached_messages(lid_chat_id, CHANNEL_WHATSAPP)
+            if cached_lid is not None:
+                fmt_cached = []
+                for m in cached_lid:
+                    body = m.get("body") or m.get("text") or m.get("content") or ""
+                    sender = "Você" if m.get("fromMe") else contact
+                    fmt_cached.append(f"[{sender}]: {body[:300]}")
+                return {
+                    "ok": True,
+                    "contact": contact,
+                    "phone": "",
+                    "messages": fmt_cached,
+                    "count": len(fmt_cached),
+                    "summary": (
+                        f"{len(fmt_cached)} mensagens com {contact} (recuperadas do cache local)"
+                        " — ATENÇÃO: este contato usa ID interno do WhatsApp;"
+                        " para enviar mensagens use o telefone cadastrado no Pipedrive"
+                    ),
+                }
+
             try:
                 r_lid = await client.get(
                     f"{WA_BASE}/chats/{lid_chat_id}/messages",
@@ -60,6 +86,17 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any]) -> Dict[str, Any]:
                                 continue
                             sender = "Você" if m.get("fromMe") else contact
                             fmt.append(f"[{sender}]: {body[:300]}")
+                        # Persiste o histórico LID no cache (usa chat_id como identifier)
+                        asyncio.create_task(
+                            cache_wa_messages(
+                                contact_identifier=lid_chat_id,
+                                contact_name=contact,
+                                org_id=org_id,
+                                org_name=args.get("org_name") or None,
+                                chat_id=lid_chat_id,
+                                raw_messages=list(msgs_lid),
+                            )
+                        )
                         return {
                             "ok": True,
                             "contact": contact,
@@ -105,6 +142,33 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any]) -> Dict[str, Any]:
             )
             if not chat_id:
                 return {"ok": False, "error": f"Contato '{contact}' não encontrado no WhatsApp"}
+
+        # ─── Cache check ───
+        # Verifica se já temos as mensagens no cache local e se não estão expiradas (stale)
+        phone_val = chat_id.split("@")[0] if "@" in chat_id else chat_id
+        is_lid = "@lid" in chat_id or (phone_val.isdigit() and len(phone_val) > 13)
+        pipedrive_phone = _re.sub(r'\D', '', phone_arg) if phone_arg else ""
+        canonical_phone = pipedrive_phone if (pipedrive_phone and len(pipedrive_phone) <= 13) else ("" if is_lid else phone_val)
+        _cache_id = canonical_phone or chat_id
+
+        from ._message_cache import get_cached_messages
+        from models.communication.contact_cache import CHANNEL_WHATSAPP
+        cached_msgs = await get_cached_messages(_cache_id, CHANNEL_WHATSAPP)
+        if cached_msgs is not None:
+            formatted = []
+            for m in cached_msgs:
+                body = m.get("body") or m.get("text") or m.get("content") or ""
+                sender = "Você" if m.get("fromMe") else (found_name or contact)
+                formatted.append(f"[{sender}]: {body[:300]}")
+            return {
+                "ok": True,
+                "contact": found_name or contact,
+                "phone": canonical_phone,
+                "messages": formatted,
+                "count": len(formatted),
+                "summary": f"{len(formatted)} mensagens com {found_name or contact} (recuperadas do cache local)"
+                           + (" — ATENÇÃO: este contato usa ID interno do WhatsApp; para enviar mensagens use o telefone cadastrado no Pipedrive" if is_lid else ""),
+            }
 
         r = await client.get(f"{WA_BASE}/chats/{chat_id}/messages", params={"limit": limit}, timeout=10.0)
         if r.status_code != 200:
@@ -152,6 +216,20 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any]) -> Dict[str, Any]:
         # Número canônico: preferência ao Pipedrive, fallback ao chat_id se não for LID
         pipedrive_phone = _re.sub(r'\D', '', phone_arg) if phone_arg else ""
         canonical_phone = pipedrive_phone if (pipedrive_phone and len(pipedrive_phone) <= 13) else ("" if is_lid else phone_val)
+
+        # Persiste no cache para a UI de mensagens (não bloqueia o retorno)
+        _cache_id = canonical_phone or chat_id
+        _org_name = args.get("org_name") or None
+        asyncio.create_task(
+            cache_wa_messages(
+                contact_identifier=_cache_id,
+                contact_name=found_name or contact,
+                org_id=org_id,
+                org_name=_org_name,
+                chat_id=chat_id,
+                raw_messages=list(msgs_raw or []),
+            )
+        )
 
         return {
             "ok": True,
@@ -426,6 +504,22 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
             if not search_query:
                 return {"ok": False, "error": "Não foi possível determinar um termo de busca válido"}
 
+            # ─── Cache check ───
+            _email_id = contact_email or search_query
+            if _email_id:
+                from ._message_cache import get_cached_messages
+                from models.communication.contact_cache import CHANNEL_EMAIL
+                cached_emails = await get_cached_messages(_email_id, CHANNEL_EMAIL)
+                if cached_emails is not None:
+                    return {
+                        "ok": True,
+                        "contact": contact_name or contact_email or org_name,
+                        "domain": domain,
+                        "emails": cached_emails,
+                        "count": len(cached_emails),
+                        "summary": f"{len(cached_emails)} e-mails encontrados para {contact_name or contact_email or org_name} (recuperados do cache local)",
+                    }
+
             # Calcula fallback por primeira palavra do org_name (usado se busca por domínio retornar 0)
             _fallback_query = None
             if org_name and search_query.startswith("@"):
@@ -547,6 +641,18 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
             ]
 
             label = contact_name or contact_email or org_name
+            # Persiste no cache para a UI de mensagens (não bloqueia o retorno)
+            _email_id = contact_email or search_query
+            if _email_id and results:
+                asyncio.create_task(
+                    cache_email_messages(
+                        contact_identifier=_email_id,
+                        contact_name=label,
+                        org_id=org_id,
+                        org_name=org_name,
+                        emails=results,
+                    )
+                )
             return {
                 "ok": True,
                 "contact": label,
@@ -557,7 +663,6 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
             }
         except httpx.TimeoutException as e:
             if attempt < max_retries:
-                import asyncio
                 await asyncio.sleep(1)  # Backoff rápido: 1s
                 continue
             # Fallback: tentar email_get_inbox com filtro

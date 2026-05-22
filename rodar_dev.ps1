@@ -60,19 +60,14 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Backend'
     Set-Location '$backendPath'
     & '$pythonPath' -X utf8 -m uvicorn main:app --port 8000 --reload ``
-        --reload-dir api ``
-        --reload-dir core ``
-        --reload-dir models ``
-        --reload-dir modules ``
-        --reload-dir services ``
+        --reload-dir . ``
         --reload-exclude '__pycache__' ``
         --reload-exclude '*.pyc' ``
         --reload-exclude '*.tmp' ``
         --reload-exclude '*.db' ``
-        --reload-exclude '*.db-journal' ``
         --reload-exclude '*.db-wal' ``
-        --reload-exclude 'intelligence.db*' ``
-        --reload-exclude '*.log'
+        --reload-exclude '*.db-shm' ``
+        --reload-exclude '*.sqlite'
 "
 
 # 4. Iniciar Worker (COM watchfiles)
@@ -114,7 +109,15 @@ $emailPath = Join-Path $PSScriptRoot "backend\services\email-service"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Email'
     Set-Location '$emailPath'
-    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8002 --reload --reload-dir .
+    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8002 --reload ``
+        --reload-dir . ``
+        --reload-exclude '__pycache__' ``
+        --reload-exclude '*.pyc' ``
+        --reload-exclude '*.tmp' ``
+        --reload-exclude '*.db' ``
+        --reload-exclude '*.db-wal' ``
+        --reload-exclude '*.db-shm' ``
+        --reload-exclude '*.sqlite'
 "
 
 Write-Host ""

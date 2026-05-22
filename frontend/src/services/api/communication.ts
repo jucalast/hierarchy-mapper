@@ -67,3 +67,76 @@ export async function sendWhatsAppDirect(number: string, message: string) {
   if (!resp.ok) throw new Error(`WhatsApp send ${resp.status}`);
   return resp.json();
 }
+
+// ── Cache de Mensagens ─────────────────────────────────────────────────────────
+
+export interface TrackedContact {
+  contact_identifier: string;
+  contact_name: string;
+  channel: 'whatsapp' | 'email';
+  org_name?: string;
+  org_id?: number;
+  message_count: number;
+  fetched_at?: string;
+  last_message_preview?: string;
+  chat_id?: string;
+  has_unread?: boolean;
+  is_key_contact?: boolean;
+  profile_pic?: string;
+}
+
+export interface WaMessage {
+  body: string;
+  fromMe: boolean;
+  timestamp: number;
+  id?: string;
+}
+
+export interface EmailMessage {
+  from: string;
+  to: string;
+  subject: string;
+  date: string;
+  preview: string;
+  entryId: string;
+  direction: 'sent' | 'received';
+}
+
+export interface CachedConversation {
+  contact_identifier: string;
+  contact_name: string;
+  channel: 'whatsapp' | 'email';
+  org_name?: string;
+  chat_id?: string;
+  messages: WaMessage[] | EmailMessage[];
+  message_count: number;
+  fetched_at?: string;
+}
+
+export function fetchTrackedContacts(channel?: 'whatsapp' | 'email', orgId?: number | null) {
+  const params = new URLSearchParams();
+  if (channel) params.append('channel', channel);
+  if (orgId != null) params.append('org_id', String(orgId));
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  return api.get<{ contacts: TrackedContact[]; total: number; unread_count: number }>(`/messages/contacts${qs}`);
+}
+
+export function fetchCachedConversation(contactIdentifier: string, channel: string) {
+  return api.get<CachedConversation>(
+    `/messages/conversation?contact_identifier=${encodeURIComponent(contactIdentifier)}&channel=${channel}`
+  );
+}
+
+export function syncContact(contactIdentifier: string) {
+  return api.post<{ ok: boolean; synced: number; contact: string }>(
+    `/messages/sync/${encodeURIComponent(contactIdentifier)}?channel=whatsapp`,
+    {}
+  );
+}
+
+export function markConversationRead(contactIdentifier: string, channel: string) {
+  return api.patch<{ ok: boolean }>(
+    `/messages/read?contact_identifier=${encodeURIComponent(contactIdentifier)}&channel=${channel}`,
+    {}
+  );
+}

@@ -80,53 +80,66 @@ async def proxy_linkedin_image(url: str):
     if "licdn.com" in url or "linkedin.com" in url:
         headers["Referer"] = "https://www.linkedin.com/"
     
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        # Tenta até 4 vezes com jitter incremental para burlar o Rate Limit de Bursts
-        for attempt in range(4):
-            try:
-                resp = await client.get(url, headers=headers)
-                if resp.status_code == 200:
-                    image_data = await resp.aread()
-                    
-                    # 3. Salva a imagem no Disco Local
-                    try:
-                        with open(file_path, "wb") as f:
-                            f.write(image_data)
-                    except OSError as e:
-                        log.warning("proxy.image.disk_write_failed", error=str(e))
+    # Reduzimos o timeout para 5.0s para evitar travar as conexões do navegador
+    async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
+        try:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                image_data = await resp.aread()
+                
+                # 3. Salva a imagem no Disco Local
+                try:
+                    with open(file_path, "wb") as f:
+                        f.write(image_data)
+                except OSError as e:
+                    log.warning("proxy.image.disk_write_failed", error=str(e))
 
-                    # Cacheia a imagem no Redis por 7 dias (Backups)
+                # Cacheia a imagem no Redis por 7 dias (Backups)
+                try:
+                    await asyncio.to_thread(_redis_setex, cache_key, 604800, image_data)
+                except Exception as e:
+                    log.warning("proxy.redis.write_failed", error=str(e))
+                
+                return FileResponse(file_path, media_type=resp.headers.get("content-type", "image/jpeg"))
+            
+            # Se for 429, 404 ou 403, tentamos o fallback unavatar imediatamente sem sleeps bloqueantes
+            if resp.status_code in [429, 404, 403] and ("linkedin.com" in url or "licdn.com" in url):
+                match = re.search(r'/company/([^/?#]+)', url)
+                if match:
+                    company_slug = match.group(1)
+                    fallback_url = f"https://unavatar.io/linkedin/{company_slug}"
                     try:
-                        await asyncio.to_thread(_redis_setex, cache_key, 604800, image_data)
-                    except Exception as e:
-                        log.warning("proxy.redis.write_failed", error=str(e))
-                    
-                    return FileResponse(file_path, media_type=resp.headers.get("content-type", "image/jpeg"))
-                elif resp.status_code == 429:
-                    await asyncio.sleep(1.5 + (attempt * 1.5))
-                    continue
-                elif resp.status_code in [404, 403] and ("linkedin.com" in url or "licdn.com" in url):
-                    match = re.search(r'/company/([^/?#]+)', url)
-                    if match:
-                        company_slug = match.group(1)
-                        # Tenta unavatar via linkedin slug ou tenta deduzir que é um domínio
-                        fallback_url = f"https://unavatar.io/linkedin/{company_slug}"
-                        f_resp = await client.get(fallback_url)
+                        f_resp = await client.get(fallback_url, timeout=4.0)
                         if f_resp.status_code == 200:
                             image_data = await f_resp.aread()
-                            # Salva no disco
                             try:
                                 with open(file_path, "wb") as f:
                                     f.write(image_data)
                             except OSError as e:
                                 log.warning("proxy.fallback.disk_write_failed", error=str(e))
                             return FileResponse(file_path, media_type="image/png")
-                    
-                    return StreamingResponse(iter([]), status_code=resp.status_code)
-                else:
-                    return StreamingResponse(iter([]), status_code=resp.status_code)
-            except Exception as e:
-                log.warning("proxy.image.fetch_failed", attempt=attempt, error=str(e))
-                return StreamingResponse(iter([]), status_code=404)
-                
-        return StreamingResponse(iter([]), status_code=429)
+                    except Exception as fe:
+                        log.warning("proxy.fallback.fetch_failed", error=str(fe))
+            
+            return StreamingResponse(iter([]), status_code=resp.status_code if resp.status_code != 429 else 404)
+        except Exception as e:
+            log.warning("proxy.image.fetch_failed", error=str(e))
+            # Fallback se der timeout ou erro de rede na imagem original
+            if "linkedin.com" in url or "licdn.com" in url:
+                match = re.search(r'/company/([^/?#]+)', url)
+                if match:
+                    company_slug = match.group(1)
+                    fallback_url = f"https://unavatar.io/linkedin/{company_slug}"
+                    try:
+                        f_resp = await client.get(fallback_url, timeout=4.0)
+                        if f_resp.status_code == 200:
+                            image_data = await f_resp.aread()
+                            try:
+                                with open(file_path, "wb") as f:
+                                    f.write(image_data)
+                            except OSError as e:
+                                log.warning("proxy.fallback.disk_write_failed", error=str(e))
+                            return FileResponse(file_path, media_type="image/png")
+                    except Exception:
+                        pass
+            return StreamingResponse(iter([]), status_code=404)

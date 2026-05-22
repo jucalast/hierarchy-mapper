@@ -48,6 +48,10 @@ class PipedriveService:
     _semaphore: asyncio.Semaphore = asyncio.Semaphore(
         max(1, settings.pipedrive.concurrency_limit)
     )
+    # Cache TTL de open org IDs — atualizado em background, nunca bloqueia requests
+    _open_org_ids_cache: Optional[set] = None
+    _open_org_ids_cache_ts: float = 0.0
+    _OPEN_ORG_IDS_TTL: float = 300.0  # 5 minutos
 
     def __init__(self) -> None:
         self.api_token = settings.PIPEDRIVE_API_TOKEN
@@ -74,6 +78,30 @@ class PipedriveService:
     def get_retry_after_seconds(self) -> int:
         remaining = int(PipedriveService._retry_after_until - time.time())
         return max(0, remaining)
+
+    async def refresh_open_org_ids_cache(self) -> None:
+        """Atualiza o cache de org IDs com negócios abertos em background.
+
+        Chamado pelo SyncIntelligenceHub — nunca pelo request handler.
+        """
+        age = time.time() - PipedriveService._open_org_ids_cache_ts
+        if age < PipedriveService._OPEN_ORG_IDS_TTL:
+            return
+        try:
+            deals_resp = await self._request("GET", "deals", params={"status": "open", "limit": 500})
+            if deals_resp is not None and deals_resp.status_code == 200:
+                ids: set = set()
+                for d in (deals_resp.json().get("data") or []):
+                    org_info = d.get("org_id")
+                    if org_info:
+                        oid = org_info.get("value") if isinstance(org_info, dict) else org_info
+                        if oid:
+                            ids.add(int(oid))
+                PipedriveService._open_org_ids_cache = ids
+                PipedriveService._open_org_ids_cache_ts = time.time()
+                log.info("pipedrive.open_org_ids_cache.refreshed", count=len(ids))
+        except Exception as e:
+            log.warning("pipedrive.open_org_ids_cache.refresh_failed", error=str(e))
 
     def _update_retry_after(self, resp: httpx.Response) -> None:
         if resp.status_code != 429:
@@ -175,12 +203,6 @@ class PipedriveService:
                     raise RuntimeError(
                         f"Pipedrive Rate Limit. Tente novamente em {int(wait)}s"
                     )
-                    try:
-                        resp = await client.request(
-                            method, url, json=json, params=params, timeout=t_out
-                        )
-                    except Exception as e:
-                        raise RuntimeError(f"Erro de conexão com Pipedrive (retry): {e}")
 
             if resp.status_code == 429:
                 raise RuntimeError(f"Pipedrive Rate Limit persistente. Tente novamente em {self.get_retry_after_seconds()}s")
@@ -573,75 +595,19 @@ class PipedriveService:
             return {"status": "error", "message": str(e)}
 
     async def list_organizations(self) -> List[dict]:
-        """Lista empresas do banco local com estatísticas otimizadas."""
+        """Lista empresas do banco local com estatísticas otimizadas.
+
+        Lê apenas do banco local para resposta imediata. A sincronização com
+        o Pipedrive é feita em background pelo SyncIntelligenceHub. Os open
+        org IDs são mantidos em cache TTL e atualizados via
+        refresh_open_org_ids_cache() sem bloquear o request.
+        """
         from core.infra.database import async_session
         from models import Employee, Organization
         from sqlalchemy import func, select, and_, or_
 
-        # 1. Pequena sincronização proativa das últimas 50 para manter o topo atualizado
-        try:
-            resp = await self._request(
-                "GET",
-                "organizations",
-                params={"user_id": self.user_id, "start": 0, "limit": 50, "sort": "id DESC"},
-            )
-            if resp is not None and resp.status_code == 200:
-                data = resp.json()
-                if data.get("success"):
-                    all_orgs = data.get("data") or []
-                    async with async_session() as session:
-                        for org in all_orgs:
-                            pid = org.get("id")
-                            name = (org.get("name") or "").strip()
-                            if not name: continue
-
-                            stmt = select(Organization).where(Organization.pipedrive_id == pid)
-                            res = await session.execute(stmt)
-                            db_org = res.scalars().first()
-
-                            if db_org and db_org.is_excluded == 1: continue
-
-                            if not db_org:
-                                stmt_name = select(Organization).where(func.lower(Organization.name) == name.lower())
-                                res_name = await session.execute(stmt_name)
-                                db_org = res_name.scalars().first()
-                                if not db_org:
-                                    db_org = Organization(pipedrive_id=pid, name=name)
-                                    session.add(db_org)
-                                else:
-                                    db_org.pipedrive_id = pid
-                            
-                            # Atualiza campos básicos
-                            if not db_org.domain and org.get("website"): db_org.domain = org.get("website")
-                            if not db_org.address and org.get("address"):
-                                addr = org.get("address")
-                                db_org.address = addr.get("label") if isinstance(addr, dict) else str(addr)
-                        await session.commit()
-        except Exception as e:
-            log.warning("pipedrive.list_quick_sync_failed", error=str(e))
-
-        # 1.5. Busca todos os negócios abertos (open deals) no Pipedrive para filtrar apenas organizações com negócios ativos
-        open_org_ids = None
-        try:
-            deals_resp = await self._request(
-                "GET",
-                "deals",
-                params={"status": "open", "limit": 500}
-            )
-            if deals_resp is not None and deals_resp.status_code == 200:
-                open_org_ids = set()
-                deals_data = deals_resp.json().get("data") or []
-                for d in deals_data:
-                    org_info = d.get("org_id")
-                    if org_info:
-                        if isinstance(org_info, dict):
-                            oid = org_info.get("value")
-                        else:
-                            oid = org_info
-                        if oid:
-                            open_org_ids.add(int(oid))
-        except Exception as e:
-            log.warning("pipedrive.list_organizations.fetch_deals_failed", error=str(e))
+        # Usa o cache de open org IDs (nunca bloqueia o request)
+        open_org_ids = PipedriveService._open_org_ids_cache
 
         # 2. Busca TODAS as organizações locais ativas
         async with async_session() as session:

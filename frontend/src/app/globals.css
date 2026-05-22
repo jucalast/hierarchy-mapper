@@ -53,7 +53,7 @@
   --sw-map-filter: brightness(1.2) contrast(0.9) grayscale(0.2);
 
   /* Graph Purple Themes */
-  --sw-graph-purple-bg: #4f46e5;   /* Dark Purple */
+  --sw-graph-purple-bg: #0c0d0e;   /* Neutral Dark */
   --sw-graph-purple-edge: #818cf8; /* Light Purple */
 
   /* Semantic States */
@@ -103,7 +103,7 @@
   --sw-map-filter: brightness(0.92) contrast(0.95) grayscale(0.2);
 
   /* Graph Purple Themes - Unified with Dark Mode */
-  --sw-graph-purple-bg: #4f46e5;   /* Dark Purple */
+  --sw-graph-purple-bg: #ffffff;   /* Neutral Light */
   --sw-graph-purple-edge: #818cf8; /* Light Purple */
 
   /* Semantic States */

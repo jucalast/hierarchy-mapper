@@ -41,6 +41,9 @@ log = get_logger(__name__)
 # Tasks de background criadas em startup — mantidas para cancelamento em shutdown.
 _background_tasks: set[asyncio.Task] = set()
 
+# Flag de readiness — False durante init, True quando o servidor está pronto para tráfego.
+_app_ready: bool = False
+
 
 # =============================================================================
 # Lifespan
@@ -87,6 +90,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.exception("database.init_failed", error=str(e))
 
+    # Servidor pronto para receber tráfego — background tasks iniciam depois.
+    global _app_ready
+    _app_ready = True
+    log.info("server.ready")
+
     # Scheduler de e-mail (IMAP)
     try:
         from modules.communication.service.email.scheduler import start_email_scheduler
@@ -130,6 +138,18 @@ async def lifespan(app: FastAPI):
         log.info("llm_healthcheck_task.started")
     except Exception as e:
         log.warning("llm_healthcheck_task.start_failed", error=str(e))
+
+    # Sync de mensagens: re-busca mensagens recentes para contatos já rastreados
+    try:
+        from services.message_sync import sync_tracked_contacts_on_startup
+        sync_task = asyncio.create_task(
+            sync_tracked_contacts_on_startup(), name="message_sync_startup"
+        )
+        _background_tasks.add(sync_task)
+        sync_task.add_done_callback(_background_tasks.discard)
+        log.info("message_sync.startup_task.started")
+    except Exception as e:
+        log.warning("message_sync.startup_task.failed", error=str(e))
 
     try:
         yield
@@ -291,38 +311,26 @@ async def health():
 
 @app.get("/ready", include_in_schema=False)
 async def ready():
-    """Readiness check — valida dependências críticas (DB + LLM)."""
-    checks: Dict[str, Any] = {}
-    overall_ok = True
-
-    # DB
-    try:
-        from core.infra.database import async_session
-        from sqlalchemy import text
-
-        async with async_session() as session:
-            await session.execute(text("SELECT 1"))
-        checks["database"] = {"ok": True}
-    except Exception as e:
-        overall_ok = False
-        checks["database"] = {"ok": False, "error": f"{type(e).__name__}: {e}"}
-
-    # LLM — any provider
-    checks["llm"] = {
-        "ok": settings.any_llm_available,
-        "providers": {
-            "gemini": settings.has_gemini,
-            "groq": settings.has_groq,
-            "claude": settings.has_claude,
-        },
-    }
-    if not settings.any_llm_available:
-        overall_ok = False
-
-    status_code = 200 if overall_ok else 503
+    """
+    Readiness check — retorna 503 enquanto o servidor está inicializando,
+    200 quando está pronto para receber tráfego real.
+    O frontend usa este endpoint como gate antes de fazer qualquer chamada de API.
+    """
+    if not _app_ready:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "starting", "message": "Servidor inicializando..."},
+        )
     return JSONResponse(
-        status_code=status_code,
-        content={"status": "ok" if overall_ok else "degraded", "checks": checks},
+        status_code=200,
+        content={
+            "status": "ready",
+            "llm": {
+                "gemini": settings.has_gemini,
+                "groq": settings.has_groq,
+                "claude": settings.has_claude,
+            },
+        },
     )
 
 

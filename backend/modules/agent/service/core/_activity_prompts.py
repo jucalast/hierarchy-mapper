@@ -48,12 +48,19 @@ def _dispatch_activity_etapas(subject: str, act_id, org_pd_id, deal_id) -> str:
     if any(k in s for k in _followup_keys):
         return (
             f"ETAPAS PARA ESTA ATIVIDADE (siga nesta ordem):\n"
-            f"  1. pipedrive_get_persons → identificar contato com canal (WhatsApp ou e-mail)\n"
-            f"  2. whatsapp_get_messages / email_get_contact_history → contexto das comunicações anteriores\n"
-            f"  3. generate_sales_message(goal='cobrar retorno da proposta/cotação') → rascunho estratégico\n"
-            f"  4. whatsapp_send_message / email_send → apresente ao João ANTES de enviar\n"
-            f"  5. pipedrive_update_task(activity_id={act_id}, done=true) → marcar concluído após aprovação\n"
-            f"⛔ PROIBIDO: NÃO crie nova tarefa — use pipedrive_update_task na atividade {act_id}.\n\n"
+            f"  1. pipedrive_get_persons → identificar contato com canal (telefone + e-mail)\n"
+            f"  2. pipedrive_get_deals(org_id={org_pd_id}) → contexto do negócio (valor, etapa, histórico)\n"
+            f"  3a. whatsapp_get_messages(contact, phone, org_name) → histórico WhatsApp\n"
+            f"  3b. email_get_contact_history(contact_name, contact_email, org_name) → histórico e-mail\n"
+            f"      ⚠️ OBRIGATÓRIO executar AMBAS as buscas (3a E 3b) mesmo que já tenha uma delas.\n"
+            f"      O gerador de mensagem usa TODO o histórico combinado — nunca pule o e-mail.\n"
+            f"  4. generate_sales_message(goal='cobrar retorno da proposta/cotação') → rascunho estratégico\n"
+            f"      (usa automaticamente tudo que foi coletado nos passos anteriores)\n"
+            f"  5. whatsapp_send_message OU email_reply/email_send → apresente ao João ANTES de enviar\n"
+            f"      Canal preferencial: WhatsApp se tiver histórico ativo; e-mail se o último contato foi por e-mail.\n"
+            f"  6. pipedrive_update_task(activity_id={act_id}, done=true) → marcar concluído após aprovação\n"
+            f"⛔ PROIBIDO: NÃO crie nova tarefa — use pipedrive_update_task na atividade {act_id}.\n"
+            f"⛔ PROIBIDO: NÃO gere a mensagem sem antes executar AMBAS as buscas de histórico (3a e 3b).\n\n"
         )
 
     # ── Agendar reunião ────────────────────────────────────────────────────

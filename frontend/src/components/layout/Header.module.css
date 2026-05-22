@@ -8,7 +8,104 @@
     background: var(--sw-sidebar);
     z-index: 50;
     transition: background var(--transition-fast), border-color var(--transition-fast);
+    position: relative;
+    overflow: hidden;
 }
+
+/* Header no modo mensagens */
+.headerMessages {
+    /* removido bg verde */
+}
+
+/* Conteúdo do header sempre acima da faixa */
+.headerInner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* ── Faixa verde animada ─────────────────────────────────────────── */
+
+.greenStrip {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(37,211,102,0.2) 100%);
+    pointer-events: none;
+    z-index: 0;
+    transform-origin: right center;
+}
+
+/* Hover: desliza da direita, para em 30% */
+.stripHover {
+    width: 30%;
+    transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Clique: expande até 100% */
+.stripFilling {
+    width: 100%;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(90deg, transparent 0%, rgba(37,211,102,0.35) 100%);
+}
+
+/* Depois do fill: desaparece */
+.stripFilled {
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* ── Ícone WhatsApp ──────────────────────────────────────────────── */
+
+.waIcon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.iconStack {
+    position: relative;
+    width: 38px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.emailIconBtn {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    left: 0;
+    top: 1px;
+    transform: rotate(-8deg);
+    opacity: 0.95;
+    z-index: 1;
+}
+
+.waIconBtnStacked {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    right: 0;
+    bottom: 1px;
+    z-index: 2;
+    border-radius: 4px;
+    background: transparent;
+    padding: 0;
+}
+
+/* ── Breadcrumbs ─────────────────────────────────────────────────── */
 
 .headerIconWrapper {
     display: flex;
@@ -59,6 +156,64 @@
     color: var(--sw-primary);
     text-transform: uppercase;
 }
+
+/* ── Botão de mensagens ──────────────────────────────────────────── */
+
+.messagesTab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--sw-text-muted);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    letter-spacing: 0;
+}
+
+.messagesTab:hover {
+    color: var(--sw-text-base);
+}
+
+.unreadPill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #25d366;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* ── Botão fechar (modo mensagens) ───────────────────────────────── */
+
+.closeMessagesBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--sw-text-muted);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.closeMessagesBtn:hover {
+    color: var(--sw-text-base);
+}
+
+/* ── Ações e dropdown (legado mantido) ───────────────────────────── */
 
 .focusHeaderActions {
     margin-left: auto;
@@ -120,6 +275,8 @@
     background: var(--sw-hover);
     color: var(--sw-text-base);
 }
+
+/* ── Header global (topo da tela) ───────────────────────────────── */
 
 .globalHeader {
     height: 48px;

@@ -184,18 +184,14 @@ async def _detect_email_triggers(session) -> List[Dict]:
     agente enviou. Cruza com ActivityLog para identificar org_id e contexto.
     """
     try:
-        # Roda a chamada bloqueante do EmailClient em thread separada
+        # EmailClient é bloqueante — inicialização E scan rodam inteiramente em thread
         from modules.communication.service.email.client import EmailClient
-        import concurrent.futures
 
-        client = EmailClient(use_outlook_app=True)
-        loop = asyncio.get_event_loop()
+        def _scan_in_thread() -> list:
+            c = EmailClient(use_outlook_app=True)
+            return c.scan_inbound_replies(max_results=EMAIL_SCAN_LIMIT) or []
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            unread = await loop.run_in_executor(
-                pool,
-                lambda: client.scan_inbound_replies(max_results=EMAIL_SCAN_LIMIT)
-            )
+        unread = await asyncio.to_thread(_scan_in_thread)
 
         if not unread:
             return []

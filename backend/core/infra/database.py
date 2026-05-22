@@ -15,7 +15,8 @@ Seeds executados uma única vez na primeira inicialização:
 """
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy import text
+from sqlalchemy import text, event
+from sqlalchemy.pool import NullPool
 from pathlib import Path
 
 from core.config import settings
@@ -29,43 +30,66 @@ DATABASE_URL = settings.DATABASE_URL
 if DATABASE_URL and "sqlite" in DATABASE_URL.lower():
     # Extrair o caminho do arquivo do DATABASE_URL
     # Exemplos: sqlite:///./intelligence.db ou sqlite+aiosqlite:///./intelligence.db
-    db_path = DATABASE_URL.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
+    db_path_str = DATABASE_URL.replace("sqlite+aiosqlite:///", "").replace("sqlite:///", "")
+    db_path = Path(db_path_str)
     
-    # Tentar encontrar o arquivo em localizações comuns
-    possible_paths = [
-        Path(db_path),  # Caminho relativo como está
-        Path(__file__).parent.parent / db_path.lstrip("./"),  # Relativo a backend/
-        Path(__file__).parent.parent.parent / db_path.lstrip("./"),  # Relativo a raiz
-    ]
-    
-    resolved_path = None
-    for path in possible_paths:
-        if path.exists():
-            resolved_path = path.resolve()
-            log.info("database.resolved", path=str(resolved_path))
-            break
-
-    if resolved_path:
-        if "aiosqlite" in DATABASE_URL:
-            DATABASE_URL = f"sqlite+aiosqlite:///{resolved_path}"
-        else:
-            DATABASE_URL = f"sqlite:///{resolved_path}"
+    if db_path.is_absolute():
+        resolved_path = db_path.resolve()
     else:
-        default_backend_db = Path(__file__).parent.parent / "intelligence.db"
-        log.warning("database.not_found", fallback=str(default_backend_db))
-        if "aiosqlite" in DATABASE_URL:
-            DATABASE_URL = f"sqlite+aiosqlite:///{default_backend_db}"
-        else:
-            DATABASE_URL = f"sqlite:///{default_backend_db}"
+        # Calcular caminhos corretos baseados na localização física deste arquivo (core/infra/database.py)
+        # __file__ = root/backend/core/infra/database.py
+        # infra_dir = root/backend/core/infra
+        # backend_root = root/backend
+        # project_root = root
+        infra_dir = Path(__file__).resolve().parent
+        backend_root = infra_dir.parent.parent
+        project_root = backend_root.parent
+        
+        possible_paths = [
+            backend_root / db_path.name,             # 1. Diretório padrão do backend: backend/intelligence.db
+            project_root / db_path.name,             # 2. Raiz do projeto: root/intelligence.db
+            Path(db_path_str),                       # 3. Caminho relativo ao diretório de execução atual
+        ]
+        
+        resolved_path = None
+        for path in possible_paths:
+            if path.exists():
+                resolved_path = path.resolve()
+                log.info("database.resolved", path=str(resolved_path))
+                break
+                
+        if not resolved_path:
+            # Fallback para o local padrão correto: backend/intelligence.db
+            resolved_path = (backend_root / db_path.name).resolve()
+            log.warning("database.not_found", fallback=str(resolved_path))
+
+    if "aiosqlite" in DATABASE_URL:
+        DATABASE_URL = f"sqlite+aiosqlite:///{resolved_path}"
+    else:
+        DATABASE_URL = f"sqlite:///{resolved_path}"
 
 Base = declarative_base()
 
 # Motor Assíncrono
+# NullPool para SQLite: sem pool de conexões — evita pool_timeout de 30s sob carga
+# concurrent e erros "database is locked". Cada request abre e fecha sua conexão.
+_is_sqlite = "sqlite" in DATABASE_URL.lower()
 engine = create_async_engine(
-    DATABASE_URL, 
+    DATABASE_URL,
     echo=False,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL.lower() else {}
+    poolclass=NullPool if _is_sqlite else None,
+    connect_args={"check_same_thread": False} if _is_sqlite else {},
 )
+
+# WAL mode + busy_timeout para SQLite: permite readers concorrentes e evita SQLITE_BUSY
+if _is_sqlite:
+    @event.listens_for(engine.sync_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA busy_timeout=5000")  # 5s antes de SQLITE_BUSY
+        cursor.close()
 
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -418,10 +442,11 @@ async def init_db():
     """Cria as tabelas se não existirem e garante migrações de colunas."""
     # Import models here to ensure they are registered with Base.metadata
     from models import (
-        Organization, Employee, ConversationThread, ConversationMessage, 
+        Organization, Employee, ConversationThread, ConversationMessage,
         ActivityLog, ProspectSession, ProspectLead, SystemSetting,
         Tenant, User, BusinessProfile, Product, ReferenceClient,
-        ICPConfig, ICPScoreRule, HierarchyConfig, Integration
+        ICPConfig, ICPScoreRule, HierarchyConfig, Integration,
+        ContactConversationCache,
     )
     
     async with engine.begin() as conn:
@@ -450,7 +475,9 @@ async def init_db():
             "ALTER TABLE prospect_leads ADD COLUMN pipedrive_deal_id INTEGER",
             "ALTER TABLE business_profiles ADD COLUMN value_propositions JSON",
             "ALTER TABLE icp_configs ADD COLUMN pain_points JSON",
-            "ALTER TABLE users ADD COLUMN hashed_password VARCHAR"
+            "ALTER TABLE users ADD COLUMN hashed_password VARCHAR",
+            "ALTER TABLE contact_conversation_cache ADD COLUMN has_unread INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE contact_conversation_cache ADD COLUMN is_key_contact INTEGER NOT NULL DEFAULT 0",
         ]:
             try:
                 await conn.execute(text(query))

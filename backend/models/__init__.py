@@ -16,6 +16,7 @@ Uso:
     from models import Organization, Employee, User
 """
 from models.conversation import *
+from models.communication import *
 from models.crm import *
 from models.organization import *
 from models.people import *

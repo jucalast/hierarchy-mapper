@@ -74,12 +74,16 @@ def _get_scheduler() -> AsyncIOScheduler:
 
 async def start_email_scheduler() -> None:
     """Inicia o scheduler (idempotente)."""
+    from datetime import datetime, timezone, timedelta
+
     scheduler = _get_scheduler()
     if scheduler.running:
         log.debug("scheduler.already_running")
         return
 
     interval = max(1, settings.email.scan_interval_min)
+    # Delay de 60s no primeiro disparo — evita competir com startup do servidor
+    first_run = datetime.now(timezone.utc) + timedelta(seconds=60)
     # `check_inbox_async` é corrotina — APScheduler suporta awaitables no AsyncIOScheduler
     scheduler.add_job(
         check_inbox_async,
@@ -89,6 +93,7 @@ async def start_email_scheduler() -> None:
         replace_existing=True,
         max_instances=1,
         coalesce=True,
+        next_run_time=first_run,
     )
     scheduler.start()
     log.info("scheduler.started", minutes=interval, folder=settings.email.scan_folder)

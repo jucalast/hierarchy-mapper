@@ -6,6 +6,7 @@ import { PanelRight, PanelRightOpen, LogOut } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../../utils/avatarUtils';
 
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { MessagesView } from '../messages/MessagesView';
 import graphStyles from './styles/Graph.module.css';
 import haStyles from './styles/HumanAnalysis.module.css';
 import sidebarStyles from '../layout/Sidebar.module.css';
@@ -28,7 +29,6 @@ import { ProspectingView } from '../prospecting/ProspectingView';
 import { Header } from '../layout/Header';
 import { Drawer } from '../ui/Drawer';
 import { ChatPanel } from '../chat/ChatPanel';
-import { WhatsAppView } from '../whatsapp/WhatsAppView';
 import { PreferencesView } from '../layout/PreferencesView';
 import { GraphCanvas } from './GraphCanvas';
 import { DiscoveryWorkflowOverlay } from './DiscoveryWorkflowOverlay';
@@ -118,10 +118,24 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     // UI States
     const [showDrawer, setShowDrawer] = useState(false);
     const [showChat, setShowChat] = useState(false);
-    const [activeView, setActiveView] = useLocalStorage<'graph' | 'whatsapp' | 'prospecting' | 'preferences'>('active-view', 'graph');
-    const [activeChatInfo, setActiveChatInfo] = useLocalStorage<{ name: string, id?: string } | null>('active-chat-info', null);
+    const [activeView, setActiveView] = useLocalStorage<'graph' | 'prospecting' | 'preferences' | 'messages'>('active-view', 'graph');
+    const [unreadCount, setUnreadCount] = useState(0);
     const prospecting = useProspecting();
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
+
+    // Polling de mensagens não lidas (para o badge no header — filtra por org atual)
+    useEffect(() => {
+        const check = async () => {
+            try {
+                const { communication } = await import('@/services/api');
+                const resp = await communication.fetchTrackedContacts(undefined, currentOrgId);
+                setUnreadCount((resp as any).unread_count || 0);
+            } catch { /* silencioso */ }
+        };
+        void check();
+        const interval = window.setInterval(check, 30_000);
+        return () => window.clearInterval(interval);
+    }, [currentOrgId]);
 
     // Sync UI states to localStorage
     useEffect(() => {
@@ -456,7 +470,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 </header>
 
                 <div className={styles.contentWrapper}>
-                    {activeView !== 'preferences' && (
+                    {activeView !== 'preferences' && activeView !== 'messages' && (
                         <Drawer
                             showDrawer={showDrawer}
                             setShowDrawer={handleSetShowDrawer}
@@ -481,6 +495,9 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                         {activeView !== 'preferences' && (
                             <Header
                                 confirmedBrand={confirmedBrand}
+                                activeView={activeView}
+                                onToggleMessages={() => setActiveView(activeView === 'messages' ? 'graph' : 'messages')}
+                                unreadCount={unreadCount}
                             />
                         )}
 
@@ -580,13 +597,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                 </>
                             )}
 
-                            {activeView === 'whatsapp' && (
-                                <WhatsAppView 
-                                    chatName={activeChatInfo?.name || "WhatsApp"} 
-                                    chatId={activeChatInfo?.id}
-                                    onBack={() => setActiveView('graph')}
-                                    theme={theme}
-                                />
+                            {activeView === 'messages' && (
+                                <MessagesView onBack={() => setActiveView('graph')} orgId={currentOrgId} />
                             )}
                             {activeView === 'prospecting' && (
                                 <>
@@ -666,7 +678,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                         </div>
                     </div>
 
-                    {showChat && (activeView === 'graph' || activeView === 'prospecting') && (
+                    {showChat && (activeView === 'graph' || activeView === 'prospecting' || activeView === 'messages') && (
                         <ChatPanel
                             showChat={showChat}
                             setShowChat={handleSetShowChat}

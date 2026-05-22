@@ -661,8 +661,9 @@ async def run_llm_preemptive_healthcheck() -> None:
     # Mensagem de teste super barata e curta (1 token)
     ping_messages = [LLMMessage(role="user", content="1")]
     
-    # Aguarda o servidor estabilizar um pouco no startup (5 segundos)
-    await asyncio.sleep(5.0)
+    # Aguarda o servidor sinalizar readiness antes de disparar chamadas a LLMs externos.
+    # Background tasks nunca devem competir com o tráfego de startup.
+    await asyncio.sleep(45.0)
     
     while True:
         try:
@@ -698,13 +699,15 @@ async def run_llm_preemptive_healthcheck() -> None:
                     else:
                         log.debug("llm.healthcheck.healthy", provider=provider.name, latency_sec=round(time.monotonic() - start_time, 2))
                 except Exception as e:
-                    # Falhou — coloca o provedor em cooldown de 60 segundos (evita punir por longos minutos devido a oscilações de rede)
                     if provider.name != "ollama":
                         _provider_rate_limited_until[provider.name] = time.monotonic() + 60.0
                         log.warning("llm.healthcheck.failed", provider=provider.name, error=str(e)[:150], action="cooldown_applied_60s")
                     else:
                         log.warning("llm.healthcheck.ollama_failed", error=str(e)[:150])
-                        
+
+                # Pausa entre providers — evita flood de conexões no event loop.
+                await asyncio.sleep(2.0)
+
         except Exception as e:
             log.exception("llm.healthcheck.loop_error", error=str(e))
             

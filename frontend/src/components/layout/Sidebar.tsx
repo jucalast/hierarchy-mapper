@@ -93,27 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Radar size={20} className={styles.iconSide} />
             </div>
 
-            {/* Ícone de acesso ao Módulo de WhatsApp */}
-            <div 
-                className={styles.navIcon} 
-                title="Mensagens (WhatsApp)" 
-                onClick={() => window.location.href = '/whatsapp'}
-                style={{ overflow: 'hidden', padding: '6px' }}
-            >
-                <img 
-                    src="/wppicon.png" 
-                    alt="WhatsApp" 
-                    style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'contain', 
-                        borderRadius: '6px',
-                        transition: 'transform 0.2s'
-                    }}
-                />
-            </div>
-
-            <div className={styles.navIcon} title="Nova Empresa" onClick={onReset}>
+<div className={styles.navIcon} title="Nova Empresa" onClick={onReset}>
                 <CirclePlus size={20} className={styles.iconSide} />
             </div>
 

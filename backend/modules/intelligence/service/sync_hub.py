@@ -49,8 +49,8 @@ class SyncIntelligenceHub:
         
     async def sync_all(self, force=False):
         """Executa a sincronização global periódica."""
-        # Pequeno delay inicial para boot
-        await asyncio.sleep(10)
+        # Delay inicial — deixa o servidor servir requests antes de rodar sync pesado
+        await asyncio.sleep(40)
         
         while True:
             try:
@@ -60,11 +60,11 @@ class SyncIntelligenceHub:
                 try:
                     current_time = time.time()
                     last_pd_sync = getattr(self, "_last_pd_sync", 0)
-                    
+
                     async with async_session() as session:
                         res = await session.execute(select(func.count()).select_from(Organization))
                         org_count = res.scalar()
-                        
+
                         # Só sincroniza se:
                         # - Forçado OU
                         # - Banco vazio E passou mais de 1 hora desde a última tentativa
@@ -74,6 +74,9 @@ class SyncIntelligenceHub:
                             self._last_pd_sync = current_time
                         elif org_count < 1:
                             print(f"[SyncHub] Pipedrive vazio, mas aguardando cooldown de cota (Próxima tentativa em {int(3600 - (current_time - last_pd_sync))}s)")
+
+                    # Atualiza cache de open org IDs (usado pelo list_organizations)
+                    await self.pipedrive_svc.refresh_open_org_ids_cache()
                 except Exception as e:
                     print(f"[SyncHub] ❌ Erro Pipedrive: {e}")
                     

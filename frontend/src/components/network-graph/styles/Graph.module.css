@@ -16,7 +16,7 @@
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    background: var(--sw-graph-purple-bg);
+    background: var(--sw-bg);
     transition: background var(--transition-fast);
 }
 
