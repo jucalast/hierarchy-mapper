@@ -215,8 +215,45 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         history_serialized.append({"role": role, "content": str(content)})
 
     # Carrega diferenciais e contexto configurados no sistema
-    business_context = await BusinessContextService.get_tenant_context()
-    biz_data_str = json.dumps(business_context, indent=2, ensure_ascii=False) if business_context else "Sem contexto configurado."
+    # ── Inteligência de Seleção de Canal
+    # Se o usuário não pediu um canal específico (veio o default 'whatsapp'), 
+    # analisamos o histórico para ver qual canal é o mais rico/recente.
+    requested_channel = args.get("channel")
+    auto_channel = None
+    
+    if not requested_channel or requested_channel.lower() == "whatsapp":
+        wa_count = 0
+        email_count = 0
+        last_wa_date = None
+        last_email_date = None
+        
+        for msg in messages:
+            if msg.get("role") == "user":
+                content = str(msg.get("content", ""))
+                if "whatsapp_get_messages" in content:
+                    import re
+                    # Tenta capturar o count do sumário: "10 mensagens com..."
+                    m = re.search(r"(\d+)\s+mensagens\s+com", content)
+                    if m: wa_count += int(m.group(1))
+                elif "email_get_contact_history" in content:
+                    import re
+                    m = re.search(r"(\d+)\s+e-mails\s+encontrados", content)
+                    if m: email_count += int(m.group(1))
+
+        # Regra de Ouro: Se só temos e-mail no banco, usamos e-mail.
+        if email_count > 0 and wa_count == 0:
+            auto_channel = "email"
+            log.info("generate_sales_message.auto_channel_forced", reason="only_email_found")
+        elif wa_count > 0 and email_count == 0:
+            auto_channel = "whatsapp"
+        elif wa_count > 0 and email_count > 0:
+            # Se tem ambos, mantém o default ou escolhe por data se disponível no histórico
+            auto_channel = "whatsapp" # WhatsApp costuma ser mais ágil
+            
+    if auto_channel:
+        channel = auto_channel
+    else:
+        channel = requested_channel.lower() if requested_channel else "whatsapp"
 
     channel_tone = (
         "CANAL: WhatsApp — seja direto, natural e conversacional. Parágrafos curtos. "

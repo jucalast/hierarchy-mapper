@@ -23,6 +23,7 @@ from modules.agent.service.tools import TOOLS, execute_write_tool, get_tools_ant
 from modules.agent.service.prompts import (
     SYSTEM_PROMPT_POWERFUL, SYSTEM_PROMPT_BASIC, SYSTEM_PROMPT_DIRECT,
     SYSTEM_PROMPT_TASK_AGENT, SYSTEM_PROMPT_TASK_AGENT_BASIC,
+    SYSTEM_PROMPT_TASK_DIRECTIVE,
 )
 from modules.agent.service.llm.caller import _call_with_tools
 from modules.agent.service.core.phase_tracker import _build_phase_status
@@ -101,6 +102,15 @@ async def _agent_loop(
     _is_task_action = direct_action and _has_task_signal
     _max_iters = (16 if _is_task_action else 6) if direct_action else MAX_ITERATIONS
 
+    # ── DETECÇÃO DE DIRETIVA DIRETA ──
+    # Se o usuário deu uma ordem direta de escrita (Ex: "atualize a nota", "marque como feita"),
+    # ativamos o modo "Direct Directive". Nesse modo, o agente é proibido de sugerir
+    # ações proativas (como rascunhar e-mail) antes de cumprir o comando original.
+    _DIRECTIVE_KEYWORDS = ["atualize", "marque", "crie", "delete", "remova", "altere", "nota", "escreva"]
+    _is_direct_directive = direct_action and any(kw in _first_msg_content.lower() for kw in _DIRECTIVE_KEYWORDS)
+    if _is_direct_directive:
+        log.info("agent.intent.direct_directive_detected", content=_first_msg_content[:50])
+
     # Ferramentas cujos resultados nunca devem ser descartados do histórico:
     # sem eles o modelo perde a lista de contatos e começa a repetir ou pular buscas.
     _PINNED_TOOLS = {
@@ -173,7 +183,9 @@ async def _agent_loop(
 
         # System prompt por fase: contém todas as instruções necessárias para o
         # momento atual — sem enviar o que já não é relevante.
-        if direct_action and _is_task_action:
+        if _is_direct_directive:
+            system = SYSTEM_PROMPT_TASK_DIRECTIVE
+        elif direct_action and _is_task_action:
             # Seleciona prompt baseado na capacidade do modelo ativo
             # Modelos grandes (size >= 3): prompt de raciocínio autônomo
             # Modelos menores (size <= 2): instruções explícitas passo a passo
@@ -195,6 +207,19 @@ async def _agent_loop(
         # ── Tool calling ──────────────────────────────────────────────────────
         try:
             import asyncio as _asyncio
+
+            # Se estiver em modo de DIRETIVA DIRETA, filtramos as ferramentas
+            # para que ele foque apenas no Pipedrive e ignore proatividade.
+            _current_tools = tools
+            if _is_direct_directive:
+                _PIPEDRIVE_WRITE_TOOLS = {
+                    "pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_person",
+                    "pipedrive_create_task", "pipedrive_create_deal", "pipedrive_get_activities",
+                    "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals"
+                }
+                _current_tools = [t for t in tools if t.get("name") in _PIPEDRIVE_WRITE_TOOLS]
+                log.info("agent.intent.direct_directive.tools_filtered", count=len(_current_tools))
+
             _raw_log(process_id, "llm_request", {"system": system, "messages": messages, "iteration": iteration})
             _pending_events: list = []
             # Roda _call_with_tools como task em background para poder emitir

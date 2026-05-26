@@ -370,6 +370,13 @@ class PipedriveService:
             return resp.json().get("data")
         return None
 
+    async def get_activity(self, activity_id: int) -> Optional[dict]:
+        """Busca detalhes de uma atividade específica."""
+        resp = await self._request("GET", f"activities/{activity_id}")
+        if resp is not None and resp.status_code == 200:
+            return resp.json().get("data")
+        return None
+
     async def update_activity(self, activity_id: int, data: dict) -> bool:
         """Atualiza atividade existente (via `_request`)."""
         resp = await self._request("PUT", f"activities/{activity_id}", json=data)
