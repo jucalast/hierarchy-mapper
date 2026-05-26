@@ -12,7 +12,7 @@ Chamado com asyncio.create_task() para não bloquear o executor do tool.
 """
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from core.infra.database import async_session
@@ -33,8 +33,11 @@ async def _upsert_contact_cache(
     org_name: Optional[str],
     chat_id: Optional[str] = None,
 ) -> None:
-    """Upsert genérico do ContactConversationCache. Compartilhado por WA e email."""
-    from models.communication.contact_cache import ContactConversationCache
+    """
+    Upsert inteligente do ContactConversationCache com mesclagem e deduplicação.
+    Evita salvar duplicados se o agente e o trigger service buscarem o mesmo e-mail/msg.
+    """
+    from models.communication.contact_cache import ContactConversationCache, CHANNEL_EMAIL, CHANNEL_WHATSAPP
     from sqlalchemy import select
 
     async with async_session() as session:
@@ -45,8 +48,44 @@ async def _upsert_contact_cache(
             )
         )
         entry = result.scalar_one_or_none()
+        
+        # Lógica de Mesclagem (Merge) e Deduplicação
+        final_messages = messages
         if entry:
-            entry.set_messages(messages)
+            existing = entry.get_messages()
+            if existing:
+                # Deduplicação por ID único do provedor
+                seen_ids = set()
+                # Email usa entryId, WhatsApp usa id
+                id_key = "entryId" if channel == CHANNEL_EMAIL else "id"
+                
+                # Mapa de mensagens existentes
+                merged_map = {m.get(id_key): m for m in existing if m.get(id_key)}
+                
+                # Adiciona/Sobrescreve com as novas (mais frescas)
+                for m in messages:
+                    mid = m.get(id_key)
+                    if mid:
+                        merged_map[mid] = m
+                    else:
+                        # Fallback se não houver ID (mensagens de sistema) — usa body como chave
+                        b_key = m.get("body") or m.get("content") or ""
+                        if b_key: merged_map[f"raw_{b_key[:50]}"] = m
+                
+                # Converte de volta para lista
+                final_messages = list(merged_map.values())
+                
+                # Re-ordenar (Emails: data decrescente | WA: timestamp crescente)
+                if channel == CHANNEL_EMAIL:
+                    final_messages.sort(key=lambda x: x.get("date") or "", reverse=True)
+                else:
+                    final_messages.sort(key=lambda x: int(x.get("timestamp") or 0))
+                
+                # Limite de segurança (mantém as 100 mais recentes)
+                final_messages = final_messages[:100]
+
+        if entry:
+            entry.set_messages(final_messages)
             entry.contact_name = contact_name
             if org_id:
                 entry.org_id = org_id
@@ -63,10 +102,11 @@ async def _upsert_contact_cache(
                 org_name=org_name,
                 chat_id=chat_id,
             )
-            entry.set_messages(messages)
+            entry.set_messages(final_messages)
             session.add(entry)
+            
         await session.commit()
-        log.info("message_cache.saved", channel=channel, contact=contact_name, count=len(messages))
+        log.info("message_cache.merged", channel=channel, contact=contact_name, total=len(final_messages))
 
 
 async def cache_wa_messages(
@@ -86,7 +126,7 @@ async def cache_wa_messages(
                 "body": m.get("body") or m.get("text") or m.get("content") or "",
                 "fromMe": bool(m.get("fromMe")),
                 "timestamp": m.get("timestamp") or 0,
-                "id": str(m.get("id") or ""),
+                "id": str(m.get("id", {}).get("_serialized") if isinstance(m.get("id"), dict) else m.get("id", "")),
             }
             for m in raw_messages
             if (m.get("body") or m.get("text") or m.get("content") or "")
@@ -112,8 +152,16 @@ async def cache_email_messages(
     if not contact_identifier or not emails:
         return
     try:
+        # Garante que campos vitais de e-mail existam para deduplicação
+        clean_emails = []
+        for e in emails:
+            if not e.get("entryId"): continue
+            clean_emails.append(e)
+            
+        if not clean_emails: return
+        
         await _upsert_contact_cache(
-            contact_identifier, contact_name, CHANNEL_EMAIL, emails,
+            contact_identifier, contact_name, CHANNEL_EMAIL, clean_emails,
             org_id, org_name,
         )
     except Exception as e:
@@ -123,11 +171,11 @@ async def cache_email_messages(
 async def get_cached_messages(
     contact_identifier: str,
     channel: str,
-    max_age_minutes: int = _CACHE_STALE_MINUTES,
+    max_age_minutes: Optional[int] = _CACHE_STALE_MINUTES,
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Retorna mensagens do cache se existirem e não estiverem stale.
-    Retorna None se ausente ou mais velhas que max_age_minutes.
+    Se max_age_minutes for None ou 0, ignora a idade (prioriza o banco).
     """
     try:
         from models.communication.contact_cache import ContactConversationCache
@@ -143,9 +191,13 @@ async def get_cached_messages(
             entry = result.scalar_one_or_none()
             if not entry:
                 return None
-            age = datetime.utcnow() - entry.fetched_at
-            if age > timedelta(minutes=max_age_minutes):
-                return None
+            
+            # Se max_age_minutes for None, confiamos plenamente no banco de dados
+            if max_age_minutes is not None and max_age_minutes > 0:
+                age = datetime.utcnow() - entry.fetched_at
+                if age > timedelta(minutes=max_age_minutes):
+                    return None
+                    
             return entry.get_messages()
     except Exception as e:
         log.warning("message_cache.get.failed", error=str(e))

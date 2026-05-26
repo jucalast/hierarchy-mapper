@@ -25,7 +25,6 @@ Get-Process | Where-Object { $_.MainWindowTitle -like "*LINKB2B-*" } | Stop-Proc
 Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Process headless_shell -ErrorAction SilentlyContinue | Stop-Process -Force
-Get-Process chrome -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 
 # 2. Iniciar Redis
@@ -36,9 +35,8 @@ $redisCliPath = Join-Path $PSScriptRoot "backend\redis\redis-cli.exe"
 if ((Test-Path $redisPath) -and (Test-Path $redisConf)) {
     Write-Host "Iniciando Redis..." -ForegroundColor Cyan
     try {
-        Push-Location (Split-Path -Parent $redisPath)
-        & (Get-Item $redisPath).FullName (Get-Item $redisConf).FullName 2>$null &
-        Pop-Location
+        $redisDir = Split-Path -Parent $redisPath
+        Start-Process (Get-Item $redisPath).FullName -ArgumentList "redis.windows.conf" -WorkingDirectory $redisDir -WindowStyle Minimized
         Start-Sleep -Seconds 2
         if (Test-Path $redisCliPath) {
             & (Get-Item $redisCliPath).FullName FLUSHALL 2>$null
@@ -129,3 +127,12 @@ Write-Host "   Backend:   http://localhost:8000" -ForegroundColor Cyan
 Write-Host "   Swagger:   http://localhost:8000/docs" -ForegroundColor Cyan
 Write-Host "   WhatsApp:  http://localhost:8001" -ForegroundColor Cyan
 Write-Host "   Email:     http://localhost:8002" -ForegroundColor Cyan
+
+# 8. Iniciar LinkedIn Scraper Terminal
+Write-Host "Iniciando Terminal Interativo do LinkedIn Scraper..." -ForegroundColor Cyan
+$scraperPath = Join-Path $PSScriptRoot "rodar_linkedin.bat"
+Start-Process cmd -ArgumentList "/k", "`"$scraperPath`"" -WorkingDirectory $PSScriptRoot
+
+# Iniciação automática do navegador
+Start-Sleep -Seconds 3
+Start-Process "http://localhost:3000"

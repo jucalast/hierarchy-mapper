@@ -382,6 +382,11 @@ async def _pipedrive_get_org_by_id(org_id: int):
 
 async def _extract_org_domain(org_name: str, org_id: int | None = None) -> str | None:
     """Busca o domínio de e-mail de uma empresa no banco local ou no Pipedrive."""
+    INVALID_DOMAINS = {
+        "gmail.com", "hotmail.com", "yahoo.com", "yahoo.com.br", "outlook.com", 
+        "icloud.com", "bol.com.br", "uol.com.br", "terra.com.br", "ig.com.br",
+        "hunter.io", "mail.hunter.io", "lusha.com", "zoominfo.com", "pipedrive.com", "snov.io"
+    }
     try:
         from core.infra.database import async_session
         from models.organization import Organization
@@ -400,14 +405,16 @@ async def _extract_org_domain(org_name: str, org_id: int | None = None) -> str |
             result = await session.execute(stmt)
             domain = result.scalar()
             if domain:
-                return domain.lower().replace("www.", "").strip()
+                domain_clean = domain.lower().replace("www.", "").strip()
+                if domain_clean and domain_clean not in INVALID_DOMAINS:
+                    return domain_clean
 
         # 2. Verifica o campo domain do próprio org no Pipedrive (ex: "apice.com.br")
         if match is None:
             match = await _pipedrive_get_org_by_id(org_id)
         if match:
             pd_domain = (match.get("domain") or "").lower().replace("www.", "").strip()
-            if pd_domain and not pd_domain.endswith(JFERRES_DOMAIN):
+            if pd_domain and not pd_domain.endswith(JFERRES_DOMAIN) and pd_domain not in INVALID_DOMAINS:
                 return pd_domain
 
         # 3. Fallback: Busca via contatos no Pipedrive
@@ -417,7 +424,9 @@ async def _extract_org_domain(org_name: str, org_id: int | None = None) -> str |
             for em in (p.get("email") or []):
                 val = (em.get("value") or "").strip()
                 if val and "@" in val and not val.endswith(JFERRES_DOMAIN):
-                    return val.split("@")[1].lower()
+                    extracted = val.split("@")[1].lower()
+                    if extracted and extracted not in INVALID_DOMAINS:
+                        return extracted
     except Exception:
         pass
     return None

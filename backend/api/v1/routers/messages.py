@@ -156,6 +156,27 @@ async def list_tracked_contacts(
             if pic:
                 profile_pics[e.contact_identifier] = pic
 
+    # Buscar logo_url e domain das empresas para fallback de avatar na UI
+    org_logos: Dict[int, str] = {}
+    org_domains: Dict[int, str] = {}
+    org_ids = {e.org_id for e in entries if e.org_id is not None}
+    if org_ids:
+        org_stmt = select(Organization.id, Organization.pipedrive_id, Organization.logo_url, Organization.domain).where(
+            or_(Organization.id.in_(org_ids), Organization.pipedrive_id.in_(org_ids))
+        )
+        org_rows = await db.execute(org_stmt)
+        for oid, pd_id, logo, dom in org_rows.all():
+            if logo:
+                if oid is not None:
+                    org_logos[oid] = logo
+                if pd_id is not None:
+                    org_logos[pd_id] = logo
+            if dom:
+                if oid is not None:
+                    org_domains[oid] = dom
+                if pd_id is not None:
+                    org_domains[pd_id] = dom
+
     return {
         "contacts": [
             {
@@ -171,6 +192,8 @@ async def list_tracked_contacts(
                 "has_unread": bool(e.has_unread),
                 "is_key_contact": bool(e.is_key_contact),
                 "profile_pic": profile_pics.get(e.contact_identifier),
+                "org_logo": org_logos.get(e.org_id) if e.org_id is not None else None,
+                "org_domain": org_domains.get(e.org_id) if e.org_id is not None else None,
             }
             for e in entries
         ],

@@ -223,6 +223,10 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         PROXYCURL_API_KEY: str = Field(default="")
         RAPIDAPI_KEY: str = Field(default="")
 
+        # --- LinkedIn Scraper ---
+        LINKEDIN_LI_AT: Optional[str] = Field(default=None)
+        LINKEDIN_HEADLESS: bool = Field(default=True)
+
         # --- Email ---
         EMAIL_API_KEY: str = Field(default="")
         EMAIL_USER: str = Field(default="joao.moura@jferres.com.br")
@@ -376,6 +380,9 @@ else:
 
         PROXYCURL_API_KEY: str = os.getenv("PROXYCURL_API_KEY", "")
         RAPIDAPI_KEY: str = os.getenv("RAPIDAPI_KEY", "")
+
+        LINKEDIN_LI_AT: Optional[str] = os.getenv("LINKEDIN_LI_AT") or None
+        LINKEDIN_HEADLESS: bool = os.getenv("LINKEDIN_HEADLESS", "true").lower() in {"1", "true", "yes"}
 
         EMAIL_API_KEY: str = os.getenv("EMAIL_API_KEY", "")
         EMAIL_USER: str = os.getenv("EMAIL_USER", "joao.moura@jferres.com.br")

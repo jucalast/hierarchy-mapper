@@ -237,14 +237,14 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         f"## CONTEXTO DA NOSSA EMPRESA (disponível se necessário):\n{biz_data_str}\n\n"
         "## INTELIGÊNCIA DE CONTEXTO — LEIA O HISTÓRICO E DECIDA O MODO:\n\n"
         "**MODO 1 — FOLLOW-UP SIMPLES**\n"
-        "Use quando: o objetivo é cobrar retorno/resposta/confirmação E o histórico não mostra objeções ativas.\n"
+        "Use quando: o objetivo é cobrar retorno/resposta/confirmação E o histórico não mostra objeções ativas nem férias/ausências recentes.\n"
         "→ Mensagem curta (máx. 3-4 linhas). Referencie o que ficou pendente. Tom humano, sem pressão. CTA único.\n"
         "→ PROIBIDO: diferenciais técnicos, laboratório, certificações, TCO, pitch de vendas. "
         "Inserir argumentos de venda num follow-up simples passa despreparo e é invasivo.\n\n"
         "**MODO 2 — FOLLOW-UP COM OBJEÇÃO**\n"
         "Use quando: o objetivo é dar continuidade MAS o histórico mostra uma objeção clara e não respondida "
         "(ex: 'está caro', 'estou com outro fornecedor', 'preciso pensar', reclamação de qualidade, prazo).\n"
-        "→ Mensagem moderada (4-6 linhas). Reconheça o contexto brevemente, depois endereço a objeção "
+        "→ Mensagem moderada (4-6 linhas). Reconheça o contexto brevemente, depois enderece a objeção "
         "com UM argumento cirúrgico e baseado em dados reais do histórico. Não faça lista de diferenciais — "
         "escolha o argumento mais relevante para aquela objeção específica. Feche com CTA claro.\n\n"
         "**MODO 3 — VENDA ATIVA**\n"
@@ -253,9 +253,13 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         "→ Use os diferenciais técnicos e contexto da empresa acima. CHALLENGER SALE: ensine algo que o cliente "
         "ainda não sabe. SPIN SELLING: mencione dores reais do histórico. DATA-DRIVEN: cite itens reais "
         "(códigos, preços, datas). NUNCA use placeholders.\n\n"
+        "**MODO 4 — RETORNO DE FÉRIAS / RAPPORT (SOFT FOLLOW-UP)**\n"
+        "Use quando: o histórico recente (seja WhatsApp ou e-mail) indicar que o contato esteve de férias, ausente, viajando ou fora do escritório recentemente (ou se desculpou pelo atraso devido a esses motivos).\n"
+        "→ Mensagem calorosa, empática e acolhedora. Dê as boas-vindas no retorno das férias/ausência, deseje que tenha descansado, tire ABSOLUTAMENTE toda a pressão de cobrança comercial e se coloque à disposição para quando a rotina dele normalizar. NÃO tente vender novos produtos cartonados ou cobrar cotações anteriores nesse momento. A prioridade máxima é gerar conexão (rapport) e se colocar à disposição. Feche de forma super leve e profissional.\n\n"
         "## REGRAS UNIVERSAIS:\n"
+        "- ALINHAMENTO CRONOLÓGICO: Analise rigorosamente a linha do tempo. Identifique e priorize o fato MAIS RECENTE da conversa. Nunca retome ou cobre cotações antigas que já foram canceladas ou substituídas se a negociação já avançou para outra etapa (ex: estudo de caixas, pesos, desenvolvimento de amostras físicas). Fale estritamente do status atual em aberto.\n"
+        "- ZERO REDUNDÂNCIA: Não pergunte o que já foi respondido na mensagem mais recente (ex: se o cliente disse 'não obtive retorno ainda', não pergunte 'como está o andamento', mas sim valide que entende a correria e se coloque à disposição).\n"
         "- ANTI-GENÉRICO: JAMAIS comece com 'Prezado', 'Espero que esteja bem', 'Tudo bem?', 'Como vai?'\n"
-        "- ZERO REDUNDÂNCIA: não pergunte o que já foi respondido no histórico\n"
         "- ZERO PLACEHOLDERS: nunca use [nome], [empresa], [item], [preço] — só dados reais\n"
         "- Tom natural, assertivo, sem desespero\n"
         f"Hoje é {datetime.now().strftime('%A, %d/%m/%Y')}.\n\n"
@@ -267,10 +271,14 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         f"CONTATO: {contact_name}" + (f" (Tel: {phone})" if phone else "") + "\n"
         f"OBJETIVO: {goal}\n\n"
         "Leia TODO o histórico disponível. Identifique:\n"
-        "1. O que está pendente/em aberto\n"
-        "2. Se há objeções não respondidas do cliente\n"
-        "3. Qual é o momento real da negociação\n\n"
+        "1. O que está pendente/em aberto e qual a última mensagem real\n"
+        "2. Se o contato esteve de férias/viagem/ausente recentemente ou se desculpou por isso na mensagem mais recente\n"
+        "3. (CRÍTICO) Verifique a DIREÇÃO (Remetente vs Destinatário) e o TEMPO das mensagens mais recentes. Se a última mensagem da conversa foi enviada PELO USUÁRIO (João Luccas/você) recentemente, NÃO sugira enviar outra mensagem de acompanhamento agora para não ser invasivo. Sugira aguardar ou criar uma tarefa interna no Pipedrive.\n"
+        "4. (CRÍTICO) NÃO ALUCINE produtos ou assuntos que não foram discutidos. Não mencione 'caixas CKD' ou outros produtos específicos a menos que estejam LITERALMENTE escritos no histórico recente do cliente.\n\n"
+        "5. Se há objeções não respondidas do cliente\n"
+        "6. Qual é o momento real da negociação (ex: envio de amostras físicas, análise de resistência)\n\n"
         "Depois escolha o modo correto e escreva a mensagem:\n"
+        "- Contato retornou de férias/ausência recentemente → MODO 4 (rapport, empático, sem pressão)\n"
         "- Sem objeções ativas → MODO 1 (follow-up simples, breve)\n"
         "- Com objeção não respondida → MODO 2 (follow-up + argumento cirúrgico)\n"
         "- Primeiro contato / venda ativa → MODO 3 (diferenciais + SPIN + dados reais)"
@@ -536,3 +544,65 @@ async def exec_generate_dossier(args: dict) -> dict:
         "ok": True,
         "summary": "Consolidação iniciada. Gere o dossiê final agora.",
     }
+
+
+async def exec_update_prospecting_context(args: dict) -> dict:
+    """Salva o contexto qualitativo e a temperatura do lead na base local."""
+    org_id = args.get("org_id")
+    person_id = args.get("person_id")
+    temperature = args.get("temperature")
+    context = args.get("context")
+
+    if not org_id and not person_id:
+        return {"ok": False, "error": "É necessário informar org_id ou person_id."}
+
+    try:
+        from core.infra.database import async_session
+        from models.organization import Organization
+        from models.people import Employee
+        from sqlalchemy import select
+
+        updated = []
+        async with async_session() as session:
+            # Atualiza organização
+            if org_id:
+                stmt = select(Organization).where(
+                    (Organization.pipedrive_id == org_id) | (Organization.id == org_id)
+                )
+                org = (await session.execute(stmt)).scalar_one_or_none()
+                if org:
+                    if temperature:
+                        org.temperature = temperature
+                    if context:
+                        # Append context to preserve history
+                        if org.prospecting_context and context not in org.prospecting_context:
+                            org.prospecting_context += f" | {context}"
+                        else:
+                            org.prospecting_context = context
+                    updated.append(f"Organização '{org.name}'")
+            
+            # Atualiza pessoa
+            if person_id:
+                stmt = select(Employee).where(
+                    (Employee.pipedrive_id == str(person_id)) | (Employee.id == person_id)
+                )
+                emp = (await session.execute(stmt)).scalar_one_or_none()
+                if emp:
+                    if temperature:
+                        emp.temperature = temperature
+                    if context:
+                        if emp.prospecting_context and context not in emp.prospecting_context:
+                            emp.prospecting_context += f" | {context}"
+                        else:
+                            emp.prospecting_context = context
+                    updated.append(f"Contato '{emp.name}'")
+
+            await session.commit()
+
+        if updated:
+            return {"ok": True, "summary": f"Contexto de prospecção atualizado para: {', '.join(updated)}"}
+        else:
+            return {"ok": False, "error": "Registro não encontrado no banco local para atualizar o contexto."}
+    except Exception as e:
+        return {"ok": False, "error": f"Erro ao atualizar contexto: {e}"}
+

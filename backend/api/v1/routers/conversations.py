@@ -208,6 +208,52 @@ async def list_activities(
     return result.scalars().all()
 
 
+@router.patch("/message/{message_id}/suggested_actions/{action_index}")
+async def update_suggested_action_status(
+    message_id: str,
+    action_index: int,
+    payload: dict,
+    session: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy.orm.attributes import flag_modified
+    status = payload.get("status")
+    if not status:
+        raise HTTPException(status_code=400, detail="status is required")
+        
+    res = await session.execute(
+        select(ConversationMessage).where(ConversationMessage.id == message_id)
+    )
+    msg = res.scalar_one_or_none()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+        
+    msg_data = dict(msg.data or {})
+    runs = msg_data.get("suggested_actions_runs", {})
+    idx_str = str(action_index)
+    if idx_str not in runs:
+        runs[idx_str] = {"status": status, "logs": [], "timestamp": datetime.utcnow().isoformat()}
+    else:
+        runs[idx_str]["status"] = status
+        
+    msg_data["suggested_actions_runs"] = runs
+    msg.data = msg_data
+    
+    parent_logs = list(msg.logs or [])
+    for event in parent_logs:
+        if event.get("type") == "suggested_actions":
+            actions = event.get("actions", [])
+            if 0 <= action_index < len(actions):
+                actions[action_index]["status"] = status
+    msg.logs = parent_logs
+    
+    flag_modified(msg, "data")
+    flag_modified(msg, "logs")
+    session.add(msg)
+    await session.commit()
+    
+    return {"ok": True}
+
+
 # ─────────────────────────────────────────────
 # Helpers usados pelos outros endpoints/services
 # ─────────────────────────────────────────────

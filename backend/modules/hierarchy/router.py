@@ -26,6 +26,9 @@ from .service.graph_builder import build_root_node, build_socio_nodes, assign_ma
 
 router = APIRouter()
 
+# Armazena o subprocesso ativo de raspagem do LinkedIn para permitir controle interativo por stdin
+active_scraper_process = None
+
 
 @router.post("/candidate-action")
 async def candidate_action(payload: CandidateActionRequest, db: AsyncSession = Depends(get_db)):
@@ -129,6 +132,8 @@ async def stream_company_hierarchy(
     confirmed_logo: Optional[str] = Query(None),
     product_focus: Optional[str] = Query(None),
     area_focus: Optional[str] = Query("compras"),
+    model: Optional[str] = Query(None),
+    strict_mode: Optional[bool] = Query(False),
     db: AsyncSession = Depends(get_db),
 ):
     """SSE — envia dados de hierarquia progressivamente."""
@@ -136,6 +141,10 @@ async def stream_company_hierarchy(
     cnpj_clean = clean_cnpj(cnpj)
 
     async def generator():
+        if model:
+            from core.llm import set_preferred_model
+            set_preferred_model(model, strict_mode)
+
         data = await fetch_company_data_by_cnpj(cnpj_clean)
         if not data:
             yield f"data: {json.dumps({'type': 'error', 'message': 'Erro nas APIs de CNPJ.'})}\n\n"
@@ -234,3 +243,289 @@ async def get_hierarchy_by_org(org_id: int, db: AsyncSession = Depends(get_db)):
     if result is None:
         raise HTTPException(status_code=404, detail="Organização não encontrada no banco local.")
     return result
+
+
+@router.post("/test-linkedin-scrape")
+async def test_linkedin_scrape(
+    company_url: str = Query(..., description="A URL da empresa no LinkedIn"),
+    session_cookie: Optional[str] = Query(None, description="O cookie li_at opcional"),
+    headless: bool = Query(True, description="Se deve rodar em segundo plano"),
+):
+    """
+    Roda um scraping de teste do LinkedIn de forma modular e isolada em subprocesso.
+    Retorna a lista de pessoas extraídas.
+    """
+    import subprocess
+    import sys
+    import os
+    import json
+    import uuid
+    import asyncio
+    
+    # Define diretórios de arquivos temporários
+    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    tmp_dir = os.path.join(backend_dir, "tmp")
+    os.makedirs(tmp_dir, exist_ok=True)
+    
+    # Gera um caminho de saída único para esta requisição para evitar colisões concorrentes
+    unique_id = str(uuid.uuid4())
+    output_filepath = os.path.join(tmp_dir, f"hierarchy_scan_{unique_id}.json")
+    
+    # Localiza o script de teste CLI e o interpretador python do venv
+    python_exe = sys.executable
+    script_path = os.path.join(backend_dir, "scripts", "test_hierarchy_scan.py")
+    
+    cmd = [python_exe, "-X", "utf8", script_path, company_url, output_filepath]
+    
+    # Propaga as variáveis de ambiente necessárias
+    env = os.environ.copy()
+    if session_cookie:
+        env["LINKEDIN_LI_AT"] = session_cookie
+    env["LINKEDIN_HEADLESS"] = "true" if headless else "false"
+    
+    # Configurações do subprocesso para o run_in_executor
+    kwargs = {
+        "env": env,
+        "encoding": "utf-8",
+        "errors": "ignore"
+    }
+    
+    if os.name == "nt":
+        # No Windows, usamos o sinalizador CREATE_NEW_CONSOLE para abrir um terminal separado visível para o usuário!
+        # Isso permite que ele veja todo o progresso (scrolls, cliques, login manual) em tempo real.
+        kwargs["creationflags"] = subprocess.CREATE_NEW_CONSOLE
+    else:
+        kwargs["capture_output"] = True
+        
+    # Executa o subprocesso de maneira assíncrona usando o run_in_executor do asyncio.
+    # Como subprocess.run é síncrono e roda em uma thread paralela do pool,
+    # não é afetado pelo loop do SelectorEventLoop do Uvicorn e executa nativamente!
+    loop = asyncio.get_running_loop()
+    
+    try:
+        # Executa o subprocesso bloqueante em uma thread do pool para não travar o FastAPI
+        result = await loop.run_in_executor(
+            None,
+            lambda: subprocess.run(cmd, **kwargs)
+        )
+        
+        # Se falhar no nível do processo
+        if result.returncode != 0:
+            err_msg = "Falha no processo secundário do scraper."
+            if not kwargs.get("creationflags"):
+                err_msg = getattr(result, "stderr", "") or getattr(result, "stdout", "") or err_msg
+            raise HTTPException(status_code=500, detail=f"Erro de processo do Scraper: {err_msg}")
+            
+        # Lê os resultados salvos no arquivo único de saída
+        if not os.path.exists(output_filepath):
+            raise HTTPException(status_code=500, detail="Arquivo de resultados não foi gerado pelo Scraper. Verifique o terminal aberto.")
+            
+        with open(output_filepath, "r", encoding="utf-8") as f:
+            results_data = json.load(f)
+            
+        # Deleta o arquivo temporário único após ler com sucesso
+        try:
+            os.remove(output_filepath)
+        except Exception:
+            pass
+            
+        return {"status": "success", "total": len(results_data), "data": results_data}
+        
+    except Exception as e:
+        # Garante que removemos o arquivo temporário em caso de erro
+        try:
+            if os.path.exists(output_filepath):
+                os.remove(output_filepath)
+        except Exception:
+            pass
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=500, detail=f"Erro na extração isolada: {str(e)}")
+
+
+@router.get("/linkedin-scrape/preview")
+async def get_linkedin_scrape_preview():
+    """
+    Retorna a captura de tela mais recente do processo de scraping do LinkedIn.
+    Usada para exibição em tempo real (live browser preview) no painel web.
+    """
+    import os
+    from fastapi.responses import FileResponse, Response
+    
+    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    preview_path = os.path.join(backend_dir, "tmp", "scraper_preview.jpg")
+    
+    if not os.path.exists(preview_path):
+        return Response(status_code=404, content="Screenshot não disponível ainda.")
+        
+    return FileResponse(
+        preview_path, 
+        media_type="image/jpeg", 
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
+
+
+@router.get("/linkedin-scrape/stream")
+async def stream_linkedin_scrape(
+    company_url: str = Query(..., description="A URL da empresa no LinkedIn"),
+    session_cookie: Optional[str] = Query(None, description="O cookie li_at opcional"),
+    headless: bool = Query(True, description="Se deve rodar em segundo plano"),
+):
+    """
+    Executa o scraping do LinkedIn em segundo plano e transmite os logs do terminal,
+    as notificações de novos prints (screenshots) e os resultados finais via Server-Sent Events (SSE).
+    """
+    import subprocess
+    import sys
+    import os
+    import json
+    import uuid
+    import asyncio
+    from fastapi.responses import StreamingResponse
+    
+    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    tmp_dir = os.path.join(backend_dir, "tmp")
+    os.makedirs(tmp_dir, exist_ok=True)
+    
+    unique_id = str(uuid.uuid4())
+    output_filepath = os.path.join(tmp_dir, f"hierarchy_scan_{unique_id}.json")
+    
+    python_exe = sys.executable
+    script_path = os.path.join(backend_dir, "scripts", "test_hierarchy_scan.py")
+    
+    # Prepara o comando
+    cmd = [python_exe, "-X", "utf8", script_path, company_url, output_filepath]
+    
+    env = os.environ.copy()
+    if session_cookie:
+        env["LINKEDIN_LI_AT"] = session_cookie
+    env["LINKEDIN_HEADLESS"] = "true" if headless else "false"
+    
+    # Remove qualquer screenshot antigo para iniciar do zero
+    preview_path = os.path.join(tmp_dir, "scraper_preview.jpg")
+    if os.path.exists(preview_path):
+        try:
+            os.remove(preview_path)
+        except Exception:
+            pass
+
+    async def sse_generator():
+        # Spawna o processo capturando stdout e stderr em uma mesma pipe
+        # Sem janela cmd popup no Windows (startupinfo opcional) para rodar invisivelmente em background
+        startupinfo = None
+        if os.name == "nt":
+            # Oculta a janela de console do processo secundário quando redirecionamos a pipe
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+
+        process = subprocess.Popen(
+            cmd,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.PIPE,  # Habilita stdin para receber comandos de controle remoto
+            text=True,
+            encoding="utf-8",
+            bufsize=1,
+            startupinfo=startupinfo
+        )
+        
+        global active_scraper_process
+        active_scraper_process = process
+        
+        loop = asyncio.get_running_loop()
+        
+        def read_line(proc):
+            return proc.stdout.readline()
+            
+        try:
+            yield f"data: {json.dumps({'type': 'log', 'message': '[Agent] Inicializando motor de automação Playwright...'}, ensure_ascii=False)}\n\n"
+            
+            while True:
+                # Lê a saída da pipe de forma não-bloqueante no executor
+                line = await loop.run_in_executor(None, read_line, process)
+                if not line and process.poll() is not None:
+                     break
+                     
+                clean_line = line.strip()
+                if not clean_line:
+                    continue
+                
+                # Intercepta notificações de novos screenshots
+                if "[SCREENSHOT_UPDATED]" in clean_line:
+                    yield f"data: {json.dumps({'type': 'screenshot'})}\n\n"
+                else:
+                    # Envia a linha de log do terminal original para o frontend
+                    yield f"data: {json.dumps({'type': 'log', 'message': clean_line}, ensure_ascii=False)}\n\n"
+            
+            # Aguarda a finalização definitiva
+            returncode = process.wait()
+            if returncode != 0:
+                yield f"data: {json.dumps({'type': 'error', 'message': f'[Agent Error] O processo secundário encerrou com código de erro {returncode}'}, ensure_ascii=False)}\n\n"
+                return
+                
+            # Lê o JSON de saída final gerado pelo script
+            if os.path.exists(output_filepath):
+                with open(output_filepath, "r", encoding="utf-8") as f:
+                    results_data = json.load(f)
+                
+                yield f"data: {json.dumps({'type': 'result', 'data': results_data}, ensure_ascii=False)}\n\n"
+                
+                # Deleta o arquivo temporário
+                try:
+                    os.remove(output_filepath)
+                except Exception:
+                    pass
+            else:
+                yield f"data: {json.dumps({'type': 'error', 'message': '[Agent Error] O arquivo de resultados não foi gerado pelo Scraper.'}, ensure_ascii=False)}\n\n"
+                
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': f'[Agent Fatal Error] Falha na transmissão: {str(e)}'}, ensure_ascii=False)}\n\n"
+            if process.poll() is None:
+                process.terminate()
+                
+    return StreamingResponse(sse_generator(), media_type="text/event-stream")
+
+
+@router.post("/linkedin-scrape/interact")
+async def linkedin_scrape_interact(
+    action: str = Query(..., description="Ação: click, type, press"),
+    x: Optional[int] = Query(None),
+    y: Optional[int] = Query(None),
+    text: Optional[str] = Query(None),
+    key: Optional[str] = Query(None),
+):
+    """
+    Interage com o navegador de raspagem em tempo real (clique, escrita ou teclas).
+    Permite controle remoto completo diretamente da interface web!
+    """
+    global active_scraper_process
+    
+    if not active_scraper_process or active_scraper_process.poll() is not None:
+        raise HTTPException(status_code=400, detail="Não há nenhum agente de raspagem ativo no momento.")
+        
+    try:
+        command = ""
+        if action == "click" and x is not None and y is not None:
+            command = f"cmd_click {x} {y}\n"
+        elif action == "type" and text:
+            # Substitui quebras de linha para evitar que o comando quebre
+            safe_text = text.replace("\n", " ")
+            command = f"cmd_type {safe_text}\n"
+        elif action == "press" and key:
+            command = f"cmd_press {key}\n"
+            
+        if command:
+            active_scraper_process.stdin.write(command)
+            active_scraper_process.stdin.flush()
+            return {"status": "success", "message": f"Comando '{action}' enviado ao agente."}
+        else:
+            raise HTTPException(status_code=400, detail="Ação de interação inválida ou parâmetros insuficientes.")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao interagir com o agente: {str(e)}")

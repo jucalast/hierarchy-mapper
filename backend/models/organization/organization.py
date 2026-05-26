@@ -36,6 +36,8 @@ class Organization(Base):
     icp_tier = Column(String, nullable=True)                       # A | B | C
     is_excluded = Column(Integer, server_default="0", index=True)   # 1 = Excluída/Oculta
     source = Column(String, default="pipedrive", index=True)        # Ex: pipedrive, outlook, manual
+    temperature = Column(String, nullable=True, index=True)         # cold, warm, hot, contacted
+    prospecting_context = Column(Text, nullable=True)               # Detalhes descritivos da origem e relação
     last_enrichment = Column(
         DateTime(timezone=True),
         server_default=func.now(),

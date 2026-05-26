@@ -100,9 +100,17 @@ async def _sync_one_wa_contact(
         if not msgs:
             return False
 
-        # Detecta se há mensagens mais recentes que as do cache
+        # Aplica o mesmo filtro de body que cache_wa_messages usa antes de comparar.
+        # Sem isso, mensagens de mídia/sistema (sem body) têm timestamp mais alto que as
+        # mensagens de texto no cache, causando has_new=True em todo ciclo mesmo sem
+        # mensagens novas de texto.
+        msgs_with_body = [
+            m for m in msgs
+            if (m.get("body") or m.get("text") or m.get("content") or "")
+        ]
+
         cached_ts = _latest_ts(contact.get_messages())
-        new_ts = _latest_ts(msgs)
+        new_ts = _latest_ts(msgs_with_body)
         has_new = new_ts > cached_ts
 
         await cache_wa_fn(
@@ -121,7 +129,11 @@ async def _sync_one_wa_contact(
 
 
 async def _mark_unread_and_notify(contact, is_key: bool) -> None:
-    """Marca has_unread=1 no cache e loga para notificação."""
+    """Marca has_unread=1 no cache e loga para notificação.
+
+    Guard: se has_unread já é 1, não reescreve nem loga de novo — evita spam
+    de 'new_message_detected' em cada ciclo de polling para o mesmo contato.
+    """
     try:
         from models.communication.contact_cache import ContactConversationCache
         from sqlalchemy import select
@@ -134,19 +146,26 @@ async def _mark_unread_and_notify(contact, is_key: bool) -> None:
                 )
             )
             entry = result.scalar_one_or_none()
-            if entry:
+            if not entry:
+                return
+
+            already_unread = bool(entry.has_unread)
+            if not already_unread:
                 entry.has_unread = 1
-                if is_key:
-                    entry.is_key_contact = 1
+            if is_key and not entry.is_key_contact:
+                entry.is_key_contact = 1
+
+            if not already_unread or (is_key and not entry.is_key_contact):
                 await session.commit()
 
-        log.info(
-            "message_sync.new_message_detected",
-            contact=contact.contact_name,
-            org=contact.org_name,
-            channel=contact.channel,
-            is_key_contact=is_key,
-        )
+        if not already_unread:
+            log.info(
+                "message_sync.new_message_detected",
+                contact=contact.contact_name,
+                org=contact.org_name,
+                channel=contact.channel,
+                is_key_contact=is_key,
+            )
     except Exception as e:
         log.warning("message_sync.mark_unread_failed", error=str(e))
 

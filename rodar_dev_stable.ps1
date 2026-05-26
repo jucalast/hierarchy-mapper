@@ -29,9 +29,7 @@ if ((Test-Path $redisPath) -and (Test-Path $redisConf)) {
         $redisFullPath = (Get-Item $redisPath).FullName
         $redisConfFullPath = (Get-Item $redisConf).FullName
         
-        Push-Location $redisDir
-        & $redisFullPath $redisConfFullPath 2>$null &
-        Pop-Location
+        Start-Process $redisFullPath -ArgumentList "redis.windows.conf" -WorkingDirectory $redisDir -WindowStyle Minimized
         
         Start-Sleep -Seconds 2
         
@@ -113,3 +111,12 @@ Write-Host ""
 Write-Host "📝 Versões:" -ForegroundColor Yellow
 Write-Host "   - rodar_dev.ps1: COM watchfiles (auto-reload de código)" -ForegroundColor Cyan
 Write-Host "   - rodar_dev_stable.ps1: SEM watchfiles (estável)" -ForegroundColor Cyan
+
+# 8. Iniciar LinkedIn Scraper Terminal
+Write-Host "Iniciando Terminal Interativo do LinkedIn Scraper..." -ForegroundColor Cyan
+$scraperPath = Join-Path $PSScriptRoot "rodar_linkedin.bat"
+Start-Process cmd -ArgumentList "/k", "`"$scraperPath`"" -WorkingDirectory $PSScriptRoot
+
+# Iniciação automática do navegador
+Start-Sleep -Seconds 3
+Start-Process "http://localhost:3000"

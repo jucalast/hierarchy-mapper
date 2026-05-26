@@ -1,6 +1,7 @@
-import React from 'react';
-import { User, Building2, Check, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Building2, Check, Sparkles, Loader2 } from 'lucide-react';
 import { Dropdown } from '../ui/Dropdown/Dropdown';
+import { organizations } from '@/services/api';
 import styles from './HistoryTimeline.module.css';
 
 export type TimelineEvent = {
@@ -26,6 +27,33 @@ interface TimelineEventRowProps {
 }
 
 export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLast, hasBackground }) => {
+    const [doneState, setDoneState] = useState(!!event.done);
+    const [isCompleting, setIsCompleting] = useState(false);
+
+    useEffect(() => {
+        setDoneState(!!event.done);
+    }, [event.done]);
+
+    const handleCompleteTask = async (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        if (doneState || isCompleting) return;
+        setIsCompleting(true);
+        try {
+            const rawId = String(event.id).replace('act-', '');
+            await organizations.updateActivity(rawId, { done: true });
+            setDoneState(true);
+            window.dispatchEvent(new CustomEvent('crm_task_completed', { detail: { activityId: rawId } }));
+        } catch (error) {
+            console.error('Failed to complete task:', error);
+            alert('Não foi possível marcar a tarefa como concluída no Pipedrive.');
+        } finally {
+            setIsCompleting(false);
+        }
+    };
+
     const formatDateTime = (ts: string) => {
         if (!ts) return '';
         try {
@@ -41,7 +69,7 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
             if (!hasTime) {
                 return `${day} de ${month}`;
             }
-
+ 
             const hours = d.getHours().toString().padStart(2, '0');
             const minutes = d.getMinutes().toString().padStart(2, '0');
             
@@ -50,7 +78,7 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
             return ts;
         }
     };
-
+ 
     // Helper para renderizar itens com separadores
     const metaItems = [];
     if (event.timestamp) metaItems.push(<span className={styles.metaItem}>{formatDateTime(event.timestamp)}</span>);
@@ -65,14 +93,14 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
             <Building2 size={10} /> {event.company}
         </span>
     );
-
+ 
     const handleExecuteWithAgent = () => {
         const t = event.title.toLowerCase();
         const org = event.company ? ` para a empresa ${event.company}` : '';
         const contact = event.contact ? ` com ${event.contact}` : '';
-
+ 
         let taskInstruction: string;
-
+ 
         // Busca/encontrar/conseguir contato
         if (['procurar contato','encontrar contato','conseguir contato','buscar contato','achar contato','identificar contato','localizar contato','contato na rodada','rodada de negócios'].some(k => t.includes(k))) {
             taskInstruction = `encontrar o contato/decisor de compras da empresa${org}. Verifique primeiro se já existe contato com canal válido no CRM. Se não houver, abra o mapeador de hierarquia (open_hierarchy_drawer). NÃO crie nova tarefa no Pipedrive — a atividade já existe no CRM.`;
@@ -95,34 +123,59 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
         } else {
             taskInstruction = `realizar a atividade "${event.title}"${contact}${org}. Raciocine sobre o que a tarefa requer e use as ferramentas adequadas`;
         }
-
-        const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction}. Use as ferramentas disponíveis para executar isso agora.`;
+ 
+        const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction} (ID da tarefa no Pipedrive: ${String(event.id).replace('act-', '')}). Use as ferramentas disponíveis para executar isso agora.`;
         window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText } }));
     };
+ 
+    const dropdownItems = [];
+    
+    if (event.type === 'activity' && !doneState) {
+        dropdownItems.push({
+            label: 'Marcar como concluída',
+            icon: isCompleting ? <Loader2 size={12} className={styles.spinner} /> : <Check size={12} />,
+            onClick: () => handleCompleteTask()
+        });
+    }
 
-    const dropdownItems = [
-        {
-            label: 'Fazer com o agente',
-            icon: <Sparkles size={12} />,
-            onClick: handleExecuteWithAgent
-        }
-    ];
-
+    dropdownItems.push({
+        label: 'Fazer com o agente',
+        icon: <Sparkles size={12} />,
+        onClick: handleExecuteWithAgent
+    });
+ 
     return (
         <div className={styles.eventRow}>
             {/* Linha e Ícone Lateral */}
             <div className={styles.timelineSide}>
-                <div className={`${styles.iconCircle} ${event.done ? styles.iconCircleDone : ''}`}>
+                <div className={`${styles.iconCircle} ${doneState ? styles.iconCircleDone : ''}`}>
                     {event.icon}
                 </div>
                 {!isLast && <div className={styles.dashedLine} />}
             </div>
-
+ 
             {/* Conteúdo do Card */}
-            <div className={`${styles.eventCard} ${event.done ? styles.eventCardDone : ''} ${hasBackground ? styles.cardWithBg : ''}`}>
+            <div className={`${styles.eventCard} ${doneState ? styles.eventCardDone : ''} ${hasBackground ? styles.cardWithBg : ''}`}>
                 <div className={styles.eventHeader} style={{ position: 'relative' }}>
                     <div className={styles.titleArea}>
-                        {event.done && <Check size={12} className={styles.doneCheck} />}
+                        {event.type === 'activity' ? (
+                            doneState ? (
+                                <Check size={12} className={styles.doneCheck} />
+                            ) : (
+                                <button 
+                                    className={`${styles.checkboxBtn} ${isCompleting ? styles.checkboxBtnLoading : ''}`}
+                                    onClick={handleCompleteTask}
+                                    disabled={isCompleting}
+                                    title="Marcar tarefa como concluída"
+                                >
+                                    {isCompleting ? (
+                                        <Loader2 size={10} className={styles.spinner} />
+                                    ) : (
+                                        <Check size={10} className={styles.checkboxCheckIcon} />
+                                    )}
+                                </button>
+                            )
+                        ) : null}
                         <span className={styles.eventTitle}>{event.title}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -134,7 +187,7 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                         />
                     </div>
                 </div>
-
+ 
                 <div className={styles.eventMeta}>
                     {metaItems.map((item, index) => (
                         <React.Fragment key={index}>
@@ -143,13 +196,13 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                         </React.Fragment>
                     ))}
                 </div>
-
+ 
                 {event.subtext && (
                     <div className={styles.eventSubtext}>
                         {event.subtext}
                     </div>
                 )}
-
+ 
                 {event.content && (
                     <div className={`${styles.eventContent} ${styles.callNote}`}>
                         <div dangerouslySetInnerHTML={{ __html: event.content }} />

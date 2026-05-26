@@ -243,6 +243,30 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         return collected;
     };
 
+    const handleCancelActiveTask = () => {
+        if (activeRunningTask) {
+            const { parentMessageId, actionIndex } = activeRunningTask;
+            if (parentMessageId && actionIndex !== undefined) {
+                const taskKey = `${parentMessageId}-${actionIndex}`;
+                setApprovedSuggestedActions(prev => {
+                    const currentStatus = prev[taskKey];
+                    if (currentStatus === 'done' || currentStatus === 'error') return prev;
+                    
+                    // Persiste o cancelamento para o backend (resetando para pending)
+                    conversations.updateSuggestedActionStatus(parentMessageId, actionIndex, 'pending').catch(err => {
+                        console.error('Failed to persist task cancellation', err);
+                    });
+                    
+                    return { ...prev, [taskKey]: 'pending' };
+                });
+            }
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            setActiveRunningTask(null);
+        }
+    };
+
     const handleApproveSuggestedAction = async (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => {
         const taskKey = `${parentMessageId}-${index}`;
         
@@ -293,6 +317,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 [taskKey]: finalStatus
             }));
             
+            if (finalStatus === 'done') {
+                setTimeout(() => {
+                    setActiveRunningTask(prev => {
+                        if (prev && prev.actionIndex === index) return null;
+                        return prev;
+                    });
+                }, 1500);
+            }
+            
             if (selectedOrgId) {
                 conversations.listThreads(selectedOrgId).then(setThreads).catch(() => {});
             }
@@ -310,15 +343,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         
         setTaskInlineConfirmed(prev => ({ ...prev, [action_id]: approved }));
 
-        if (!approved) {
-            setActiveRunningTask(prev => prev ? { ...prev, status: 'done' } : null);
-            if (activeRunningTask.parentMessageId) {
-                const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
-                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'done' }));
-            }
-            return;
-        }
-
         setActiveRunningTask(prev => prev ? { ...prev, status: 'streaming' } : null);
         if (activeRunningTask.parentMessageId) {
             const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
@@ -328,7 +352,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         try {
             const collected = await streamTaskInto(AGENT_CONFIRM_URL, {
                 action_id,
-                approved: true,
+                approved,
                 thread_id: activeThread?.id,
             }, activeRunningTask);
             
@@ -342,6 +366,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (activeRunningTask.parentMessageId) {
                 const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
                 setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
+            }
+            if (finalStatus === 'done') {
+                const currentIdx = activeRunningTask.actionIndex;
+                setTimeout(() => {
+                    setActiveRunningTask(prev => {
+                        if (prev && prev.actionIndex === currentIdx) return null;
+                        return prev;
+                    });
+                }, 1500);
             }
         } catch {
             setActiveRunningTask(prev => prev ? { ...prev, status: 'error' } : null);
@@ -409,6 +442,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
                 setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
             }
+            if (finalStatus === 'done') {
+                const currentIdx = activeRunningTask.actionIndex;
+                setTimeout(() => {
+                    setActiveRunningTask(prev => {
+                        if (prev && prev.actionIndex === currentIdx) return null;
+                        return prev;
+                    });
+                }, 1500);
+            }
         } catch {
             setActiveRunningTask(prev => prev ? { ...prev, status: 'error' } : null);
             if (activeRunningTask.parentMessageId) {
@@ -467,6 +509,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             taskInlineConfirmed={taskInlineConfirmed}
             onTaskInlineConfirm={handleTaskInlineConfirm}
             onTaskMappingComplete={handleTaskMappingComplete}
+            onCancelActiveTask={handleCancelActiveTask}
         />
     );
 
@@ -544,6 +587,93 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 }]);
             } else {
                 let hasActiveJobLoading = false;
+                let hasAwaitingConfirmation = false;
+                
+                // Constrói o mapeamento global de ações decididas no histórico da thread
+                const callIdToActionId: Record<string, string> = {};
+                const actionIdToApproved: Record<string, boolean> = {};
+                const initialSuggestedActions: Record<string, TaskStatus> = {};
+                let restoredTask: any = null;
+
+                msgs.forEach((m: MessageOut) => {
+                    if (m.logs && Array.isArray(m.logs)) {
+                        m.logs.forEach((event: any) => {
+                            if (event.type === 'confirmation_required' && event.action_id && event.call_id) {
+                                callIdToActionId[event.call_id] = event.action_id;
+                            }
+                        });
+                    }
+                    if (m.data && m.data.suggested_actions_runs) {
+                        const runs = m.data.suggested_actions_runs;
+                        Object.keys(runs).forEach((idx) => {
+                            const run = runs[idx];
+                            if (run.status) {
+                                initialSuggestedActions[`${m.id}-${idx}`] = run.status as TaskStatus;
+                                
+                                // Restaura a tarefa ativa se não estiver concluída ou com erro
+                                if (run.status !== 'done' && run.status !== 'error') {
+                                    let label = 'Tarefa em andamento';
+                                    let prompt = '';
+                                    if (m.logs && Array.isArray(m.logs)) {
+                                        const event = m.logs.find((e: any) => e.type === 'suggested_actions');
+                                        if (event && event.actions && event.actions[Number(idx)]) {
+                                            label = event.actions[Number(idx)].label || label;
+                                            prompt = event.actions[Number(idx)].prompt || prompt;
+                                        }
+                                    }
+                                    restoredTask = {
+                                        label,
+                                        prompt,
+                                        status: run.status as TaskStatus,
+                                        logs: run.logs || [],
+                                        isExpanded: true, // Expande ao carregar para o usuário ver os botões de ação e status
+                                        orgId: selectedOrgId,
+                                        threadId: thread.id,
+                                        actionIndex: Number(idx),
+                                        parentMessageId: m.id,
+                                    };
+                                }
+                            }
+                            if (run.logs && Array.isArray(run.logs)) {
+                                run.logs.forEach((event: any) => {
+                                    if (event.type === 'confirmation_required' && event.action_id && event.call_id) {
+                                        callIdToActionId[event.call_id] = event.action_id;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+
+                msgs.forEach((m: MessageOut) => {
+                    if (m.logs && Array.isArray(m.logs)) {
+                        m.logs.forEach((event: any) => {
+                            if (event.type === 'tool_result' && event.call_id) {
+                                const actionId = callIdToActionId[event.call_id];
+                                if (actionId) {
+                                    actionIdToApproved[actionId] = event.ok === true;
+                                }
+                            }
+                        });
+                    }
+                    if (m.data && m.data.suggested_actions_runs) {
+                        const runs = m.data.suggested_actions_runs;
+                        Object.keys(runs).forEach((idx) => {
+                            const run = runs[idx];
+                            if (run.logs && Array.isArray(run.logs)) {
+                                run.logs.forEach((event: any) => {
+                                    if (event.type === 'tool_result' && event.call_id) {
+                                        const actionId = callIdToActionId[event.call_id];
+                                        if (actionId) {
+                                            actionIdToApproved[actionId] = event.ok === true;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+
                 const mappedMsgs = msgs.map((m: MessageOut) => {
                     const isAgent = !!(m.logs && Array.isArray(m.logs) && m.logs.some((l: any) => l.type === 'tool_call' || l.type === 'thinking' || l.type === 'final'));
                     let forceAgentStreaming = false;
@@ -556,7 +686,42 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                 hasActiveJobLoading = true;
                             }
                         }
+
+                        let hasUndecidedConfirmation = false;
+                        m.logs.forEach((l: any) => {
+                            if (l.type === 'confirmation_required' && l.action_id) {
+                                if (!(l.action_id in actionIdToApproved)) {
+                                    hasUndecidedConfirmation = true;
+                                }
+                            }
+                        });
+
+                        if (m.data && m.data.suggested_actions_runs) {
+                            Object.values(m.data.suggested_actions_runs).forEach((run: any) => {
+                                if (run.status === 'awaiting_confirm') {
+                                    hasUndecidedConfirmation = true;
+                                }
+                            });
+                        }
+
+                        if (hasUndecidedConfirmation) {
+                            forceAgentStreaming = true;
+                            hasAwaitingConfirmation = true;
+                        }
                     }
+
+                    // Reconstrói as ações confirmadas deste agent message especificamente
+                    const msgConfirmedActions: Record<string, boolean> = {};
+                    if (m.logs && Array.isArray(m.logs)) {
+                        m.logs.forEach((event: any) => {
+                            if (event.type === 'confirmation_required' && event.action_id) {
+                                if (event.action_id in actionIdToApproved) {
+                                    msgConfirmedActions[event.action_id] = actionIdToApproved[event.action_id];
+                                }
+                            }
+                        });
+                    }
+
                     return {
                         id: m.id,
                         role: m.role as 'user' | 'assistant',
@@ -568,12 +733,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         isAgent: isAgent,
                         agentEvents: isAgent ? (m.logs ?? undefined) : undefined,
                         agentStreaming: forceAgentStreaming ? true : undefined,
+                        agentConfirmedActions: msgConfirmedActions,
                     };
                 });
 
+                if (hasActiveJobLoading || hasAwaitingConfirmation) {
+                    setAgentStreaming(true);
+                }
                 if (hasActiveJobLoading) {
                     setIsLoading(true);
-                    setAgentStreaming(true);
+                }
+                setApprovedSuggestedActions(initialSuggestedActions);
+                if (restoredTask) {
+                    setActiveRunningTask(restoredTask);
+                } else {
+                    setActiveRunningTask(null);
                 }
                 setMessages(mappedMsgs);
             }
@@ -642,6 +816,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     const handleNewThread = () => {
         setActiveThread(null);
+        setApprovedSuggestedActions({});
+        setAgentConfirmedActions({});
         if (typeof window !== 'undefined') {
             const targetOrgId = selectedOrgId || 0;
             window.localStorage.removeItem(`active-thread-id-${targetOrgId}`);
@@ -654,6 +830,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // ─── Back to list ────────────────────────────────────────
     const handleBackToList = async () => {
         setView('list');
+        setApprovedSuggestedActions({});
+        setAgentConfirmedActions({});
         if (typeof window !== 'undefined') {
             const targetOrgId = selectedOrgId || 0;
             window.localStorage.removeItem(`active-thread-id-${targetOrgId}`);
@@ -1043,7 +1221,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     };
 
     // ─── Agente: lidar com confirmação de ação ───────────────
-    const handleAgentConfirm = async (action_id: string, approved: boolean) => {
+    const handleAgentConfirm = async (action_id: string, approved: boolean, file?: File) => {
         setAgentConfirmedActions(prev => ({ ...prev, [action_id]: approved }));
 
         // Marca todas as mensagens com esse action_id
@@ -1054,12 +1232,31 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             return { ...m, agentConfirmedActions: { ...(m.agentConfirmedActions || {}), [action_id]: approved } };
         }));
 
-        if (!approved) return;
-
         // Chama o endpoint de confirmação e faz streaming do resultado
         const threadId = activeThread?.id || '';
         setIsLoading(true);
         setAgentStreaming(true);
+        
+        let attachment_path = undefined;
+        if (file && approved) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const baseUrl = AGENT_CONFIRM_URL.replace('/confirm', '');
+                const uploadRes = await fetch(`${baseUrl}/upload`, {
+                    method: 'POST',
+                    body: formData,
+                });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    attachment_path = uploadData.attachment_path;
+                } else {
+                    console.error('[Agent Confirm] Erro no upload:', uploadRes.status);
+                }
+            } catch (err) {
+                console.error('[Agent Confirm] Falha no upload:', err);
+            }
+        }
 
         const msgId = (Date.now() + 2).toString();
         setMessages(prev => [...prev, {
@@ -1081,7 +1278,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             const response = await fetch(AGENT_CONFIRM_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action_id, approved, thread_id: threadId }),
+                body: JSON.stringify({ action_id, approved, thread_id: threadId, attachment_path }),
                 signal: controller.signal,
             });
 

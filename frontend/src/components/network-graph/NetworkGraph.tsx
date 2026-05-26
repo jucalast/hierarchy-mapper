@@ -30,11 +30,13 @@ import { Header } from '../layout/Header';
 import { Drawer } from '../ui/Drawer';
 import { ChatPanel } from '../chat/ChatPanel';
 import { PreferencesView } from '../layout/PreferencesView';
+import { HierarchyScanView } from '../hierarchy-scan/HierarchyScanView';
 import { GraphCanvas } from './GraphCanvas';
-import { DiscoveryWorkflowOverlay } from './DiscoveryWorkflowOverlay';
+import { HierarchyDiscoveryOverlay } from './HierarchyDiscoveryOverlay';
 import { FloatingToolbar } from './FloatingToolbar';
 import { SmartBackground } from './components/SmartBackground';
 import { FitViewHandler } from './components/FitViewHandler';
+import { ModelSelector } from '../chat/ModelSelector';
 import { TriggerNotifications } from '../ui/TriggerNotifications';
 import { API_BASE_URL } from '@/services/config';
 
@@ -97,7 +99,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         productFocus, setProductFocus, areaFocus, setAreaFocus,
         confirmedBrand, setConfirmedBrand, confirmedLogo, setConfirmedLogo,
         confirmedFollowers, setConfirmedFollowers, refreshDrawerTrigger, setRefreshDrawerTrigger,
-        enrichingIds, handleSearch, handleBrandSelect, handleAutoEnrich, resetWorkflow
+        enrichingIds, handleSearch, handleBrandSelect, handleAutoEnrich, resetWorkflow,
+        selectedModel, setSelectedModel, strictMode, setStrictMode
     } = discovery;
 
     // Network Flow
@@ -118,7 +121,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     // UI States
     const [showDrawer, setShowDrawer] = useState(false);
     const [showChat, setShowChat] = useState(false);
-    const [activeView, setActiveView] = useLocalStorage<'graph' | 'prospecting' | 'preferences' | 'messages'>('active-view', 'graph');
+    const [activeView, setActiveView] = useLocalStorage<'graph' | 'prospecting' | 'preferences' | 'messages' | 'linkedin-scrape'>('active-view', 'graph');
     const [unreadCount, setUnreadCount] = useState(0);
     const prospecting = useProspecting();
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
@@ -143,6 +146,13 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         const savedChat = localStorage.getItem("show-chat") === "true";
         setShowDrawer(savedDrawer);
         setShowChat(savedChat);
+
+        const openDrawerHandler = () => {
+            setShowDrawer(true);
+            localStorage.setItem("show-drawer", "true");
+        };
+        window.addEventListener('drawer_open', openDrawerHandler);
+        return () => window.removeEventListener('drawer_open', openDrawerHandler);
     }, []);
 
     const handleSetShowDrawer = (val: boolean) => {
@@ -295,6 +305,20 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                         const jobData = JSON.parse(jobDataStr);
                         if (Number(jobData.orgId) === Number(org.id)) {
                             setStep("loading");
+                            
+                            // Restaurar os dados da empresa na interface do toolbar
+                            setConfirmedBrand(jobData.brand || cleanName(org.name || ""));
+                            setConfirmedLogo(jobData.logo || org.logo || "");
+                            
+                            let targetCnpj = jobData.cnpj || org.cnpj || "";
+                            const onlyNums = targetCnpj.replace(/\D/g, '');
+                            if (onlyNums.length >= 5) {
+                                setCnpj(formatCnpj(targetCnpj));
+                            }
+                            setDomainTarget(jobData.domain || org.domain || "");
+                            if (org.product_focus) setProductFocus(org.product_focus);
+                            if (org.category === "compras" || org.category === "logistica") setAreaFocus(org.category);
+                            
                             const reconnected = await reconnectToActiveJob(addNotification);
                             if (reconnected) {
                                 return;
@@ -405,6 +429,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 isProspecting={activeView === 'prospecting'}
                 onOpenPreferences={() => setActiveView(activeView === 'preferences' ? 'graph' : 'preferences')}
                 isPreferences={activeView === 'preferences'}
+                onOpenLinkedinScrape={() => setActiveView(activeView === 'linkedin-scrape' ? 'graph' : 'linkedin-scrape')}
+                isLinkedinScrape={activeView === 'linkedin-scrape'}
             />
 
             <div className={styles.mainWrapper}>
@@ -514,7 +540,25 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                         smartBackground={<SmartBackground />}
                                     />
                                     
-                                    <DiscoveryWorkflowOverlay
+                                    <div 
+                                        className="dropdownDown"
+                                        style={{
+                                            position: 'absolute',
+                                            top: '16px',
+                                            right: '16px',
+                                            zIndex: 10,
+                                        }}
+                                    >
+                                        <ModelSelector
+                                            model={selectedModel as any}
+                                            setModel={setSelectedModel as any}
+                                            strictMode={strictMode}
+                                            setStrictMode={setStrictMode}
+                                            theme={theme}
+                                        />
+                                    </div>
+                                    
+                                    <HierarchyDiscoveryOverlay
                                         error={null}
                                         handleSearch={handleSearch}
                                         cnpj={cnpj}
@@ -674,6 +718,9 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                             )}
                             {activeView === 'preferences' && (
                                 <PreferencesView onBack={() => setActiveView('graph')} />
+                            )}
+                            {activeView === 'linkedin-scrape' && (
+                                <HierarchyScanView onBack={() => setActiveView('graph')} />
                             )}
                         </div>
                     </div>

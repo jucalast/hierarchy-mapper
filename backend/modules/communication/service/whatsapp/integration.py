@@ -193,62 +193,91 @@ class WhatsAppIntegration:
 
 
     @staticmethod
-    async def send_message(chat_id: str, message: str) -> Dict:
+    async def send_message(chat_id: str, message: str, attachment_path: Optional[str] = None) -> Dict:
         """
         Envia uma mensagem de WhatsApp para um ID ou número.
         Suporta: 55... @c.us, ID@lid, ou número puro.
+        Possui retry automático (até 3 vezes) se o serviço estiver inicializando.
+        Suporta envio de arquivo via attachment_path convertendo para base64.
         """
-        if not chat_id or not message:
-            return {"ok": False, "error": "Faltam dados de destino ou mensagem."}
+        import asyncio
+        import os
+        import base64
+        import mimetypes
+        
+        if not chat_id:
+            return {"ok": False, "error": "Faltam dados de destino."}
             
         # Limpeza e Normalização do ID
         target_jid = chat_id
         if not "@" in target_jid:
-            # LIDs (Linked IDs) do Baileys/Multidevice costumam ter 15+ dígitos
-            # Números brasileiros com o 9 extra têm 13 dígitos (ex: 5511999998888)
             if target_jid.isdigit() and len(target_jid) >= 15:
                 target_jid = f"{target_jid}@lid"
             elif target_jid.isdigit():
                 target_jid = f"{target_jid}@c.us"
 
-        try:
-            service_url = await WhatsAppIntegration._get_service_url()
-            async with httpx.AsyncClient(timeout=TIMEOUT * 3) as client:
-                url = f"{service_url}/send"
+        service_url = await WhatsAppIntegration._get_service_url()
+        url = f"{service_url}/send"
+        
+        # Preparar payload base
+        base_payload = {"message": message}
+        if attachment_path and os.path.exists(attachment_path):
+            try:
+                mime_type, _ = mimetypes.guess_type(attachment_path)
+                mime_type = mime_type or "application/octet-stream"
+                with open(attachment_path, "rb") as f:
+                    b64_data = base64.b64encode(f.read()).decode("utf-8")
+                
+                base_payload["media"] = {
+                    "mimetype": mime_type,
+                    "data": b64_data,
+                    "filename": os.path.basename(attachment_path)
+                }
+            except Exception as e:
+                logger.error(f"Erro ao ler anexo {attachment_path}: {e}")
+        
+        cid_num = target_jid.split("@")[0] if "@" in target_jid else target_jid
+        is_lid = cid_num.isdigit() and len(cid_num) > 13
+        
+        max_retries = 60 # Até 5 minutos tentando (60 * 5s)
+        
+        for attempt in range(max_retries):
+            try:
+                async with httpx.AsyncClient(timeout=TIMEOUT * 3) as client:
+                    if is_lid:
+                        jid_cus = f"{cid_num}@c.us"
+                        for try_payload in [
+                            {**base_payload, "chatId": jid_cus},
+                            {**base_payload, "chatId": target_jid},
+                            {**base_payload, "to": jid_cus},
+                        ]:
+                            try:
+                                r = await client.post(url, json=try_payload)
+                                if r.status_code == 200:
+                                    return {"ok": True, "result": r.json()}
+                            except Exception:
+                                pass
 
-                # Para contatos LID (ID interno >13 dígitos), o bridge pode rejeitar
-                # o campo 'number' (que espera um telefone real). Tenta chatId-only primeiro,
-                # pois alguns bridges roteiam via chatId sem validar o número.
-                cid_num = target_jid.split("@")[0] if "@" in target_jid else target_jid
-                is_lid = cid_num.isdigit() and len(cid_num) > 13
+                    payload = {**base_payload, "number": target_jid, "chatId": target_jid}
+                    response = await client.post(url, json=payload)
 
-                if is_lid:
-                    # Tentativa 1: chatId-only (sem number) com @c.us
-                    jid_cus = f"{cid_num}@c.us"
-                    for try_payload in [
-                        {"chatId": jid_cus, "message": message},
-                        {"chatId": target_jid, "message": message},
-                        {"to": jid_cus, "message": message},
-                    ]:
-                        try:
-                            r = await client.post(url, json=try_payload)
-                            if r.status_code == 200:
-                                return {"ok": True, "result": r.json()}
-                        except Exception:
-                            pass
-
-                # Tentativa padrão: number + chatId
-                payload = {"number": target_jid, "chatId": target_jid, "message": message}
-                response = await client.post(url, json=payload)
-
-                if response.status_code == 200:
-                    return {"ok": True, "result": response.json()}
-                else:
-                    err_msg = response.json().get("error") or response.text or f"Erro {response.status_code}"
-                    return {"ok": False, "error": err_msg}
-        except Exception as e:
-            logger.error(f"Erro ao enviar mensagem WhatsApp: {str(e)}")
-            return {"ok": False, "error": str(e)}
+                    if response.status_code == 200:
+                        return {"ok": True, "result": response.json()}
+                    elif response.status_code in [500, 502, 503, 504]:
+                        # Serviço do WhatsApp reiniciando, sem carga ou indisponível temporariamente
+                        logger.info(f"WhatsApp Service indisponível (Erro {response.status_code} - tentativa {attempt+1}/{max_retries}). Aguardando 5s...")
+                        await asyncio.sleep(5)
+                        continue
+                    else:
+                        # Erros 400/404 (Número não existe, requisição malformada, etc) -> não adianta tentar de novo
+                        err_msg = response.json().get("error") if response.headers.get("content-type") == "application/json" else response.text
+                        err_msg = err_msg or f"Erro {response.status_code}"
+                        return {"ok": False, "error": err_msg}
+            except Exception as e:
+                logger.warning(f"Erro de conexão com WhatsApp Service (tentativa {attempt+1}/{max_retries}): {str(e)}. Aguardando 5s...")
+                await asyncio.sleep(5)
+                
+        return {"ok": False, "error": "WhatsApp indisponível após 5 minutos de tentativas. Verifique se o serviço está rodando e reinicie se necessário."}
 
 
 # Test/Demo

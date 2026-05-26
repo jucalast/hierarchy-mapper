@@ -68,6 +68,23 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                 ]:
                     if t_name in content_trimmed:
                         tools_called.add(t_name)
+                        
+                # Heurísticas baseadas nas strings renderizadas pelo frontend para manter o contexto
+                content_lower = content_trimmed.lower()
+                if "consultando " in content_lower and "no pipedrive" in content_lower:
+                    tools_called.add("pipedrive_get_org")
+                if "buscando contatos de" in content_lower:
+                    tools_called.add("pipedrive_get_persons")
+                if "buscando deals de" in content_lower:
+                    tools_called.add("pipedrive_get_deals")
+                if "buscando atividades de" in content_lower:
+                    tools_called.add("pipedrive_get_activities")
+                if "buscando mensagens de" in content_lower:
+                    tools_called.add("whatsapp_get_messages")
+                if "buscando e-mails de" in content_lower or "buscando emails de" in content_lower:
+                    tools_called.add("email_get_contact_history")
+                if "generate sales message" in content_lower:
+                    tools_called.add("generate_sales_message")
 
         # ── Lê ARGS das tool_use blocks (mensagens do assistente)
         # Mais confiável que parsear o resultado — captura o que FOI pedido.
@@ -82,8 +99,11 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                 args = block.get("input") or {}
                 if tn == "pipedrive_get_org" and args.get("org_name"):
                     org_name = args["org_name"].strip()
-                if tn == "whatsapp_get_messages" and args.get("contact"):
-                    whatsapp_searched.add(args["contact"].lower())
+                if tn == "whatsapp_get_messages":
+                    if args.get("contact"):
+                        whatsapp_searched.add(args["contact"].lower())
+                    if args.get("org_name"):
+                        whatsapp_searched.add(args["org_name"].lower())
                 if tn == "email_get_contact_history":
                     name = args.get("contact_name") or args.get("org_name") or ""
                     if name:
@@ -511,11 +531,10 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
     org_email_done = bool(org_name and _searched(org_name, email_searched))
 
     if active_contacts:
-        comms_complete = (
-            pipedrive_complete
-            and not pending_wapp
-            and not pending_email
-        )
+        # Se encontramos um contato ativo com histórico substancial (PARADA ANTECIPADA),
+        # a fase de comunicação é considerada concluída, liberando o agente para agir
+        # (criar tarefas, sugerir ações, dossiê) sem forçá-lo a esgotar os demais contatos irrelevantes.
+        comms_complete = pipedrive_complete
     else:
         comms_complete = (
             pipedrive_complete
@@ -536,8 +555,13 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
         "o que você já encontrou e por que esta ferramenta é o próximo passo. "
         "Cite nomes reais, datas e dados concretos do histórico. "
         "(5) CONTINUIDADE OBRIGATÓRIA (CRÍTICO): Se uma ferramenta retornar 0 resultados ou dados vazios, VOCÊ NÃO DEVE PARAR. Registre o fato e CHAME IMEDIATAMENTE a próxima ferramenta pendente na mesma resposta. NUNCA encerre seu turno apenas com comentários de texto sem chamar uma ferramenta, e NUNCA declare a tarefa como concluída se ainda houver nomes na lista 'Pendente' abaixo, a menos que todas as fases da investigação estejam 100% concluídas.\n"
-        "(6) IDENTIDADE: João Luccas (joao.moura@jferres.com.br ou qualquer e-mail do domínio jferres.com.br) é o vendedor/remetente (você / o usuário do sistema). Ele NUNCA deve ser cadastrado ou sugerido como contato (person/lead) de nenhuma empresa no Pipedrive. Os contatos reais e leads são sempre os destinatários/interlocutores externos (ex: Lgustavo/Luis Gustavo).\n"
-        "(7) NOME DO AGENTE (CRÍTICO): Seu nome é 'Agente de Investigação Comercial LinkB2B'. Este é o nome do seu próprio sistema/plataforma de vendas. Você está ABSOLUTAMENTE PROIBIDO de buscar informações, contatos, deals ou atividades sobre a organização 'LinkB2B', pois ela representa o seu próprio sistema, e não o cliente externo sob investigação."
+        "(6) PROSPECÇÃO ATIVA (CRÍTICO): Se as ferramentas de histórico de comunicação retornarem ZERO resultados (nenhuma conversa no WhatsApp ou E-mail), NÃO bloqueie a execução! Isso significa que o lead é frio e VOCÊ TEM AUTORIZAÇÃO para iniciar o primeiro contato. Nesses casos, use as ferramentas de escrita (`whatsapp_send_message` ou `email_send`) para executar as tarefas de prospecção (como 'Apresentar empresa' ou 'Enviar proposta').\n"
+        "(7) IDENTIDADE: João Luccas (joao.moura@jferres.com.br ou qualquer e-mail do domínio jferres.com.br) é o vendedor/remetente (você / o usuário do sistema). Ele NUNCA deve ser cadastrado ou sugerido como contato (person/lead) de nenhuma empresa no Pipedrive. Os contatos reais e leads são sempre os destinatários/interlocutores externos (ex: Lgustavo/Luis Gustavo).\n"
+        "1. INFORMAÇÃO GERAL E BUSCAS\n"
+        "Se o usuário enviou uma ordem direta (ex: 'marque a tarefa', 'crie o contato'), você NÃO PRECISA investigar WhatsApp ou E-mail a menos que a tarefa envolva entender o contexto da conversa. Execute as ferramentas de alteração imediatamente!\n"
+        "Se a tarefa for abstrata ou estratégica (ex: 'quais os próximos passos', 'o que falei com fulano'), aí sim você DEVE usar ferramentas como `pipedrive_get_org`, `whatsapp_get_messages`, etc.\n"
+        "(7) SENSO DE PROSPECÇÃO (CRÍTICO): Você tem a capacidade de guardar a história de um relacionamento. Quando o usuário mencionar que conheceu um lead em um evento, indicação, feira, etc., você DEVE usar a ferramenta `update_prospecting_context` para salvar essa informação qualitativa e a 'temperature' (ex: 'morno', 'quente'). Nas suas comunicações futuras (e-mail, whatsapp), SEMPRE leia o 'prospecting_context' retornado por `pipedrive_get_org` ou `pipedrive_get_persons` e USE esse contexto para criar empatia e rapport na mensagem, adaptando o tom de acordo com a origem do lead.\n\n"
+        "(8) NOME DO AGENTE: Seu nome é 'Agente de Investigação Comercial LinkB2B'. Este é o nome do seu próprio sistema/plataforma de vendas. Você está ABSOLUTAMENTE PROIBIDO de buscar informações, contatos, deals ou atividades sobre a organização 'LinkB2B', pois ela representa o seu próprio sistema, e não o cliente externo sob investigação."
     )
 
     # ── Tratamento Específico: Tarefas do Dia (atalho eficiente) ─────────────
@@ -569,9 +593,35 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
     # (Claude/Gemini) é inteligente o suficiente para escolher a ferramenta certa.
     #
     # Isso é equivalente ao "agent mode" do GitHub Copilot.
-    _is_investigation = query_type in ("deal_status", "agent_workflow")
+    # Detecta se o MODO CONTEXTO está ativo no histórico de mensagens
+    context_mode_active = False
+    command_mode_active = False
+    for msg in messages:
+        if msg.get("role") == "user":
+            msg_content = str(msg.get("content", ""))
+            if "[MODO CONTEXTO" in msg_content:
+                context_mode_active = True
+            
+            # Detecta comandos diretos
+            content_lower = msg_content.lower().strip()
+            import re as _re
+            if _re.search(r'\b(execute|realizar|realize|marque|crie|adicione|atualize|altere|mande|envie|agende|ligue)\b', content_lower):
+                command_mode_active = True
+
+    # Se estiver dentro de um chat de uma empresa específica (org_id > 0), é sempre sobre um negócio específico,
+    # exigindo a investigação completa, a menos que estejamos no MODO CONTEXTO, puxando tarefas globais,
+    # ou executando um comando direto.
+    _is_investigation = query_type in ("deal_status", "agent_workflow") or (
+        org_id is not None
+        and org_id > 0
+        and query_type != "pipedrive_tasks"
+        and not context_mode_active
+        and not command_mode_active
+    )
     _investigation_active = bool(
-        {"pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities"} & tools_called
+        not context_mode_active 
+        and not command_mode_active 
+        and ({"pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities"} & tools_called)
     )
 
     if not _is_investigation and not _investigation_active:
@@ -598,7 +648,11 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                 "Apresente os resultados de forma altamente profissional, organizada e detalhada para o usuário.\n"
                 "Se o usuário fez uma pergunta específica, responda diretamente usando os dados coletados.\n"
                 "Se as tarefas incluem empresas, agrupe por empresa. Se são e-mails, organize por data.\n"
-                "NÃO chame mais ferramentas. Escreva apenas a resposta final."
+                "AÇÃO E CONTINUIDADE: Se a solicitação do usuário exige uma ação concreta (como criar ou atualizar tarefas no CRM, enviar mensagens de WhatsApp/E-mail, criar notas ou sugerir próximos passos estrategicamente), você DEVE chamar a ferramenta correspondente agora.\n"
+                "REGRA CRÍTICA DE COMANDOS DIRETOS: Nunca escreva apenas 'Tarefa concluída' se você não executou as ferramentas solicitadas pelo usuário! Se o usuário pediu para atualizar uma tarefa e criar um contato, você DEVE emitir a chamada para `pipedrive_update_task` primeiro. No próximo turno você criará o contato.\n"
+                "IMPORTANTE: Se você precisa fazer MAIS DE UMA ação (ex: atualizar uma tarefa E criar um contato), chame APENAS UMA FERRAMENTA agora (ex: pipedrive_update_task). Assim que ela terminar, você chamará a próxima no turno seguinte. Não tente chamar duas ferramentas de escrita ao mesmo tempo.\n"
+                "Se você não encontrou os IDs necessários nos dados coletados, explique isso CLARAMENTE ao usuário em vez de encerrar a conversa.\n"
+                "Caso contrário (se for apenas uma pergunta informativa e você já tiver todos os dados para respondê-la), NÃO chame mais ferramentas e escreva apenas a resposta final."
             )
 
         # ── Primeiro turno: Prompt Universal com TODAS as ferramentas ──
@@ -611,7 +665,8 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             "(1) Execute diretamente — NUNCA peça permissão ou faça perguntas de confirmação.\n"
             "(2) Uma ferramenta por turno — nunca duas.\n"
             "(3) Se a pergunta pode ser respondida com dados do sistema, USE a ferramenta certa.\n"
-            "(4) Se é uma saudação ou pergunta sobre o sistema, responda diretamente SEM ferramentas.\n\n"
+            "(4) Se o usuário fornecer DADOS DE UM CONTATO (nome, email, telefone), PRIORIZE CADASTRAR/ATUALIZAR IMEDIATAMENTE usando `pipedrive_create_person` em vez de investigar.\n"
+            "(5) Se é uma saudação ou pergunta sobre o sistema, responda diretamente SEM ferramentas.\n\n"
             "FERRAMENTAS DISPONÍVEIS E QUANDO USAR CADA UMA:\n\n"
             "📋 TAREFAS E AGENDA:\n"
             "• pipedrive_get_all_activities → Para 'o que tenho pra fazer?', 'minhas tarefas', 'agenda de hoje', "
@@ -629,6 +684,12 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             "• email_get_contact_history → Para buscar emails de um contato ou empresa específica\n\n"
             "🔍 PESQUISA:\n"
             "• web_search_external → Para pesquisar informações na web sobre empresas/contatos\n\n"
+            "✍️ AÇÕES DE ESCRITA / COMANDOS DIRETOS:\n"
+            "• pipedrive_create_person → Para criar um novo contato (ATENÇÃO: use a chave 'name', NUNCA 'contact_name')\n"
+            "• pipedrive_update_task → Para marcar uma tarefa como concluída (done=true) ou alterar detalhes\n"
+            "• pipedrive_create_task → Para criar uma nova tarefa / follow-up\n"
+            "• pipedrive_create_note → Para adicionar uma nota a um deal\n"
+            "• email_send / whatsapp_send_message → Para enviar comunicações ativas\n\n"
             "DECISÃO: Leia a mensagem do usuário, escolha a ferramenta mais adequada e execute-a imediatamente.\n"
             "Se nenhuma ferramenta for necessária (saudação, pergunta sobre o sistema), responda diretamente com "
             "uma saudação calorosa, apresente-se e diga brevemente o que pode fazer pelo usuário."
@@ -716,7 +777,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             + " PROIBIDO: não use web_search_external durante investigação de empresa, EXCETO como último recurso para descobrir o domínio do site/e-mail caso não encontre contatos."
             + "\nPROIBIDO: NUNCA passe nomes de negócios (Deals) ou emojis nos campos de contato. Use APENAS o nome exato da empresa ou da pessoa."
             + "\n\nPRIORIDADE: examine as atividades para decidir a ordem. Se uma tarefa menciona 'fale com X' ou 'aguardando Y': essa pessoa vem antes."
-            + "\nFOCO EXCLUSIVO NO CONTATO ATIVO (REGRA DE OURO): Se você identificar que as comunicações ativas da empresa estão sendo centralizadas em um interlocutor específico (ex: Gabriel, com mais de 10 mensagens no WhatsApp ou e-mails maduros), você deve focar EXCLUSIVAMENTE nele. NÃO gaste tokens nem tempo de execução buscando ou investigando contatos inativos/periféricos (como Gustavo, WOLDASCH, Wagner etc.), exceto se o contato ativo o recomendou explicitamente. Se o contato ativo já resolve o histórico, encerre as buscas adicionais e chame 'generate_dossier' imediatamente."
+            + "\nFOCO EXCLUSIVO NO CONTATO ATIVO E PREVENÇÃO DE LOOP (REGRA DE OURO): Se você encontrar um contato com comunicação recente relevante que já responde à dúvida (ex: proposta enviada, preenchimento, negociação ativa, etc.), VOCÊ DEVE INTERROMPER A INVESTIGAÇÃO DE OUTROS CONTATOS IMEDIATAMENTE. NÃO pesquise outros contatos ou a organização se já encontrou o contexto com a pessoa principal. Se você decidiu parar a investigação antecipadamente por ter encontrado conteúdo relevante, escreva 'REGRA DE OURO' ou 'PARADA ANTECIPADA' no seu raciocínio e você PODE E DEVE chamar 'generate_dossier' ou escrever sua resposta final, ignorando a lista de pendências acima."
             + "\nRADAR: ao ler conversas, se aparecer nome novo, investigue também — mesmo fora do Pipedrive."
             + "\nCROSS-VALIDAÇÃO: compare Pipedrive com comunicações — aponte discrepâncias de datas, status ou pessoas não cadastradas."
         )

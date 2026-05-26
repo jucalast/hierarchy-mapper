@@ -15,6 +15,7 @@ from .pipedrive import (
     exec_pipedrive_get_activities,
     exec_pipedrive_get_deals,
     exec_pipedrive_get_all_activities,
+    exec_pipedrive_get_deals_without_tasks,
 )
 from .communication import (
     exec_whatsapp_get_messages,
@@ -29,6 +30,7 @@ from .intelligence import (
     exec_generate_call_script,
     exec_generate_sales_message,
     exec_generate_dossier,
+    exec_update_prospecting_context,
     exec_open_hierarchy_drawer,
     exec_suggest_next_actions,
     exec_evaluate_prospects,
@@ -153,7 +155,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "executor": exec_pipedrive_get_deals,
     },
     "pipedrive_get_activities": {
-        "description": "Busca atividades e tarefas pendentes de uma organização específica no Pipedrive.",
+        "description": "Busca atividades (pendentes e concluídas), tarefas e notas/anotações (notes) de uma organização específica no Pipedrive.",
         "args_schema": {"org_name": "string (nome da empresa)"},
         "type": "read",
         "executor": exec_pipedrive_get_activities,
@@ -163,6 +165,12 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "args_schema": {},
         "type": "read",
         "executor": exec_pipedrive_get_all_activities,
+    },
+    "pipedrive_get_deals_without_tasks": {
+        "description": "Busca todos os negócios (deals) abertos DO USUÁRIO ATUAL no Pipedrive que NÃO possuem nenhuma tarefa/atividade pendente programada (undone_activities_count = 0). Eles podem ter atividades passadas concluídas, mas nenhuma em aberto no momento. Use para encontrar negócios esquecidos ou que precisam de follow-up.",
+        "args_schema": {},
+        "type": "read",
+        "executor": exec_pipedrive_get_deals_without_tasks,
     },
     "pipedrive_update_deal": {
         "description": "Atualiza campos de um deal no Pipedrive (stage_id, status, value etc.). Requer confirmação.",
@@ -277,6 +285,17 @@ TOOLS: Dict[str, Dict[str, Any]] = {
     },
 
     # ── Consolidação ──────────────────────────────────────────────────────────
+    "update_prospecting_context": {
+        "description": "Salva o contexto qualitativo e a temperatura do lead na base de dados (Ex: 'Lead morno, trazido pelo usuário da feira X'). Use SEMPRE que descobrir a origem de um lead manual ou aprender uma informação vital de relacionamento.",
+        "args_schema": {
+            "org_id": "int opcional (ID da empresa)",
+            "person_id": "int opcional (ID da pessoa)",
+            "temperature": "string opcional ('cold', 'warm', 'hot', 'contacted')",
+            "context": "string (texto descritivo detalhando o contexto, origem ou relação)",
+        },
+        "type": "read", # Read para não precisar de confirmação para salvar memória interna
+        "executor": exec_update_prospecting_context,
+    },
     "generate_dossier": {
         "description": (
             "Chame esta ferramenta UMA VEZ, após ter esgotado TODAS as fontes "
@@ -398,7 +417,7 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
 
     # ── WhatsApp ──────────────────────────────────────────────────────────────
     if tool_name == "whatsapp_send_message":
-        result = await exec_whatsapp_send_message(args, org_id=org_id)
+        result = await exec_whatsapp_send_message(args, org_id=org_id, attachment_path=args.get("attachment_path"))
         if result.get("ok"):
             await _log_activity_bg(
                 "whatsapp_sent",
@@ -420,6 +439,12 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
 
         # Resolve attachment_name → caminho absoluto via settings
         attachment_paths: list[str] = []
+        
+        # Adiciona anexo customizado feito pelo usuário na confirmação
+        user_attachment_path = args.get("attachment_path")
+        if user_attachment_path and _os.path.exists(user_attachment_path):
+            attachment_paths.append(user_attachment_path)
+            
         att_name = args.get("attachment_name", "")
         if att_name:
             try:
@@ -458,13 +483,19 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
     elif tool_name == "email_reply":
         entry_id = args.get("entry_id", "")
         body = args.get("body", "")
+        
+        attachment_paths: list[str] = []
+        user_attachment_path = args.get("attachment_path")
+        if user_attachment_path and _os.path.exists(user_attachment_path):
+            attachment_paths.append(user_attachment_path)
+            
         if not entry_id or not body:
             return {"ok": False, "error": "entry_id e body são obrigatórios"}
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 r = await client.post(
                     f"{EMAIL_SERVICE_BASE}/reply",
-                    json={"entry_id": entry_id, "body": body, "reply_all": True},
+                    json={"entry_id": entry_id, "body": body, "reply_all": True, "attachment_paths": attachment_paths or None},
                 )
                 ok = r.status_code in (200, 201, 202)
                 if ok:
@@ -532,6 +563,8 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
             data: dict = {"subject": subject, "type": task_type, "note": note}
             if deal_id:
                 data["deal_id"] = int(deal_id)
+            if pd_org_id:
+                data["org_id"] = int(pd_org_id)
             if due_date:
                 data["due_date"] = due_date
 
@@ -586,7 +619,7 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
 
     # ── Pipedrive: criar pessoa/contato ────────────────────────────────────────
     elif tool_name == "pipedrive_create_person":
-        name = args.get("name")
+        name = args.get("name") or args.get("contact_name")
         email = args.get("email")
         phone = args.get("phone")
         arg_org_id = args.get("org_id")
@@ -622,6 +655,8 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
                             "POST", "notes",
                             json={"content": f"👤 Novo contato adicionado via Assistente V2: {name} ({email or 'sem email'})", "deal_id": deal_id}
                         )
+                        if person_id:
+                            await pipedrive_service.update_deal(deal_id, {"person_id": person_id})
                 except Exception:
                     pass
             return {"ok": ok, "result": f"Contato '{name}' adicionado com sucesso" if ok else f"Erro ao adicionar contato: {result.get('error', 'desconhecido')}"}

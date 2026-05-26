@@ -9,6 +9,7 @@
   --chat-bg-primary:   #131313;   /* sw-sidebar */
   --chat-bg-secondary: rgba(255, 255, 255, 0.04);
   --chat-bg-tertiary:  rgba(255, 255, 255, 0.02);
+  --chat-console-bg:   #1e1e1e;
 
   /* ── Borders ──────────────────────────── */
   --chat-border-color: rgba(255, 255, 255, 0.15);  /* sw-border-strong */
@@ -70,6 +71,7 @@
   --chat-bg-primary:   #ffffff;
   --chat-bg-secondary: #ececef;
   --chat-bg-tertiary:  #ffffff;
+  --chat-console-bg:   #e5e5e5;
 
   /* Borders */
   --chat-border-color: rgba(0, 0, 0, 0.10);

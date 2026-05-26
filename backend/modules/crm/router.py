@@ -115,6 +115,18 @@ async def update_pipedrive_org(org_id: int, payload: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.put("/pipedrive/activities/{activity_id}")
+async def update_pipedrive_activity(activity_id: int, payload: Dict[str, Any]):
+    """Atualiza dados de uma atividade no Pipedrive (ex: marcar como concluída)."""
+    try:
+        success = await pipedrive_service.update_activity(activity_id, payload)
+        if success:
+            return {"status": "success", "message": f"Atividade {activity_id} atualizada no Pipedrive."}
+        raise Exception("Erro ao atualizar atividade no Pipedrive.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/pipedrive/organizations/{org_id}/details")
 async def get_org_details(org_id: int):
     """Retorna o 360 da empresa: Tarefas, contatos, negócios e notas."""

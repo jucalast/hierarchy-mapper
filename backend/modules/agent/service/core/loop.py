@@ -42,13 +42,15 @@ _PENDING: Dict[str, Dict[str, Any]] = {}
 
 
 def _suggest_actions_done(messages: list) -> bool:
-    """Retorna True se suggest_next_actions já foi chamado em alguma mensagem do histórico."""
+    """Retorna True se suggest_next_actions foi efetivamente executada com sucesso."""
     for msg in messages:
         content = msg.get("content", "")
         if isinstance(content, list):
             for block in content:
-                if block.get("type") == "tool_use" and block.get("name") == "suggest_next_actions":
-                    return True
+                if block.get("type") == "tool_result" and block.get("tool_name") == "suggest_next_actions":
+                    res_content = str(block.get("content", ""))
+                    if "SKIPPED" not in res_content and "Erro" not in res_content:
+                        return True
     return False
 
 
@@ -411,7 +413,7 @@ async def _agent_loop(
         if stop_reason == "end_turn" or not tool_use_blocks:
             response_text = " ".join(b.get("text", "") for b in text_blocks).strip()
             if not response_text:
-                response_text = "Tarefa concluída."
+                response_text = "(Erro interno: O agente não gerou resposta nem chamou ferramentas no Pipedrive. Isso geralmente ocorre quando ele não consegue encontrar a tarefa com o nome exato que você pediu. Tente pedir para ele listar as tarefas primeiro, ou verifique se o nome está correto.)"
 
             # Modo execução direta: verificar se a Fase 1 foi concluída antes de encerrar
             if direct_action and _is_task_action:
@@ -864,7 +866,21 @@ async def _agent_loop(
                     _status = _build_phase_status(_msgs_with_current, query_type=query_type, org_id=org_id)
                     # Para queries não-investigativas, o modo universal já controla a completude.
                     # Para investigações, detectamos pela fase no _status.
-                    _is_non_investigation = query_type not in ("deal_status", "agent_workflow")
+                    # Detecta se o MODO CONTEXTO está ativo no histórico de mensagens
+                    context_mode_active = False
+                    for msg in messages:
+                        if msg.get("role") == "user" and "[MODO CONTEXTO" in str(msg.get("content", "")):
+                            context_mode_active = True
+                            break
+
+                    # Determina se a consulta exige investigação de negócio (chat dedicado de empresa org_id > 0)
+                    _is_investigation = query_type in ("deal_status", "agent_workflow") or (
+                        org_id is not None
+                        and org_id > 0
+                        and query_type != "pipedrive_tasks"
+                        and not context_mode_active
+                    )
+                    _is_non_investigation = not _is_investigation
                     _is_complete = (
                         _is_non_investigation
                         or _is_task_action
@@ -874,6 +890,8 @@ async def _agent_loop(
                         or "apresente os" in _status.lower()
                         or "escreva a resposta final" in _status.lower()
                         or "não chame mais ferramentas" in _status.lower()
+                        or "regra de ouro" in content.lower()
+                        or "parada antecipada" in content.lower()
                     )
 
                     if not _is_complete and stop_reason == "end_turn" and not tool_use_blocks:
@@ -927,7 +945,13 @@ async def _agent_loop(
                                 f"Dossiê entregue. DADOS REAIS EXTRAÍDOS DO HISTÓRICO (USE APENAS ESTES IDS):\n{real_data_str}\n\n"
                                 f"RESUMO DAS FONTES:\n{context_str}\n\n"
                                 "Você é um Consultor de Vendas B2B sênior e altamente estratégico. "
-                                "Chame OBRIGATORIAMENTE 'suggest_next_actions' com 3-6 ações específicas, contextualizadas e comercialmente brilhantes.\n"
+                                "Chame OBRIGATORIAMENTE 'suggest_next_actions' com ações específicas, contextualizadas e comercialmente brilhantes.\n"
+                                "ATENÇÃO: Se a busca retornou uma LISTA de entidades (ex: 12 negócios sem tarefas, múltiplos prospects), "
+                                "VOCÊ DEVE GERAR UMA AÇÃO INDIVIDUAL PARA CADA UM DELES. NÃO agrupe ações e NÃO resuma. "
+                                "Você pode e deve gerar até 20 ações se houver 20 empresas na lista.\n"
+                                "Avalie inteligentemente o status de cada entidade na lista. Por exemplo: se um negócio sem tarefa possuir o aviso 'SEM CONTATO', a tarefa que você deve criar para ele deverá se focar ativamente em 'Procurar contato/Encontrar decisor' ao invés de follow-ups genéricos.\n"
+                                "MUITO IMPORTANTE: Não forneça uma introdução gigante em texto Markdown antes de chamar as actions. "
+                                "Deixe que os botões (actions) gerados mostrem o que precisa ser feito.\n"
                                 "Cada ação DEVE ter:\n"
                                 "• 'label': texto curto, persuasivo e atraente para o botão (comercialmente focado)\n"
                                 "• 'prompt': instrução autossuficiente com IDs e parâmetros REAIS obtidos nas buscas.\n\n"
@@ -1099,40 +1123,64 @@ async def _agent_loop(
 
             tool_meta = TOOLS[tool_name]
 
+            _INVESTIGATION_REQUIRED = {"whatsapp_send_message", "email_send", "email_reply", "pipedrive_create_task", "pipedrive_create_person", "suggest_next_actions"}
+            if tool_name in _INVESTIGATION_REQUIRED:
+                try:
+                    _phase = _build_phase_status(messages, query_type=query_type, org_id=org_id)
+                    
+                    context_mode_active = False
+                    command_mode_active = False
+                    for msg in messages:
+                        if msg.get("role") == "user":
+                            _content = str(msg.get("content", "")).lower()
+                            if "[MODO CONTEXTO" in _content:
+                                context_mode_active = True
+                            import re as _re
+                            if _re.search(r'\b(execute|realizar|realize|marque|crie|adicione|atualize|altere|mande|envie|agende|ligue)\b', _content):
+                                command_mode_active = True
+
+                    _is_investigation = query_type in ("deal_status", "agent_workflow") or (
+                        org_id is not None
+                        and org_id > 0
+                        and query_type != "pipedrive_tasks"
+                        and not context_mode_active
+                        and not command_mode_active
+                    )
+
+                    _write_allowed = (
+                        direct_action 
+                        or _is_task_action 
+                        or "Fase final" in _phase 
+                        or "Todas as fontes foram investigadas" in _phase
+                        or not _is_investigation
+                    )
+                except Exception:
+                    _write_allowed = True
+
+                if not _write_allowed:
+                    _block_reason = (
+                        "criar tarefas embasadas" if tool_name == "pipedrive_create_task"
+                        else "criar novos contatos" if tool_name == "pipedrive_create_person"
+                        else "sugerir próximos passos comerciais" if tool_name == "suggest_next_actions"
+                        else "enviar mensagens ou emails"
+                    )
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": tool_id,
+                        "tool_name": tool_name,
+                        "content": (
+                            f"BLOQUEADO: complete a investigação de comunicação (whatsapp_get_messages e email_get_contact_history) antes de {_block_reason}. "
+                            + _phase
+                        ),
+                        "is_error": False,
+                    })
+                    continue
+
             # Ferramenta de ESCRITA — sempre exige confirmação do usuário, inclusive em direct_action.
             # O direct_action já foi aprovado pelo usuário (ação sugerida), mas qualquer
             # side-effect externo (enviar email, atualizar CRM, enviar WhatsApp) requer
             # uma segunda confirmação explícita para evitar ações não intencionais.
             if tool_meta["type"] == "write":
-                # Ferramentas que exigem investigação completa antes de serem usadas:
-                # - Comunicação externa (WhatsApp/Email): precisa de contexto para não enviar mensagem errada
-                # - Criação de tarefas (pipedrive_create_task): precisa de contexto para criar tarefas embasadas
-                # Ferramentas de CRM simples (update, note) não precisam — são operações de manutenção.
-                _INVESTIGATION_REQUIRED = {"whatsapp_send_message", "email_send", "email_reply", "pipedrive_create_task"}
-                if tool_name in _INVESTIGATION_REQUIRED:
-                    try:
-                        _phase = _build_phase_status(messages, query_type=query_type, org_id=org_id)
-                        _write_allowed = direct_action or _is_task_action or "Fase final" in _phase or query_type not in ("agent_workflow", "deal_status")
-                    except Exception:
-                        _write_allowed = True
-
-                    if not _write_allowed:
-                        _block_reason = (
-                            "criar tarefas embasadas" if tool_name == "pipedrive_create_task"
-                            else "enviar mensagens ou emails"
-                        )
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": tool_id,
-                            "tool_name": tool_name,
-                            "content": (
-                                f"BLOQUEADO: complete a investigação de comunicação antes de {_block_reason}. "
-                                + _phase
-                            ),
-                            "is_error": False,
-                        })
-                        continue
-
                 if write_tool_pending is None:
                     call_id = f"tc_{iteration}_{uuid.uuid4().hex[:6]}"
                     write_tool_pending = {
@@ -1184,187 +1232,157 @@ async def _agent_loop(
             call_id = f"tc_{iteration}_{uuid.uuid4().hex[:6]}"
             read_blocks.append((block, call_id, executor))
 
-        # Executa ferramentas de leitura SEQUENCIALMENTE — uma por vez.
-        # Se o modelo enviou múltiplas (desobedeceu a instrução), executa a primeira
-        # e marca as demais como "skip" para que o modelo as chame individualmente nas
-        # próximas iterações. Isso garante que a API receba tool_result para todos os
-        # tool_use do turno (obrigatoriedade da spec), sem quebrar o fluxo narrativo.
+        # Executa TODAS as ferramentas de leitura SEQUENCIALMENTE no mesmo turno.
+        # Isso garante que a API receba tool_result para todos os
+        # tool_use do turno (obrigatoriedade da spec), sem quebrar o fluxo narrativo
+        # e sem confundir o LLM com mensagens de erro falsas.
         if read_blocks:
-            first_block, first_call_id, first_executor = read_blocks[0]
-            skipped_blocks = read_blocks[1:]
+            for first_block, first_call_id, first_executor in read_blocks:
+                tool_args = first_block.get("input") or {}
+                tool_id = first_block.get("id", "")
+                tool_name = first_block.get("name", "")
 
-            # Executa a primeira ferramenta
-            tool_args = first_block.get("input") or {}
-            tool_id = first_block.get("id", "")
-            tool_name = first_block.get("name", "")
+                if tool_name in _DEDUP_READ_TOOLS:
+                    if tool_name in _DEDUP_PIPEDRIVE:
+                        _tool_call_history.add(tool_name)
+                    else:
+                        _exec_contact_id = (
+                            tool_args.get("contact") or
+                            tool_args.get("contact_name") or
+                            tool_args.get("org_name") or ""
+                        ).lower().strip()
+                        _tool_call_history.add(f"{tool_name}:{_exec_contact_id}")
 
-            # Registra no histórico de dedup SOMENTE a ferramenta que vai executar.
-            # As ferramentas em skipped_blocks serão tentadas de novo nas próximas
-            # iterações, então NÃO devem ser marcadas como "já executadas" aqui.
-            # Registra no histórico de dedup com a chave correta (igual à usada no check acima).
-            if tool_name in _DEDUP_READ_TOOLS:
-                if tool_name in _DEDUP_PIPEDRIVE:
-                    _tool_call_history.add(tool_name)
-                else:
-                    _exec_contact_id = (
-                        tool_args.get("contact") or
-                        tool_args.get("contact_name") or
-                        tool_args.get("org_name") or ""
-                    ).lower().strip()
-                    _tool_call_history.add(f"{tool_name}:{_exec_contact_id}")
+                yield _emit({"type": "tool_call", "call_id": first_call_id, "tool": tool_name,
+                             "args": tool_args, "label": _get_label(tool_name, tool_args)})
 
-            yield _emit({"type": "tool_call", "call_id": first_call_id, "tool": tool_name,
-                         "args": tool_args, "label": _get_label(tool_name, tool_args)})
+                _raw_log(process_id, "tool_execute_start", {"tool": tool_name, "args": tool_args, "call_id": first_call_id})
 
-            _raw_log(process_id, "tool_execute_start", {"tool": tool_name, "args": tool_args, "call_id": first_call_id})
-
-            try:
-                import inspect
-                exec_kwargs = {}
                 try:
-                    sig = inspect.signature(first_executor)
-                    params = sig.parameters
-                    if "org_id" in params:
-                        exec_kwargs["org_id"] = org_id
-                    if "messages" in params:
-                        exec_kwargs["messages"] = messages
-                    if "process_id" in params:
-                        exec_kwargs["process_id"] = process_id
-                except Exception:
-                    pass
-
-                tool_result = await first_executor(tool_args, **exec_kwargs)
-                _raw_log(process_id, "tool_execute_result", {"tool": tool_name, "result_raw": tool_result, "call_id": first_call_id})
-            except Exception as e:
-                tool_result = {"ok": False, "error": str(e)}
-
-            # Retry automático: se a ferramenta falhou por erro transitório, tenta mais uma vez.
-            # Não retenta erros esperados como "não encontrado" ou "0 resultados".
-            if not tool_result.get("ok"):
-                _err = str(tool_result.get("error", "")).lower()
-                _expected = any(x in _err for x in [
-                    "não encontrad", "not found", "nenhum", "0 contatos", "0 deal",
-                    "0 mensagens", "0 e-mail", "sem histórico",
-                ])
-                if not _expected:
+                    import inspect
+                    exec_kwargs = {}
                     try:
-                        import asyncio as _asyncio
-                        await _asyncio.sleep(1)
-                        # Reutiliza exec_kwargs preparados acima
-                        tool_result = await first_executor(tool_args, **exec_kwargs)
-                    except Exception as e:
-                        tool_result = {"ok": False, "error": str(e)}
-
-            ok = tool_result.get("ok", False)
-            # Salva o org_id resolvido no estado da sessão para as próximas iterações
-            if ok and isinstance(tool_result, dict):
-                org_val = tool_result.get("org")
-                org_id_from_org = org_val.get("id") if isinstance(org_val, dict) else None
-                res_org_id = tool_result.get("org_id") or org_id_from_org
-                if res_org_id:
-                    try:
-                        org_id = int(res_org_id)
-                        log.info("agent.session_org_id.updated", org_id=org_id, tool_name=tool_name)
-                    except (ValueError, TypeError):
+                        sig = inspect.signature(first_executor)
+                        params = sig.parameters
+                        if "org_id" in params:
+                            exec_kwargs["org_id"] = org_id
+                        if "messages" in params:
+                            exec_kwargs["messages"] = messages
+                        if "process_id" in params:
+                            exec_kwargs["process_id"] = process_id
+                    except Exception:
                         pass
 
-            # Captura o dono da tarefa (person_name) antes da sanitização apagar a estrutura
-            if ok and tool_name == "pipedrive_get_activities" and not _session_task_person:
-                _pending_acts = (tool_result.get("pending") or []) if isinstance(tool_result, dict) else []
-                for _a in _pending_acts:
-                    if isinstance(_a, dict) and _a.get("person_name"):
-                        _session_task_person = _a["person_name"]
-                        log.info("agent.session_task_person.set", person=_session_task_person)
-                        break
+                    tool_result = await first_executor(tool_args, **exec_kwargs)
+                    _raw_log(process_id, "tool_execute_result", {"tool": tool_name, "result_raw": tool_result, "call_id": first_call_id})
+                except Exception as e:
+                    tool_result = {"ok": False, "error": str(e)}
 
-            summary = tool_result.get("summary") or tool_result.get("error") or ("OK" if ok else "Erro")
-            yield _emit({"type": "tool_result", "call_id": first_call_id, "tool": tool_name, "summary": summary, "ok": ok})
-            yield _emit({"type": "context_saved"})
+                if not tool_result.get("ok"):
+                    _err = str(tool_result.get("error", "")).lower()
+                    _expected = any(x in _err for x in [
+                        "não encontrad", "not found", "nenhum", "0 contatos", "0 deal",
+                        "0 mensagens", "0 e-mail", "sem histórico",
+                    ])
+                    if not _expected:
+                        try:
+                            import asyncio as _asyncio
+                            await _asyncio.sleep(1)
+                            tool_result = await first_executor(tool_args, **exec_kwargs)
+                        except Exception as e:
+                            tool_result = {"ok": False, "error": str(e)}
 
-            if ok and summary:
-                _collected_tool_summaries.append(f"[{tool_name}] {summary}")
+                ok = tool_result.get("ok", False)
+                if ok and isinstance(tool_result, dict):
+                    org_val = tool_result.get("org")
+                    org_id_from_org = org_val.get("id") if isinstance(org_val, dict) else None
+                    res_org_id = tool_result.get("org_id") or org_id_from_org
+                    if res_org_id:
+                        try:
+                            org_id = int(res_org_id)
+                            log.info("agent.session_org_id.updated", org_id=org_id, tool_name=tool_name)
+                        except (ValueError, TypeError):
+                            pass
 
-            if ok and tool_name == "suggest_next_actions":
-                actions = tool_result.get("actions", [])
-                if actions:
-                    yield _emit({"type": "suggested_actions", "actions": actions})
+                if ok and tool_name == "pipedrive_get_activities" and not _session_task_person:
+                    _pending_acts = (tool_result.get("pending") or []) if isinstance(tool_result, dict) else []
+                    for _a in _pending_acts:
+                        if isinstance(_a, dict) and _a.get("person_name"):
+                            _session_task_person = _a["person_name"]
+                            log.info("agent.session_task_person.set", person=_session_task_person)
+                            break
 
-            if ok and tool_name == "open_hierarchy_drawer":
-                yield _emit({
-                    "type": "hierarchy_mapping_required",
-                    "org_name": tool_result.get("org_name"),
-                    "org_id": tool_result.get("org_id"),
-                    "deal_id": tool_result.get("deal_id"),
-                    "activity_id": tool_result.get("activity_id"),
-                    "pre_task_id": tool_result.get("pre_task_id"),
-                })
-                # Para aqui — usuário precisa completar o mapeamento antes de o agente continuar.
-                # A continuação é enviada automaticamente quando o worker dispara 'done'.
-                if not _final_emitted:
-                    _final_emitted = True
-                    _org = tool_result.get("org_name", "a empresa")
-                    yield _emit({"type": "final", "response": f"Empresa **{_org}** aberta no mapeador. Insira o CNPJ e inicie o mapeamento — assim que terminar, continuarei automaticamente."})
-                return
+                summary = tool_result.get("summary") or tool_result.get("error") or ("OK" if ok else "Erro")
+                yield _emit({"type": "tool_result", "call_id": first_call_id, "tool": tool_name, "summary": summary, "ok": ok})
+                yield _emit({"type": "context_saved"})
 
-            # Para pipedrive_tasks: gera cards de ação inteligentes direto das atividades.
-            # Prompt contextualizado por tipo de tarefa — sem LLM extra.
-            if ok and tool_name == "pipedrive_get_all_activities" and query_type == "pipedrive_tasks":
-                _pd_actions = []
-                for _act in tool_result.get("overdue", []):
-                    _subj = _act.get("subject") or ""
-                    _org = _act.get("org") or ""
-                    _act_id = _act.get("id")
-                    if not _act_id:
-                        continue
-                    _pd_actions.append({
-                        "label": f"⚠️ ATRASADA → {_subj}" + (f"  ·  {_org}" if _org else ""),
-                        "prompt": _build_task_action_prompt(
-                            _act_id, _subj, _org,
-                            _act.get("org_id"), _act.get("deal_id"),
-                            _act.get("type", ""), _act.get("note", "")
-                        ),
+                if ok and summary:
+                    _collected_tool_summaries.append(f"[{tool_name}] {summary}")
+
+                if ok and tool_name == "suggest_next_actions":
+                    actions = tool_result.get("actions", [])
+                    if actions:
+                        yield _emit({"type": "suggested_actions", "actions": actions})
+
+                if ok and tool_name == "open_hierarchy_drawer":
+                    yield _emit({
+                        "type": "hierarchy_mapping_required",
+                        "org_name": tool_result.get("org_name"),
+                        "org_id": tool_result.get("org_id"),
+                        "deal_id": tool_result.get("deal_id"),
+                        "activity_id": tool_result.get("activity_id"),
+                        "pre_task_id": tool_result.get("pre_task_id"),
                     })
-                for _act in tool_result.get("today", []):
-                    _subj = _act.get("subject") or ""
-                    _org = _act.get("org") or ""
-                    _act_id = _act.get("id")
-                    if not _act_id:
-                        continue
-                    _pd_actions.append({
-                        "label": f"{_subj}" + (f"  →  {_org}" if _org else ""),
-                        "prompt": _build_task_action_prompt(
-                            _act_id, _subj, _org,
-                            _act.get("org_id"), _act.get("deal_id"),
-                            _act.get("type", ""), _act.get("note", "")
-                        ),
-                    })
-                if _pd_actions:
-                    yield _emit({"type": "suggested_actions", "actions": _pd_actions})
+                    if not _final_emitted:
+                        _final_emitted = True
+                        _org = tool_result.get("org_name", "a empresa")
+                        yield _emit({"type": "final", "response": f"Empresa **{_org}** aberta no mapeador. Insira o CNPJ e inicie o mapeamento — assim que terminar, continuarei automaticamente."})
+                    return
 
-            sanitized = _sanitize_result(tool_name, tool_result)
-            raw_content = json.dumps(sanitized, ensure_ascii=False)
-            # Limite de truncação dinâmico: atividades globais e emails precisam de mais espaço
-            _max_content = 4000 if tool_name in ("pipedrive_get_all_activities", "email_get_inbox", "email_get_contact_history") else 2000
-            if len(raw_content) > _max_content:
-                raw_content = raw_content[:_max_content] + "... [TRUNCADO]"
+                if ok and tool_name == "pipedrive_get_all_activities" and query_type == "pipedrive_tasks":
+                    _pd_actions = []
+                    for _act in tool_result.get("overdue", []):
+                        _subj = _act.get("subject") or ""
+                        _org = _act.get("org") or ""
+                        _act_id = _act.get("id")
+                        if not _act_id:
+                            continue
+                        _pd_actions.append({
+                            "label": f"⚠️ ATRASADA → {_subj}" + (f"  ·  {_org}" if _org else ""),
+                            "prompt": _build_task_action_prompt(
+                                _act_id, _subj, _org,
+                                _act.get("org_id"), _act.get("deal_id"),
+                                _act.get("type", ""), _act.get("note", "")
+                            ),
+                        })
+                    for _act in tool_result.get("today", []):
+                        _subj = _act.get("subject") or ""
+                        _org = _act.get("org") or ""
+                        _act_id = _act.get("id")
+                        if not _act_id:
+                            continue
+                        _pd_actions.append({
+                            "label": f"{_subj}" + (f"  →  {_org}" if _org else ""),
+                            "prompt": _build_task_action_prompt(
+                                _act_id, _subj, _org,
+                                _act.get("org_id"), _act.get("deal_id"),
+                                _act.get("type", ""), _act.get("note", "")
+                            ),
+                        })
+                    if _pd_actions:
+                        yield _emit({"type": "suggested_actions", "actions": _pd_actions})
 
-            tool_results.append({
-                "type": "tool_result",
-                "tool_use_id": tool_id,
-                "tool_name": tool_name,
-                "content": raw_content,
-            })
+                sanitized = _sanitize_result(tool_name, tool_result)
+                raw_content = json.dumps(sanitized, ensure_ascii=False)
+                _max_content = 4000 if tool_name in ("pipedrive_get_all_activities", "email_get_inbox", "email_get_contact_history") else 2000
+                if len(raw_content) > _max_content:
+                    raw_content = raw_content[:_max_content] + "... [TRUNCADO]"
 
-            # Marca ferramentas extras como skipped (protocolo exige tool_result para todas)
-            for skip_block, skip_call_id, _ in skipped_blocks:
-                skip_tool_id = skip_block.get("id", "")
-                skip_tool_name = skip_block.get("name", "")
                 tool_results.append({
                     "type": "tool_result",
-                    "tool_use_id": skip_tool_id,
-                    "tool_name": skip_tool_name,
-                    "content": "SKIPPED: chame apenas uma ferramenta por vez. Chame esta ferramenta individualmente na próxima resposta.",
-                    "is_error": False,
+                    "tool_use_id": tool_id,
+                    "tool_name": tool_name,
+                    "content": raw_content,
                 })
 
         # Pausa para ferramenta de escrita (leituras já foram executadas)
@@ -1389,6 +1407,10 @@ async def _agent_loop(
                 "process_id": process_id,
                 "parent_message_id": parent_message_id,
                 "action_index": action_index,
+                "direct_action": direct_action,
+                "preferred": preferred,
+                "strict_mode": strict_mode,
+                "query_type": query_type,
             }
 
             label_fn = TOOLS[tool_name].get("confirm_label")

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { RefreshCw, Inbox, MessageSquare, Mail } from 'lucide-react';
-import { communication } from '@/services/api';
+import { RefreshCw, Inbox, MessageSquare, Mail, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ai, communication } from '@/services/api';
 import type {
     TrackedContact,
     CachedConversation,
@@ -45,32 +45,230 @@ const resolveAvatar = (pic?: string): string | null => {
     return null;
 };
 
+const isUserEmail = (str: string | undefined, userEmail: string | undefined): boolean => {
+    if (!str || !userEmail) return false;
+    const cleanedStr = str.toLowerCase().trim();
+    const cleanedUser = userEmail.toLowerCase().trim();
+    
+    // Extract email from <...> or (...)
+    const emailMatch = cleanedStr.match(/<([^>]+)>/) || cleanedStr.match(/\(([^)]+)\)/);
+    const emailPart = emailMatch ? emailMatch[1].trim() : '';
+    
+    if (emailPart === cleanedUser) return true;
+    if (cleanedStr.includes(cleanedUser)) return true;
+    
+    const userPart = cleanedUser.split('@')[0];
+    if (userPart) {
+        // Check if legacy Exchange DN contains user part
+        const isLegacy = cleanedStr.startsWith('/') || cleanedStr.includes('o=exchangelabs') || cleanedStr.includes('cn=');
+        if (isLegacy && cleanedStr.includes(userPart)) {
+            return true;
+        }
+    }
+    
+    return false;
+};
+
+/**
+ * Limpa e formata o remetente de e-mail, especialmente para endereços internos do Exchange (LegacyExchangeDN)
+ * que começam com "/o=ExchangeLabs/ou=..."
+ */
+const cleanEmailSender = (fromStr: string, fallbackEmailOrName?: string, userEmail?: string): string => {
+    if (!fromStr) return '';
+    if (userEmail && isUserEmail(fromStr, userEmail)) {
+        return '(pra mim)';
+    }
+
+    const formatName = (str: string): string => {
+        return str
+            .replace(/\./g, ' ')
+            .split(' ')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ');
+    };
+
+    const isRawGuid = (str: string): boolean => {
+        const cleaned = str.trim().split(/[<(]/)[0].trim();
+        // Um GUID / identificador hexadecimal bruto possui apenas dígitos hexadecimais, hifens ou comprimento longo sem letras além de a-f
+        return /^[a-fA-F0-9\-_]+$/.test(cleaned) || (cleaned.length > 20 && !/[g-zG-Z]/.test(cleaned));
+    };
+
+    // Se contiver um e-mail padrão entre < > ou ( ), tenta extrair
+    const emailMatch = fromStr.match(/<([^>]+)>/) || fromStr.match(/\(([^)]+)\)/);
+    let emailPart = emailMatch ? emailMatch[1].trim() : '';
+    if (!emailPart && fromStr.includes('@')) {
+        emailPart = fromStr.trim();
+    }
+
+    let namePart = fromStr.split(/[<(]/)[0].trim();
+    let isLegacyDN = fromStr.startsWith('/') || fromStr.toLowerCase().includes('o=exchangelabs');
+    let extractedCN = '';
+    let isCnUgly = false;
+
+    if (isLegacyDN) {
+        const cnParts = fromStr.split(/cn=/i);
+        if (cnParts.length > 1) {
+            let lastPart = cnParts[cnParts.length - 1].trim();
+            lastPart = lastPart.split('/')[0].split(';')[0].trim();
+            
+            const hyphenParts = lastPart.split('-');
+            if (hyphenParts.length > 1) {
+                const possibleName = hyphenParts[hyphenParts.length - 1];
+                if (possibleName && possibleName.length > 2 && !/^\d+$/.test(possibleName)) {
+                    lastPart = possibleName;
+                }
+            }
+            extractedCN = lastPart;
+            isCnUgly = isRawGuid(lastPart);
+        }
+    }
+
+    if (extractedCN && !isCnUgly) {
+        return formatName(extractedCN);
+    }
+
+    if (isCnUgly || isRawGuid(namePart) || !namePart || namePart.includes('@') || isLegacyDN) {
+        const isFromFallback = fallbackEmailOrName && (
+            isLegacyDN || 
+            (emailPart && fallbackEmailOrName.toLowerCase().includes(emailPart.toLowerCase())) ||
+            (emailPart && emailPart.toLowerCase().includes(fallbackEmailOrName.split('@')[0].toLowerCase()))
+        );
+
+        if (isFromFallback && fallbackEmailOrName) {
+            if (fallbackEmailOrName.includes('@')) {
+                const username = fallbackEmailOrName.split('@')[0];
+                if (!isRawGuid(username)) {
+                    return formatName(username);
+                }
+            } else if (!isRawGuid(fallbackEmailOrName) && !fallbackEmailOrName.startsWith('/')) {
+                return formatName(fallbackEmailOrName);
+            }
+        }
+
+        if (emailPart) {
+            const username = emailPart.split('@')[0];
+            if (!isRawGuid(username)) {
+                return formatName(username);
+            }
+            return emailPart;
+        }
+    }
+
+    if (namePart && !isRawGuid(namePart) && !isLegacyDN) {
+        return formatName(namePart);
+    }
+
+    return fromStr;
+};
+
 /** Avatar com foto ou fallback de iniciais. */
 function ContactAvatar({
     name,
     channel,
     profilePic,
+    orgLogo,
+    orgDomain,
+    contactIdentifier,
     size = 36,
     className,
+    showChannelBadge = false,
 }: {
     name: string;
     channel: string;
     profilePic?: string;
+    orgLogo?: string;
+    orgDomain?: string;
+    contactIdentifier?: string;
     size?: number;
     className?: string;
+    showChannelBadge?: boolean;
 }) {
-    const src = resolveAvatar(profilePic);
+    const cleanedName = channel === 'email' ? cleanEmailSender(name) : name;
+    let src = resolveAvatar(profilePic);
+
+    if (!src) {
+        if (orgLogo) {
+            src = resolveAvatar(orgLogo);
+        } else {
+            const domain = orgDomain || (channel === 'email' && contactIdentifier?.includes('@') ? contactIdentifier.split('@').pop() : null);
+            const excludedDomains = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com'];
+            if (domain && !excludedDomains.includes(domain.toLowerCase().trim())) {
+                src = `https://unavatar.io/${domain.trim()}`;
+            }
+        }
+    }
     const [imgErr, setImgErr] = React.useState(false);
+
+    const badgeSize = Math.max(16, Math.round(size * 0.5));
+    const iconSize = Math.round(size * 0.24);
+
+    const renderBadge = () => {
+        if (!showChannelBadge) return null;
+        const isWa = channel === 'whatsapp';
+        const imgSrc = isWa ? '/wppicon.png' : '/outlook.png';
+
+        return (
+            <div
+                style={{
+                    position: 'absolute',
+                    bottom: -2,
+                    right: -2,
+                    width: badgeSize,
+                    height: badgeSize,
+                    borderRadius: '0px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: 'none',
+                    zIndex: 2,
+                    pointerEvents: 'none',
+                    overflow: 'visible',
+                }}
+            >
+                <img
+                    src={imgSrc}
+                    alt={channel}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        borderRadius: '0px',
+                        filter: 'none',
+                    }}
+                />
+            </div>
+        );
+    };
 
     if (src && !imgErr) {
         return (
-            <div className={className} style={{ width: size, height: size, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '1.5px solid var(--sw-border-strong)' }}>
+            <div 
+                className={className} 
+                style={{ 
+                    width: size, 
+                    height: size, 
+                    borderRadius: '50%', 
+                    overflow: 'visible', // Permite que o badge apareça fora dos limites circulares
+                    flexShrink: 0, 
+                    border: 'none',
+                    position: 'relative',
+                    boxSizing: 'border-box'
+                }}
+            >
                 <img
                     src={src}
-                    alt={name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    alt={cleanedName}
+                    style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover',
+                        borderRadius: '50%' // Garante o arredondamento perfeito da imagem interna
+                    }}
                     onError={() => setImgErr(true)}
                 />
+                {renderBadge()}
             </div>
         );
     }
@@ -85,10 +283,13 @@ function ContactAvatar({
                 alignItems: 'center', 
                 justifyContent: 'center',
                 borderRadius: '50%',
-                flexShrink: 0
+                flexShrink: 0,
+                position: 'relative',
+                overflow: 'visible' // Permite que o badge apareça fora dos limites circulares
             }}
         >
-            {initials(name)}
+            {initials(cleanedName)}
+            {renderBadge()}
         </div>
     );
 }
@@ -141,7 +342,26 @@ function WaConversation({ messages }: { messages: WaMessage[] }) {
 
 // ── Email Thread ──────────────────────────────────────────────────────────────
 
-function EmailConversation({ messages }: { messages: EmailMessage[] }) {
+function EmailConversation({ 
+    messages, 
+    contactName, 
+    contactIdentifier, 
+    userEmail 
+}: { 
+    messages: EmailMessage[]; 
+    contactName: string; 
+    contactIdentifier: string; 
+    userEmail: string; 
+}) {
+    const [expandedEmails, setExpandedEmails] = useState<Record<string, boolean>>({});
+
+    const toggleEmail = (entryId: string, isLatest: boolean) => {
+        setExpandedEmails(prev => ({
+            ...prev,
+            [entryId]: !(prev[entryId] !== undefined ? prev[entryId] : isLatest)
+        }));
+    };
+
     if (!messages.length)
         return (
             <div className={styles.noConversation}>
@@ -150,32 +370,90 @@ function EmailConversation({ messages }: { messages: EmailMessage[] }) {
         );
 
     return (
-        <>
-            {messages.map((m, i) => (
-                <div
-                    key={m.entryId || i}
-                    className={`${styles.emailCard} ${
-                        m.direction === 'sent' ? styles.emailCardSent : styles.emailCardReceived
-                    }`}
-                >
-                    <span
-                        className={`${styles.directionTag} ${
-                            m.direction === 'sent' ? styles.directionSent : styles.directionReceived
-                        }`}
-                    >
-                        {m.direction === 'sent' ? 'Enviado' : 'Recebido'}
-                    </span>
-                    <div className={styles.emailHeader}>
-                        <span className={styles.emailFrom}>
-                            {m.direction === 'sent' ? `Para: ${m.to}` : m.from}
-                        </span>
-                        <span className={styles.emailDate}>{formatDate(m.date)}</span>
-                    </div>
-                    <div className={styles.emailSubject}>{m.subject}</div>
-                    <div className={styles.emailPreview}>{m.preview}</div>
-                </div>
-            ))}
-        </>
+        <div className={styles.emailThreadDetails}>
+            {/* Lista de Mensagens da Thread */}
+            <div className={styles.emailMessageList}>
+                {messages.map((m, idx) => {
+                    const totalMsgs = messages.length;
+                    const isLatest = idx === totalMsgs - 1;
+                    const expanded = expandedEmails[m.entryId] !== undefined 
+                        ? expandedEmails[m.entryId] 
+                        : isLatest;
+
+                    const isSent = m.direction === 'sent' || isUserEmail(m.from, userEmail);
+                    const cleanedSender = isSent 
+                        ? '(pra mim)' 
+                        : cleanEmailSender(m.from, contactName || contactIdentifier, userEmail);
+
+                    return (
+                        <div
+                            key={m.entryId || idx}
+                            className={`${styles.emailMessageItem} ${
+                                m.direction === 'sent' 
+                                    ? styles.emailMessageItemSent 
+                                    : styles.emailMessageItemReceived
+                            }`}
+                        >
+                            {/* Cabeçalho do E-mail (Clicável) */}
+                            <div
+                                className={styles.emailMessageHeader}
+                                onClick={() => toggleEmail(m.entryId, isLatest)}
+                            >
+                                <ContactAvatar
+                                    name={cleanedSender}
+                                    channel="email"
+                                    contactIdentifier={contactIdentifier}
+                                    size={32}
+                                    className={styles.emailMessageAvatar}
+                                />
+                                
+                                <div className={styles.emailMessageSenderInfo}>
+                                    <div className={styles.emailMessageRow}>
+                                        <span className={styles.emailMessageSenderName} title={m.from}>
+                                            {cleanedSender}
+                                        </span>
+                                        <span className={styles.emailMessageDate}>
+                                            {formatDate(m.date)}
+                                        </span>
+                                    </div>
+                                    <div className={styles.emailMessageRecipients}>
+                                        {isSent 
+                                            ? `para: ${m.to}` 
+                                            : (isUserEmail(m.to, userEmail) 
+                                                ? `para mim (${m.to})` 
+                                                : `para: ${m.to}`)}
+                                    </div>
+                                    
+                                    {/* Se colapsado, mostra o preview em uma linha */}
+                                    {!expanded && (
+                                        <div className={styles.emailMessagePreviewText}>
+                                            {m.preview}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className={styles.emailMessageChevron}>
+                                    {expanded ? (
+                                        <ChevronDown size={16} />
+                                    ) : (
+                                        <ChevronRight size={16} />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Corpo do E-mail (Expandido) */}
+                            {expanded && (
+                                <div className={styles.emailMessageBody}>
+                                    <div className={styles.emailMessageBodyContent}>
+                                        {m.body || m.preview}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
     );
 }
 
@@ -188,12 +466,31 @@ interface MessagesViewProps {
 
 export function MessagesView({ onBack, orgId }: MessagesViewProps) {
     const [contacts, setContacts] = useState<TrackedContact[]>([]);
+    const [userEmail, setUserEmail] = useState<string>('');
+
+    useEffect(() => {
+        const fetchUserEmail = async () => {
+            try {
+                const ints = await ai.getIntegrations();
+                const email = ints?.outlook?.credentials?.email_user;
+                if (email) {
+                    setUserEmail(email);
+                    console.log('Successfully fetched user email from integrations:', email);
+                }
+            } catch (err) {
+                console.error('Error fetching user email in MessagesView:', err);
+            }
+        };
+        void fetchUserEmail();
+    }, []);
     const [channelFilter, setChannelFilter] = useState<'all' | 'whatsapp' | 'email'>('all');
     const [selected, setSelected] = useState<TrackedContact | null>(null);
     const [conversation, setConversation] = useState<CachedConversation | null>(null);
     const [loadingContacts, setLoadingContacts] = useState(true);
     const [loadingConv, setLoadingConv] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    const [emailConversations, setEmailConversations] = useState<Record<string, CachedConversation>>({});
+    const [loadingEmails, setLoadingEmails] = useState(false);
 
     const loadContacts = useCallback(async (isSilent = false) => {
         if (!isSilent) {
@@ -230,12 +527,67 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
         return () => window.clearInterval(interval);
     }, [loadContacts]);
 
-    const loadConversation = useCallback(async (contact: TrackedContact, isSilent = false) => {
+    // Pre-fetch e-mail conversations for all e-mail contacts to extract threads
+    useEffect(() => {
+        const emailContacts = contacts.filter((c) => c.channel === 'email');
+        if (emailContacts.length === 0) return;
+
+        const preFetchAll = async () => {
+            setLoadingEmails(true);
+            try {
+                const newMap = { ...emailConversations };
+                let changed = false;
+
+                await Promise.all(
+                    emailContacts.map(async (c) => {
+                        try {
+                            const data = await communication.fetchCachedConversation(
+                                c.contact_identifier,
+                                c.channel
+                            );
+                            if (JSON.stringify(newMap[c.contact_identifier]) !== JSON.stringify(data)) {
+                                newMap[c.contact_identifier] = data;
+                                changed = true;
+                            }
+                        } catch (err) {
+                            console.error('Error pre-fetching email conversation:', err);
+                        }
+                    })
+                );
+
+                if (changed) {
+                    setEmailConversations(newMap);
+                }
+            } catch (err) {
+                console.error('Error pre-fetching emails:', err);
+            } finally {
+                setLoadingEmails(false);
+            }
+        };
+
+        void preFetchAll();
+    }, [contacts]);
+
+    const loadConversation = useCallback(async (contact: TrackedContact, isSilent = false, targetThreadId?: string) => {
         setSelected(contact);
-        if (!isSilent) {
-            setConversation(null);
-            setLoadingConv(true);
+        if (contact.channel === 'email') {
+            if (targetThreadId) {
+                setActiveEmailThreadId(targetThreadId);
+            }
+        } else {
+            setActiveEmailThreadId(null);
         }
+
+        const cached = contact.channel === 'email' ? emailConversations[contact.contact_identifier] : null;
+        if (cached) {
+            setConversation(cached);
+        } else {
+            if (!isSilent) {
+                setConversation(null);
+                setLoadingConv(true);
+            }
+        }
+
         try {
             const data = await communication.fetchCachedConversation(
                 contact.contact_identifier,
@@ -243,6 +595,20 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
             );
             setConversation((prev) => {
                 const hasChanged = JSON.stringify(prev) !== JSON.stringify(data);
+                
+                // Update cache map
+                if (contact.channel === 'email') {
+                    setEmailConversations((prevMap: Record<string, CachedConversation>) => {
+                        if (JSON.stringify(prevMap[contact.contact_identifier]) !== JSON.stringify(data)) {
+                            return {
+                                ...prevMap,
+                                [contact.contact_identifier]: data
+                            };
+                        }
+                        return prevMap;
+                    });
+                }
+
                 return hasChanged ? data : prev;
             });
             // Marca como lido ao abrir a conversa
@@ -258,7 +624,7 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
             }
         } catch (err) {
             console.error('MessagesView loadConversation error:', err);
-            if (!isSilent) {
+            if (!isSilent && !cached) {
                 setConversation(null);
             }
         } finally {
@@ -266,7 +632,7 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
                 setLoadingConv(false);
             }
         }
-    }, []);
+    }, [emailConversations]);
 
     // Polling periódico da conversa selecionada a cada 10 segundos
     useEffect(() => {
@@ -288,10 +654,142 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
         }
     };
 
-    const filteredContacts =
-        channelFilter === 'all'
-            ? contacts
-            : contacts.filter((c) => c.channel === channelFilter);
+    const [activeEmailThreadId, setActiveEmailThreadId] = useState<string | null>(null);
+
+    const cleanSubject = (subject: string): string => {
+        if (!subject) return 'sem assunto';
+        let cleaned = subject;
+        let prev = '';
+        while (cleaned !== prev) {
+            prev = cleaned;
+            cleaned = cleaned.replace(/^(re|res|fwd|enc|respondo|encaminhado|reply|forward)(\[\d+\])?:\s*/i, '').trim();
+        }
+        return cleaned.replace(/\s+/g, ' ').toLowerCase();
+    };
+
+    const emailThreads = React.useMemo(() => {
+        if (!conversation || selected?.channel !== 'email') return [];
+        const emailMsgs = conversation.messages as EmailMessage[];
+        const threadsMap = new Map<string, EmailMessage[]>();
+        emailMsgs.forEach((m) => {
+            const key = cleanSubject(m.subject);
+            if (!threadsMap.has(key)) {
+                threadsMap.set(key, []);
+            }
+            threadsMap.get(key)!.push(m);
+        });
+
+        const list = Array.from(threadsMap.entries()).map(([key, msgs]) => {
+            const mostRecent = msgs[0];
+            const chronologicalMsgs = [...msgs].reverse();
+            return {
+                id: key,
+                subject: mostRecent.subject,
+                messages: chronologicalMsgs,
+                lastMessageDate: mostRecent.date,
+            };
+        });
+
+        list.sort((a, b) => new Date(b.lastMessageDate).getTime() - new Date(a.lastMessageDate).getTime());
+        return list;
+    }, [conversation, selected]);
+
+    useEffect(() => {
+        if (selected?.channel === 'email' && emailThreads.length > 0) {
+            if (!activeEmailThreadId || !emailThreads.some(t => t.id === activeEmailThreadId)) {
+                setActiveEmailThreadId(emailThreads[0].id);
+            }
+        } else if (selected?.channel !== 'email') {
+            setActiveEmailThreadId(null);
+        }
+    }, [emailThreads, selected, activeEmailThreadId]);
+
+    const activeThread = emailThreads.find(t => t.id === activeEmailThreadId) || emailThreads[0];
+
+    const sidebarItems = React.useMemo(() => {
+        interface UnifiedSidebarItem {
+            id: string;
+            type: 'whatsapp' | 'email_thread';
+            contact: TrackedContact;
+            threadId?: string;
+            subject?: string;
+            lastMessagePreview?: string;
+            lastMessageDate?: string;
+            messageCount?: number;
+            hasUnread?: boolean;
+            lastMessageFrom?: string;
+        }
+
+        const items: UnifiedSidebarItem[] = [];
+
+        contacts.forEach((c) => {
+            if (c.channel === 'whatsapp') {
+                items.push({
+                    id: `whatsapp|${c.contact_identifier}`,
+                    type: 'whatsapp',
+                    contact: c,
+                    subject: c.contact_name,
+                    lastMessagePreview: c.last_message_preview,
+                    lastMessageDate: c.fetched_at ? new Date(c.fetched_at).toISOString() : undefined,
+                    hasUnread: c.has_unread,
+                });
+            } else if (c.channel === 'email') {
+                const conv = emailConversations[c.contact_identifier];
+                if (!conv) {
+                    // Fallback item when still loading
+                    items.push({
+                        id: `email_loading|${c.contact_identifier}`,
+                        type: 'email_thread',
+                        contact: c,
+                        threadId: 'loading',
+                        subject: cleanEmailSender(c.contact_name, c.contact_identifier, userEmail),
+                        lastMessagePreview: c.last_message_preview || 'Carregando e-mails...',
+                        hasUnread: c.has_unread,
+                    });
+                } else {
+                    // Group messages into threads
+                    const emailMsgs = conv.messages as EmailMessage[];
+                    const threadsMap = new Map<string, EmailMessage[]>();
+                    emailMsgs.forEach((m) => {
+                        const key = cleanSubject(m.subject);
+                        if (!threadsMap.has(key)) {
+                            threadsMap.set(key, []);
+                        }
+                        threadsMap.get(key)!.push(m);
+                    });
+
+                    threadsMap.forEach((msgs, key) => {
+                        const mostRecent = msgs[0];
+                        const chronologicalMsgs = [...msgs].reverse();
+                        items.push({
+                            id: `email_thread|${c.contact_identifier}|${key}`,
+                            type: 'email_thread',
+                            contact: c,
+                            threadId: key,
+                            subject: mostRecent.subject,
+                            lastMessagePreview: mostRecent.preview || '',
+                            lastMessageDate: mostRecent.date,
+                            messageCount: chronologicalMsgs.length,
+                            hasUnread: c.has_unread && mostRecent.direction === 'received',
+                            lastMessageFrom: mostRecent.from,
+                        });
+                    });
+                }
+            }
+        });
+
+        // Sort items by last message date if available
+        items.sort((a, b) => {
+            const dateA = a.lastMessageDate ? new Date(a.lastMessageDate).getTime() : 0;
+            const dateB = b.lastMessageDate ? new Date(b.lastMessageDate).getTime() : 0;
+            if (dateA && dateB) {
+                return dateB - dateA; // descending chronological order (most recent first)
+            }
+            return 0;
+        });
+
+        return items;
+    }, [contacts, emailConversations, userEmail]);
 
     return (
         <div className={styles.container}>
@@ -315,53 +813,85 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
                 <div className={styles.contactList}>
                     {loadingContacts ? (
                         <div className={styles.emptyState}>Carregando...</div>
-                    ) : filteredContacts.length === 0 ? (
+                    ) : sidebarItems.length === 0 ? (
                         <div className={styles.emptyState}>
                             Nenhuma conversa salva ainda.
                             <br />
                             Peça ao agente para buscar mensagens de um contato.
                         </div>
                     ) : (
-                        filteredContacts.map((c) => (
-                            <div
-                                key={`${c.contact_identifier}|${c.channel}`}
-                                className={`${styles.contactItem} ${
-                                    selected?.contact_identifier === c.contact_identifier &&
-                                    selected?.channel === c.channel
-                                        ? styles.contactItemActive
-                                        : ''
-                                }`}
-                                onClick={() => loadConversation(c)}
-                            >
-                                <ContactAvatar
-                                    name={c.contact_name}
-                                    channel={c.channel}
-                                    profilePic={c.profile_pic}
-                                    size={32}
-                                    className={`${styles.contactAvatar} ${
-                                        c.channel === 'whatsapp'
-                                            ? styles.contactAvatarWa
-                                            : styles.contactAvatarEmail
-                                    }`}
-                                />
-                                <div className={styles.contactInfo}>
-                                    <div className={styles.contactName}>
-                                        {c.contact_name}
-                                        {c.is_key_contact && (
-                                            <span className={styles.keyContactStar} title="Contato-chave / Decisor"> ★</span>
+                        sidebarItems.map((item) => {
+                            const c = item.contact;
+                            
+                            // Check active state
+                            const isActive = item.type === 'whatsapp'
+                                ? selected?.contact_identifier === c.contact_identifier && selected?.channel === 'whatsapp'
+                                : selected?.contact_identifier === c.contact_identifier && selected?.channel === 'email' && activeEmailThreadId === item.threadId;
+
+                            return (
+                                <div
+                                    key={item.id}
+                                    className={`${styles.contactItem} ${isActive ? styles.contactItemActive : ''}`}
+                                    onClick={() => {
+                                        if (item.type === 'whatsapp') {
+                                            void loadConversation(c);
+                                        } else {
+                                            if (item.threadId !== 'loading') {
+                                                void loadConversation(c, false, item.threadId);
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <ContactAvatar
+                                        name={c.channel === 'email' ? cleanEmailSender(c.contact_name, c.contact_identifier, userEmail) : c.contact_name}
+                                        channel={c.channel}
+                                        profilePic={c.profile_pic}
+                                        orgLogo={c.org_logo}
+                                        orgDomain={c.org_domain}
+                                        contactIdentifier={c.contact_identifier}
+                                        size={32}
+                                        showChannelBadge={channelFilter === 'all'}
+                                        className={`${styles.contactAvatar} ${
+                                            c.channel === 'whatsapp'
+                                                ? styles.contactAvatarWa
+                                                : styles.contactAvatarEmail
+                                        }`}
+                                    />
+                                    <div className={styles.contactInfo}>
+                                        <div className={styles.contactName} title={item.subject}>
+                                            {item.subject}
+                                            {item.type === 'whatsapp' && c.is_key_contact && (
+                                                <span className={styles.keyContactStar} title="Contato-chave / Decisor"> ★</span>
+                                            )}
+                                        </div>
+                                        <div className={styles.contactMeta}>
+                                            {item.type === 'email_thread' && item.threadId !== 'loading' ? (
+                                                `${(item.lastMessageFrom && isUserEmail(item.lastMessageFrom, userEmail)) ? '(pra mim)' : cleanEmailSender(c.contact_name, c.contact_identifier, userEmail)}: ${item.lastMessagePreview}`
+                                            ) : (
+                                                item.lastMessagePreview || c.org_name || '—'
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                                        {item.lastMessageDate && (
+                                            <span style={{ fontSize: 10, color: 'var(--sw-text-muted)' }}>
+                                                {item.type === 'email_thread' ? formatDate(item.lastMessageDate) : formatTime(new Date(item.lastMessageDate).getTime() / 1000)}
+                                            </span>
+                                        )}
+                                        {item.type === 'email_thread' && item.messageCount && item.messageCount > 1 && (
+                                            <span className={styles.emailThreadItemCount}>
+                                                {item.messageCount}
+                                            </span>
+                                        )}
+                                        {item.hasUnread && (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: 4, flexShrink: 0 }}>
+                                                <span className={styles.unreadDot} title="Mensagem nova" />
+                                            </div>
                                         )}
                                     </div>
-                                    <div className={styles.contactMeta}>
-                                        {c.last_message_preview || c.org_name || '—'}
-                                    </div>
                                 </div>
-                                {c.has_unread && (
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: 4, flexShrink: 0 }}>
-                                        <span className={styles.unreadDot} title="Mensagem nova" />
-                                    </div>
-                                )}
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             </div>
@@ -381,23 +911,30 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
                     <>
                         <div className={styles.panelHeader}>
                             <ContactAvatar
-                                name={selected.contact_name}
+                                name={selected.channel === 'email' ? cleanEmailSender(selected.contact_name, selected.contact_identifier, userEmail) : selected.contact_name}
                                 channel={selected.channel}
                                 profilePic={selected.profile_pic}
+                                orgLogo={selected.org_logo}
+                                orgDomain={selected.org_domain}
+                                contactIdentifier={selected.contact_identifier}
                                 size={36}
                                 className={`${styles.contactAvatar} ${
                                     selected.channel === 'whatsapp'
                                         ? styles.contactAvatarWa
-                                        : styles.contactAvatarEmail
+                                        : selected.channel === 'email'
+                                            ? styles.contactAvatarEmail
+                                            : ''
                                 }`}
                             />
                             <div className={styles.panelHeaderInfo}>
-                                <div className={styles.panelHeaderName}>{selected.contact_name}</div>
+                                <div className={styles.panelHeaderName}>
+                                    {selected.channel === 'email' && activeThread ? activeThread.subject : (selected.channel === 'email' ? cleanEmailSender(selected.contact_name, selected.contact_identifier, userEmail) : selected.contact_name)}
+                                </div>
                                 <div className={styles.panelHeaderSub}>
                                     {selected.channel === 'whatsapp' ? (
                                         <>WhatsApp · {selected.contact_identifier}</>
                                     ) : (
-                                        <>E-mail · {selected.contact_identifier}</>
+                                        <>E-mail de {selected.channel === 'email' ? cleanEmailSender(selected.contact_name, selected.contact_identifier, userEmail) : selected.contact_name} ({selected.contact_identifier})</>
                                     )}
                                     {selected.org_name && ` · ${selected.org_name}`}
                                 </div>
@@ -415,7 +952,7 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
                             )}
                         </div>
 
-                        <div className={`${styles.messagesArea} ${selected.channel === 'whatsapp' ? styles.messagesAreaWa : ''}`}>
+                        <div className={`${styles.messagesArea} ${selected.channel === 'whatsapp' ? styles.messagesAreaWa : styles.messagesAreaEmail}`}>
                             {loadingConv ? (
                                 <div className={styles.noConversation}>
                                     <p className={styles.noConversationText}>Carregando mensagens...</p>
@@ -429,7 +966,7 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
                             ) : selected.channel === 'whatsapp' ? (
                                 <WaConversation messages={conversation.messages as WaMessage[]} />
                             ) : (
-                                <EmailConversation messages={conversation.messages as EmailMessage[]} />
+                                <EmailConversation key={activeEmailThreadId} messages={(activeThread?.messages || []) as EmailMessage[]} contactName={selected.contact_name} contactIdentifier={selected.contact_identifier} userEmail={userEmail} />
                             )}
                         </div>
                     </>

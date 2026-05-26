@@ -659,3 +659,266 @@
     transform: scale(1.1);
     box-shadow: 0 0 0 2px var(--sw-sidebar), 0 0 4px var(--sw-primary);
 }
+
+/* =========================================== */
+/* HierarchyScan Integration Styles            */
+/* =========================================== */
+
+/* --- Mapping Mode Toggle (Vertical switch on side) --- */
+.mappingModeToggle {
+    position: absolute;
+    right: -46px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 3px;
+    background: var(--sw-sidebar);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-radius: 10px;
+    pointer-events: auto;
+    z-index: 10;
+    box-shadow: var(--sw-shadow);
+    animation: swSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modeBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modeBtn:hover {
+    color: var(--sw-text-base);
+    background: var(--sw-hover);
+}
+
+.modeBtnActive {
+    background: var(--sw-primary) !important;
+    color: #fff !important;
+    box-shadow: 0 0 8px var(--sw-primary-soft);
+}
+
+/* --- Scan Terminal Panel (below toolbar) --- */
+.scanTerminalPanel {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--sw-sidebar);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-top: none;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    pointer-events: auto;
+    animation: swSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    overflow: hidden;
+}
+
+.scanTerminalHeader {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: 10px;
+    font-weight: 600;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    color: var(--sw-text-muted);
+    opacity: 0.7;
+    border-bottom: 1px solid var(--sw-border);
+    user-select: none;
+}
+
+.scanTerminalBody {
+    padding: 6px 12px;
+    max-height: 160px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--sw-border) transparent;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.scanTerminalLine {
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Conecta refineTab ao terminal abaixo */
+.refineTabTerminalConnected {
+    border-bottom: none !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+@keyframes swSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- Scan Preview Bubble (above toolbar, left corner) --- */
+.previewBubble {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 8px);
+    z-index: 10;
+    background: var(--sw-sidebar);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    pointer-events: auto;
+    box-shadow: var(--sw-shadow);
+    transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                height 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: swSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.previewCollapsed {
+    width: 120px;
+    height: 90px;
+}
+
+.previewExpanded {
+    width: 520px;
+    height: 440px;
+}
+
+.previewImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.previewExpanded .previewImage {
+    height: calc(100% - 40px); /* Leave room for interaction bar */
+    object-fit: contain;
+    background: #0a0a0a;
+}
+
+.previewPlaceholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.previewLiveBadge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(239, 68, 68, 0.85);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    pointer-events: none;
+}
+
+.previewLiveDot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #fff;
+    animation: swPulse 1.2s infinite;
+}
+
+@keyframes swPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.previewToggleBtn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 3;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.previewBubble:hover .previewToggleBtn {
+    opacity: 1;
+}
+
+.previewInteractionBar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-top: 1px solid var(--sw-border);
+    height: 40px;
+    box-sizing: border-box;
+}
+
+.previewInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--sw-text-base);
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    padding: 4px 8px;
+}
+
+.previewInput::placeholder {
+    color: var(--sw-text-muted);
+    opacity: 0.5;
+}
+
+.previewActionBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.previewActionBtn:hover {
+    background: var(--sw-hover);
+    color: var(--sw-text-base);
+}

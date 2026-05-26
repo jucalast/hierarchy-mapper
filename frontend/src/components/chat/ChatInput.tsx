@@ -54,6 +54,7 @@ interface ChatInputProps {
     taskInlineConfirmed?: Record<string, boolean>;
     onTaskInlineConfirm?: (action_id: string, approved: boolean) => Promise<void>;
     onTaskMappingComplete?: (contacts: MappedContact[]) => Promise<void>;
+    onCancelActiveTask?: () => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -68,13 +69,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     modelActivity = [],
     isStreamingActivity = false,
     pipedriveCooldown = 0,
-    theme,
-    onStop,
-    activeRunningTask,
-    setActiveRunningTask,
-    taskInlineConfirmed,
-    onTaskInlineConfirm,
-    onTaskMappingComplete
+    theme, onStop, activeRunningTask, setActiveRunningTask,
+    taskInlineConfirmed, onTaskInlineConfirm, onTaskMappingComplete, onCancelActiveTask
 }) => {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const highlighterRef = useRef<HTMLDivElement>(null);
@@ -97,11 +93,31 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         }
     };
 
-    // Auto-ajuste de altura
+    // Auto-ajuste de altura e scroll
     useEffect(() => {
         if (inputRef.current) {
+            const currentScrollTop = inputRef.current.scrollTop;
+            const isAtBottom = inputRef.current.scrollHeight - inputRef.current.scrollTop <= inputRef.current.clientHeight + 10;
+            const isCursorAtEnd = inputRef.current.selectionStart === inputValue.length;
+
             inputRef.current.style.height = 'auto';
-            inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 76)}px`;
+            const newHeight = Math.min(inputRef.current.scrollHeight, 100);
+            inputRef.current.style.height = `${newHeight}px`;
+
+            if (highlighterRef.current) {
+                highlighterRef.current.style.height = 'auto';
+                highlighterRef.current.style.height = `${newHeight}px`;
+            }
+
+            if (isAtBottom || isCursorAtEnd) {
+                inputRef.current.scrollTop = inputRef.current.scrollHeight;
+            } else {
+                inputRef.current.scrollTop = currentScrollTop;
+            }
+            
+            if (highlighterRef.current) {
+                highlighterRef.current.scrollTop = inputRef.current.scrollTop;
+            }
         }
     }, [inputValue]);
 
@@ -145,7 +161,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const notice = getNoticeStyle(modelActivity || [], undefined, theme);
     const hasRunningTask = !!activeRunningTask;
 
-    const consoleBg = theme === 'dark' ? '#1e1e1e' : 'var(--chat-bg-primary)';
+    const consoleBg = theme === 'dark' ? '#1e1e1e' : '#e5e5e5';
 
     const taskStyle = (hasRunningTask && !isExpandedRunningTask) ? {
         border: 'var(--sw-border-width) solid var(--chat-border-weak)',
@@ -206,33 +222,34 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     alignItems: 'center',
                     gap: 6,
                     padding: '8px 16px',
-                    fontSize: 11,
+                    fontSize: 'var(--font-sm)',
                     fontWeight: 500,
-                    color: 'rgba(255, 255, 255, 0.75)',
+                    color: theme === 'dark' ? 'rgba(255, 255, 255, 0.75)' : 'rgba(0, 0, 0, 0.75)',
                     letterSpacing: '0.01em',
                     cursor: 'pointer',
                     userSelect: 'none',
                     transition: 'opacity 0.2s',
-                    background: '#1e1e1e',
+                    background: consoleBg,
                     borderTopLeftRadius: 15,
                     borderTopRightRadius: 15,
                 }}
             >
                 <span style={{ color: statusColor, fontWeight: 600 }}>{statusLabel}</span>
-                <span style={{ opacity: 0.25, color: '#fff' }}>·</span>
+                <span style={{ opacity: 0.25, color: theme === 'dark' ? '#fff' : '#000' }}>·</span>
                 <span style={{
                     flex: 1,
                     minWidth: 0,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
-                    textOverflow: 'ellipsis'
+                    textOverflow: 'ellipsis',
+                    color: theme === 'dark' ? '#fff' : '#000',
                 }}>
                     {activeRunningTask.label}
                 </span>
 
                 <span style={{
-                    fontSize: 9,
-                    color: 'rgba(255, 255, 255, 0.35)',
+                    fontSize: 'var(--font-xs)',
+                    color: theme === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                     fontWeight: 600,
@@ -249,6 +266,36 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     flexShrink: 0,
                     animation: (isStreaming || isAwaiting) ? 'modelLivePulse 1.4s ease-in-out infinite' : 'none',
                 }} />
+
+                <div
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (onCancelActiveTask) onCancelActiveTask();
+                        else setActiveRunningTask?.(null);
+                    }}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        marginLeft: 8,
+                        color: theme === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
+                        transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                        e.currentTarget.style.color = theme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = theme === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)';
+                    }}
+                    title="Fechar console"
+                >
+                    <X size={14} />
+                </div>
             </div>
         );
     };

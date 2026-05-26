@@ -45,16 +45,16 @@ export const ActiveTaskConsole: React.FC<ActiveTaskConsoleProps> = ({
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '10px',
-                background: '#1e1e1e',
+                background: theme === 'dark' ? '#1e1e1e' : '#e5e5e5',
                 borderRadius: '12px',
-                borderTop: 'var(--chat-border-width, 1.5px) solid rgba(255, 255, 255, 0.08)',
-                borderLeft: 'var(--chat-border-width, 1.5px) solid rgba(255, 255, 255, 0.08)',
-                borderRight: 'var(--chat-border-width, 1.5px) solid rgba(255, 255, 255, 0.08)',
+                borderTop: `var(--chat-border-width, 1.5px) solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#e5e5e5'}`,
+                borderLeft: `var(--chat-border-width, 1.5px) solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#e5e5e5'}`,
+                borderRight: `var(--chat-border-width, 1.5px) solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : '#e5e5e5'}`,
                 borderBottom: 'none',
             }}
         >
             {activeRunningTask.logs.length === 0 ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'rgba(255, 255, 255, 0.35)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--font-sm)', color: theme === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)' }}>
                     <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
                     <span>Iniciando pipeline de tarefa em console dedicado...</span>
                 </div>

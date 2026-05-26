@@ -1,14 +1,12 @@
 """
-trigger_service.py — Gatilhos Autônomos de Resposta de Clientes
+trigger_service.py — Gatilhos Autônomos de Resposta de Clientes (ARQ Worker version)
 
 Monitora em background os canais de comunicação (Email + WhatsApp) em busca de
 novas respostas de clientes. Quando detectada, dispara o workflow do agente em
-modo "sugerir + aprovar" — a resposta sugerida fica pendente de confirmação.
+modo "sugerir + aprovar".
 
-Uso (registrar no lifespan do FastAPI):
-    from modules.triggers.service.trigger_service import TriggerService
-    trigger = TriggerService()
-    asyncio.create_task(trigger.start_polling())
+Esta versão foi migrada para rodar exclusivamente como cron_jobs no ARQ Worker,
+liberando o lifespan do FastAPI e usando Redis para compartilhar o estado pendente.
 """
 from __future__ import annotations
 
@@ -26,80 +24,54 @@ from models.conversation import ActivityLog
 
 log = get_logger(__name__)
 
-# Intervalo de polling para cada canal
 EMAIL_POLL_INTERVAL_SEC = 120   # 2 minutos
 WA_POLL_INTERVAL_SEC = 60       # 1 minuto
 
-# ── Horário de silêncio ───────────────────────────────────────────────────────
-# Fora desse intervalo o polling não dispara nenhuma análise nem envio.
-# Configurável por variável de ambiente: TRIGGER_QUIET_START / TRIGGER_QUIET_END
 QUIET_HOURS_START: int = int(getattr(settings, "TRIGGER_QUIET_START", 22))  # 22h
 QUIET_HOURS_END: int   = int(getattr(settings, "TRIGGER_QUIET_END",   7))   #  7h
 
-# ── Kill switch em memória ────────────────────────────────────────────────────
-# Pode ser alternado via POST /api/v1/trigger/pause e /resume sem reiniciar o servidor.
-_service_paused: bool = False
-
-
 def is_quiet_hours() -> bool:
-    """Retorna True se o horário atual está dentro do período de silêncio."""
     hour = datetime.now().hour
     if QUIET_HOURS_START > QUIET_HOURS_END:
-        # Período que cruza a meia-noite (ex: 22h → 7h)
         return hour >= QUIET_HOURS_START or hour < QUIET_HOURS_END
     else:
         return QUIET_HOURS_START <= hour < QUIET_HOURS_END
 
+# O estado de "pause" agora será mantido no Redis para que a API controle o worker
+async def is_service_paused(redis) -> bool:
+    val = await redis.get("trigger_service_paused")
+    return val == b"1"
 
-def pause_service() -> str:
-    global _service_paused
-    _service_paused = True
+async def pause_service(redis) -> str:
+    await redis.set("trigger_service_paused", "1")
     log.info("trigger_service.paused_by_user")
     return "paused"
 
-
-def resume_service() -> str:
-    global _service_paused
-    _service_paused = False
+async def resume_service(redis) -> str:
+    await redis.delete("trigger_service_paused")
     log.info("trigger_service.resumed_by_user")
     return "resumed"
 
-
-def service_status() -> dict:
+async def service_status(redis) -> dict:
     quiet = is_quiet_hours()
+    paused = await is_service_paused(redis)
     return {
-        "paused": _service_paused,
+        "paused": paused,
         "quiet_hours": quiet,
         "quiet_window": f"{QUIET_HOURS_START:02d}h–{QUIET_HOURS_END:02d}h",
-        "active": not _service_paused and not quiet,
+        "active": not paused and not quiet,
     }
 
-# Quantos emails / chats escanear por ciclo
 EMAIL_SCAN_LIMIT = 15
 WA_CHATS_LIMIT = 30
 
-# In-memory store de triggers detectados (também persistido via ActivityLog)
-# key = trigger_id, value = TriggerEvent dict
-_pending_triggers: Dict[str, Dict] = {}
-_trigger_callbacks: List = []   # callables para notificar o frontend via SSE
-
-# Marca o tempo da última verificação para cada canal
 _last_email_check: float = 0.0
 _last_wa_check: float = 0.0
-
-# IDs de emails/mensagens já processados para evitar re-trigger
-_processed_email_ids: set = set()
-_processed_wa_ids: set = set()
-
-
-# =============================================================================
-# ESTRUTURA DE TRIGGER
-# =============================================================================
 
 def _make_trigger(
     *,
     trigger_id: str,
-    channel: str,                   # "email" | "whatsapp"
+    channel: str,
     org_id: Optional[int],
     org_name: str,
     contact_name: str,
@@ -108,7 +80,7 @@ def _make_trigger(
     message_preview: str,
     full_message: str,
     subject: Optional[str] = None,
-    entry_id: Optional[str] = None,  # email_entry_id para reply
+    entry_id: Optional[str] = None,
     in_reply_to_activity_id: Optional[int] = None,
 ) -> Dict:
     return {
@@ -125,81 +97,68 @@ def _make_trigger(
         "entry_id": entry_id,
         "in_reply_to_activity_id": in_reply_to_activity_id,
         "detected_at": datetime.utcnow().isoformat(),
-        "status": "pending",       # pending → processing → suggested → approved/dismissed
-        "suggested_plan": None,    # preenchido após análise do agente
+        "status": "pending",
+        "suggested_plan": None,
         "analysis": None,
     }
 
-
-# =============================================================================
-# ACESSO AOS TRIGGERS
-# =============================================================================
-
-def get_pending_triggers() -> List[Dict]:
-    """Retorna todos os triggers pendentes (status pending ou suggested)."""
-    return [t for t in _pending_triggers.values() if t["status"] in ("pending", "suggested", "processing")]
-
-
-def get_trigger(trigger_id: str) -> Optional[Dict]:
-    return _pending_triggers.get(trigger_id)
-
-
-def dismiss_trigger(trigger_id: str) -> bool:
-    if trigger_id in _pending_triggers:
-        _pending_triggers[trigger_id]["status"] = "dismissed"
-        return True
-    return False
-
-
-def mark_trigger_approved(trigger_id: str) -> bool:
-    if trigger_id in _pending_triggers:
-        _pending_triggers[trigger_id]["status"] = "approved"
-        return True
-    return False
-
-
-def register_trigger_callback(fn):
-    """Registra uma função que será chamada quando um novo trigger for detectado."""
-    _trigger_callbacks.append(fn)
-
-
-def _notify_callbacks(trigger: Dict):
-    for fn in _trigger_callbacks:
+async def get_pending_triggers(redis) -> List[Dict]:
+    """Retorna todos os triggers pendentes salvos no Redis."""
+    triggers_hash = await redis.hgetall("pending_triggers")
+    triggers = []
+    for k, v in triggers_hash.items():
         try:
-            if asyncio.iscoroutinefunction(fn):
-                asyncio.create_task(fn(trigger))
-            else:
-                fn(trigger)
-        except Exception as e:
-            log.warning("trigger.callback_error", error=str(e))
+            t = json.loads(v)
+            if t.get("status") in ("pending", "suggested", "processing"):
+                triggers.append(t)
+        except Exception:
+            pass
+    return triggers
+
+async def get_trigger(redis, trigger_id: str) -> Optional[Dict]:
+    val = await redis.hget("pending_triggers", trigger_id)
+    if val:
+        return json.loads(val)
+    return None
+
+async def dismiss_trigger(redis, trigger_id: str) -> bool:
+    t = await get_trigger(redis, trigger_id)
+    if t:
+        t["status"] = "dismissed"
+        await redis.hset("pending_triggers", trigger_id, json.dumps(t, ensure_ascii=False))
+        await redis.publish("trigger_events", json.dumps({"type": "trigger_update", "trigger": t}, ensure_ascii=False))
+        return True
+    return False
+
+async def mark_trigger_approved(redis, trigger_id: str) -> bool:
+    t = await get_trigger(redis, trigger_id)
+    if t:
+        t["status"] = "approved"
+        await redis.hset("pending_triggers", trigger_id, json.dumps(t, ensure_ascii=False))
+        await redis.publish("trigger_events", json.dumps({"type": "trigger_update", "trigger": t}, ensure_ascii=False))
+        return True
+    return False
+
+async def _notify_trigger(redis, trigger: Dict):
+    await redis.publish("trigger_events", json.dumps({"type": "trigger_update", "trigger": trigger}, ensure_ascii=False))
 
 
 # =============================================================================
 # DETECÇÃO DE EMAILS RECEBIDOS
 # =============================================================================
 
-async def _detect_email_triggers(session) -> List[Dict]:
-    """
-    Varre a caixa de entrada do Outlook em busca de respostas a emails que o
-    agente enviou. Cruza com ActivityLog para identificar org_id e contexto.
-    """
+async def _detect_email_triggers(session, redis) -> List[Dict]:
     try:
-        # EmailClient é bloqueante — inicialização E scan rodam inteiramente em thread
         from modules.communication.service.email.client import EmailClient
-
         def _scan_in_thread() -> list:
             c = EmailClient(use_outlook_app=True)
             return c.scan_inbound_replies(max_results=EMAIL_SCAN_LIMIT) or []
 
         unread = await asyncio.to_thread(_scan_in_thread)
+        if not unread: return []
 
-        if not unread:
-            return []
-
-        # Busca ActivityLogs de emails enviados para fazer o match
         from sqlalchemy import select
         from models.conversation import ActivityLog
-
         sent_logs_result = await session.execute(
             select(ActivityLog)
             .where(ActivityLog.activity_type.in_(["email_sent", "email_reply_sent"]))
@@ -209,13 +168,11 @@ async def _detect_email_triggers(session) -> List[Dict]:
         )
         sent_logs = sent_logs_result.scalars().all()
 
-        # Index por assunto (normalizado) e email do destinatário
         sent_index = {}
         for log_entry in sent_logs:
             payload = log_entry.payload or {}
             to_email = (payload.get("to_email") or "").lower()
             subj = (payload.get("subject") or "").lower().strip()
-            # Remove "Re: " prefixo para normalizar
             base_subj = subj.replace("re: ", "").replace("re:", "").strip()
             key = f"{to_email}|{base_subj}"
             sent_index[key] = log_entry
@@ -223,18 +180,15 @@ async def _detect_email_triggers(session) -> List[Dict]:
         triggers_found = []
         for msg in unread:
             msg_id = msg.get("entryId") or msg.get("messageId") or ""
-            if msg_id in _processed_email_ids:
+            is_processed = await redis.sismember("processed_email_ids", msg_id)
+            if is_processed:
                 continue
 
             sender = (msg.get("sender") or "").lower()
             subject = (msg.get("subject") or "")
-            # Normaliza assunto para match
             base_subj = subject.lower().replace("re: ", "").replace("re:", "").strip()
 
-            # Tenta encontrar o ActivityLog correspondente
             matched_log = sent_index.get(f"{sender}|{base_subj}")
-
-            # Se não encontrou por email exato, tenta só pelo assunto
             if not matched_log:
                 for key, entry in sent_index.items():
                     if base_subj and base_subj in key:
@@ -245,18 +199,12 @@ async def _detect_email_triggers(session) -> List[Dict]:
             org_name = "Empresa desconhecida"
 
             if org_id:
-                # Busca nome da org
                 from models.organization import Organization
-                org_result = await session.execute(
-                    select(Organization).where(Organization.id == org_id)
-                )
+                org_result = await session.execute(select(Organization).where(Organization.id == org_id))
                 org = org_result.scalar_one_or_none()
-                if org:
-                    org_name = org.name
+                if org: org_name = org.name
 
-            # Extrai nome do remetente (parte antes do @)
             contact_name = sender.split("@")[0].replace(".", " ").title() if "@" in sender else sender
-
             body_preview = (msg.get("body") or "")[:500]
 
             import uuid
@@ -274,7 +222,9 @@ async def _detect_email_triggers(session) -> List[Dict]:
                 in_reply_to_activity_id=matched_log.id if matched_log else None,
             )
             triggers_found.append(trigger)
-            _processed_email_ids.add(msg_id)
+            await redis.sadd("processed_email_ids", msg_id)
+            # Expira o cache de processados apos 7 dias
+            await redis.expire("processed_email_ids", 86400 * 7)
 
         return triggers_found
 
@@ -287,31 +237,21 @@ async def _detect_email_triggers(session) -> List[Dict]:
 # DETECÇÃO DE MENSAGENS WHATSAPP RECEBIDAS
 # =============================================================================
 
-async def _detect_wa_triggers(session) -> List[Dict]:
-    """
-    Consulta o WPP Connect por mensagens novas (fromMe=False) em chats ativos.
-    Cruza com ActivityLog de whatsapp_sent para identificar contexto.
-    """
+async def _detect_wa_triggers(session, redis) -> List[Dict]:
     wa_base = settings.WHATSAPP_SERVICE_URL
-
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.get(f"{wa_base}/chats")
-            if resp.status_code != 200:
-                return []
-
+            if resp.status_code != 200: return []
             chats_data = resp.json()
             chats = chats_data if isinstance(chats_data, list) else chats_data.get("chats", [])
-
     except Exception as e:
         log.debug("trigger.wa_chats_unavailable", error=str(e)[:100])
         return []
 
-    # Busca ActivityLogs de WA enviados para contextualizar
     try:
         from sqlalchemy import select
         from models.conversation import ActivityLog
-
         wa_logs_result = await session.execute(
             select(ActivityLog)
             .where(ActivityLog.activity_type == "whatsapp_sent")
@@ -319,60 +259,43 @@ async def _detect_wa_triggers(session) -> List[Dict]:
             .limit(100)
         )
         wa_logs = wa_logs_result.scalars().all()
-
-        # Index por número de telefone
-        wa_index: Dict[str, ActivityLog] = {}
+        wa_index = {}
         for entry in wa_logs:
             payload = entry.payload or {}
             phone = (payload.get("to_phone") or payload.get("phone") or "").replace("+", "").replace(" ", "")
-            if phone:
-                wa_index[phone] = entry
+            if phone: wa_index[phone] = entry
     except Exception as e:
         log.warning("trigger.wa_log_query_error", error=str(e)[:200])
         wa_index = {}
 
     triggers_found = []
     now_ts = time.time()
-    # Considera mensagens recebidas nos últimos WA_POLL_INTERVAL_SEC * 2 segundos
     cutoff_ts = now_ts - (WA_POLL_INTERVAL_SEC * 2)
 
     for chat in chats[:WA_CHATS_LIMIT]:
         try:
             last_message = chat.get("lastMessage") or {}
-            from_me = last_message.get("fromMe", True)
-            msg_ts = last_message.get("timestamp", 0)
-
-            # Só processa mensagens recebidas (não enviadas por nós)
-            if from_me:
-                continue
-
-            # Só mensagens recentes
-            if msg_ts < cutoff_ts:
-                continue
+            if last_message.get("fromMe", True): continue
+            if last_message.get("timestamp", 0) < cutoff_ts: continue
 
             msg_id = last_message.get("id", {})
             if isinstance(msg_id, dict):
                 msg_id = msg_id.get("_serialized") or str(msg_id)
             msg_id = str(msg_id)
 
-            if msg_id in _processed_wa_ids:
-                continue
+            is_processed = await redis.sismember("processed_wa_ids", msg_id)
+            if is_processed: continue
 
-            # Extrai dados do chat
             chat_id = chat.get("id", {})
-            if isinstance(chat_id, dict):
-                phone = chat_id.get("user", "")
-            else:
-                phone = str(chat_id).split("@")[0]
+            if isinstance(chat_id, dict): phone = chat_id.get("user", "")
+            else: phone = str(chat_id).split("@")[0]
 
             contact_name = chat.get("name") or chat.get("contact", {}).get("pushname") or phone
             body = last_message.get("body") or last_message.get("caption") or "[mídia]"
 
-            # Match com ActivityLog
             phone_clean = phone.replace("+", "").replace(" ", "")
             matched_log = wa_index.get(phone_clean)
             if not matched_log:
-                # Tenta match sem DDI
                 for key_phone, entry in wa_index.items():
                     if phone_clean.endswith(key_phone[-8:]) or key_phone.endswith(phone_clean[-8:]):
                         matched_log = entry
@@ -384,12 +307,9 @@ async def _detect_wa_triggers(session) -> List[Dict]:
             if org_id:
                 from sqlalchemy import select
                 from models.organization import Organization
-                org_result = await session.execute(
-                    select(Organization).where(Organization.id == org_id)
-                )
+                org_result = await session.execute(select(Organization).where(Organization.id == org_id))
                 org = org_result.scalar_one_or_none()
-                if org:
-                    org_name = org.name
+                if org: org_name = org.name
 
             import uuid
             trigger = _make_trigger(
@@ -404,8 +324,8 @@ async def _detect_wa_triggers(session) -> List[Dict]:
                 in_reply_to_activity_id=matched_log.id if matched_log else None,
             )
             triggers_found.append(trigger)
-            _processed_wa_ids.add(msg_id)
-
+            await redis.sadd("processed_wa_ids", msg_id)
+            await redis.expire("processed_wa_ids", 86400 * 7)
         except Exception as e:
             log.debug("trigger.wa_chat_parse_error", error=str(e)[:100])
             continue
@@ -417,20 +337,16 @@ async def _detect_wa_triggers(session) -> List[Dict]:
 # ANÁLISE ASSÍNCRONA DO TRIGGER PELO AGENTE
 # =============================================================================
 
-async def _analyze_trigger(trigger: Dict, session) -> None:
-    """
-    Roda o INCOMING_RESPONSE_ANALYSIS_PROMPT para o trigger detectado.
-    Atualiza o trigger com o plano sugerido (não executa — aguarda aprovação).
-    """
+async def _analyze_trigger(trigger: Dict, session, redis) -> None:
     trigger_id = trigger["trigger_id"]
-    _pending_triggers[trigger_id]["status"] = "processing"
+    trigger["status"] = "processing"
+    await redis.hset("pending_triggers", trigger_id, json.dumps(trigger, ensure_ascii=False))
 
     try:
         from modules.ai.service.context.business_context import get_business_context_for_prompt
         from modules.ai.service.intent.prompts import INCOMING_RESPONSE_ANALYSIS_PROMPT
         from core.llm import ask_llm
 
-        # Busca histórico resumido da org
         history_summary = "Sem histórico disponível."
         if trigger.get("org_id"):
             try:
@@ -440,16 +356,12 @@ async def _analyze_trigger(trigger: Dict, session) -> None:
                     trigger["org_id"],
                     session
                 )
-                # Resumo compacto
                 deals = (ctx.get("pipedrive_details") or {}).get("deals", [])
                 acts = (ctx.get("pipedrive_details") or {}).get("activities", [])
                 parts = []
-                if deals:
-                    parts.append(f"Deal ativo: {deals[0].get('title')} ({deals[0].get('stage_name')})")
-                if acts:
-                    parts.append(f"Última atividade: {acts[0].get('subject')} ({'OK' if acts[0].get('done') else 'PEND'})")
-                if parts:
-                    history_summary = " | ".join(parts)
+                if deals: parts.append(f"Deal ativo: {deals[0].get('title')} ({deals[0].get('stage_name')})")
+                if acts: parts.append(f"Última atividade: {acts[0].get('subject')} ({'OK' if acts[0].get('done') else 'PEND'})")
+                if parts: history_summary = " | ".join(parts)
             except Exception as he:
                 log.debug("trigger.history_error", error=str(he)[:100])
 
@@ -470,136 +382,87 @@ async def _analyze_trigger(trigger: Dict, session) -> None:
             try:
                 plan_data = _json.loads(result.text)
             except Exception:
-                # Tenta extrair JSON do texto
                 import re
                 m = re.search(r'\{.*\}', result.text, re.DOTALL)
                 if m:
-                    try:
-                        plan_data = _json.loads(m.group())
-                    except Exception:
-                        plan_data = {}
+                    try: plan_data = _json.loads(m.group())
+                    except Exception: plan_data = {}
 
-        _pending_triggers[trigger_id]["analysis"] = plan_data.get("analysis", "")
-        _pending_triggers[trigger_id]["sentiment"] = plan_data.get("sentiment", "neutral")
-        _pending_triggers[trigger_id]["client_intent"] = plan_data.get("client_intent", "")
-        _pending_triggers[trigger_id]["urgency"] = plan_data.get("urgency", "media")
-        _pending_triggers[trigger_id]["suggested_plan"] = plan_data.get("plan", [])
-        _pending_triggers[trigger_id]["status"] = "suggested"
+        trigger["analysis"] = plan_data.get("analysis", "")
+        trigger["sentiment"] = plan_data.get("sentiment", "neutral")
+        trigger["client_intent"] = plan_data.get("client_intent", "")
+        trigger["urgency"] = plan_data.get("urgency", "media")
+        trigger["suggested_plan"] = plan_data.get("plan", [])
+        trigger["status"] = "suggested"
 
         log.info("trigger.analyzed", trigger_id=trigger_id, sentiment=plan_data.get("sentiment"))
-
-        # Notifica callbacks (SSE listeners)
-        _notify_callbacks(_pending_triggers[trigger_id])
+        await redis.hset("pending_triggers", trigger_id, json.dumps(trigger, ensure_ascii=False))
+        await _notify_trigger(redis, trigger)
 
     except Exception as e:
         log.warning("trigger.analysis_failed", trigger_id=trigger_id, error=str(e)[:200])
-        _pending_triggers[trigger_id]["status"] = "suggested"
-        _pending_triggers[trigger_id]["analysis"] = "Análise automática indisponível. Verifique a mensagem manualmente."
-        _pending_triggers[trigger_id]["suggested_plan"] = []
-        _notify_callbacks(_pending_triggers[trigger_id])
+        trigger["status"] = "suggested"
+        trigger["analysis"] = "Análise automática indisponível. Verifique a mensagem manualmente."
+        trigger["suggested_plan"] = []
+        await redis.hset("pending_triggers", trigger_id, json.dumps(trigger, ensure_ascii=False))
+        await _notify_trigger(redis, trigger)
+
+async def _safe_analyze(trigger: Dict, redis) -> None:
+    try:
+        from core.infra.database import async_session
+        async with async_session() as new_session:
+            await _analyze_trigger(trigger, new_session, redis)
+    except Exception as e:
+        log.warning("trigger.safe_analyze_error", error=str(e)[:200])
 
 
 # =============================================================================
-# LOOP PRINCIPAL DE POLLING
+# ARQ CRON JOBS
 # =============================================================================
 
-class TriggerService:
-    """
-    Serviço de background que monitora email e WhatsApp por respostas de clientes.
+async def scan_email_triggers(ctx):
+    redis = ctx['redis']
+    if await is_service_paused(redis): return
+    if is_quiet_hours(): return
 
-    Registre no lifespan do FastAPI:
-        task = asyncio.create_task(TriggerService().start_polling())
-    """
+    global _last_email_check
+    now = time.monotonic()
+    if now - _last_email_check < EMAIL_POLL_INTERVAL_SEC - 10:
+        return
+    _last_email_check = now
 
-    def __init__(self):
-        self._running = False
+    log.info("trigger.cron.scan_email.start")
+    try:
+        from core.infra.database import async_session
+        async with async_session() as session:
+            new_triggers = await _detect_email_triggers(session, redis)
+            for trigger in new_triggers:
+                tid = trigger["trigger_id"]
+                await redis.hset("pending_triggers", tid, json.dumps(trigger, ensure_ascii=False))
+                asyncio.create_task(_safe_analyze(trigger, redis), name=f"trigger_analyze_{tid[:8]}")
+    except Exception as e:
+        log.warning("trigger.cron.email_error", error=str(e)[:200])
 
-    async def start_polling(self):
-        """Loop principal de monitoramento. Roda indefinidamente."""
-        self._running = True
-        log.info("trigger_service.started")
 
-        # Aguarda 30s no startup para não concorrer com inicialização
-        await asyncio.sleep(30)
+async def scan_whatsapp_triggers(ctx):
+    redis = ctx['redis']
+    if await is_service_paused(redis): return
+    if is_quiet_hours(): return
 
-        while self._running:
-            try:
-                await self._poll_cycle()
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                log.warning("trigger_service.poll_error", error=str(e)[:300])
+    global _last_wa_check
+    now = time.monotonic()
+    if now - _last_wa_check < WA_POLL_INTERVAL_SEC - 10:
+        return
+    _last_wa_check = now
 
-            # Intervalo entre ciclos completos
-            await asyncio.sleep(min(EMAIL_POLL_INTERVAL_SEC, WA_POLL_INTERVAL_SEC))
-
-        log.info("trigger_service.stopped")
-
-    async def stop(self):
-        self._running = False
-
-    async def _poll_cycle(self):
-        """Executa um ciclo de detecção em todos os canais."""
-        global _last_email_check, _last_wa_check
-
-        # ── Guards: kill switch ou horário de silêncio ────────────────────────
-        if _service_paused:
-            log.debug("trigger_service.skipped_paused")
-            return
-        if is_quiet_hours():
-            log.debug("trigger_service.skipped_quiet_hours",
-                      hour=datetime.now().hour,
-                      window=f"{QUIET_HOURS_START}h-{QUIET_HOURS_END}h")
-            return
-
-        now = time.monotonic()
-
-        # Abre sessão DB para cada ciclo
-        try:
-            from core.infra.database import async_session
-            async with async_session() as session:
-                tasks = []
-
-                if now - _last_email_check >= EMAIL_POLL_INTERVAL_SEC:
-                    tasks.append(("email", _detect_email_triggers(session)))
-                    _last_email_check = now
-
-                if now - _last_wa_check >= WA_POLL_INTERVAL_SEC:
-                    tasks.append(("wa", _detect_wa_triggers(session)))
-                    _last_wa_check = now
-
-                if not tasks:
-                    return
-
-                results = await asyncio.gather(*[t[1] for t in tasks], return_exceptions=True)
-
-                new_triggers = []
-                for (channel, _), result in zip(tasks, results):
-                    if isinstance(result, Exception):
-                        log.warning("trigger_service.channel_error", channel=channel, error=str(result)[:200])
-                        continue
-                    new_triggers.extend(result)
-
-                if new_triggers:
-                    log.info("trigger_service.new_triggers", count=len(new_triggers))
-
-                for trigger in new_triggers:
-                    tid = trigger["trigger_id"]
-                    _pending_triggers[tid] = trigger
-                    asyncio.create_task(
-                        self._safe_analyze(trigger, session),
-                        name=f"trigger_analyze_{tid[:8]}"
-                    )
-
-        except Exception as e:
-            log.warning("trigger_service.session_error", error=str(e)[:200])
-
-    @staticmethod
-    async def _safe_analyze(trigger: Dict, session) -> None:
-        """Wrapper seguro para _analyze_trigger."""
-        try:
-            from core.infra.database import async_session
-            async with async_session() as new_session:
-                await _analyze_trigger(trigger, new_session)
-        except Exception as e:
-            log.warning("trigger_service.analyze_error", error=str(e)[:200])
+    log.info("trigger.cron.scan_wa.start")
+    try:
+        from core.infra.database import async_session
+        async with async_session() as session:
+            new_triggers = await _detect_wa_triggers(session, redis)
+            for trigger in new_triggers:
+                tid = trigger["trigger_id"]
+                await redis.hset("pending_triggers", tid, json.dumps(trigger, ensure_ascii=False))
+                asyncio.create_task(_safe_analyze(trigger, redis), name=f"trigger_analyze_{tid[:8]}")
+    except Exception as e:
+        log.warning("trigger.cron.wa_error", error=str(e)[:200])

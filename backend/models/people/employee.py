@@ -44,6 +44,7 @@ class Employee(Base):
     temperature = Column(String, nullable=True, index=True)
     matching_score = Column(Integer, nullable=True)
     evidence = Column(Text, nullable=True)
+    prospecting_context = Column(Text, nullable=True)
     education = Column(Text, nullable=True)
     headline = Column(String, nullable=True)
     is_discovery = Column(Integer, default=0, index=True)

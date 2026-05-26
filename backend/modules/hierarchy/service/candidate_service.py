@@ -12,8 +12,8 @@ from .filters import get_department_tag
 
 
 async def resolve_employee_by_node_id(node_id: str, db: AsyncSession) -> Employee | None:
-    """Resolve um node_id efêmero (node_123, node_username) para um Employee do banco."""
-    if "_" in str(node_id) and str(node_id).startswith("node_"):
+    """Resolve um node_id efêmero (node_123, node_username, partner_123) para um Employee do banco."""
+    if "_" in str(node_id) and (str(node_id).startswith("node_") or str(node_id).startswith("partner_")):
         parts = str(node_id).split("_")
         if parts[1].isdigit():
             res = await db.execute(select(Employee).where(Employee.id == int(parts[1])))

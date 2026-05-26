@@ -141,8 +141,28 @@ async def refine_message(payload: RefineMessageRequest):
     from core.llm.base import LLMTier
     import json
 
-    from modules.agent.core.loop import _PENDING as _V2_PENDING
+    from modules.agent.service.core.loop import _PENDING as _V2_PENDING
+    from core.infra.database import async_session as _async_session
+    from models.conversation.conversation import AgentPendingConfirmation
+    from sqlalchemy import select
+    from sqlalchemy.orm.attributes import flag_modified
+
+    db_pending_obj = None
     pending = _V2_PENDING.get(payload.action_id)
+    if not pending:
+        try:
+            async with _async_session() as db:
+                result = await db.execute(
+                    select(AgentPendingConfirmation).where(AgentPendingConfirmation.id == payload.action_id)
+                )
+                db_pending_obj = result.scalar_one_or_none()
+                if db_pending_obj:
+                    pending = db_pending_obj.payload
+                    # Também armazena em memória para o fluxo continuar rápido se o mesmo worker confirmar
+                    _V2_PENDING[payload.action_id] = pending
+        except Exception as e:
+            log.warning("ai.refine_message.db_fallback_failed", error=str(e))
+
     if not pending:
         raise HTTPException(status_code=404, detail="Ação não encontrada ou já expirou.")
 
@@ -151,40 +171,84 @@ async def refine_message(payload: RefineMessageRequest):
     contact_name = args.get("contact") or args.get("contact_name") or ""
     channel = "email" if "email" in pending.get("tool", "") else "whatsapp"
 
+    # Serializa o histórico de comunicações para contextualização da reescrita
+    messages = pending.get("messages_snapshot", [])
+    history_serialized = []
+    for msg in messages:
+        role = msg.get("role", "")
+        content = msg.get("content", "")
+        if isinstance(content, list):
+            text_parts = []
+            for item in content:
+                if isinstance(item, dict):
+                    if item.get("type") == "text":
+                        text_parts.append(item.get("text", ""))
+                    elif item.get("type") == "tool_result":
+                        tool_content = str(item.get("content", ""))
+                        if len(tool_content) > 12000:
+                            tool_content = tool_content[:12000] + "... [truncado]"
+                        text_parts.append(f"[Ferramenta '{item.get('tool_name', '')}': {tool_content}]")
+            content = "\n".join(text_parts)
+        history_serialized.append({"role": role, "content": str(content)})
+
     business_context = await BusinessContextService.get_tenant_context()
     biz_data_str = json.dumps(business_context, indent=2, ensure_ascii=False) if business_context else ""
 
     system_prompt = (
         "Você é um redator comercial B2B sênior. Reescreva a mensagem de vendas abaixo aplicando "
-        "exatamente o ajuste solicitado — não altere o que não foi pedido.\n\n"
-        f"## CONTEXTO DA EMPRESA (mantenha os diferenciais):\n{biz_data_str}\n\n"
-        "REGRAS:\n"
-        "- Aplique APENAS o ajuste pedido. Preserve tom, dados concretos (nomes, preços, códigos) e estratégia geral.\n"
-        "- Nunca adicione placeholders como [x] ou [y].\n"
-        f"- Canal: {channel}. Tom natural e direto.\n"
-        "RETORNE APENAS O TEXTO DA MENSAGEM REESCRITA. Sem introdução, sem explicação."
+        "exatamente o ajuste solicitado pelo usuário, baseando-se no histórico real de e-mails, "
+        "WhatsApp e CRM disponíveis na conversa para contextualizar melhor e manter a coerência.\n"
+        "Não altere o que não foi pedido e mantenha os dados corretos (nomes, preços, cotações, amostras, etc.).\n\n"
+        f"## CONTEXTO DA NOSSA EMPRESA:\n{biz_data_str}\n\n"
+        "REGRAS CRÍTICAS DE REESCRITA:\n"
+        "- IMPORTANTE: Você tem acesso ao histórico completo da conversa. Se o usuário pedir para 'mudar o tom', 'tornar mais caloroso', 'mencionar o retorno de férias', 'citar as amostras', 'adequar ao peso', use os dados reais do histórico recente para enriquecer a mensagem de forma precisa e sem alucinar.\n"
+        "- Preserve todos os dados concretos (nomes, preços, códigos, links) que já estão na mensagem original e que não foram explicitamente solicitados para alteração.\n"
+        "- Nunca adicione placeholders como [x] ou [y] ou [nome].\n"
+        f"- Canal: {channel}. Tom natural, direto e profissional.\n"
+        "RETORNE APENAS O TEXTO DA MENSAGEM REESCRITA. Sem introdução, sem explicação, sem aspas."
     )
     prompt_user = (
         f"MENSAGEM ORIGINAL:\n{current_message}\n\n"
         f"AJUSTE SOLICITADO: {payload.feedback}\n\n"
-        "Reescreva a mensagem aplicando o ajuste."
+        "Reescreva a mensagem de vendas aplicando o ajuste solicitado com precisão."
     )
 
     try:
         res = await ask_llm(
             prompt=prompt_user,
             system=system_prompt,
+            history=history_serialized,
             json_mode=False,
             temperature=0.4,
             tier=LLMTier.STANDARD
         )
         refined = res.text.strip()
 
+        # Atualiza em memória
         args = _V2_PENDING[payload.action_id].get("args", {})
         if "message" in args:
             args["message"] = refined
         if "body" in args:
             args["body"] = refined
+
+        # Atualiza no DB se foi carregado de lá
+        if db_pending_obj:
+            try:
+                async with _async_session() as db:
+                    result = await db.execute(
+                        select(AgentPendingConfirmation).where(AgentPendingConfirmation.id == payload.action_id)
+                    )
+                    db_obj = result.scalar_one_or_none()
+                    if db_obj:
+                        db_args = db_obj.payload.get("args", {})
+                        if "message" in db_args:
+                            db_args["message"] = refined
+                        if "body" in db_args:
+                            db_args["body"] = refined
+                        flag_modified(db_obj, "payload")
+                        await db.commit()
+            except Exception as e:
+                log.warning("ai.refine_message.db_update_failed", error=str(e))
 
         return {"ok": True, "refined_message": refined}
     except Exception as e:

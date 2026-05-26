@@ -25,6 +25,28 @@ export function useDiscoveryWorkflow({
 }: DiscoveryWorkflowProps) {
     const { addNotification } = useNotifications();
     const [step, setStep] = useState<"input" | "confirm" | "scanning" | "loading" | "initial">("input");
+    const [selectedModel, setSelectedModelState] = useState<string>(() => {
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("selected-hierarchy-model") || "gemini";
+        }
+        return "gemini";
+    });
+    const [strictMode, setStrictModeState] = useState<boolean>(() => {
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("selected-hierarchy-strict-mode") === "true";
+        }
+        return false;
+    });
+
+    const setSelectedModel = useCallback((val: string) => {
+        setSelectedModelState(val);
+        localStorage.setItem("selected-hierarchy-model", val);
+    }, []);
+
+    const setStrictMode = useCallback((val: boolean) => {
+        setStrictModeState(val);
+        localStorage.setItem("selected-hierarchy-strict-mode", String(val));
+    }, []);
     const [cnpj, setCnpj] = useState(defaultCnpj);
     const [domainTarget, setDomainTarget] = useState("");
     const [productFocus, setProductFocus] = useState("");
@@ -35,6 +57,8 @@ export function useDiscoveryWorkflow({
     const [refreshDrawerTrigger, setRefreshDrawerTrigger] = useState(0);
     const [enrichingIds, setEnrichingIds] = useState<Set<number>>(new Set());
     const [partners, setPartners] = useState<any[]>([]);
+    const [mappingMode, setMappingMode] = useState<'discovery' | 'scan'>('discovery');
+    const [confirmedLinkedInUrl, setConfirmedLinkedInUrl] = useState('');
 
     const {
         discoverBrandStream,
@@ -108,13 +132,15 @@ export function useDiscoveryWorkflow({
                 addNotification,
                 partners,
                 currentOrgId,
-                rootAndPartnersOnly
+                rootAndPartnersOnly,
+                selectedModel,
+                strictMode
             );
         }
     }, [
         step, cnpj, domainTarget, confirmedBrand, confirmedLogo, productFocus, areaFocus,
         discoverBrandStream, fetchHierarchy, addNotification, 
-        partners, currentOrgId, rawEmployees, setBrandOptions
+        partners, currentOrgId, rawEmployees, setBrandOptions, selectedModel, strictMode
     ]);
 
     const handleBrandSelect = useCallback(async (brandObj: any) => {
@@ -149,6 +175,7 @@ export function useDiscoveryWorkflow({
         setConfirmedLogo(logo);
         setConfirmedFollowers(followers);
         setPartners(newPartners);
+        setConfirmedLinkedInUrl(brandObj.url || '');
         setStep("confirm");
 
         if (cnpj) {
@@ -167,7 +194,14 @@ export function useDiscoveryWorkflow({
                 const isUpdate = result.is_update || result.status === "updated" || result.status === "success";
                 const newOrgId = result.pipedrive_id || result.local_id;
 
-                if (!currentOrgId && newOrgId) setCurrentOrgId(Number(newOrgId));
+                if (!currentOrgId && newOrgId) {
+                    setCurrentOrgId(Number(newOrgId));
+                    // Expande a empresa no Drawer automaticamente
+                    localStorage.setItem('drawer-expanded-org-id', newOrgId.toString());
+                    window.dispatchEvent(new CustomEvent('drawer_reset_expansion'));
+                    // Dispara também um evento para abrir o drawer caso esteja fechado
+                    window.dispatchEvent(new CustomEvent('drawer_open'));
+                }
                 addNotification('success', isUpdate ? "Empresa atualizada!" : "Empresa integrada!");
 
                 if (!currentOrgId) fetchPipedriveOrgs();
@@ -222,6 +256,12 @@ export function useDiscoveryWorkflow({
                         if (newOrg) {
                             setCurrentOrgId(Number(newOrg.id));
                             localStorage.setItem('last-viewed-org', JSON.stringify(newOrg));
+                            
+                            // Expande a empresa no Drawer automaticamente
+                            localStorage.setItem('drawer-expanded-org-id', newOrg.id.toString());
+                            window.dispatchEvent(new CustomEvent('drawer_reset_expansion'));
+                            window.dispatchEvent(new CustomEvent('drawer_open'));
+                            
                             if (newOrg.logo) setConfirmedLogo(newOrg.logo);
                             addNotification('success', `Empresa '${officialName || "Nova Empresa"}' integrada!`);
                         }
@@ -255,6 +295,8 @@ export function useDiscoveryWorkflow({
         setCurrentOrgId(null);
         setChatOrgId(null);
         setPartners([]);
+        setMappingMode('discovery');
+        setConfirmedLinkedInUrl('');
         resetHierarchy();
         localStorage.removeItem('last-viewed-org');
     }, [setBrandOptions, setCurrentOrgId, setChatOrgId, resetHierarchy]);
@@ -274,6 +316,14 @@ export function useDiscoveryWorkflow({
         handleSearch,
         handleBrandSelect,
         handleAutoEnrich,
-        resetWorkflow
+        resetWorkflow,
+        selectedModel,
+        setSelectedModel,
+        strictMode,
+        setStrictMode,
+        mappingMode,
+        setMappingMode,
+        confirmedLinkedInUrl,
+        setConfirmedLinkedInUrl
     };
 }

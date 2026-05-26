@@ -188,7 +188,7 @@
   /* Garante que o gradiente não escape das bordas */
 
   /* Gradiente focado no Azul Elétrico #7a8bff */
-  background: linear-gradient(145deg, #7a8bff 0%, #2d3a8c 45%, #131313 100%) !important;
+  background: linear-gradient(145deg, #7a8bff 0%, #2d3a8c 45%, #111113 100%) !important;
   transition: all 0.2s ease !important;
 }
 
@@ -623,4 +623,37 @@
 
 [data-theme='light'] .agentModeV2:hover {
   background: rgba(79, 70, 229, 0.14) !important;
+}
+
+/* === MODIFICADOR PARA ABERTURA PARA BAIXO (EX: CANTO DO GRAFO) === */
+.dropdownDown .modelSelectorTrigger {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.dropdownDown .modelSelectorDropdown {
+  bottom: auto !important;
+  top: calc(100% + 8px) !important;
+  left: auto !important;
+  right: 0 !important;
+  animation: modelSelectorFadeInDown 0.15s ease !important;
+}
+
+@keyframes modelSelectorFadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownDown .modelSelectorTrigger .chevron {
+  transform: rotate(180deg) !important;
+}
+
+.dropdownDown .modelSelectorTrigger .chevron.open {
+  transform: rotate(0deg) !important;
 }

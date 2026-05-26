@@ -54,7 +54,9 @@ class ContactConversationCache(Base):
         self.messages_json = json.dumps(msgs, ensure_ascii=False)
         self.message_count = len(msgs)
         if msgs:
-            last = msgs[-1]
-            body = last.get("body") or last.get("preview") or ""
+            # E-mails são ordenados decrescente (mais novo primeiro),
+            # WhatsApp e outros são ordenados crescente (mais novo por último).
+            last = msgs[0] if self.channel == CHANNEL_EMAIL else msgs[-1]
+            body = last.get("body") or last.get("preview") or last.get("content") or ""
             self.last_message_preview = body[:120] if body else None
         self.fetched_at = datetime.utcnow()

@@ -297,3 +297,9 @@
   font-size: var(--font-xs);
   color: var(--chat-text-muted);
 }
+
+/* === MODIFICADOR PARA ABERTURA PARA BAIXO (EX: CANTO DO GRAFO) === */
+.dropdownDown .modelSelectorTrigger {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}

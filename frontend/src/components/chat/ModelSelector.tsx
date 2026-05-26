@@ -88,6 +88,7 @@ interface ModelSelectorProps {
     setStrictMode?: (strict: boolean) => void;
     theme?: string;
     liveModel?: AIModel | null;
+    dropdownDirection?: 'up' | 'down';
 }
 
 export const ModelSelector: React.FC<ModelSelectorProps> = ({
@@ -97,6 +98,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
     setStrictMode,
     theme = 'light',
     liveModel,
+    dropdownDirection = 'up',
 }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -149,12 +151,16 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
     };
 
     return (
-        <div ref={ref} className="modelSelectorWrapper">
+        <div ref={ref} className={`modelSelectorWrapper ${dropdownDirection === 'down' ? 'dropdownDown' : ''}`}>
             {/* Trigger button */}
             <button
                 onClick={() => setOpen(v => !v)}
                 data-open={open}
                 className={`modelSelectorTrigger`}
+                style={dropdownDirection === 'down' ? {
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                } : undefined}
             >
                 <img
                     src={current.logoSrc}

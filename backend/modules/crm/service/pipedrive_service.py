@@ -716,21 +716,26 @@ class PipedriveService:
             if not data.get("success"):
                 return {"status": "error", "message": "Sem tarefas."}
             activities = data.get("data") or []
-            updated = 0
-            for act in activities:
-                due = act.get("due_date")
-                deal_id = act.get("deal_id")
-                # Apenas atualiza atividades atreladas a negócios (Deals)
-                if not deal_id:
-                    continue
-                if due and due < today:
+            async def _update_overdue_task(act_id: int) -> bool:
+                try:
                     r = await self._request(
                         "PUT",
-                        f"activities/{act.get('id')}",
+                        f"activities/{act_id}",
                         json={"due_date": today},
                     )
-                    if r is not None and r.status_code == 200:
-                        updated += 1
+                    return r is not None and r.status_code == 200
+                except Exception as e:
+                    log.warning("pipedrive.sync_overdue.task_failed", task_id=act_id, error=str(e))
+                    return False
+
+            tasks_to_update = [
+                act.get("id")
+                for act in activities
+                if act.get("deal_id") and act.get("due_date") and act.get("due_date") < today
+            ]
+
+            results = await asyncio.gather(*[_update_overdue_task(tid) for tid in tasks_to_update])
+            updated = sum(1 for res in results if res)
             return {"status": "success", "message": f"{updated} atrasos perdoados."}
         except Exception as e:
             return {"status": "error", "message": str(e)}
@@ -748,7 +753,7 @@ class PipedriveService:
             resp_act = await self._request(
                 "GET",
                 "activities",
-                params={"user_id": self.user_id, "limit": 500},
+                params={"user_id": self.user_id, "limit": 500, "done": 0},
             )
             if resp_act is None or resp_act.status_code != 200:
                 return {"status": "error", "message": "Falha ao buscar atividades."}
@@ -834,13 +839,18 @@ class PipedriveService:
                                 target_day += timedelta(days=1)
                                 attempt += 1
 
-            updated = 0
-            for tid, d_str in scheduled_updates:
-                r = await self._request(
-                    "PUT", f"activities/{tid}", json={"due_date": d_str}
-                )
-                if r is not None and r.status_code == 200:
-                    updated += 1
+            async def _update_one_task(tid: int, d_str: str) -> bool:
+                try:
+                    r = await self._request(
+                        "PUT", f"activities/{tid}", json={"due_date": d_str}
+                    )
+                    return r is not None and r.status_code == 200
+                except Exception as e:
+                    log.warning("pipedrive.smart_reschedule.task_failed", task_id=tid, error=str(e))
+                    return False
+
+            results = await asyncio.gather(*[_update_one_task(tid, d_str) for tid, d_str in scheduled_updates])
+            updated = sum(1 for res in results if res)
 
             final_day = (
                 max(u[1] for u in scheduled_updates)

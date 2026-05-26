@@ -147,3 +147,16 @@ class ActivityLog(Base):
         Index("ix_al_org_type_created", "org_id", "activity_type", "created_at"),
         Index("ix_al_status_type", "status", "activity_type"),  # para polling
     )
+
+
+# ─────────────────────────────────────────────
+# AgentPendingConfirmation
+# ─────────────────────────────────────────────
+
+class AgentPendingConfirmation(Base):
+    """Armazena confirmações de ações pendentes do agente de forma persistente."""
+    __tablename__ = "agent_pending_confirmations"
+
+    id         = Column(String, primary_key=True)  # O action_id
+    payload    = Column(JSON, nullable=False)      # O dicionário completo do _PENDING[action_id]
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)

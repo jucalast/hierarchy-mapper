@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
+from datetime import datetime
 from typing import Any, AsyncGenerator, Dict, List
 
 from modules.agent.service.helpers import _emit, _raw_log, _fix_corrupted_name
@@ -23,6 +24,122 @@ from core.observability.logging_config import get_logger
 log = get_logger(__name__)
 
 MAX_ITERATIONS = 20
+
+
+async def _save_run_state(
+    thread_id: str | None,
+    parent_message_id: str | None,
+    action_index: int | None,
+    message: str,
+    is_regeneration: bool,
+    final_response: str,
+    collected_events: list,
+    process_id: str,
+    is_resume: bool = False,
+    user_msg_saved: bool = False,
+) -> bool:
+    if not thread_id:
+        return False
+
+    try:
+        from core.infra.database import async_session as _async_session
+        from sqlalchemy import select
+        from models.conversation import ConversationMessage
+        from sqlalchemy.orm.attributes import flag_modified
+        from datetime import datetime
+
+        async with _async_session() as db:
+            if parent_message_id and action_index is not None:
+                # ─── Suggested action saving logic ───
+                result = await db.execute(
+                    select(ConversationMessage).where(ConversationMessage.id == parent_message_id)
+                )
+                parent_msg = result.scalar_one_or_none()
+                if parent_msg:
+                    has_confirm = any(e.get("type") == "confirmation_required" for e in collected_events)
+                    action_status = "awaiting_confirm" if has_confirm else "done"
+
+                    msg_data = dict(parent_msg.data or {})
+                    runs = msg_data.get("suggested_actions_runs", {})
+                    
+                    if is_resume:
+                        prev_run = runs.get(str(action_index), {})
+                        prev_logs = prev_run.get("logs", [])
+                        combined_logs = prev_logs + collected_events
+                    else:
+                        combined_logs = collected_events
+
+                    runs[str(action_index)] = {
+                        "status": action_status,
+                        "logs": combined_logs,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                    msg_data["suggested_actions_runs"] = runs
+                    parent_msg.data = msg_data
+                    
+                    parent_logs = list(parent_msg.logs or [])
+                    for event in parent_logs:
+                        if event.get("type") == "suggested_actions" and "actions" in event:
+                            if 0 <= action_index < len(event["actions"]):
+                                action_item = event["actions"][action_index]
+                                action_item["status"] = action_status
+                                action_item["logs"] = combined_logs
+                    parent_msg.logs = parent_logs
+                    
+                    flag_modified(parent_msg, "data")
+                    flag_modified(parent_msg, "logs")
+                    db.add(parent_msg)
+
+                # Salva quaisquer confirmações de ações pendentes criadas nesta execução no banco de dados para resiliência pós-reinicialização
+                try:
+                    from models.conversation.conversation import AgentPendingConfirmation
+                    for act_id, payload in list(_PENDING.items()):
+                        if payload.get("process_id") == process_id:
+                            exists = await db.get(AgentPendingConfirmation, act_id)
+                            if not exists:
+                                db_confirm = AgentPendingConfirmation(id=act_id, payload=payload)
+                                db.add(db_confirm)
+                except Exception as db_err:
+                    log.warning("agent.pending_confirmation.save_failed", error=str(db_err))
+
+                await db.commit()
+                log.info("agent.suggested_action.saved_to_parent", parent_message_id=parent_message_id, action_index=action_index)
+            else:
+                # Comportamento padrão de salvar como mensagens separadas se não for uma ação sugerida atrelada ao pai
+                from api.v1.routers.conversations import save_message as _save_message
+                
+                if not is_resume and not is_regeneration and not user_msg_saved:
+                    await _save_message(db, thread_id, "user", message)
+                    log.info("agent.user_message.saved_immediately", thread_id=thread_id)
+                
+                # Salva a resposta do assistente se houve resposta final OU se houve eventos (investigação iniciada/parada em confirmação)
+                if final_response or collected_events:
+                    await _save_message(
+                        db, 
+                        thread_id, 
+                        "assistant", 
+                        final_response or "", 
+                        logs=collected_events
+                    )
+                
+                # Salva quaisquer confirmações de ações pendentes criadas nesta execução no banco de dados para resiliência pós-reinicialização
+                try:
+                    from models.conversation.conversation import AgentPendingConfirmation
+                    for act_id, payload in list(_PENDING.items()):
+                        if payload.get("process_id") == process_id:
+                            exists = await db.get(AgentPendingConfirmation, act_id)
+                            if not exists:
+                                db_confirm = AgentPendingConfirmation(id=act_id, payload=payload)
+                                db.add(db_confirm)
+                    await db.commit()
+                except Exception as db_err:
+                    log.warning("agent.pending_confirmation.save_failed", error=str(db_err))
+                log.info("agent.messages.saved", thread_id=thread_id, is_regeneration=is_regeneration, has_final=bool(final_response))
+        return True
+    except Exception as e:
+        log.warning("agent.messages.save_failed", thread_id=thread_id, error=str(e))
+        return False
+
 
 async def run_agent(
     message: str,
@@ -192,89 +309,77 @@ async def run_agent(
 
     final_response = ""
     collected_events = []
-    async for chunk in _agent_loop(
-        messages,
-        tools,
-        org_id=org_id,
-        preferred=preferred,
-        strict_mode=strict_mode,
-        process_id=process_id,
-        direct_action=direct_action,
-        parent_message_id=parent_message_id,
-        action_index=action_index,
-        query_type=query_type,
-    ):
-        # Rastreia a resposta final antes de emitir
-        try:
-            data = _json.loads(chunk)
-            collected_events.append(data)
-            if data.get("type") == "final":
-                final_response = data.get("response", "")
-        except Exception:
-            pass
-        yield chunk
 
-    # Persiste as mensagens no banco após o stream completo
-    if thread_id:
+    # Salva a mensagem do usuário imediatamente se thread_id estiver presente, não for regeneração e não for ação sugerida.
+    user_msg_saved = False
+    if thread_id and not is_regeneration and not parent_message_id:
         try:
             from core.infra.database import async_session as _async_session
+            from api.v1.routers.conversations import save_message as _save_message
             async with _async_session() as db:
-                if parent_message_id and action_index is not None:
-                    # ─── Suggested action saving logic ───
-                    # Carrega a mensagem do assistente pai e atualiza os eventos dela com os resultados dessa execução
-                    from sqlalchemy import select
-                    from models.conversation import ConversationMessage
-                    result = await db.execute(
-                        select(ConversationMessage).where(ConversationMessage.id == parent_message_id)
-                    )
-                    parent_msg = result.scalar_one_or_none()
-                    if parent_msg:
-                        has_confirm = any(e.get("type") == "confirmation_required" for e in collected_events)
-                        action_status = "awaiting_confirm" if has_confirm else "done"
-
-                        # Vamos salvar os logs desta execução e o status no data da mensagem do assistente pai.
-                        msg_data = dict(parent_msg.data or {})
-                        runs = msg_data.get("suggested_actions_runs", {})
-                        runs[str(action_index)] = {
-                            "status": action_status,
-                            "logs": collected_events,
-                            "timestamp": datetime.utcnow().isoformat()
-                        }
-                        msg_data["suggested_actions_runs"] = runs
-                        parent_msg.data = msg_data
-                        
-                        # Também precisamos atualizar o log/evento "suggested_actions" original em parent_msg.logs para refletir que ela foi executada
-                        parent_logs = list(parent_msg.logs or [])
-                        for event in parent_logs:
-                            if event.get("type") == "suggested_actions" and "actions" in event:
-                                # Adiciona o status/logs na ação correspondente
-                                if 0 <= action_index < len(event["actions"]):
-                                    action_item = event["actions"][action_index]
-                                    action_item["status"] = action_status
-                                    action_item["logs"] = collected_events
-                        parent_msg.logs = parent_logs
-                        
-                        db.add(parent_msg)
-                        await db.commit()
-                        log.info("agent.suggested_action.saved_to_parent", parent_message_id=parent_message_id, action_index=action_index)
-                else:
-                    # Comportamento padrão de salvar como mensagens separadas se não for uma ação sugerida atrelada ao pai
-                    from api.v1.routers.conversations import save_message as _save_message
-                    if not is_regeneration:
-                        await _save_message(db, thread_id, "user", message)
-                    
-                    # Salva a resposta do assistente se houve resposta final OU se houve eventos (investigação iniciada/parada em confirmação)
-                    if final_response or collected_events:
-                        await _save_message(
-                            db, 
-                            thread_id, 
-                            "assistant", 
-                            final_response or "", 
-                            logs=collected_events
-                        )
-                    log.info("agent.messages.saved", thread_id=thread_id, is_regeneration=is_regeneration, has_final=bool(final_response))
+                await _save_message(db, thread_id, "user", message)
+                user_msg_saved = True
+                log.info("agent.user_message.saved_immediately", thread_id=thread_id)
         except Exception as e:
-            log.warning("agent.messages.save_failed", thread_id=thread_id, error=str(e))
+            log.warning("agent.user_message.save_immediate_failed", thread_id=thread_id, error=str(e))
+
+    saved_on_completion = False
+    try:
+        async for chunk in _agent_loop(
+            messages,
+            tools,
+            org_id=org_id,
+            preferred=preferred,
+            strict_mode=strict_mode,
+            process_id=process_id,
+            direct_action=direct_action,
+            parent_message_id=parent_message_id,
+            action_index=action_index,
+            query_type=query_type,
+        ):
+            try:
+                data = json.loads(chunk)
+                collected_events.append(data)
+                if data.get("type") == "final":
+                    final_response = data.get("response", "")
+            except Exception:
+                pass
+            yield chunk
+
+        # Loop concluído com sucesso
+        if thread_id:
+            await _save_run_state(
+                thread_id=thread_id,
+                parent_message_id=parent_message_id,
+                action_index=action_index,
+                message=message,
+                is_regeneration=is_regeneration,
+                final_response=final_response,
+                collected_events=collected_events,
+                process_id=process_id,
+                is_resume=False,
+                user_msg_saved=user_msg_saved,
+            )
+            saved_on_completion = True
+
+    except BaseException as exc:
+        log.warning("agent.run_generator.interrupted", thread_id=thread_id, exc_type=type(exc).__name__)
+        if thread_id and not saved_on_completion:
+            await asyncio.shield(
+                _save_run_state(
+                    thread_id=thread_id,
+                    parent_message_id=parent_message_id,
+                    action_index=action_index,
+                    message=message,
+                    is_regeneration=is_regeneration,
+                    final_response=final_response,
+                    collected_events=collected_events,
+                    process_id=process_id,
+                    is_resume=False,
+                    user_msg_saved=user_msg_saved,
+                )
+            )
+        raise exc
 
 
 def _extract_first_activity_id(messages_snapshot: list) -> str | None:
@@ -327,12 +432,19 @@ _FOLLOWUP_ACTION_KEYWORDS = [
     "sugira tarefas", "crie tarefas", "criar tarefas", "novas tarefas",
     "próximos passos", "proximos passos", "marcar uma reunião", "agendar reunião",
     "o que fazer", "o que devo fazer", "qual o próximo passo",
+    "criar", "cria", "crie", "agendar", "agenda", "agende",
+    "salvar", "salva", "salve", "registrar", "registra", "registre",
+    "adicionar", "adiciona", "adicione", "anotar", "anota", "anote",
+    "enviar", "envia", "envie", "mandar", "manda", "mande",
+    "escrever", "escreve", "escreve", "propor", "propoe", "propõe",
+    "gerar", "gera", "gere", "dossie", "dossiê", "timeline",
 ]
 
 _INVESTIGATION_DONE_MARKERS = [
     "pipedrive_get_activities", "pipedrive_get_org", "pipedrive_get_persons",
     "whatsapp_get_messages", "generate_sales_message",
     "atividades pendentes", "mensagens com", "contatos em", "deal(s) em",
+    "dossiê", "dossie", "histórico", "historico", "contatos", "atividades", "whatsapp", "email"
 ]
 
 
@@ -343,17 +455,29 @@ def _detect_context_followup(message: str, history: list) -> str | None:
     """
     import re as _re
 
+    if not history:
+        return None
+
     msg_lower = message.lower().strip()
     is_micro_action = (
-        len(message.strip()) < 250
+        len(message.strip()) < 1000
         and any(kw in msg_lower for kw in _FOLLOWUP_ACTION_KEYWORDS)
     )
     if not is_micro_action:
         return None
 
     history_text = " ".join(str(m.get("content", "")) for m in history[-15:])
-    markers_found = sum(1 for mk in _INVESTIGATION_DONE_MARKERS if mk in history_text)
-    if markers_found < 2:
+    
+    # Marcadores estendidos para robustez
+    markers = _INVESTIGATION_DONE_MARKERS + [
+        "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities",
+        "whatsapp_get_messages", "email_get_contact_history", "generate_sales_message", "generate_dossier",
+    ]
+    markers_found = sum(1 for mk in markers if mk.lower() in history_text.lower())
+    
+    # Se encontramos pelo menos 1 marcador importante ou a história tem um tamanho razoável (>= 2 mensagens),
+    # indica que já há contexto de conversa ativo.
+    if markers_found < 1 and len(history) < 2:
         return None
 
     # Extrai IDs de atividade do histórico para incluir na diretiva
@@ -387,9 +511,46 @@ async def resume_after_confirmation(
     action_id: str,
     approved: bool,
     thread_id: str | None = None,
+    attachment_path: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """Retoma o agente após confirmação de uma ação de escrita."""
     pending = _PENDING.pop(action_id, None)
+    if pending:
+        # Se estava em memória, vamos garantir a deleção no banco de dados para manter limpo
+        try:
+            from core.infra.database import async_session as _async_session
+            from models.conversation.conversation import AgentPendingConfirmation
+            from sqlalchemy import select
+            async with _async_session() as db:
+                result = await db.execute(
+                    select(AgentPendingConfirmation).where(AgentPendingConfirmation.id == action_id)
+                )
+                db_pending = result.scalar_one_or_none()
+                if db_pending:
+                    await db.delete(db_pending)
+                    await db.commit()
+        except Exception:
+            pass
+    else:
+        try:
+            # Fallback: tentar buscar no banco de dados caso a aplicação tenha sido reiniciada
+            from core.infra.database import async_session as _async_session
+            from models.conversation.conversation import AgentPendingConfirmation
+            from sqlalchemy import select
+            async with _async_session() as db:
+                result = await db.execute(
+                    select(AgentPendingConfirmation).where(AgentPendingConfirmation.id == action_id)
+                )
+                db_pending = result.scalar_one_or_none()
+                if db_pending:
+                    pending = db_pending.payload
+                    # Remove do banco após recuperar para evitar reuso duplicado
+                    await db.delete(db_pending)
+                    await db.commit()
+                    log.info("agent.pending_confirmation.restored_from_db", action_id=action_id)
+        except Exception as e:
+            log.warning("agent.pending_confirmation.load_failed", error=str(e))
+
     if not pending:
         yield _emit({"type": "error", "content": "Ação não encontrada ou expirada"})
         return
@@ -401,15 +562,26 @@ async def resume_after_confirmation(
     label = pending.get("label", tool_name)
     parent_message_id = pending.get("parent_message_id")
     action_index = pending.get("action_index")
+    pending_direct_action = pending.get("direct_action", False)
+    pending_preferred = pending.get("preferred")
+    pending_strict_mode = pending.get("strict_mode", False)
+    pending_query_type = pending.get("query_type", "agent_workflow")
+
+    final_response = ""
+    collected_events = []
 
     # Emite o tool call que estava pendente
-    yield _emit({"type": "tool_call", "call_id": call_id, "tool": tool_name, "args": tool_args, "label": label})
+    tc_event = {"type": "tool_call", "call_id": call_id, "tool": tool_name, "args": tool_args, "label": label}
+    collected_events.append(tc_event)
+    yield _emit(tc_event)
 
     pending_org_id = pending.get("org_id")
     pending_process_id = pending.get("process_id", f"proc_res_{uuid.uuid4().hex[:8]}")
 
     if approved:
         try:
+            if attachment_path:
+                tool_args["attachment_path"] = attachment_path
             _raw_log(pending_process_id, "tool_execute_write_start", {"tool": tool_name, "args": tool_args})
             result = await execute_write_tool(tool_name, tool_args, org_id=pending_org_id)
             _raw_log(pending_process_id, "tool_execute_write_result", {"tool": tool_name, "result_raw": result})
@@ -421,7 +593,10 @@ async def resume_after_confirmation(
     ok = result.get("ok", False)
     summary = result.get("result") or result.get("error") or ("OK" if ok else "Erro")
 
-    yield _emit({"type": "tool_result", "call_id": call_id, "tool": tool_name, "summary": summary, "ok": ok})
+    # Emite o tool result e adiciona no logs
+    tr_event = {"type": "tool_result", "call_id": call_id, "tool": tool_name, "summary": summary, "ok": ok}
+    collected_events.append(tr_event)
+    yield _emit(tr_event)
 
     # Monta a lista completa de tool results (reads anteriores + write confirmado)
     write_result = {
@@ -484,70 +659,61 @@ async def resume_after_confirmation(
     tools = get_tools_anthropic_schema()
     start_iter = pending.get("iteration", 1)
 
-    final_response = ""
-    collected_events = []
-    
-    async for chunk in _agent_loop(messages, tools, start_iteration=start_iter, org_id=pending_org_id, process_id=pending_process_id, parent_message_id=parent_message_id, action_index=action_index):
-        try:
-            data = _json.loads(chunk)
-            collected_events.append(data)
-            if data.get("type") == "final":
-                final_response = data.get("response", "")
-        except Exception:
-            pass
-        yield chunk
+    saved_on_completion = False
+    try:
+        async for chunk in _agent_loop(
+            messages,
+            tools,
+            start_iteration=start_iter,
+            org_id=pending_org_id,
+            process_id=pending_process_id,
+            parent_message_id=parent_message_id,
+            action_index=action_index,
+            direct_action=pending_direct_action,
+            preferred=pending_preferred,
+            strict_mode=pending_strict_mode,
+            query_type=pending_query_type,
+        ):
+            try:
+                data = json.loads(chunk)
+                collected_events.append(data)
+                if data.get("type") == "final":
+                    final_response = data.get("response", "")
+            except Exception:
+                pass
+            yield chunk
 
-    if thread_id:
-        try:
-            from core.infra.database import async_session as _async_session
-            async with _async_session() as db:
-                if parent_message_id and action_index is not None:
-                    # Carrega a mensagem do assistente pai e atualiza os eventos dela
-                    from sqlalchemy import select
-                    from models.conversation import ConversationMessage
-                    result = await db.execute(
-                        select(ConversationMessage).where(ConversationMessage.id == parent_message_id)
-                    )
-                    parent_msg = result.scalar_one_or_none()
-                    if parent_msg:
-                        msg_data = dict(parent_msg.data or {})
-                        runs = msg_data.get("suggested_actions_runs", {})
-                        
-                        # Recupera logs anteriores de SuggestedActionTask (que geraram a confirmação)
-                        prev_run = runs.get(str(action_index), {})
-                        prev_logs = prev_run.get("logs", [])
-                        
-                        # Combina os logs anteriores com os novos logs desta retomada
-                        combined_logs = prev_logs + collected_events
-                        
-                        has_confirm = any(e.get("type") == "confirmation_required" for e in collected_events)
-                        action_status = "awaiting_confirm" if has_confirm else "done"
-                        
-                        runs[str(action_index)] = {
-                            "status": action_status,
-                            "logs": combined_logs,
-                            "timestamp": datetime.utcnow().isoformat()
-                        }
-                        msg_data["suggested_actions_runs"] = runs
-                        parent_msg.data = msg_data
-                        
-                        # Também atualiza o log/evento "suggested_actions" original em parent_msg.logs
-                        parent_logs = list(parent_msg.logs or [])
-                        for event in parent_logs:
-                            if event.get("type") == "suggested_actions" and "actions" in event:
-                                if 0 <= action_index < len(event["actions"]):
-                                    action_item = event["actions"][action_index]
-                                    action_item["status"] = action_status
-                                    action_item["logs"] = combined_logs
-                        parent_msg.logs = parent_logs
-                        
-                        db.add(parent_msg)
-                        await db.commit()
-                        log.info("agent.suggested_action.confirm.saved_to_parent", parent_message_id=parent_message_id, action_index=action_index)
-                else:
-                    from api.v1.routers.conversations import save_message as _save_message
-                    if final_response or collected_events:
-                        await _save_message(db, thread_id, "assistant", final_response or "", logs=collected_events)
-            log.info("agent.messages.resumed_saved", thread_id=thread_id)
-        except Exception as e:
-            log.warning("agent.messages.resumed_save_failed", thread_id=thread_id, error=str(e))
+        # Retomada concluída com sucesso
+        if thread_id:
+            await _save_run_state(
+                thread_id=thread_id,
+                parent_message_id=parent_message_id,
+                action_index=action_index,
+                message="",
+                is_regeneration=False,
+                final_response=final_response,
+                collected_events=collected_events,
+                process_id=pending_process_id,
+                is_resume=True,
+                user_msg_saved=True,
+            )
+            saved_on_completion = True
+
+    except BaseException as exc:
+        log.warning("agent.resume_generator.interrupted", thread_id=thread_id, exc_type=type(exc).__name__)
+        if thread_id and not saved_on_completion:
+            await asyncio.shield(
+                _save_run_state(
+                    thread_id=thread_id,
+                    parent_message_id=parent_message_id,
+                    action_index=action_index,
+                    message="",
+                    is_regeneration=False,
+                    final_response=final_response,
+                    collected_events=collected_events,
+                    process_id=pending_process_id,
+                    is_resume=True,
+                    user_msg_saved=True,
+                )
+            )
+        raise exc

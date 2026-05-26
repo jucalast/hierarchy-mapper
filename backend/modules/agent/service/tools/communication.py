@@ -273,7 +273,7 @@ async def exec_whatsapp_list_chats(args: Dict[str, Any]) -> Dict[str, Any]:
         return {"ok": False, "error": str(e)}
 
 
-async def exec_whatsapp_send_message(args: dict, messages: list | None = None, org_id: int | None = None) -> dict:
+async def exec_whatsapp_send_message(args: dict, messages: list | None = None, org_id: int | None = None, attachment_path: str | None = None) -> dict:
     """Envia uma mensagem de WhatsApp para um contato resolvido por nome, telefone ou empresa."""
     import re as _re
     from modules.communication.service.whatsapp.integration import WhatsAppIntegration
@@ -338,7 +338,7 @@ async def exec_whatsapp_send_message(args: dict, messages: list | None = None, o
         return {"ok": False, "error": f"Contato '{contact}' não encontrado (mesmo com telefone/empresa se fornecidos)."}
 
     # Executa o envio via integração centralizada
-    res = await WhatsAppIntegration.send_message(chat_id, message)
+    res = await WhatsAppIntegration.send_message(chat_id, message, attachment_path=attachment_path)
     if res.get("ok"):
         return {"ok": True, "result": f"Mensagem enviada com sucesso para {resolved_name or contact} (ID: {chat_id})"}
 
@@ -360,7 +360,7 @@ async def exec_whatsapp_send_message(args: dict, messages: list | None = None, o
                         real_num = c.get("number") or ""
                         if real_num.isdigit() and len(real_num) <= 15:
                             fallback_jid = f"{real_num}@c.us"
-                            res2 = await WhatsAppIntegration.send_message(fallback_jid, message)
+                            res2 = await WhatsAppIntegration.send_message(fallback_jid, message, attachment_path=attachment_path)
                             if res2.get("ok"):
                                 log.info(f"wa_send.lid_fallback_success chat_id={chat_id} fallback={fallback_jid}")
                                 return {"ok": True, "result": f"Mensagem enviada com sucesso para {resolved_name or contact} (via número real: {fallback_jid})"}
@@ -391,7 +391,7 @@ async def exec_whatsapp_send_message(args: dict, messages: list | None = None, o
                                 if not pd_digits.startswith("55"):
                                     pd_digits = f"55{pd_digits}"
                                 pd_jid = f"{pd_digits}@c.us"
-                                res_pd = await WhatsAppIntegration.send_message(pd_jid, message)
+                                res_pd = await WhatsAppIntegration.send_message(pd_jid, message, attachment_path=attachment_path)
                                 if res_pd.get("ok"):
                                     log.info(f"wa_send.pipedrive_fallback_success jid={pd_jid}")
                                     return {"ok": True, "result": f"Mensagem enviada para {contact} via telefone do Pipedrive ({pd_jid})"}
@@ -429,13 +429,11 @@ async def exec_email_get_inbox(args: Dict[str, Any]) -> Dict[str, Any]:
                 return {"ok": True, "emails": results, "count": len(results), "summary": f"{len(results)} e-mails encontrados"}
         except httpx.TimeoutException as e:
             if attempt < max_retries:
-                import asyncio
-                await asyncio.sleep(1)  # Backoff rápido: 1s
+                await asyncio.sleep(1)
                 continue
             return {"ok": False, "error": f"Timeout ao acessar serviço de e-mail (tentativa {attempt}/{max_retries}): {e}"}
         except Exception as e:
             if attempt < max_retries:
-                import asyncio
                 await asyncio.sleep(1)
                 continue
             return {"ok": False, "error": f"Erro ao acessar e-mail (tentativa {attempt}/{max_retries}): {e}"}
@@ -505,19 +503,23 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                 return {"ok": False, "error": "Não foi possível determinar um termo de busca válido"}
 
             # ─── Cache check ───
+            # Prioriza o banco de dados (cache): se temos dados, usamos eles imediatamente
+            # para evitar chamadas lentas ao Outlook. O TriggerService garante que o banco esteja ok.
             _email_id = contact_email or search_query
             if _email_id:
                 from ._message_cache import get_cached_messages
                 from models.communication.contact_cache import CHANNEL_EMAIL
-                cached_emails = await get_cached_messages(_email_id, CHANNEL_EMAIL)
-                if cached_emails is not None:
+                # max_age_minutes=None -> Ignora TTL e confia no que está no banco
+                cached_emails = await get_cached_messages(_email_id, CHANNEL_EMAIL, max_age_minutes=None)
+                if cached_emails:
+                    log.info("email_search.cache_hit_priority", contact=_email_id, count=len(cached_emails))
                     return {
                         "ok": True,
                         "contact": contact_name or contact_email or org_name,
                         "domain": domain,
                         "emails": cached_emails,
                         "count": len(cached_emails),
-                        "summary": f"{len(cached_emails)} e-mails encontrados para {contact_name or contact_email or org_name} (recuperados do cache local)",
+                        "summary": f"{len(cached_emails)} e-mails encontrados para {contact_name or contact_email or org_name} (recuperados do banco de dados local)",
                     }
 
             # Calcula fallback por primeira palavra do org_name (usado se busca por domínio retornar 0)
@@ -533,6 +535,23 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
             async with httpx.AsyncClient(timeout=30.0) as client:
                 # "conversations" varre TODAS as pastas do Outlook recursivamente
                 all_r = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "conversations", "limit": limit * 2, "q": search_query})
+
+                # 503 = email service ainda inicializando (Outlook COM não pronto).
+                # Aguarda 25s e retenta uma vez — Outlook demora ~30s para inicializar.
+                if all_r.status_code == 503:
+                    if attempt < max_retries:
+                        log.info("email_get_contact_history.outlook_not_ready_waiting",
+                                 attempt=attempt, wait_sec=25)
+                        await asyncio.sleep(25)
+                        continue
+                    label = contact_name or contact_email or org_name
+                    return {
+                        "ok": True,
+                        "contact": label,
+                        "emails": [],
+                        "count": 0,
+                        "summary": f"Serviço de e-mail ainda inicializando — sem histórico disponível para {label} no momento.",
+                    }
 
                 all_messages = []
                 if all_r.status_code == 200:
@@ -634,6 +653,7 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                     "subject": m.get("subject", ""),
                     "date": (m.get("date") or "")[:10],
                     "preview": (m.get("body") or "")[:200].strip(),
+                    "body": (m.get("body") or "").strip(),
                     "entryId": m.get("entryId", ""),
                     "direction": "sent" if JFERRES_DOMAIN in (m.get("sender") or "").lower() else "received",
                 }
@@ -671,7 +691,6 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
             return {"ok": False, "error": f"Timeout ao acessar serviço de e-mail (tentativa {attempt}/{max_retries}): {e}"}
         except Exception as e:
             if attempt < max_retries:
-                import asyncio
                 await asyncio.sleep(1)
                 continue
             # Fallback: tentar email_get_inbox com filtro

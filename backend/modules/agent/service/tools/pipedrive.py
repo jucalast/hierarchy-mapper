@@ -64,8 +64,10 @@ async def exec_pipedrive_get_org(args: Dict[str, Any], org_id: int | None = None
             if deals else "Nenhum deal encontrado"
         )
 
-        # Busca CNPJ no banco local para disponibilizar à tool find_company_contact
+        # Busca CNPJ e Contexto no banco local para disponibilizar à tool
         cnpj_local = None
+        prospecting_context = None
+        temperature = None
         try:
             from core.infra.database import async_session
             from models.organization import Organization
@@ -76,20 +78,28 @@ async def exec_pipedrive_get_org(args: Dict[str, Any], org_id: int | None = None
                 )
                 res = await session.execute(stmt)
                 local_org = res.scalar_one_or_none()
-                if local_org and local_org.cnpj:
+                if local_org:
                     cnpj_local = local_org.cnpj
+                    prospecting_context = local_org.prospecting_context
+                    temperature = local_org.temperature
         except Exception:
             pass
+
+        context_str = f" | Temp: {temperature}" if temperature else ""
+        if prospecting_context:
+            context_str += f" | Contexto: {prospecting_context}"
 
         return {
             "ok": True,
             "org": match,
             "org_id": org_id,
             "cnpj": cnpj_local,
+            "temperature": temperature,
+            "prospecting_context": prospecting_context,
             "deals": deals,
             "persons": persons,
             "summary": (
-                f"{match.get('name')} | CNPJ: {cnpj_local or 'não cadastrado'} | "
+                f"{match.get('name')} | CNPJ: {cnpj_local or 'não cadastrado'}{context_str} | "
                 f"{deals_summary} | {len(persons)} contato(s)"
             ),
         }
@@ -191,12 +201,15 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
                             channels = [c for c, v in [("WhatsApp", phone), ("Email", emp.email)] if v]
                             result.append({
                                 "id": None,
+                                "local_id": emp.id,
                                 "name": emp.name,
                                 "phone": phone,
                                 "email": emp.email,
                                 "role": emp.department or "Contato Banco Local",
                                 "channels": channels,
-                                "source": "Banco Local"
+                                "source": "Banco Local",
+                                "temperature": emp.temperature,
+                                "prospecting_context": emp.prospecting_context
                             })
         except Exception as db_err:
             pass
@@ -292,13 +305,20 @@ async def exec_pipedrive_get_activities(args: Dict[str, Any], org_id: int | None
             for a in activities if not a.get("done")
         ]
         done = [a for a in activities if a.get("done")]
+        notes = details.get("notes", []) if isinstance(details, dict) else []
+        recent_notes = [
+            {"id": n.get("id"), "content": n.get("content"), "add_time": n.get("add_time")}
+            for n in sorted(notes, key=lambda x: x.get("add_time", ""), reverse=True)[:5]
+        ]
+        
         return {
             "ok": True,
             "org": match.get("name"),
             "pending": pending[:10],
             "done_count": len(done),
+            "recent_notes": recent_notes,
             "count": len(pending),
-            "summary": f"{len(pending)} atividades pendentes para {match.get('name')}",
+            "summary": f"{len(pending)} atividades pendentes e {len(notes)} anotações para {match.get('name')}",
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
@@ -400,3 +420,44 @@ async def exec_pipedrive_get_all_activities(args: Dict[str, Any]) -> Dict[str, A
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+async def exec_pipedrive_get_deals_without_tasks(args: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        from modules.crm.service.pipedrive_service import pipedrive_service
+        r = await pipedrive_service.make_request("GET", f"deals?user_id={pipedrive_service.user_id}&status=open&limit=500")
+        if not r or r.status_code != 200:
+            return {"ok": False, "error": "Erro ao buscar negócios do Pipedrive"}
+        deals = r.json().get("data") or []
+        deals_without_tasks = []
+        for d in deals:
+            undone_count = d.get("undone_activities_count", 0)
+            if undone_count == 0:
+                person_name = d.get("person_name") or ""
+                stage_id = d.get("stage_id", "Desconhecido")
+                deals_without_tasks.append({
+                    "id": d.get("id"),
+                    "title": d.get("title", ""),
+                    "org_name": d.get("org_name", ""),
+                    "person_name": person_name,
+                    "stage_id": stage_id,
+                    "value": d.get("value", 0),
+                    "status": d.get("status", ""),
+                    "owner_name": d.get("owner_name", "")
+                })
+        
+        summary_parts = [f"Encontrados {len(deals_without_tasks)} negócio(s) em andamento sem tarefas pendentes:"]
+        for d in deals_without_tasks[:30]:
+            contact_info = f"Contato: {d['person_name']}" if d['person_name'] else "SEM CONTATO"
+            summary_parts.append(f"- {d['title']} (ID: {d['id']}) | Etapa: {d['stage_id']} | {contact_info}")
+        summary = "\n".join(summary_parts)
+        
+        return {
+            "ok": True,
+            "deals": deals_without_tasks[:30],
+            "count": len(deals_without_tasks),
+            "summary": summary
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+

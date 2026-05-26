@@ -11054,3 +11054,783 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:09:57.741016",
+    "candidate": "Ilda",
+    "linkedin": "https://linkedin.com/in/pd_2224",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ilda - Contato Hlcaps",
+            "body": "Email: ilda.dias@hlcaps.com.br | Telefone: (11)911989458 | Pipedrive ID: 2224"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_2224",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:10:26.439299",
+    "candidate": "CHARLEY BONAFE",
+    "linkedin": "https://br.linkedin.com/in/charley-bonafe-5a709566",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "CHARLEY BONAFE - CEO - HLCAPS - LinkedIn",
+            "body": "CEO - HLCAPS · Experiência: HLCAPS · Formação acadêmica: UNISO · Localidade: Salto · 358 conexões no LinkedIn. Veja o perfil de CHARLEY BONAFE no LinkedIn, ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: HLCAPS · Formação acadêmica: UNISO · Localidade: Salto · 358 conexões no LinkedIn. Veja o perfil de CHARLEY BONAFE no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/charley-bonafe-5a709566",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:10:30.645145",
+    "candidate": "Charley Pereira",
+    "linkedin": "https://www.linkedin.com/in/charley-pereira-82700819",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Charley Pereira - Transportation Safety & Security Consulting, Inc. | LinkedIn",
+            "body": "Experience: Transportation Safety & Security Consulting, Inc. · Education: Embry-Riddle Aeronautical University · Location: Nags Head · 500+ connections on LinkedIn. View Charley Pereira’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "transportation safety & security consulting, inc.",
+            "bio": "Experiência: Transportation Safety & Security Consulting, Inc. · Formação acadêmica: Embry-Riddle Aeronautical University · Localidade: Nags Head · + de 500 conexões no LinkedIn. Veja o perfil de Charley Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:10:33.239060",
+    "candidate": "Charley Pereira",
+    "linkedin": "https://www.linkedin.com/in/charley-pereira-5078099",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Charley Pereira - President at TSSC, Inc. | LinkedIn",
+            "body": "President at TSSC, Inc. · Experience: TSSC, Inc. · Location: Buxton · 1 connection on LinkedIn. View Charley Pereira’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "tssc, inc.",
+            "bio": "Experiência: TSSC, Inc. · Localidade: Buxton · 1 conexão no LinkedIn. Veja o perfil de Charley Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:10:43.575360",
+    "candidate": "Marcelo Pereira Carvalho",
+    "linkedin": "https://www.linkedin.com/in/marcelo-pereira-carvalho-794444125",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcelo Pereira Carvalho - Bank of America Merrill Lynch | LinkedIn",
+            "body": "Experience: Bank of America Merrill Lynch · Education: FGV EAESP - Escola de Administração de Empresas de São Paulo da Fundação Getulio Vargas · Location: New York · 158 connections on LinkedIn. View Marcelo Pereira Carvalho’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "bank of america merrill lynch",
+            "bio": "Experiência: Bank of America Merrill Lynch · Formação acadêmica: FGV EAESP - Escola de Administração de Empresas de São Paulo da Fundação Getulio Vargas · Localidade: Nova York · 157 conexões no LinkedIn. Veja o perfil de Marcelo Pereira Carvalho no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:10:48.367406",
+    "candidate": "Carlos Pereira",
+    "linkedin": "https://br.linkedin.com/in/carlospereiralogisitica",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Pereira - G2L LOGÍSTICA | LinkedIn",
+            "body": "Experience: G2L LOGÍSTICA · Education: FGV · Location: São Paulo · 500+ connections on LinkedIn. View Carlos Pereira’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "g2l logística",
+            "bio": "Experiência: G2L LOGÍSTICA · Formação acadêmica: FGV · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:10:54.605892",
+    "candidate": "Carlos Alberto Pereira da silva",
+    "linkedin": "https://br.linkedin.com/in/carlosalbertopsilva",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Alberto Pereira da silva - CAPS Tech Consulting | LinkedIn",
+            "body": "April 7, 2026 - With over a decade of experience in software development, I specialize in designing and… · Experience: CAPS Tech Consulting · Education: UNIPDS · Location: São Paulo · 500+ connections on LinkedIn. View Carlos Alberto Pereira da silva’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "caps tech consulting",
+            "bio": "With over a decade of experience in software development, I specialize in designing and… · Experiência: CAPS Tech Consulting · Formação acadêmica: UNIPDS · Localidade: Rio de Janeiro · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Alberto Pereira da silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:10:59.278760",
+    "candidate": "Carlos Pereira",
+    "linkedin": "https://www.linkedin.com/in/carloscpereira",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Pereira - Sócio Proprietário - Campo de Ideias Marketing Esportivo | LinkedIn",
+            "body": "June 20, 2017 - Sócio Proprietário da Campo de Ideias · Ao longo dos últimos 15 anos, atuei em diferentes setores que contribuíram fortemente na minha capacidade de entender as necessidades do mercado esportivo sob um ponto de vista privilegiado."
+        },
+        "osint_metadata": {
+            "role": "campo de ideias marketing esportivo",
+            "bio": "Ao longo dos últimos 15 anos, atuei em diferentes setores que contribuíram fortemente na… · Experiência: Campo de Ideias Marketing Esportivo · Formação acadêmica: ESPM Escola Superior de Propaganda e Marketing · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:11:05.403201",
+    "candidate": "Carlos Pereira, PhD.",
+    "linkedin": "https://br.linkedin.com/in/chtpereira/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Pereira, PhD. - Grupo Aço Cearense | LinkedIn",
+            "body": "March 6, 2026 - Business Executive with solid experience and contributions in various strategic positions … · Experience: Grupo Aço Cearense · Education: PUCRS - Pontifícia Universidade Católica do Rio Grande do Sul · Location: Fortaleza · 500+ connections ..."
+        },
+        "osint_metadata": {
+            "role": "grupo aço cearense",
+            "bio": "Business Executive with solid experience and contributions in various strategic positions… · Experience: Grupo Aço Cearense · Education: PUCRS - Pontifícia Universidade Católica do Rio Grande do Sul · Location: Fortaleza · 500+ connections on LinkedIn. View Carlos Pereira, PhD.’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:11:09.350141",
+    "candidate": "LEANDRO BONAFÉ",
+    "linkedin": "https://br.linkedin.com/in/leandro-bonafé-a5747467",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "LEANDRO BONAFÉ - Brasil | Perfil profissional",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "brasil",
+            "bio": "Localidade: Brasil · 9 conexões no LinkedIn. Veja o perfil de LEANDRO BONAFÉ no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:12:45.385550",
+    "candidate": "Michael Garcia",
+    "linkedin": "https://br.linkedin.com/in/michael-garcia-26312820",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Michael Garcia - HLCAPS - LinkedIn",
+            "body": "20 anos de experiência em gestão de Suprimentos/Compras em empresas nacionais e… · Experiência: HLCAPS · Localidade: Itu · + de 500 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "•\t20 anos de experiência em gestão de Suprimentos/Compras em empresas nacionais e… · Experiência: HLCAPS · Localidade: Itu · + de 500 conexões no LinkedIn. Veja o perfil de Michael Garcia no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/michael-garcia-26312820",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:12:55.178808",
+    "candidate": "Jessica Santos",
+    "linkedin": "https://br.linkedin.com/in/jessica-santos-5a30981b4",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jessica Santos - HLCAPS - LinkedIn",
+            "body": "Iniciei minha carreira aos 16 anos como estagiária no setor administrativo. Cursei… · Experiência: HLCAPS · Formação acadêmica: Centro Universitário Nossa ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Iniciei minha carreira aos 16 anos como estagiária no setor administrativo. Cursei… · Experiência: HLCAPS · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Salto · 230 conexões no LinkedIn. Veja o perfil de Jessica Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/jessica-santos-5a30981b4",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:13:06.482226",
+    "candidate": "Filipe Talon",
+    "linkedin": "https://br.linkedin.com/in/filipetalon",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Filipe Talon - HLCAPS - LinkedIn",
+            "body": "Executivo de Finanças com mais de 16 anos de experiência liderando transformação… · Experiência: HLCAPS · Formação acadêmica: Fundação Getulio Vargas ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Executivo de Finanças com mais de 16 anos de experiência liderando transformação… · Experiência: HLCAPS · Formação acadêmica: Fundação Getulio Vargas · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Filipe Talon no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/filipetalon",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:13:16.409749",
+    "candidate": "Felipe Loati",
+    "linkedin": "https://br.linkedin.com/in/felipe-loati-6ab0a0ba",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Felipe Loati - Novos negócios na HLCAPS | MBA em Marketing | KAM",
+            "body": "Novos negócios na HLCAPS | MBA em Marketing | KAM | Vendas · Carreira construída com mais de 12 anos na área de negócios, com robusta habilidade em grandes ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Carreira construída com mais de 12 anos na área de negócios, com robusta habilidade em… · Experiência: HLCAPS · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Salto · + de 500 conexões no LinkedIn. Veja o perfil de Felipe Loati no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/felipe-loati-6ab0a0ba",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:13:24.554757",
+    "candidate": "Edirlaine Schimith",
+    "linkedin": "https://br.linkedin.com/in/edirlaine-schimith-584426216",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Edirlaine Schimith - HLCAPS - LinkedIn",
+            "body": "Experiência: HLCAPS · Formação acadêmica: FIOCRUZ - Fundação Oswaldo Cruz · Localidade: Salto · + de 500 conexões no LinkedIn. Veja o perfil de Edirlaine ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: HLCAPS · Formação acadêmica: FIOCRUZ - Fundação Oswaldo Cruz · Localidade: Salto · + de 500 conexões no LinkedIn. Veja o perfil de Edirlaine Schimith no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/edirlaine-schimith-584426216",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:14:08.699395",
+    "candidate": "Alaf Klinger Moreira",
+    "linkedin": "https://br.linkedin.com/in/alaf-klinger-moreira-568a52131",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alaf Klinger Moreira - HLCAPS | LinkedIn",
+            "body": "Experiência: HLCAPS · Localidade: Indaiatuba · 1 conexão no LinkedIn. Veja o perfil de Alaf Klinger Moreira no LinkedIn, uma comunidade profissional de 1 ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: HLCAPS · Localidade: Indaiatuba · 1 conexão no LinkedIn. Veja o perfil de Alaf Klinger Moreira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/alaf-klinger-moreira-568a52131",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:14:13.808895",
+    "candidate": "Mourad Mourad",
+    "linkedin": "https://br.linkedin.com/in/mourad-mourad-85497262",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Mourad Mourad - Tripoli logistica - LinkedIn",
+            "body": "HABILIDADES E COMPETÊNCIAS · Liderança e gestão de pessoas · Gestão de projetos em… · Experiência: Tripoli logistica · Formação acadêmica: Centro ..."
+        },
+        "osint_metadata": {
+            "role": "tripoli logistica",
+            "bio": "HABILIDADES E COMPETÊNCIAS\n· Liderança e gestão de pessoas\n· Gestão de projetos em… · Experiência: Tripoli logistica · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Salto · 228 conexões no LinkedIn. Veja o perfil de Mourad Mourad no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:14:55.043380",
+    "candidate": "Daiane Gonçalves",
+    "linkedin": "https://br.linkedin.com/in/daiane-gonçalves-846073118",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Daiane Gonçalves - HLCAPS - LinkedIn",
+            "body": "Experiência: HLCAPS · Formação acadêmica: ICTQ - Instituto de Pós-Graduação para Farmacêuticos · Localidade: Indaiatuba · 318 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: HLCAPS · Formação acadêmica: ICTQ - Instituto de Pós-Graduação para Farmacêuticos · Localidade: Indaiatuba · 318 conexões no LinkedIn. Veja o perfil de Daiane Gonçalves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/daiane-gonçalves-846073118",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:15:06.015012",
+    "candidate": "Alexandre Francisco",
+    "linkedin": "https://br.linkedin.com/in/alexandre-francisco-8a419754",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alexandre Francisco - HLCAPS | LinkedIn",
+            "body": "Experiência: HLCAPS · Localidade: Itupeva · 112 conexões no LinkedIn . Veja o perfil de Alexandre Francisco no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: HLCAPS · Localidade: Itupeva · 112 conexões no LinkedIn. Veja o perfil de Alexandre Francisco no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/alexandre-francisco-8a419754",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:15:20.071713",
+    "candidate": "Carlos Eduardo de Jesus",
+    "linkedin": "https://br.linkedin.com/in/carlos-eduardo-de-jesus-88030457",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Eduardo de Jesus - Coordenador de QA/QC/Validação",
+            "body": "Experiência ; Coordenador de Garantia da Qualidade e Projetos. HLCAPS. jan. de 2025 ; Especialista da Qualidade / Projetos. Biogen. ago. de 2021 ; Controle de ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Engenheiro Químico com MBA em Gerenciamento de Projetos e Gestão Industrial Farmacêutica,… · Experiência: HLCAPS · Formação acadêmica: Universidade de Sorocaba · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Eduardo de Jesus no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/carlos-eduardo-de-jesus-88030457",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T00:15:34.293750",
+    "candidate": "Milton Amauri Alvares Terra Junior",
+    "linkedin": "https://br.linkedin.com/in/miltonterrajunior",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Milton Amauri Alvares Terra Junior | Gestão de manufatura e manutenção",
+            "body": "Experiência ; Coordenador de Manufatura e Manutenção. HLCAPS. jul. de 2022 ; Professor. Governo do Estado de São Paulo. fev. de 2020 ; Supervisor de Manutenção e ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sólida experiência em manutenção, manufatura, facilities e engenharia, liderando equipes… · Experiência: HLCAPS · Formação acadêmica: Universidade Estadual de Campinas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Milton Amauri Alvares Terra Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://br.linkedin.com/in/miltonterrajunior",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T23:53:48.306428",
+    "candidate": "Ricardo Ferreira",
+    "linkedin": "https://linkedin.com/in/pd_2096",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ricardo Ferreira - Contato Brasa",
+            "body": "Email:  | Telefone: 19999812110 | Pipedrive ID: 2096"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_2096",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T23:54:03.584707",
+    "candidate": "Costa",
+    "linkedin": "https://linkedin.com/in/pd_2099",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Costa - Contato Brasa",
+            "body": "Email:  | Telefone: 11993401451 | Pipedrive ID: 2099"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_2099",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-25T23:54:14.807000",
+    "candidate": "Gelielson Gomes",
+    "linkedin": "https://linkedin.com/in/pd_2128",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gelielson Gomes - Contato Brasa",
+            "body": "Email:  | Telefone:  | Pipedrive ID: 2128"
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "verified_linkedin": "https://linkedin.com/in/pd_2128",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 50
+    }
+}
+--------------------------------------------------------------------------------

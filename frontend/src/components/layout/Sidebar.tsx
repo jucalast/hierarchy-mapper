@@ -26,6 +26,8 @@ interface SidebarProps {
     isProspecting?: boolean;
     onOpenPreferences?: () => void;
     isPreferences?: boolean;
+    onOpenLinkedinScrape?: () => void;
+    isLinkedinScrape?: boolean;
 }
 
 
@@ -42,6 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     isProspecting,
     onOpenPreferences,
     isPreferences,
+    onOpenLinkedinScrape,
+    isLinkedinScrape,
 }) => {
 
     return (
@@ -93,7 +97,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Radar size={20} className={styles.iconSide} />
             </div>
 
-<div className={styles.navIcon} title="Nova Empresa" onClick={onReset}>
+            <div
+                className={`${styles.navIcon} ${isLinkedinScrape ? styles.navIconActive : ''}`}
+                title="Raspador LinkedIn"
+                onClick={onOpenLinkedinScrape}
+            >
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className={styles.iconSide}
+                >
+                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+                    <rect x="2" y="9" width="4" height="12" />
+                    <circle cx="4" cy="4" r="2" />
+                </svg>
+            </div>
+
+            <div className={styles.navIcon} title="Nova Empresa" onClick={onReset}>
                 <CirclePlus size={20} className={styles.iconSide} />
             </div>
 

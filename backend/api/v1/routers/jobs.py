@@ -69,7 +69,9 @@ async def start_scan(
     confirmed_logo: Optional[str] = None,
     location: Optional[str] = None,
     product_focus: Optional[str] = None,
-    area_focus: Optional[str] = "compras"
+    area_focus: Optional[str] = "compras",
+    model: Optional[str] = None,
+    strict_mode: Optional[bool] = False
 ):
     """
     Enfileira um novo job de descoberta B2B no Redis/ARQ.
@@ -88,7 +90,9 @@ async def start_scan(
             confirmed_logo=confirmed_logo,
             location=location,
             product_focus=product_focus,
-            area_focus=area_focus
+            area_focus=area_focus,
+            model=model,
+            strict_mode=strict_mode
         )
         
         return {

@@ -42,3 +42,8 @@ export function triggerPipedriveSync() {
 export function triggerSmartSync() {
   return api.post<{ status?: string; message?: string }>('/pipedrive_smart_sync');
 }
+
+export function updateActivity(activityId: number | string, data: Record<string, unknown>) {
+  return api.put<Record<string, unknown>>(`/pipedrive/activities/${activityId}`, data);
+}
+

@@ -320,7 +320,9 @@ export const useHierarchy = () => {
         onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void,
         partners: any[] = [],
         orgId?: number | null,
-        initialEmployees?: HierarchyEmployee[]
+        initialEmployees?: HierarchyEmployee[],
+        model?: string,
+        strictMode?: boolean
     ) => {
         setLoading(true);
         setError("");
@@ -342,6 +344,8 @@ export const useHierarchy = () => {
                 confirmed_logo: confirmedLogo,
                 product_focus: productFocus,
                 area_focus: areaFocus,
+                model: model || undefined,
+                strict_mode: strictMode !== undefined ? strictMode : undefined,
             });
 
             if (!job_id) {
@@ -520,11 +524,53 @@ export const useHierarchy = () => {
                                 return;
                             }
 
+                            const oldId = currentEmployeesRef.current[idx].id;
                             const merged = { ...emp, ...currentEmployeesRef.current[idx] };
                             merged.role = emp.role || merged.role;
                             merged.department = emp.department || merged.department;
                             merged.level = emp.level || merged.level;
                             merged.manager_id = emp.manager_id || merged.manager_id;
+
+                            // Garante que o ID do backend prevalece se o local for provisório (ex: partner_0)
+                            if (String(oldId).startsWith('partner_') && !String(emp.id).startsWith('partner_')) {
+                                merged.id = emp.id;
+                            } else if (String(oldId).startsWith('partner_') && String(emp.id).startsWith('partner_')) {
+                                const localParts = String(oldId).split('_');
+                                const empParts = String(emp.id).split('_');
+                                if (empParts[1] && empParts[1] !== localParts[1]) {
+                                    merged.id = emp.id;
+                                }
+                            }
+
+                            const newId = merged.id;
+                            if (String(oldId) !== String(newId)) {
+                                console.log(`[useHierarchy] Atualizando ID provisório: ${oldId} -> ${newId}`);
+                                // Atualiza manager_id de outros nós que apontavam para o ID antigo
+                                currentEmployeesRef.current.forEach(other => {
+                                    if (String(other.manager_id) === String(oldId)) {
+                                        other.manager_id = newId;
+                                    }
+                                });
+                                // Atualiza as arestas correspondentes
+                                setRawBackendEdges(prev => {
+                                    return prev.map(edge => {
+                                        let updated = false;
+                                        const newEdge = { ...edge };
+                                        if (String(edge.source) === String(oldId)) {
+                                            newEdge.source = newId;
+                                            updated = true;
+                                        }
+                                        if (String(edge.target) === String(oldId)) {
+                                            newEdge.target = newId;
+                                            updated = true;
+                                        }
+                                        if (updated) {
+                                            newEdge.id = `e-${newEdge.source}-${newEdge.target}`;
+                                        }
+                                        return newEdge;
+                                    });
+                                });
+                            }
                             
                             const imgFields = ['logo', 'image', 'url', 'company_logo', 'logo_url', 'brand_logo', 'avatar', 'profile_pic', 'photo'];
                             imgFields.forEach(field => {

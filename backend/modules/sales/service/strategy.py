@@ -144,7 +144,8 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 - Hoje: {today}
 
 ## REGRAS PARA AS SUGESTÕES:
-1. Gere entre 5 e 8 ações — cubra TODAS as categorias relevantes (comunicação, CRM, agendamento, estratégia)
+1. Gere de 5 a 15 ações — cubra TODAS as categorias relevantes (comunicação, CRM, agendamento, estratégia).
+   ATENÇÃO EXTREMA: Se o histórico tratar de uma LISTA MÚLTIPLA de negócios ou empresas (ex: varredura de negócios sem tarefas), VOCÊ DEVE GERAR UMA AÇÃO SEPARADA PARA CADA NEGÓCIO DA LISTA INDIVIDUALMENTE. NUNCA faça ações genéricas como "Criar tarefas para os demais". Liste TODOS os negócios. Avalie friamente o estado do negócio: se o item possuir "SEM CONTATO", a tarefa sugerida não deve ser um follow-up clássico, mas sim uma tarefa mandatória de "Encontrar Contato / Decisor".
 2. Se NÃO há atividades pendentes → OBRIGATÓRIO incluir sugestão de criar tarefa de acompanhamento no Pipedrive
 3. Se não há reunião agendada → sugira criar tarefa de ligação/reunião com plano de abordagem
 4. Baseie CADA sugestão no contexto real do histórico — cite itens, preços, datas, objeções reais
@@ -152,6 +153,8 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 6. Priorize WhatsApp se é o canal mais ativo, email se há thread em aberto
 7. Varie os tipos: não coloque todas como WhatsApp — inclua email, tarefa CRM, atualização de deal quando fizer sentido
 8. Para criar tarefas no Pipedrive, o prompt DEVE usar: pipedrive_create_task com subject='...', task_type='call' ou 'meeting', due_date='YYYY-MM-DD', deal_id={crm_snapshot.get('deal_id') or 'ID do deal'}, org_name='...'
+9. RECONHECER O ESTÁGIO DO DEAL (PREVENIR REGRESSÃO): Analise o histórico recente buscando menções a orçamentos, propostas, preços, amostras, visitas, especificação de caixas, pesos ou volumes. Se estes já existirem, o lead NÃO é inicial. Você está TERMINANTEMENTE PROIBIDO de sugerir ações/tarefas frias (como "Pesquisar empresa", "Iniciar contato", "Ligar para qualificar", "Revisar diferenciais"). Sugira apenas ações avançadas (ex: "Cobrar retorno da proposta de valores", "Negociar preços enviados", "Cobrar retorno sobre o volume de caixas").
+10. PREVENIR DUPLICIDADE DE CONTATOS: Se o contato (ex: "Ilda") já possui histórico no WhatsApp, E-mail ou timeline de atividades passadas, ele já está cadastrado ou identificado. Você está PROIBIDO de sugerir a criação do contato (pipedrive_create_person) nesses casos.
 
 ## REGRAS PARA O CAMPO "label":
 - NÃO inclua o nome do canal no label (ex: PROIBIDO "WhatsApp: Cobrar retorno", CORRETO: "Cobrar retorno da cotação de Outubro")

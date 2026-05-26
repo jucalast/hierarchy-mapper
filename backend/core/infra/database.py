@@ -440,13 +440,12 @@ async def seed_tenant_data(session: AsyncSession):
 
 async def init_db():
     """Cria as tabelas se não existirem e garante migrações de colunas."""
-    # Import models here to ensure they are registered with Base.metadata
     from models import (
         Organization, Employee, ConversationThread, ConversationMessage,
         ActivityLog, ProspectSession, ProspectLead, SystemSetting,
         Tenant, User, BusinessProfile, Product, ReferenceClient,
         ICPConfig, ICPScoreRule, HierarchyConfig, Integration,
-        ContactConversationCache,
+        ContactConversationCache, AgentPendingConfirmation,
     )
     
     async with engine.begin() as conn:

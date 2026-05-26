@@ -14,6 +14,10 @@ Melhorias vs. versão antiga:
 from __future__ import annotations
 
 import asyncio
+import sys
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
@@ -52,6 +56,15 @@ _app_ready: bool = False
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Ciclo de vida: startup → yield → shutdown."""
+    # Corrige o loop de eventos no Windows para suportar subprocessos assíncronos (Playwright)
+    import sys
+    if sys.platform == "win32":
+        try:
+            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+            log.info("server.startup.event_loop", message="Forçado WindowsProactorEventLoopPolicy com sucesso!")
+        except Exception as e:
+            log.warning("server.startup.event_loop.failed", error=str(e))
+
     configure_logging()
 
     # Avisa se o JWT secret padrão está sendo usado em produção
@@ -114,18 +127,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning("sync_hub.start_failed", error=str(e))
 
-    # Trigger Service — monitora respostas de clientes (email + WhatsApp)
-    try:
-        from modules.triggers.service.trigger_service import TriggerService
-        _trigger_svc = TriggerService()
-        trigger_task = asyncio.create_task(
-            _trigger_svc.start_polling(), name="trigger_service"
-        )
-        _background_tasks.add(trigger_task)
-        trigger_task.add_done_callback(_background_tasks.discard)
-        log.info("trigger_service.started")
-    except Exception as e:
-        log.warning("trigger_service.start_failed", error=str(e))
+    # Trigger Service movido para o ARQ Worker (cron jobs)
 
     # LLM Proactive Preemptive Healthcheck task
     try:

@@ -83,6 +83,8 @@ export interface TrackedContact {
   has_unread?: boolean;
   is_key_contact?: boolean;
   profile_pic?: string;
+  org_logo?: string;
+  org_domain?: string;
 }
 
 export interface WaMessage {
@@ -98,6 +100,7 @@ export interface EmailMessage {
   subject: string;
   date: string;
   preview: string;
+  body?: string;
   entryId: string;
   direction: 'sent' | 'received';
 }

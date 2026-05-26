@@ -47,7 +47,7 @@ export interface AgentMessageProps {
     messageId?: string;
     events: AgentEvent[];
     isStreaming?: boolean;
-    onConfirm?: (action_id: string, approved: boolean) => void;
+    onConfirm?: (action_id: string, approved: boolean, file?: File) => void;
     confirmedActions?: Record<string, boolean>;
     onRegenerate?: () => void;
     onAction?: (prompt: string) => void;
@@ -299,6 +299,17 @@ const renderMarkdown = (text: string): React.ReactNode => {
             return <h3 key={idx} style={{ fontSize: '15px', fontWeight: 700, margin: '4px 0 8px' }}>{renderInline(line.slice(4))}</h3>;
         if (line.startsWith('## '))
             return <h3 key={idx} style={{ fontSize: '16px', fontWeight: 700, margin: '4px 0 8px' }}>{renderInline(line.slice(3))}</h3>;
+        
+        let trimmed = line.trim();
+        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+            return (
+                <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '4px', marginLeft: '12px' }}>
+                    <span style={{ opacity: 0.6 }}>•</span>
+                    <div>{renderInline(trimmed.slice(2))}</div>
+                </div>
+            );
+        }
+
         return <div key={idx} style={{ marginBottom: '10px', lineHeight: '1.65' }}>{renderInline(line)}</div>;
     });
 };
@@ -307,13 +318,15 @@ const renderMarkdown = (text: string): React.ReactNode => {
 
 const ConfirmationCard: React.FC<{
     event: AgentEvent;
-    onConfirm: (action_id: string, approved: boolean) => void;
+    onConfirm: (action_id: string, approved: boolean, file?: File) => void;
     decided?: boolean;
     approvedResult?: boolean;
 }> = ({ event, onConfirm, decided, approvedResult }) => {
     const [previewText, setPreviewText] = useState(event.preview ?? '');
     const [refineText, setRefineText] = useState('');
     const [isRefining, setIsRefining] = useState(false);
+    const [attachedFile, setAttachedFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleRefine = async () => {
         if (!refineText.trim() || isRefining || !event.action_id) return;
@@ -324,8 +337,9 @@ const ConfirmationCard: React.FC<{
                 setPreviewText(res.refined_message);
                 setRefineText('');
             }
-        } catch {
-            // silent — mantém a mensagem atual
+        } catch (e: any) {
+            console.error('Refine message failed:', e);
+            alert(`Erro ao refinar mensagem: ${e.message || 'Erro desconhecido'}`);
         } finally {
             setIsRefining(false);
         }
@@ -380,7 +394,7 @@ const ConfirmationCard: React.FC<{
                 gap: 8, 
                 padding: '8px 12px', 
                 borderBottom: 'var(--sw-border-width) solid var(--sw-border)', 
-                background: 'var(--sw-hover)' 
+                background: 'var(--chat-console-bg)' 
             }}>
                 <img src={channelConfig.icon} alt="Channel" style={{ width: channelConfig.iconSize, height: channelConfig.iconSize, borderRadius: 3 }} />
                 <span style={{ fontSize: 'var(--font-xs)', color: 'var(--sw-text-muted)', letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>
@@ -432,7 +446,43 @@ const ConfirmationCard: React.FC<{
                                 minWidth: 0,
                                 opacity: isRefining ? 0.4 : 1,
                             }}
-                        />
+                            />
+                            {(isEmail || !isPipedrive) && (
+                                <>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*,.pdf" 
+                                        ref={fileInputRef} 
+                                        style={{ display: 'none' }} 
+                                        onChange={e => {
+                                            if (e.target.files && e.target.files.length > 0) {
+                                                setAttachedFile(e.target.files[0]);
+                                            }
+                                        }} 
+                                    />
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        title="Anexar arquivo (PDF ou Imagem)"
+                                        style={{
+                                            flexShrink: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            padding: '7px 10px',
+                                            background: attachedFile ? 'var(--sw-hover)' : 'transparent',
+                                            border: 'var(--sw-border-width) solid var(--sw-border)',
+                                            borderRadius: 8,
+                                            color: attachedFile ? channelConfig.accentColor : 'var(--sw-text-subtle)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.18s ease',
+                                        }}
+                                        onMouseEnter={e => { if (!attachedFile) e.currentTarget.style.color = 'var(--sw-text-base)'; }}
+                                        onMouseLeave={e => { if (!attachedFile) e.currentTarget.style.color = 'var(--sw-text-subtle)'; }}
+                                    >
+                                        <Paperclip size={14} />
+                                    </button>
+                                </>
+                            )}
                         <button
                             onClick={handleRefine}
                             disabled={isRefining || !refineText.trim()}
@@ -460,16 +510,31 @@ const ConfirmationCard: React.FC<{
                         </button>
                     </div>
                 )}
+                
+                {attachedFile && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, padding: '6px 10px', background: 'var(--sw-hover)', borderRadius: 6, border: 'var(--sw-border-width) solid var(--sw-border)' }}>
+                        <Paperclip size={12} style={{ color: channelConfig.accentColor }} />
+                        <span style={{ fontSize: 11, color: 'var(--sw-text-base)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {attachedFile.name}
+                        </span>
+                        <button 
+                            onClick={() => { setAttachedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--sw-text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        >
+                            <X size={12} />
+                        </button>
+                    </div>
+                )}
                 <div style={{ display: 'flex', gap: 8 }}>
                     <button 
-                        onClick={() => onConfirm(event.action_id!, true)} 
+                        onClick={() => onConfirm(event.action_id!, true, attachedFile || undefined)} 
                         style={{ 
                             flex: 1, 
                             padding: '8px 12px', 
                             borderRadius: 7, 
                             border: 'none', 
-                            background: channelConfig.accentColor, 
-                            color: '#fff', 
+                            background: 'transparent', 
+                            color: channelConfig.accentColor, 
                             fontSize: 12, 
                             fontWeight: 600, 
                             cursor: 'pointer', 
@@ -477,10 +542,12 @@ const ConfirmationCard: React.FC<{
                             alignItems: 'center', 
                             justifyContent: 'center', 
                             gap: 5,
-                            transition: 'opacity 0.2s'
+                            transition: 'all 0.15s ease'
                         }}
+                        onMouseEnter={e => { e.currentTarget.style.background = `${channelConfig.accentColor}12`; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                     >
-                        <Check size={13} /> Confirmar
+                        <Check size={13} strokeWidth={2.5} /> Confirmar
                     </button>
                     <button 
                         onClick={() => onConfirm(event.action_id!, false)} 
@@ -523,7 +590,7 @@ const RateWaitBadge: React.FC<{ event: AgentEvent; isStreaming: boolean }> = ({ 
     const label = event.reason === 'TPM' ? 'tokens/min' : 'req/min';
     const done = remaining <= 0;
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: done ? 'var(--sw-text-muted)' : '#f59e0b', margin: '3px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-sm)', color: done ? 'var(--sw-text-muted)' : '#f59e0b', margin: '3px 0' }}>
             {done ? <CheckCircle2 size={11} style={{ color: '#10b981', flexShrink: 0 }} /> : <Clock size={11} style={{ flexShrink: 0 }} />}
             <span>{done ? `Cota ${label} liberada — retomando` : `Aguardando cota ${label} (${remaining}s) · ${event.model}`}</span>
         </div>
@@ -531,7 +598,7 @@ const RateWaitBadge: React.FC<{ event: AgentEvent; isStreaming: boolean }> = ({ 
 };
 
 const ContextOverflowBadge: React.FC<{ event: AgentEvent }> = ({ event }) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--sw-text-subtle)', margin: '3px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--font-sm)', color: 'var(--sw-text-subtle)', margin: '3px 0' }}>
         <AlertCircle size={11} style={{ flexShrink: 0, color: '#f59e0b' }} />
         <span>{event.model} não suporta {event.estimated_tokens?.toLocaleString()} tokens (limite {event.limit?.toLocaleString()}) · usando modelo maior</span>
     </div>
@@ -545,8 +612,9 @@ export const InlineEventStream: React.FC<{
     inlineConfirmed: Record<string, boolean>;
     onInlineConfirm: (action_id: string, approved: boolean) => void;
     onHierarchyMappingDone?: (contacts: MappedContact[]) => void;
+    onAction?: (prompt: string) => void;
     model: AIModel;
-}> = ({ events, isStreaming, inlineConfirmed, onInlineConfirm, onHierarchyMappingDone, model }) => {
+}> = ({ events, isStreaming, inlineConfirmed, onInlineConfirm, onHierarchyMappingDone, onAction, model }) => {
     const resultMap: Record<string, AgentEvent> = {};
     for (const ev of events) {
         if (ev.type === 'tool_result' && ev.call_id) resultMap[ev.call_id] = ev;
@@ -607,7 +675,7 @@ export const InlineEventStream: React.FC<{
                 if (ev.type === 'tool_result') return null;
                 if (ev.type === 'context_saved') {
                     return (
-                        <div key={i} className={styles.logLine} style={{ opacity: 0.3, fontSize: 10, letterSpacing: '0.04em' }}>
+                        <div key={i} className={styles.logLine} style={{ opacity: 0.3, fontSize: 'var(--font-xs)', letterSpacing: '0.04em' }}>
                             <span>· contexto salvo</span>
                         </div>
                     );
@@ -631,7 +699,7 @@ export const InlineEventStream: React.FC<{
                 }
                 if (ev.type === 'error') {
                     return (
-                        <div key={i} style={{ fontSize: 13, color: '#ef4444', marginTop: 4 }}>
+                        <div key={i} style={{ fontSize: 'var(--font-base)', color: '#ef4444', marginTop: 4 }}>
                             {ev.content}
                         </div>
                     );
@@ -657,12 +725,43 @@ export const InlineEventStream: React.FC<{
                         />
                     );
                 }
+                if (ev.type === 'suggested_actions') {
+                    const actions = ev.actions || [];
+                    if (actions.length === 0) return null;
+                    return (
+                        <div key={i} style={{ marginTop: 12, marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ fontSize: 'var(--font-sm)', fontWeight: 500, color: 'var(--sw-text-subtle)' }}>Próximas ações sugeridas:</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                {actions.map((act: any, idx: number) => (
+                                    <button 
+                                        key={idx}
+                                        onClick={() => onAction && onAction(act.prompt)}
+                                        style={{
+                                            padding: '6px 10px',
+                                            borderRadius: 6,
+                                            border: '1px solid var(--sw-border)',
+                                            background: 'var(--sw-bg)',
+                                            color: 'var(--sw-text-base)',
+                                            fontSize: 'var(--font-sm)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.15s ease'
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--sw-hover)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = 'var(--sw-bg)'; }}
+                                    >
+                                        {act.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                }
                 return null;
             })}
             {isStreaming && (
                 <div className={styles.logLine} style={{ marginTop: 4, opacity: 0.6 }}>
                     <Loader2 size={11} className={styles.spinner} />
-                    <span style={{ fontSize: 11 }}>Executando...</span>
+                    <span style={{ fontSize: 'var(--font-sm)' }}>Executando...</span>
                 </div>
             )}
         </div>
@@ -670,6 +769,8 @@ export const InlineEventStream: React.FC<{
 };
 
 // ─── SuggestedActionTask — card de tarefa com streaming inline ────────────────
+
+import { conversations } from '../../services/api';
 
 export type TaskStatus = 'pending' | 'streaming' | 'awaiting_confirm' | 'awaiting_mapping' | 'done' | 'rejected' | 'error';
 
@@ -702,10 +803,11 @@ const SuggestedActionTask: React.FC<{
     actionIndex?: number;
     approvedSuggestedActions?: Record<string, TaskStatus>;
     onApproveSuggestedAction?: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => void;
+    onAction?: (prompt: string) => void;
     isLast?: boolean;
     sameCompanyAsNext?: boolean;
     model: AIModel;
-}> = ({ action, streamV2Url, confirmV2Url, orgId, selectedOrgName, threadId, parentMessageId, actionIndex, approvedSuggestedActions = {}, onApproveSuggestedAction, isLast = false, sameCompanyAsNext = false, model }) => {
+}> = ({ action, streamV2Url, confirmV2Url, orgId, selectedOrgName, threadId, parentMessageId, actionIndex, approvedSuggestedActions = {}, onApproveSuggestedAction, onAction, isLast = false, sameCompanyAsNext = false, model }) => {
     const taskKey = `${parentMessageId}-${actionIndex}`;
     const externalStatus = approvedSuggestedActions[taskKey];
     const [localStatus, setLocalStatus] = useState<TaskStatus>(action.status || 'pending');
@@ -872,14 +974,10 @@ const SuggestedActionTask: React.FC<{
 
     const handleInlineConfirm = async (action_id: string, approved: boolean) => {
         setInlineConfirmed(prev => ({ ...prev, [action_id]: approved }));
-        if (!approved) {
-            setLocalStatus('done');
-            return;
-        }
         setLocalStatus('streaming');
         await streamInto(confirmV2Url, {
             action_id,
-            approved: true,
+            approved,
             thread_id: threadId,
         });
         setLocalStatus('done');
@@ -945,23 +1043,23 @@ const SuggestedActionTask: React.FC<{
                 gap: 8,
                 padding: '8px 12px',
                 borderBottom: 'var(--sw-border-width) solid var(--sw-border)',
-                background: 'var(--sw-hover)',
+                background: 'var(--chat-console-bg)',
             }}>
                 {channelCfg.img
                     ? <img src={channelCfg.img} alt={channelCfg.label} style={{ width: 14, height: 14, borderRadius: 2, objectFit: 'contain' }} />
                     : <span style={{ color: accentColor, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{catCfg.icon}</span>
                 }
-                <span style={{ fontSize: 10, color: 'var(--sw-text-muted)', letterSpacing: '0.07em', fontWeight: 700, textTransform: 'uppercase' }}>
+                <span style={{ fontSize: 'var(--font-xs)', color: 'var(--sw-text-muted)', letterSpacing: '0.07em', fontWeight: 700, textTransform: 'uppercase' }}>
                     {channelCfg.label}
                 </span>
                 {isManual && (
-                    <span style={{ fontSize: 9, color: '#eab308', background: 'rgba(234,179,8,0.12)', borderRadius: 3, padding: '2px 5px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: 'calc(var(--font-xs) - 2px)', color: '#eab308', background: 'rgba(234,179,8,0.12)', borderRadius: 3, padding: '2px 5px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                         Ação Manual
                     </span>
                 )}
                 {/* Status badge (execução ativa) */}
                 {(status === 'streaming' || status === 'awaiting_confirm' || status === 'awaiting_mapping') && (
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: status === 'awaiting_confirm' ? '#f59e0b' : status === 'awaiting_mapping' ? '#818cf8' : 'var(--sw-text-muted)' }}>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--font-xs)', color: status === 'awaiting_confirm' ? '#f59e0b' : status === 'awaiting_mapping' ? '#818cf8' : 'var(--sw-text-muted)' }}>
                         {status === 'streaming'
                             ? <><Loader2 size={10} className={styles.spinner} /><span>Executando...</span></>
                             : status === 'awaiting_confirm'
@@ -975,13 +1073,13 @@ const SuggestedActionTask: React.FC<{
             {/* Body */}
             <div style={{ padding: '10px 12px' }}>
                 {/* Título da ação — sem prefixo de canal */}
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--sw-text-base)', marginBottom: action.razao ? 6 : 0, lineHeight: 1.4 }}>
+                <div style={{ fontSize: 'var(--font-base)', fontWeight: 600, color: 'var(--sw-text-base)', marginBottom: action.razao ? 6 : 0, lineHeight: 1.4 }}>
                     {cleanLabel}
                 </div>
 
                 {/* Razão — itálico, como preview no ConfirmationCard */}
                 {action.razao && (
-                    <div style={{ fontSize: 12, color: 'var(--sw-text-subtle)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 'var(--font-sm)', color: 'var(--sw-text-subtle)', fontStyle: 'italic', lineHeight: 1.5 }}>
                         {action.razao}
                     </div>
                 )}
@@ -992,7 +1090,7 @@ const SuggestedActionTask: React.FC<{
                         style={{ marginTop: 10, cursor: 'pointer' }}
                         onClick={() => setIsExpanded(e => !e)}
                     >
-                        <div style={{ fontSize: 10, color: 'var(--sw-text-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ fontSize: 'var(--font-xs)', color: 'var(--sw-text-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span style={{ display: 'inline-block', transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.15s' }}>▶</span>
                             {isExpanded ? 'ocultar detalhes' : 'ver detalhes'}
                         </div>
@@ -1007,6 +1105,7 @@ const SuggestedActionTask: React.FC<{
                                     inlineConfirmed={inlineConfirmed}
                                     onInlineConfirm={handleInlineConfirm}
                                     onHierarchyMappingDone={handleMappingComplete}
+                                    onAction={onAction}
                                     model={model}
                                 />
                             </div>
@@ -1024,25 +1123,34 @@ const SuggestedActionTask: React.FC<{
                                 padding: '7px 12px',
                                 borderRadius: 7,
                                 border: 'none',
-                                background: accentColor,
-                                color: '#fff',
-                                fontSize: 12,
+                                background: 'transparent',
+                                color: accentColor,
+                                fontSize: 'var(--font-sm)',
                                 fontWeight: 600,
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: 5,
-                                transition: 'opacity 0.15s',
+                                transition: 'all 0.15s ease',
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
-                            onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+                            onMouseEnter={e => { e.currentTarget.style.background = `${accentColor}12`; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                         >
                             <Check size={12} strokeWidth={2.5} />
                             {isManual ? 'Marcar como feito' : 'Executar'}
                         </button>
                         <button
-                            onClick={() => setLocalStatus('rejected')}
+                            onClick={async () => {
+                                setLocalStatus('rejected');
+                                if (parentMessageId && actionIndex !== undefined) {
+                                    try {
+                                        await conversations.updateSuggestedActionStatus(parentMessageId, actionIndex, 'rejected');
+                                    } catch (e) {
+                                        console.error('Failed to persist rejected status', e);
+                                    }
+                                }
+                            }}
                             style={{
                                 flex: 1,
                                 padding: '7px 12px',
@@ -1050,7 +1158,7 @@ const SuggestedActionTask: React.FC<{
                                 border: 'var(--sw-border-width) solid var(--sw-border)',
                                 background: 'transparent',
                                 color: 'var(--sw-text-subtle)',
-                                fontSize: 12,
+                                fontSize: 'var(--font-sm)',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1249,7 +1357,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
             continue;
         } else if (ev.type === 'context_saved') {
             orderedItems.push(
-                <div key={`ctx-${i}`} className={styles.logLine} style={{ opacity: 0.3, fontSize: 10, margin: '2px 0 8px', letterSpacing: '0.04em' }}>
+                <div key={`ctx-${i}`} className={styles.logLine} style={{ opacity: 0.3, fontSize: 'var(--font-xs)', margin: '2px 0 8px', letterSpacing: '0.04em' }}>
                     <span>· contexto salvo</span>
                 </div>
             );
@@ -1348,6 +1456,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                                 actionIndex={idx}
                                 approvedSuggestedActions={approvedSuggestedActions}
                                 onApproveSuggestedAction={onApproveSuggestedAction}
+                                onAction={onAction}
                                 isLast={idx === suggestedActions.length - 1}
                                 sameCompanyAsNext={sameCompanyAsNext}
                                 model={model}

@@ -6,7 +6,8 @@ const contactService = require('./contactService');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Anti-ban configurations for whatsapp-web.js
 // - Usage of existing sessions (LocalAuth) to avoid multiple logins.
@@ -215,8 +216,8 @@ const normalizeNumberJid = (jid) => {
 app.post('/api/whatsapp/send', async (req, res) => {
     if (!isReady) return res.status(503).json({ error: 'WhatsApp indisponível ou não logado.' });
     
-    const { number, message } = req.body;
-    if (!number || !message) return res.status(400).json({ error: 'Faltam dados de number e message.' });
+    const { number, message, media } = req.body;
+    if (!number || (!message && !media)) return res.status(400).json({ error: 'Faltam dados de number e message ou media.' });
 
     let formattedNumber = normalizeNumberJid(number);
     if (!formattedNumber) {
@@ -289,7 +290,15 @@ app.post('/api/whatsapp/send', async (req, res) => {
             trackFatalError(e);
         }
 
-        await client.sendMessage(formattedNumber, message);
+        let msgContent = message;
+        let options = {};
+        
+        if (media && media.data && media.mimetype) {
+            msgContent = new MessageMedia(media.mimetype.replace('data:', ''), media.data, media.filename || 'documento');
+            options.caption = message || '';
+        }
+
+        await client.sendMessage(formattedNumber, msgContent, options);
         fatalErrorCount = 0; // Sucesso no envio reseta contador de erros
 
         res.json({ success: true, number: formattedNumber });

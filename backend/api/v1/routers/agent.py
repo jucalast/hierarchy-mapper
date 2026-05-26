@@ -30,14 +30,19 @@ class AgentConfirmRequest(BaseModel):
     action_id: str
     approved: bool
     thread_id: Optional[str] = None
+    attachment_path: Optional[str] = None
 
 
 @router.post("/chat")
 async def agent_chat(payload: AgentChatRequest):
-    """Executa o loop do Agente com streaming NDJSON."""
-    from modules.agent import run_agent
+    """Executa o loop do Agente com streaming NDJSON via Worker ARQ."""
     from core.llm.router import set_preferred_model
     from core.llm.router import get_strict_mode_preference
+    import uuid
+    import json
+    import asyncio
+    from core.infra.redis_config import redis_settings
+    from arq.connections import create_pool
 
     preferred = getattr(payload, "model", None)
     strict = get_strict_mode_preference()
@@ -80,6 +85,10 @@ async def agent_chat(payload: AgentChatRequest):
                                                 del actions[payload.action_index]["logs"]
                                 parent_msg.logs = parent_logs
 
+                                from sqlalchemy.orm.attributes import flag_modified
+                                flag_modified(parent_msg, "data")
+                                flag_modified(parent_msg, "logs")
+
                                 db.add(parent_msg)
                                 await db.commit()
 
@@ -87,35 +96,142 @@ async def agent_chat(payload: AgentChatRequest):
 
                 payload.history = payload.history[:-1]
 
+    job_id = f"agent_chat_{uuid.uuid4().hex[:8]}"
+
+    payload_dict = {
+        "job_id": job_id,
+        "message": payload.message,
+        "history": payload.history or [],
+        "org_id": payload.org_id,
+        "preferred": preferred,
+        "strict_mode": strict,
+        "thread_id": payload.thread_id,
+        "direct_action": payload.direct_action or False,
+        "parent_message_id": payload.parent_message_id,
+        "action_index": payload.action_index,
+        "is_regeneration": is_regeneration,
+    }
+
+    redis = await create_pool(redis_settings)
+    await redis.enqueue_job("run_agent_task", payload_dict=payload_dict)
+
     async def streamer():
-        async for chunk in run_agent(
-            message=payload.message,
-            history=payload.history or [],
-            org_id=payload.org_id,
-            preferred=preferred,
-            strict_mode=strict,
-            thread_id=payload.thread_id,
-            direct_action=payload.direct_action or False,
-            parent_message_id=payload.parent_message_id,
-            action_index=payload.action_index,
-            is_regeneration=is_regeneration,
-        ):
-            yield chunk
+        pubsub = redis.pubsub()
+        channel_name = f"agent_updates_{job_id}"
+        await pubsub.subscribe(channel_name)
+        finished = False
+        try:
+            async for message in pubsub.listen():
+                if message and message['type'] == 'message':
+                    data = message['data']
+                    if isinstance(data, bytes):
+                        data = data.decode('utf-8')
+
+                    try:
+                        msg_obj = json.loads(data)
+                        if msg_obj.get('type') == 'job_done':
+                            finished = True
+                            break
+                        if msg_obj.get('type') == 'error':
+                            error_msg = msg_obj.get("error", "Erro interno no worker")
+                            yield json.dumps({"type": "error", "content": error_msg}) + "\n"
+                            finished = True
+                            break
+                    except (json.JSONDecodeError, AttributeError):
+                        pass
+                    
+                    yield data if data.endswith('\n') else data + '\n'
+        finally:
+            await pubsub.unsubscribe(channel_name)
+            if not finished:
+                try:
+                    from arq.jobs import Job
+                    job = Job(job_id, redis)
+                    await job.abort()
+                except Exception:
+                    pass
 
     return StreamingResponse(streamer(), media_type="application/x-ndjson")
 
 
 @router.post("/confirm")
 async def agent_confirm(payload: AgentConfirmRequest):
-    """Retoma o agente após confirmação de uma ação de escrita."""
-    from modules.agent import resume_after_confirmation
+    """Retoma o agente após confirmação de uma ação de escrita via Worker ARQ."""
+    import uuid
+    import json
+    from core.infra.redis_config import redis_settings
+    from arq.connections import create_pool
+
+    job_id = f"agent_resume_{uuid.uuid4().hex[:8]}"
+
+    payload_dict = {
+        "job_id": job_id,
+        "action_id": payload.action_id,
+        "approved": payload.approved,
+        "thread_id": payload.thread_id,
+        "attachment_path": payload.attachment_path,
+    }
+
+    redis = await create_pool(redis_settings)
+    await redis.enqueue_job("resume_agent_task", payload_dict=payload_dict)
 
     async def streamer():
-        async for chunk in resume_after_confirmation(
-            action_id=payload.action_id,
-            approved=payload.approved,
-            thread_id=payload.thread_id,
-        ):
-            yield chunk
+        pubsub = redis.pubsub()
+        channel_name = f"agent_updates_{job_id}"
+        await pubsub.subscribe(channel_name)
+        finished = False
+        try:
+            async for message in pubsub.listen():
+                if message and message['type'] == 'message':
+                    data = message['data']
+                    if isinstance(data, bytes):
+                        data = data.decode('utf-8')
+
+                    try:
+                        msg_obj = json.loads(data)
+                        if msg_obj.get('type') == 'job_done':
+                            finished = True
+                            break
+                        if msg_obj.get('type') == 'error':
+                            error_msg = msg_obj.get("error", "Erro interno no worker")
+                            yield json.dumps({"type": "error", "content": error_msg}) + "\n"
+                            finished = True
+                            break
+                    except (json.JSONDecodeError, AttributeError):
+                        pass
+                    
+                    yield data if data.endswith('\n') else data + '\n'
+        finally:
+            await pubsub.unsubscribe(channel_name)
+            if not finished:
+                try:
+                    from arq.jobs import Job
+                    job = Job(job_id, redis)
+                    await job.abort()
+                except Exception:
+                    pass
 
     return StreamingResponse(streamer(), media_type="application/x-ndjson")
+
+
+@router.post("/upload")
+async def agent_upload(file: __import__("fastapi").UploadFile = __import__("fastapi").File(...)):
+    """Faz upload de um arquivo para ser anexado em uma ação do agente."""
+    import os
+    import uuid
+    from pathlib import Path
+    
+    upload_dir = Path("backend/uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Sanitizar o nome do arquivo e adicionar UUID para evitar colisões
+    safe_name = "".join(c for c in file.filename if c.isalnum() or c in " ._-")
+    file_id = uuid.uuid4().hex[:8]
+    final_name = f"{file_id}_{safe_name}"
+    
+    file_path = upload_dir / final_name
+    
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+        
+    return {"ok": True, "attachment_path": str(file_path.absolute())}

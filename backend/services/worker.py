@@ -16,14 +16,18 @@ O frontend conecta ao WebSocket /api/v1/jobs/ws/{job_id} para receber as atualiz
 """
 import asyncio
 import json
+import traceback
 from typing import Optional
 
 from arq import create_pool
-from sqlalchemy import select
+from arq.connections import RedisSettings
+from arq.cron import cron
 
 from core.infra.redis_config import redis_settings
-from core.observability.logging_config import get_logger
+from core.observability.logging_config import get_logger, configure_logging
 from modules.hierarchy.service.b2b_scanner import discover_employees_stream
+from modules.triggers.service.trigger_service import scan_email_triggers, scan_whatsapp_triggers
+
 
 log = get_logger(__name__)
 
@@ -39,14 +43,21 @@ async def run_b2b_discovery_task(
     product_focus: Optional[str] = None, 
     area_focus: Optional[str] = "compras",
     email_api_key: str = None, 
-    max_results: int = 100
+    max_results: int = 100,
+    model: Optional[str] = None,
+    strict_mode: bool = False
 ):
     import urllib.parse
-    log.info("worker.task.started", company=company_name, domain=domain, area=area_focus)
+    log.info("worker.task.started", company=company_name, domain=domain, area=area_focus, model=model, strict_mode=strict_mode)
+    
+    if model:
+        from core.llm import set_preferred_model
+        set_preferred_model(model, strict_mode)
     
     # 🕵️ Passo 0: Check Rápido no Banco (Para resposta instantânea)
     from core.infra.database import async_session
     from models import Organization, Employee
+    from sqlalchemy import select
     
     fast_nodes = []
     async with async_session() as session:
@@ -119,9 +130,9 @@ async def run_b2b_discovery_task(
             # Sócios salvos
             stmt_p = select(Employee).where(Employee.company_id == db_org.id, Employee.department == "Quadro de Sócios (QSA)")
             res_p = await session.execute(stmt_p)
-            for i, p in enumerate(res_p.scalars().all()):
+            for p in res_p.scalars().all():
                 fast_nodes.append({
-                    "id": f"partner_{i}",
+                    "id": f"partner_{p.id}",
                     "name": p.name,
                     "role": p.role,
                     "department": "Quadro de Sócios (QSA)",
@@ -189,21 +200,23 @@ async def run_b2b_discovery_task(
                 }]
                 
                 async with async_session() as session:
-                    for i, p in enumerate(partners):
+                    for p in partners:
                         stmt_p = select(Employee).where(Employee.name == p.get("name"), Employee.company_id == db_org.id)
                         res_p = await session.execute(stmt_p)
-                        if not res_p.scalars().first():
-                            new_p = Employee(
+                        db_p = res_p.scalars().first()
+                        if not db_p:
+                            db_p = Employee(
                                 name=p.get("name"),
                                 role=p.get("role", "Sócio"),
                                 department="Quadro de Sócios (QSA)",
                                 seniority=6,
                                 company_id=db_org.id
                             )
-                            session.add(new_p)
+                            session.add(db_p)
+                            await session.flush()
                         
                         update_nodes.append({
-                            "id": f"partner_{i}",
+                            "id": f"partner_{db_p.id}",
                             "name": p.get("name"),
                             "role": p.get("role", "Sócio"),
                             "department": "Quadro de Sócios (QSA)",
@@ -280,10 +293,60 @@ async def shutdown(ctx):
     """Hook executado quando o worker ARQ encerra."""
     log.info("worker.shutdown")
 
+async def run_agent_task(ctx, payload_dict: dict):
+    from modules.agent import run_agent
+    job_id = payload_dict["job_id"]
+    try:
+        log.info("worker.agent_task.started", job_id=job_id)
+        async for chunk in run_agent(
+            message=payload_dict["message"],
+            history=payload_dict.get("history", []),
+            org_id=payload_dict.get("org_id"),
+            preferred=payload_dict.get("preferred"),
+            strict_mode=payload_dict.get("strict_mode", False),
+            thread_id=payload_dict.get("thread_id"),
+            direct_action=payload_dict.get("direct_action", False),
+            parent_message_id=payload_dict.get("parent_message_id"),
+            action_index=payload_dict.get("action_index"),
+            is_regeneration=payload_dict.get("is_regeneration", False),
+        ):
+            await ctx['redis'].publish(f"agent_updates_{job_id}", chunk)
+        
+        await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "job_done"}))
+        log.info("worker.agent_task.completed", job_id=job_id)
+    except Exception as e:
+        log.exception("worker.agent_task.failed", job_id=job_id, error=str(e))
+        await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "error", "error": str(e)}))
+
+async def resume_agent_task(ctx, payload_dict: dict):
+    from modules.agent import resume_after_confirmation
+    job_id = payload_dict["job_id"]
+    try:
+        log.info("worker.resume_agent_task.started", job_id=job_id)
+        async for chunk in resume_after_confirmation(
+            action_id=payload_dict["action_id"],
+            approved=payload_dict["approved"],
+            thread_id=payload_dict.get("thread_id"),
+            attachment_path=payload_dict.get("attachment_path"),
+        ):
+            await ctx['redis'].publish(f"agent_updates_{job_id}", chunk)
+            
+        await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "job_done"}))
+        log.info("worker.resume_agent_task.completed", job_id=job_id)
+    except Exception as e:
+        log.exception("worker.resume_agent_task.failed", job_id=job_id, error=str(e))
+        await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "error", "error": str(e)}))
+
+
 class WorkerSettings:
-    functions = [run_b2b_discovery_task]
+    functions = [run_b2b_discovery_task, run_agent_task, resume_agent_task]
+    cron_jobs = [
+        cron(scan_email_triggers, minute=set(range(0, 60, 2))),
+        cron(scan_whatsapp_triggers, minute=set(range(0, 60, 1)))
+    ]
     redis_settings = redis_settings
     job_timeout = 1800 # 30 min (Aumentando de 300s pra dar tempo aos fallback engines e delays)
     allow_abort_jobs = True
     on_startup = startup
     on_shutdown = shutdown
+

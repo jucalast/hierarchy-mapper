@@ -480,43 +480,91 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     </div>
                 ] : [];
             }
-            const boldParts = part.split(/(\*\*.*?\*\*)/g);
-            return boldParts.flatMap((bPart, bi) => {
-                if (bPart.startsWith('**') && bPart.endsWith('**')) {
-                    return [<strong key={`bold-${i}-${bi}`} style={{ fontWeight: 700 }}>{bPart.slice(2, -2)}</strong>];
+            const tokenParts = part.split(/(\*\*.*?\*\*|`.*?`|\[.*?\]\(.*?\))/g);
+            return tokenParts.flatMap((tPart, ti) => {
+                if (tPart.startsWith('**') && tPart.endsWith('**')) {
+                    return [<strong key={`bold-${i}-${ti}`} style={{ fontWeight: 700 }}>{tPart.slice(2, -2)}</strong>];
                 }
-                return renderHighlightedText(bPart, `${i}-${bi}`);
+                if (tPart.startsWith('`') && tPart.endsWith('`')) {
+                    return [<code key={`code-${i}-${ti}`} style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '2px 4px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.9em' }}>{tPart.slice(1, -1)}</code>];
+                }
+                const linkMatch = tPart.match(/^\[(.*?)\]\((.*?)\)$/);
+                if (linkMatch) {
+                    return [<a key={`link-${i}-${ti}`} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" style={{ color: '#5E6AD2', textDecoration: 'underline' }}>{linkMatch[1]}</a>];
+                }
+                return renderHighlightedText(tPart, `${i}-${ti}`);
             });
         });
     };
 
     const renderMarkdown = (text: string, messageData?: any) => {
         if (!text) return null;
-        const lines = text.split('\n');
-        return lines.map((line, idx) => {
-            if (line.includes('[[PAST_TASKS]]')) {
+        
+        // Handle code blocks first
+        const blocks = text.split(/(```[\s\S]*?```)/g);
+        
+        return blocks.map((block, blockIdx) => {
+            if (block.startsWith('```') && block.endsWith('```')) {
+                const codeContent = block.slice(3, -3).replace(/^[\w-]+\n/, ''); // remove language identifier if present
                 return (
-                    <div key={idx} style={{ margin: '8px 0' }}>
-                        <div style={{ fontSize: '14px', color: '#888', marginBottom: '12px', textTransform: 'uppercase', fontWeight: 800 }}>Cenário Analisado (Pipedrive)</div>
-                        <TaskList data={{ activities: messageData?.past_activities }} />
+                    <div key={`codeblock-${blockIdx}`} style={{ margin: '12px 0', padding: '12px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '6px', overflowX: 'auto', fontFamily: 'monospace', fontSize: '0.9em', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <pre style={{ margin: 0 }}><code>{codeContent.trim()}</code></pre>
                     </div>
                 );
             }
-            if (line.includes('[[NEW_TASKS]]')) {
-                return (
-                    <div key={idx} style={{ margin: '12px 0' }}>
-                        <div style={{ fontSize: '14px', color: '#5E6AD2', marginBottom: '12px', textTransform: 'uppercase', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <CheckCircle2 size={16} /> Nova Atividade Gerada
+            
+            const lines = block.split('\n');
+            return lines.map((line, idx) => {
+                if (line.includes('[[PAST_TASKS]]')) {
+                    return (
+                        <div key={`${blockIdx}-${idx}`} style={{ margin: '8px 0' }}>
+                            <div style={{ fontSize: '14px', color: '#888', marginBottom: '12px', textTransform: 'uppercase', fontWeight: 800 }}>Cenário Analisado (Pipedrive)</div>
+                            <TaskList data={{ activities: messageData?.past_activities }} />
                         </div>
-                        <TaskList data={{ activities: messageData?.new_activities }} />
-                    </div>
-                );
-            }
-            if (line.trim() === '---') return <hr key={idx} style={{ margin: '12px 0', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />;
-            if (line.startsWith('### ')) {
-                return <h3 key={idx} style={{ fontSize: '20px', fontWeight: 'bold', marginTop: '4px', marginBottom: '8px' }}>{renderInlineMarkdown(line.replace('### ', '').replace('🎯 ', ''), messageData)}</h3>;
-            }
-            return <div key={idx} style={{ marginBottom: '12px', lineHeight: '1.6' }}>{renderInlineMarkdown(line, messageData)}</div>;
+                    );
+                }
+                if (line.includes('[[NEW_TASKS]]')) {
+                    return (
+                        <div key={`${blockIdx}-${idx}`} style={{ margin: '12px 0' }}>
+                            <div style={{ fontSize: '14px', color: '#5E6AD2', marginBottom: '12px', textTransform: 'uppercase', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <CheckCircle2 size={16} /> Nova Atividade Gerada
+                            </div>
+                            <TaskList data={{ activities: messageData?.new_activities }} />
+                        </div>
+                    );
+                }
+                if (line.trim() === '---') return <hr key={`${blockIdx}-${idx}`} style={{ margin: '12px 0', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />;
+                
+                const trimmedLine = line.trim();
+                
+                if (trimmedLine.startsWith('### ')) {
+                    return <h3 key={`${blockIdx}-${idx}`} style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px' }}>{renderInlineMarkdown(trimmedLine.replace('### ', '').replace('🎯 ', ''), messageData)}</h3>;
+                }
+                if (trimmedLine.startsWith('## ')) {
+                    return <h2 key={`${blockIdx}-${idx}`} style={{ fontSize: '20px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px' }}>{renderInlineMarkdown(trimmedLine.replace('## ', ''), messageData)}</h2>;
+                }
+                if (trimmedLine.startsWith('# ')) {
+                    return <h1 key={`${blockIdx}-${idx}`} style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '16px', marginBottom: '8px' }}>{renderInlineMarkdown(trimmedLine.replace('# ', ''), messageData)}</h1>;
+                }
+                
+                // List item (number or bullet)
+                const listMatch = trimmedLine.match(/^(\d+\.|[-*])\s+(.*)/);
+                if (listMatch) {
+                    return (
+                        <div key={`${blockIdx}-${idx}`} style={{ display: 'flex', gap: '10px', marginBottom: '8px', paddingLeft: '8px' }}>
+                            <span style={{ fontWeight: 'bold', minWidth: '16px', opacity: 0.8 }}>{listMatch[1].replace('*', '•').replace('-', '•')}</span>
+                            <div style={{ flex: 1, lineHeight: '1.6' }}>{renderInlineMarkdown(listMatch[2], messageData)}</div>
+                        </div>
+                    );
+                }
+                
+                // Empty line
+                if (trimmedLine === '') {
+                    return <div key={`${blockIdx}-${idx}`} style={{ height: '8px' }}></div>;
+                }
+                
+                return <div key={`${blockIdx}-${idx}`} style={{ marginBottom: '12px', lineHeight: '1.6' }}>{renderInlineMarkdown(line, messageData)}</div>;
+            });
         });
     };
 

@@ -176,9 +176,10 @@ export const Drawer: React.FC<DrawerProps> = ({
 
     useEffect(() => {
         if (refreshDetailsTrigger > 0) {
-            // Em nova varredura ou job explícito, zera estado local
-            setOrgDetails({});
-            setExpandedOrgId(null);
+            // Em nova varredura atualiza os detalhes em vez de fechar
+            if (expandedOrgId) {
+                void fetchOrgDetails(expandedOrgId);
+            }
         }
     }, [refreshDetailsTrigger]);
 

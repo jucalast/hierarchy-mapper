@@ -10,7 +10,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-left: var(--sw-border-width) solid rgba(255, 255, 255, 0.05);
+  border-left: var(--sw-border-width) solid var(--sw-border);
   animation: slideInRight var(--chat-transition-smooth);
   transition: background var(--chat-transition-fast), border-color var(--chat-transition-fast);
 }
@@ -1962,6 +1962,10 @@
   border-color: rgba(255, 255, 255, 0.05);
 }
 
+.waPreviewCard.pendingApproval {
+  border-color: rgba(37, 211, 102, 0.35) !important;
+}
+
 .waPreviewHeader {
   display: flex;
   align-items: center;
@@ -2272,7 +2276,7 @@
 }
 
 .chatPanel.dark .emailPreviewCard {
-  background: #131313;
+  background: var(--chat-bg-primary);
 }
 
 .emailPreviewHeader {
@@ -2370,11 +2374,11 @@
 
 .emailPreviewBody {
   padding: 16px;
-  background: #ffffff;
+  background: #e3e3e3;
 }
 
 .chatPanel.dark .emailPreviewBody {
-  background: #131313;
+  background: #0f0f0f;
 }
 
 .emailBodyText {
@@ -4172,7 +4176,7 @@
 
 /* Dark mode specific */
 .chatPanel.dark .emptyWelcomeContainer {
-  background-color: #131313;
+  background-color: var(--chat-bg-primary);
 }
 
 .emptyWelcomeText {
