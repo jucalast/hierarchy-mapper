@@ -17,17 +17,27 @@ from typing import Dict, List, Optional
 from .role_engine import role_engine
 from .org_search import org_search
 from modules.intelligence.service.preview_service import get_url_preview
-from .filters import apply_strict_filters, get_department_tag, get_seniority_level
+from .filters import apply_strict_filters, get_department_tag, get_seniority_level, is_same_person
 from core.external.email_service import apply_pattern
 from .logging_utils import log_candidate_rejection, log_candidate_analysis, register_raw_data
 
 class CandidateProcessor:
-    def __init__(self, brand: str, domain: str, area: str, location: str, product: str):
+    def __init__(self, brand: str, domain: str, area: str, location: str, product: str, razao_social: Optional[str] = None, partners: Optional[List[str]] = None):
         self.brand = brand
         self.domain = domain
         self.area = area
         self.location = location
         self.product = product
+        self.razao_social = razao_social
+        self.partners = partners or []
+
+    def is_qsa_partner(self, candidate_name: str) -> bool:
+        if not self.partners or not candidate_name:
+            return False
+        for partner_name in self.partners:
+            if is_same_person(partner_name, candidate_name):
+                return True
+        return False
 
     async def deep_research(self, candidate_data: Dict) -> Dict:
         """Realiza uma busca cirúrgica para validar um candidato duvidoso (Repescagem)."""
@@ -73,7 +83,7 @@ class CandidateProcessor:
             
             # 3. Segunda Opinião da IA
             from .role_engine import role_engine
-            res = await role_engine.distill_role(name, self.brand, repescagem_context, area_focus=self.area, target_location=self.location)
+            res = await role_engine.distill_role(name, self.brand, repescagem_context, area_focus=self.area, target_location=self.location, razao_social=self.razao_social)
             res["verified_linkedin"] = suggested_linkedin
             return res
             
@@ -102,6 +112,8 @@ class CandidateProcessor:
         name = orphan_data.get("name")
         print(f"      [Orphan Upgrade] 💎 Iniciando investigação para: {name}")
         
+        is_qsa = self.is_qsa_partner(name)
+
         # 1. Roda a Repescagem (IA + Busca Direta)
         ai_data = await self.deep_research({"name": name, "linkedin": "None"})
         
@@ -112,7 +124,13 @@ class CandidateProcessor:
 
         if is_invalid and (current_role_lower in generic_roles or not ai_data.get("role")):
              # Para órfãos, exigimos um pouco mais de evidência para não encher de lixo
-             if ai_data.get("department") != "Não Identificado" and ai_data.get("matching_score", 0) > 0:
+             if is_qsa:
+                 ai_data["is_valid"] = True
+                 ai_data["role"] = "Sócio / Administrador"
+                 ai_data["department"] = "Quadro de Sócios (QSA)"
+                 ai_data["matching_score"] = 100
+                 print(f"      [Orphan Upgrade] 💎 Sócio Administrador QSA promovido automaticamente: {name}")
+             elif ai_data.get("department") != "Não Identificado" and ai_data.get("matching_score", 0) > 0:
                  ai_data["is_valid"] = True
                  ai_data["role"] = "Análise Humana"
                  ai_data["department"] = "A validar (Órfão)"
@@ -130,6 +148,8 @@ class CandidateProcessor:
 
         # 3. Montagem do Nó Completo
         final_role = ai_data.get("role", orphan_data.get("role", "Colaborador"))
+        if is_qsa and (final_role.lower() in generic_roles or not final_role or final_role == "Colaborador"):
+            final_role = "Sócio / Administrador"
         
         confidence = ai_data.get("matching_score", 0)
         
@@ -140,16 +160,16 @@ class CandidateProcessor:
             "company": self.brand,
             "linkedin": verified_linkedin or "URL não encontrada",
             "url": verified_linkedin or "URL não encontrada",
-            "department": await get_department_tag(final_role),
-            "level": await get_seniority_level(final_role),
+            "department": "Quadro de Sócios (QSA)" if is_qsa else await get_department_tag(final_role),
+            "level": 6 if is_qsa else await get_seniority_level(final_role),
             "email": apply_pattern(name.split()[0].lower(), (name.split()[1:] or [name.split()[0]])[-1].lower(), self.domain, "first.last"),
             "avatar": enriched.get("image") or None,
             "company_logo": f"https://unavatar.io/{self.domain}" if self.domain else None,
             "location": enriched.get("location") or self.location or "Brasil",
             "observations": ai_data.get("evidence") or enriched.get("description"),
             "education": enriched.get("education"),
-            "headline": enriched.get("role") or final_role,
-            "matching_score": confidence,
+            "headline": enriched.get("role") if (enriched.get("role") and "não identificado" not in enriched.get("role").lower()) else final_role,
+            "matching_score": 100 if is_qsa else confidence,
             "evidence": ai_data.get("evidence")
         }
         
@@ -180,10 +200,17 @@ class CandidateProcessor:
             log_candidate_rejection(name or "Unknown", href, "Nome inválido ou coincidente com a marca")
             return None
 
-        # 🛡️ FIX #4: Ativa o Filtro Mecânico Estrito antes da IA (Bypassado para buscas de sócios/fundadores)
-        if not is_partner_search:
-            if not await apply_strict_filters(name, title, body, self.brand, self.brand, self.location):
-                log_candidate_rejection(name, href, "REJEIÇÃO MECÂNICA: Filtro de segurança (filters.py)")
+        # 🛡️ FIX #4: Ativa o Filtro Mecânico Estrito antes da IA (Bypassado para buscas de sócios/fundadores ou QSA)
+        is_qsa = self.is_qsa_partner(name)
+        
+        mechanical_title = role_engine.extract_mechanical_title(title, body, self.brand)
+        if not mechanical_title or mechanical_title.strip() == "":
+            mechanical_title = "Não Identificado"
+
+        if not is_partner_search and not is_qsa:
+            core_comp_arg = self.razao_social if self.razao_social else self.brand
+            if not await apply_strict_filters(name, title, body, core_comp_arg, self.brand, self.location, mechanical_title):
+                log_candidate_rejection(name, href, f"REJEIÇÃO MECÂNICA: {mechanical_title}")
                 return None
 
         # 1. 🔍 THE ORG (Verdade Absoluta)
@@ -216,13 +243,26 @@ class CandidateProcessor:
         meta_role = (enriched.get('role', '') or '').lower()
         meta_role_clean = html.unescape(meta_role)
         bio_clean = html.unescape(enriched.get('description', 'N/A'))
-        
-        # 3. 🛡️ FILTRO DE ÂNCORA (Marca)
         brand_slug = role_engine.slugify_lenient(self.brand)
         words = [role_engine.slugify_lenient(w) for w in self.brand.replace('&', ' ').split() if len(w) > 1]
+        
+        # Se tiver Razão Social, inclui na âncora de marca
+        if self.razao_social:
+            razao_slug = role_engine.slugify_lenient(self.razao_social)
+            razao_words = [role_engine.slugify_lenient(w) for w in self.razao_social.replace('&', ' ').split() if len(w) > 1]
+        else:
+            razao_slug = ""
+            razao_words = []
+            
         context_slug = role_engine.slugify_lenient(title + body + meta_role)
         
-        brand_match = brand_slug in context_slug or any(w in context_slug for w in words)
+        brand_match = (
+            brand_slug in context_slug 
+            or any(w in context_slug for w in words)
+            or (razao_slug and razao_slug in context_slug)
+            or (razao_words and any(w in context_slug for w in razao_words))
+        )
+        
         if not theorg_found and not brand_match:
             # Mesmo rejeitado aqui, vamos logar os dados brutos que já coletamos
             log_candidate_analysis(
@@ -237,7 +277,6 @@ class CandidateProcessor:
         # 4. 🧠 REPESCAGEM / DEEP ANALYSIS
         # Para modularidade, o B2BScanner pode decidir quando rodar a repescagem no lote.
         # Mas aqui faremos a lógica de decisão individual para este processador.
-        mechanical_title = role_engine.extract_mechanical_title(title, body, self.brand)
         
         # ✂️ PODA MECÂNICA (Solução Definitiva contra ruído de múltiplos perfis)
         def isolate_context(text, target_name):
@@ -277,7 +316,8 @@ class CandidateProcessor:
             area_focus=self.area, 
             target_location=self.location,
             official_role=theorg_role if theorg_found else None,
-            meta_company=meta_company
+            meta_company=meta_company,
+            razao_social=self.razao_social
         )
         confidence = ai_data.get("matching_score", 0)
 
@@ -309,17 +349,17 @@ class CandidateProcessor:
         final_processed_role = str(ai_data.get("role", "")).lower()
         if final_processed_role in generic_roles or not ai_data.get("role"):
              # Só fazemos o fallback se houver algum indício de que a pessoa trabalha lá
-             if ai_data.get("is_valid") or ai_data.get("department") != "Não Identificado" or confidence > 0:
-                 ai_data["is_valid"] = True
-                 ai_data["role"] = "Análise Humana"
-                 ai_data["department"] = "A validar"
-                 ai_data["matching_score"] = 10 
-                 ai_data["evidence"] = "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
+             if mechanical_title == "Não Identificado" or ai_data.get("is_valid") or ai_data.get("department") != "Não Identificado" or confidence > 0 or is_qsa:
+                  ai_data["is_valid"] = True
+                  ai_data["role"] = "Análise Humana"
+                  ai_data["department"] = "A validar"
+                  ai_data["matching_score"] = 10 
+                  ai_data["evidence"] = "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico."
 
         # 🛡️ TRAVA FINAL: Só rejeita se a confiança for realmente nula ou se a IA for categórica.
         if ai_data.get("is_valid") and confidence < 5:
-            # Mantemos o "Análise Humana" se for o caso
-            if ai_data.get("role") != "Análise Humana":
+            # Mantemos o "Análise Humana" se for o caso ou se for QSA
+            if ai_data.get("role") != "Análise Humana" and not is_qsa:
                 ai_data["is_valid"] = False
             ai_data["evidence"] = f"VETO: Confiança insuficiente ({confidence}%)."
 
@@ -327,6 +367,9 @@ class CandidateProcessor:
         final_role = role_engine.apply_fidelity_guard(ai_data.get("role", "Professional"), mechanical_title, brand=self.brand)
         if theorg_found and theorg_role != "Não Encontrado":
             final_role = theorg_role
+
+        if is_qsa and (final_role.lower() in generic_roles or not final_role or final_role == "Professional"):
+            final_role = "Sócio / Administrador"
 
         # 🔥 SOBERANIA DA IA: O nome final é o que a IA extraiu (proper_name), ignorando o chute inicial.
         name = ai_data.get("proper_name", name)
@@ -353,7 +396,16 @@ class CandidateProcessor:
                 })
 
         if not ai_data.get("is_valid") and not theorg_found:
-            return {"main": None, "orphans": potential_orphans}
+            # Se for um sócio do QSA, NUNCA rejeita! Protege e força Análise Humana/Sócio
+            if is_qsa:
+                ai_data["is_valid"] = True
+                final_role = final_role if (final_role and final_role != "Professional" and final_role.lower() not in generic_roles) else "Sócio / Administrador"
+                ai_data["role"] = final_role
+                ai_data["department"] = "Quadro de Sócios (QSA)"
+                ai_data["matching_score"] = 100
+                ai_data["evidence"] = "APROVADO AUTOMATICAMENTE: Sócio Administrador confirmado no QSA/CNPJ da empresa."
+            else:
+                return {"main": None, "orphans": potential_orphans}
 
         # 🎨 MONTAGEM DO NÓ PRINCIPAL
         node_data = {
@@ -363,16 +415,16 @@ class CandidateProcessor:
             "company": self.brand,
             "linkedin": href,
             "url": href,
-            "department": await get_department_tag(final_role),
-            "level": await get_seniority_level(final_role),
+            "department": "Quadro de Sócios (QSA)" if is_qsa else await get_department_tag(final_role),
+            "level": 6 if is_qsa else await get_seniority_level(final_role),
             "email": apply_pattern(name.split()[0].lower(), (name.split()[1:] or [name.split()[0]])[-1].lower(), self.domain, "first.last"),
             "avatar": enriched.get("image"),
             "company_logo": f"https://unavatar.io/{self.domain}" if self.domain else None,
             "location": enriched.get("location") or self.location or "Brasil",
             "observations": enriched.get("description"), # A Bio vinda do OSINT
             "education": enriched.get("education"),
-            "headline": enriched.get("role") or final_role,
-            "matching_score": confidence,
+            "headline": enriched.get("role") if (enriched.get("role") and "não identificado" not in enriched.get("role").lower()) else final_role,
+            "matching_score": 100 if is_qsa else confidence,
             "evidence": ai_data.get("evidence")
         }
 

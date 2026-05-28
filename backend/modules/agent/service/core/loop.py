@@ -111,7 +111,36 @@ async def _agent_loop(
     if _is_direct_directive:
         log.info("agent.intent.direct_directive_detected", content=_first_msg_content[:50])
 
-    # Ferramentas cujos resultados nunca devem ser descartados do histórico:
+    # ── DETECÇÃO DE REUSO DE CONTEXTO ──
+    # Se o histórico já contém as informações necessárias para a tarefa, 
+    # injetamos uma instrução para pular a fase de investigação.
+    _history_text = str(messages).lower()
+    _has_org_info = "consultando" in _history_text and "pipedrive" in _history_text
+    _has_comm_info = ("buscando e-mails" in _history_text) or ("buscando mensagens" in _history_text)
+    _should_skip_investigation = _has_org_info and _has_comm_info
+    
+    # ── FILTRO DE REPETIÇÃO DE SUGESTÃO ──
+    # Evita sugerir ações que o usuário acabou de aprovar ou que o agente acabou de executar.
+    _executed_tools = []
+    for _m in messages:
+        _mc = _m.get("content", "")
+        if isinstance(_mc, list):
+            for _b in _mc:
+                if isinstance(_b, dict):
+                    _tn = _b.get("tool_name") or _b.get("name")
+                    if _tn: _executed_tools.append(_tn)
+    _just_updated_task = "pipedrive_update_task" in _executed_tools
+
+    if _should_skip_investigation and iteration == 0 and direct_action:
+        log.info("agent.intent.context_reuse_detected")
+        messages.append({
+            "role": "user",
+            "content": (
+                "Você já possui o mapeamento da empresa e o histórico de comunicação nesta conversa. "
+                "NÃO execute as ferramentas de busca (pipedrive_get_*, email_get_*, whatsapp_get_*) novamente. "
+                "Prossiga diretamente para a ação solicitada (ex: atualizar tarefa ou gerar script/mensagem)."
+            )
+        })
     # sem eles o modelo perde a lista de contatos e começa a repetir ou pular buscas.
     _PINNED_TOOLS = {
         "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities",

@@ -69,7 +69,7 @@ export function loadHierarchyByLocalId(orgId: number) {
 
 export function candidateAction(employeeId: string, action: 'approve' | 'reject') {
   return api.post<Record<string, unknown>>('/hierarchy/candidate-action', {
-    employee_id: employeeId,
+    employee_id: String(employeeId),
     action,
   });
 }

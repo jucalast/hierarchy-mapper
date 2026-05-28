@@ -19,6 +19,7 @@ interface DropdownProps {
   menuClassName?: string;
   iconSize?: number;
   title?: string;
+  customTrigger?: React.ReactNode;
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
@@ -28,7 +29,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
   triggerClassName = '',
   menuClassName = '',
   iconSize = 16,
-  title = 'Mais opções'
+  title = 'Mais opções',
+  customTrigger
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -63,11 +65,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
         title={title}
         type="button"
       >
-        {iconType === 'horizontal' ? (
+        {customTrigger ? customTrigger : (iconType === 'horizontal' ? (
           <MoreHorizontal size={iconSize} />
         ) : (
           <MoreVertical size={iconSize} />
-        )}
+        ))}
       </button>
 
       {isOpen && (

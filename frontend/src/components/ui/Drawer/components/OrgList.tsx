@@ -40,7 +40,7 @@ export const OrgList: React.FC<OrgListProps> = ({
                         emp.department !== 'Quadro de Sócios (QSA)' &&
                         emp.level !== 6 &&
                         !String(emp.id).startsWith('partner_') &&
-                        emp.role !== 'Análise Humana'
+                        (!emp.role || !emp.role.toLowerCase().includes('humana'))
                     );
 
                     const graphPics = validEmps

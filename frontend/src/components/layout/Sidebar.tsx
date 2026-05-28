@@ -28,6 +28,7 @@ interface SidebarProps {
     isPreferences?: boolean;
     onOpenLinkedinScrape?: () => void;
     isLinkedinScrape?: boolean;
+    isScanActive?: boolean;
 }
 
 
@@ -46,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     isPreferences,
     onOpenLinkedinScrape,
     isLinkedinScrape,
+    isScanActive,
 }) => {
 
     return (
@@ -99,8 +101,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <div
                 className={`${styles.navIcon} ${isLinkedinScrape ? styles.navIconActive : ''}`}
-                title="Raspador LinkedIn"
+                title={isScanActive ? 'Raspador LinkedIn — Scan em andamento em background' : 'Raspador LinkedIn'}
                 onClick={onOpenLinkedinScrape}
+                style={{ position: 'relative' }}
             >
                 <svg 
                     xmlns="http://www.w3.org/2000/svg" 
@@ -118,6 +121,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <rect x="2" y="9" width="4" height="12" />
                     <circle cx="4" cy="4" r="2" />
                 </svg>
+                {isScanActive && (
+                    <span style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: '#4ade80',
+                        border: '1.5px solid var(--sw-bg)',
+                        animation: 'pulse 1.5s infinite ease-in-out',
+                        display: 'block',
+                    }} />
+                )}
             </div>
 
             <div className={styles.navIcon} title="Nova Empresa" onClick={onReset}>

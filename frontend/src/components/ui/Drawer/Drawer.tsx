@@ -3,7 +3,7 @@ import styles from './Drawer.module.css';
 import { Spinner } from '../';
 import { organizations as orgsApi } from '@/services/api';
 import type { NotificationType } from '../Notification';
-import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal } from './components';
+import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal, OrgDetailsModal } from './components';
 
 interface DrawerProps {
     showDrawer: boolean;
@@ -21,6 +21,9 @@ interface DrawerProps {
     graphEmployees?: any[];
     refreshDetailsTrigger?: number; // Para forçar a recarga dos detalhes
     addNotification?: (type: NotificationType, message: string) => void;
+    onEditEmployee?: (empId: string) => void;
+    onSaveToPipedrive?: (empId: string) => void;
+    onOrgDomainChanged?: (oldDomain: string, newDomain: string) => void;
 }
 
 const LOCAL_CACHE_KEYS = (orgId: number) => [
@@ -62,6 +65,9 @@ export const Drawer: React.FC<DrawerProps> = ({
     graphEmployees = [],
     refreshDetailsTrigger = 0,
     addNotification = () => {},
+    onEditEmployee,
+    onSaveToPipedrive,
+    onOrgDomainChanged,
 }) => {
     const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(() => {
         if (typeof window !== 'undefined') {
@@ -147,16 +153,20 @@ export const Drawer: React.FC<DrawerProps> = ({
     const [editingNameOrgId, setEditingNameOrgId] = useState<number | null>(null);
     const [editingNameValue, setEditingNameValue] = useState<string>('');
     const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
-    const [confirmBusy, setConfirmBusy] = useState<boolean>(false);
+    const [confirmBusy, setConfirmBusy] = useState(false);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [scanningOrgId, setScanningOrgId] = useState<number | null>(null);
 
+    const fetchedOrgsRef = useRef<Record<number, boolean>>({});
+
     const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false) => {
-        if (!force && orgDetails[orgId]) return; // Já carregado
+        if (!force && fetchedOrgsRef.current[orgId]) return; // Já buscado nesta sessão
 
         setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
         try {
             const data = await orgsApi.getOrganizationDetails(orgId);
             setOrgDetails(prev => ({ ...prev, [orgId]: data }));
+            fetchedOrgsRef.current[orgId] = true;
             if (typeof window !== 'undefined') {
                 window.localStorage.setItem(`org-${orgId}-details`, JSON.stringify(data));
             }
@@ -172,7 +182,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         } finally {
             setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
         }
-    }, [orgDetails, addNotification]);
+    }, [addNotification]);
 
     useEffect(() => {
         if (refreshDetailsTrigger > 0) {
@@ -292,6 +302,58 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
+    const handleUpdateOrg = async (orgId: number, data: Record<string, any>) => {
+        try {
+            const oldDomain = orgDetails[orgId]?.domain || orgDetails[orgId]?.org?.website || '';
+            await orgsApi.updateOrganization(orgId, data);
+
+            if (data.domain && oldDomain && data.domain !== oldDomain) {
+                if (onOrgDomainChanged) {
+                    onOrgDomainChanged(oldDomain, data.domain);
+                }
+            }
+
+            // Atualizar no local state
+            const updatedOrg = filteredOrgs.find(o => Number(o.id) === orgId);
+            if (updatedOrg) {
+                if (data.name !== undefined) updatedOrg.name = data.name;
+                if (data.domain !== undefined) updatedOrg.domain = data.domain;
+                if (data.address !== undefined) updatedOrg.address = data.address;
+            }
+
+            setOrgDetails(prev => {
+                if (prev[orgId]) {
+                    const existingOrg = prev[orgId].org || {};
+                    return {
+                        ...prev,
+                        [orgId]: {
+                            ...prev[orgId],
+                            ...data,
+                            org: {
+                                ...existingOrg,
+                                ...data,
+                                website: data.domain !== undefined ? data.domain : existingOrg.website,
+                                owner_name: data.owner_name !== undefined ? data.owner_name : existingOrg.owner_name
+                            }
+                        },
+                    };
+                }
+                return prev;
+            });
+
+            if (data.name && onOrgRenamed) {
+                onOrgRenamed(orgId, data.name);
+            }
+
+            // Recarregar os detalhes completos do Pipedrive/DB local
+            await fetchOrgDetails(orgId, true);
+        } catch (e: any) {
+            console.error('Erro ao atualizar empresa:', e.message || e);
+            addNotification('error', 'Erro ao atualizar informações da empresa.');
+            throw e;
+        }
+    };
+
     // Filtra a organização que está em foco
     const focusedOrg = expandedOrgId ? filteredOrgs.find(o => Number(o.id) === expandedOrgId) : null;
 
@@ -308,6 +370,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 fetchOrgDetails={fetchOrgDetails}
                 loadingDetails={loadingDetails}
                 setConfirmKind={setConfirmKind}
+                onOpenDetailsModal={() => setShowDetailsModal(true)}
             />
 
             <div className={styles.drawerList}>
@@ -328,9 +391,13 @@ export const Drawer: React.FC<DrawerProps> = ({
                         setEditingNameValue={setEditingNameValue}
                         setEditingNameOrgId={setEditingNameOrgId}
                         handleRenameOrg={handleRenameOrg}
+                        handleUpdateOrg={handleUpdateOrg}
                         scanningOrgId={scanningOrgId}
                         selectedOrgId={selectedOrgId}
                         selectedOrgLogo={selectedOrgLogo}
+                        graphEmployees={graphEmployees}
+                        onEditEmployee={onEditEmployee}
+                        onSaveToPipedrive={onSaveToPipedrive}
                     />
                 ) : (
                     <OrgList 
@@ -354,6 +421,15 @@ export const Drawer: React.FC<DrawerProps> = ({
                 performDelete={performDelete}
                 performReset={performReset}
                 expandedOrgId={expandedOrgId}
+            />
+
+            <OrgDetailsModal 
+                isOpen={showDetailsModal}
+                onClose={() => setShowDetailsModal(false)}
+                expandedOrgId={expandedOrgId}
+                orgDetails={orgDetails}
+                focusedOrg={focusedOrg}
+                handleUpdateOrg={handleUpdateOrg}
             />
         </div>
     );

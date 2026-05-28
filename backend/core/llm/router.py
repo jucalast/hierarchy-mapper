@@ -58,7 +58,8 @@ _request_preferred_model: ContextVar[Optional[str]] = ContextVar(
     "request_preferred_model", default=None
 )
 
-_PREFERENCE_FILE = "ai_preference.json"
+_backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_PREFERENCE_FILE = os.path.join(_backend_dir, "ai_preference.json")
 
 def _load_global_preference() -> tuple[Optional[str], bool]:
     if os.path.exists(_PREFERENCE_FILE):
@@ -116,9 +117,15 @@ def get_preferred_model() -> Optional[str]:
     Retorna o modelo preferido para a chamada LLM atual.
 
     Prioridade: preferência do request atual (ContextVar) → última escolha global
-    persistida em ai_preference.json.
+    persistida dinamicamente em ai_preference.json.
     """
-    return _request_preferred_model.get() or _app_global_preferred_model
+    req = _request_preferred_model.get()
+    if req:
+        return req
+    
+    # Recarrega do arquivo em tempo de execução para sincronia com processos em background (workers)
+    model, _ = _load_global_preference()
+    return model or _app_global_preferred_model
 
 def get_strict_mode_preference() -> bool:
     """Retorna se o strict mode está ativo no request ou globalmente.
@@ -129,7 +136,10 @@ def get_strict_mode_preference() -> bool:
     request_val = _request_strict_mode.get()
     if request_val is not None:
         return request_val
-    return _app_global_strict_mode
+    
+    # Recarrega do arquivo em tempo de execução para sincronia com processos em background (workers)
+    _, strict = _load_global_preference()
+    return strict
 
 # ---------------------------------------------------------------------------
 # Throttler global — serializa chamadas LLM para não explodir o rate limit

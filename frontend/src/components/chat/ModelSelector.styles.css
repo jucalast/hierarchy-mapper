@@ -16,7 +16,9 @@
   gap: 8px;
   padding: 0 12px;
   height: 38px;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -28,6 +30,7 @@
   flex-shrink: 0;
   min-width: 0;
 }
+
 
 .modelSelectorTrigger span {
   white-space: nowrap;
@@ -499,6 +502,7 @@
 /* === LIGHT MODE OVERRIDES === */
 [data-theme='light'] .modelSelectorTrigger {
   color: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.01);
 }
 
 [data-theme='light'] .modelSelectorTrigger:hover {
@@ -627,8 +631,6 @@
 
 /* === MODIFICADOR PARA ABERTURA PARA BAIXO (EX: CANTO DO GRAFO) === */
 .dropdownDown .modelSelectorTrigger {
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
 }
 
 .dropdownDown .modelSelectorDropdown {

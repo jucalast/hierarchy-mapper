@@ -24,6 +24,12 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from typing import Optional
+from dotenv import load_dotenv
+
+# Define o caminho absoluto para o arquivo .env dentro do diretório backend
+_backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_env_file_path = os.path.join(_backend_dir, ".env")
+load_dotenv(_env_file_path)
 
 try:
     # Pydantic v2 + pydantic-settings (instalar via requirements.txt)
@@ -32,8 +38,6 @@ try:
     _PYDANTIC_SETTINGS_AVAILABLE = True
 except ImportError:  # pragma: no cover - fallback para ambientes sem pydantic-settings
     _PYDANTIC_SETTINGS_AVAILABLE = False
-    from dotenv import load_dotenv
-    load_dotenv()
 
 
 # =============================================================================

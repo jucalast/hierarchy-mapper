@@ -664,52 +664,6 @@
 /* HierarchyScan Integration Styles            */
 /* =========================================== */
 
-/* --- Mapping Mode Toggle (Vertical switch on side) --- */
-.mappingModeToggle {
-    position: absolute;
-    right: -46px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 3px;
-    background: var(--sw-sidebar);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: var(--sw-border-width) solid var(--sw-border);
-    border-radius: 10px;
-    pointer-events: auto;
-    z-index: 10;
-    box-shadow: var(--sw-shadow);
-    animation: swSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.modeBtn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    border: none;
-    background: transparent;
-    color: var(--sw-text-muted);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.modeBtn:hover {
-    color: var(--sw-text-base);
-    background: var(--sw-hover);
-}
-
-.modeBtnActive {
-    background: var(--sw-primary) !important;
-    color: #fff !important;
-    box-shadow: 0 0 8px var(--sw-primary-soft);
-}
-
 /* --- Scan Terminal Panel (below toolbar) --- */
 .scanTerminalPanel {
     width: 100%;
@@ -921,4 +875,95 @@
 .previewActionBtn:hover {
     background: var(--sw-hover);
     color: var(--sw-text-base);
+}
+.toolbarContentLayout {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background: var(--sw-sidebar);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--sw-shadow);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toolbarContentLayout .refineTab {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 6px 12px;
+}
+
+.toolbarConnected {
+    border-top: none !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+}
+
+.toolbarTerminalConnected {
+    border-bottom: none !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.purpleToolbarWrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    position: relative;
+    background: transparent;
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    padding: 0;
+    border-radius: var(--radius-lg);
+    
+}
+
+.mappingModeToggle {
+    position: relative;
+    background: transparent;
+    padding: 0 4px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+}
+
+.modeBtn {
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: 8px;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.modeBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.modeBtnActive {
+    background: #131313 !important; /* Dark color for active button */
+    color: white !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+
+@media (min-width: 750px) {
+    .toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] .mappingModeToggle {
+        flex-direction: row;
+    }
 }

@@ -19,6 +19,7 @@ interface UseNetworkFlowProps {
     confirmedLogo: string;
     getStableId: (n: any) => string;
     deleteEmployee?: (id: string) => void;
+    editEmployee?: (id: string) => void;
 }
 
 export function useNetworkFlow({
@@ -29,6 +30,7 @@ export function useNetworkFlow({
     confirmedLogo,
     getStableId,
     deleteEmployee,
+    editEmployee,
 }: UseNetworkFlowProps) {
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
@@ -42,9 +44,11 @@ export function useNetworkFlow({
             return;
         }
 
-        // 🕵️ Filtrar 'Análise Humana' e 'Reprovados' do grafo principal
+        // 🕵️ Filtrar 'Análise Humana' e 'Reprovados' do grafo principal com segurança (impede crash se emp ou emp.id for undefined/null)
         const visibleEmployees = rawEmployees.filter(emp => 
-            emp.role !== "Análise Humana" && 
+            emp && 
+            emp.id &&
+            (!emp.role || !emp.role.toLowerCase().includes('humana')) && 
             emp.role !== "Reprovado" && 
             emp.department !== "Reprovado"
         );
@@ -60,6 +64,7 @@ export function useNetworkFlow({
                     isRoot: isRootNode,
                     confirmedLogo: confirmedLogo,
                     onDelete: deleteEmployee,
+                    onEdit: editEmployee,
                 },
                 position: { x: 0, y: 0 }, // Dagre vai calcular
             };

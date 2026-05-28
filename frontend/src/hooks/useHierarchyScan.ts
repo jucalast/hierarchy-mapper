@@ -12,7 +12,13 @@ export interface ScanEmployeeProfile {
 }
 
 interface UseHierarchyScanReturn {
-    startScan: (companyUrl: string, sessionCookie?: string) => void;
+    startScan: (
+        companyUrl: string, 
+        sessionCookie?: string,
+        areaFocus?: string,
+        productFocus?: string,
+        model?: string
+    ) => void;
     stopScan: () => void;
     isScanning: boolean;
     scanError: string | null;
@@ -46,7 +52,13 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
         setConsoleLogs((prev) => [...prev, message]);
     }, []);
 
-    const startScan = useCallback((companyUrl: string, sessionCookie?: string) => {
+    const startScan = useCallback((
+        companyUrl: string, 
+        sessionCookie?: string,
+        areaFocus?: string,
+        productFocus?: string,
+        model?: string
+    ) => {
         setIsScanning(true);
         setScanError(null);
         setScanResults([]);
@@ -59,6 +71,15 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
         let sseUrl = `${API_V1_URL}/hierarchy/linkedin-scrape/stream?company_url=${encodeURIComponent(companyUrl)}&headless=true`;
         if (sessionCookie) {
             sseUrl += `&session_cookie=${encodeURIComponent(sessionCookie)}`;
+        }
+        if (areaFocus) {
+            sseUrl += `&area_focus=${encodeURIComponent(areaFocus)}`;
+        }
+        if (productFocus) {
+            sseUrl += `&product_focus=${encodeURIComponent(productFocus)}`;
+        }
+        if (model) {
+            sseUrl += `&model=${encodeURIComponent(model)}`;
         }
 
         const eventSource = new EventSource(sseUrl);
@@ -80,6 +101,11 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
                     case 'screenshot': {
                         setPreviewTimestamp(Date.now());
                         setHasPreview(true);
+                        break;
+                    }
+                    case 'cookie': {
+                        localStorage.setItem('linkedin_li_at_cookie', data.cookie);
+                        appendLog('[System] Cookie de sessão li_at capturado e salvo localmente para futuras varreduras!');
                         break;
                     }
                     case 'result': {
@@ -113,13 +139,18 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
         eventSourceRef.current = eventSource;
     }, [appendLog]);
 
-    const stopScan = useCallback(() => {
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-            eventSourceRef.current = null;
+    const stopScan = useCallback(async () => {
+        appendLog('[System] Solicitando parada graciosa e extração dos dados coletados até o momento...');
+        try {
+            await apiPost(`${API_V1_URL}/hierarchy/linkedin-scrape/stop`, {});
+        } catch {
+            appendLog('[System Error] Falha ao enviar comando de parada. Fechando conexão de forma forçada.');
+            if (eventSourceRef.current) {
+                eventSourceRef.current.close();
+                eventSourceRef.current = null;
+            }
+            setIsScanning(false);
         }
-        setIsScanning(false);
-        appendLog('[System] Varredura interrompida pelo usuário.');
     }, [appendLog]);
 
     const handleImageClick = useCallback(
@@ -127,10 +158,11 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
             if (!isScanning) return;
 
             const rect = e.currentTarget.getBoundingClientRect();
-            const x = Math.round(((e.clientX - rect.left) / rect.width) * 1280);
-            const y = Math.round(((e.clientY - rect.top) / rect.height) * 800);
+            // Calcula frações decimais (0 a 1) para total independência de resolução e proporção visual!
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
 
-            appendLog(`[Operator] Clique em (${x}, ${y})`);
+            appendLog(`[Operator] Clique em (${Math.round(x * 100)}%, ${Math.round(y * 100)}%)`);
 
             try {
                 await apiPost(

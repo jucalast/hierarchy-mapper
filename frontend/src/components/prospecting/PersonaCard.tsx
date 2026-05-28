@@ -10,7 +10,10 @@ import {
   ShieldCheck,
   Layers,
   X,
-  Trash2
+  Trash2,
+  Brain,
+  Quote,
+  Info
 } from 'lucide-react';
 
 import { getAvatarUrl, getCompanyLogoUrl, getProxiedUrl } from '../../utils/avatarUtils';
@@ -19,12 +22,17 @@ import { Dropdown } from '../ui/Dropdown';
 function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: number, isNode?: boolean }) {
   const dropdownItems = useMemo(() => [
     {
+      label: 'Detalhes e Configurações',
+      onClick: () => data.onEdit?.(data.id),
+      icon: <Info size={14} />
+    },
+    {
       label: 'Excluir Perfil',
       onClick: () => data.onDelete?.(data.id),
       icon: <Trash2 size={14} />,
       danger: true
     }
-  ], [data.onDelete, data.id]);
+  ], [data.onEdit, data.onDelete, data.id]);
 
   // Prioriza o nível vindo dos dados (backend) sobre o default do componente
   const effectiveLevel = data.seniority !== undefined ? Number(data.seniority) : (level ?? 5);
@@ -90,7 +98,7 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
                   src={getProxiedUrl(data.confirmedLogo || data.company_logo || data.logo || data.avatar || data.image || data.logo_url || data.brand_logo || (data.domain ? "https://unavatar.io/" + data.domain : null))} 
                   alt="Company" 
                   className={styles.avatarImg} 
-                  style={{ objectFit: "contain", background: "#fff" }} 
+                  style={{ objectFit: "cover", background: "#fff" }} 
                   loading="lazy" 
                   decoding="async" 
                   onError={(e) => { 
@@ -154,7 +162,7 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
           </div>
           <div className={styles.roleWrapper}>
             <span className={styles.roleDept}>
-              <Briefcase size={14} /> {data.headline || data.role || 'Professional'}
+              <Briefcase size={14} /> {data.role || data.headline || 'Professional'}
             </span>
             <span className={styles.roleDot}></span>
             <span className={styles.roleCompany}>
@@ -183,12 +191,46 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
             <MapPin className={styles.osintIcon} />
             <span className={styles.osintText}>{data.location || 'Localização não identificada'}</span>
           </div>
-          <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
-            <GraduationCap className={styles.osintIcon} />
-            <p className={styles.osintParagraph}>
-              {data.evidence || data.education || data.observations || 'Nenhuma informação adicional disponível via OSINT.'}
-            </p>
-          </div>
+          {data.evidence && (
+            <div className={`${styles.osintLine} ${styles.osintLineMetadata}`} style={{ background: 'rgba(52, 211, 153, 0.05)', borderLeft: '2px solid rgba(52, 211, 153, 0.4)', padding: '6px 8px', borderRadius: '4px' }}>
+              <Brain className={styles.osintIcon} style={{ color: 'rgba(52, 211, 153, 0.8)' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'rgba(52, 211, 153, 0.8)', fontWeight: 600 }}>Veredito da IA</span>
+                <p className={styles.osintParagraph} style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                  {data.evidence}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {(data.observations && data.observations !== 'N/A') && (
+            <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
+              <Quote className={styles.osintIcon} size={12} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.4)', fontWeight: 600 }}>Bio Original</span>
+                <p className={styles.osintParagraph}>
+                  {data.observations}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {(data.education && data.education !== data.observations) && (
+            <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
+              <GraduationCap className={styles.osintIcon} />
+              <p className={styles.osintParagraph}>
+                {data.education}
+              </p>
+            </div>
+          )}
+
+          {!data.evidence && !data.education && !data.observations && (
+             <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
+              <p className={styles.osintParagraph} style={{ fontStyle: 'italic', opacity: 0.5 }}>
+                Nenhuma informação adicional disponível.
+              </p>
+             </div>
+          )}
           
           <div className={styles.emailLine}>
             <Mail size={14} className={styles.metaIcon} />

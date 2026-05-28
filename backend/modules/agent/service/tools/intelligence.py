@@ -390,14 +390,32 @@ async def exec_open_hierarchy_drawer(args: dict, org_id: int | None = None) -> d
 
 
 async def exec_suggest_next_actions(args: dict, messages: list | None = None, org_id: int | None = None) -> dict:
+    # Filtro de Repetição: detecta o que já foi feito na sessão para não sugerir o mesmo
+    executed_tools = []
+    if messages:
+        for m in messages:
+            if m.get("role") == "tool":
+                executed_tools.append(m.get("tool_name"))
+            elif m.get("role") == "assistant":
+                mc = m.get("content")
+                if isinstance(mc, list):
+                    for b in mc:
+                        if b.get("type") == "tool_use": executed_tools.append(b.get("name"))
+
     if messages:
         try:
             from modules.sales.service.strategy import sales_strategy_service
             strategy_res = await sales_strategy_service.analyze_and_suggest_actions(messages, org_id)
             if strategy_res and strategy_res.get("ok"):
+                actions = strategy_res.get("actions", [])
+                
+                # Regra: se acabou de atualizar uma tarefa, remove sugestões de "Concluir atividade"
+                if "pipedrive_update_task" in executed_tools:
+                    actions = [a for a in actions if "Concluir atividade" not in a.get("label", "")]
+                
                 return {
                     "ok": True,
-                    "actions": strategy_res.get("actions", []),
+                    "actions": actions,
                     "summary": strategy_res.get("summary", "")
                 }
         except Exception as e:

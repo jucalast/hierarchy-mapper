@@ -226,7 +226,17 @@ const HierarchyMappingCard: React.FC<{
         }
 
         const handleScanDone = (e: Event) => {
-            const contacts: MappedContact[] = (e as CustomEvent).detail?.contacts || [];
+            const detail = (e as CustomEvent).detail || {};
+            const eventOrgId = detail.orgId;
+            // Validar se este evento é realmente para esta empresa
+            if (eventOrgId && Number(eventOrgId) !== Number(event.org_id)) {
+                return;
+            }
+            // Se o scan finalizado não foi iniciado pelo chat panel, não faz nada no chat
+            if (detail.chatPrompted === false) {
+                return;
+            }
+            const contacts: MappedContact[] = detail.contacts || [];
             setContactCount(contacts.length);
             setStatus('done');
             if (!doneCalledRef.current) {

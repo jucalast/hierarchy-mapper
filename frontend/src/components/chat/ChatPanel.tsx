@@ -155,6 +155,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const activeJob = localStorage.getItem('active-discovery-job');
         if (!pending || !activeJob) return;
 
+        try {
+            const jobData = JSON.parse(activeJob);
+            if (jobData) {
+                if (Number(jobData.orgId) !== Number(selectedOrgId)) {
+                    return; // O job ativo pertence a outra empresa!
+                }
+                if (jobData.chatPrompted === false) {
+                    return; // O job ativo foi manual/usuário, o chat não precisa esperar!
+                }
+            }
+        } catch {}
+
         // Valida se realmente é um reload: messages ainda não foram carregadas
         // (se o chat já tem mensagens renderizadas com o event, o card cuida disso)
         // Usamos um flag de "fresh mount" via sessionStorage para distinguir reload de navegação normal
@@ -170,8 +182,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setAgentStreaming(true);
 
         const handleScanDone = (e: Event) => {
+            const detail = (e as CustomEvent).detail || {};
+            const eventOrgId = detail.orgId;
+            if (eventOrgId && Number(eventOrgId) !== Number(selectedOrgId)) {
+                return;
+            }
+            if (detail.chatPrompted === false) {
+                return;
+            }
             window.removeEventListener('hierarchy_scan_done', handleScanDone);
-            const contacts = (e as CustomEvent).detail?.contacts || [];
+            const contacts = detail.contacts || [];
             handleMainChatMappingDone(contacts, ctx.event as AgentEvent);
         };
 
@@ -182,7 +202,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         return () => window.removeEventListener('hierarchy_scan_done', handleScanDone);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [selectedOrgId]);
 
 
 
@@ -682,8 +702,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         if (hasMapping && typeof window !== 'undefined') {
                             const activeJob = window.localStorage.getItem('active-discovery-job');
                             if (activeJob) {
-                                forceAgentStreaming = true;
-                                hasActiveJobLoading = true;
+                                try {
+                                    const jobData = JSON.parse(activeJob);
+                                    if (jobData && Number(jobData.orgId) === Number(selectedOrgId)) {
+                                        forceAgentStreaming = true;
+                                        hasActiveJobLoading = true;
+                                    }
+                                } catch {
+                                    forceAgentStreaming = true;
+                                    hasActiveJobLoading = true;
+                                }
                             }
                         }
 
@@ -1058,23 +1086,30 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             : '';
         const dealClause = event?.deal_id ? ` atrelado ao negócio deal_id=${event.deal_id}` : '';
 
+        // ── SEGURANÇA: Remove qualquer contato rejeitado que possa ter escapado do filtro do hook
+        const approvedContacts = contacts.filter((c: any) =>
+            c.role !== 'Reprovado' && c.department !== 'Reprovado'
+        );
+
         // Detecta decisores de compras/logística pelo cargo
-        const isBuyingDecisionMaker = (role: string) => {
+        const isBuyingDecisionMaker = (role: string, dept?: string) => {
             const r = (role || '').toLowerCase();
-            return ['compras', 'procurement', 'suprimentos', 'logística', 'logistica',
+            const d = (dept || '').toLowerCase();
+            const keywords = ['compras', 'procurement', 'suprimentos', 'logística', 'logistica',
                     'supply chain', 'supply', 'materiais', 'aquisição', 'aquisicao',
-                    'estoque', 'sourcing'].some(k => r.includes(k));
+                    'estoque', 'sourcing'];
+            return keywords.some(k => r.includes(k) || d.includes(k));
         };
 
-        const contactsSummary = contacts.length > 0
-            ? contacts.map((c: any) => `- ${c.name} (${c.role}${c.department ? ', ' + c.department : ''}${c.email ? ', ' + c.email : ''}${c.temperature ? ', temp=' + c.temperature : ''}${c.decision_maker ? ', DECISOR' : ''})`).join('\n')
+        const contactsSummary = approvedContacts.length > 0
+            ? approvedContacts.map((c: any) => `- ${c.name} (${c.role}${c.department ? ', ' + c.department : ''}${c.email ? ', ' + c.email : ''}${c.temperature ? ', temp=' + c.temperature : ''}${c.decision_maker ? ', DECISOR' : ''})`).join('\n')
             : '';
 
         const baseProhibition = `REGRA CRÍTICA: Estes contatos são leads frios do LinkedIn — PROIBIDO chamar whatsapp_get_messages, email_get_contact_history ou whatsapp_list_chats para eles.\n`;
 
         let taskInstruction: string;
 
-        if (contacts.length === 0) {
+        if (approvedContacts.length === 0) {
             // Cenário C: nenhum contato aprovado pelo usuário
             taskInstruction =
                 `Nenhum contato foi aprovado pelo usuário no carrossel de revisão.\n` +
@@ -1083,10 +1118,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 `e prossiga executando a tarefa original. ` +
                 `Se não encontrar nada, informe ao João e sugira próximas ações.`;
         } else {
-            const decisionMakers = contacts.filter((c: any) => c.decision_maker || isBuyingDecisionMaker(c.role));
-            const best = decisionMakers[0] || contacts[0];
+            const decisionMakers = approvedContacts.filter((c: any) => c.decision_maker || isBuyingDecisionMaker(c.role, c.department));
+            // Exclui "Análise Humana" de ser o "melhor" candidato automático — prefere cargos reais
+            const definedRoles = approvedContacts.filter((c: any) => c.role !== 'Análise Humana');
+            const best = decisionMakers[0] || definedRoles[0] || approvedContacts[0];
 
-            const contactsBlock = `Contatos aprovados pelo usuário (${contacts.length}):\n${contactsSummary}`;
+            const contactsBlock = `Contatos aprovados pelo usuário (${approvedContacts.length}):\n${contactsSummary}`;
             const createCmd =
                 `Cadastre ${best.name} no Pipedrive chamando pipedrive_create_person ` +
                 `(org_id=${orgId}${dealClause}${best.email ? `, email="${best.email}"` : ''}). ` +
@@ -1098,6 +1135,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     `${contactsBlock}\n\n` +
                     `ANÁLISE: ${best.name} (${best.role}) é decisor de compras/logística — contato ideal para a prospecção.\n` +
                     createCmd;
+            } else if (best.role === 'Análise Humana') {
+                // Cenário D: todos os contatos precisam de análise humana — não há cargo definido
+                taskInstruction =
+                    `${contactsBlock}\n\n` +
+                    `ANÁLISE: Nenhum contato tem cargo definido — todos estão como "Análise Humana". ` +
+                    `Não há decisor claro de compras. ` +
+                    `Informe ao João quais contatos estão disponíveis e pergunte com qual ele quer prosseguir antes de cadastrar qualquer pessoa no Pipedrive. ` +
+                    `NÃO cadastre nenhum contato automaticamente neste cenário.`;
             } else {
                 // Cenário B: contatos encontrados mas sem decisor direto de compras
                 taskInstruction =
@@ -1110,7 +1155,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
 
         const continuation = (
-            `[SISTEMA]: Mapeamento de hierarquia concluído para "${orgName}". ${contacts.length} contato(s) aprovados pelo usuário.\n` +
+            `[SISTEMA]: Mapeamento de hierarquia concluído para "${orgName}". ${approvedContacts.length} contato(s) aprovados pelo usuário.\n` +
             baseProhibition +
             taskInstruction +
             (preTaskClause ? `\n${preTaskClause}` : '') +

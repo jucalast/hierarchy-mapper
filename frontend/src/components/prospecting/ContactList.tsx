@@ -13,13 +13,34 @@ import { Dropdown } from '../ui/Dropdown';
 
 interface ContactListProps {
     persons: any[];
+    onEditPerson?: (empId: string) => void;
+    onSaveToPipedrive?: (empId: string) => void;
 }
 
-export const ContactList: React.FC<ContactListProps> = ({ persons }) => {
+export const ContactList: React.FC<ContactListProps> = ({ persons, onEditPerson, onSaveToPipedrive }) => {
     const getDropdownItems = (person: any) => {
         const items = [];
-        const email = person.email?.[0]?.value;
-        const phone = person.phone?.[0]?.value;
+        const email = person.email?.[0]?.value || person.email;
+        const phone = person.phone?.[0]?.value || person.phone;
+
+        if (onEditPerson && person.emp_id) {
+            items.push({
+                label: 'Detalhes e Configurações',
+                onClick: () => onEditPerson(person.emp_id),
+                icon: <Briefcase size={14} />
+            });
+        }
+
+        if (onSaveToPipedrive && person.emp_id && !person.sources?.includes('pipedrive')) {
+            items.push({
+                label: 'Salvar no Pipedrive',
+                onClick: () => {
+                    onSaveToPipedrive(person.emp_id);
+                    toast.success('Salvando contato no Pipedrive...');
+                },
+                icon: <User size={14} />
+            });
+        }
 
         if (email) {
             items.push({
@@ -65,7 +86,31 @@ export const ContactList: React.FC<ContactListProps> = ({ persons }) => {
                         <div className={styles.contentCard}>
                             <div className={styles.contactHeader}>
                                 <div>
-                                    <h3 className={styles.name}>{person.name}</h3>
+                                    <div className={styles.nameContainer}>
+                                        {person.profile_pic && (
+                                            <img 
+                                                src={person.profile_pic} 
+                                                alt={person.name} 
+                                                style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} 
+                                            />
+                                        )}
+                                        <h3 className={styles.name}>{person.name}</h3>
+                                        <div className={styles.sourceIcons}>
+                                            {person.sources?.includes('pipedrive') && (
+                                                <img src="/pipedrive.png" alt="Pipedrive" title="Cadastrado no Pipedrive" className={`${styles.sourceIcon} ${styles.pipedriveIcon}`} />
+                                            )}
+                                            {person.sources?.includes('mapped') && (
+                                                <a 
+                                                    href={person.linkedin || `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(person.name)}`} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer" 
+                                                    style={{ display: 'flex', alignItems: 'center' }}
+                                                >
+                                                    <img src="/linkedin.png" alt="Mapeado" title={person.linkedin ? "Ver no LinkedIn" : "Pesquisar no LinkedIn"} className={`${styles.sourceIcon} ${styles.linkedinIcon}`} />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
                                     <div className={styles.role}>
                                         {person.job_title || 'Cargo não informado'}
                                     </div>

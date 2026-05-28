@@ -18,14 +18,14 @@ export const MappingModeToggle: React.FC<MappingModeToggleProps> = ({ mode, onCh
                 onClick={() => onChange('discovery')}
                 title="Discovery — Mapeamento via IA"
             >
-                <Search size={14} />
+                <Search size={16} />
             </button>
             <button
                 className={`${styles.modeBtn} ${mode === 'scan' ? styles.modeBtnActive : ''}`}
                 onClick={() => onChange('scan')}
                 title="Scan — Varredura LinkedIn"
             >
-                <Radio size={14} />
+                <Radio size={16} />
             </button>
         </div>
     );

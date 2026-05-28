@@ -13,15 +13,40 @@ from .filters import get_department_tag
 
 async def resolve_employee_by_node_id(node_id: str, db: AsyncSession) -> Employee | None:
     """Resolve um node_id efêmero (node_123, node_username, partner_123) para um Employee do banco."""
-    if "_" in str(node_id) and (str(node_id).startswith("node_") or str(node_id).startswith("partner_")):
-        parts = str(node_id).split("_")
+    id_str = str(node_id)
+    if "pd_" in id_str or "pipedrive_" in id_str:
+        import re
+        m = re.search(r'\d+', id_str)
+        if m:
+            pd_id = m.group(0)
+            res = await db.execute(select(Employee).where(Employee.pipedrive_id == pd_id))
+            emp = res.scalars().first()
+            if emp:
+                return emp
+            
+            res = await db.execute(select(Employee).where(Employee.linkedin_url.contains(pd_id)))
+            emp = res.scalars().first()
+            if emp:
+                return emp
+
+    if "_" in id_str and (id_str.startswith("node_") or id_str.startswith("partner_")):
+        parts = id_str.split("_")
         if parts[1].isdigit():
             res = await db.execute(select(Employee).where(Employee.id == int(parts[1])))
             return res.scalars().first()
         else:
             username = "_".join(parts[1:])
             res = await db.execute(select(Employee).where(Employee.linkedin_url.contains(username)))
-            return res.scalars().first()
+            emp = res.scalars().first()
+            if emp:
+                return emp
+            
+            if username.startswith("pd_"):
+                alt_username = username.replace("pd_", "pipedrive_")
+                res = await db.execute(select(Employee).where(Employee.linkedin_url.contains(alt_username)))
+                emp = res.scalars().first()
+                if emp:
+                    return emp
 
     try:
         res = await db.execute(select(Employee).where(Employee.id == int(node_id)))

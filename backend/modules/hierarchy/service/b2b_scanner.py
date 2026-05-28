@@ -27,7 +27,7 @@ from .role_engine import role_engine
 from .org_search import org_search
 from .candidate_processor import CandidateProcessor
 from modules.intelligence.service.preview_service import get_url_preview
-from .filters import get_seniority_level, get_department_tag, PURCHASING_KEYWORDS, LOGISTICS_KEYWORDS, apply_strict_filters
+from .filters import get_seniority_level, get_department_tag, PURCHASING_KEYWORDS, LOGISTICS_KEYWORDS, apply_strict_filters, is_same_person
 from core.external.email_service import apply_pattern
 from .logging_utils import log_session_start, log_query_start
 
@@ -89,8 +89,10 @@ async def discover_employees_stream(
                 org.domain = domain
         
         db_org_id = org.id
-        await session.execute(delete(Employee).where(Employee.company_id == db_org_id, or_(Employee.department != "Quadro de Sócios (QSA)", Employee.department == None)))
-        await session.commit()
+        
+        # Removido: O bloco delete(Employee) que destruía a hierarquia (aprovados e pendentes) 
+        # a cada reconexão ou novo scan. O controle de duplicatas e rejeições já é feito 
+        # linha a linha durante o stream.
 
     # 1. CLEAN BRAND FOR SEARCH (Remove ruído corporativo: GmbH, Ltda, etc)
     clean_brand = temp_brand.replace("Gmb H", "").replace("GmbH", "").replace("Ltda", "").replace("S.A.", "").strip()
@@ -146,12 +148,13 @@ async def discover_employees_stream(
         
         yield nodes_qsa
 
-    # 3. Adiciona termos genéricos de sócios como fallback (apenas os principais)
-    partner_terms = ["Sócio", "Fundador", "Owner"]
-    for p_term in partner_terms:
-        query = f'{clean_brand} {p_term} {search_location} linkedin'
-        if query not in base_queries:
-            base_queries.append(query)
+    # 3. Adiciona termos genéricos de sócios como fallback (apenas se não houver sócios no CNPJ)
+    if not qsa_partners:
+        partner_terms = ["Sócio", "Fundador", "Owner"]
+        for p_term in partner_terms:
+            query = f'{clean_brand} {p_term} {search_location} linkedin'
+            if query not in base_queries:
+                base_queries.append(query)
         
     # 4. Gera as queries operacionais depois dos sócios
     for term in selected_terms:
@@ -167,7 +170,18 @@ async def discover_employees_stream(
     from modules.crm.service.pipedrive_service import pipedrive_service
 
     # 3. SEARCH & PROCESSING LOOP
-    processor = CandidateProcessor(temp_brand, domain, area_focus, location, product_focus)
+    razao_social_official = org.name if org else None
+    partner_names = [p.name for p in qsa_partners] if qsa_partners else []
+
+    processor = CandidateProcessor(
+        temp_brand, 
+        domain, 
+        area_focus, 
+        location, 
+        product_focus,
+        razao_social=razao_social_official,
+        partners=partner_names
+    )
     seen_urls = set()
     consecutive_empty = 0  # 🛡️ FIX #5: Quórum de parada inteligente
     
@@ -213,52 +227,96 @@ async def discover_employees_stream(
                 if person.get("phone") and len(person["phone"]) > 0:
                     phone = person["phone"][0].get("value")
                 
-                # Emula o dictionary do DuckDuckGo p/ CandidateProcessor
-                job_title_crm = ""
-                # Tenta buscar algo que sugira o cargo no Pipedrive, se disponível (custom fields ou notas)
-                if n_text:
-                    job_title_crm = f" Notes: {n_text[:100]}"
-                    
-                fake_res = {
-                    "title": f"{name} - Contato {temp_brand}",
-                    "body": f"Email: {email} | Telefone: {phone} | Pipedrive ID: {person.get('id')}{job_title_crm}",
-                    "href": f"https://linkedin.com/in/pd_{person.get('id')}" # Falso, só pra não dar erro se não tiver
-                }
-                
-                processor_res = await processor.process_candidate(fake_res)
-                
-                # Se o CandidateProcessor retornar dados (aprovou), usamos.
-                # Se rejeitar (por falta de info ou filtro de área), AINDA ASSIM aceitamos por ser CRM!
-                if processor_res and processor_res.get("main"):
-                    node_data = processor_res.get("main")
+                # NOVO FLUXO: Busca no DuckDuckGo e testa CADA perfil retornado.
+                # Se a IA disser que trabalha na empresa (is_valid = True), paramos e usamos este perfil.
+                # Se não passar, continuamos até o final. Se não achar, usa perfil dummy.
+                real_linkedin = None
+                valid_node_data = None
+                search_query = f'{name} "{temp_brand}" site:linkedin.com/in/'
+                try:
+                    search_results = await get_duck_results(search_query, max_results=5)
+                    if search_results:
+                        for r in search_results:
+                            link = r.get("href", "")
+                            if "linkedin.com/in/" in link and "pd_" not in link and "pipedrive_" not in link:
+                                test_link = link.split("?")[0].rstrip("/")
+                                
+                                test_res = {
+                                    "title": r.get("title", ""),
+                                    "body": r.get("body", ""),
+                                    "href": test_link
+                                }
+                                
+                                test_processor_res = await processor.process_candidate(test_res, is_partner_search=True)
+                                if test_processor_res and test_processor_res.get("main"):
+                                    real_linkedin = test_link
+                                    valid_node_data = test_processor_res.get("main")
+                                    print(f"[B2B Engine] Perfil correto encontrado no LinkedIn para {name}!")
+                                    break
+                except Exception as e:
+                    print(f"[B2B Engine] Erro ao buscar/validar LinkedIn real para {name}: {e}")
+
+                if valid_node_data:
+                    node_data = valid_node_data
                 else:
-                    # Fallback para Contatos do CRM que foram rejeitados pela IA
+                    print(f"[B2B Engine] Nenhum perfil LinkedIn exato validado para {name}, deixando quieto como Contato Pipedrive.")
                     node_data = {
                         "name": name,
                         "role": "Contato no Pipedrive",
                         "level": 5,
                         "department": "Vendas/Pipedrive",
-                        "linkedin": fake_res["href"],
-                        "confidence": 100 # Confiança máxima pois vem do CRM
+                        "linkedin": f"https://linkedin.com/in/pd_{person.get('id')}",
+                        "confidence": 100 
                     }
 
                 node_data["temperature"] = temperature
                 node_data["source"] = "Pipedrive"
                 
                 async with async_session() as session:
-                    emp = Employee(
-                        name=name,
-                        role=node_data.get("role", "Contato no Pipedrive"),
-                        department=node_data.get("department", "Vendas/Pipedrive"),
-                        seniority=node_data.get("level", 5),
-                        email=email,
-                        phone=phone,
-                        temperature=temperature,
-                        company_id=db_org_id,
-                        linkedin_url=f"pipedrive_{person.get('id')}",
+                    # Tenta encontrar contato existente pelo pipedrive_id, linkedin_url ou nome fuzzy
+                    stmt_pd = select(Employee).where(
+                        (Employee.company_id == db_org_id) & 
+                        ((Employee.pipedrive_id == str(person.get('id'))) | 
+                         (Employee.linkedin_url == f"pipedrive_{person.get('id')}"))
                     )
-                    session.add(emp)
+                    res_pd = await session.execute(stmt_pd)
+                    emp = res_pd.scalars().first()
+                    
+                    if not emp:
+                        stmt_all_pd = select(Employee).where(Employee.company_id == db_org_id)
+                        res_all_pd = await session.execute(stmt_all_pd)
+                        for e in res_all_pd.scalars().all():
+                            if is_same_person(e.name, name):
+                                emp = e
+                                break
+                                
+                    if emp:
+                        emp.pipedrive_id = str(person.get('id'))
+                        emp.email = email or emp.email
+                        emp.phone = phone or emp.phone
+                        emp.temperature = temperature or emp.temperature
+                        if emp.role in ["Contato no Pipedrive", None, ""]:
+                            emp.role = node_data.get("role", "Contato no Pipedrive")
+                            emp.department = node_data.get("department", "Vendas/Pipedrive")
+                    else:
+                        emp = Employee(
+                            name=name,
+                            role=node_data.get("role", "Contato no Pipedrive"),
+                            department=node_data.get("department", "Vendas/Pipedrive"),
+                            seniority=node_data.get("level", 5),
+                            email=email,
+                            phone=phone,
+                            temperature=temperature,
+                            company_id=db_org_id,
+                            linkedin_url=f"pipedrive_{person.get('id')}",
+                            pipedrive_id=str(person.get('id')),
+                            source="pipedrive",
+                            is_discovery=0
+                        )
+                        session.add(emp)
                     await session.commit()
+                    await session.refresh(emp)
+                    node_data["id"] = emp.id
                 
                 yield [node_data]
         except Exception as e:
@@ -347,14 +405,14 @@ async def discover_employees_stream(
                     res_emp = await session.execute(stmt_emp)
                     existing_emp = res_emp.scalars().first()
                     
-                    # Se não achou por LinkedIn, tenta match por NOME para sócios do QSA que já estão no banco
+                    # Se não achou por LinkedIn, tenta match por NOME fuzzy (para Pipedrive/QSA)
                     if not existing_emp:
-                        stmt_name = select(Employee).where(
-                            Employee.name == node_data["name"], 
-                            Employee.company_id == db_org_id
-                        )
-                        res_name = await session.execute(stmt_name)
-                        existing_emp = res_name.scalars().first()
+                        stmt_all_nodes = select(Employee).where(Employee.company_id == db_org_id)
+                        res_all_nodes = await session.execute(stmt_all_nodes)
+                        for e in res_all_nodes.scalars().all():
+                            if is_same_person(e.name, node_data["name"]):
+                                existing_emp = e
+                                break
 
                     if existing_emp:
                         # Atualiza dados (Enriquecimento)
@@ -363,14 +421,16 @@ async def discover_employees_stream(
                         existing_emp.department = node_data["department"]
                         existing_emp.seniority = node_data["level"]
                         existing_emp.company_id = db_org_id
-                        existing_emp.linkedin_url = node_data["linkedin"] # Preenche o LinkedIn se não tinha
-                        existing_emp.profile_pic = node_data.get("avatar")
-                        existing_emp.location = node_data.get("location")
-                        existing_emp.description = node_data.get("observations")
-                        existing_emp.education = node_data.get("education")
-                        existing_emp.matching_score = node_data.get("matching_score")
-                        existing_emp.evidence = node_data.get("evidence")
-                        existing_emp.headline = node_data.get("headline")
+                        # Preenche o LinkedIn real se não tinha ou se era dummy do Pipedrive
+                        if not existing_emp.linkedin_url or "pipedrive_" in existing_emp.linkedin_url:
+                            existing_emp.linkedin_url = node_data["linkedin"]
+                        existing_emp.profile_pic = node_data.get("avatar") or existing_emp.profile_pic
+                        existing_emp.location = node_data.get("location") or existing_emp.location
+                        existing_emp.description = node_data.get("observations") or existing_emp.description
+                        existing_emp.education = node_data.get("education") or existing_emp.education
+                        existing_emp.matching_score = node_data.get("matching_score") or existing_emp.matching_score
+                        existing_emp.evidence = node_data.get("evidence") or existing_emp.evidence
+                        existing_emp.headline = node_data.get("headline") or existing_emp.headline
                         existing_emp.last_scanned = func.now()
                     else:
                         emp = Employee(
@@ -391,21 +451,35 @@ async def discover_employees_stream(
                         )
                         session.add(emp)
                     await session.commit()
+                    
+                    if not existing_emp:
+                        await session.refresh(emp)
+                        node_data["id"] = emp.id
+                    else:
+                        node_data["id"] = existing_emp.id
                 
                 found_nodes.append(node_data)
                 yield [node_data]
 
             # 2. Promoção e Persistência de Órfãos (Aproveitamento com Repescagem)
             for orphan in orphans:
-                # Verifica se já existe no banco (Prioridade: linkedin_url, senão nome+empresa)
+                # Verifica se já existe no banco (Prioridade: linkedin_url, senão nome+empresa fuzzy)
                 async with async_session() as session:
+                    existing_o = None
                     if orphan.get("linkedin"):
                         stmt_o = select(Employee).where(Employee.linkedin_url == orphan["linkedin"])
-                    else:
-                        stmt_o = select(Employee).where(Employee.name == orphan["name"], Employee.company_id == db_org_id)
+                        res_o = await session.execute(stmt_o)
+                        existing_o = res_o.scalars().first()
                     
-                    res_o = await session.execute(stmt_o)
-                    if res_o.scalars().first():
+                    if not existing_o:
+                        stmt_all_o = select(Employee).where(Employee.company_id == db_org_id)
+                        res_all_o = await session.execute(stmt_all_o)
+                        for e in res_all_o.scalars().all():
+                            if is_same_person(e.name, orphan["name"]):
+                                existing_o = e
+                                break
+                                
+                    if existing_o:
                         continue # Já conhecemos
                 
                 # Roda a Repescagem para o Órfão (Transforma em nó completo)
@@ -413,12 +487,23 @@ async def discover_employees_stream(
                 
                 if upgraded_node:
                     async with async_session() as session:
-                        # Segunda verificação pós-upgrade para garantir que não achou um linkedin já cadastrado
+                        # Segunda verificação pós-upgrade para garantir que não achou um linkedin/nome já cadastrado
+                        existing_up = None
                         if upgraded_node.get("linkedin"):
                             check_stmt = select(Employee).where(Employee.linkedin_url == upgraded_node["linkedin"])
                             check_res = await session.execute(check_stmt)
-                            if check_res.scalars().first():
-                                continue
+                            existing_up = check_res.scalars().first()
+                            
+                        if not existing_up:
+                            stmt_all_up = select(Employee).where(Employee.company_id == db_org_id)
+                            res_all_up = await session.execute(stmt_all_up)
+                            for e in res_all_up.scalars().all():
+                                if is_same_person(e.name, upgraded_node["name"]):
+                                    existing_up = e
+                                    break
+                                    
+                        if existing_up:
+                            continue
                             
                         new_emp = Employee(
                             name=upgraded_node["name"],
@@ -438,6 +523,9 @@ async def discover_employees_stream(
                         )
                         session.add(new_emp)
                         await session.commit()
+                        
+                        await session.refresh(new_emp)
+                        upgraded_node["id"] = new_emp.id
                         
                         found_nodes.append(upgraded_node)
                         # Opcional: Yield para o front-end ver o órfão aparecendo? 

@@ -13,216 +13,93 @@ import {
     Eye,
     EyeOff,
     Terminal,
-    RefreshCw,
     Globe
 } from 'lucide-react';
-import { apiPost, API_V1_URL } from '@/services/config';
-
-interface EmployeeProfile {
-    name: string;
-    role: string;
-    linkedin_url: string;
-    avatar: string;
-    location?: string;
-}
+import { API_V1_URL } from '@/services/config';
+import type { ScanEmployeeProfile } from '@/hooks/useHierarchyScan';
 
 interface HierarchyScanViewProps {
     onBack: () => void;
+    // Contexto da empresa atual (pré-preenche a URL)
+    defaultCompanyUrl?: string;
+    // Estado do scan vindo do hook pai (useHierarchyScan no NetworkGraph)
+    isScanning: boolean;
+    scanProgress: number;
+    consoleLogs: string[];
+    hasPreview: boolean;
+    previewUrl: string;
+    scanResults: ScanEmployeeProfile[];
+    scanError: string | null;
+    // Callbacks para o hook pai
+    onStartScan: (url: string, cookie: string) => void;
+    onStopScan: () => void;
+    onImageClick: (e: React.MouseEvent<HTMLImageElement>) => void;
+    onSendText: (text: string) => void;
+    onPressEnter: () => void;
+    onPressBackspace: () => void;
 }
 
-export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) => {
-    const [companyUrl, setCompanyUrl] = useState("https://www.linkedin.com/company/grupobrasa/people/");
-    const [cookie, setCookie] = useState("");
-    // Iniciamos como FALSE por padrão para que o navegador NÃO abra fisicamente na tela do usuário,
-    // permitindo que ele faça todo o login diretamente pelo preview da interface web!
+export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({
+    onBack,
+    defaultCompanyUrl = '',
+    isScanning,
+    scanProgress,
+    consoleLogs,
+    hasPreview,
+    previewUrl,
+    scanResults,
+    scanError,
+    onStartScan,
+    onStopScan,
+    onImageClick,
+    onSendText,
+    onPressEnter,
+    onPressBackspace,
+}) => {
+    // Estado de UI local — não tem nada a ver com o scan em si
+    const [companyUrl, setCompanyUrl] = useState(defaultCompanyUrl);
+    const [cookie, setCookie] = useState('');
     const [showBrowser, setShowBrowser] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [results, setResults] = useState<EmployeeProfile[]>([]);
     const [showCookie, setShowCookie] = useState(false);
-    const [progressPercent, setProgressPercent] = useState(0);
-
-    // Estados do painel de agentes e preview em tempo real
-    const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
-    const [previewTimestamp, setPreviewTimestamp] = useState<number>(Date.now());
-    const [hasPreview, setHasPreview] = useState(false);
-    const [sseActive, setSseActive] = useState(false);
-    const [inputText, setInputText] = useState("");
+    const [inputText, setInputText] = useState('');
 
     const consoleEndRef = useRef<HTMLDivElement>(null);
-    const eventSourceRef = useRef<EventSource | null>(null);
 
-    // Carrega o cookie salvo no localStorage ao montar
+    // Sincroniza URL da empresa se a prop mudar (ex: troca de empresa no drawer)
+    useEffect(() => {
+        if (defaultCompanyUrl && !isScanning) {
+            setCompanyUrl(defaultCompanyUrl);
+        }
+    }, [defaultCompanyUrl, isScanning]);
+
+    // Carrega cookie salvo no localStorage ao montar
     useEffect(() => {
         const savedCookie = localStorage.getItem('linkedin_li_at_cookie');
         if (savedCookie) {
             setCookie(savedCookie);
         }
-        return () => {
-            // Garante o fechamento da conexão se desmontar
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-            }
-        };
     }, []);
 
-    // Rola o terminal console para baixo automaticamente
+    // Rola o terminal para o final automaticamente quando chegam novos logs
     useEffect(() => {
         if (consoleEndRef.current) {
             consoleEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [consoleLogs]);
 
-    // Salva o cookie no localStorage ao digitar
     const handleCookieChange = (val: string) => {
         setCookie(val);
         localStorage.setItem('linkedin_li_at_cookie', val);
     };
 
-    const stopScraping = () => {
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-            eventSourceRef.current = null;
-        }
-        setLoading(false);
-        setSseActive(false);
-        setConsoleLogs(prev => [...prev, "[System] Extração interrompida manualmente pelo operador."]);
+    const handleStart = () => {
+        onStartScan(companyUrl, cookie);
     };
 
-    const startScraping = async () => {
-        setLoading(true);
-        setError(null);
-        setResults([]);
-        setProgressPercent(0);
-        setHasPreview(false);
-        setConsoleLogs([
-            "[System] Inicializando módulo de extração modular...",
-            "[System] Tentando abrir conexão SSE para transmissão em tempo real..."
-        ]);
-
-        // Fecha qualquer conexão anterior ativa
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-        }
-
-        const encodedUrl = encodeURIComponent(companyUrl);
-        const encodedCookie = cookie ? encodeURIComponent(cookie) : "";
-        const sseUrl = `${API_V1_URL}/hierarchy/linkedin-scrape/stream?company_url=${encodedUrl}&session_cookie=${encodedCookie}&headless=${!showBrowser}`;
-
-        setSseActive(true);
-        const es = new EventSource(sseUrl);
-        eventSourceRef.current = es;
-
-        es.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                
-                if (data.type === 'log') {
-                    // Adiciona a linha de log do terminal vinda do backend
-                    setConsoleLogs(prev => [...prev, data.message]);
-                    
-                    // Incrementa a barra de progresso com base na contagem de perfis seletivamente
-                    if (data.message.includes("Colaboradores na página:")) {
-                        const countMatch = data.message.match(/Colaboradores na página:\s*(\d+)/i);
-                        if (countMatch) {
-                            const count = parseInt(countMatch[1], 10);
-                            // Simulação aproximada de progresso com limite de 98% antes do final
-                            setProgressPercent(Math.min(98, Math.floor((count / 140) * 100)));
-                        }
-                    }
-                } else if (data.type === 'screenshot') {
-                    // Força a atualização da imagem do preview mudando a chave do cache-busting
-                    setPreviewTimestamp(Date.now());
-                    setHasPreview(true);
-                } else if (data.type === 'result') {
-                    const employees = data.data || [];
-                    setResults(employees);
-                    setProgressPercent(100);
-                    setConsoleLogs(prev => [
-                        ...prev, 
-                        `[System] Processamento final concluído! ${employees.length} perfis importados com sucesso.`,
-                        "[System] Conexão encerrada com sucesso."
-                    ]);
-                    es.close();
-                    setLoading(false);
-                    setSseActive(false);
-                } else if (data.type === 'error') {
-                    setError(data.message);
-                    setConsoleLogs(prev => [...prev, `❌ [Erro do Agente] ${data.message}`]);
-                    es.close();
-                    setLoading(false);
-                    setSseActive(false);
-                }
-            } catch (err) {
-                console.error("Erro no processamento SSE:", err);
-            }
-        };
-
-        es.onerror = (err) => {
-            console.error("Erro de conexão com EventSource:", err);
-            setError("Erro na conexão em tempo real com o servidor do Scraper. Verifique se o backend está ativo.");
-            setConsoleLogs(prev => [...prev, "❌ [Erro de Rede] Conexão SSE falhou inesperadamente."]);
-            es.close();
-            setLoading(false);
-            setSseActive(false);
-        };
-    };
-
-    // --- MÉTODOS DE INTERAÇÃO E CONTROLE REMOTO EM TEMPO REAL ---
-
-    const handleImageClick = async (e: React.MouseEvent<HTMLImageElement>) => {
-        if (!loading) return; // Só permite interagir se o scraper estiver ativamente em execução
-
-        const img = e.currentTarget;
-        const rect = img.getBoundingClientRect();
-        
-        // Calcula coordenadas relativas do clique no tamanho exibido da imagem
-        const x_client = e.clientX - rect.left;
-        const y_client = e.clientY - rect.top;
-        
-        // Projeta as coordenadas no tamanho real do viewport padrão do Playwright (1280x800)
-        const x_absolute = Math.round((x_client / rect.width) * 1280);
-        const y_absolute = Math.round((y_client / rect.height) * 800);
-        
-        try {
-            setConsoleLogs(prev => [...prev, `[Operator] Focando/Clicando em coordenada: (${x_absolute}, ${y_absolute})...`]);
-            await apiPost(`/hierarchy/linkedin-scrape/interact?action=click&x=${x_absolute}&y=${y_absolute}`);
-        } catch (err: any) {
-            console.error("Erro ao enviar clique remoto:", err);
-            setConsoleLogs(prev => [...prev, `❌ [System Error] Falha ao enviar clique: ${err.message}`]);
-        }
-    };
-
-    const handleSendText = async () => {
-        if (!inputText) return;
-        try {
-            setConsoleLogs(prev => [...prev, `[Operator] Inserindo texto: "${inputText}"...`]);
-            await apiPost(`/hierarchy/linkedin-scrape/interact?action=type&text=${encodeURIComponent(inputText)}`);
-            setInputText("");
-        } catch (err: any) {
-            console.error("Erro ao enviar texto remoto:", err);
-            setConsoleLogs(prev => [...prev, `❌ [System Error] Falha ao enviar escrita: ${err.message}`]);
-        }
-    };
-
-    const handlePressEnter = async () => {
-        try {
-            setConsoleLogs(prev => [...prev, `[Operator] Pressionando tecla ENTER...`]);
-            await apiPost(`/hierarchy/linkedin-scrape/interact?action=press&key=Enter`);
-        } catch (err: any) {
-            console.error("Erro ao enviar tecla Enter:", err);
-            setConsoleLogs(prev => [...prev, `❌ [System Error] Falha ao pressionar Enter: ${err.message}`]);
-        }
-    };
-
-    const handlePressBackspace = async () => {
-        try {
-            setConsoleLogs(prev => [...prev, `[Operator] Pressionando tecla BACKSPACE...`]);
-            await apiPost(`/hierarchy/linkedin-scrape/interact?action=press&key=Backspace`);
-        } catch (err: any) {
-            console.error("Erro ao enviar tecla Backspace:", err);
-            setConsoleLogs(prev => [...prev, `❌ [System Error] Falha ao pressionar Backspace: ${err.message}`]);
-        }
+    const handleSendText = () => {
+        if (!inputText.trim()) return;
+        onSendText(inputText);
+        setInputText('');
     };
 
     return (
@@ -236,7 +113,7 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
             fontFamily: 'var(--font-primary)',
             animation: 'fadeIn 0.4s var(--transition-smooth)'
         }}>
-            {/* Header do Scraper */}
+            {/* Header */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -254,31 +131,23 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                         display: 'flex',
                         alignItems: 'center'
                     }}>
-                        <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            width="24" 
-                            height="24" 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            strokeWidth="2" 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round"
-                        >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
                             <rect x="2" y="9" width="4" height="12" />
                             <circle cx="4" cy="4" r="2" />
                         </svg>
                     </div>
                     <div>
-                        <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>Módulo Core LinkedIn Scraper</h1>
+                        <h1 style={{ fontSize: '20px', fontWeight: 600, margin: 0 }}>LinkedIn Scraper</h1>
                         <p style={{ fontSize: '13px', color: 'var(--sw-text-subtle)', margin: '2px 0 0 0' }}>
-                            Mapeador e Raspador integrado em tempo real. Veja o progresso e o preview do navegador live.
+                            {isScanning
+                                ? '🟢 Varredura em execução — você pode navegar livremente, o scan continua em background.'
+                                : 'Mapeador e raspador integrado em tempo real. O scan continua mesmo ao navegar para outras telas.'}
                         </p>
                     </div>
                 </div>
 
-                <button 
+                <button
                     onClick={onBack}
                     style={{
                         background: 'transparent',
@@ -295,11 +164,11 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--sw-hover)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
-                    Voltar para o Grafo
+                    ← Voltar para o Grafo
                 </button>
             </div>
 
-            {/* Layout em Duas Colunas (Opções / Visualização em Tempo Real) */}
+            {/* Layout em Duas Colunas */}
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: '380px 1fr',
@@ -307,7 +176,7 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                 alignItems: 'start',
                 marginBottom: '24px'
             }}>
-                
+
                 {/* Painel Esquerdo: Configurações */}
                 <div style={{
                     background: 'var(--sw-surface-base)',
@@ -320,7 +189,7 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                     gap: '20px'
                 }}>
                     <h2 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--sw-primary)', margin: 0, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                        Configurações da Automação
+                        Configurações
                     </h2>
 
                     {/* URL da Empresa */}
@@ -328,12 +197,12 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                         <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--sw-text-subtle)' }}>
                             URL da Empresa no LinkedIn (/people)
                         </label>
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             value={companyUrl}
                             onChange={e => setCompanyUrl(e.target.value)}
-                            disabled={loading}
-                            placeholder="https://www.linkedin.com/company/nome-da-empresa/people/"
+                            disabled={isScanning}
+                            placeholder="https://www.linkedin.com/company/empresa/people/"
                             style={{
                                 background: 'rgba(0, 0, 0, 0.25)',
                                 border: '1px solid var(--sw-border)',
@@ -342,7 +211,8 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                 color: 'var(--sw-text-base)',
                                 fontSize: '13px',
                                 outline: 'none',
-                                transition: 'border-color 0.2s'
+                                transition: 'border-color 0.2s',
+                                opacity: isScanning ? 0.6 : 1,
                             }}
                             onFocus={e => e.currentTarget.style.borderColor = 'var(--sw-primary)'}
                             onBlur={e => e.currentTarget.style.borderColor = 'var(--sw-border)'}
@@ -353,9 +223,9 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--sw-text-subtle)' }}>
-                                Cookie de Sessão 'li_at' (Recomendado)
+                                Cookie de Sessão 'li_at'
                             </label>
-                            <button 
+                            <button
                                 type="button"
                                 onClick={() => setShowCookie(!showCookie)}
                                 style={{
@@ -373,11 +243,11 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                 {showCookie ? 'Ocultar' : 'Mostrar'}
                             </button>
                         </div>
-                        <input 
-                            type={showCookie ? "text" : "password"} 
+                        <input
+                            type={showCookie ? 'text' : 'password'}
                             value={cookie}
                             onChange={e => handleCookieChange(e.target.value)}
-                            disabled={loading}
+                            disabled={isScanning}
                             placeholder="Insira seu cookie li_at para rodar headless..."
                             style={{
                                 background: 'rgba(0, 0, 0, 0.25)',
@@ -386,21 +256,22 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                 padding: '12px',
                                 color: 'var(--font-mono)',
                                 fontSize: '13px',
-                                outline: 'none'
+                                outline: 'none',
+                                opacity: isScanning ? 0.6 : 1,
                             }}
                         />
                         <span style={{ fontSize: '11px', color: 'var(--sw-text-muted)', lineHeight: '1.4' }}>
                             {!cookie ? (
                                 <span style={{ color: 'var(--sw-status-warning)' }}>
-                                    ⚠️ Sem cookie. O script rodará 100% oculto e você poderá interagir e fazer o login direto pela janela do Live Preview ao lado!
+                                    ⚠️ Sem cookie — o login pode ser feito pelo Live Preview ao lado.
                                 </span>
                             ) : (
-                                "Cookie injetado! O script iniciará logado em segundo plano automaticamente."
+                                'Cookie injetado! O script iniciará logado automaticamente.'
                             )}
                         </span>
                     </div>
 
-                    {/* Mostrar Navegador */}
+                    {/* Modo Headful */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -414,25 +285,20 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                             <span style={{ fontSize: '13px', fontWeight: 500 }}>Live GUI (Modo Headful)</span>
                             <span style={{ fontSize: '11px', color: 'var(--sw-text-muted)' }}>Exibe a janela física externa do Playwright</span>
                         </div>
-                        <input 
+                        <input
                             type="checkbox"
                             checked={showBrowser}
                             onChange={e => setShowBrowser(e.target.checked)}
-                            disabled={loading} 
-                            style={{
-                                width: '38px',
-                                height: '20px',
-                                cursor: 'pointer',
-                                accentColor: 'var(--sw-primary)'
-                            }}
+                            disabled={isScanning}
+                            style={{ width: '38px', height: '20px', cursor: 'pointer', accentColor: 'var(--sw-primary)' }}
                         />
                     </div>
 
-                    {/* Botões de Ação */}
+                    {/* Botão de Ação */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {!loading ? (
+                        {!isScanning ? (
                             <button
-                                onClick={startScraping}
+                                onClick={handleStart}
                                 disabled={!companyUrl}
                                 style={{
                                     background: 'var(--sw-primary)',
@@ -442,23 +308,24 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                     padding: '14px',
                                     fontSize: '14px',
                                     fontWeight: 600,
-                                    cursor: 'pointer',
+                                    cursor: companyUrl ? 'pointer' : 'not-allowed',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: '8px',
                                     transition: 'all 0.2s',
-                                    boxShadow: '0 4px 12px rgba(129, 140, 248, 0.25)'
+                                    boxShadow: '0 4px 12px rgba(129, 140, 248, 0.25)',
+                                    opacity: companyUrl ? 1 : 0.6,
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.background = 'var(--sw-primary-hover)'}
+                                onMouseEnter={e => { if (companyUrl) e.currentTarget.style.background = 'var(--sw-primary-hover)'; }}
                                 onMouseLeave={e => e.currentTarget.style.background = 'var(--sw-primary)'}
                             >
                                 <Play size={16} />
-                                Iniciar Extração Incansável
+                                Iniciar Varredura
                             </button>
                         ) : (
                             <button
-                                onClick={stopScraping}
+                                onClick={onStopScan}
                                 style={{
                                     background: 'var(--sw-status-danger)',
                                     color: '#ffffff',
@@ -472,20 +339,17 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: '8px',
-                                    transition: 'all 0.2s',
                                     boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)'
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-                                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                             >
                                 <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                                Parar Agente / Interromper
+                                Parar Varredura
                             </button>
                         )}
                     </div>
 
-                    {/* Informações Auxiliares */}
-                    {loading && (
+                    {/* Barra de Progresso */}
+                    {isScanning && (
                         <div style={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -497,18 +361,12 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                                 <span>Progresso da varredura</span>
-                                <strong>{progressPercent}%</strong>
+                                <strong>{scanProgress}%</strong>
                             </div>
-                            <div style={{
-                                width: '100%',
-                                height: '6px',
-                                background: 'rgba(0,0,0,0.3)',
-                                borderRadius: '3px',
-                                overflow: 'hidden'
-                            }}>
+                            <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.3)', borderRadius: '3px', overflow: 'hidden' }}>
                                 <div style={{
                                     height: '100%',
-                                    width: `${progressPercent}%`,
+                                    width: `${scanProgress}%`,
                                     background: 'var(--sw-primary)',
                                     borderRadius: '3px',
                                     transition: 'width 0.4s ease'
@@ -518,15 +376,10 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                     )}
                 </div>
 
-                {/* Painel Direito: Live Agent Dashboard (Terminal e Preview) */}
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '20px',
-                    width: '100%'
-                }}>
-                    
-                    {/* Linha de Cima: Browser Preview Mockup */}
+                {/* Painel Direito: Live Preview + Terminal */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+
+                    {/* Browser Preview */}
                     <div style={{
                         background: 'var(--sw-surface-base)',
                         border: '1px solid var(--sw-border)',
@@ -537,7 +390,7 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                         flexDirection: 'column',
                         minHeight: '460px'
                     }}>
-                        {/* Browser Window Header */}
+                        {/* Browser Header */}
                         <div style={{
                             background: 'rgba(255,255,255,0.03)',
                             borderBottom: '1px solid var(--sw-border)',
@@ -551,8 +404,7 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                 <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
                                 <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
                             </div>
-                            
-                            {/* Browser Search Bar Mock */}
+
                             <div style={{
                                 background: 'rgba(0,0,0,0.25)',
                                 borderRadius: '6px',
@@ -566,19 +418,13 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                 border: '1px solid var(--sw-border)'
                             }}>
                                 <Globe size={12} />
-                                <span style={{
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    width: '100%'
-                                }}>
-                                    {companyUrl}
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
+                                    {companyUrl || 'linkedin.com'}
                                 </span>
                             </div>
 
-                            {/* Live Badge */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                {loading && (
+                                {isScanning && (
                                     <div style={{
                                         display: 'flex',
                                         alignItems: 'center',
@@ -612,18 +458,18 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                             height: '320px'
                         }}>
                             {hasPreview ? (
-                                <img 
-                                    src={`${API_V1_URL}/hierarchy/linkedin-scrape/preview?t=${previewTimestamp}`}
-                                    alt="Live Browser View" 
-                                    onClick={handleImageClick}
+                                <img
+                                    src={previewUrl}
+                                    alt="Live Browser View"
+                                    onClick={onImageClick}
                                     style={{
                                         width: '100%',
                                         height: '100%',
                                         objectFit: 'contain',
-                                        cursor: loading ? 'pointer' : 'default',
+                                        cursor: isScanning ? 'pointer' : 'default',
                                         transition: 'all 0.3s var(--transition-smooth)'
                                     }}
-                                    title={loading ? "Clique na tela para focar em campos ou clicar em botões!" : ""}
+                                    title={isScanning ? 'Clique na tela para interagir com o browser!' : ''}
                                 />
                             ) : (
                                 <div style={{
@@ -635,40 +481,27 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                     textAlign: 'center',
                                     padding: '20px'
                                 }}>
-                                    {loading ? (
+                                    {isScanning ? (
                                         <>
                                             <Loader2 size={32} style={{ animation: 'spin 1s linear infinite', color: 'var(--sw-primary)' }} />
                                             <span style={{ fontSize: '13px' }}>Aguardando primeira captura do navegador...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <svg 
-                                                xmlns="http://www.w3.org/2000/svg" 
-                                                width="48" 
-                                                height="48" 
-                                                viewBox="0 0 24 24" 
-                                                fill="none" 
-                                                stroke="currentColor" 
-                                                strokeWidth="1.5" 
-                                                strokeLinecap="round" 
-                                                strokeLinejoin="round"
-                                                style={{ opacity: 0.3 }}
-                                            >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3 }}>
                                                 <rect width="18" height="18" x="3" y="3" rx="2" />
                                                 <path d="M3 9h18" />
                                                 <path d="M9 21V9" />
                                             </svg>
-                                            <span style={{ fontSize: '13px' }}>
-                                                Inicie a extração para visualizar a tela do navegador Playwright em tempo real.
-                                            </span>
+                                            <span style={{ fontSize: '13px' }}>Inicie a varredura para ver o navegador em tempo real.</span>
                                         </>
                                     )}
                                 </div>
                             )}
                         </div>
 
-                        {/* Interactive Remote Input Panel */}
-                        {loading && (
+                        {/* Painel de Interação Remota */}
+                        {isScanning && (
                             <div style={{
                                 background: 'rgba(0, 0, 0, 0.4)',
                                 borderTop: '1px solid var(--sw-border)',
@@ -678,16 +511,12 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                 gap: '8px'
                             }}>
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                    <input 
+                                    <input
                                         type="text"
                                         value={inputText}
                                         onChange={e => setInputText(e.target.value)}
-                                        placeholder="Digite texto para preencher o campo focado (ex: e-mail, senha)..."
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter') {
-                                                handleSendText();
-                                            }
-                                        }}
+                                        placeholder="Digite texto para o campo focado (ex: e-mail, senha)..."
+                                        onKeyDown={e => { if (e.key === 'Enter') handleSendText(); }}
                                         style={{
                                             flex: 1,
                                             background: 'rgba(0, 0, 0, 0.4)',
@@ -699,65 +528,24 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                             outline: 'none'
                                         }}
                                     />
-                                    <button
-                                        onClick={handleSendText}
-                                        disabled={!inputText.trim()}
-                                        style={{
-                                            background: 'var(--sw-primary)',
-                                            color: '#ffffff',
-                                            border: 'none',
-                                            borderRadius: '8px',
-                                            padding: '8px 16px',
-                                            fontSize: '12px',
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
-                                            opacity: inputText.trim() ? 1 : 0.6
-                                        }}
-                                    >
-                                        Enviar Escrita
+                                    <button onClick={handleSendText} disabled={!inputText.trim()} style={{ background: 'var(--sw-primary)', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', opacity: inputText.trim() ? 1 : 0.6 }}>
+                                        Enviar
                                     </button>
-                                    <button
-                                        onClick={handlePressEnter}
-                                        style={{
-                                            background: 'rgba(255, 255, 255, 0.08)',
-                                            border: '1px solid var(--sw-border)',
-                                            color: '#ffffff',
-                                            borderRadius: '8px',
-                                            padding: '8px 16px',
-                                            fontSize: '12px',
-                                            fontWeight: 600,
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Pressionar Enter ↵
+                                    <button onClick={onPressEnter} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--sw-border)', color: '#fff', borderRadius: '8px', padding: '8px 16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                        Enter ↵
                                     </button>
-                                    <button
-                                        onClick={handlePressBackspace}
-                                        style={{
-                                            background: 'rgba(239, 68, 68, 0.1)',
-                                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                                            color: '#ef4444',
-                                            borderRadius: '8px',
-                                            padding: '8px 16px',
-                                            fontSize: '12px',
-                                            fontWeight: 600,
-                                            cursor: 'pointer'
-                                        }}
-                                    >
+                                    <button onClick={onPressBackspace} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: '8px', padding: '8px 16px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                                         Apagar ⌫
                                     </button>
                                 </div>
-                                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', display: 'flex', gap: '4px' }}>
-                                    <span>💡</span>
-                                    <span>
-                                        <strong>Instruções de Login:</strong> 1. Clique na tela do navegador acima sobre o campo de login ou senha. 2. Digite seus dados no campo de texto acima e clique em <strong>"Enviar Escrita"</strong>. 3. Clique em <strong>"Pressionar Enter ↵"</strong> para submeter o formulário.
-                                    </span>
+                                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}>
+                                    💡 Clique na tela acima → depois use os botões para digitar e submeter o login.
                                 </span>
                             </div>
                         )}
                     </div>
 
-                    {/* Linha de Baixo: Sleek Agent Terminal Logs */}
+                    {/* Terminal de Logs */}
                     <div style={{
                         background: 'rgba(10, 10, 12, 0.85)',
                         border: '1px solid var(--sw-border)',
@@ -769,7 +557,6 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                         overflow: 'hidden',
                         backdropFilter: 'blur(12px)'
                     }}>
-                        {/* Terminal Header */}
                         <div style={{
                             background: 'rgba(0,0,0,0.4)',
                             borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -782,10 +569,23 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                             fontFamily: 'var(--font-mono)'
                         }}>
                             <Terminal size={12} style={{ color: 'var(--sw-primary)' }} />
-                            <span>terminal - agent@linkb2b:~ (live_logs)</span>
+                            <span>terminal — agent@linkb2b:~ (live_logs)</span>
+                            {isScanning && (
+                                <div style={{
+                                    marginLeft: 'auto',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    color: '#4ade80',
+                                    fontSize: '10px',
+                                    fontWeight: 600,
+                                }}>
+                                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80', animation: 'pulse 1.5s infinite ease-in-out' }} />
+                                    SCANNING
+                                </div>
+                            )}
                         </div>
 
-                        {/* Terminal Console Logs Area */}
                         <div style={{
                             flex: 1,
                             padding: '16px',
@@ -801,20 +601,12 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                             {consoleLogs.length > 0 ? (
                                 consoleLogs.map((log, index) => {
                                     let textColor = 'rgba(255, 255, 255, 0.8)';
-                                    if (log.startsWith('[System]')) {
-                                        textColor = 'var(--sw-primary)';
-                                    } else if (log.includes('✅') || log.startsWith('🎉') || log.includes('Login detectado')) {
-                                        textColor = '#4ade80'; // Bright Green
-                                    } else if (log.startsWith('👤') || log.startsWith('[Operator]')) {
-                                        textColor = '#38bdf8'; // Sky Blue
-                                    } else if (log.includes('⚠️') || log.includes('Warning')) {
-                                        textColor = '#fbbf24'; // Amber Yellow
-                                    } else if (log.startsWith('❌') || log.startsWith('[Erro')) {
-                                        textColor = '#f87171'; // Coral Red
-                                    } else if (log.includes('📊')) {
-                                        textColor = 'rgba(255,255,255,0.5)';
-                                    }
-
+                                    if (log.startsWith('[System]')) textColor = 'var(--sw-primary)';
+                                    else if (log.includes('✅') || log.startsWith('🎉') || log.includes('Login detectado')) textColor = '#4ade80';
+                                    else if (log.startsWith('👤') || log.startsWith('[Operator]')) textColor = '#38bdf8';
+                                    else if (log.includes('⚠️') || log.includes('Warning')) textColor = '#fbbf24';
+                                    else if (log.startsWith('❌') || log.startsWith('[Erro') || log.startsWith('[Error]')) textColor = '#f87171';
+                                    else if (log.includes('📊')) textColor = 'rgba(255,255,255,0.5)';
                                     return (
                                         <div key={index} style={{ color: textColor, whiteSpace: 'pre-wrap' }}>
                                             {log}
@@ -823,7 +615,7 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                 })
                             ) : (
                                 <div style={{ color: 'rgba(255, 255, 255, 0.3)', fontStyle: 'italic' }}>
-                                    Aguardando tarefas da CPU... Terminal inativo.
+                                    Aguardando tarefas... Terminal inativo.
                                 </div>
                             )}
                             <div ref={consoleEndRef} />
@@ -832,8 +624,8 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                 </div>
             </div>
 
-            {/* Mensagem de Erro Geral */}
-            {error && !loading && (
+            {/* Erro */}
+            {scanError && !isScanning && (
                 <div style={{
                     background: 'rgba(239, 68, 68, 0.08)',
                     border: '1px solid rgba(239, 68, 68, 0.2)',
@@ -848,23 +640,17 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                 }}>
                     <AlertTriangle size={20} style={{ color: 'var(--sw-status-danger)', flexShrink: 0, marginTop: '2px' }} />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <strong style={{ fontSize: '14px', color: 'var(--sw-status-danger)' }}>Falha na Automação do Agente</strong>
+                        <strong style={{ fontSize: '14px', color: 'var(--sw-status-danger)' }}>Falha na Automação</strong>
                         <p style={{ fontSize: '13px', color: 'var(--sw-text-subtle)', margin: 0, lineHeight: '1.5' }}>
-                            {error}
+                            {scanError}
                         </p>
                     </div>
                 </div>
             )}
 
-            {/* Resultados da Extração */}
-            {results.length > 0 && !loading && (
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px',
-                    animation: 'fadeIn 0.4s'
-                }}>
-                    {/* Estatísticas e Ações */}
+            {/* Resultados */}
+            {scanResults.length > 0 && !isScanning && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'fadeIn 0.4s' }}>
                     <div style={{
                         background: 'var(--sw-surface-base)',
                         border: '1px solid var(--sw-border)',
@@ -878,19 +664,18 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4ade80' }}>
                             <CheckCircle2 size={18} />
                             <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--sw-text-base)' }}>
-                                Extração concluída com sucesso: <strong>{results.length}</strong> pessoas importadas para análise.
+                                Extração concluída: <strong>{scanResults.length}</strong> pessoas importadas.
                             </span>
                         </div>
-
                         <button
                             onClick={() => {
-                                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(results, null, 4));
-                                const downloadAnchor = document.createElement('a');
-                                downloadAnchor.setAttribute("href", dataStr);
-                                downloadAnchor.setAttribute("download", `linkedin_colaboradores_${Date.now()}.json`);
-                                document.body.appendChild(downloadAnchor);
-                                downloadAnchor.click();
-                                downloadAnchor.remove();
+                                const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(scanResults, null, 4));
+                                const a = document.createElement('a');
+                                a.setAttribute('href', dataStr);
+                                a.setAttribute('download', `linkedin_colaboradores_${Date.now()}.json`);
+                                document.body.appendChild(a);
+                                a.click();
+                                a.remove();
                             }}
                             style={{
                                 background: 'rgba(255,255,255,0.04)',
@@ -914,7 +699,6 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                         </button>
                     </div>
 
-                    {/* Grid de Perfis */}
                     <div style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fill, minmax(285px, 1fr))',
@@ -923,8 +707,8 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                         overflowY: 'auto',
                         paddingRight: '4px'
                     }}>
-                        {results.map((profile, idx) => (
-                            <div 
+                        {scanResults.map((profile, idx) => (
+                            <div
                                 key={idx}
                                 style={{
                                     background: 'var(--sw-surface-base)',
@@ -945,24 +729,15 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                     e.currentTarget.style.transform = 'none';
                                 }}
                             >
-                                {/* Foto Perfil */}
                                 <div style={{
-                                    width: '48px',
-                                    height: '48px',
-                                    borderRadius: '50%',
+                                    width: '48px', height: '48px', borderRadius: '50%',
                                     background: 'rgba(255,255,255,0.05)',
                                     border: '1px solid var(--sw-border)',
-                                    overflow: 'hidden',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0
+                                    overflow: 'hidden', display: 'flex',
+                                    alignItems: 'center', justifyContent: 'center', flexShrink: 0
                                 }}>
                                     {profile.avatar ? (
-                                        <img 
-                                            src={profile.avatar} 
-                                            alt={profile.name} 
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        <img src={profile.avatar} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             onError={e => {
                                                 e.currentTarget.style.display = 'none';
                                                 e.currentTarget.parentElement?.insertAdjacentHTML('beforeend', '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--sw-text-muted)" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>');
@@ -973,66 +748,26 @@ export const HierarchyScanView: React.FC<HierarchyScanViewProps> = ({ onBack }) 
                                     )}
                                 </div>
 
-                                {/* Dados */}
-                                <div style={{ 
-                                    display: 'flex', 
-                                    flexDirection: 'column', 
-                                    gap: '4px',
-                                    overflow: 'hidden',
-                                    width: '100%'
-                                }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflow: 'hidden', width: '100%' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '4px' }}>
-                                        <span style={{ 
-                                            fontSize: '14px', 
-                                            fontWeight: 600, 
-                                            color: 'var(--sw-text-base)',
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis'
-                                        }} title={profile.name}>
+                                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--sw-text-base)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={profile.name}>
                                             {profile.name}
                                         </span>
-                                        <a 
-                                            href={profile.linkedin_url} 
-                                            target="_blank" 
-                                            rel="noreferrer"
-                                            style={{ 
-                                                color: 'var(--sw-text-muted)', 
-                                                display: 'flex',
-                                                flexShrink: 0,
-                                                transition: 'color 0.2s'
-                                            }}
+                                        <a href={profile.linkedin_url} target="_blank" rel="noreferrer"
+                                            style={{ color: 'var(--sw-text-muted)', display: 'flex', flexShrink: 0, transition: 'color 0.2s' }}
                                             onMouseEnter={e => e.currentTarget.style.color = 'var(--sw-primary)'}
                                             onMouseLeave={e => e.currentTarget.style.color = 'var(--sw-text-muted)'}
-                                            title="Abrir perfil no LinkedIn"
                                         >
                                             <ExternalLink size={12} />
                                         </a>
                                     </div>
-
-                                    <span style={{ 
-                                        fontSize: '12px', 
-                                        color: 'var(--sw-text-subtle)',
-                                        lineHeight: '1.3',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        display: '-webkit-box',
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: 'vertical',
-                                        minHeight: '32px'
-                                    }} title={profile.role}>
+                                    <span style={{ fontSize: '12px', color: 'var(--sw-text-subtle)', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', minHeight: '32px' }} title={profile.role}>
                                         {profile.role}
                                     </span>
-
                                     {profile.location && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--sw-text-muted)' }}>
                                             <MapPin size={10} style={{ flexShrink: 0 }} />
-                                            <span style={{ 
-                                                fontSize: '11px', 
-                                                whiteSpace: 'nowrap', 
-                                                overflow: 'hidden', 
-                                                textOverflow: 'ellipsis' 
-                                            }} title={profile.location}>
+                                            <span style={{ fontSize: '11px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={profile.location}>
                                                 {profile.location}
                                             </span>
                                         </div>

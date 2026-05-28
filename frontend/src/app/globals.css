@@ -97,8 +97,8 @@
   --sw-primary-soft: rgba(79, 70, 229, 0.08);
   --sw-primary-border: rgba(79, 70, 229, 0.18);
   --sw-text-base: #09090b;
-  --sw-text-subtle: #4b5563;
-  --sw-text-muted: #9ca3af;
+  --sw-text-subtle: #374151;
+  --sw-text-muted: #6b7280;
   --sw-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.08);
   --sw-map-filter: brightness(0.92) contrast(0.95) grayscale(0.2);
 

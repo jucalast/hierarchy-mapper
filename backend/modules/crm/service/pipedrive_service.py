@@ -263,6 +263,7 @@ class PipedriveService:
         return {}
 
     _users_cache: Dict[int, str] = {}
+    _users_pics_cache: Dict[int, Optional[str]] = {}
     _users_cache_time: float = 0
 
     async def get_users_map(self) -> Dict[int, str]:
@@ -275,11 +276,17 @@ class PipedriveService:
             if resp and resp.status_code == 200:
                 data = resp.json().get("data") or []
                 self._users_cache = {u["id"]: u["name"] for u in data if "id" in u and "name" in u}
+                self._users_pics_cache = {u["id"]: u.get("icon_url") for u in data if "id" in u}
                 self._users_cache_time = time.time()
                 return self._users_cache
         except Exception:
             pass
         return self._users_cache
+
+    async def get_users_pics_map(self) -> Dict[int, Optional[str]]:
+        """Retorna mapeamento {user_id: icon_url} com cache de 1 hora."""
+        await self.get_users_map()
+        return self._users_pics_cache
 
     # ---------------------------------------------------------------------
     # CRUD — Organizations
@@ -413,27 +420,36 @@ class PipedriveService:
         from sqlalchemy import select
 
         payload: Dict[str, Any] = {}
-        if data.get("address"):
+        if "address" in data:
             payload["address"] = data.get("address")
-        if data.get("domain"):
+        if "domain" in data:
             payload["website"] = data.get("domain")
-        if data.get("name"):
+        if "name" in data:
             payload["name"] = data.get("name")
-        if data.get("owner_id"):
+        if "owner_id" in data:
             payload["owner_id"] = data.get("owner_id")
 
-        if not payload:
+        local_keys = [
+            "cnpj", "domain", "address", "linkedin_url", "logo_url", "name",
+            "description", "category", "product_focus", "temperature", "prospecting_context"
+        ]
+        has_local_update = any(k in data for k in local_keys)
+
+        if not payload and not has_local_update:
             return True
 
-        pipedrive_success = False
-        resp = await self._request("PUT", f"organizations/{org_id}", json=payload)
-        if resp is not None:
-            pipedrive_success = resp.status_code == 200
-            log.info(
-                "pipedrive.org.updated",
-                org_id=org_id,
-                status=resp.status_code,
-            )
+        pipedrive_success = True
+        if payload:
+            resp = await self._request("PUT", f"organizations/{org_id}", json=payload)
+            if resp is not None:
+                pipedrive_success = resp.status_code == 200
+                log.info(
+                    "pipedrive.org.updated",
+                    org_id=org_id,
+                    status=resp.status_code,
+                )
+            else:
+                pipedrive_success = False
 
         # Atualiza banco local
         try:
@@ -442,20 +458,32 @@ class PipedriveService:
                 res = await session.execute(stmt)
                 org = res.scalars().first()
                 if org:
-                    if data.get("cnpj"):
+                    if "cnpj" in data:
+                        val = data["cnpj"]
                         org.cnpj = (
-                            data["cnpj"].replace(".", "").replace("/", "").replace("-", "")
+                            val.replace(".", "").replace("/", "").replace("-", "").strip()
+                            if val else None
                         )
-                    if data.get("domain"):
-                        org.domain = data.get("domain")
-                    if data.get("address"):
-                        org.address = data.get("address")
-                    if data.get("linkedin_url"):
-                        org.linkedin_url = data.get("linkedin_url")
-                    if data.get("logo_url"):
-                        org.logo_url = data.get("logo_url")
-                    if data.get("name"):
+                    if "domain" in data:
+                        org.domain = data.get("domain") or None
+                    if "address" in data:
+                        org.address = data.get("address") or None
+                    if "linkedin_url" in data:
+                        org.linkedin_url = data.get("linkedin_url") or None
+                    if "logo_url" in data:
+                        org.logo_url = data.get("logo_url") or None
+                    if "name" in data:
                         org.name = data.get("name")
+                    if "description" in data:
+                        org.description = data.get("description") or None
+                    if "category" in data:
+                        org.category = data.get("category") or None
+                    if "product_focus" in data:
+                        org.product_focus = data.get("product_focus") or None
+                    if "temperature" in data:
+                        org.temperature = data.get("temperature") or None
+                    if "prospecting_context" in data:
+                        org.prospecting_context = data.get("prospecting_context") or None
                     await session.commit()
                     log.info("pipedrive.org.local_updated", org_id=org_id)
         except Exception as e:
@@ -679,6 +707,7 @@ class PipedriveService:
             # 5. Monta o resultado final
             result = []
             users_map = await self.get_users_map()
+            users_pics_map = await self.get_users_pics_map()
             for o in local_orgs:
                 result.append({
                     "id": o.pipedrive_id or o.id,
@@ -698,6 +727,7 @@ class PipedriveService:
                     "icp_tier": o.icp_tier,
                     "owner_id": o.owner_id,
                     "owner_name": users_map.get(o.owner_id) if o.owner_id in users_map else "Sistema",
+                    "owner_avatar": users_pics_map.get(o.owner_id) if o.owner_id in users_pics_map else None,
                 })
 
             return result
@@ -748,7 +778,7 @@ class PipedriveService:
             return {"status": "error", "message": str(e)}
 
     async def smart_reschedule_activities(self) -> Dict[str, Any]:
-        """Remanejamento Inteligente v2 — mesma lógica, via `_request`."""
+        """Remanejamento Inteligente v3 — Espaçamento de 7 dias e prioridade +1sem."""
         from datetime import datetime, timezone, timedelta
         sao_paulo_tz = timezone(timedelta(hours=-3))
         today_date = datetime.now(sao_paulo_tz).date()
@@ -763,10 +793,30 @@ class PipedriveService:
                 params={"user_id": self.user_id, "limit": 500, "done": 0},
             )
             if resp_act is None or resp_act.status_code != 200:
-                return {"status": "error", "message": "Falha ao buscar atividades."}
+                return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
             act_data = resp_act.json()
             if not act_data.get("success"):
-                return {"status": "error", "message": "Falha ao buscar atividades."}
+                return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
+
+            # 🚀 Busca atividades CONCLUÍDAS (done=1) para mapear o histórico de tarefas de cada empresa
+            deal_last_done: Dict[int, str] = {}
+            resp_done_act = await self._request(
+                "GET",
+                "activities",
+                params={"user_id": self.user_id, "limit": 500, "done": 1},
+            )
+            if resp_done_act and resp_done_act.status_code == 200:
+                done_data = resp_done_act.json()
+                if done_data.get("success"):
+                    for act in done_data.get("data") or []:
+                        deal_id = act.get("deal_id")
+                        if not deal_id:
+                            continue
+                        due_date = act.get("due_date")
+                        if due_date:
+                            current_last = deal_last_done.get(deal_id, "1900-01-01")
+                            if due_date > current_last:
+                                deal_last_done[deal_id] = due_date
 
             resp_deals = await self._request(
                 "GET",
@@ -776,13 +826,14 @@ class PipedriveService:
             deals_data = resp_deals.json() if resp_deals is not None else {"success": False}
 
             deal_stages: Dict[int, int] = {}
+            deal_expected_close: Dict[int, str] = {}
             if deals_data.get("success"):
                 for d in deals_data.get("data") or []:
                     deal_stages[d["id"]] = d.get("stage_id")
+                    deal_expected_close[d["id"]] = d.get("expected_close_date")
 
             activities = act_data.get("data") or []
             deal_open_tasks: Dict[int, list] = defaultdict(list)
-            deal_last_done: Dict[int, str] = {}
             all_stages: set[int] = set()
 
             for act in activities:
@@ -802,6 +853,7 @@ class PipedriveService:
                     act["stage_id"] = stage_id
                     deal_open_tasks[deal_id].append(act)
 
+            # Ordenação por prioridade: negócios sem atividades realizadas (1900-01-01) ou com atividades mais antigas (+1sem) primeiro!
             sorted_deals = sorted(
                 deal_open_tasks.keys(),
                 key=lambda did: deal_last_done.get(did, "1900-01-01"),
@@ -813,6 +865,7 @@ class PipedriveService:
                 stage_queues[stage_id].extend(deal_open_tasks[did])
 
             scheduled_updates: List[tuple[int, str]] = []
+            scheduled_deal_updates: Dict[int, str] = {}
             current_day = today_date
             sorted_stages = sorted(list(all_stages))
             daily_load: Dict[str, int] = defaultdict(int)
@@ -826,21 +879,45 @@ class PipedriveService:
                         task = stage_queues[stage_id].pop(0)
                         deal_id = task.get("deal_id")
                         has_tasks = True
-                        target_day = current_day
+                        
+                        # 🚀 ENVELHECIMENTO / INTERVALO DE 1 SEMANA:
+                        # Calcula a data mínima permitida (7 dias após a última tarefa realizada)
+                        last_done = deal_last_done.get(deal_id)
+                        if last_done:
+                            try:
+                                last_dt = datetime.strptime(last_done, "%Y-%m-%d").date()
+                                min_allowed = last_dt + timedelta(days=7)
+                            except Exception:
+                                min_allowed = today_date
+                        else:
+                            min_allowed = today_date
+                            
+                        # O agendamento começa a partir da data mínima ou da data corrente (o que for maior)
+                        target_day = max(current_day, min_allowed)
+                        
                         found_day = False
                         attempt = 0
-                        while not found_day and attempt < 30:
+                        while not found_day and attempt < 365:
                             d_str = target_day.isoformat()
                             if target_day.weekday() >= 5:
                                 target_day += timedelta(days=1)
                                 continue
                             if (
-                                daily_load[d_str] < 10
+                                daily_load[d_str] < 20
                                 and (d_str, deal_id) not in deal_day_map
                             ):
                                 scheduled_updates.append((task.get("id"), d_str))
                                 daily_load[d_str] += 1
                                 deal_day_map[(d_str, deal_id)] = True
+                                
+                                # Espaça eventuais tarefas subsequentes deste mesmo negócio em 7 dias adicionais
+                                deal_last_done[deal_id] = d_str
+                                
+                                current_close = deal_expected_close.get(deal_id)
+                                if not current_close or current_close < d_str:
+                                    scheduled_deal_updates[deal_id] = d_str
+                                    deal_expected_close[deal_id] = d_str
+                                    
                                 found_day = True
                             else:
                                 target_day += timedelta(days=1)
@@ -859,12 +936,23 @@ class PipedriveService:
             results = await asyncio.gather(*[_update_one_task(tid, d_str) for tid, d_str in scheduled_updates])
             updated = sum(1 for res in results if res)
 
+            async def _update_one_deal(did: int, d_str: str) -> bool:
+                try:
+                    r = await self._request("PUT", f"deals/{did}", json={"expected_close_date": d_str})
+                    return r is not None and r.status_code == 200
+                except Exception as e:
+                    log.warning("pipedrive.smart_reschedule.deal_failed", deal_id=did, error=str(e))
+                    return False
+
+            deal_results = await asyncio.gather(*[_update_one_deal(did, d_str) for did, d_str in scheduled_deal_updates.items()])
+            updated_deals = sum(1 for res in deal_results if res)
+
             final_day = (
                 max(u[1] for u in scheduled_updates)
                 if scheduled_updates
                 else today_date.isoformat()
             )
-            log.info("pipedrive.smart_reschedule.done", updated=updated)
+            log.info("pipedrive.smart_reschedule.done", updated=updated, updated_deals=updated_deals)
             return {
                 "status": "success",
                 "message": (
@@ -873,6 +961,7 @@ class PipedriveService:
                 ),
                 "stats": {
                     "updated": updated,
+                    "updated_deals": updated_deals,
                     "start_date": today_date.isoformat(),
                     "end_date": str(final_day),
                 },
@@ -1138,10 +1227,16 @@ class PipedriveService:
         if isinstance(org_data, dict):
             # Resolve nome do dono da organização
             oid = org_data.get("owner_id")
+            users_pics_map = await self.get_users_pics_map()
             if isinstance(oid, dict):
                 org_data["owner_name"] = oid.get("name")
-            elif isinstance(oid, int) and oid in users_map:
-                org_data["owner_name"] = users_map[oid]
+                org_data["owner_avatar"] = oid.get("icon_url")
+                if not org_data.get("owner_avatar") and isinstance(oid.get("id"), int):
+                    org_data["owner_avatar"] = users_pics_map.get(oid["id"])
+            elif isinstance(oid, int):
+                if oid in users_map:
+                    org_data["owner_name"] = users_map[oid]
+                org_data["owner_avatar"] = users_pics_map.get(oid)
 
         results = {
             "org": org_data,
@@ -1241,7 +1336,7 @@ class PipedriveService:
             ]
 
         # Busca dados extras no banco local (ICP Score/Tier)
-        icp_info = {"icp_score": None, "icp_tier": None}
+        icp_info = {"icp_score": None, "icp_tier": None, "linkedin_url": None}
         try:
             from core.infra.database import async_session
             from models import Organization
@@ -1253,6 +1348,14 @@ class PipedriveService:
                 if org:
                     icp_info["icp_score"] = org.icp_score
                     icp_info["icp_tier"] = org.icp_tier
+                    icp_info["linkedin_url"] = org.linkedin_url
+                    icp_info["cnpj"] = org.cnpj
+                    icp_info["domain"] = org.domain
+                    icp_info["description"] = org.description
+                    icp_info["category"] = org.category
+                    icp_info["product_focus"] = org.product_focus
+                    icp_info["temperature"] = org.temperature
+                    icp_info["prospecting_context"] = org.prospecting_context
         except Exception:
             pass
 
@@ -1264,6 +1367,7 @@ class PipedriveService:
             "activities": results["activities"],
             "notes": results["notes"],
             "updates": results["updates"],
+            "org": results["org"],
             **icp_info
         }
 

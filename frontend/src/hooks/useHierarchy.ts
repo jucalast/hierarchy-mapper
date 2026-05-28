@@ -24,13 +24,13 @@ export const useHierarchy = () => {
         if (!saved) return;
         let jobData: any;
         try { jobData = JSON.parse(saved); } catch { return; }
-        const { job_id, brand, logo, domain } = jobData;
+        const { job_id, brand, logo, domain, orgId, chatPrompted } = jobData;
         if (!job_id) return;
         console.log('[useHierarchy] Reconectando ao job:', job_id);
         setLoading(true);
         setActiveJobId(job_id);
         // Reconecta sem initialEmployees — o WebSocket vai repassar os dados
-        connectToJobWebSocket(job_id, brand || '', logo || '', domain || '', [], undefined);
+        connectToJobWebSocket(job_id, brand || '', logo || '', domain || '', [], undefined, undefined, orgId, chatPrompted);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -356,6 +356,18 @@ export const useHierarchy = () => {
 
             console.log(`[Job API] Scan iniciado! ID: ${job_id}`);
             
+            // 🚀 Identifica se foi originado pelo Chat Panel
+            const pending = localStorage.getItem('pending-hierarchy-continuation');
+            let chatPrompted = false;
+            if (pending) {
+                try {
+                    const parsed = JSON.parse(pending);
+                    if (parsed && (parsed.org_id === orgId || Number(parsed.org_id) === Number(orgId))) {
+                        chatPrompted = true;
+                    }
+                } catch {}
+            }
+
             // 💾 Salvar job em localStorage para persistência
             const jobData = {
                 job_id,
@@ -364,7 +376,8 @@ export const useHierarchy = () => {
                 brand: confirmedBrand,
                 logo: confirmedLogo,
                 startTime: Date.now(),
-                orgId: orgId
+                orgId: orgId,
+                chatPrompted: chatPrompted
             };
             localStorage.setItem('active-discovery-job', JSON.stringify(jobData));
             setActiveJobId(job_id);
@@ -372,7 +385,7 @@ export const useHierarchy = () => {
             window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
 
             // Conectar ao WebSocket e monitorar
-            connectToJobWebSocket(job_id, confirmedBrand, confirmedLogo, explicitDomain, partners, onNotification, initialEmployees);
+            connectToJobWebSocket(job_id, confirmedBrand, confirmedLogo, explicitDomain, partners, onNotification, initialEmployees, orgId, chatPrompted);
 
         } catch (err: any) {
             console.error("[Job API] Erro ao disparar scan:", err.message || err);
@@ -389,7 +402,9 @@ export const useHierarchy = () => {
         explicitDomain: string,
         partners: any[],
         onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void,
-        initialEmployees?: HierarchyEmployee[]
+        initialEmployees?: HierarchyEmployee[],
+        orgId?: number | null,
+        chatPrompted?: boolean
     ) => {
         // 2. Conecta no WebSocket para monitorar o progresso
         const wsUrl = jobsApi.getJobWebSocketUrl(job_id);
@@ -448,32 +463,80 @@ export const useHierarchy = () => {
         });
         setRawBackendEdges(initialEdges);
 
-        // ⏱️ TIMEOUT: Se não receber 'done' em 5 minutos, fecha a conexão
-        // (Previne jobs travados ou com 0 resultados)
-        const timeoutId = setTimeout(() => {
-            console.log("[WebSocket] ⏱️ Timeout: Nenhuma mensagem de conclusão recebida há 5 minutos");
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.close();
+        // ⏱️ WATCHDOG TIMEOUT: Se não receber NENHUMA mensagem (nem ping/batch) em 5 minutos, fecha a conexão
+        let timeoutId: NodeJS.Timeout;
+        let scanDoneDispatched = false; // Flag para não disparar hierarchy_scan_done duas vezes
+        
+        const dispatchScanDone = (fromDone: boolean) => {
+            if (scanDoneDispatched) return;
+            scanDoneDispatched = true;
+            window.dispatchEvent(new CustomEvent('hierarchy_scan_done', {
+                detail: {
+                    orgId: orgId,
+                    orgName: confirmedBrand,
+                    chatPrompted: chatPrompted,
+                    contacts: currentEmployeesRef.current
+                        .filter(e => 
+                            e.id !== 'root_company' && 
+                            e.name &&
+                            (e as any).role !== 'Reprovado' &&
+                            (e as any).department !== 'Reprovado'
+                        )
+                        .map(e => ({
+                            name: e.name,
+                            role: (e as any).role || '',
+                            email: (e as any).email || undefined,
+                            department: (e as any).department || undefined,
+                            temperature: (e as any).temperature || undefined,
+                            level: (e as any).level,
+                            decision_maker: [
+                                'compras', 'procurement', 'suprimentos', 'logística', 'logistica',
+                                'supply chain', 'supply', 'materiais', 'aquisição', 'aquisicao',
+                                'estoque', 'sourcing'
+                            ].some(k => ((e as any).role || '').toLowerCase().includes(k) || ((e as any).department || '').toLowerCase().includes(k)),
+                        })),
+                },
+            }));
+            if (!fromDone) {
+                console.warn('[WebSocket] hierarchy_scan_done disparado por fallback (conexão encerrada antes do done)');
             }
-            setLoading(false);
-            localStorage.removeItem('active-discovery-job');
-            setActiveJobId(null);
-        }, 5 * 60 * 1000); // 5 minutos
+        };
+        
+        const resetTimeout = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                console.log("[WebSocket] ⏱️ Timeout: Nenhuma mensagem recebida há 5 minutos");
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.close();
+                }
+                // Despacha evento mesmo no timeout para não travar o HierarchyMappingCard
+                dispatchScanDone(false);
+                setLoading(false);
+                localStorage.removeItem('active-discovery-job');
+                setActiveJobId(null);
+            }, 5 * 60 * 1000); // 5 minutos sem atividade
+        };
+        resetTimeout();
 
         ws.onclose = () => {
             console.log("[WebSocket] Conexão encerrada pelo servidor.");
             clearTimeout(timeoutId);
+            // Se o scan não terminou normalmente (chatPrompted e sem done), notifica o card
+            if (chatPrompted) {
+                dispatchScanDone(false);
+            }
             setLoading(false);
             localStorage.removeItem('active-discovery-job');
             setActiveJobId(null);
             
             // Dispara refinamento final como medida de segurança se a conexão caiu
             setTimeout(() => {
-                refineHierarchy(currentEmployees);
+                refineHierarchy(currentEmployeesRef.current);
             }, 500);
         };
 
         ws.onmessage = (event) => {
+            resetTimeout();
             try {
                 const data = JSON.parse(event.data);
                 
@@ -491,20 +554,7 @@ export const useHierarchy = () => {
                     console.log("[Worker] Scan finalizado via WebSocket.");
                     if (onNotification) onNotification('success', "Mapeamento concluído com sucesso!");
                     // Notifica o chat agent que o mapeamento terminou, passando os contatos reais
-                    window.dispatchEvent(new CustomEvent('hierarchy_scan_done', {
-                        detail: {
-                            contacts: currentEmployees
-                                .filter(e => e.id !== 'root_company' && e.name)
-                                .map(e => ({
-                                    name: e.name,
-                                    role: (e as any).role || '',
-                                    email: (e as any).email || undefined,
-                                    department: (e as any).department || undefined,
-                                    temperature: (e as any).temperature || undefined,
-                                    level: (e as any).level,
-                                })),
-                        },
-                    }));
+                    dispatchScanDone(true);
                     ws.close(); // Isso vai disparar o ws.onclose, que faz a limpeza e o refineHierarchy.
                     return;
                 }
@@ -585,6 +635,7 @@ export const useHierarchy = () => {
                     });
 
                     setRawEmployees([...currentEmployeesRef.current]);
+                    currentEmployees = [...currentEmployeesRef.current];
 
                     setRawBackendEdges(prev => {
                         const next = [...prev];
@@ -824,7 +875,7 @@ export const useHierarchy = () => {
                 
                 setRawEmployees(prev => {
                     const next = prev.map(emp => {
-                        if (String(emp.id) === String(employeeId) && emp.role === 'Análise Humana') {
+                        if (String(emp.id) === String(employeeId) && emp.role && emp.role.toLowerCase().includes('humana')) {
                             return { ...emp, role: 'Aprovado (Recarregue para ver cargo)' };
                         }
                         return emp;
@@ -906,6 +957,8 @@ export const useHierarchy = () => {
         resetHierarchy,
         approveCandidate,
         rejectCandidate,
-        deleteEmployee
+        deleteEmployee,
+        setRawEmployees,
+        setRawBackendEdges
     };
 };

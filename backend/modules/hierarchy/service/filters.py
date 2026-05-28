@@ -53,6 +53,46 @@ def normalize_str(s: str) -> str:
     s = "".join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
     return s.strip()
 
+def is_same_person(name1: str, name2: str) -> bool:
+    if not name1 or not name2:
+        return False
+        
+    c1 = normalize_str(name1)
+    c2 = normalize_str(name2)
+    
+    if c1 == c2:
+        return True
+        
+    import re
+    from difflib import SequenceMatcher
+    
+    # Remove special characters and split to tokens
+    t1 = [t for t in re.sub(r'[^a-z0-9\s]', ' ', c1).split() if t not in {'de', 'da', 'do', 'das', 'dos', 'e', 'a', 'o'} and len(t) > 1]
+    t2 = [t for t in re.sub(r'[^a-z0-9\s]', ' ', c2).split() if t not in {'de', 'da', 'do', 'das', 'dos', 'e', 'a', 'o'} and len(t) > 1]
+    
+    if not t1 or not t2:
+        return False
+        
+    # First name must be very similar (minimum 80% similarity)
+    if t1[0] != t2[0]:
+        if SequenceMatcher(None, t1[0], t2[0]).ratio() < 0.8:
+            return False
+            
+    # Count overlapping or highly similar tokens
+    matches = 0
+    for token1 in t1:
+        for token2 in t2:
+            if token1 == token2 or SequenceMatcher(None, token1, token2).ratio() >= 0.85:
+                matches += 1
+                break
+                
+    min_len = min(len(t1), len(t2))
+    if min_len <= 2:
+        return matches >= min_len
+    else:
+        return matches >= 2
+
+
 async def get_seniority_level(role: str) -> int:
     role = role.lower()
     ctx = await BusinessContextService.get_tenant_context()
@@ -95,7 +135,7 @@ async def get_department_tag(role: str) -> str:
     
     return "Operations"
 
-async def apply_strict_filters(name: str, title: str, snippet: str, core_company: str, target_brand: str, target_location: str = None) -> bool:
+async def apply_strict_filters(name: str, title: str, snippet: str, core_company: str, target_brand: str, target_location: str = None, mechanical_title: str = "Não Identificado") -> bool:
     """
     PRE-FILTRO DE SEGURANÇA: Bloqueia marcas invasoras e lixo óbvio para economizar API da IA.
     Retorna True se o candidato PARECE ser da empresa certa, False se for lixo óbvio.
@@ -107,13 +147,48 @@ async def apply_strict_filters(name: str, title: str, snippet: str, core_company
     snippet_clean = normalize_str(snippet)
     context_clean = f"{title_clean} | {snippet_clean}"
     
-    brand_variants = [normalize_str(target_brand), normalize_str(core_company)]
+    # Geração robusta de variações da marca alvo
+    def get_variants(brand_str: str) -> list[str]:
+        norm = normalize_str(brand_str)
+        if not norm or len(norm) <= 2:
+            return []
+        
+        variants = {norm}
+        
+        # Limpezas de sufixos empresariais brasileiros e internacionais
+        cleaned = norm
+        for suffix in ["ltda", "s/a", "sa", "gmbh", "holding", "group", "grupo", "comercio", "servicos", "industria", "eireli", "me"]:
+            cleaned = re.sub(rf"\b{suffix}\b", "", cleaned).strip()
+            
+        if cleaned and len(cleaned) > 2:
+            variants.add(cleaned)
+            
+        # Variações sem espaços
+        for v in list(variants):
+            variants.add(v.replace(" ", ""))
+            
+        # Tratamento especial de "autopecas" / "auto pecas" / "autopeças"
+        for v in list(variants):
+            if "auto pecas" in v:
+                variants.add(v.replace("auto pecas", "autopecas"))
+            if "autopecas" in v:
+                variants.add(v.replace("autopecas", "auto pecas"))
+                
+        return sorted(list(variants), key=len, reverse=True)
+        
+    brand_variants = list(set(get_variants(target_brand) + get_variants(core_company)))
     
     # 🕵️ 1. SEGURANÇA DE MARCA
     has_our_brand = any(bv in context_clean for bv in brand_variants if len(bv) > 2)
     
-    # 🕵️ 2. FILTRAGEM POR RELEVÂNCIA (Whitelist)
-    whitelist_raw = hier.get("whitelist_keywords", ["buyer", "compras", "procurement", "suprimentos", "supply", "sourcing"])
+    # 🕵️ 2. FILTRAGEM POR RELEVÂNCIA (Whitelist unificada e abrangente em PT/EN)
+    default_whitelist = [
+        "buyer", "compras", "comprador", "compradora", "procurement", "suprimentos", "supply", "sourcing", 
+        "purchasing", "purchas", "category manager", "logistica", "logística", "logistics", "supply chain", 
+        "pcp", "almoxarife", "estoque", "expedição", "warehouse"
+    ]
+    
+    whitelist_raw = hier.get("whitelist_keywords", default_whitelist)
     if isinstance(whitelist_raw, dict):
         whitelist = []
         for lst in whitelist_raw.values():
@@ -122,22 +197,29 @@ async def apply_strict_filters(name: str, title: str, snippet: str, core_company
     elif isinstance(whitelist_raw, list):
         whitelist = whitelist_raw
     else:
-        whitelist = ["buyer", "compras", "procurement", "suprimentos", "supply", "sourcing"]
+        whitelist = default_whitelist
         
+    # Garante que termos cruciais da whitelist default em PT e EN sempre façam parte da checagem
+    whitelist = list(set(normalize_str(kw) for kw in whitelist + default_whitelist if kw))
     is_high_value = any(kw in context_clean for kw in whitelist)
 
     if not has_our_brand and not is_high_value:
-        return False
+        if mechanical_title == "Não Identificado":
+            print(f"      [Filtro Mecânico] ⚠️ AVISO: {name} | Sem marca ({brand_variants}) e nenhum cargo identificado. Passando para Análise Humana.")
+            return True
+        else:
+            print(f"      [Filtro Mecânico] 🚫 REJEITADO: {name} | Cargo Encontrado: '{mechanical_title}' | Motivo: Sem marca ({brand_variants}) e sem cargo relevante na whitelist.")
+            return False
 
     # 🕵️ 3. BLOQUEIO DE OUTRAS MARCAS
     other_competitors = ["mercedes", "scania", "volkswagen", "bosch", "zf ", "continental", "gm", "volvo"]
     for comp in other_competitors:
         normalized_comp = normalize_str(comp)
         if f"at {normalized_comp}" in title_clean or f"na {normalized_comp}" in title_clean:
+            print(f"      [Filtro Mecânico] 🚫 REJEITADO: {name} | Cargo Encontrado: '{mechanical_title}' | Motivo: Concorrente '{comp}' detectado no cargo.")
             return False
 
     # 🕵️ 4. NEGATIVE KEYWORDS (Vetos do banco)
-    # Pega os vetos do departamento focado ou globais
     focus = hier.get("department_focus", "compras")
     forbidden = hier.get("forbidden_keywords", {}).get(focus, negative_keywords_fallback)
     
@@ -154,7 +236,10 @@ async def apply_strict_filters(name: str, title: str, snippet: str, core_company
         if normalize_str(nk) not in words_to_ignore
     ]
     
-    if any(nk in context_clean for nk in normalized_negatives):
-        return False
+    for nk in normalized_negatives:
+        if nk in context_clean:
+            print(f"      [Filtro Mecânico] 🚫 REJEITADO: {name} | Cargo Encontrado: '{mechanical_title}' | Motivo: Contém palavra vetada '{nk}'.")
+            return False
 
+    print(f"      [Filtro Mecânico] ✅ APROVADO: {name} | Passou nas checagens mecânicas.")
     return True

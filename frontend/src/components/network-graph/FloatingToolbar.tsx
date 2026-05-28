@@ -62,6 +62,14 @@ export interface FloatingToolbarProps {
     isSidebarOpen?: boolean;
     isChatOpen?: boolean;
     children?: React.ReactNode;
+
+    // ── Modo Scan ──
+    mappingMode?: 'discovery' | 'scan';
+    onMappingModeChange?: (mode: 'discovery' | 'scan') => void;
+    scanTerminal?: React.ReactNode;
+    scanPreview?: React.ReactNode;
+    isScanning?: boolean;
+    onStopScan?: () => void;
 }
 
 export const FloatingToolbar: React.FC<FloatingToolbarProps> = (props) => {
@@ -127,6 +135,12 @@ export const FloatingToolbar: React.FC<FloatingToolbarProps> = (props) => {
             onRejectCandidate={props.onRejectCandidate}
             isSidebarOpen={props.isSidebarOpen}
             isChatOpen={props.isChatOpen}
+            mappingMode={props.mappingMode ?? 'discovery'}
+            onMappingModeChange={props.onMappingModeChange ?? (() => {})}
+            scanTerminal={props.scanTerminal}
+            scanPreview={props.scanPreview}
+            isScanning={props.isScanning}
+            onStopScan={props.onStopScan}
         >
             {props.children}
         </NormalToolbar>

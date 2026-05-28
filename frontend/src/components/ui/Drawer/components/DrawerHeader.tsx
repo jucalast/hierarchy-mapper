@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, RefreshCw } from 'lucide-react';
+import { Search, X, RefreshCw, Settings, RefreshCcw, Trash2 } from 'lucide-react';
 import styles from './DrawerHeader.module.css';
 import { Dropdown } from '../../Dropdown';
 
@@ -12,6 +12,7 @@ interface DrawerHeaderProps {
     fetchOrgDetails: (orgId: number, force?: boolean) => Promise<void>;
     loadingDetails: Record<number, boolean>;
     setConfirmKind: (kind: 'reset' | 'delete' | null) => void;
+    onOpenDetailsModal: () => void;
 }
 
 export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
@@ -23,21 +24,27 @@ export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
     fetchOrgDetails,
     loadingDetails,
     setConfirmKind,
+    onOpenDetailsModal,
 }) => {
     const dropdownItems = React.useMemo(() => [
         {
-            label: 'Resetar Cache',
+            label: 'Detalhes e Configurações',
+            onClick: () => onOpenDetailsModal(),
+            icon: <Settings size={14} />
+        },
+        {
+            label: 'Sincronizar Dados',
             onClick: () => setConfirmKind('reset'),
-            icon: <Search size={14} />,
+            icon: <RefreshCcw size={14} />,
             style: { color: '#f59e0b' }
         },
         {
             label: 'Excluir Empresa',
             onClick: () => setConfirmKind('delete'),
-            icon: <X size={14} />,
+            icon: <Trash2 size={14} />,
             danger: true
         }
-    ], [setConfirmKind]);
+    ], [setConfirmKind, onOpenDetailsModal]);
 
     return (
         <div className={styles.drawerHeader}>

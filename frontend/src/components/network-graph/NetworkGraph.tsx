@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { useReactFlow, ReactFlowProvider } from 'reactflow';
+import { useReactFlow, ReactFlowProvider, Edge } from 'reactflow';
+import { HierarchyEmployee } from '@/types';
 import { PanelRight, PanelRightOpen, LogOut } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../../utils/avatarUtils';
 
@@ -28,6 +29,7 @@ import { Sidebar } from '../layout/Sidebar';
 import { ProspectingView } from '../prospecting/ProspectingView';
 import { Header } from '../layout/Header';
 import { Drawer } from '../ui/Drawer';
+import { Avatar } from '../ui';
 import { ChatPanel } from '../chat/ChatPanel';
 import { PreferencesView } from '../layout/PreferencesView';
 import { HierarchyScanView } from '../hierarchy-scan/HierarchyScanView';
@@ -37,8 +39,12 @@ import { FloatingToolbar } from './FloatingToolbar';
 import { SmartBackground } from './components/SmartBackground';
 import { FitViewHandler } from './components/FitViewHandler';
 import { ModelSelector } from '../chat/ModelSelector';
+import { useHierarchyScan } from '@/hooks/useHierarchyScan';
+import { ScanTerminalPanel } from './components/ScanTerminalPanel';
+import { ScanPreviewBubble } from './components/ScanPreviewBubble';
 import { TriggerNotifications } from '../ui/TriggerNotifications';
 import { API_BASE_URL } from '@/services/config';
+import { EmployeeDetailsModal } from './components/EmployeeDetailsModal';
 
 const styles = { ...graphStyles, ...haStyles, ...sidebarStyles, ...headerStyles };
 
@@ -80,7 +86,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         rawEmployees, rawBackendEdges, loading, discovering, brandOptions, setBrandOptions,
         activeJobId, stopHierarchyScan, cancelDiscovery, resetHierarchy,
         reconnectToActiveJob, approveCandidate, refineHierarchy, smartSyncPipedrive,
-        loadStoredHierarchy, deleteEmployee
+        loadStoredHierarchy, deleteEmployee, setRawEmployees, setRawBackendEdges
     } = hierarchy;
 
     // Discovery Workflow
@@ -100,8 +106,13 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         confirmedBrand, setConfirmedBrand, confirmedLogo, setConfirmedLogo,
         confirmedFollowers, setConfirmedFollowers, refreshDrawerTrigger, setRefreshDrawerTrigger,
         enrichingIds, handleSearch, handleBrandSelect, handleAutoEnrich, resetWorkflow,
-        selectedModel, setSelectedModel, strictMode, setStrictMode
+        selectedModel, setSelectedModel, strictMode, setStrictMode,
+        mappingMode, setMappingMode, confirmedLinkedInUrl, setConfirmedLinkedInUrl, partners
     } = discovery;
+
+    // HierarchyScan Integration
+    const scan = useHierarchyScan();
+    const [previewExpanded, setPreviewExpanded] = useState(false);
 
     // Network Flow
     const {
@@ -116,6 +127,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         confirmedLogo,
         getStableId,
         deleteEmployee,
+        editEmployee: (id: string) => setEditEmployeeModal({ isOpen: true, empId: id }),
     });
 
     // UI States
@@ -125,6 +137,140 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     const [unreadCount, setUnreadCount] = useState(0);
     const prospecting = useProspecting();
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
+    const [editEmployeeModal, setEditEmployeeModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
+
+    const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string | null } | null>(null);
+
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                if (typeof window !== 'undefined') {
+                    const cached = window.localStorage.getItem('pipedrive-current-user');
+                    if (cached) {
+                        setCurrentUser(JSON.parse(cached));
+                    }
+                }
+                
+                const resp = await fetch(`${API_BASE_URL}/api/v1/pipedrive/current-user`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    setCurrentUser(data);
+                    if (typeof window !== 'undefined') {
+                        window.localStorage.setItem('pipedrive-current-user', JSON.stringify(data));
+                    }
+                }
+            } catch (err) {
+                console.error('Erro ao buscar usuário do Pipedrive:', err);
+            }
+        };
+        void fetchCurrentUser();
+    }, []);
+
+    // Wrapper para suportar mapeamento por busca/IA (Discovery) ou varredura (Scan)
+    const handleSearchOrScan = useCallback((e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (mappingMode === 'scan') {
+            if (!cnpj) {
+                addNotification('error', 'O CNPJ é obrigatório para iniciar o mapeamento por varredura.');
+                return;
+            }
+            if (!confirmedLinkedInUrl) {
+                addNotification('error', 'Nenhum link do LinkedIn confirmado para realizar a varredura.');
+                return;
+            }
+            let peopleUrl = confirmedLinkedInUrl.trim();
+            if (!peopleUrl.endsWith('/people/')) {
+                peopleUrl = peopleUrl.replace(/\/+$/, '') + '/people/';
+            }
+            const sessionCookie = localStorage.getItem('linkedin_li_at_cookie') || '';
+            scan.startScan(peopleUrl, sessionCookie, areaFocus, productFocus, selectedModel);
+            addNotification('info', 'Iniciando varredura do LinkedIn...');
+        } else {
+            handleSearch(e as any);
+        }
+    }, [mappingMode, cnpj, confirmedLinkedInUrl, scan, handleSearch, addNotification, areaFocus, productFocus, selectedModel]);
+
+    // Trata erros de varredura
+    useEffect(() => {
+        if (scan.scanError) {
+            addNotification('error', `Erro na varredura: ${scan.scanError}`);
+        }
+    }, [scan.scanError, addNotification]);
+
+    // Trata resultados de varredura
+    useEffect(() => {
+        if (scan.scanResults && scan.scanResults.length > 0) {
+            const employees: HierarchyEmployee[] = scan.scanResults.map((p, idx) => ({
+                id: (idx + 100).toString(),
+                name: p.name,
+                role: p.role,
+                department: '',
+                company: confirmedBrand,
+                manager_id: undefined,
+                level: 0,
+                linkedin: p.linkedin_url,
+                avatar: p.avatar,
+                location: p.location || '',
+            }));
+
+            const existingRootAndPartners = rawEmployees.filter(e => e.id === 'root_company' || e.id.startsWith('partner_'));
+            let baseEmployees = [...existingRootAndPartners];
+
+            if (baseEmployees.length === 0) {
+                baseEmployees.push({
+                    id: 'root_company',
+                    name: confirmedBrand || "Empresa",
+                    role: "Holding / Matriz",
+                    department: "Corporate Root",
+                    level: 0,
+                    logo: confirmedLogo,
+                    company_logo: confirmedLogo,
+                    domain: domainTarget
+                });
+
+                if (partners && partners.length > 0) {
+                    partners.forEach((p: any, idx: number) => {
+                        baseEmployees.push({
+                            id: `partner_${idx}`,
+                            name: p.name || `Sócio ${idx + 1}`,
+                            role: p.role || "Sócio / Administrador",
+                            department: "Quadro de Sócios (QSA)",
+                            level: 6,
+                            manager_id: 'root_company',
+                            company: confirmedBrand
+                        });
+                    });
+                }
+            }
+
+            const allEmployees = [...baseEmployees, ...employees];
+            setRawEmployees(allEmployees);
+
+            const initialEdges: Edge[] = [];
+            allEmployees.forEach(emp => {
+                if (emp.manager_id && emp.id !== "root_company") {
+                    initialEdges.push({
+                        id: `e-${emp.manager_id}-${emp.id}`,
+                        source: emp.manager_id,
+                        target: emp.id,
+                        animated: false
+                    });
+                } else if (emp.id !== 'root_company') {
+                    initialEdges.push({
+                        id: `e-root_company-${emp.id}`,
+                        source: 'root_company',
+                        target: emp.id,
+                        animated: false
+                    });
+                }
+            });
+            setRawBackendEdges(initialEdges);
+
+            addNotification('success', `Varredura concluída! ${employees.length} perfis extraídos.`);
+            addNotification('info', 'Processando varredura e gerando árvore hierárquica com IA...');
+            refineHierarchy(allEmployees);
+        }
+    }, [scan.scanResults, confirmedBrand, confirmedLogo, domainTarget, partners, rawEmployees, setRawEmployees, setRawBackendEdges, addNotification, refineHierarchy]);
 
     // Polling de mensagens não lidas (para o badge no header — filtra por org atual)
     useEffect(() => {
@@ -205,10 +351,17 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     setCurrentOrgId(Number(org.id));
                     setChatOrgId(Number(org.id));
 
+                    const lUrl = org.linkedin_url || org.linkedin || "";
+                    if (lUrl) setConfirmedLinkedInUrl(lUrl);
+
                     if (org.id) {
                         const data = await loadStoredHierarchy(Number(org.id), true);
                         if (data && data.nodes && data.nodes.length > 0) {
                             setStep("confirm");
+                            const rootLinkedin = data.nodes[0]?.linkedin || data.nodes[0]?.url;
+                            if (rootLinkedin && rootLinkedin.startsWith('http')) {
+                                setConfirmedLinkedInUrl(rootLinkedin);
+                            }
                             setTimeout(() => setShouldFitView(true), 100);
                         } else {
                             setStep("input");
@@ -344,12 +497,22 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     setDomainTarget(org.domain || "");
                     setStep("confirm");
                     setShouldFitView(true);
+
+                    const rootLinkedin = data.nodes[0]?.linkedin || data.nodes[0]?.url || org.linkedin_url || org.linkedin;
+                    if (rootLinkedin && rootLinkedin.startsWith('http')) {
+                        setConfirmedLinkedInUrl(rootLinkedin);
+                    }
                 } else if (isProspecting && (org.domain || org.linkedin || org.linkedin_url)) {
                     setConfirmedBrand(cleanName(org.name || ""));
                     setConfirmedLogo(org.logo || "");
                     setCnpj(formatCnpj(org.cnpj || ""));
                     setDomainTarget(org.domain || "");
                     setStep("confirm");
+
+                    const rootLinkedin = org.linkedin_url || org.linkedin;
+                    if (rootLinkedin && rootLinkedin.startsWith('http')) {
+                        setConfirmedLinkedInUrl(rootLinkedin);
+                    }
                 } else {
                     setConfirmedBrand(cleanName(org.name || ""));
                     setConfirmedLogo(org.logo || "");
@@ -365,7 +528,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     }, [
         resetHierarchy, setNodes, setEdges, setActiveView, setStep, setCnpj, setDomainTarget,
         setConfirmedBrand, setConfirmedLogo, setBrandOptions, reconnectToActiveJob, addNotification,
-        loadStoredHierarchy, setProductFocus, setAreaFocus, setShouldFitView
+        loadStoredHierarchy, setProductFocus, setAreaFocus, setShouldFitView, setConfirmedLinkedInUrl
     ]);
 
     const handleOrgReset = useCallback((orgId: number) => {
@@ -431,6 +594,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 isPreferences={activeView === 'preferences'}
                 onOpenLinkedinScrape={() => setActiveView(activeView === 'linkedin-scrape' ? 'graph' : 'linkedin-scrape')}
                 isLinkedinScrape={activeView === 'linkedin-scrape'}
+                isScanActive={scan.isScanning}
             />
 
             <div className={styles.mainWrapper}>
@@ -464,6 +628,39 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                 {showChat ? <PanelRightOpen size={20} /> : <PanelRight size={20} />}
                             </button>
                         )}
+                        {currentUser && (
+                            <div 
+                                className={styles.userProfile} 
+                                title={`Conectado como ${currentUser.name}`} 
+                                style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px', 
+                                    marginRight: '8px', 
+                                    borderRight: '1px solid var(--sw-border)', 
+                                    paddingRight: '16px', 
+                                    height: '24px' 
+                                }}
+                            >
+                                <Avatar
+                                    kind="person"
+                                    src={currentUser.avatar}
+                                    name={currentUser.name}
+                                    size={24}
+                                />
+                                <span 
+                                    style={{ 
+                                        fontSize: '12px', 
+                                        fontWeight: 500, 
+                                        color: 'var(--sw-text-base)', 
+                                        opacity: 0.85 
+                                    }}
+                                >
+                                    {currentUser.name}
+                                </span>
+                            </div>
+                        )}
+
                         {onLogout && (
                             <button
                                 onClick={onLogout}
@@ -508,16 +705,36 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                             selectedOrgId={currentOrgId}
                             onOrgRenamed={handleOrgRenamed}
                             selectedOrgLogo={confirmedLogo}
-                            activeJobId={activeJobId}
+                            activeJobId={scan.activeJobId}
                             graphEmployees={rawEmployees}
-                            refreshDetailsTrigger={refreshDrawerTrigger}
+                            refreshDetailsTrigger={pipedriveOrgs.length}
                             addNotification={addNotification}
                             onOrgReset={handleOrgReset}
+                            onEditEmployee={(id) => setEditEmployeeModal({ isOpen: true, empId: id })}
+                            onSaveToPipedrive={(id) => hierarchy.approveCandidate(id)}
+                            onOrgDomainChanged={(oldDomain, newDomain) => {
+                                // Extract the naked domains
+                                const getDomain = (url: string) => {
+                                    try {
+                                        return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
+                                    } catch {
+                                        return url;
+                                    }
+                                };
+                                const cleanOld = getDomain(oldDomain);
+                                const cleanNew = getDomain(newDomain);
+                                
+                                rawEmployees.forEach(emp => {
+                                    if (emp.email && emp.email.includes(`@${cleanOld}`)) {
+                                        const newEmail = emp.email.replace(`@${cleanOld}`, `@${cleanNew}`);
+                                        hierarchy.updateEmployee(emp.id, { email: newEmail });
+                                    }
+                                });
+                            }}
                         />
                     )}
 
                     <div className={styles.mainContent}>
-                        <NotificationContainer notifications={notifications} removeNotification={removeNotification} />
                         {activeView !== 'preferences' && (
                             <Header
                                 confirmedBrand={confirmedBrand}
@@ -526,6 +743,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                 unreadCount={unreadCount}
                             />
                         )}
+                        <NotificationContainer notifications={notifications} removeNotification={removeNotification} />
 
                         <div className={styles.graphWrapper}>
                             {activeView === 'graph' && (
@@ -540,27 +758,9 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                         smartBackground={<SmartBackground />}
                                     />
                                     
-                                    <div 
-                                        className="dropdownDown"
-                                        style={{
-                                            position: 'absolute',
-                                            top: '16px',
-                                            right: '16px',
-                                            zIndex: 10,
-                                        }}
-                                    >
-                                        <ModelSelector
-                                            model={selectedModel as any}
-                                            setModel={setSelectedModel as any}
-                                            strictMode={strictMode}
-                                            setStrictMode={setStrictMode}
-                                            theme={theme}
-                                        />
-                                    </div>
-                                    
                                     <HierarchyDiscoveryOverlay
                                         error={null}
-                                        handleSearch={handleSearch}
+                                        handleSearch={handleSearchOrScan}
                                         cnpj={cnpj}
                                         setCnpj={setCnpj}
                                         confirmedBrand={confirmedBrand}
@@ -593,8 +793,33 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                             addNotification('success', "Perfil aprovado.");
                                         }}
                                         rejectCandidate={(id) => setConfirmModal({ isOpen: true, empId: id })}
+                                        mappingMode={mappingMode}
+                                        onMappingModeChange={setMappingMode}
+                                        scanTerminal={
+                                            scan.isScanning || scan.consoleLogs.length > 0 ? (
+                                                <ScanTerminalPanel consoleLogs={scan.consoleLogs} isVisible={true} />
+                                            ) : undefined
+                                        }
+                                        scanPreview={
+                                            scan.isScanning || scan.hasPreview ? (
+                                                <ScanPreviewBubble
+                                                    hasPreview={scan.hasPreview}
+                                                    previewUrl={scan.previewUrl}
+                                                    isScanning={scan.isScanning}
+                                                    expanded={previewExpanded}
+                                                    onToggleExpand={() => setPreviewExpanded(v => !v)}
+                                                    onImageClick={scan.handleImageClick}
+                                                    onSendText={scan.sendText}
+                                                    onPressEnter={scan.pressEnter}
+                                                    onPressBackspace={scan.pressBackspace}
+                                                    consoleLogs={scan.consoleLogs}
+                                                />
+                                            ) : undefined
+                                        }
+                                        isScanning={scan.isScanning}
+                                        onStopScan={scan.stopScan}
                                         humanAnalysisContent={(() => {
-                                            const pending = rawEmployees.filter(e => e.role === 'Análise Humana');
+                                            const pending = rawEmployees.filter(e => e.role && e.role.toLowerCase().includes('humana'));
                                             if (pending.length === 0) return null;
                                             const layerClasses = [styles.stackLayer0, styles.stackLayer1, styles.stackLayer2];
                                             return (
@@ -720,9 +945,51 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                 <PreferencesView onBack={() => setActiveView('graph')} />
                             )}
                             {activeView === 'linkedin-scrape' && (
-                                <HierarchyScanView onBack={() => setActiveView('graph')} />
+                                <HierarchyScanView
+                                    onBack={() => setActiveView('graph')}
+                                    defaultCompanyUrl={confirmedLinkedInUrl
+                                        ? (confirmedLinkedInUrl.trim().endsWith('/people/')
+                                            ? confirmedLinkedInUrl.trim()
+                                            : confirmedLinkedInUrl.trim().replace(/\/+$/, '') + '/people/')
+                                        : ''}
+                                    isScanning={scan.isScanning}
+                                    scanProgress={scan.scanProgress}
+                                    consoleLogs={scan.consoleLogs}
+                                    hasPreview={scan.hasPreview}
+                                    previewUrl={scan.previewUrl}
+                                    scanResults={scan.scanResults}
+                                    scanError={scan.scanError}
+                                    onStartScan={(url, cookie) =>
+                                        scan.startScan(url, cookie, areaFocus, productFocus, selectedModel)
+                                    }
+                                    onStopScan={scan.stopScan}
+                                    onImageClick={scan.handleImageClick}
+                                    onSendText={scan.sendText}
+                                    onPressEnter={scan.pressEnter}
+                                    onPressBackspace={scan.pressBackspace}
+                                />
                             )}
                         </div>
+
+                        {activeView === 'graph' && (
+                            <div 
+                                className="dropdownDown"
+                                style={{
+                                    position: 'absolute',
+                                    top: '68px',
+                                    right: '16px',
+                                    zIndex: 10,
+                                }}
+                            >
+                                <ModelSelector
+                                    model={selectedModel as any}
+                                    setModel={setSelectedModel as any}
+                                    strictMode={strictMode}
+                                    setStrictMode={setStrictMode}
+                                    theme={theme}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {showChat && (activeView === 'graph' || activeView === 'prospecting' || activeView === 'messages') && (
@@ -755,7 +1022,15 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     setConfirmModal({ isOpen: false, empId: null });
                 }}
                 title="Descartar Perfil"
-                message="Tem certeza que deseja remover este perfil da análise humana?"
+                message="Tem certeza que deseja remover este profissional? Ele será movido para o grupo de descartados."
+            />
+
+            <EmployeeDetailsModal
+                isOpen={editEmployeeModal.isOpen}
+                onClose={() => setEditEmployeeModal({ isOpen: false, empId: null })}
+                empId={editEmployeeModal.empId}
+                rawEmployees={rawEmployees}
+                handleUpdateEmployee={hierarchy.updateEmployee}
             />
         </div>
     );

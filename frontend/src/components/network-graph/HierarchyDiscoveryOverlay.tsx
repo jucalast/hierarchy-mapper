@@ -35,6 +35,12 @@ interface HierarchyDiscoveryOverlayProps {
     approveCandidate: (id: string) => void;
     rejectCandidate: (id: string) => void;
     humanAnalysisContent?: React.ReactNode;
+    mappingMode?: 'discovery' | 'scan';
+    onMappingModeChange?: (mode: 'discovery' | 'scan') => void;
+    scanTerminal?: React.ReactNode;
+    scanPreview?: React.ReactNode;
+    isScanning?: boolean;
+    onStopScan?: () => void;
 }
 
 export const HierarchyDiscoveryOverlay: React.FC<HierarchyDiscoveryOverlayProps> = ({
@@ -43,7 +49,8 @@ export const HierarchyDiscoveryOverlay: React.FC<HierarchyDiscoveryOverlayProps>
     domainTarget, setDomainTarget, productFocus, setProductFocus, areaFocus, setAreaFocus,
     handleAutoEnrich, enrichingIds, discovering, loading, step, brandOptions,
     onBrandSelect, hasMapping, stopHierarchyScan, cancelDiscovery, activeJobId,
-    showDrawer, showChat, approveCandidate, rejectCandidate, humanAnalysisContent
+    showDrawer, showChat, approveCandidate, rejectCandidate, humanAnalysisContent,
+    mappingMode, onMappingModeChange, scanTerminal, scanPreview, isScanning, onStopScan
 }) => {
     return (
         <div className={styles.bottomToolbarRow}>
@@ -79,6 +86,12 @@ export const HierarchyDiscoveryOverlay: React.FC<HierarchyDiscoveryOverlayProps>
                 isChatOpen={showChat}
                 onApproveCandidate={approveCandidate}
                 onRejectCandidate={rejectCandidate}
+                mappingMode={mappingMode}
+                onMappingModeChange={onMappingModeChange}
+                scanTerminal={scanTerminal}
+                scanPreview={scanPreview}
+                isScanning={isScanning}
+                onStopScan={onStopScan}
             >
                 {humanAnalysisContent}
             </FloatingToolbar>

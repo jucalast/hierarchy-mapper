@@ -18,9 +18,10 @@ import asyncio
 from typing import List, Dict, Optional
 from core.external.groq_service import GroqService
 from core.llm.base import LLMTier
+from core.config import settings
 
 # Reusing the Groq API key from environment
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY") or settings.GROQ_API_KEY
 
 class RoleEngine:
     def __init__(self):
@@ -158,9 +159,10 @@ class RoleEngine:
             
         return ai_role
 
-    async def distill_role(self, name: str, company: str, context: List[str], product_focus: str = None, area_focus: str = "compras", target_location: str = "Brasil", official_role: str = None, meta_company: str = "") -> Dict:
+    async def distill_role(self, name: str, company: str, context: List[str], product_focus: str = None, area_focus: str = "compras", target_location: str = "Brasil", official_role: str = None, meta_company: str = "", razao_social: Optional[str] = None) -> Dict:
         """Motor de Decisão em Cadeia (Especializado): Sniper -> Detetive -> Especialista -> Juiz."""
-        if not GROQ_API_KEY:
+        api_key = GROQ_API_KEY or os.getenv("GROQ_API_KEY") or settings.GROQ_API_KEY
+        if not api_key:
             return {"is_valid": True, "role": "Professional", "matching_score": 50, "department": area_focus.upper()}
 
         # 🛡️ TRAVA DE SEGURANÇA: Veto Mecânico de Perfis Institucionais (Fuzzy)
@@ -247,16 +249,17 @@ DICA: Se o alvo prioritário for '{name}', procure por '{name}' no texto. Se o s
 
         # --- ETAPA 1: O DETETIVE (EXTRAÇÃO DE EVIDÊNCIAS) ---
         prompt_detective = f"""
-Você é um Detetive de Metadados Corporativos. Analise o contexto de '{name}' para a empresa-alvo '{company}'.
+Você é um Detetive de Metadados Corporativos. Analise o contexto de '{name}' para a empresa-alvo '{company}' (Razão Social Oficial: '{razao_social or 'Não Informada'}').
 META_COMPANY_DECLARADA: '{meta_company}'
 
-OBJETIVO: Identificar se o vínculo ATUAL com '{company}' é real.
+OBJETIVO: Identificar se o vínculo ATUAL com a empresa-alvo é real.
 DADOS BRUTOS E HIGIENIZADOS:
 {" ".join(sanitized_context)}
 
 REGRAS DE VETO (MUITO IMPORTANTE):
-1. **CONFLICT_CHECK:** Se a META_COMPANY_DECLARADA ou o Snippet indicam que o candidato trabalha em OUTRA empresa (ex: Siemens, Vivo, Unimed, PHD do Brasil), você deve marcar 'employer_found': false e citar o conflito no campo snippets.
-2. **PAST_EMPLOYER:** Se o texto diz "ex-funcionário", "trabalhou na", ou cita datas passadas (2020-2023), o vínculo é suspeito. Marque 'employer_found': false se houver outra empresa atual citada.
+1. **CONFLICT_CHECK:** Se a META_COMPANY_DECLARADA ou o Snippet indicam que o candidato trabalha em OUTRA empresa (ex: Siemens, Vivo, Unimed, PHD do Brasil) que não seja '{company}' nem a sua Razão Social '{razao_social or 'Não Informada'}', você deve marcar 'employer_found': false e citar o conflito no campo snippets.
+   * ATENÇÃO: A Razão Social Oficial da empresa é '{razao_social or 'Não Informada'}'. Se o candidato declarar trabalhar na Razão Social '{razao_social or 'Não Informada'}', ou em qualquer variação óbvia ou abreviação comercial dela (como 'Com.', 'Comércio' etc.), isso é considerado um VÍNCULO CONFIRMADO (employer_found: true). NÃO considere como conflito!
+2. **PAST_EMPLOYER:** Se o text diz "ex-funcionário", "trabalhou na", ou cita datas passadas (2020-2023), o vínculo é suspeito. Marque 'employer_found': false se houver outra empresa atual citada.
 3. **SURNAME_SKEPTICISM:** O sobrenome do candidato pode ser igual ao nome da empresa '{company}' (ex: João Böttcher). NÃO assuma que ele trabalha na '{company}' apenas pelo sobrenome. Procure por indicadores funcionais ("na {company}", "at {company}").
 4. **INSTITUTIONAL:** Se o perfil parecer ser da PRÓPRIA empresa (Página oficial) e não de uma pessoa, marque is_institutional: true.
 
@@ -326,7 +329,7 @@ Responda APENAS JSON:
 
         prompt_judge = f"""
 Você é o Juiz Final da Qualificação B2B em {area_label}. Sua missão é barrar falsos positivos sem rejeitar candidatos legítimos.
-CANDIDATO: '{name}' na '{company}'
+CANDIDATO: '{name}' na empresa-alvo '{company}' (Razão Social Oficial: '{razao_social or 'Não Informada'}')
 META_COMPANY_DECLARADA: '{meta_company}'
 
 DADOS RECEBIDOS:
@@ -338,7 +341,8 @@ DADOS RECEBIDOS:
 - Veto Mecânico Detectado: {mechanical_veto}
 
 CONSTITUIÇÃO (REGRAS CRÍTICAS - SIGA À RISCA):
-1. **VETO DE EMPRESA (CRÍTICO):** Se a META_COMPANY_DECLARADA ou os fatos do Detetive indicam que o candidato trabalha em OUTRA empresa (ex: Siemens, Vivo, Unimed, etc) que não seja '{company}', você **DEVE REJEITAR** (is_valid=false). Não importa o cargo.
+1. **VETO DE EMPRESA (CRÍTICO):** Se a META_COMPANY_DECLARADA ou os fatos do Detetive indicam que o candidato trabalha em OUTRA empresa (ex: Siemens, Vivo, Unimed, etc) que não seja '{company}' nem a sua Razão Social Oficial '{razao_social or 'Não Informada'}', você **DEVE REJEITAR** (is_valid=false). Não importa o cargo.
+   * ATENÇÃO: A Razão Social Oficial '{razao_social or 'Não Informada'}' e a empresa-alvo '{company}' são a MESMA empresa. Se o candidato trabalha em qualquer uma delas, ou em abreviações comerciais dela (como 'Com.', 'Comércio' etc.), ele NÃO trabalha em outra empresa e NÃO deve ser rejeitado por essa regra!
 2. **TRAVA DE SOBRENOME:** Muitos candidatos têm o sobrenome '{company}'. Se o Detetive/Sniper indica que eles trabalham em OUTRA empresa, você **DEVE REJEITAR** (is_valid=false). O sobrenome é apenas uma coincidência. 
 3. **VEREDITO DE RELEVÂNCIA (VETO TÉCNICO):** Se o Especialista marcou "is_relevant: false", o candidato **DEVE SER REJEITADO** (is_valid=false), a menos que haja um 'Cargo Oficial Verificado' que contradiga isso. Se o cargo for 'Aluno', 'Estagiário' ou áreas alheias (Financeiro/RH para busca de Compras), RESPEITE o Especialista e rejeite. NUNCA diga que o especialista não marcou como falso se ele marcou.
 4. **GUARDIÃO DE ALUCINAÇÃO (MARCA):** Se o cargo for similar ou contido no nome da empresa '{company}', **REJEITE IMEDIATAMENTE** (is_valid=false). Nomes de empresa não são cargos.

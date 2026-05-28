@@ -26,7 +26,7 @@ class HierarchyScanService:
         self,
         session_cookie: Optional[str] = None,
         headless: Optional[bool] = None,
-        max_clicks: int = 150,
+        max_clicks: int = 20,
         click_delay_min: float = 2.0,
         click_delay_max: float = 4.5
     ):
@@ -46,14 +46,13 @@ class HierarchyScanService:
         if headless is not None:
             self.headless = headless
         else:
-            if self.session_cookie:
-                self.headless = settings.LINKEDIN_HEADLESS
-            else:
-                self.headless = False  # Modo manual necessita de tela visível!
+            self.headless = settings.LINKEDIN_HEADLESS
 
         self.max_clicks = max_clicks
         self.click_delay_min = click_delay_min
         self.click_delay_max = click_delay_max
+        self.active_page = None
+        self.graceful_stop = False
 
     async def _setup_browser(self, playwright) -> tuple[Browser, BrowserContext, Page]:
         """Inicializa o navegador, contexto e injeta cookies se disponíveis."""
@@ -96,6 +95,13 @@ class HierarchyScanService:
             await context.add_cookies(cookies)
             
         page = await context.new_page()
+        self.active_page = page
+        
+        # Escuta a abertura de novas abas/popups (ex: login com Google/Apple)
+        def handle_page(new_page):
+            asyncio.create_task(self._on_page_opened(new_page))
+            
+        context.on("page", handle_page)
         
         # Oculta propriedades de automação adicionais do Playwright
         await page.add_init_script(
@@ -104,23 +110,61 @@ class HierarchyScanService:
         
         return browser, context, page
 
-    async def _save_preview(self, page: Page):
+    async def _save_preview(self, page: Optional[Page] = None):
         """Captura um screenshot da página e salva como preview em backend/tmp/scraper_preview.jpg"""
         import os
         try:
-            backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            # Seleciona qual página fotografar (prefere a página ativa/popup se houver)
+            target_page = page or self.active_page
+            if self.active_page and not self.active_page.is_closed():
+                target_page = self.active_page
+                
+            if not target_page or target_page.is_closed():
+                return
+                
+            # Subir 4 níveis para sair de modules/hierarchy/service/ e pousar na raiz de backend/
+            backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
             tmp_dir = os.path.join(backend_dir, "tmp")
             os.makedirs(tmp_dir, exist_ok=True)
             preview_path = os.path.join(tmp_dir, "scraper_preview.jpg")
             
             # Tira um screenshot comprimido em JPEG para excelente performance
-            await page.screenshot(path=preview_path, type="jpeg", quality=50)
+            await target_page.screenshot(path=preview_path, type="jpeg", quality=50)
             # Imprime uma tag que o leitor de subprocesso monitora para notificar o frontend
             print("[SCREENSHOT_UPDATED]")
             import sys
             sys.stdout.flush()
         except Exception as e:
             log.warning("hierarchy_scan.save_preview_error", error=str(e))
+
+    async def _on_page_opened(self, new_page: Page):
+        """Trata o evento de uma nova página/popup aberta (ex: Login do Google/Apple)."""
+        if self.active_page == new_page:
+            return
+            
+        log.info("hierarchy_scan.popup_opened", url=new_page.url)
+        self.active_page = new_page
+        
+        # Registra o evento de fechamento
+        new_page.on("close", lambda: asyncio.create_task(self._on_page_closed(new_page)))
+        
+        # Aguarda a página carregar e tira print
+        try:
+            await new_page.wait_for_load_state("domcontentloaded", timeout=10000)
+        except Exception:
+            pass
+        await self._save_preview()
+
+    async def _on_page_closed(self, closed_page: Page):
+        """Trata o fechamento de um popup, retornando o foco para a página principal."""
+        log.info("hierarchy_scan.popup_closed")
+        if self.active_page == closed_page:
+            pages = closed_page.context.pages
+            open_pages = [p for p in pages if not p.is_closed()]
+            if open_pages:
+                self.active_page = open_pages[0]
+            await self._save_preview()
+
 
     async def _wait_for_manual_login(self, page: Page) -> bool:
         """Navega para a página de login e espera até que o usuário esteja autenticado."""
@@ -141,6 +185,19 @@ class HierarchyScanService:
                 if "/feed" in current_url or "/mynetwork" in current_url or await page.query_selector("#global-nav"):
                     log.info("hierarchy_scan.manual_login_success", message="Login manual detectado com sucesso!")
                     print("\n✅ [Terminal Scraper] Login detectado com sucesso!")
+                    
+                    # Captura o cookie li_at gerado pelo login bem-sucedido
+                    try:
+                        cookies = await page.context.cookies()
+                        li_at_cookie = next((c["value"] for c in cookies if c["name"] == "li_at"), None)
+                        if li_at_cookie:
+                            log.info("hierarchy_scan.cookie_captured", cookie_len=len(li_at_cookie))
+                            print(f"[COOKIE_CAPTURED] {li_at_cookie}")
+                            import sys
+                            sys.stdout.flush()
+                    except Exception as e:
+                        log.warning("hierarchy_scan.cookie_capture_error", error=str(e))
+                        
                     await self._save_preview(page)
                     return True
             except Exception:
@@ -173,6 +230,9 @@ class HierarchyScanService:
                 if not clean_line:
                     continue
                 
+                # Direciona os cliques e teclas para a aba ativa (popup do Google se estiver aberto)
+                target_page = self.active_page if (self.active_page and not self.active_page.is_closed()) else page
+                
                 # Comandos suportados:
                 # cmd_click X Y
                 # cmd_type TEXT
@@ -180,30 +240,49 @@ class HierarchyScanService:
                 if clean_line.startswith("cmd_click "):
                     parts = clean_line.split()
                     if len(parts) >= 3:
-                        x = int(parts[1])
-                        y = int(parts[2])
-                        log.info("hierarchy_scan.remote_command.click", x=x, y=y)
+                        x_pct = float(parts[1])
+                        y_pct = float(parts[2])
+                        
+                        # Obtém a resolução real da página ativa no momento
+                        viewport = target_page.viewport_size
+                        if viewport:
+                            width = viewport.get("width", 1280)
+                            height = viewport.get("height", 800)
+                        else:
+                            width = 1280
+                            height = 800
+                            
+                        # Calcula a coordenada absoluta exata
+                        x = int(x_pct * width)
+                        y = int(y_pct * height)
+                        
+                        log.info("hierarchy_scan.remote_command.click", x=x, y=y, width=width, height=height)
                         # Executa o clique
-                        await page.mouse.click(x, y)
+                        await target_page.mouse.click(x, y)
                         await asyncio.sleep(0.5)
                         # Tira print para atualizar a tela
-                        await self._save_preview(page)
+                        await self._save_preview()
+
                         
                 elif clean_line.startswith("cmd_type "):
                     text = clean_line[9:]
                     log.info("hierarchy_scan.remote_command.type", text_len=len(text))
                     # Insere o texto no elemento focado
-                    await page.keyboard.insert_text(text)
+                    await target_page.keyboard.insert_text(text)
                     await asyncio.sleep(0.5)
-                    await self._save_preview(page)
+                    await self._save_preview()
                     
                 elif clean_line.startswith("cmd_press "):
                     key = clean_line[10:]
                     log.info("hierarchy_scan.remote_command.press", key=key)
                     # Pressiona uma tecla especial (ex: Enter, Backspace)
-                    await page.keyboard.press(key)
+                    await target_page.keyboard.press(key)
                     await asyncio.sleep(0.5)
-                    await self._save_preview(page)
+                    await self._save_preview()
+                    
+                elif clean_line == "cmd_stop":
+                    log.info("hierarchy_scan.remote_command.stop", message="Parada graciosa solicitada!")
+                    self.graceful_stop = True
                     
         except asyncio.CancelledError:
             pass
@@ -249,14 +328,11 @@ class HierarchyScanService:
                     current_url = page.url
                     if "login" in current_url or "signup" in current_url:
                         log.error("hierarchy_scan.cookie_expired", message="O cookie li_at fornecido expirou ou é inválido!")
-                        # Fallback se não estiver rodando headless: permite login manual
-                        if not self.headless:
-                            log.warning("hierarchy_scan.cookie_expired_fallback", message="Iniciando fallback para login manual...")
-                            login_ok = await self._wait_for_manual_login(page)
-                            if not login_ok:
-                                return []
-                        else:
-                            raise ValueError("Cookie li_at inválido ou expirado, e modo headless ativado. Impossível prosseguir.")
+                        # Com o painel interativo no frontend, o login manual pode ser feito remotamente via preview em modo headless!
+                        log.warning("hierarchy_scan.cookie_expired_fallback", message="Iniciando fallback para login manual remoto...")
+                        login_ok = await self._wait_for_manual_login(page)
+                        if not login_ok:
+                            return []
                     else:
                         log.info("hierarchy_scan.session_valid", message="Sessão autenticada via cookie com sucesso!")
 
@@ -285,7 +361,7 @@ class HierarchyScanService:
                 log.info("hierarchy_scan.expansion_loop_start", max_clicks=self.max_clicks)
                 print("   🔄 [Terminal Scraper] Iniciando rolagem e expansão incansável...")
 
-                while click_count < self.max_clicks:
+                while click_count < self.max_clicks and not self.graceful_stop:
                     # Rola até o final para carregar mais itens preguiçosos
                     await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                     

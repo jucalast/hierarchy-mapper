@@ -374,6 +374,9 @@ async def stream_linkedin_scrape(
     company_url: str = Query(..., description="A URL da empresa no LinkedIn"),
     session_cookie: Optional[str] = Query(None, description="O cookie li_at opcional"),
     headless: bool = Query(True, description="Se deve rodar em segundo plano"),
+    area_focus: Optional[str] = Query(None, description="Foco de departamento/área"),
+    product_focus: Optional[str] = Query(None, description="Foco de produto"),
+    model: Optional[str] = Query(None, description="Modelo de IA selecionado"),
 ):
     """
     Executa o scraping do LinkedIn em segundo plano e transmite os logs do terminal,
@@ -456,9 +459,12 @@ async def stream_linkedin_scrape(
                 if not clean_line:
                     continue
                 
-                # Intercepta notificações de novos screenshots
+                # Intercepta notificações de novos screenshots e cookies capturados
                 if "[SCREENSHOT_UPDATED]" in clean_line:
                     yield f"data: {json.dumps({'type': 'screenshot'})}\n\n"
+                elif clean_line.startswith("[COOKIE_CAPTURED] "):
+                    cookie_val = clean_line.split("[COOKIE_CAPTURED] ")[1].strip()
+                    yield f"data: {json.dumps({'type': 'cookie', 'cookie': cookie_val})}\n\n"
                 else:
                     # Envia a linha de log do terminal original para o frontend
                     yield f"data: {json.dumps({'type': 'log', 'message': clean_line}, ensure_ascii=False)}\n\n"
@@ -473,6 +479,132 @@ async def stream_linkedin_scrape(
             if os.path.exists(output_filepath):
                 with open(output_filepath, "r", encoding="utf-8") as f:
                     results_data = json.load(f)
+                
+                # Se area_focus ou product_focus estiverem definidos, aplica o filtro da IA
+                if results_data and (area_focus or product_focus):
+                    yield f"data: {json.dumps({'type': 'log', 'message': '[AI Filter] Iniciando filtragem inteligente de perfis...'}, ensure_ascii=False)}\n\n"
+                    
+                    # 1. Deduplica por linkedin_url para garantir dados não duplicados
+                    unique_employees = []
+                    seen_urls = set()
+                    for emp in results_data:
+                        url = emp.get("linkedin_url")
+                        if url:
+                            if url not in seen_urls:
+                                seen_urls.add(url)
+                                unique_employees.append(emp)
+                        else:
+                            unique_employees.append(emp)
+                            
+                    total_found = len(unique_employees)
+                    yield f"data: {json.dumps({'type': 'log', 'message': f'[AI Filter] Total de perfis únicos a avaliar: {total_found}'}, ensure_ascii=False)}\n\n"
+                    
+                    # 2. Divide em lotes de 15 perfis
+                    batch_size = 15
+                    filtered_employees = []
+                    
+                    if model:
+                        from core.llm import set_preferred_model
+                        set_preferred_model(model, False)
+                        
+                    for idx_start in range(0, total_found, batch_size):
+                        batch = unique_employees[idx_start : idx_start + batch_size]
+                        current_batch_num = idx_start // batch_size + 1
+                        total_batches = (total_found + batch_size - 1) // batch_size
+                        
+                        yield f"data: {json.dumps({'type': 'log', 'message': f'[AI Filter] Processando lote {current_batch_num} de {total_batches}...'}, ensure_ascii=False)}\n\n"
+                        
+                        # Cria lista simplificada para o prompt para economizar tokens
+                        batch_to_evaluate = []
+                        for emp_idx, emp in enumerate(batch):
+                            batch_to_evaluate.append({
+                                "index": emp_idx,
+                                "name": emp.get("name"),
+                                "role": emp.get("role"),
+                                "linkedin_url": emp.get("linkedin_url")
+                            })
+                            
+                        prompt = f"""
+Você é um especialista em estruturação organizacional B2B e prospecção de vendas.
+Sua tarefa é analisar uma lista de perfis do LinkedIn e decidir se cada perfil é RELEVANTE ou não para uma abordagem focada em compras e logística.
+
+Área de Foco principal: {area_focus or "Compras e Logística"}
+Produto/Serviço a ser vendido (opcional): {product_focus or "Geral B2B"}
+
+Diretrizes de Classificação:
+1. Um perfil é RELEVANTE (relevant = true) se trabalhar com Compras, Procurement, Suprimentos, Logística, Supply Chain, Recebimento, Facilities, Importação/Exportação ou cargos de liderança operacional relacionados à cadeia de suprimentos.
+2. Níveis hierárquicos aceitos: de Diretores a Assistentes/Compradores, desde que na área especificada.
+3. Se um produto/serviço estiver especificado (ex: "Embalagens"), a relevância aumenta se o comprador for daquela categoria, mas qualquer comprador geral também é aceitável.
+4. Pessoas de RH, Marketing, Vendas, TI (exceto se focado em compras de TI), Administrativo puro, Financeiro, Consultores externos que não sejam da empresa, e outros cargos não relacionados a suprimentos devem ser REJEITADOS (relevant = false).
+
+Lista de perfis do lote atual:
+{json.dumps(batch_to_evaluate, ensure_ascii=False, indent=2)}
+
+Retorne APENAS um objeto JSON com a chave "decisions" contendo um array de objetos. Cada objeto deve mapear o "linkedin_url" do perfil correspondente, definindo se é "relevant" (boolean) e uma breve "reason" (string em português):
+{{
+  "decisions": [
+    {{
+      "linkedin_url": "...",
+      "relevant": true,
+      "reason": "Comprador de embalagens, diretamente relevante para o produto papelão."
+    }}
+  ]
+}}
+"""
+                        try:
+                            from core.llm import ask_llm, LLMTier
+                            ai_res = await ask_llm(
+                                prompt=prompt,
+                                system="Você é um classificador especializado em leads B2B e organogramas de compras. Responda apenas com JSON estrito.",
+                                json_mode=True,
+                                tier=LLMTier.FAST,
+                                cacheable=True
+                            )
+                            
+                            data = ai_res.json_data or {}
+                            decisions = data.get("decisions", [])
+                            
+                            decisions_map = {}
+                            if isinstance(decisions, list):
+                                for dec in decisions:
+                                    url = dec.get("linkedin_url")
+                                    if url:
+                                        decisions_map[url] = dec.get("relevant", False)
+                                        
+                            for emp in batch:
+                                url = emp.get("linkedin_url")
+                                if url:
+                                    is_relevant = decisions_map.get(url, False)
+                                    if url not in decisions_map:
+                                        # Fallback por palavra-chave se não respondeu
+                                        keywords = ["compra", "suprimento", "procurement", "logistica", "logística", "supply", "facilities", "buyer", "sourcing"]
+                                        role_lower = emp.get("role", "").lower()
+                                        is_relevant = any(k in role_lower for k in keywords)
+                                        
+                                    emp_name = emp.get("name") or "Profissional"
+                                    emp_role = emp.get("role") or ""
+                                    if is_relevant:
+                                        filtered_employees.append(emp)
+                                        yield f"data: {json.dumps({'type': 'log', 'message': f'✅ [AI Aprovou] {emp_name} ({emp_role})'}, ensure_ascii=False)}\n\n"
+                                    else:
+                                        yield f"data: {json.dumps({'type': 'log', 'message': f'❌ [AI Filtrou] {emp_name} ({emp_role})'}, ensure_ascii=False)}\n\n"
+                                else:
+                                    filtered_employees.append(emp)
+                        except Exception as e:
+                            yield f"data: {json.dumps({'type': 'log', 'message': f'⚠️ [AI Warning] Falha na IA no lote: {str(e)}. Executando fallback por palavra-chave...'}, ensure_ascii=False)}\n\n"
+                            keywords = ["compra", "suprimento", "procurement", "logistica", "logística", "supply", "facilities", "buyer", "sourcing"]
+                            for emp in batch:
+                                emp_name = emp.get("name") or "Profissional"
+                                emp_role = emp.get("role") or ""
+                                role_lower = emp_role.lower()
+                                if any(k in role_lower for k in keywords):
+                                    filtered_employees.append(emp)
+                                    yield f"data: {json.dumps({'type': 'log', 'message': f'✅ [Fallback Aprovou] {emp_name} ({emp_role})'}, ensure_ascii=False)}\n\n"
+                                else:
+                                    yield f"data: {json.dumps({'type': 'log', 'message': f'❌ [Fallback Filtrou] {emp_name} ({emp_role})'}, ensure_ascii=False)}\n\n"
+                                    
+                    results_data = filtered_employees
+                    yield f"data: {json.dumps({'type': 'log', 'message': f'🎉 [AI Filter] Filtragem concluída! Mantidos {len(results_data)} de {total_found} perfis.'}, ensure_ascii=False)}\n\n"
                 
                 yield f"data: {json.dumps({'type': 'result', 'data': results_data}, ensure_ascii=False)}\n\n"
                 
@@ -495,8 +627,8 @@ async def stream_linkedin_scrape(
 @router.post("/linkedin-scrape/interact")
 async def linkedin_scrape_interact(
     action: str = Query(..., description="Ação: click, type, press"),
-    x: Optional[int] = Query(None),
-    y: Optional[int] = Query(None),
+    x: Optional[float] = Query(None),
+    y: Optional[float] = Query(None),
     text: Optional[str] = Query(None),
     key: Optional[str] = Query(None),
 ):
@@ -529,3 +661,22 @@ async def linkedin_scrape_interact(
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao interagir com o agente: {str(e)}")
+
+
+@router.post("/linkedin-scrape/stop")
+async def linkedin_scrape_stop():
+    """
+    Para o processo de varredura ativo graciosamente, forçando a extração imediata
+    de todas as pessoas localizadas até então.
+    """
+    global active_scraper_process
+    
+    if not active_scraper_process or active_scraper_process.poll() is not None:
+        raise HTTPException(status_code=400, detail="Não há nenhum agente de raspagem ativo no momento.")
+        
+    try:
+        active_scraper_process.stdin.write("cmd_stop\n")
+        active_scraper_process.stdin.flush()
+        return {"status": "success", "message": "Solicitação de parada graciosa enviada ao agente."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao parar o agente graciosamente: {str(e)}")

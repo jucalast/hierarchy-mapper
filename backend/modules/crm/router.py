@@ -204,3 +204,36 @@ async def delete_pipedrive_org(org_id: int):
         return {"status": status}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/pipedrive/current-user")
+async def get_current_user():
+    """Retorna o nome e avatar do usuário logado (João Luccas) do Pipedrive."""
+    try:
+        users_map = await pipedrive_service.get_users_map()
+        users_pics_map = await pipedrive_service.get_users_pics_map()
+        user_id = pipedrive_service.user_id # e.g. 24921888
+        
+        name = users_map.get(user_id, "João Luccas")
+        avatar = users_pics_map.get(user_id)
+        
+        # Se por algum motivo o user_id configurado não estiver no cache, pega o primeiro que combine com João ou o primeiro da lista
+        if not avatar and users_pics_map:
+            for uid, pic in users_pics_map.items():
+                uname = users_map.get(uid, "")
+                if "joao" in uname.lower() or "joão" in uname.lower():
+                    name = uname
+                    avatar = pic
+                    break
+            else:
+                # Fallback para o primeiro com foto
+                for uid, pic in users_pics_map.items():
+                    if pic:
+                        name = users_map.get(uid, name)
+                        avatar = pic
+                        break
+                        
+        return {"id": user_id, "name": name, "avatar": avatar}
+    except Exception as e:
+        return {"id": None, "name": "João Luccas", "avatar": None}
+

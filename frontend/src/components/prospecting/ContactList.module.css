@@ -50,6 +50,43 @@
     align-items: flex-start;
 }
 
+.nameContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sourceIcons {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.sourceIcon {
+    width: 14px;
+    height: 14px;
+    object-fit: cover;
+    opacity: 0.8;
+    border-radius: 3px;
+    display: block;
+    transition: all 0.2s ease;
+}
+
+.sourceIcon:hover {
+    opacity: 1;
+}
+
+.pipedriveIcon {
+    width: 14px;
+    height: 14px;
+}
+
+.linkedinIcon {
+    width: 16px;
+    height: 16px;
+    margin-left: 2px;
+}
+
 .name {
     font-size: var(--font-sm);
     font-weight: 500;
