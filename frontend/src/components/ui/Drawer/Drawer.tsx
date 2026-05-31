@@ -204,10 +204,26 @@ export const Drawer: React.FC<DrawerProps> = ({
         if (refreshDetailsTrigger > 0) {
             // Em nova varredura atualiza os detalhes em vez de fechar
             if (expandedOrgId) {
-                void fetchOrgDetails(expandedOrgId);
+                void fetchOrgDetails(expandedOrgId, true);
             }
         }
     }, [refreshDetailsTrigger]);
+
+    useEffect(() => {
+        const handleTimelineChanged = () => {
+            if (expandedOrgId) {
+                void fetchOrgDetails(expandedOrgId, true);
+            }
+        };
+        window.addEventListener('crm_timeline_changed', handleTimelineChanged);
+        window.addEventListener('crm_task_completed', handleTimelineChanged);
+        window.addEventListener('crm_task_uncompleted', handleTimelineChanged);
+        return () => {
+            window.removeEventListener('crm_timeline_changed', handleTimelineChanged);
+            window.removeEventListener('crm_task_completed', handleTimelineChanged);
+            window.removeEventListener('crm_task_uncompleted', handleTimelineChanged);
+        };
+    }, [expandedOrgId, fetchOrgDetails]);
 
     useEffect(() => {
         if (activeJobId) {

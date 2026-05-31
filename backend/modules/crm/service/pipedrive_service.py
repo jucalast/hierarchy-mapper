@@ -413,6 +413,21 @@ class PipedriveService:
             log.warning("pipedrive.activity.delete_failed", error=str(e))
         return False
 
+    async def delete_note(self, note_id: int) -> bool:
+        resp = await self._request("DELETE", f"notes/{note_id}")
+        if resp is None:
+            return False
+        try:
+            if resp.status_code == 204:
+                return True
+            res_data = resp.json()
+            if res_data.get("success"):
+                log.info("pipedrive.note.deleted", note_id=note_id)
+                return True
+        except Exception as e:
+            log.warning("pipedrive.note.delete_failed", error=str(e))
+        return False
+
     async def update_organization(self, org_id: int, data: dict) -> bool:
         """Atualiza Endereço, CNPJ e Domínio no Pipedrive e no Banco Local."""
         from core.infra.database import async_session

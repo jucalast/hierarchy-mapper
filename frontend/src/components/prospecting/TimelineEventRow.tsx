@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { User, Building2, Check, Sparkles, Loader2 } from 'lucide-react';
+import { User, Building2, Check, Sparkles, Loader2, Trash2 } from 'lucide-react';
 import { Dropdown } from '../ui/Dropdown/Dropdown';
+import { ConfirmModal } from '../ui/ConfirmModal';
 import { organizations } from '@/services/api';
+import toast from 'react-hot-toast';
 import styles from './HistoryTimeline.module.css';
 
 export type TimelineEvent = {
@@ -29,6 +31,7 @@ interface TimelineEventRowProps {
 export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLast, hasBackground }) => {
     const [doneState, setDoneState] = useState(!!event.done);
     const [isCompleting, setIsCompleting] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
     useEffect(() => {
         setDoneState(!!event.done);
@@ -45,16 +48,61 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
             const rawId = String(event.id).replace('act-', '');
             await organizations.updateActivity(rawId, { done: true });
             setDoneState(true);
+            toast.success('Tarefa marcada como concluída no Pipedrive.');
             window.dispatchEvent(new CustomEvent('crm_task_completed', { detail: { activityId: rawId } }));
         } catch (error) {
             console.error('Failed to complete task:', error);
-            alert('Não foi possível marcar a tarefa como concluída no Pipedrive.');
+            toast.error('Não foi possível marcar a tarefa como concluída no Pipedrive.');
         } finally {
             setIsCompleting(false);
         }
     };
 
+    const handleUncompleteTask = async (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        if (!doneState || isCompleting) return;
+        setIsCompleting(true);
+        try {
+            const rawId = String(event.id).replace('act-', '');
+            await organizations.updateActivity(rawId, { done: 0 });
+            setDoneState(false);
+            toast.success('Tarefa desmarcada no Pipedrive.');
+            window.dispatchEvent(new CustomEvent('crm_task_uncompleted', { detail: { activityId: rawId } }));
+        } catch (error) {
+            console.error('Failed to uncomplete task:', error);
+            toast.error('Não foi possível desmarcar a tarefa no Pipedrive.');
+        } finally {
+            setIsCompleting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (isCompleting) return;
+        setIsConfirmOpen(false);
+        setIsCompleting(true);
+        try {
+            if (event.type === 'activity') {
+                const rawId = String(event.id).replace('act-', '');
+                await organizations.deleteActivity(rawId);
+                toast.success('Atividade excluída com sucesso.');
+            } else if (event.type === 'note') {
+                const rawId = String(event.id).replace('note-', '');
+                await organizations.deleteNote(rawId);
+                toast.success('Anotação excluída com sucesso.');
+            }
+            window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+        } catch (error) {
+            console.error('Failed to delete:', error);
+            toast.error('Não foi possível excluir o item no Pipedrive.');
+            setIsCompleting(false); 
+        }
+    };
+
     const formatDateTime = (ts: string) => {
+
         if (!ts) return '';
         try {
             const d = new Date(ts);
@@ -127,21 +175,36 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
         const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction} (ID da tarefa no Pipedrive: ${String(event.id).replace('act-', '')}). Use as ferramentas disponíveis para executar isso agora.`;
         window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText } }));
     };
+
  
     const dropdownItems = [];
     
-    if (event.type === 'activity' && !doneState) {
+    if (event.type === 'activity') {
+        if (!doneState) {
+            dropdownItems.push({
+                label: 'Marcar como concluída',
+                icon: isCompleting ? <Loader2 size={12} className={styles.spinner} /> : <Check size={12} />,
+                onClick: () => handleCompleteTask()
+            });
+        } else {
+            dropdownItems.push({
+                label: 'Desmarcar como concluída',
+                icon: isCompleting ? <Loader2 size={12} className={styles.spinner} /> : <Check size={12} style={{ opacity: 0.5 }} />,
+                onClick: () => handleUncompleteTask()
+            });
+        }
+        
         dropdownItems.push({
-            label: 'Marcar como concluída',
-            icon: isCompleting ? <Loader2 size={12} className={styles.spinner} /> : <Check size={12} />,
-            onClick: () => handleCompleteTask()
+            label: 'Fazer com o agente',
+            icon: <Sparkles size={12} />,
+            onClick: handleExecuteWithAgent
         });
     }
 
     dropdownItems.push({
-        label: 'Fazer com o agente',
-        icon: <Sparkles size={12} />,
-        onClick: handleExecuteWithAgent
+        label: 'Excluir',
+        icon: <Trash2 size={12} style={{ color: '#ef4444' }} />,
+        onClick: () => setIsConfirmOpen(true)
     });
  
     return (
@@ -160,7 +223,18 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                     <div className={styles.titleArea}>
                         {event.type === 'activity' ? (
                             doneState ? (
-                                <Check size={12} className={styles.doneCheck} />
+                                <button
+                                    style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                    onClick={handleUncompleteTask}
+                                    disabled={isCompleting}
+                                    title="Desmarcar tarefa como concluída"
+                                >
+                                    {isCompleting ? (
+                                        <Loader2 size={12} className={styles.spinner} style={{ color: 'var(--sw-status-success)' }} />
+                                    ) : (
+                                        <Check size={12} className={styles.doneCheck} />
+                                    )}
+                                </button>
                             ) : (
                                 <button 
                                     className={`${styles.checkboxBtn} ${isCompleting ? styles.checkboxBtnLoading : ''}`}
@@ -209,6 +283,17 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                     </div>
                 )}
             </div>
+
+            <ConfirmModal 
+                isOpen={isConfirmOpen}
+                title={`Excluir ${event.type === 'note' ? 'Anotação' : 'Tarefa'}`}
+                message={`Tem certeza que deseja excluir esta ${event.type === 'note' ? 'anotação' : 'tarefa'}? Esta ação não pode ser desfeita.`}
+                confirmLabel="Excluir"
+                cancelLabel="Cancelar"
+                onConfirm={handleDelete}
+                onCancel={() => setIsConfirmOpen(false)}
+                type="danger"
+            />
         </div>
     );
 };

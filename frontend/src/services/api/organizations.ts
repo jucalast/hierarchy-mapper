@@ -57,6 +57,14 @@ export function updateActivity(activityId: number | string, data: Record<string,
   return api.put<Record<string, unknown>>(`/pipedrive/activities/${activityId}`, data);
 }
 
+export function deleteActivity(activityId: number | string) {
+  return api.delete<{ status?: string; message?: string }>(`/pipedrive/activities/${activityId}`);
+}
+
+export function deleteNote(noteId: number | string) {
+  return api.delete<{ status?: string; message?: string }>(`/pipedrive/notes/${noteId}`);
+}
+
 export function getPipelineBoard() {
   return api.get<{ stages: any[]; deals: any[] }>('/pipedrive/pipeline/board');
 }

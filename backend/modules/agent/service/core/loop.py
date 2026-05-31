@@ -864,6 +864,36 @@ async def _agent_loop(
                     yield _emit({"type": "final", "response": response_text})
                 return
 
+            # Para _is_task_action: forçar suggest_next_actions após execução bem-sucedida de write
+            if _is_task_action and stop_reason == "end_turn" and not tool_use_blocks:
+                _executed_writes = set()
+                for _m in messages + [{"role": "assistant", "content": content}]:
+                    _mc = _m.get("content", "")
+                    if isinstance(_mc, list):
+                        for _b in _mc:
+                            if isinstance(_b, dict) and _b.get("type") in ("tool_use", "tool_result"):
+                                _tn = _b.get("name") or _b.get("tool_name", "")
+                                if _tn in ("pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_task", "pipedrive_create_person"):
+                                    _executed_writes.add(_tn)
+                if _executed_writes and not _suggest_actions_done(messages + [{"role": "assistant", "content": content}]):
+                    if not _final_emitted:
+                        _final_response = response_text.strip() or "Ação realizada com sucesso! Aqui estão as sugestões de próximos passos:"
+                        _raw_log(process_id, "agent_final_response", {"response": _final_response})
+                        yield _emit({"type": "final", "response": _final_response})
+                        _final_emitted = True
+                    messages.append({"role": "assistant", "content": content})
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            f"Tarefa concluída com sucesso ({', '.join(_executed_writes)}).\n"
+                            "Agora você é um Consultor de Vendas B2B sênior. "
+                            "Chame OBRIGATORIAMENTE 'suggest_next_actions' com 2 a 5 sugestões de próximos passos comerciais relevantes para esta empresa. "
+                            "Use IDs REAIS já coletados no histórico. Não invente IDs. "
+                            "NÃO escreva texto adicional — apenas chame suggest_next_actions."
+                        ),
+                    })
+                    continue
+
             # Interceptor anti-permissão...
             _PERMISSION_PHRASES = [
                 "você gostaria", "gostaria de verificar", "gostaria de buscar",
@@ -1249,23 +1279,26 @@ async def _agent_loop(
                     _write_allowed = True
 
                 if not _write_allowed:
-                    _block_reason = (
-                        "criar tarefas embasadas" if tool_name == "pipedrive_create_task"
-                        else "criar novos contatos" if tool_name == "pipedrive_create_person"
-                        else "sugerir próximos passos comerciais" if tool_name == "suggest_next_actions"
-                        else "enviar mensagens ou emails"
-                    )
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tool_id,
-                        "tool_name": tool_name,
-                        "content": (
-                            f"BLOQUEADO: complete a investigação de comunicação (whatsapp_get_messages e email_get_contact_history) antes de {_block_reason}. "
-                            + _phase
-                        ),
-                        "is_error": False,
-                    })
-                    continue
+                    # suggest_next_actions NUNCA deve ser bloqueado
+                    if tool_name == "suggest_next_actions":
+                        pass  # permite continuar normalmente
+                    else:
+                        _block_reason = (
+                            "criar tarefas embasadas" if tool_name == "pipedrive_create_task"
+                            else "criar novos contatos" if tool_name == "pipedrive_create_person"
+                            else "enviar mensagens ou emails"
+                        )
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": tool_id,
+                            "tool_name": tool_name,
+                            "content": (
+                                f"BLOQUEADO: complete a investigação de comunicação (whatsapp_get_messages e email_get_contact_history) antes de {_block_reason}. "
+                                + _phase
+                            ),
+                            "is_error": False,
+                        })
+                        continue
 
             # Ferramenta de ESCRITA — sempre exige confirmação do usuário, inclusive em direct_action.
             # O direct_action já foi aprovado pelo usuário (ação sugerida), mas qualquer
@@ -1511,6 +1544,7 @@ async def _agent_loop(
             yield _emit({
                 "type": "confirmation_required",
                 "action_id": action_id,
+                "call_id": write_tool_pending["call_id"],
                 "tool": tool_name,
                 "label": confirm_label,
                 "preview": str(preview),

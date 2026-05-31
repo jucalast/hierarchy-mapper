@@ -715,13 +715,18 @@ export const InlineEventStream: React.FC<{
                     );
                 }
                 if (ev.type === 'confirmation_required' && ev.action_id) {
+                    const isDecided = (ev.call_id && !!resultMap[ev.call_id]) || (ev.action_id in inlineConfirmed);
+                    const isApproved = ev.call_id && resultMap[ev.call_id] 
+                        ? resultMap[ev.call_id].ok 
+                        : inlineConfirmed[ev.action_id];
+
                     return (
                         <ConfirmationCard
                             key={i}
                             event={ev}
                             onConfirm={onInlineConfirm}
-                            decided={ev.action_id in inlineConfirmed}
-                            approvedResult={inlineConfirmed[ev.action_id]}
+                            decided={isDecided}
+                            approvedResult={isApproved}
                         />
                     );
                 }
@@ -1243,6 +1248,24 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
     model,
 }) => {
     const [copied, setCopied] = useState(false);
+    const notifiedToolResultsRef = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+        let hasNewCrmUpdate = false;
+        for (const ev of events) {
+            if (ev.type === 'tool_result' && ev.call_id && !notifiedToolResultsRef.current.has(ev.call_id)) {
+                notifiedToolResultsRef.current.add(ev.call_id);
+                if (ev.ok && ev.tool) {
+                    if (ev.tool.startsWith('pipedrive_update_') || ev.tool.startsWith('pipedrive_create_') || ev.tool.startsWith('pipedrive_delete_')) {
+                        hasNewCrmUpdate = true;
+                    }
+                }
+            }
+        }
+        if (hasNewCrmUpdate) {
+            window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+        }
+    }, [events]);
 
     const resultMap: Record<string, AgentEvent> = {};
     for (const ev of events) {
@@ -1473,6 +1496,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                             />
                         );
                     })}
+                    
                 </div>
             )}
 

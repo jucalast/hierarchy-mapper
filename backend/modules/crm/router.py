@@ -136,6 +136,28 @@ async def update_pipedrive_activity(activity_id: int, payload: Dict[str, Any]):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete("/pipedrive/activities/{activity_id}")
+async def delete_pipedrive_activity(activity_id: int):
+    """Deleta uma atividade no Pipedrive."""
+    try:
+        success = await pipedrive_service.delete_activity(activity_id)
+        if success:
+            return {"status": "success", "message": f"Atividade {activity_id} deletada do Pipedrive."}
+        raise Exception("Erro ao deletar atividade no Pipedrive.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/pipedrive/notes/{note_id}")
+async def delete_pipedrive_note(note_id: int):
+    """Deleta uma nota no Pipedrive."""
+    try:
+        success = await pipedrive_service.delete_note(note_id)
+        if success:
+            return {"status": "success", "message": f"Nota {note_id} deletada do Pipedrive."}
+        raise Exception("Erro ao deletar nota no Pipedrive.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/pipedrive/pipeline/board")
 async def get_pipeline_board():

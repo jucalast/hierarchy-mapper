@@ -201,7 +201,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "description": "Atualiza ou conclui uma atividade existente no Pipedrive. Requer confirmação.",
         "args_schema": {
             "activity_id": "int (ID da atividade)",
-            "done": "bool opcional (true para marcar como concluída)",
+            "done": "bool opcional (MUITO IMPORTANTE: passe true se o usuário pedir para 'marcar', 'concluir' ou 'fechar' a tarefa)",
             "due_date": "string opcional (reagendar — formato YYYY-MM-DD)",
             "note": "string opcional (atualizar descrição)",
             "subject": "string opcional (novo título)",

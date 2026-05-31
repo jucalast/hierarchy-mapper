@@ -957,11 +957,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         let hasMappingRequired = false;
         let hasConfirmationRequired = false;
 
+        let apiMessage = text;
+        if (selectedOrgId && selectedOrgName) {
+            apiMessage = `[ALERTA DE CONTEXTO DO SISTEMA: O usuário está na página da empresa "${selectedOrgName}" (org_id=${selectedOrgId}).\nREGRA CRÍTICA: Se o usuário pedir para atualizar ou concluir uma tarefa e NÃO fornecer o ID explícito na mensagem atual, VOCÊ É ESTRITAMENTE PROIBIDO de adivinhar ou usar IDs de tarefas do histórico. Você DEVE obrigatoriamente chamar a ferramenta \`pipedrive_get_activities\` com org_id=${selectedOrgId} para descobrir o ID correto antes de atualizar. Não atualize atividades cegamente.]\n\n${text}`;
+        }
+
         try {
             const response = await fetch(AGENT_STREAM_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, history: historyForApi, org_id: selectedOrgId, thread_id: threadId }),
+                body: JSON.stringify({ message: apiMessage, history: historyForApi, org_id: selectedOrgId, thread_id: threadId }),
                 signal: controller.signal,
             });
 
