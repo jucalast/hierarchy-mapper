@@ -12,7 +12,9 @@ export interface HierarchyEmployee {
   manager_id?: string;
   level: number;
   email?: string;
+  phone?: string;
   linkedin?: string;
+  linkedin_url?: string;
   logo?: string;
   url?: string;
   location?: string;
@@ -26,6 +28,8 @@ export interface HierarchyEmployee {
   matching_score?: number;
   evidence?: string;
   headline?: string;
+  temperature?: string | number;
+  [key: string]: unknown;
 }
 
 export interface HierarchyResponse {

@@ -27,15 +27,29 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession) -> dict:
     )
     employees = res_emp.scalars().all()
 
-    if not employees:
-        return {"company_name": org.name, "nodes": [], "status": "empty"}
-
     nodes = [{"id": "root_company", "name": org.name, "role": "Entidade Principal",
               "department": "Supply Chain (Matriz)", "manager_id": None, "level": 0,
               "company_logo": org.logo_url, "logo": org.logo_url, "domain": org.domain,
               "cnpj": org.cnpj, "linkedin": org.linkedin_url}]
 
+    if not employees:
+        # Tenta buscar sócios do QSA como fallback mínimo antes de dar empresa como vazia
+        res_qsa = await db.execute(
+            select(Employee)
+            .where(Employee.company_id == org_id, Employee.department == "Quadro de Sócios (QSA)")
+        )
+        qsa_list = res_qsa.scalars().all()
+        for p in qsa_list:
+            nodes.append({
+                "id": f"node_{p.id}", "name": p.name, "role": p.role or "Sócio / Administrador", 
+                "level": 6, "seniority": 6, "department": "Quadro de Sócios (QSA)", 
+                "manager_id": "root_company", "linkedin": p.linkedin_url, "url": p.linkedin_url
+            })
+
+        return {"company_name": org.name, "nodes": nodes, "status": "cached" if len(nodes) > 1 else "empty"}
+
     id_mapping: dict = {}
+
     for emp in employees:
         new_id = f"node_{emp.id}"
         if emp.linkedin_url and "/in/" in emp.linkedin_url:
@@ -62,12 +76,15 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession) -> dict:
             clean_email = f"{clean_email}{org.domain}"
 
         nodes.append({
-            "id": new_id, "name": emp.name, "role": emp.role, "level": level, "seniority": level,
+            "id": new_id, "name": emp.name, "role": emp.role, 
+            "level": 6 if emp.department == "Quadro de Sócios (QSA)" else level, 
+            "seniority": 6 if emp.department == "Quadro de Sócios (QSA)" else level,
             "department": await get_department_tag(emp.role), "manager_id": manager_id,
             "linkedin": emp.linkedin_url, "url": emp.linkedin_url, "profile_pic": emp.profile_pic,
-            "email": clean_email, "education": emp.description, "observations": emp.description,
-            "location": emp.location, "phone": emp.phone, "whatsapp_number": emp.whatsapp_number,
-            "temperature": emp.temperature,
+            "email": clean_email, "education": emp.education, "observations": emp.description,
+            "evidence": emp.evidence, "matching_score": emp.matching_score,
+            "location": emp.location, "phone": emp.phone, "headline": emp.headline,
+            "whatsapp_number": emp.whatsapp_number, "temperature": emp.temperature,
         })
 
     return {"company_name": org.name, "nodes": nodes, "status": "cached"}

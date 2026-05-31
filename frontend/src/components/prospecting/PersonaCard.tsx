@@ -192,11 +192,11 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
             <span className={styles.osintText}>{data.location || 'Localização não identificada'}</span>
           </div>
           {data.evidence && (
-            <div className={`${styles.osintLine} ${styles.osintLineMetadata}`} style={{ background: 'rgba(52, 211, 153, 0.05)', borderLeft: '2px solid rgba(52, 211, 153, 0.4)', padding: '6px 8px', borderRadius: '4px' }}>
-              <Brain className={styles.osintIcon} style={{ color: 'rgba(52, 211, 153, 0.8)' }} />
+            <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
+              <Brain className={styles.osintIcon} size={14} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'rgba(52, 211, 153, 0.8)', fontWeight: 600 }}>Veredito da IA</span>
-                <p className={styles.osintParagraph} style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.4)', fontWeight: 600 }}>Veredito da IA</span>
+                <p className={styles.osintParagraph}>
                   {data.evidence}
                 </p>
               </div>
@@ -234,7 +234,7 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
           
           <div className={styles.emailLine}>
             <Mail size={14} className={styles.metaIcon} />
-            <span className={styles.emailText}>{data.email || 'gerando email...'}</span>
+            <span className={styles.emailText}>{data.email || 'E-mail não cadastrado'}</span>
           </div>
 
           {/* TELEFONE / WHATSAPP / PABX */}

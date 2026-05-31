@@ -134,6 +134,11 @@ export function useNetworkFlow({
         }
 
         setNodes(finalNodes);
+        
+        // 🚀 OTIMIZAÇÃO: Força fitView se for a primeira vez carregando ou se só houver o root
+        if (finalNodes.length === 1 && finalNodes[0].id === 'root_company') {
+            setShouldFitView(true);
+        }
     }, [rawEmployees, rawBackendEdges, currentOrgId, confirmedBrand, confirmedLogo, getStableId]);
 
     const onNodesChange = useCallback(

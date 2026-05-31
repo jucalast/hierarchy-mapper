@@ -93,8 +93,13 @@ def _sanitize_pipedrive(data: dict) -> str:
         if not orgs: return "📊 Nenhuma empresa encontrada."
         return "📊 Empresas: " + " | ".join([f"{o['name']} (ID:{o['id']})" for o in orgs])
 
-    # Caso seja detalhe de uma organização/deal
+    # Caso seja detalhe de uma organização/deal/contatos
     sections = []
+
+    # Se houver sumário (ex: resultado de pipedrive_get_persons com análise ICP),
+    # incluímos no topo para que o Agent Loop possa interceptar regras de banco local.
+    if "summary" in data and isinstance(data["summary"], str):
+        sections.append(f"📝 RESUMO: {data['summary']}")
 
     _org_field = data.get("org")
     org_name = data.get("name", "") or (
@@ -123,7 +128,16 @@ def _sanitize_pipedrive(data: dict) -> str:
             email = p.get('email', '')
             phone = p.get('phone', '')
             contact = phone or email or 'sem contato'
-            persons_lines.append(f"   • [ID:{p.get('id','?')}] {name} ({contact})")
+            
+            role = p.get('role', '')
+            source = p.get('source', 'Pipedrive')
+            local_id = p.get('local_id', '')
+            
+            role_str = f" - Cargo: {role}" if role else ""
+            source_str = f" [{source}]"
+
+            p_id = p.get('id') or 'LocalDB'
+            persons_lines.append(f"   • [ID:{p_id}] {name} ({contact}){role_str}{source_str}")
         sections.append("\n".join(persons_lines))
 
     # Atividades pendentes

@@ -54,8 +54,8 @@ export function getNoticeStyle(events: ModelActivityEvent[], remainingSeconds?: 
     const providerColor = ev.provider ? (MODEL_COLORS[ev.provider] ?? '#64748b') : '#64748b';
 
     const isLight = theme === 'light';
-    const GRAY_BG = isLight ? '#e5e7eb' : '#1e1e1e';
-    const GRAY_BORDER = isLight ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.1)';
+    const GRAY_BG = isLight ? '#d9d9d9' : '#1e1e1e';
+    const GRAY_BORDER = isLight ? 'transparent' : 'rgba(255, 255, 255, 0.1)';
     const DEFAULT_COLOR = isLight ? '#374151' : 'rgba(255, 255, 255, 0.75)';
 
     if (ev.type === 'rate_wait') {

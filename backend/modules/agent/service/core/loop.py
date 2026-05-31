@@ -22,7 +22,6 @@ from modules.agent.service.sanitizers import _sanitize_result
 from modules.agent.service.tools import TOOLS, execute_write_tool, get_tools_anthropic_schema
 from modules.agent.service.prompts import (
     SYSTEM_PROMPT_POWERFUL, SYSTEM_PROMPT_BASIC, SYSTEM_PROMPT_DIRECT,
-    SYSTEM_PROMPT_TASK_AGENT, SYSTEM_PROMPT_TASK_AGENT_BASIC,
     SYSTEM_PROMPT_TASK_DIRECTIVE,
 )
 from modules.agent.service.llm.caller import _call_with_tools
@@ -68,10 +67,16 @@ async def _agent_loop(
     parent_message_id: str | None = None,
     action_index: int | None = None,
     query_type: str = "agent_workflow",
+    active_skill: Any = None,
 ) -> AsyncGenerator[str, None]:
     """Loop central do agente. Yields eventos NDJSON."""
     import re as _re
     process_id = process_id or f"proc_{uuid.uuid4().hex[:8]}"
+
+    # Sinais de detecção persistentes
+    _has_local_decision_maker = False
+    _persons_with_wa: list[tuple] = []
+    _persons_with_email: list[tuple] = []
 
     # Acumula resultados de ferramentas para degradação graciosa
     _collected_tool_summaries: list[str] = []
@@ -100,16 +105,21 @@ async def _agent_loop(
         direct_action = True
 
     _is_task_action = direct_action and _has_task_signal
+    _is_find_decisor_task = any(kw in _first_msg_content.lower() for kw in [
+        "encontrar contato", "encontrar decisor", "open_hierarchy_drawer",
+        "encontrar o contato", "identificar contato", "localizar contato",
+    ])
     _max_iters = (16 if _is_task_action else 6) if direct_action else MAX_ITERATIONS
 
     # ── DETECÇÃO DE DIRETIVA DIRETA ──
     # Se o usuário deu uma ordem direta de escrita (Ex: "atualize a nota", "marque como feita"),
     # ativamos o modo "Direct Directive". Nesse modo, o agente é proibido de sugerir
     # ações proativas (como rascunhar e-mail) antes de cumprir o comando original.
-    _DIRECTIVE_KEYWORDS = ["atualize", "marque", "crie", "delete", "remova", "altere", "nota", "escreva"]
+    _DIRECTIVE_KEYWORDS = ["atualize", "marque", "crie", "delete", "remova", "altere", "nota", "escreva", "execute"]
     _is_direct_directive = direct_action and any(kw in _first_msg_content.lower() for kw in _DIRECTIVE_KEYWORDS)
     if _is_direct_directive:
         log.info("agent.intent.direct_directive_detected", content=_first_msg_content[:50])
+        active_skill = None  # Desativa Skills para ordens diretas/action cards
 
     # ── DETECÇÃO DE REUSO DE CONTEXTO ──
     # Se o histórico já contém as informações necessárias para a tarefa, 
@@ -131,20 +141,10 @@ async def _agent_loop(
                     if _tn: _executed_tools.append(_tn)
     _just_updated_task = "pipedrive_update_task" in _executed_tools
 
-    if _should_skip_investigation and iteration == 0 and direct_action:
-        log.info("agent.intent.context_reuse_detected")
-        messages.append({
-            "role": "user",
-            "content": (
-                "Você já possui o mapeamento da empresa e o histórico de comunicação nesta conversa. "
-                "NÃO execute as ferramentas de busca (pipedrive_get_*, email_get_*, whatsapp_get_*) novamente. "
-                "Prossiga diretamente para a ação solicitada (ex: atualizar tarefa ou gerar script/mensagem)."
-            )
-        })
     # sem eles o modelo perde a lista de contatos e começa a repetir ou pular buscas.
-    _PINNED_TOOLS = {
-        "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities",
-        "whatsapp_get_messages", "email_get_contact_history"
+    _CTX_TOOLS = {
+        "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
+        "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
     }
 
     def _is_pinned(msg: dict) -> bool:
@@ -175,56 +175,71 @@ async def _agent_loop(
     # Guard de deduplicação de tool calls — evita loop infinito quando modelo ignora anti-repetição
     _tool_call_history: set[tuple] = set()
     # Nome do contato dono da tarefa (person_name da atividade pendente do Pipedrive).
-    # Capturado quando pipedrive_get_activities executa, antes da sanitização.
     _session_task_person: str | None = None
-
+    
     for iteration in range(start_iteration, _max_iters):
-        # Sai assim que suggest_next_actions foi chamado — cards já estão na UI,
-        # não há razão para continuar investigando.
+        # Sai assim que suggest_next_actions foi chamado
         if _suggest_actions_done(messages):
             return
 
-        # Controle de ritmo (pacing sleep) defensivo para evitar estouro de RPM/TPM no Cerebras/Groq
-        if iteration > 0:
-            import asyncio as _asyncio
-            from core.config import settings as _s
-            _is_rate_sensitive = False
-            if preferred:
-                pref_lower = preferred.lower()
-                if "cerebras" in pref_lower or "groq" in pref_lower:
-                    _is_rate_sensitive = True
-                elif pref_lower in (_s.ai_cerebras_models_list or []) or pref_lower in (_s.ai_groq_models_list or []):
-                    _is_rate_sensitive = True
-            
-            if _is_rate_sensitive:
-                pacing_delay = 1.5 if strict_mode else 1.0
-                log.info("agent.llm.pacing_delay", provider=preferred, seconds=pacing_delay, iteration=iteration)
-                await _asyncio.sleep(pacing_delay)
-
-        # Corte de memória inteligente: preserva resultados críticos (lista de contatos,
-        # deals e atividades) independente da posição no histórico, para que o modelo
-        # não perca o mapa de quem investigar nas iterações finais do fluxo sequencial.
+        # ... (pacing logic) ...
+        # Corte de memória inteligente...
         if len(messages) > 40:
             pinned = [m for m in messages[1:-20] if _is_pinned(m)]
             recent = messages[-20:]
             pinned_set = set(id(m) for m in pinned)
             messages = [messages[0]] + pinned + [m for m in recent if id(m) not in pinned_set]
 
-        # System prompt por fase: contém todas as instruções necessárias para o
-        # momento atual — sem enviar o que já não é relevante.
-        if _is_direct_directive:
-            system = SYSTEM_PROMPT_TASK_DIRECTIVE
-        elif direct_action and _is_task_action:
-            # Seleciona prompt baseado na capacidade do modelo ativo
-            # Modelos grandes (size >= 3): prompt de raciocínio autônomo
-            # Modelos menores (size <= 2): instruções explícitas passo a passo
+        # Atualiza sinais de detecção a partir do histórico mais recente
+        _has_local_decision_maker = False
+        _persons_with_wa = []
+        _persons_with_email = []
+        
+        # Usa apenas o resultado MAIS RECENTE de pipedrive_get_persons
+        _last_persons_msg = None
+        for _m in messages:
+            _mc = _m.get("content", "")
+            if not isinstance(_mc, list): continue
+            for _b in _mc:
+                if isinstance(_b, dict) and _b.get("type") == "tool_result" and _b.get("tool_name") == "pipedrive_get_persons":
+                    _last_persons_msg = _b
+
+        if _last_persons_msg:
+            import json as _json_loop
+            import re as _re_loop
+            _raw_c = _last_persons_msg.get("content", "")
             try:
-                from core.llm.router import get_model_size
-                _model_size = get_model_size(preferred or "")
+                _text = _json_loop.loads(_raw_c) if isinstance(_raw_c, str) else _raw_c
             except Exception:
-                _model_size = 2
-            # size >= 2 (flash, 32B, 17B+) → prompt autônomo; size 1 (8B, lite) → instruções explícitas
-            system = SYSTEM_PROMPT_TASK_AGENT if _model_size >= 2 else SYSTEM_PROMPT_TASK_AGENT_BASIC
+                _text = _raw_c
+            
+            # Detecção de Decisor Local (Sinalizador Estratégico)
+            if isinstance(_text, str) and "[ALERTA: DECISOR LOCAL ENCONTRADO]" in _text:
+                _has_local_decision_maker = True
+
+            # Extração de contatos com canal
+            if isinstance(_text, dict):
+                for _p in (_text.get("persons") or []):
+                    _pn = _p.get("name", "")
+                    if _pn:
+                        if _p.get("phone"): _persons_with_wa.append((_pn, _p.get("phone")))
+                        if _p.get("email"): _persons_with_email.append((_pn, _p.get("email")))
+            elif isinstance(_text, str):
+                # Formato: "• [ID:NNN] Nome (telefone_ou_email) - Cargo: ... [Origem]"
+                for _line in _text.split('\n'):
+                    _m2 = _re_loop.search(r'•\s*\[ID:[^\]]+\]\s*([^(\n]+?)\s*\(([^)]+)\)', _line)
+                    if _m2:
+                        _pn = _m2.group(1).strip()
+                        _pc = _m2.group(2).strip()
+                        if _pn and _pc and _pc != "sem contato":
+                            if "@" in _pc: _persons_with_email.append((_pn, _pc))
+                            else: _persons_with_wa.append((_pn, _pc))
+
+        # System prompt por fase...
+        if active_skill:
+            system = active_skill.get_instructions({"org_id": org_id, "process_id": process_id})
+        elif _is_direct_directive:
+            system = SYSTEM_PROMPT_TASK_DIRECTIVE
         elif direct_action:
             system = SYSTEM_PROMPT_DIRECT
         else:
@@ -237,10 +252,13 @@ async def _agent_loop(
         try:
             import asyncio as _asyncio
 
-            # Se estiver em modo de DIRETIVA DIRETA, filtramos as ferramentas
-            # para que ele foque apenas no Pipedrive e ignore proatividade.
+            # Se houver skill ativo, filtramos as ferramentas
+            # para as permitidas pelo skill.
             _current_tools = tools
-            if _is_direct_directive:
+            if active_skill:
+                _current_tools = [t for t in tools if t.get("name") in active_skill.allowed_tools]
+                log.info("agent.intent.active_skill.tools_filtered", count=len(_current_tools))
+            elif _is_direct_directive:
                 _PIPEDRIVE_WRITE_TOOLS = {
                     "pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_person",
                     "pipedrive_create_task", "pipedrive_create_deal", "pipedrive_get_activities",
@@ -257,9 +275,31 @@ async def _agent_loop(
             # restringindo ao próximo tool core pendente para garantir a ordem correta.
             _force = False
             _allowed_core: list | None = None
-            if _is_task_action:
-                _CORE = {"pipedrive_get_org","pipedrive_get_persons","pipedrive_get_deals","pipedrive_get_activities"}
-                _CORE_ORDER = ["pipedrive_get_org","pipedrive_get_persons","pipedrive_get_deals","pipedrive_get_activities"]
+            if active_skill:
+                _CORE = set(active_skill.core_tools)
+                _CORE_ORDER = list(active_skill.core_tools)
+                _done: set[str] = set()
+                for _m in messages:
+                    _mc = _m.get("content","")
+                    if isinstance(_mc, list):
+                        for _b in _mc:
+                            if isinstance(_b, dict):
+                                _tn = _b.get("tool_name") or _b.get("name","")
+                                if _b.get("type") in ("tool_result","tool_use") and _tn in _CORE:
+                                    _done.add(_tn)
+                _missing_core = _CORE - _done
+                if _missing_core:
+                    _force = True
+                    _next_core = next((t for t in _CORE_ORDER if t not in _done), None)
+                    if _next_core:
+                        _allowed_core = [_next_core]
+            elif _is_task_action:
+                if _is_find_decisor_task:
+                    _CORE = {"deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects"}
+                    _CORE_ORDER = ["deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects"]
+                else:
+                    _CORE = {"deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals", "pipedrive_get_activities"}
+                    _CORE_ORDER = ["deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals", "pipedrive_get_activities"]
                 _done: set[str] = set()
                 for _m in messages:
                     _mc = _m.get("content","")
@@ -312,7 +352,7 @@ async def _agent_loop(
                     })
 
             _llm_task = _asyncio.create_task(_call_with_tools(
-                system, messages, tools,
+                system, messages, _current_tools,
                 preferred=preferred, strict_mode=strict_mode,
                 pending_events=_pending_events,
                 force_tool_call=_force,
@@ -466,13 +506,11 @@ async def _agent_loop(
         # Resposta final (sem tool calls)
         if stop_reason == "end_turn" or not tool_use_blocks:
             response_text = " ".join(b.get("text", "") for b in text_blocks).strip()
-            if not response_text:
-                response_text = "(Erro interno: O agente não gerou resposta nem chamou ferramentas no Pipedrive. Isso geralmente ocorre quando ele não consegue encontrar a tarefa com o nome exato que você pediu. Tente pedir para ele listar as tarefas primeiro, ou verifique se o nome está correto.)"
 
             # Modo execução direta: verificar se a Fase 1 foi concluída antes de encerrar
             if direct_action and _is_task_action:
                 _CTX_TOOLS = {
-                    "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals",
+                    "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
                     "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
                 }
                 # Detecta quais ferramentas de contexto já foram chamadas no histórico
@@ -490,14 +528,13 @@ async def _agent_loop(
                 _missing_ctx = _CTX_TOOLS - _called_ctx
                 # Só bloqueia se faltam ferramentas core (org, persons, deals, activities)
                 # — as de comunicação podem ser omitidas pelo padrão "Encontrar Decisor"
-                _CORE_CTX = {"pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities"}
+                _CORE_CTX = {"deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals", "pipedrive_get_activities"}
                 _missing_core = _CORE_CTX - _called_ctx
 
                 # Ordem preferida de execução da fase 1
                 _CTX_ORDER = [
-                    "pipedrive_get_org", "pipedrive_get_persons",
-                    "pipedrive_get_deals", "pipedrive_get_activities",
-                    "whatsapp_get_messages", "email_get_contact_history",
+                    "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
+                    "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
                 ]
                 _next_tool = next((t for t in _CTX_ORDER if t not in _called_ctx), None)
 
@@ -554,63 +591,20 @@ async def _agent_loop(
                 # de o agente finalizar. Impede que o modelo conclua "sem histórico" depois
                 # de buscar apenas o contato principal.
                 if iteration < _max_iters - 2:
-                    # Extrai contatos com canal do resultado de pipedrive_get_persons.
-                    # O conteúdo armazenado é texto sanitizado, não JSON estruturado.
-                    # Formato: "• [ID:61] Lucas (11 4591-1807)" — "sem contato" = sem canal.
-                    _persons_with_channel: list[str] = []
-                    import json as _json2
-                    import re as _re_pc
-                    # Usa apenas o resultado MAIS RECENTE de pipedrive_get_persons
-                    # para evitar contaminação de sessões/chats anteriores no histórico.
-                    _last_persons_msg = None
-                    for _m in messages:
-                        _mc = _m.get("content", "")
-                        if not isinstance(_mc, list): continue
-                        for _b in _mc:
-                            if isinstance(_b, dict) and _b.get("type") == "tool_result" and _b.get("tool_name") == "pipedrive_get_persons":
-                                _last_persons_msg = _b
-                    for _m in ([{"content": [_last_persons_msg]}] if _last_persons_msg else []):
-                        _mc = _m.get("content", "")
-                        if not isinstance(_mc, list): continue
-                        for _b in _mc:
-                            if not isinstance(_b, dict): continue
-                            if _b.get("type") != "tool_result" or _b.get("tool_name") != "pipedrive_get_persons": continue
-                            _raw_c = _b.get("content", "")
-                            # Desserializa o JSON externo (que encapsula a string sanitizada)
-                            try:
-                                _text = _json2.loads(_raw_c) if isinstance(_raw_c, str) else _raw_c
-                            except Exception:
-                                _text = _raw_c
-                            # Caso dict com "persons" (raro — resultado não sanitizado)
-                            if isinstance(_text, dict):
-                                for _p in (_text.get("persons") or []):
-                                    _pn = _p.get("name", "")
-                                    if _pn and (_p.get("phone") or _p.get("email")):
-                                        _persons_with_channel.append(_pn)
-                            elif isinstance(_text, str):
-                                # Formato: "• [ID:NNN] Nome (telefone_ou_email)"
-                                # Pula linhas com "sem contato" — são contatos sem canal
-                                for _m2 in _re_pc.finditer(
-                                    r'•\s*\[ID:\d+\]\s*([^(\n]+?)\s*\(([^)]+)\)',
-                                    _text
-                                ):
-                                    _pname_raw = _m2.group(1).strip()
-                                    _pcontact  = _m2.group(2).strip()
-                                    if _pname_raw and _pcontact and _pcontact != "sem contato":
-                                        _persons_with_channel.append((_pname_raw, _pcontact))
-
                     # Prioriza o contato dono da tarefa — usa _session_task_person capturado
                     # durante a execução de pipedrive_get_activities (dado raw, antes da sanitização).
-                    if _session_task_person and _persons_with_channel:
+                    if _session_task_person:
                         _tpn_lower = _session_task_person.lower()
-                        _task_entry = next(
-                            (p for p in _persons_with_channel
-                             if _tpn_lower in p[0].lower() or p[0].lower().split()[0] in _tpn_lower),
-                            None
-                        )
-                        if _task_entry and _persons_with_channel.index(_task_entry) != 0:
-                            _persons_with_channel.remove(_task_entry)
-                            _persons_with_channel.insert(0, _task_entry)
+                        # WA
+                        _task_entry_wa = next((p for p in _persons_with_wa if _tpn_lower in p[0].lower() or p[0].lower().split()[0] in _tpn_lower), None)
+                        if _task_entry_wa and _persons_with_wa.index(_task_entry_wa) != 0:
+                            _persons_with_wa.remove(_task_entry_wa)
+                            _persons_with_wa.insert(0, _task_entry_wa)
+                        # Email
+                        _task_entry_email = next((p for p in _persons_with_email if _tpn_lower in p[0].lower() or p[0].lower().split()[0] in _tpn_lower), None)
+                        if _task_entry_email and _persons_with_email.index(_task_entry_email) != 0:
+                            _persons_with_email.remove(_task_entry_email)
+                            _persons_with_email.insert(0, _task_entry_email)
 
                     # Descobre quais contatos já foram buscados via whatsapp ou email
                     _already_searched: set[str] = set()
@@ -637,21 +631,27 @@ async def _agent_loop(
                             if not isinstance(_b, dict): continue
                             if _b.get("type") == "tool_result" and _b.get("tool_name") == "pipedrive_get_org":
                                 try:
-                                    _od = _json2.loads(_b.get("content", "{}"))
+                                    _od = json.loads(_b.get("content", "{}"))
                                     _org_name_for_search = (_od.get("org") or {}).get("name") or _od.get("name") or ""
                                 except Exception:
                                     pass
 
-                    # Encontra o próximo contato com canal ainda não buscado
-                    _next_unsearched = None
-                    for _pname, _pcontact in _persons_with_channel:
+                    # Encontra o próximo contato WA e Email ainda não buscados
+                    _next_unsearched_wa = None
+                    for _pname, _pphone in _persons_with_wa:
                         if _pname.lower() not in _already_searched and _pname.split()[0].lower() not in _already_searched:
-                            _next_unsearched = (_pname, _pcontact)
+                            _next_unsearched_wa = (_pname, _pphone)
+                            break
+                    
+                    _next_unsearched_email = None
+                    for _pname, _pemail in _persons_with_email:
+                        if _pname.lower() not in _already_searched and _pname.split()[0].lower() not in _already_searched:
+                            _next_unsearched_email = (_pname, _pemail)
                             break
 
                     _ai_response_text = " ".join(b.get("text", "") for b in text_blocks).lower()
                     
-                    # Detecta se já gerou rascunho de mensagem (significa que já identificou o decisor e o histórico)
+                    # Detecta se já gerou rascunho de mensagem
                     _has_draft = False
                     for _m in messages + [{"role": "assistant", "content": content}]:
                         _mc = _m.get("content", "")
@@ -665,8 +665,6 @@ async def _agent_loop(
                     _found_decision_maker = _has_draft or ("decisor" in _ai_response_text and any(word in _ai_response_text for word in ["encontrado", "confirmado", "identificado"]))
 
                     # Se já achou decisor ou gerou rascunho, ignora esgotamento forçado.
-                    # Para tarefas diretas (_is_task_action), somos mais flexíveis apenas se JÁ encontrou
-                    # histórico útil. Se WhatsApp estava desconectado, ainda força busca de email.
                     _has_useful_history = any(
                         True
                         for _hm in messages + [{"role": "assistant", "content": content}]
@@ -678,16 +676,14 @@ async def _agent_loop(
                         and "inacess" not in str(_hb.get("content", "")).lower()
                         and "não encontrado" not in str(_hb.get("content", "")).lower()
                     )
-                    if _next_unsearched and _persons_with_channel and not _found_decision_maker:
+
+                    if not _found_decision_maker and not _has_draft:
                         if _is_task_action and _already_searched and _has_useful_history:
                             # Já encontrou histórico útil — não força busca adicional
                             pass
-                        else:
-                            _first_name = _next_unsearched[0].split()[0]
-                            _phone_val = _next_unsearched[1]
-                            _unsearched_list = [p[0] for p in _persons_with_channel
-                                                if p[0].lower() not in _already_searched
-                                                and p[0].split()[0].lower() not in _already_searched]
+                        elif _next_unsearched_wa:
+                            _first_name = _next_unsearched_wa[0].split()[0]
+                            _phone_val = _next_unsearched_wa[1]
                             _phone_param = f", phone='{_phone_val}'" if "@" not in _phone_val else ""
 
                             # Se WhatsApp estiver desconectado ou com falha, força email em vez de outra tentativa
@@ -703,7 +699,8 @@ async def _agent_loop(
                                 and _hb.get("tool_name") == "whatsapp_get_messages"
                             )
                             if _wa_disconnected_now:
-                                _next_for_email = _next_unsearched[0]
+                                # Tenta buscar o e-mail deste contato ou do próximo
+                                _next_for_email = _next_unsearched_wa[0]
                                 _org_label = _org_name_for_search or "a empresa"
                                 messages.append({"role": "assistant", "content": content})
                                 messages.append({
@@ -719,22 +716,31 @@ async def _agent_loop(
                                 messages.append({
                                     "role": "user",
                                     "content": (
-                                        f"ATENÇÃO: Você não esgotou todos os contatos com canal antes de finalizar.\n"
-                                        f"Contatos com canal registrado ainda não buscados: {', '.join(_unsearched_list)}\n"
+                                        f"ATENÇÃO: Você não esgotou todos os contatos com WhatsApp antes de finalizar.\n"
                                         f"OBRIGATÓRIO: busque agora whatsapp_get_messages com contact='{_first_name}'{_phone_param} "
                                         f"antes de redigir qualquer mensagem. "
                                         f"Só conclua 'sem histórico' após verificar TODOS os contatos com canal."
                                     ),
                                 })
                             continue
+                        elif _next_unsearched_email:
+                            _next_for_email = _next_unsearched_email[0]
+                            _org_label = _org_name_for_search or "a empresa"
+                            messages.append({"role": "assistant", "content": content})
+                            messages.append({
+                                "role": "user",
+                                "content": (
+                                    f"OBRIGATÓRIO: busque o histórico de e-mail para ter o histórico completo.\n"
+                                    f"Chame email_get_contact_history com contact_name='{_next_for_email}', org_name='{_org_label}' agora.\n"
+                                    f"Só conclua 'sem histórico' após verificar e-mail também."
+                                ),
+                            })
+                            continue
 
                     # ── Interceptor: sem canal → forçar open_hierarchy_drawer (anti-alucinação) ──
                     # O LLM tende a escrever "abri o mapeador" em texto em vez de chamar a tool.
                     # Condição: investigação concluída + zero contatos com canal + tarefa é encontrar decisor.
-                    _is_find_decisor_task = any(kw in _first_msg_content.lower() for kw in [
-                        "encontrar contato", "encontrar decisor", "open_hierarchy_drawer",
-                        "encontrar o contato", "identificar contato", "localizar contato",
-                    ])
+                    # _is_find_decisor_task já foi definido no início do loop
                     _hierarchy_already_called = any(
                         isinstance(_b, dict) and (
                             (_b.get("type") == "tool_use" and _b.get("name") == "open_hierarchy_drawer") or
@@ -745,9 +751,11 @@ async def _agent_loop(
                     )
                     if (
                         _is_find_decisor_task
-                        and not _persons_with_channel
+                        and not _persons_with_wa
+                        and not _persons_with_email
                         and not _missing_core
                         and not _hierarchy_already_called
+                        and not _has_local_decision_maker
                     ):
                         _org_hint = _org_name_for_search or ""
                         messages.append({"role": "assistant", "content": content})
@@ -762,6 +770,25 @@ async def _agent_loop(
                             ),
                         })
                         continue
+
+                    # ── Interceptor: Decisores locais exigem evaluation ──
+                    if _has_local_decision_maker:
+                        _evaluation_called = any(
+                            isinstance(_b, dict) and (
+                                (_b.get("type") == "tool_use" and _b.get("name") == "evaluate_prospects") or
+                                (_b.get("type") == "tool_result" and _b.get("tool_name") == "evaluate_prospects")
+                            )
+                            for _m in messages + [{"role": "assistant", "content": content}]
+                            for _b in (_m.get("content") if isinstance(_m.get("content"), list) else [])
+                        )
+                        
+                        if not _evaluation_called:
+                            messages.append({"role": "assistant", "content": content})
+                            messages.append({
+                                "role": "user",
+                                "content": "AÇÃO OBRIGATÓRIA: Decisores ICP encontrados. CHAME AGORA `evaluate_prospects` para realizar o ranking inteligente."
+                            })
+                            continue
 
                 # ── Interceptor: Rascunho gerado mas NÃO enviado (REGRA DE OURO) ─────────────
                 if _is_task_action and iteration < _max_iters - 2:
@@ -831,14 +858,13 @@ async def _agent_loop(
                                 continue
 
             # Emite resultado final
-            if direct_action:
+            if direct_action and not _is_task_action:
                 if not _final_emitted:
                     _raw_log(process_id, "agent_final_response", {"response": response_text})
                     yield _emit({"type": "final", "response": response_text})
                 return
 
-            # Interceptor anti-permissão: se o modelo pediu permissão em vez de agir,
-            # injeta uma correção e força mais uma iteração de ferramentas.
+            # Interceptor anti-permissão...
             _PERMISSION_PHRASES = [
                 "você gostaria", "gostaria de verificar", "gostaria de buscar",
                 "deseja continuar", "deseja verificar", "posso verificar",
@@ -965,11 +991,18 @@ async def _agent_loop(
                         continue
 
                     # Investigação completa — verifica se suggest_next_actions já foi chamado.
-                    # Para tarefas diretas (_is_task_action), não sugerimos ações extras ao final.
-                    if not _is_task_action and not _final_emitted and not _suggest_actions_done(_msgs_with_current) and stop_reason == "end_turn" and not tool_use_blocks:
+                    if not _final_emitted and not _suggest_actions_done(_msgs_with_current) and stop_reason == "end_turn" and not tool_use_blocks:
                         # Emite o dossiê agora e força turno dedicado para suggest_next_actions
-                        _raw_log(process_id, "agent_final_response", {"response": response_text})
-                        yield _emit({"type": "final", "response": response_text})
+                        _final_response = response_text
+                        if not _final_response.strip():
+                            _has_update_task = any("pipedrive_update_task" in str(m) for m in messages)
+                            if _has_update_task:
+                                _final_response = "Ação realizada com sucesso! Aqui estão as sugestões de próximos passos:"
+                            else:
+                                _final_response = "Investigação concluída! Aqui estão as sugestões de próximos passos:"
+
+                        _raw_log(process_id, "agent_final_response", {"response": _final_response})
+                        yield _emit({"type": "final", "response": _final_response})
                         _final_emitted = True
 
                         real_data_summary = []
@@ -1009,42 +1042,7 @@ async def _agent_loop(
                                 "Cada ação DEVE ter:\n"
                                 "• 'label': texto curto, persuasivo e atraente para o botão (comercialmente focado)\n"
                                 "• 'prompt': instrução autossuficiente com IDs e parâmetros REAIS obtidos nas buscas.\n\n"
-                                "REGRAS OBRIGATÓRIAS DE RACIOCÍNIO COMERCIAL:\n"
-                                "1. EVITAR CADASTROS DUPLICADOS (CRÍTICO): Se o nome da pessoa identificada na comunicação (ex: Gabriel) "
-                                "já está listado nos 'Contatos Atuais no Pipedrive' fornecidos acima (mesmo com pequenas variações), "
-                                "você está ABSOLUTAMENTE PROIBIDO de sugerir criar o contato. O usuário considera isso um erro grave. "
-                                "Apenas sugira 'pipedrive_create_person' se for um contato 100% novo revelado no histórico que não esteja no CRM. "
-                                "(Lembre-se: João Moura é o vendedor, nunca cadastre ele).\n"
-                                "   Prompt caso novo: 'Execute pipedrive_create_person: name=[NOME_REAL_DO_CONTATO], email=[EMAIL_REAL], org_name=[NOME_DA_EMPRESA]' (substitua sempre as chaves por valores reais, nunca use palavras genéricas ou colchetes no prompt final)\n\n"
-                                "2. CONCLUIR ATIVIDADE: Se há uma atividade pendente de follow-up e o histórico de e-mails ou WhatsApp "
-                                "mostra que já houve uma interação/resposta real recente, sugira marcar essa atividade pendente como feita.\n"
-                                "   O 'label' da ação DEVE conter obrigatoriamente o assunto da tarefa no formato: 'Concluir atividade pendente · [Assunto da Tarefa]'.\n"
-                                "   Exemplo: se a tarefa pendente tem o assunto 'Ligar para Gabriel', o label deve ser exatamente: 'Concluir atividade pendente · Ligar para Gabriel'.\n"
-                                "   Prompt: 'Execute pipedrive_update_task com activity_id=[ID_NUMERICO_REAL] e done=true' (substitua sempre pelo ID numérico real da atividade encontrado no CRM, nunca escreva a palavra literal 'ID')\n\n"
-                                "3. ANÁLISE DE OBJEÇÃO DE PREÇO (MUITO IMPORTANTE): Verifique atentamente se o contato (ex: Gabriel) indicou "
-                                "nas mensagens de WhatsApp ou E-mail que nosso preço/orçamento está alto, caro, fora do orçamento, ou que "
-                                "está comparando com a concorrência que é mais barata. Neste cenário de objeção de preço:\n"
-                                "   - NÃO sugira sequências genéricas de follow-ups persistentes pedindo reunião. Isso afasta o cliente e é ineficaz.\n"
-                                "   - Em vez disso, crie um plano sob medida focado em contornar a objeção de preço, ajustando propostas, "
-                                "estudando margens e negociando termos técnicos de valor. A sequência de 5 tarefas no Pipedrive deve ser:\n"
-                                "     * Tarefa 1: Estudo interno de custos e viabilidade de desconto de margem (tipo='task', due_date='<HOJE+1d>')\n"
-                                "     * Tarefa 2: WhatsApp/Email rápido de alinhamento com o contato, informando que estamos revisando os custos (tipo='task', due_date='<HOJE+1d>')\n"
-                                "     * Tarefa 3: Elaborar e Enviar Proposta Comercial Revisada com a melhor margem possível ou especificações alternativas para caber no budget (tipo='task', due_date='<HOJE+3d>')\n"
-                                "     * Tarefa 4: Ligação consultiva para entender as propostas dos concorrentes e termos técnicos (tipo='call', due_date='<HOJE+6d>')\n"
-                                "     * Tarefa 5: Ligação/Reunião de fechamento comercial definitivo (tipo='call' ou 'meeting', due_date='<HOJE+10d>')\n"
-                                "   - Se NÃO houver reclamação de preço alto no histórico: use uma sequência padrão de 5 follow-ups progressivos de qualificação "
-                                "visando agendar uma reunião de apresentação.\n"
-                                "   Exemplo de prompt para sequência de follow-ups adaptada:\n"
-                                "   label: 'Criar plano de 5 tarefas de negociação de preço para <CONTATO>' (ou 'Criar sequência de 5 follow-ups para reunião' se for fluxo padrão)\n"
-                                "   prompt: 'Execute pipedrive_create_task 5 vezes em sequência para criar o plano de negociação/follow-up com <EMPRESA> (deal_id=<ID>):\n"
-                                "Tarefa 1: subject=\"<ASSUNTO ESTRETEGICO DA TAREFA 1>\", task_type=\"task\", due_date=\"<HOJE+1d>\", org_name=\"<EMPRESA>\", note=\"<DETALHE COMERCIAL ESTRUTURADO DA TAREFA 1>\"\n"
-                                "Tarefa 2: ...'\n\n"
-                                "4. ENVIAR PROPOSTA COM DESCONTO / RESPOSTA RÁPIDA: Se o histórico indica que o vendedor (João) prometeu um desconto (ex: 9% de desconto) "
-                                "ou que ficou de enviar uma nova proposta e isso ainda não foi formalizado/fechado, sugira uma ação direta de envio por e-mail ou WhatsApp "
-                                "com o teor exato da proposta negociada, citando os valores discutidos.\n\n"
-                                "5. RESPONDER E-MAIL / WHATSAPP: Se há um e-mail ou thread ativo com entry_id real, ou mensagem do WhatsApp recente sem resposta, "
-                                "sugira uma resposta comercialmente impecável, oferecendo resolver a dor do cliente.\n"
-                                "   Prompt: 'Execute email_reply com entry_id=[ENTRY_ID_REAL] e body=[TEXTO_DA_RESPOSTA_REAL]' (substitua sempre pelas informações reais coletadas das buscas, nunca use colchetes ou as palavras genéricas no prompt final)\n\n"
+                                f"{active_skill.get_suggestion_rules() if active_skill else ''}\n"
                                 "NÃO invente IDs. Se não tiver ID real, não use o prompt correspondente.\n"
                                 "NÃO escreva nenhum outro texto no seu retorno. Apenas chame suggest_next_actions."
                             ),
@@ -1080,7 +1078,7 @@ async def _agent_loop(
 
                     if has_price_objection:
                         seq_prompt = (
-                            f"Execute pipedrive_create_task 5 vezes em sequência para criar o plano de negociação e contorno de objeção de preço com {found_org}"
+                            f"Execute pipedrive_create_task 5 vezes em sequência para criar o plano de negociação e contorno de objeção de preço with {found_org}"
                             + (f" (deal_id={found_deal_id})" if found_deal_id else "") + ":\n"
                             f"Tarefa 1: subject=\"Estudo interno de margem e engenharia de custos\", task_type=\"task\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Analisar viabilidade de concessão de descontos adicionais ou alteração de especificações para caber no orçamento.\"\n"
                             f"Tarefa 2: subject=\"Aviso de revisão de proposta comercial\", task_type=\"task\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Enviar mensagem ao contato informando que estamos revisando internamente os valores para apresentar uma alternativa competitiva.\"\n"
@@ -1091,7 +1089,7 @@ async def _agent_loop(
                         lbl = "Criar plano de 5 tarefas de negociação de preço"
                     else:
                         seq_prompt = (
-                            f"Execute pipedrive_create_task 5 vezes em sequência para criar o plano de follow-up para agendar reunião com {found_org}"
+                            f"Execute pipedrive_create_task 5 vezes em sequência para criar o plano de follow-up para agendar reunião with {found_org}"
                             + (f" (deal_id={found_deal_id})" if found_deal_id else "") + ":\n"
                             f"Tarefa 1: subject=\"Follow-up 1: Ligar para {found_org}\", task_type=\"call\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Primeira tentativa de contato. Apresentar J.Ferres e propor reunião rápida de 20 min.\"\n"
                             f"Tarefa 2: subject=\"Follow-up 2: Email de apresentação\", task_type=\"task\", due_date=\"{_d(3)}\", org_name=\"{found_org}\", note=\"Enviar e-mail de apresentação propondo reunião. Referenciar último assunto discutido.\"\n"
@@ -1127,6 +1125,45 @@ async def _agent_loop(
             tool_name = block.get("name", "")
             tool_args = block.get("input") or {}
             tool_id = block.get("id", "")
+
+            # 🚀 INTERCEPTOR: Bloqueio Hard de WhatsApp para contatos Somente-Email
+            if tool_name == "whatsapp_get_messages":
+                _contact_name = (tool_args.get("contact") or "").lower()
+                # Se o contato está na lista de e-mails mas NÃO está na lista de WA
+                _is_only_email = any(_p[0].lower() in _contact_name for _p in _persons_with_email) and not any(_p[0].lower() in _contact_name for _p in _persons_with_wa)
+                
+                if _is_only_email:
+                    log.info("agent.interceptor.whatsapp_blocked_only_email", contact=_contact_name)
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": tool_id,
+                        "tool_name": tool_name,
+                        "content": (
+                            f"AÇÃO BLOQUEADA PELO SISTEMA: O contato '{tool_args.get('contact')}' não possui WhatsApp "
+                            "registrado (canal identificado: apenas Email). É PROIBIDO tentar buscar mensagens de WhatsApp "
+                            "para este contato. PROSSIGA imediatamente para 'email_get_contact_history' ou para a ação final."
+                        ),
+                        "is_error": False,
+                    })
+                    continue
+
+            # 🚀 INTERCEPTOR: Bloqueio Hard de Mapeamento Redundante
+            # Se um decisor local foi encontrado, é terminantemente proibido abrir o mapeador.
+            if tool_name == "open_hierarchy_drawer" and _has_local_decision_maker:
+                log.info("agent.interceptor.hierarchy_drawer_blocked", org_name=tool_args.get("org_name"))
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_id,
+                    "tool_name": tool_name,
+                    "content": (
+                        "AÇÃO BLOQUEADA PELO SISTEMA: Um decisor estratégico (Compras/Logística) já foi identificado "
+                        "no Banco Local para esta empresa. O mapeamento de hierarquia é desnecessário e redundante. "
+                        "PROSSIGA agora para a associação do contato ao negócio ou verificação dos canais de comunicação "
+                        "já encontrados (WhatsApp/E-mail)."
+                    ),
+                    "is_error": False,
+                })
+                continue
 
             if tool_name not in TOOLS:
                 tool_results.append({
@@ -1493,4 +1530,3 @@ async def _agent_loop(
         "type": "final",
         "response": "Não consegui concluir a tarefa dentro do número máximo de passos. Tente reformular o pedido.",
     })
-

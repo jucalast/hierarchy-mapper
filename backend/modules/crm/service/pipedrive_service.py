@@ -528,6 +528,31 @@ class PipedriveService:
 
         return pipedrive_success
 
+    async def delete_person(self, person_id: int) -> bool:
+        resp = await self._request("DELETE", f"persons/{person_id}")
+        if resp is not None and resp.status_code == 403:
+            raise RuntimeError("Você não tem permissão no Pipedrive para excluir contatos. Entre em contato com o administrador do CRM.")
+            
+        pipedrive_success = resp is not None and resp.status_code in [200, 201, 204, 404]
+        if not pipedrive_success:
+            return False
+            
+        from core.infra.database import async_session
+        from models import Employee
+        from sqlalchemy import select
+        try:
+            async with async_session() as session:
+                stmt = select(Employee).where(Employee.pipedrive_id == str(person_id))
+                res = await session.execute(stmt)
+                emp = res.scalars().first()
+                if emp:
+                    emp.pipedrive_id = None
+                    await session.commit()
+        except Exception as e:
+            log.warning("pipedrive.person.local_delete_failed", error=str(e))
+            
+        return pipedrive_success
+
     # ---------------------------------------------------------------------
     # Listing / Sync
     # ---------------------------------------------------------------------
@@ -641,8 +666,20 @@ class PipedriveService:
         from models import Employee, Organization
         from sqlalchemy import func, select, and_, or_
 
-        # Usa o cache de open org IDs (nunca bloqueia o request)
+        # Aguarda até 5 segundos se o cache não estiver pronto (startup warm-up)
+        # Evita drawer vazio se o frontend for mais rápido que o primeiro request ao Pipedrive
+        attempts = 0
+        while PipedriveService._open_org_ids_cache is None and attempts < 10:
+            await asyncio.sleep(0.5)
+            attempts += 1
+
+        # Usa o cache de open org IDs (filtro obrigatório para mostrar apenas ativos)
         open_org_ids = PipedriveService._open_org_ids_cache
+        
+        # Se o cache ainda não carregou, retornamos vazio para evitar mostrar negócios perdidos/antigos
+        if open_org_ids is None:
+            log.info("pipedrive.list_orgs.cache_not_ready")
+            return []
 
         # 2. Busca TODAS as organizações locais ativas
         async with async_session() as session:
@@ -651,20 +688,13 @@ class PipedriveService:
                 .where(
                     and_(
                         Organization.is_excluded != 1,
-                        or_(
-                            Organization.source != "prospecting",
-                            Organization.pipedrive_id.is_not(None)
-                        )
+                        Organization.pipedrive_id.in_(list(open_org_ids))
                     )
                 )
                 .order_by(Organization.last_enrichment.desc())
             )
             res = await session.execute(stmt)
             local_orgs = res.scalars().all()
-
-            # Filtrar organizações com negócios abertos (se carregado com sucesso)
-            if open_org_ids is not None:
-                local_orgs = [o for o in local_orgs if o.pipedrive_id in open_org_ids]
 
             if not local_orgs:
                 return []
@@ -840,7 +870,13 @@ class PipedriveService:
                 deal_id = act.get("deal_id")
                 if not deal_id:
                     continue
-                stage_id = deal_stages.get(deal_id, 0)
+                
+                # 🚀 FILTRO CRÍTICO: Só processa atividades de negócios que estão ABERTOS
+                # Se o deal_id não está no mapa deal_stages, significa que ele não é um deal "open"
+                stage_id = deal_stages.get(deal_id)
+                if stage_id is None:
+                    continue
+
                 all_stages.add(stage_id)
                 is_done = act.get("done") == 1
                 due_date = act.get("due_date")
@@ -853,99 +889,110 @@ class PipedriveService:
                     act["stage_id"] = stage_id
                     deal_open_tasks[deal_id].append(act)
 
-            # Ordenação por prioridade: negócios sem atividades realizadas (1900-01-01) ou com atividades mais antigas (+1sem) primeiro!
+            # Ordenação por prioridade global (negócios sem atividades ou mais antigos primeiro)
             sorted_deals = sorted(
                 deal_open_tasks.keys(),
                 key=lambda did: deal_last_done.get(did, "1900-01-01"),
             )
 
-            stage_queues: Dict[int, list] = defaultdict(list)
+            # Criando uma única fila global ordenada por prioridade de tempo (descartando funil)
+            global_queue = []
             for did in sorted_deals:
-                stage_id = deal_stages.get(did, 0)
-                stage_queues[stage_id].extend(deal_open_tasks[did])
+                global_queue.extend(deal_open_tasks[did])
 
             scheduled_updates: List[tuple[int, str]] = []
             scheduled_deal_updates: Dict[int, str] = {}
             current_day = today_date
-            sorted_stages = sorted(list(all_stages))
             daily_load: Dict[str, int] = defaultdict(int)
             deal_day_map: Dict[tuple, bool] = {}
 
-            has_tasks = True
-            while has_tasks:
-                has_tasks = False
-                for stage_id in sorted_stages:
-                    if stage_queues[stage_id]:
-                        task = stage_queues[stage_id].pop(0)
-                        deal_id = task.get("deal_id")
-                        has_tasks = True
-                        
-                        # 🚀 ENVELHECIMENTO / INTERVALO DE 1 SEMANA:
-                        # Calcula a data mínima permitida (7 dias após a última tarefa realizada)
-                        last_done = deal_last_done.get(deal_id)
-                        if last_done:
-                            try:
-                                last_dt = datetime.strptime(last_done, "%Y-%m-%d").date()
-                                min_allowed = last_dt + timedelta(days=7)
-                            except Exception:
-                                min_allowed = today_date
+            for task in global_queue:
+                deal_id = task.get("deal_id")
+                
+                # 🚀 ENVELHECIMENTO / INTERVALO:
+                # Calcula a data mínima permitida baseada na última tarefa realizada
+                last_done = deal_last_done.get(deal_id)
+                if last_done:
+                    try:
+                        last_dt = datetime.strptime(last_done, "%Y-%m-%d").date()
+                        # Se a tarefa foi feita hoje ou no futuro (agendada), pula 7 dias para a próxima
+                        if last_dt >= today_date:
+                            min_allowed = last_dt + timedelta(days=7)
                         else:
+                            # Se a tarefa é antiga, permite agendar para hoje se houver vaga
                             min_allowed = today_date
-                            
-                        # O agendamento começa a partir da data mínima ou da data corrente (o que for maior)
-                        target_day = max(current_day, min_allowed)
+                    except Exception:
+                        min_allowed = today_date
+                else:
+                    min_allowed = today_date
+                    
+                target_day = min_allowed
+                
+                found_day = False
+                attempt = 0
+                while not found_day and attempt < 365:
+                    d_str = target_day.isoformat()
+                    # Pula finais de semana
+                    if target_day.weekday() >= 5:
+                        target_day += timedelta(days=1)
+                        continue
+                    
+                    # Verifica se o dia atual tem menos de 10 tarefas E se este negócio já não tem tarefa neste dia
+                    if (
+                        daily_load[d_str] < 10
+                        and (d_str, deal_id) not in deal_day_map
+                    ):
+                        # ONLY add to scheduled_updates if the date actually changes!
+                        if task.get("due_date") != d_str:
+                            scheduled_updates.append((task.get("id"), d_str))
                         
-                        found_day = False
-                        attempt = 0
-                        while not found_day and attempt < 365:
-                            d_str = target_day.isoformat()
-                            if target_day.weekday() >= 5:
-                                target_day += timedelta(days=1)
-                                continue
-                            if (
-                                daily_load[d_str] < 20
-                                and (d_str, deal_id) not in deal_day_map
-                            ):
-                                scheduled_updates.append((task.get("id"), d_str))
-                                daily_load[d_str] += 1
-                                deal_day_map[(d_str, deal_id)] = True
-                                
-                                # Espaça eventuais tarefas subsequentes deste mesmo negócio em 7 dias adicionais
-                                deal_last_done[deal_id] = d_str
-                                
-                                current_close = deal_expected_close.get(deal_id)
-                                if not current_close or current_close < d_str:
-                                    scheduled_deal_updates[deal_id] = d_str
-                                    deal_expected_close[deal_id] = d_str
-                                    
-                                found_day = True
-                            else:
-                                target_day += timedelta(days=1)
-                                attempt += 1
+                        daily_load[d_str] += 1
+                        deal_day_map[(d_str, deal_id)] = True
+                        
+                        # Atualiza o rastro de "última tarefa" para as próximas tasks do mesmo deal
+                        deal_last_done[deal_id] = d_str
+                        
+                        current_close = deal_expected_close.get(deal_id)
+                        if not current_close or current_close < d_str:
+                            if current_close != d_str:
+                                scheduled_deal_updates[deal_id] = d_str
+                            deal_expected_close[deal_id] = d_str
+                            
+                        found_day = True
+                    else:
+                        target_day += timedelta(days=1)
+                        attempt += 1
 
-            async def _update_one_task(tid: int, d_str: str) -> bool:
+            # Para evitar Timeout no frontend (Next.js) e Rate Limits absurdos no Pipedrive,
+            # vamos limitar o número máximo de atualizações por vez a 30 (lotes menores e muito rápidos).
+            # O usuário pode clicar no botão novamente se houver mais atrasados.
+            MAX_UPDATES = 30
+            scheduled_updates = scheduled_updates[:MAX_UPDATES]
+            
+            # Execução Sequencial para Background
+            # Como está rodando de madrugada/invisível, não temos pressa. Executar sequencialmente
+            # impede o erro de "Too Many Requests" (429) do Pipedrive que derruba o serviço.
+            updated = 0
+            for tid, d_str in scheduled_updates:
                 try:
-                    r = await self._request(
-                        "PUT", f"activities/{tid}", json={"due_date": d_str}
-                    )
-                    return r is not None and r.status_code == 200
+                    r = await self._request("PUT", f"activities/{tid}", json={"due_date": d_str})
+                    if r is not None and r.status_code == 200:
+                        updated += 1
                 except Exception as e:
                     log.warning("pipedrive.smart_reschedule.task_failed", task_id=tid, error=str(e))
-                    return False
+                    await asyncio.sleep(2) # Dorme em caso de erro
 
-            results = await asyncio.gather(*[_update_one_task(tid, d_str) for tid, d_str in scheduled_updates])
-            updated = sum(1 for res in results if res)
-
-            async def _update_one_deal(did: int, d_str: str) -> bool:
+            deal_updates_list = list(scheduled_deal_updates.items())[:MAX_UPDATES]
+            
+            updated_deals = 0
+            for did, d_str in deal_updates_list:
                 try:
                     r = await self._request("PUT", f"deals/{did}", json={"expected_close_date": d_str})
-                    return r is not None and r.status_code == 200
+                    if r is not None and r.status_code == 200:
+                        updated_deals += 1
                 except Exception as e:
                     log.warning("pipedrive.smart_reschedule.deal_failed", deal_id=did, error=str(e))
-                    return False
-
-            deal_results = await asyncio.gather(*[_update_one_deal(did, d_str) for did, d_str in scheduled_deal_updates.items()])
-            updated_deals = sum(1 for res in deal_results if res)
+                    await asyncio.sleep(2)
 
             final_day = (
                 max(u[1] for u in scheduled_updates)
@@ -1425,6 +1472,33 @@ class PipedriveService:
             return resp.json()
         except Exception:
             return {"success": False}
+
+    async def get_pipeline_board(self) -> dict:
+        """Busca os estágios do pipeline padrão e todos os negócios abertos para montar o Kanban."""
+        try:
+            stages_resp = await self._request("GET", "stages")
+            if stages_resp is None or stages_resp.status_code != 200:
+                return {"success": False, "error": "Erro ao buscar stages"}
+            
+            stages = stages_resp.json().get("data") or []
+            stages = sorted(stages, key=lambda x: x.get("order_nr", 0))
+
+            deals_resp = await self._request("GET", "deals", params={"status": "open", "limit": 500})
+            if deals_resp is None or deals_resp.status_code != 200:
+                return {"success": False, "error": "Erro ao buscar deals"}
+            
+            deals = deals_resp.json().get("data") or []
+
+            return {
+                "success": True,
+                "data": {
+                    "stages": stages,
+                    "deals": deals
+                }
+            }
+        except Exception as e:
+            log.error("pipedrive.get_pipeline_board.error", error=str(e))
+            return {"success": False, "error": str(e)}
 
 
 # Singleton

@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pure_link_gradient" x1="120" y1="256" x2="392" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7A8BFF"/>
+      <stop offset="100%" stop-color="#5E6AD2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Bold Minimalist LinkB2B Symbol -->
+  <g transform="translate(0, 50)">
+    <!-- Thicker, more elegant bridge -->
+    <path d="M130 206 C 130 80, 382 332, 382 206" stroke="url(#pure_link_gradient)" stroke-width="85" stroke-linecap="round" />
+    
+    <!-- Primary Bold Nodes -->
+    <circle cx="130" cy="206" r="70" fill="#7A8BFF" />
+    <circle cx="382" cy="206" r="70" fill="#5E6AD2" />
+  </g>
+</svg>

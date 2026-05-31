@@ -55,7 +55,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     Set-Location '$backendPath'
     Write-Host 'ℹ️ Backend iniciado. Pressione Ctrl+C para parar.' -ForegroundColor Yellow
     Write-Host 'Para mudanças automáticas, use: .\rodar_dev.ps1' -ForegroundColor Cyan
-    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8000
+    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8000 --loop asyncio
 "
 
 # 4. Iniciar Worker (SEM watchfiles)

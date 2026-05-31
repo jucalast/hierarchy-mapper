@@ -107,7 +107,7 @@ $emailPath = Join-Path $PSScriptRoot "backend\services\email-service"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Email'
     Set-Location '$emailPath'
-    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8002 --reload ``
+    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8002 --loop asyncio --reload ``
         --reload-dir . ``
         --reload-exclude '__pycache__' ``
         --reload-exclude '*.pyc' ``

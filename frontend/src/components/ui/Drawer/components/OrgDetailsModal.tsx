@@ -96,7 +96,7 @@ export const OrgDetailsModal: React.FC<OrgDetailsModalProps> = ({
             isOpen={isOpen}
             onClose={onClose}
             title="Detalhes e Configurações"
-            width={640}
+            width={720}
         >
             <form onSubmit={handleSubmit} className={styles.detailsForm} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 
@@ -159,7 +159,7 @@ export const OrgDetailsModal: React.FC<OrgDetailsModalProps> = ({
                     <div className={styles.formGroup}>
                         <label>Website / Domínio</label>
                         <div className={styles.formInputWithIcon}>
-                            <Globe size={14} className={styles.formInputIcon} />
+                            <Globe size={16} className={styles.formInputIcon} />
                             <input 
                                 type="text" 
                                 value={formDomain} 
@@ -210,7 +210,7 @@ export const OrgDetailsModal: React.FC<OrgDetailsModalProps> = ({
                                          formTemperature === 'contacted' ? '📞 Contatado' : 
                                          'Selecione...'}
                                     </span>
-                                    <ChevronDown size={14} style={{ opacity: 0.5 }} />
+                                    <ChevronDown size={16} style={{ opacity: 0.5 }} />
                                 </div>
                             }
                             items={[

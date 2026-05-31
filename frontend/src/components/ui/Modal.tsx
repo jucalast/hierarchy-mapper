@@ -104,7 +104,7 @@ export const Modal: React.FC<ModalProps> = ({
             }}
           >
             {typeof title === 'string' ? (
-              <h3 style={{ margin: 0, fontSize: 'var(--font-base)', fontWeight: 600 }}>{title}</h3>
+              <h3 style={{ margin: 0, fontSize: 'var(--font-lg)', fontWeight: 600 }}>{title}</h3>
             ) : (
               title ?? <span />
             )}

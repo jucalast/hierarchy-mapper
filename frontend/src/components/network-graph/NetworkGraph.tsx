@@ -115,6 +115,13 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     const [previewExpanded, setPreviewExpanded] = useState(false);
 
     // Network Flow
+    // IMPORTANTE: editEmployee DEVE ser memoizado com useCallback para não recriar a cada render
+    // e disparar o useEffect do useNetworkFlow em loop infinito.
+    const handleEditEmployee = useCallback(
+        (id: string) => setEditEmployeeModal({ isOpen: true, empId: id }),
+        []
+    );
+
     const {
         nodes, setNodes, edges, setEdges,
         onNodesChange, onEdgesChange, onConnect,
@@ -127,7 +134,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         confirmedLogo,
         getStableId,
         deleteEmployee,
-        editEmployee: (id: string) => setEditEmployeeModal({ isOpen: true, empId: id }),
+        editEmployee: handleEditEmployee,
     });
 
     // UI States
@@ -190,6 +197,12 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         }
     }, [mappingMode, cnpj, confirmedLinkedInUrl, scan, handleSearch, addNotification, areaFocus, productFocus, selectedModel]);
 
+    // Mantém ref estável dos funcionários para evitar loop de dependência no useEffect de scanResults
+    const rawEmployeesRef = useRef(rawEmployees);
+    useEffect(() => {
+        rawEmployeesRef.current = rawEmployees;
+    }, [rawEmployees]);
+
     // Trata erros de varredura
     useEffect(() => {
         if (scan.scanError) {
@@ -197,11 +210,21 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         }
     }, [scan.scanError, addNotification]);
 
+    // ✅ NOVO: Limpa o grafo quando a varredura inicia do zero ou recebe comando de limpeza
+    useEffect(() => {
+        if (scan.isScanning && scan.scanResults.length === 0) {
+            console.log("[NetworkGraph] 🧹 Limpando grafo para nova varredura.");
+            const existingRootAndPartners = rawEmployeesRef.current.filter(e => e.id === 'root_company' || e.id.startsWith('partner_'));
+            setRawEmployees([...existingRootAndPartners]);
+            setRawBackendEdges([]);
+        }
+    }, [scan.isScanning, scan.scanResults.length, setRawEmployees, setRawBackendEdges]);
+
     // Trata resultados de varredura
     useEffect(() => {
         if (scan.scanResults && scan.scanResults.length > 0) {
-            const employees: HierarchyEmployee[] = scan.scanResults.map((p, idx) => ({
-                id: (idx + 100).toString(),
+            const employees: HierarchyEmployee[] = scan.scanResults.map((p) => ({
+                id: p.id || Math.random().toString(36).substr(2, 9),
                 name: p.name,
                 role: p.role,
                 department: '',
@@ -210,10 +233,14 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 level: 0,
                 linkedin: p.linkedin_url,
                 avatar: p.avatar,
+                profile_pic: p.avatar,
                 location: p.location || '',
+                observations: p.observations || '',
+                evidence: p.evidence || '',
+                email: p.email || '',
             }));
 
-            const existingRootAndPartners = rawEmployees.filter(e => e.id === 'root_company' || e.id.startsWith('partner_'));
+            const existingRootAndPartners = rawEmployeesRef.current.filter(e => e.id === 'root_company' || e.id.startsWith('partner_'));
             let baseEmployees = [...existingRootAndPartners];
 
             if (baseEmployees.length === 0) {
@@ -266,11 +293,14 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
             });
             setRawBackendEdges(initialEdges);
 
-            addNotification('success', `Varredura concluída! ${employees.length} perfis extraídos.`);
-            addNotification('info', 'Processando varredura e gerando árvore hierárquica com IA...');
-            refineHierarchy(allEmployees);
+            // Somente dispara o refinamento e as notificações finais quando o scan terminar de fato
+            if (!scan.isScanning) {
+                addNotification('success', `Varredura concluída! ${employees.length} perfis extraídos.`);
+                addNotification('info', 'Processando varredura e gerando árvore hierárquica com IA...');
+                refineHierarchy(allEmployees);
+            }
         }
-    }, [scan.scanResults, confirmedBrand, confirmedLogo, domainTarget, partners, rawEmployees, setRawEmployees, setRawBackendEdges, addNotification, refineHierarchy]);
+    }, [scan.scanResults, scan.isScanning, confirmedBrand, confirmedLogo, domainTarget, partners, setRawEmployees, setRawBackendEdges, addNotification, refineHierarchy]);
 
     // Polling de mensagens não lidas (para o badge no header — filtra por org atual)
     useEffect(() => {
@@ -363,10 +393,14 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                 setConfirmedLinkedInUrl(rootLinkedin);
                             }
                             setTimeout(() => setShouldFitView(true), 100);
+                        } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
+                            // 🚀 OTIMIZAÇÃO: Pula 'Detectar' se já temos metadados básicos ao recarregar
+                            setStep("confirm");
                         } else {
                             setStep("input");
                         }
-                    } else {
+                    }
+ else {
                         setStep("input");
                     }
                 } catch (e) {
@@ -502,7 +536,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     if (rootLinkedin && rootLinkedin.startsWith('http')) {
                         setConfirmedLinkedInUrl(rootLinkedin);
                     }
-                } else if (isProspecting && (org.domain || org.linkedin || org.linkedin_url)) {
+                } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
+                    // 🚀 OTIMIZAÇÃO: Se já temos LinkedIn ou (CNPJ + Domínio), pulamos o passo de "Detectar"
                     setConfirmedBrand(cleanName(org.name || ""));
                     setConfirmedLogo(org.logo || "");
                     setCnpj(formatCnpj(org.cnpj || ""));
@@ -582,12 +617,15 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     refineHierarchy(rawEmployees);
                 }}
                 onSmartSync={async () => {
-                    const res = await smartSyncPipedrive();
-                    if (res && res.status === 'success') {
-                        addNotification('success', "Sincronização com Pipedrive concluída!");
-                        fetchPipedriveOrgs(); // Refresh the list
-                    }
+                    // Pass notification callback directly to handle the background job messages
+                    await smartSyncPipedrive((type, msg) => {
+                        addNotification(type as any, msg);
+                        if (type === 'success') {
+                            fetchPipedriveOrgs(); // Refresh the list
+                        }
+                    });
                 }}
+                isSmartSyncLoading={hierarchy.isSmartSyncLoading}
                 onOpenProspecting={() => setActiveView(activeView === 'prospecting' ? 'graph' : 'prospecting')}
                 isProspecting={activeView === 'prospecting'}
                 onOpenPreferences={() => setActiveView(activeView === 'preferences' ? 'graph' : 'preferences')}
@@ -705,13 +743,12 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                             selectedOrgId={currentOrgId}
                             onOrgRenamed={handleOrgRenamed}
                             selectedOrgLogo={confirmedLogo}
-                            activeJobId={scan.activeJobId}
+                            activeJobId={activeJobId}
                             graphEmployees={rawEmployees}
                             refreshDetailsTrigger={pipedriveOrgs.length}
                             addNotification={addNotification}
                             onOrgReset={handleOrgReset}
                             onEditEmployee={(id) => setEditEmployeeModal({ isOpen: true, empId: id })}
-                            onSaveToPipedrive={(id) => hierarchy.approveCandidate(id)}
                             onOrgDomainChanged={(oldDomain, newDomain) => {
                                 // Extract the naked domains
                                 const getDomain = (url: string) => {
@@ -796,12 +833,12 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                         mappingMode={mappingMode}
                                         onMappingModeChange={setMappingMode}
                                         scanTerminal={
-                                            scan.isScanning || scan.consoleLogs.length > 0 ? (
+                                            scan.isScanning ? (
                                                 <ScanTerminalPanel consoleLogs={scan.consoleLogs} isVisible={true} />
                                             ) : undefined
                                         }
                                         scanPreview={
-                                            scan.isScanning || scan.hasPreview ? (
+                                            scan.isScanning ? (
                                                 <ScanPreviewBubble
                                                     hasPreview={scan.hasPreview}
                                                     previewUrl={scan.previewUrl}

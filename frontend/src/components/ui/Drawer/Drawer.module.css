@@ -989,7 +989,7 @@
 .icpProgressLabel {
     display: flex;
     justify-content: space-between;
-    font-size: 11px;
+    font-size: var(--font-xs);
     font-weight: 600;
     color: var(--sw-text-base);
 }
@@ -1008,7 +1008,7 @@
 }
 
 .formSectionTitle {
-    font-size: 10px;
+    font-size: var(--font-sm);
     font-weight: 700;
     color: var(--sw-primary);
     text-transform: uppercase;
@@ -1038,7 +1038,7 @@
 }
 
 .formGroup label {
-    font-size: 11px;
+    font-size: var(--font-xs);
     font-weight: 700;
     color: var(--sw-text-muted);
     text-transform: uppercase;
@@ -1059,7 +1059,7 @@
     border: 1px solid transparent;
     border-radius: 8px;
     padding: 10px 12px;
-    font-size: 14px;
+    font-size: var(--font-base);
     color: var(--sw-text-base);
     outline: none;
     transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1084,12 +1084,17 @@
 
 .formInput:focus,
 .formSelect:focus,
+.formSelect.active,
 .formTextarea:focus {
     background: rgba(255, 255, 255, 0.05);
     border-color: var(--sw-primary);
     box-shadow: 0 0 0 3px var(--sw-primary-soft);
-    cursor: text;
     border-radius: 8px;
+}
+
+.formInput:focus,
+.formTextarea:focus {
+    cursor: text;
 }
 
 .formInputWithIcon {
@@ -1101,7 +1106,7 @@
 
 .formInputIcon {
     position: absolute;
-    left: 8px;
+    left: 10px;
     color: var(--sw-text-muted);
     opacity: 0.4;
     pointer-events: none;
@@ -1114,7 +1119,7 @@
 }
 
 .formInputWithIcon .formInput {
-    padding-left: 28px;
+    padding-left: 34px;
     width: 100%;
 }
 
@@ -1151,7 +1156,7 @@
     border-radius: 8px;
     color: var(--sw-primary);
     padding: 10px 16px;
-    font-size: 12px;
+    font-size: var(--font-sm);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);

@@ -6,6 +6,12 @@ import os
 import sys
 import threading
 
+if sys.platform == "win32":
+    import asyncio
+    from asyncio import WindowsProactorEventLoopPolicy
+    if not isinstance(asyncio.get_event_loop_policy(), WindowsProactorEventLoopPolicy):
+        asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
+
 # Adicionar o root ao path para localizar os módulos de serviços
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from modules.communication.service.email.client import EmailClient

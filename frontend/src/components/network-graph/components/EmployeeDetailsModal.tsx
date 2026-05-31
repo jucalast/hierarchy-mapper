@@ -79,7 +79,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
             isOpen={isOpen}
             onClose={onClose}
             title="Detalhes do Profissional"
-            width={580}
+            width={720}
         >
             <form onSubmit={handleSubmit} className={styles.detailsForm} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div className={styles.formSectionTitle}>Informações Principais</div>
@@ -138,7 +138,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                                          formLevel === 1 ? 'Tier 1 - Operacional' : 
                                          'Selecione...'}
                                     </span>
-                                    <ChevronDown size={14} style={{ opacity: 0.5 }} />
+                                    <ChevronDown size={16} style={{ opacity: 0.5 }} />
                                 </div>
                             }
                             items={[
@@ -159,7 +159,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                     <div className={styles.formGroup}>
                         <label>Email</label>
                         <div className={styles.formInputWithIcon}>
-                            <Mail size={14} className={styles.formInputIcon} />
+                            <Mail size={16} className={styles.formInputIcon} />
                             <input 
                                 type="email" 
                                 value={formEmail} 
@@ -173,7 +173,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                     <div className={styles.formGroup}>
                         <label>Telefone</label>
                         <div className={styles.formInputWithIcon}>
-                            <Phone size={14} className={styles.formInputIcon} />
+                            <Phone size={16} className={styles.formInputIcon} />
                             <input 
                                 type="text" 
                                 value={formPhone} 
@@ -189,7 +189,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                     <div className={styles.formGroup}>
                         <label>LinkedIn URL</label>
                         <div className={styles.formInputWithIcon}>
-                            <LinkedInIcon size={14} className={styles.formInputIcon} />
+                            <LinkedInIcon size={16} className={styles.formInputIcon} />
                             <input 
                                 type="text"  
                                 value={formLinkedin} 
@@ -203,7 +203,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                     <div className={styles.formGroup}>
                         <label>Localidade</label>
                         <div className={styles.formInputWithIcon}>
-                            <MapPin size={14} className={styles.formInputIcon} />
+                            <MapPin size={16} className={styles.formInputIcon} />
                             <input 
                                 type="text" 
                                 value={formLocation} 

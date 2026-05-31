@@ -40,8 +40,8 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
 
         # Se o phone for um LID (>13 dígitos), tenta buscar mensagens diretamente via
         # {LID}@lid — as conversas com contatos LID ficam sob esse ID, não sob o número.
-        phone_arg = args.get("phone", "")
-        phone_digits_arg = _re.sub(r'\D', '', phone_arg)
+        phone_arg = args.get("phone") or ""
+        phone_digits_arg = _re.sub(r'\D', '', phone_arg) if phone_arg else ""
         if phone_digits_arg and len(phone_digits_arg) > 13:
             lid_chat_id = f"{phone_digits_arg}@lid"
 

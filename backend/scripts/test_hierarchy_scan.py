@@ -85,6 +85,11 @@ async def run_test():
     print(f"\n✅ Resultados salvos com sucesso em: {output_file}")
     print("=" * 70)
     
+    # Se o argumento --no-delay estiver presente, encerra imediatamente
+    if "--no-delay" in sys.argv:
+        print("\n[INFO] Concluído!")
+        return
+
     # Adiciona uma pausa elegante para que o usuário possa visualizar os logs e a listagem final no terminal aberto
     print("\n⏳ Este terminal fechará automaticamente em 10 segundos...")
     for remaining in range(10, 0, -1):

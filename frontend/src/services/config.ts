@@ -15,8 +15,8 @@ export function buildProxyImageUrl(url: string | null | undefined): string | und
   if (!url) return undefined;
   if (typeof url !== 'string') return undefined;
   if (!url.startsWith('http')) return url;
-  // Já está proxificada ou já aponta para o próprio backend
-  if (url.includes('/proxy/image') || url.includes(API_BASE_URL)) return url;
+  // Já está proxificada, aponta para o próprio backend ou é do unavatar.io
+  if (url.includes('/proxy/image') || url.includes(API_BASE_URL) || url.includes('unavatar.io')) return url;
   return `${API_V1_URL}/proxy/image?url=${encodeURIComponent(url)}`;
 }
 

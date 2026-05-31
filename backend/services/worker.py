@@ -286,6 +286,7 @@ async def run_b2b_discovery_task(
 
 async def startup(ctx):
     """Hook executado quando o worker ARQ inicia."""
+    configure_logging()
     log.info("worker.started")
 
 
@@ -338,11 +339,41 @@ async def resume_agent_task(ctx, payload_dict: dict):
         await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "error", "error": str(e)}))
 
 
+async def run_smart_reschedule_task(ctx):
+    import json
+    from modules.crm.service.pipedrive_service import pipedrive_service
+    job_id = ctx.get('job_id')
+    redis = ctx.get('redis')
+    
+    log.info("worker.smart_reschedule.started", job_id=job_id)
+    try:
+        while True:
+            res = await pipedrive_service.smart_reschedule_activities()
+            if res.get("status") == "error":
+                log.error("worker.smart_reschedule.error", error=res.get("message"))
+                await asyncio.sleep(10)
+                continue
+                
+            updated = res.get("stats", {}).get("updated", 0)
+            if updated == 0:
+                log.info("worker.smart_reschedule.finished_clean", job_id=job_id)
+                if job_id and redis:
+                    await redis.publish(f"job_updates_{job_id}", json.dumps({"type": "job_done", "message": "Tarefas reorganizadas!"}))
+                break
+                
+            log.info("worker.smart_reschedule.batch_done", updated=updated)
+            await asyncio.sleep(2)
+    except Exception as e:
+        log.exception("worker.smart_reschedule.fatal", error=str(e), job_id=job_id)
+        if job_id and redis:
+            await redis.publish(f"job_updates_{job_id}", json.dumps({"type": "error", "message": str(e)}))
+
+
 class WorkerSettings:
-    functions = [run_b2b_discovery_task, run_agent_task, resume_agent_task]
+    functions = [run_b2b_discovery_task, run_agent_task, resume_agent_task, run_smart_reschedule_task]
     cron_jobs = [
         cron(scan_email_triggers, minute=set(range(0, 60, 2))),
-        cron(scan_whatsapp_triggers, minute=set(range(0, 60, 1)))
+        cron(scan_whatsapp_triggers, minute=set(range(0, 60, 1))),
     ]
     redis_settings = redis_settings
     job_timeout = 1800 # 30 min (Aumentando de 300s pra dar tempo aos fallback engines e delays)

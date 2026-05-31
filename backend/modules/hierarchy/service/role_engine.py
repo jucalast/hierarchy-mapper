@@ -412,4 +412,55 @@ Responda APENAS um JSON com os IDs como chaves:
             print(f"      [RoleEngine] Batch Error: {e}")
             return {c['idx']: {"is_valid": True, "role": "Professional"} for c in candidates}
 
+    async def distill_roles_batch_v2(self, candidates: List[Dict], company: str, product_focus: str = None, area_focus: str = "compras", target_location: str = "Brasil", razao_social: Optional[str] = None) -> Dict[int, Dict]:
+        """Versão otimizada e de alta fidelidade do processamento em lote."""
+        if not candidates: return {}
+        
+        # Agrupa os candidatos em uma string de contexto estruturada
+        batch_context = ""
+        for c in candidates:
+            batch_context += f"--- CANDIDATO ID {c['idx']} ---\n"
+            batch_context += f"NOME INICIAL: {c['name']}\n"
+            batch_context += f"DADOS BRUTOS: {' | '.join(c['context'])[:1000]}\n\n"
+
+        area_label = "SUPRIMENTOS / COMPRAS / PROCUREMENT" if area_focus == "compras" else "LOGÍSTICA / SUPPLY CHAIN"
+        
+        prompt = f"""
+Você é um Juiz de Qualificação B2B especializado em {area_label}.
+Analise este LOTE de candidatos para a empresa '{company}' (Razão Social: '{razao_social or 'Não Informada'}').
+
+OBJETIVO: Identificar se cada pessoa trabalha ATUALMENTE na empresa-alvo e se o cargo é relevante para {area_label}.
+
+DIRETRIZES RÍGIDAS:
+1. VETO DE CONFLITO: Se os dados indicam que a pessoa trabalha em OUTRA empresa (Siemens, Vivo, etc), is_valid=false.
+2. VETO TÉCNICO: Rejeite Vendas (Sales/Comercial), RH, Marketing, Financeiro e Produção.
+3. VETO DE ALUCINAÇÃO: Nomes de empresas não são cargos.
+4. RAZÃO SOCIAL: Considere '{company}' e '{razao_social}' como a mesma empresa.
+5. LOCALIZAÇÃO: Foco em {target_location}.
+
+LOTE PARA ANÁLISE:
+{batch_context}
+
+Responda APENAS um JSON onde as chaves são os IDs dos candidatos:
+{{
+  "ID": {{
+    "is_valid": bool,
+    "proper_name": "Nome Real Extraído",
+    "role": "Cargo Funcional",
+    "department": "Departamento",
+    "matching_score": 0-100,
+    "evidence": "Explicação curta"
+  }}
+}}
+"""
+        try:
+            # Usamos o modelo standard para velocidade no lote
+            results = await self.groq.ask(prompt, json_mode=True, tier=LLMTier.STANDARD)
+            # Normaliza as chaves para int
+            return {int(k): v for k, v in results.items()}
+        except Exception as e:
+            print(f"      [RoleEngine] Batch V2 Error: {e}")
+            # Fallback seguro: marca todos como inválidos para não poluir
+            return {c['idx']: {"is_valid": False, "role": "Erro no Processamento"} for c in candidates}
+
 role_engine = RoleEngine()

@@ -58,10 +58,14 @@ export const Dropdown: React.FC<DropdownProps> = ({
   };
 
   return (
-    <div className={`${styles.dropdownContainer} nodrag`} ref={containerRef}>
+    <div 
+      className={`${styles.dropdownContainer} nodrag`} 
+      style={customTrigger ? { width: '100%', display: 'flex' } : undefined}
+      ref={containerRef}
+    >
       <button
         onClick={toggleDropdown}
-        className={`${styles.triggerBtn} ${triggerClassName} ${isOpen ? styles.active : ''}`}
+        className={`${customTrigger ? styles.customTriggerBtn : styles.triggerBtn} ${triggerClassName} ${isOpen ? styles.active : ''}`}
         title={title}
         type="button"
       >

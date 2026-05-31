@@ -22,7 +22,7 @@ interface DrawerProps {
     refreshDetailsTrigger?: number; // Para forçar a recarga dos detalhes
     addNotification?: (type: NotificationType, message: string) => void;
     onEditEmployee?: (empId: string) => void;
-    onSaveToPipedrive?: (empId: string) => void;
+    onSaveToPipedrive?: (person: any, orgId: number) => Promise<void> | void;
     onOrgDomainChanged?: (oldDomain: string, newDomain: string) => void;
 }
 
@@ -163,25 +163,41 @@ export const Drawer: React.FC<DrawerProps> = ({
         if (!force && fetchedOrgsRef.current[orgId]) return; // Já buscado nesta sessão
 
         setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
-        try {
-            const data = await orgsApi.getOrganizationDetails(orgId);
-            setOrgDetails(prev => ({ ...prev, [orgId]: data }));
-            fetchedOrgsRef.current[orgId] = true;
-            if (typeof window !== 'undefined') {
-                window.localStorage.setItem(`org-${orgId}-details`, JSON.stringify(data));
+        let attempt = 0;
+        const maxAttempts = 3;
+
+        while (attempt < maxAttempts) {
+            try {
+                const data = await orgsApi.getOrganizationDetails(orgId);
+                setOrgDetails(prev => ({ ...prev, [orgId]: data }));
+                fetchedOrgsRef.current[orgId] = true;
+                if (typeof window !== 'undefined') {
+                    window.localStorage.setItem(`org-${orgId}-details`, JSON.stringify(data));
+                }
+                if (force) {
+                    addNotification('success', 'Dados sincronizados com o Pipedrive.');
+                }
+                break; // Sucesso, sai do loop
+            } catch (e: any) {
+                const errMsg = e.message || e;
+                if (typeof errMsg === 'string' && errMsg.toLowerCase().includes('cooldown')) {
+                    attempt++;
+                    if (attempt < maxAttempts) {
+                        console.warn(`Rate limit do Pipedrive atingido. Tentando novamente em 2.5s (Tentativa ${attempt}/${maxAttempts})...`);
+                        await new Promise(res => setTimeout(res, 2500));
+                        continue; // Tenta de novo
+                    }
+                }
+                
+                console.error('Erro ao carregar detalhes:', errMsg);
+                if (force) {
+                    const msg = (e as any)?.message || 'Erro ao sincronizar. Tente novamente.';
+                    addNotification('error', msg);
+                }
+                break; // Outro erro ou limite de tentativas excedido, sai do loop
             }
-            if (force) {
-                addNotification('success', 'Dados sincronizados com o Pipedrive.');
-            }
-        } catch (e: any) {
-            console.error('Erro ao carregar detalhes:', e.message || e);
-            if (force) {
-                const msg = (e as any)?.message || 'Erro ao sincronizar. Tente novamente.';
-                addNotification('error', msg);
-            }
-        } finally {
-            setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
         }
+        setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
     }, [addNotification]);
 
     useEffect(() => {
@@ -354,6 +370,144 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
+    const handleSaveToPipedrive = async (person: any, orgId: number) => {
+        if (onSaveToPipedrive) {
+            return onSaveToPipedrive(person, orgId);
+        }
+        
+        addNotification('info', 'Salvando contato no Pipedrive...');
+        try {
+            const { organizations } = await import('@/services/api');
+            let email = person.email;
+            if (Array.isArray(email)) email = email[0]?.value;
+            if (typeof email === 'string' && (!email.includes('@') || email.includes('Sem dados'))) {
+                email = null;
+            }
+            if (!email) email = null;
+            
+            let phone = person.phone;
+            if (Array.isArray(phone)) phone = phone[0]?.value;
+            if (typeof phone === 'string' && (!/\d/.test(phone) || phone.includes('Sem dados'))) {
+                phone = null;
+            }
+            if (!phone) phone = null;
+
+            const res = await organizations.createPerson({
+                name: person.name,
+                email,
+                phone,
+                org_id: orgId
+            });
+            
+            if (res.status === 'success' || res.data) {
+                addNotification('success', 'Contato salvo com sucesso no Pipedrive!');
+                setOrgDetails(prev => {
+                    const current = prev[orgId];
+                    if (!current) return prev;
+                    const newPerson = res.data || {
+                        id: `temp_${Date.now()}`,
+                        name: person.name,
+                        ...(email ? { email: [{ value: email, primary: true }] } : {}),
+                        ...(phone ? { phone: [{ value: phone, primary: true }] } : {})
+                    };
+                    return {
+                        ...prev,
+                        [orgId]: {
+                            ...current,
+                            persons: [...(current.persons || []), newPerson]
+                        }
+                    };
+                });
+            } else {
+                addNotification('error', 'Erro ao salvar contato no Pipedrive.');
+            }
+        } catch(e: any) {
+            addNotification('error', e.message || 'Erro ao salvar contato no Pipedrive.');
+            throw e;
+        }
+    };
+
+    const handleUpdateInPipedrive = async (person: any, orgId: number) => {
+        addNotification('info', 'Atualizando contato no Pipedrive...');
+        try {
+            const { organizations } = await import('@/services/api');
+            let email = person.email;
+            if (Array.isArray(email)) email = email[0]?.value;
+            if (typeof email === 'string' && (!email.includes('@') || email.includes('Sem dados'))) {
+                email = null;
+            }
+            if (!email) email = null;
+            
+            let phone = person.phone;
+            if (Array.isArray(phone)) phone = phone[0]?.value;
+            if (typeof phone === 'string' && (!/\d/.test(phone) || phone.includes('Sem dados'))) {
+                phone = null;
+            }
+            if (!phone) phone = null;
+            
+            let personId = person.id;
+            if (typeof personId === 'string' && (personId.startsWith('mapped_') || personId.startsWith('temp_'))) {
+                 const pipedrivePerson = orgDetails[orgId]?.persons?.find((p: any) => p.name?.trim().toLowerCase() === person.name?.trim().toLowerCase());
+                 if (pipedrivePerson) {
+                     personId = pipedrivePerson.id;
+                 }
+            }
+
+            const res = await organizations.updatePerson(personId, {
+                name: person.name,
+                email,
+                phone
+            });
+            
+            if (res.status === 'success') {
+                addNotification('success', 'Contato atualizado no Pipedrive!');
+                setOrgDetails(prev => {
+                    const current = prev[orgId];
+                    if (!current) return prev;
+                    const updatedPersons = (current.persons || []).map((p: any) => 
+                        p.id === personId ? { ...p, name: person.name, email: [{ value: email, primary: true }], phone: [{ value: phone, primary: true }] } : p
+                    );
+                    return { ...prev, [orgId]: { ...current, persons: updatedPersons } };
+                });
+            } else {
+                addNotification('error', 'Erro ao atualizar contato.');
+            }
+        } catch(e: any) {
+            addNotification('error', e.message || 'Erro ao atualizar contato.');
+            throw e;
+        }
+    };
+
+    const handleDeleteFromPipedrive = async (person: any, orgId: number) => {
+        addNotification('info', 'Removendo contato do Pipedrive...');
+        try {
+            const { organizations } = await import('@/services/api');
+            let personId = person.id;
+            if (typeof personId === 'string' && (personId.startsWith('mapped_') || personId.startsWith('temp_'))) {
+                 const pipedrivePerson = orgDetails[orgId]?.persons?.find((p: any) => p.name?.trim().toLowerCase() === person.name?.trim().toLowerCase());
+                 if (pipedrivePerson) {
+                     personId = pipedrivePerson.id;
+                 }
+            }
+
+            const res = await organizations.deletePerson(personId);
+            if (res.status === 'success') {
+                addNotification('success', 'Contato removido do Pipedrive!');
+                setOrgDetails(prev => {
+                    const current = prev[orgId];
+                    if (!current) return prev;
+                    const updatedPersons = (current.persons || []).filter((p: any) => p.id !== personId);
+                    return { ...prev, [orgId]: { ...current, persons: updatedPersons } };
+                });
+            } else {
+                addNotification('error', 'Erro ao remover contato.');
+            }
+        } catch(e: any) {
+            addNotification('error', e.message || 'Erro ao remover contato.');
+            throw e;
+        }
+    };
+
     // Filtra a organização que está em foco
     const focusedOrg = expandedOrgId ? filteredOrgs.find(o => Number(o.id) === expandedOrgId) : null;
 
@@ -397,7 +551,9 @@ export const Drawer: React.FC<DrawerProps> = ({
                         selectedOrgLogo={selectedOrgLogo}
                         graphEmployees={graphEmployees}
                         onEditEmployee={onEditEmployee}
-                        onSaveToPipedrive={onSaveToPipedrive}
+                        onSaveToPipedrive={(person) => handleSaveToPipedrive(person, expandedOrgId!)}
+                        onUpdateInPipedrive={(person) => handleUpdateInPipedrive(person, expandedOrgId!)}
+                        onDeleteFromPipedrive={(person) => handleDeleteFromPipedrive(person, expandedOrgId!)}
                     />
                 ) : (
                     <OrgList 
@@ -411,7 +567,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         toggleExpand={toggleExpand}
                         scanningOrgId={scanningOrgId}
                     />
-                )}
+                )                }
             </div>
 
             <ConfirmModal 

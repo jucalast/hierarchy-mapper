@@ -1086,10 +1086,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             : '';
         const dealClause = event?.deal_id ? ` atrelado ao negócio deal_id=${event.deal_id}` : '';
 
-        // ── SEGURANÇA: Remove qualquer contato rejeitado que possa ter escapado do filtro do hook
-        const approvedContacts = contacts.filter((c: any) =>
-            c.role !== 'Reprovado' && c.department !== 'Reprovado'
-        );
+        // ── SEGURANÇA: Remove qualquer contato rejeitado ou pendente que possa ter escapado
+        const approvedContacts = contacts.filter((c: any) => {
+            const r = (c.role || '').toLowerCase();
+            const d = (c.department || '').toLowerCase();
+            if (r.includes('reprovado') || d.includes('reprovado')) return false;
+            if (r.includes('análise humana') || r.includes('analise humana')) return false;
+            return true;
+        });
 
         // Detecta decisores de compras/logística pelo cargo
         const isBuyingDecisionMaker = (role: string, dept?: string) => {

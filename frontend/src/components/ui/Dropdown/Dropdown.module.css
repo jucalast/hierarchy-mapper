@@ -9,12 +9,14 @@
   border: none;
   color: var(--sw-text-muted);
   cursor: pointer;
-  padding: 6px;
-  border-radius: var(--radius-sm);
+  padding: 8px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
+  width: 32px;
+  height: 32px;
 }
 
 .triggerBtn:hover {
@@ -25,6 +27,19 @@
 .triggerBtn.active {
   background: var(--sw-hover);
   color: var(--sw-text-base);
+}
+
+.customTriggerBtn {
+  background: transparent;
+  border: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all var(--transition-fast);
+  width: 100%;
+  padding: 0;
+  text-align: left;
 }
 
 .dropdownMenu {

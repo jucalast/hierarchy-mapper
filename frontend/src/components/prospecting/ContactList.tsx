@@ -5,7 +5,9 @@ import {
     Phone, 
     MessageSquare, 
     ExternalLink, 
-    Briefcase
+    Briefcase,
+    Info,
+    Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import styles from './ContactList.module.css';
@@ -14,10 +16,12 @@ import { Dropdown } from '../ui/Dropdown';
 interface ContactListProps {
     persons: any[];
     onEditPerson?: (empId: string) => void;
-    onSaveToPipedrive?: (empId: string) => void;
+    onSaveToPipedrive?: (person: any) => Promise<void> | void;
+    onUpdateInPipedrive?: (person: any) => Promise<void> | void;
+    onDeleteFromPipedrive?: (person: any) => Promise<void> | void;
 }
 
-export const ContactList: React.FC<ContactListProps> = ({ persons, onEditPerson, onSaveToPipedrive }) => {
+export const ContactList: React.FC<ContactListProps> = ({ persons, onEditPerson, onSaveToPipedrive, onUpdateInPipedrive, onDeleteFromPipedrive }) => {
     const getDropdownItems = (person: any) => {
         const items = [];
         const email = person.email?.[0]?.value || person.email;
@@ -27,19 +31,51 @@ export const ContactList: React.FC<ContactListProps> = ({ persons, onEditPerson,
             items.push({
                 label: 'Detalhes e Configurações',
                 onClick: () => onEditPerson(person.emp_id),
-                icon: <Briefcase size={14} />
+                icon: <Info size={14} />
             });
         }
 
         if (onSaveToPipedrive && person.emp_id && !person.sources?.includes('pipedrive')) {
             items.push({
                 label: 'Salvar no Pipedrive',
-                onClick: () => {
-                    onSaveToPipedrive(person.emp_id);
-                    toast.success('Salvando contato no Pipedrive...');
+                onClick: async () => {
+                    try {
+                        await onSaveToPipedrive(person);
+                    } catch (e) {
+                        console.error("Erro ao salvar no pipedrive", e);
+                    }
                 },
-                icon: <User size={14} />
+                icon: <img src="/pipedrive.png" alt="Pipedrive" style={{ width: 14, height: 14, objectFit: 'contain', borderRadius: '2px' }} />
             });
+        }
+
+        if (person.sources?.includes('pipedrive')) {
+            if (onUpdateInPipedrive) {
+                items.push({
+                    label: 'Atualizar no Pipedrive',
+                    onClick: async () => {
+                        try {
+                            await onUpdateInPipedrive(person);
+                        } catch (e) {
+                            console.error("Erro ao atualizar no pipedrive", e);
+                        }
+                    },
+                    icon: <img src="/pipedrive.png" alt="Pipedrive" style={{ width: 14, height: 14, objectFit: 'contain', borderRadius: '2px' }} />
+                });
+            }
+            if (onDeleteFromPipedrive) {
+                items.push({
+                    label: 'Remover do Pipedrive',
+                    onClick: async () => {
+                        try {
+                            await onDeleteFromPipedrive(person);
+                        } catch (e) {
+                            console.error("Erro ao remover do pipedrive", e);
+                        }
+                    },
+                    icon: <Trash2 size={14} style={{ color: '#ef4444' }} />
+                });
+            }
         }
 
         if (email) {

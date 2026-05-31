@@ -3,6 +3,8 @@ Versão com streaming da descoberta de marcas.
 Faz yield de cada candidato conforme é processado.
 """
 from typing import AsyncGenerator, Dict, Optional
+import asyncio
+import random
 from modules.intelligence.service.brand_discovery import (
     clean_brand_name, 
     fetch_linkedin_logo, 
@@ -125,11 +127,9 @@ async def discover_company_brand_stream(
             city = city_part
     
     # Extrai a marca curta (duas primeiras palavras significativas) para buscas diretas
-    # Ex: "SARLO INDUSTRIA E COMERCIO..." -> "SARLO INDUSTRIA"
     brand_tokens = search_name.split()
     meaningful_tokens = []
     for token in brand_tokens:
-        # Pula palavras genéricas corporativas e preposições
         if not any(corp_word == token.upper() for corp_word in ["LTDA", "S.A.", "INC", "LLC", "BRASIL", "BRAZIL", "DO", "DE", "DA", "E"]):
             meaningful_tokens.append(token)
             if len(meaningful_tokens) == 2:
@@ -139,10 +139,10 @@ async def discover_company_brand_stream(
     domain_base = domain.split(".")[0] if domain else ""
     
     search_queries = [
-        f'"{brand_short}" linkedin' if brand_short else None,  # 🆕 Busca pela marca curta direto
-        f'"{brand_short}" company linkedin' if brand_short else None,  # 🆕 Variação com "company"
-        f'"{brand_short}" Brasil linkedin' if brand_short else None,  # 🆕 Variação com país
-        f'"{domain_base}" linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None, # 🆕 Busca pelo prefixo do dominio
+        f'"{brand_short}" linkedin' if brand_short else None,
+        f'"{brand_short}" company linkedin' if brand_short else None,
+        f'"{brand_short}" Brasil linkedin' if brand_short else None,
+        f'"{domain_base}" linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None,
         f'"{domain_base}" Brasil linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None,
         f'"{search_name}" linkedin',
         f'site:linkedin.com/company "{search_name}"',
@@ -153,9 +153,6 @@ async def discover_company_brand_stream(
     
     # Dicionário para rastrear candidatos únicos
     unique_candidates = {}
-    
-    # Cada vez que encontramos um candidato, enriquecemos e fazemos yield
-    print(f"[BrandDiscovery] 🔍 Começando buscas por perfis (Stream)...")
     
     # 🧪 Função de scoring (copiada da versão original)
     def get_brand_score(name: str) -> int:
@@ -208,70 +205,82 @@ async def discover_company_brand_stream(
             
         return score
     
+    # Cada vez que encontramos um candidato, enriquecemos e fazemos yield
+    print(f"[BrandDiscovery] 🔍 Começando buscas por perfis (Stream) EM PARALELO...")
+    
     candidate_count = 0
-    for query in filter(None, search_queries):
-        print(f"[BrandDiscovery] 🔎 Consultando: {query[:60]}...")
-        res = await get_duck_results(query, max_results=25, is_company=True)
-        
-        query_candidates = 0  # Contar perfis desta query
-        for r in res:
-            title = r.get("title", "")
-            snippet = (r.get("body") or r.get("snippet") or "").lower()
-            name = clean_brand_name(title)
+    
+    # Prepara todas as tarefas de busca
+    active_queries = [q for q in search_queries if q]
+    
+    async def process_query(query):
+        nonlocal candidate_count
+        try:
+            # Timeout por query para não travar o processo todo se um buscador demorar
+            res = await asyncio.wait_for(get_duck_results(query, max_results=15, is_company=True), timeout=25.0)
             
-            # Extração de seguidores
-            followers = "N/A"
-            f_match = re.search(r"([\d\.,k\+]+)\s+(followers|seguidores)", snippet)
-            if f_match:
-                followers = f_match.group(1).upper()
-            
-            # Extração de URL (usar 'href' que é o que search_engine retorna)
-            url = r.get("href") or r.get("link") or r.get("url") or ""
-            
-            if name and url and "/company/" in url.lower():
-                # Evita duplicatas
-                if name not in unique_candidates:
-                    unique_candidates[name] = {
-                        "name": name,
-                        "followers": followers,
-                        "url": url,
-                        "logo": None
-                    }
-                    query_candidates += 1  # Contar novo perfil nesta query
-                    
-                    # Log do perfil encontrado
-                    print(f"      [BrandDiscovery] ✨ Candidato encontrado: {name} → {url}")
-                    
-                    # Tenta buscar logo e faz yield imediatamente
-                    try:
-                        real_logo = fetch_linkedin_logo(url)
-                        if real_logo:
-                            unique_candidates[name]["logo"] = real_logo
-                        else:
+            local_results = []
+            for r in res:
+                title = r.get("title", "")
+                snippet = (r.get("body") or r.get("snippet") or "").lower()
+                name = clean_brand_name(title)
+                
+                # Extração de seguidores
+                followers = "N/A"
+                f_match = re.search(r"([\d\.,k\+]+)\s+(followers|seguidores)", snippet)
+                if f_match:
+                    followers = f_match.group(1).upper()
+                
+                url = r.get("href") or r.get("link") or r.get("url") or ""
+                
+                if name and url and "/company/" in url.lower():
+                    if name not in unique_candidates:
+                        # Registro inicial (bloqueia duplicatas antes do await de imagem)
+                        unique_candidates[name] = {"name": name, "url": url, "followers": followers, "logo": None}
+                        
+                        # Tenta buscar logo (rápido)
+                        try:
+                            # Adiciona um pequeno delay aleatório para não disparar muitos fetches de logo ao mesmo tempo
+                            await asyncio.sleep(random.uniform(0.1, 0.5))
+                            real_logo = fetch_linkedin_logo(url)
+                            if real_logo:
+                                unique_candidates[name]["logo"] = real_logo
+                            else:
+                                initials = "".join([w[0] for w in name.split()[:2]]).upper()
+                                unique_candidates[name]["logo"] = f"https://ui-avatars.com/api/?name={initials}&background=6366f1&color=fff&bold=true&rounded=true&size=128"
+                        except:
                             initials = "".join([w[0] for w in name.split()[:2]]).upper()
                             unique_candidates[name]["logo"] = f"https://ui-avatars.com/api/?name={initials}&background=6366f1&color=fff&bold=true&rounded=true&size=128"
-                    except:
-                        initials = "".join([w[0] for w in name.split()[:2]]).upper()
-                        unique_candidates[name]["logo"] = f"https://ui-avatars.com/api/?name={initials}&background=6366f1&color=fff&bold=true&rounded=true&size=128"
-                    
-                    # Yield do candidato encontrado
-                    candidate_count += 1
-                    yield {
-                        "type": "candidate",
-                        "index": candidate_count,
-                        "name": name,
-                        "url": url,
-                        "followers": followers,
-                        "logo": unique_candidates[name]["logo"],
-                        "partners": partners,
-                        "source": "search"
-                    }
-        
-        # Log da query
-        print(f"[BrandDiscovery] ✅ Query: {query} | Encontrou {query_candidates} perfis")
+                        
+                        candidate_count += 1
+                        local_results.append({
+                            "type": "candidate",
+                            "index": candidate_count,
+                            "name": name,
+                            "url": url,
+                            "followers": followers,
+                            "logo": unique_candidates[name]["logo"],
+                            "partners": partners,
+                            "source": "search_parallel"
+                        })
+            return local_results
+        except Exception as e:
+            print(f"[BrandDiscovery] Query error ({query[:30]}): {e}")
+            return []
+
+    # Dispara todas as buscas simultaneamente
+    print(f"[BrandDiscovery] 🚀 Disparando {len(active_queries)} queries em paralelo...")
+    pending_tasks = [asyncio.create_task(process_query(q)) for q in active_queries]
     
-    # 🏆 ORDENAÇÃO POR SCORE antes de enviar o sinal final
-    # Calcula o score de cada candidato
+    # Processa conforme as tarefas terminam (streaming real)
+    while pending_tasks:
+        done, pending_tasks = await asyncio.wait(pending_tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            results = task.result()
+            for cand in results:
+                yield cand
+
+    # 🏆 ORDENAÇÃO FINAL POR SCORE
     scored_candidates = []
     for name in unique_candidates.keys():
         score = get_brand_score(name)
@@ -302,3 +311,4 @@ async def discover_company_brand_stream(
         "detected_domain": detected_domain or domain,
         "top_alternatives": top_alternatives
     }
+

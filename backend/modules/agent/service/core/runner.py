@@ -19,6 +19,7 @@ from modules.agent.service.prompts import (
     SYSTEM_PROMPT_TASK_AGENT, SYSTEM_PROMPT_TASK_AGENT_BASIC,
 )
 from modules.agent.service.core.loop import _agent_loop, _PENDING
+from modules.agent.skills.router import route_task_to_skill
 from core.observability.logging_config import get_logger
 
 log = get_logger(__name__)
@@ -192,18 +193,25 @@ async def run_agent(
     org_context = ""
     if org_id:
         try:
-            from modules.crm.service.pipedrive_service import pipedrive_service
-            orgs = await pipedrive_service.list_organizations()
-            org = next((o for o in (orgs or []) if o.get("id") == org_id), None)
-            if org:
-                org_context = (
-                    f"\n[OBRIGATÓRIO - ESCOPO EXCLUSIVO DA EMPRESA]: Você está no chat dedicado da empresa '{org['name']}' (org_id={org_id}). "
-                    f"Todas as suas respostas, investigações, buscas e ações de ferramentas devem ser direcionadas "
-                    f"ESTRITAMENTE a esta empresa e seus contatos associados. Não cite, não investigue e não execute tarefas de outras empresas "
-                    f"ou contatos fora deste escopo."
+            from core.infra.database import async_session as _async_session
+            from models import Organization
+            from sqlalchemy import select
+            
+            async with _async_session() as session:
+                stmt = select(Organization).where(
+                    (Organization.pipedrive_id == org_id) | (Organization.id == org_id)
                 )
-        except Exception:
-            pass
+                res = await session.execute(stmt)
+                org = res.scalars().first()
+                if org:
+                    org_context = (
+                        f"\n[OBRIGATÓRIO - ESCOPO EXCLUSIVO DA EMPRESA]: Você está no chat dedicado da empresa '{org.name}' (org_id={org_id}). "
+                        f"Todas as suas respostas, investigações, buscas e ações de ferramentas devem ser direcionadas "
+                        f"ESTRITAMENTE a esta empresa e seus contatos associados. Não cite, não investigue e não execute tarefas de outras empresas "
+                        f"ou contatos fora deste escopo."
+                    )
+        except Exception as e:
+            log.warning("agent.org_context.resolution_failed", org_id=org_id, error=str(e))
     else:
         # Chat geral — busca por menções de "@"
         import re
@@ -307,6 +315,8 @@ async def run_agent(
         query_type = "general"
         log.info("agent.context_followup.query_type_override")
 
+    active_skill = route_task_to_skill(query_type, message)
+
     final_response = ""
     collected_events = []
 
@@ -336,6 +346,7 @@ async def run_agent(
             parent_message_id=parent_message_id,
             action_index=action_index,
             query_type=query_type,
+            active_skill=active_skill,
         ):
             try:
                 data = json.loads(chunk)
@@ -673,6 +684,7 @@ async def resume_after_confirmation(
             preferred=pending_preferred,
             strict_mode=pending_strict_mode,
             query_type=pending_query_type,
+            active_skill=None,
         ):
             try:
                 data = json.loads(chunk)

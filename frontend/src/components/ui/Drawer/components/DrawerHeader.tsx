@@ -26,6 +26,8 @@ export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
     setConfirmKind,
     onOpenDetailsModal,
 }) => {
+    const [isSearchExpanded, setIsSearchExpanded] = React.useState(!!searchTerm);
+
     const dropdownItems = React.useMemo(() => [
         {
             label: 'Detalhes e Configurações',
@@ -74,21 +76,49 @@ export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
                     </div>
                 </div>
             ) : (
-                <>
-                    <div className={styles.drawerInputWrapper}>
-                        <Search size={14} className={styles.inputIcon} />
+                <div className={styles.mainHeader}>
+                    <div className={`${styles.drawerInputWrapper} ${isSearchExpanded ? styles.expanded : ''}`}>
+                        <button 
+                            className={styles.searchToggleBtn}
+                            onClick={() => setIsSearchExpanded(true)}
+                            title="Pesquisar"
+                        >
+                            <Search size={16} className={styles.inputIcon} />
+                        </button>
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Pesquisar no Pipedrive..."
                             className={styles.drawerInput}
+                            onBlur={() => {
+                                if (!searchTerm) setIsSearchExpanded(false);
+                            }}
+                            ref={(el) => {
+                                if (isSearchExpanded && el && !searchTerm) {
+                                    el.focus();
+                                }
+                            }}
                         />
+                        {isSearchExpanded && searchTerm && (
+                            <button 
+                                className={styles.clearSearchBtn}
+                                onClick={() => {
+                                    setSearchTerm('');
+                                    setIsSearchExpanded(false);
+                                }}
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
                     </div>
-                    <button onClick={() => setShowDrawer(false)} className={styles.backBtn} title="Fechar">
-                        <X size={14} />
-                    </button>
-                </>
+                    
+                    <div className={styles.headerRightActions}>
+                        <button onClick={() => setShowDrawer(false)} className={styles.backBtn} title="Fechar">
+                            <X size={16} />
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );

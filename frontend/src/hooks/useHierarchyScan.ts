@@ -4,11 +4,15 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { API_V1_URL, apiPost } from '@/services/config';
 
 export interface ScanEmployeeProfile {
+    id?: string;
     name: string;
     role: string;
     linkedin_url: string;
     avatar: string;
     location?: string;
+    observations?: string;
+    evidence?: string;
+    email?: string;
 }
 
 interface UseHierarchyScanReturn {
@@ -108,10 +112,48 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
                         appendLog('[System] Cookie de sessão li_at capturado e salvo localmente para futuras varreduras!');
                         break;
                     }
+                    case 'clear_nodes': {
+                        console.log("[Scan] 🧹 Comando de limpeza recebido do backend.");
+                        setScanResults([]);
+                        setScanProgress(0);
+                        break;
+                    }
+                    case 'batch': {
+                        if (data.nodes && data.nodes.length > 0) {
+                            setScanResults((prev) => {
+                                // Evita duplicatas pelo linkedin_url
+                                const newProfiles = data.nodes.map((n: any) => ({
+                                    id: n.id,
+                                    name: n.name,
+                                    role: n.role,
+                                    linkedin_url: n.linkedin || n.url,
+                                    avatar: n.avatar,
+                                    location: n.location,
+                                    observations: n.observations,
+                                    evidence: n.evidence,
+                                    email: n.email
+                                }));
+                                
+                                const filtered = newProfiles.filter((newP: any) => 
+                                    !prev.some(oldP => oldP.linkedin_url === newP.linkedin_url)
+                                );
+                                
+                                return [...prev, ...filtered];
+                            });
+                        }
+                        break;
+                    }
                     case 'result': {
-                        setScanResults(data.data);
+                        // O 'result' agora é opcional se usarmos 'batch', mas mantemos por retrocompatibilidade
+                        if (data.data && data.data.length > 0) {
+                            setScanResults(data.data);
+                        }
                         setScanProgress(100);
-                        appendLog('[System] Varredura concluída com sucesso!');
+                        break;
+                    }
+                    case 'done': {
+                        appendLog('[System] Varredura e processamento concluídos com sucesso!');
+                        setScanProgress(100);
                         eventSource.close();
                         setIsScanning(false);
                         break;

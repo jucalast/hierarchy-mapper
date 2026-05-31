@@ -15,8 +15,15 @@ from __future__ import annotations
 
 import asyncio
 import sys
+
+# Corrige o loop de eventos no Windows para suportar subprocessos assíncronos (Playwright)
+# Deve ser feito o mais cedo possível, antes de qualquer loop ser criado.
 if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    import sys
+    sys.stderr.write("DEBUG: Aplicando WindowsProactorEventLoopPolicy no topo do main.py\n")
+    from asyncio import WindowsProactorEventLoopPolicy
+    if not isinstance(asyncio.get_event_loop_policy(), WindowsProactorEventLoopPolicy):
+        asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
 
 from contextlib import asynccontextmanager
 from typing import Any, Dict
@@ -56,16 +63,29 @@ _app_ready: bool = False
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Ciclo de vida: startup → yield → shutdown."""
-    # Corrige o loop de eventos no Windows para suportar subprocessos assíncronos (Playwright)
+    # 1. Configura logging IMEDIATAMENTE para não perder logs de startup
+    configure_logging()
+
+    # 2. Garante ProactorEventLoop no Windows (necessário para subprocessos assíncronos)
     import sys
     if sys.platform == "win32":
         try:
-            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-            log.info("server.startup.event_loop", message="Forçado WindowsProactorEventLoopPolicy com sucesso!")
+            from asyncio import WindowsProactorEventLoopPolicy
+            # ProactorEventLoop is the correct class name
+            from asyncio import ProactorEventLoop
+            policy = asyncio.get_event_loop_policy()
+            if not isinstance(policy, WindowsProactorEventLoopPolicy):
+                asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
+                log.info("server.startup.event_loop_policy_fixed", 
+                         old_policy=str(type(policy)),
+                         new_policy="WindowsProactorEventLoopPolicy")
+            
+            loop = asyncio.get_running_loop()
+            log.info("server.startup.loop_check", 
+                     loop_type=str(type(loop)),
+                     supports_subprocess=isinstance(loop, ProactorEventLoop))
         except Exception as e:
             log.warning("server.startup.event_loop.failed", error=str(e))
-
-    configure_logging()
 
     # Avisa se o JWT secret padrão está sendo usado em produção
     try:

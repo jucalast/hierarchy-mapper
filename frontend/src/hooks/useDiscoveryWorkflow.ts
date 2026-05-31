@@ -110,7 +110,17 @@ export function useDiscoveryWorkflow({
             setBrandOptions([]);
             setRefreshDrawerTrigger(prev => prev + 1);
 
-            const rootAndPartnersOnly = rawEmployees.filter(emp => {
+            // 🎯 Identifica se estamos mapeando a mesma empresa que já está na tela
+            const rootNode = rawEmployees.find(e => e.id === 'root_company' || e.level === 0);
+            const isSameCompany = rootNode && (
+                rootNode.name.toLowerCase().includes(confirmedBrand.toLowerCase()) || 
+                confirmedBrand.toLowerCase().includes(rootNode.name.toLowerCase()) ||
+                (rootNode as any).cnpj === cnpj.replace(/\D/g, '') ||
+                (rootNode as any).domain === domainTarget
+            );
+
+            // Se for a mesma empresa, filtramos para manter apenas Root e Sócios
+            const rootAndPartnersOnly = isSameCompany ? rawEmployees.filter(emp => {
                 const isRoot = emp.id === 'root_company' || emp.level === 0;
                 const isPartner = emp.level === 6 || String(emp.id).startsWith('partner_');
                 const isPartnerDept = emp.department && (
@@ -120,7 +130,7 @@ export function useDiscoveryWorkflow({
                     emp.department.includes('Conselho')
                 );
                 return isRoot || isPartner || isPartnerDept;
-            });
+            }) : [];
 
             fetchHierarchy(
                 cnpj,

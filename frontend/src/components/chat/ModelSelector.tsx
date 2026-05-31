@@ -139,15 +139,16 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
         const opt = MODEL_OPTIONS.find(m => m.id === modelId);
         if (!opt?.invertOnDark) return { filter: 'none' };
 
-
-
         if (isTrigger) {
             return { filter: theme === 'dark' ? 'brightness(0) invert(1)' : 'brightness(0)' };
         }
-        if (isSelected) {
-            return { filter: 'brightness(0)' };
-        }
-        return { filter: 'brightness(0) invert(1)' };
+
+        // Determine if the background behind the logo will be dark.
+        // In dark theme: non-selected options have dark background (#131313), selected has light background (#ffffff).
+        // In light theme: selected options have dark background (#131313), non-selected has light background (#ffffff).
+        const hasDarkBg = theme === 'dark' ? !isSelected : isSelected;
+
+        return { filter: hasDarkBg ? 'brightness(0) invert(1)' : 'brightness(0)' };
     };
 
     return (

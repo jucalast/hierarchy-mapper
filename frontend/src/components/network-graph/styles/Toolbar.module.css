@@ -922,7 +922,14 @@
     backdrop-filter: blur(16px) saturate(180%);
     padding: 0;
     border-radius: var(--radius-lg);
-    
+}
+
+.mainToolbarSection {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* Garante que o carrossel ocupe toda a largura disponível da seção */
+    width: fit-content;
+    max-width: 100%;
 }
 
 .mappingModeToggle {
@@ -937,7 +944,7 @@
 }
 
 .modeBtn {
-    color: white;
+    color: var(--sw-text-muted);
     border-radius: var(--radius-lg);
     padding: 8px;
     width: 40px;
@@ -951,14 +958,23 @@
     transition: all 0.2s ease;
 }
 
+:global([data-theme='light']) .modeBtn {
+    color: #131313 !important;
+}
+
 .modeBtn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--sw-hover);
 }
 
 .modeBtnActive {
     background: #131313 !important; /* Dark color for active button */
     color: white !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+:global([data-theme='light']) .modeBtnActive {
+    background: #131313 !important;
+    color: white !important;
 }
 
 

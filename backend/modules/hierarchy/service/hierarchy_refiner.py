@@ -105,8 +105,11 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
             node_li = node.get("linkedin") or node.get("url")
             if is_real_linkedin(node_li) and (not emp_db.linkedin_url or "pipedrive_" in emp_db.linkedin_url or "pd_" in emp_db.linkedin_url):
                 emp_db.linkedin_url = node_li
-            if not emp_db.profile_pic and node.get("avatar"):
-                emp_db.profile_pic = node.get("avatar")
+            # Atualiza foto se a do banco for nula, vazia ou inválida
+            db_pic = emp_db.profile_pic
+            new_pic = node.get("avatar") or node.get("profile_pic")
+            if new_pic and (not db_pic or db_pic.startswith("data:image") or "ghost-person" in db_pic):
+                emp_db.profile_pic = new_pic
             if not emp_db.location and node.get("location"):
                 emp_db.location = node.get("location")
             if not emp_db.headline and node.get("headline"):
@@ -187,6 +190,24 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
             if db_emp:
                 db_emp.seniority = new_level
                 db_emp.manager_id = str(final_manager_id)
+
+        # Garante que os dados de enriquecimento salvos no banco retornem ao frontend
+        node_stable_id = ephemeral_to_db_id.get(original_id)
+        db_emp_to_read = None
+        if node_stable_id and node_stable_id.startswith("node_"):
+            db_emp_id = int(node_stable_id.split("_")[1])
+            db_emp_to_read = next((e for e in all_db_emps if e.id == db_emp_id), None)
+            
+        if db_emp_to_read:
+            best_pic = db_emp_to_read.profile_pic
+            if not best_pic or best_pic.startswith("data:image") or "ghost-person" in best_pic:
+                best_pic = node.get("avatar") or node.get("profile_pic")
+            node["profile_pic"] = best_pic
+            node["avatar"] = best_pic
+            node["location"] = db_emp_to_read.location or node.get("location")
+            node["observations"] = db_emp_to_read.description or node.get("observations")
+            node["evidence"] = db_emp_to_read.evidence or node.get("evidence")
+            node["education"] = db_emp_to_read.education or node.get("education")
 
         updated_nodes.append(node)
 

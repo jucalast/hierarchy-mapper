@@ -40,9 +40,19 @@ async def pipedrive_sync_endpoint():
 
 @router.post("/pipedrive_smart_sync")
 async def pipedrive_smart_sync_endpoint():
-    """Endpoint para remanejar tarefas de forma inteligente (10/dia + prioridade)."""
+    """Endpoint para remanejar tarefas de forma inteligente (em background)"""
     try:
-        return await pipedrive_service.smart_reschedule_activities()
+        from arq import create_pool
+        from core.infra.redis_config import redis_settings
+        
+        redis = await create_pool(redis_settings)
+        job = await redis.enqueue_job("run_smart_reschedule_task")
+        
+        return {
+            "status": "queued", 
+            "message": "Sincronização inteligente iniciada em background. Você pode fechar ou continuar usando a plataforma.",
+            "job_id": job.job_id
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -127,6 +137,17 @@ async def update_pipedrive_activity(activity_id: int, payload: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/pipedrive/pipeline/board")
+async def get_pipeline_board():
+    """Retorna estágios e negócios para o Kanban."""
+    try:
+        res = await pipedrive_service.get_pipeline_board()
+        if res.get("success"):
+            return res.get("data")
+        raise HTTPException(status_code=500, detail=res.get("error", "Erro ao buscar pipeline board"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/pipedrive/organizations/{org_id}/details")
 async def get_org_details(org_id: int):
     """Retorna o 360 da empresa: Tarefas, contatos, negócios e notas."""
@@ -140,6 +161,46 @@ async def get_org_details(org_id: int):
         if "cooldown" in err.lower() or "rate limit" in err.lower():
             raise HTTPException(status_code=429, detail=err)
         raise HTTPException(status_code=500, detail=err)
+
+
+@router.post("/pipedrive/persons")
+async def create_pipedrive_person(payload: Dict[str, Any]):
+    """Cria uma nova pessoa no Pipedrive."""
+    try:
+        res = await pipedrive_service.create_person(
+            name=payload.get("name"),
+            email=payload.get("email"),
+            phone=payload.get("phone"),
+            org_id=payload.get("org_id")
+        )
+        if res and res.get("success") is not False:
+            return {"status": "success", "message": "Pessoa criada no Pipedrive com sucesso.", "data": res.get("data")}
+        raise Exception("Erro ao criar pessoa no Pipedrive.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/pipedrive/persons/{person_id}")
+async def update_pipedrive_person(person_id: int, payload: Dict[str, Any]):
+    """Atualiza uma pessoa no Pipedrive."""
+    try:
+        success = await pipedrive_service.update_person(person_id, payload)
+        if success:
+            return {"status": "success", "message": "Pessoa atualizada no Pipedrive com sucesso."}
+        raise Exception("Erro ao atualizar pessoa no Pipedrive.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/pipedrive/persons/{person_id}")
+async def delete_pipedrive_person(person_id: int):
+    """Deleta uma pessoa do Pipedrive."""
+    try:
+        success = await pipedrive_service.delete_person(person_id)
+        if success:
+            return {"status": "success", "message": "Pessoa deletada do Pipedrive com sucesso."}
+        raise Exception("Erro ao deletar pessoa no Pipedrive.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/pipedrive/organizations/{org_id}/reset")

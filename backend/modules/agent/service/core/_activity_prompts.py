@@ -32,12 +32,16 @@ def _dispatch_activity_etapas(subject: str, act_id, org_pd_id, deal_id) -> str:
     if any(k in s for k in _contact_search_keys):
         _act_args = f"org_id={org_pd_id}" + (f", deal_id={deal_id}" if deal_id else "") + f", activity_id={act_id}"
         return (
-            f"ETAPAS PARA ESTA ATIVIDADE (siga nesta ordem):\n"
-            f"  1. pipedrive_get_persons → verificar se já existe contato com canal (telefone ou e-mail) no CRM\n"
-            f"  2a. SE existe contato com canal disponível → execute a comunicação adequada e apresente ao João\n"
-            f"  2b. SE não existe contato ou está sem canal válido → open_hierarchy_drawer({_act_args})\n"
-            f"      (O mapeador será aberto na UI; aguarde a conclusão antes de continuar)\n"
-            f"⛔ PROIBIDO: NÃO use pipedrive_create_task — esta atividade já existe no CRM (id={act_id}).\n\n"
+            f"ESTRATÉGIA COMERCIAL: Antes de executar, pare e pense. Qual é o perfil desta empresa? Por que estamos buscando este contato?\n"
+            f"ETAPAS PARA ESTA ATIVIDADE (siga com calma e inteligência, EXATAMENTE nesta ordem):\n"
+            f"  1. deep_company_investigation → (OBRIGATÓRIO) Investigação profunda sobre a empresa ANTES de buscar pessoas.\n"
+            f"  2. pipedrive_get_persons → mapear os contatos da empresa.\n"
+            f"  3. evaluate_prospects → (OBRIGATÓRIO) Se decisores forem encontrados (no banco local ou CRM), faça o ranking inteligente.\n"
+            f"  4. Raciocínio Estratégico → Explique em 2-3 frases por que o contato X é o melhor (senioridade, canal).\n"
+            f"  5. Ação de Associação → SE o contato for [Banco Local] / sem ID Pipedrive numérico, use `pipedrive_create_person`. SE ele já tiver ID numérico, proponha vincular ao negócio via `pipedrive_update_deal`.\n"
+            f"  6. Concluir a busca → `pipedrive_update_task(activity_id={act_id}, done=true)` para finalizar esta tarefa!\n"
+            f"  7. Outreach ou Mapeamento → Proponha enviar apresentação (`generate_sales_message`) OU se ninguém for bom `open_hierarchy_drawer({_act_args})`.\n"
+            f"⛔ PROIBIDO: NÃO crie nova tarefa de busca — marque esta atividade (id={act_id}) como concluída ao finalizar.\n\n"
         )
 
     # ── Cobrar retorno / follow-up ─────────────────────────────────────────

@@ -49,8 +49,27 @@ class SyncIntelligenceHub:
         
     async def sync_all(self, force=False):
         """Executa a sincronização global periódica."""
-        # Delay inicial — deixa o servidor servir requests antes de rodar sync pesado
-        await asyncio.sleep(40)
+        # Warm-up imediato do cache de IDs (necessário para list_organizations)
+        # Isso não é "pesado" (apenas 1 request) e evita drawer vazio nos primeiros 40s.
+        try:
+            await self.pipedrive_svc.refresh_open_org_ids_cache()
+        except:
+            pass
+
+        # 🚀 NOVO: Se o banco estiver zerado, tenta um sync rápido ANTES do sleep longo.
+        # Isso garante que usuários em ambiente novo não vejam o drawer vazio por quase 1 min.
+        try:
+            async with async_session() as session:
+                from sqlalchemy import func
+                res = await session.execute(select(func.count()).select_from(Organization))
+                if res.scalar() < 1:
+                    print("[SyncHub] Banco local vazio. Iniciando sincronização prioritária...")
+                    await self.pipedrive_svc.sync_all_parallel()
+        except Exception as e:
+            print(f"[SyncHub] Erro no sync prioritário: {e}")
+
+        # Delay inicial — deixa o servidor servir requests antes de rodar sync pesado (WA/Mail)
+        await asyncio.sleep(10)
         
         while True:
             try:

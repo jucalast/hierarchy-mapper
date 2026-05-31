@@ -10179,3 +10179,2906 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-28T09:53:49.078232",
+    "candidate": "Neto Gregorio",
+    "linkedin": "https://br.linkedin.com/in/neto-gregorio-214a71249",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Neto Gregorio - J . L . O Autopeças Atacadista | LinkedIn",
+            "body": "Experiência: J . L . O Autopeças Atacadista · Localidade: Itu · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "unigrande",
+            "bio": "Formação acadêmica: UNIGRANDE - Centro Universitário da Grande Fortaleza · Localidade: Sobral · + de 500 conexões no LinkedIn. Veja o perfil de Neto Gregorio no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Neto Gregorio",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Neto Gregorio - J . L . O Autopeças Atacadista",
+                "LinkedIn CURRENT COMPANY (Declarada): J L O Autopeças Atacadista"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Neto Gregorio - J . L . O Autopeças Atacadista. Localidade: Itu. + de 500 conexões no LinkedIn. Formação acadêmica: UNIGRANDE - Centro Universitário da Grande Fortaleza. Localidade: Sobral. + de 500 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Neto Gregorio",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Neto Gregorio",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Neto Gregorio - J . L . O Autopeças Atacadista. Localidade: Itu. + de 500 conexões no LinkedIn. Formação acadêmica: UNIGRANDE - Centro Universitário da Grande Fortaleza. Localidade: Sobral. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Neto Gregorio não foi identificado explicitamente nos dados fornecidos. Embora ele trabalhe na J L O Autopeças Atacadista, não há informações suficientes para determinar se sua função está diretamente ligada a Suprimentos, Compras ou Procurement, nem há termos técnicos explícitos na bio ou snippets que sugiram essa relevância. A instrução 9 veta a aprovação apenas com base no vínculo empregatício sem cargo explícito ou termos técnicos."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T11:53:43.725850",
+    "candidate": "ROBERTO ROCHA",
+    "linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "ROBERTO ROCHA - ROCHA AUTOPECAS | LinkedIn",
+            "body": "Agradeço à Eurotecnica Auto Peças e a Euroricambi pela confiança depositada em mim para liderar a área comercial! Estou entusiasmada com a…"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 221 conexões no LinkedIn. Veja o perfil de ROBERTO ROCHA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "ROBERTO ROCHA",
+        "role": "Sócio-Fundador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Roberto Rocha é Sócio-Fundador da Rocha Auto Peças, empresa que corresponde à META_COMPANY_DECLARADA e à Razão Social Oficial. O departamento é Suprimentos/Compras/Procurement e o especialista considerou relevante.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região.",
+                "ROBERTO ROCHA - ROCHA AUTOPECAS",
+                "Rocha Auto Peças: Employee Directory | ZoomInfo.com Roberto Rocha - Rocha Auto Peças | LinkedIn",
+                "Veja o perfil de ROBERTO ROCHA no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.",
+                "vamos conversar com o renomado Roberto Rocha , sócio-fundador da Rocha Auto Peças , de Campinas e Região."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região. Ele compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "ROBERTO ROCHA",
+                    "role": "sócio-fundador"
+                },
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "ROBERTO ROCHA",
+                "detected_role": "sócio-fundador",
+                "clean_bio": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região. Ele compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio-Fundador",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "Roberto Rocha é sócio-fundador da Rocha Auto Peças. Como fundador e proprietário de uma empresa no setor de reposição automotiva, é altamente provável que ele tenha envolvimento direto ou indireto nas decisões estratégicas de compras e suprimentos, especialmente na negociação com fornecedores e na gestão de estoque de peças. A relevância é confirmada pelo contexto da empresa e sua posição de liderança."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio-Fundador",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T11:54:02.468164",
+    "candidate": "Jederson Rodrigues Thomé",
+    "linkedin": "https://www.linkedin.com/in/jederson-rodrigues-thom%C3%A9-6923074b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jederson Rodrigues Thomé - Comprador | Rocha Auto Peças - LinkedIn",
+            "body": "Comprador | Rocha Auto Peças · Experiência: Rocha Auto Peças · Formação acadêmica: UNIVERSIDADE PAULISTA · Localidade: Campinas · + de 500 conexões no ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Formação acadêmica: UNIVERSIDADE PAULISTA · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Jederson Rodrigues Thomé no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Jederson Rodrigues Thomé",
+        "role": "Comprador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato Jederson Rodrigues Thomé trabalha na empresa alvo Rocha Auto Peças, com o cargo de Comprador, conforme confirmado pelo Especialista e pelo Detetive. Não há indícios de veto por empresa, sobrenome, relevância, alucinação de cargo, departamento ou cargo vazio.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Comprador | Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Comprador na Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jederson Rodrigues Thomé",
+                    "role": "Comprador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jederson Rodrigues Thomé",
+                "detected_role": "Comprador",
+                "clean_bio": "Comprador | Rocha Auto Peças · Experiência: Rocha Auto Peças · Formação acadêmica: UNIVERSIDADE PAULISTA · Localidade: Campinas · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador' foi detectado na Bio Higienizada e confirmado pelos snippets. Este cargo tem interface direta com a área de Suprimentos/Compras, que é o foco da análise."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T11:54:22.026077",
+    "candidate": "Silvana Aparecida Amorim",
+    "linkedin": "https://www.linkedin.com/in/silvana-aparecida-amorim-752325177",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Silvana Aparecida Amorim - Rocha Auto Peças - LinkedIn",
+            "body": "Experiência na área de compras,follow up de pedidos, negociação com fornecedores,controle… · Experiência: Rocha Auto Peças · Formação acadêmica: Estácio ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência na área de compras,follow up de pedidos, negociação com fornecedores,controle… · Experiência: Rocha Auto Peças · Formação acadêmica: Estácio · Localidade: Campinas · 167 conexões no LinkedIn. Veja o perfil de Silvana Aparecida Amorim no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Silvana Aparecida Amorim",
+        "role": "Comprador",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O especialista confirmou que a candidata é Compradora na área de Suprimentos/Compras e trabalha na empresa-alvo 'Rocha Auto Peças'. Os dados do detetive confirmam a empresa e a experiência em compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência na área de compras,follow up de pedidos, negociação com fornecedores,controle…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Silvana Aparecida Amorim",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Silvana Aparecida Amorim",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência na área de compras,follow up de pedidos, negociação com fornecedores,controle… · Experiência: Rocha Auto Peças · Formação acadêmica: Estácio · Localidade: Campinas · 167 conexões no LinkedIn. Veja o perfil de Silvana Aparecida Amorim no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "A bio menciona explicitamente 'experiência na área de compras', 'follow up de pedidos' e 'negociação com fornecedores', que são atividades centrais de Suprimentos/Compras. O vínculo com a Rocha Auto Peças foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T11:54:39.936076",
+    "candidate": "Leonardo Pacheco",
+    "linkedin": "https://www.linkedin.com/in/leonardo-pacheco-67a164230",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leonardo Pacheco - Vendedor na Rocha Auto Peças | LinkedIn",
+            "body": "Vendedor na Rocha Auto Peças · Experiência: Rocha Auto Peças · Localidade: 13330-005 · 61 conexões no LinkedIn. Veja o perfil de Leonardo Pacheco no ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13330-005 · 62 conexões no LinkedIn. Veja o perfil de Leonardo Pacheco no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Leonardo Pacheco",
+        "role": "Vendedor",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "Veto Mecânico Detectado: O candidato foi marcado com 'Veto Mecânico Detectado: True', indicando uma falha em alguma regra crítica de qualificação.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Vendedor na Rocha Auto Peças.",
+                "Vendedor na Rocha Auto Peças · Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Vendedor na Rocha Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leonardo Pacheco",
+                    "role": "Vendedor"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leonardo Pacheco",
+                "detected_role": "Vendedor",
+                "clean_bio": "Vendedor na Rocha Auto Peças. 61 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Vendedor', que é explicitamente vetado pela regra 5 e 6. Não há informações adicionais nos snippets que sugiram uma interface com Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Vendedor",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T11:55:46.947243",
+    "candidate": "Matheus Pereira de Jesus",
+    "linkedin": "https://www.linkedin.com/in/matheus-pereira-de-jesus-272b0930a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Matheus Pereira de Jesus - Rocha E Rocha Auto Pecas | LinkedIn",
+            "body": "Veja o perfil de Matheus Pereira de Jesus no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Cadastre-se para ver o perfil. Rocha E Rocha Auto Pecas . Denunciar este perfil."
+        },
+        "osint_metadata": {
+            "role": "rocha e rocha auto pecas",
+            "bio": "Experiência: Rocha E Rocha Auto Pecas · Localidade: Indaiatuba. Veja o perfil de Matheus Pereira de Jesus no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Matheus Pereira de Jesus",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Matheus Pereira de Jesus | rocha e rocha auto pecas",
+                "Experiência: Rocha E Rocha Auto Pecas · Localidade: Indaiatuba.",
+                "Matheus Pereira de Jesus - Rocha E Rocha Auto Pecas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Matheus Pereira de Jesus no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. Experiência: Rocha E Rocha Auto Pecas · Localidade: Indaiatuba."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Matheus Pereira de Jesus",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Matheus Pereira de Jesus",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Matheus Pereira de Jesus no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Cadastre-se para ver o perfil. Rocha E Rocha Auto Pecas . Denunciar este perfil. Matheus Pereira de Jesus | rocha e rocha auto pecas Experiência: Rocha E Rocha Auto Pecas · Localidade: Indaiatuba. Veja o perfil de Matheus Pereira de Jesus no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Matheus Pereira de Jesus não foi identificado nos dados fornecidos. Embora ele trabalhe na Rocha Auto Peças, não há informações técnicas explícitas em sua bio ou nos snippets que o vinculem diretamente às áreas de Suprimentos, Compras ou Procurement, nem a funções com interface direta com fornecedores ou materiais. Portanto, não é possível confirmar a relevância para as áreas de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T11:56:06.990920",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn",
+            "body": "March 3, 2023 - Explore More ... 4 others named André Roberto Ribeiro in Brazil are on LinkedIn See others named André Roberto Ribeiro ... Don’t have the app? Get it in the Microsoft Store. Open the app · André Roberto can introduce you to 10+ people ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Comprador",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças' como Comprador no departamento de Suprimentos/Compras, conforme indicado pelo Especialista e Detetive. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de…",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "A bio menciona 'compras' e a experiência é na Rocha Auto Peças, que é uma empresa do setor automotivo, onde compras é uma função essencial. O cargo é diretamente relacionado a Suprimentos/Compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T14:05:23.981159",
+    "candidate": "Roberto Rocha",
+    "linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "ROBERTO ROCHA - ROCHA AUTOPECAS | LinkedIn",
+            "body": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 220 conexões no LinkedIn . Veja o perfil de ROBERTO ROCHA no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 221 conexões no LinkedIn. Veja o perfil de ROBERTO ROCHA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Roberto Rocha",
+        "role": "Sócio-Fundador",
+        "matching_score": 100,
+        "department": "Suprimentos / Compras / Procurement",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Roberto Rocha é Sócio-Fundador da Rocha Auto Peças, empresa alvo e razão social oficial. O especialista confirmou a relevância e o departamento de Suprimentos / Compras / Procurement. Não há indícios de veto por outras regras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Roberto Rocha é sócio-fundador da Rocha Auto Peças",
+                "Roberto Rocha - Rocha Auto Peças | LinkedIn",
+                "Rocha Peças Roberto Rocha Comercio de Auto Pecas LTDA - 68098730000100",
+                "Rocha Auto Peças | LinkedIn",
+                "ROBERTO ROCHA - ROCHA AUTOPECAS",
+                "Roberto Rocha, sócio-fundador da Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Roberto Rocha é sócio-fundador da Rocha Auto Peças, localizada em Campinas e Região. Ele compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva. A empresa foi fundada em 30/06/1992 e atua no comércio de peças e acessórios novos para veículos automotores."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "ROBERTO ROCHA",
+                    "role": "sócio-fundador"
+                },
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Roberto Rocha",
+                "detected_role": "sócio-fundador",
+                "clean_bio": "Roberto Rocha é sócio-fundador da Rocha Auto Peças, localizada em Campinas e Região. Ele compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva. A empresa foi fundada em 30/06/1992 e atua no comércio de peças e acessórios novos para veículos automotores."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio-Fundador",
+            "dept": "Suprimentos / Compras / Procurement",
+            "is_relevant": true,
+            "reasoning": "O candidato é sócio-fundador de uma empresa de comércio de peças automotivas, o que implica em forte interface com a gestão de fornecedores, negociação e aquisição de materiais, áreas centrais de Suprimentos/Compras/Procurement. A relevância é confirmada pela natureza do negócio (comércio de peças) e pela posição de liderança e fundação da empresa."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio-Fundador",
+        "department": "Suprimentos / Compras / Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T14:05:45.813641",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Orphan Upgrade",
+            "body": "N/D"
+        },
+        "osint_metadata": {
+            "role": "Cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Compras e Especialista em Cadastro",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa alvo 'Rocha Auto Peças', conforme confirmado pelo Detetive. O cargo e departamento são relevantes para a área de Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência : Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "compras e especialista em cadastro"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "compras e especialista em cadastro",
+                "clean_bio": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn"
+            }
+        },
+        "specialist": {
+            "role_name": "compras e especialista em cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'compras e especialista em cadastro' está diretamente relacionado à área de Compras e Suprimentos. O vínculo com a empresa Rocha Auto Peças foi confirmado e o cargo é explícito na bio higienizada."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras e Especialista em Cadastro",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T14:16:23.743600",
+    "candidate": "Hellen Gulla",
+    "linkedin": "https://www.linkedin.com/in/hellen-gulla-4435031bb",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Hellen Gulla - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: 13090-150. Veja o perfil de Hellen Gulla no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13090-150. Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Hellen Gulla",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Hellen Gulla - Rocha Auto Peças",
+                "Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Hellen Gulla - Rocha Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Hellen Gulla",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Hellen Gulla",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Hellen Gulla - Rocha Auto Peças. Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Hellen Gulla não foi identificado nos dados fornecidos. Embora ela trabalhe na Rocha Auto Peças, não há informações suficientes para determinar se sua função tem interface direta com Suprimentos/Compras/Procurement, e o cargo não foi explicitamente identificado como relevante."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:07:06.019925",
+    "candidate": "Adriano Rocha",
+    "linkedin": "https://www.linkedin.com/in/adriano-rocha-3bb381228",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Adriano Rocha - Sócio | LinkedIn",
+            "body": "Sócio · Experience: SPARTACUS Distribuidora de peças e componentes para celulares. · Education: Faculdade famig · Location: Belo Horizonte · 10 connections on LinkedIn. View Adriano Rocha ’s profile on LinkedIn, a professional community ..."
+        },
+        "osint_metadata": {
+            "role": "spartacus  distribuidora de peças e componentes para celulares.",
+            "bio": "Experiência: SPARTACUS  Distribuidora de peças e componentes para celulares. · Formação acadêmica: Faculdade famig · Localidade: Belo Horizonte · 10 conexões no LinkedIn. Veja o perfil de Adriano Rocha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Adriano Rocha",
+        "role": "Sócio",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O detetive indicou que o candidato trabalha na SPARTACUS Distribuidora de peças e componentes para celulares, que é uma empresa diferente da META_COMPANY_DECLARADA 'Rocha Auto Peças'. A Regra 1 (VETO DE EMPRESA) foi aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Experiência: SPARTACUS Distribuidora de peças e componentes para celulares.",
+                "Candidate Name: Adriano Rocha | Google Page Title: Adriano Rocha - Sócio | Search Snippet: Sócio · Experience: SPARTACUS Distribuidora de peças e componentes para celulares. · Education: Faculdade famig · Location: Belo Horizonte · 10 connections on LinkedIn. View Adriano Rocha ’s profile on LinkedIn, a professional community | LinkedIn Status: Adriano Rocha | spartacus distribuidora de peças e componentes para celulares. | LinkedIn"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sócio · Experiência: SPARTACUS Distribuidora de peças e componentes para celulares. · Formação acadêmica: Faculdade famig · Localidade: Belo Horizonte · 10 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Adriano Rocha",
+                    "role": "Sócio"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Adriano Rocha",
+                "detected_role": "Sócio",
+                "clean_bio": "Sócio · Experiência: SPARTACUS Distribuidora de peças e componentes para celulares. · Formação acadêmica: Faculdade famig · Localidade: Belo Horizonte · 10 conexões no LinkedIn. Veja o perfil de Adriano Rocha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo de Sócio em uma distribuidora de peças (SPARTACUS) e a empresa alvo (Rocha Auto Peças) sugerem uma forte interface com a gestão de suprimentos e compras, especialmente no setor automotivo. Embora o vínculo com a Rocha Auto Peças não esteja 100% confirmado pelo Detetive, a natureza do cargo e o nome da empresa alvo indicam relevância para a área de compras/suprimentos."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sócio",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:07:23.769191",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn",
+            "body": "March 3, 2023 - · Experience: Rocha Auto Peças · Education: faculdade santanna · Location: Campinas · 500+ connections on LinkedIn. View André Roberto Ribeiro ’s profile on LinkedIn, a professional community of 1 billion ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Especialista em Compras e Cadastro",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças', conforme confirmado pelo Detetive. O Especialista validou a relevância e o departamento. O cargo é consistente com a área de Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "André Roberto Ribeiro - Rocha Auto Peças",
+                "Experience: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Rocha Auto Peças 14 agosto de 2017 A atual",
+                "Experiência: Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "André Roberto Ribeiro | cargo não identificado nos metadados LinkedIn | Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "André Roberto Ribeiro | cargo não identificado nos metadados LinkedIn"
+            }
+        },
+        "specialist": {
+            "role_name": "Especialista em Compras e Cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "A bio menciona explicitamente 'compras e especialista em cadastro', o que é diretamente relevante para a área de Suprimentos/Compras. O vínculo com a Rocha Auto Peças está confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Especialista em Compras e Cadastro",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:35:04.345333",
+    "candidate": "Roberto Rocha",
+    "linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "ROBERTO ROCHA - ROCHA AUTOPECAS | LinkedIn",
+            "body": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 220 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 221 conexões no LinkedIn. Veja o perfil de ROBERTO ROCHA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Roberto Rocha",
+        "role": "Sócio-Fundador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Roberto Rocha trabalha na empresa alvo Rocha Auto Peças, conforme confirmado pelo Detetive e Especialista. Seu cargo de Sócio-Fundador é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Roberto Rocha Empresa Alvo: Rocha Auto Peças Bio Higienizada: Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região.",
+                "ROBERTO ROCHA - ROCHA AUTOPECAS",
+                "Roberto Rocha - Rocha Auto Peças | LinkedIn",
+                "Experiência : ROCHA AUTOPECAS",
+                "Roberto Rocha , sócio-fundador da Rocha Auto Peças , de Campinas e Região."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, com mais de 32 anos de experiência no comércio de peças automotivas."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "ROBERTO ROCHA",
+                    "role": "sócio-fundador"
+                },
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "compras e especialista em cadastro"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Roberto Rocha",
+                "detected_role": "sócio-fundador",
+                "clean_bio": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região. Compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva. Com mais de 32 anos de experiência no comércio de peças automotivas."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio-Fundador",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O candidato é sócio-fundador da Rocha Auto Peças, com mais de 32 anos de experiência no comércio de peças automotivas. Embora o cargo 'Sócio-Fundador' não seja diretamente de Compras, a vasta experiência no setor de reposição automotiva e a natureza do negócio (comércio de peças) sugerem uma forte interface com a área de suprimentos e negociação com fornecedores. A presença de 'André Roberto Ribeiro' com o cargo 'compras e especialista em cadastro' no mesmo snippet reforça a existência e a importância da área de compras na empresa, onde o sócio-fundador certamente tem influência e conhecimento estratégico."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio-Fundador",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:37:18.505375",
+    "candidate": "Roberto Rocha",
+    "linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "ROBERTO ROCHA - ROCHA AUTOPECAS | LinkedIn",
+            "body": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 220 conexões no LinkedIn . Veja o perfil de ROBERTO ROCHA no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 221 conexões no LinkedIn. Veja o perfil de ROBERTO ROCHA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Roberto Rocha",
+        "role": "Sócio-Fundador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Roberto Rocha é Sócio-Fundador da Rocha Auto Peças, empresa-alvo e razão social oficial. O especialista confirmou a relevância e o departamento. Não há indícios de falsos positivos ou vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Roberto Rocha Empresa Alvo: Rocha Auto Peças Bio Higienizada: Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região.",
+                "ROBERTO ROCHA - ROCHA AUTOPECAS",
+                "Roberto Rocha - Rocha Auto Peças | LinkedIn",
+                "Experiência : ROCHA AUTOPECAS",
+                "Roberto Rocha , sócio-fundador da Rocha Auto Peças , de Campinas e Região."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, com mais de 32 anos de experiência no comércio de peças automotivas."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "ROBERTO ROCHA",
+                    "role": "sócio-fundador"
+                },
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "compras e especialista em cadastro"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Roberto Rocha",
+                "detected_role": "sócio-fundador",
+                "clean_bio": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região. Compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva. Com mais de 32 anos de experiência no comércio de peças automotivas."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio-Fundador",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O candidato é sócio-fundador da Rocha Auto Peças, com mais de 32 anos de experiência no comércio de peças automotivas. Embora o cargo não seja explicitamente de compras, a vasta experiência no setor e a posição de fundador em uma empresa de autopeças sugerem forte interface com a cadeia de suprimentos e negociação com fornecedores. A presença de 'André Roberto Ribeiro' com o cargo 'compras e especialista em cadastro' no mesmo snippet reforça a relevância do contexto de compras na empresa."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio-Fundador",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:37:35.985055",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Orphan Upgrade",
+            "body": "N/D"
+        },
+        "osint_metadata": {
+            "role": "Cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Comprador",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças', com cargo de Comprador e especialista em cadastro, o que é relevante para a área de Suprimentos/Compras. Não há indícios de falsos positivos ou vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn. Comprador e especialista em cadastro de… Veja o perfil de André Roberto Ribeiro no LinkedIn.",
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência : Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            ],
+            "is_institutional": false,
+            "bio_raw": "André Roberto Ribeiro - Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "comprador e especialista em cadastro"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "comprador e especialista em cadastro",
+                "clean_bio": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn. Comprador e especialista em cadastro de… Veja o perfil de André Roberto Ribeiro no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador e especialista em cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador e especialista em cadastro' está diretamente alinhado com as áreas de Suprimentos/Compras. O vínculo com a empresa Rocha Auto Peças foi confirmado e a relevância é alta."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:39:06.576353",
+    "candidate": "Hellen Gulla",
+    "linkedin": "https://www.linkedin.com/in/hellen-gulla-4435031bb",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Hellen Gulla - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: 13090-150. Veja o perfil de Hellen Gulla no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13090-150. Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Hellen Gulla",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Hellen Gulla - Rocha Auto Peças",
+                "Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Hellen Gulla - Rocha Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Hellen Gulla",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Hellen Gulla",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Hellen Gulla - Rocha Auto Peças. Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Hellen Gulla não foi identificado nos dados fornecidos ('Cargo Detectado: Não Identificado', 'Verified Official Role: Não Encontrado'). Não há termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT na Bio ou nos Snippets para justificar a relevância, conforme instrução 9."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:41:38.142925",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn",
+            "body": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Compras e Especialista em Cadastro",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças', conforme confirmado pelo Detetive. O cargo 'Compras e Especialista em Cadastro' é relevante para a área de Suprimentos/Compras e o especialista marcou como relevante.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Compras e Especialista em Cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Compras e Especialista em Cadastro' e a experiência na empresa 'Rocha Auto Peças' indicam uma forte interface com a área de Suprimentos/Compras, especialmente no que tange à gestão de fornecedores e materiais."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras e Especialista em Cadastro",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:42:39.833948",
+    "candidate": "Nathan Lopes",
+    "linkedin": "https://www.linkedin.com/in/nathan-lopes-489217292",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nathan Lopes - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Nathan Lopes",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Nathan Lopes - Rocha Auto Peças",
+                "Nathan Lopes - Rocha Auto Peças. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Nathan Lopes - Rocha Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nathan Lopes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nathan Lopes",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Nathan Lopes - Rocha Auto Peças. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Nathan Lopes não foi identificado nos dados fornecidos. Embora ele trabalhe na Rocha Auto Peças, não há informações suficientes para determinar se sua função tem interface direta com Suprimentos/Compras/Procurement, e não há termos técnicos explícitos na bio ou snippets que sugiram essa relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:47:52.877607",
+    "candidate": "Roberto Rocha",
+    "linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "ROBERTO ROCHA - ROCHA AUTOPECAS | LinkedIn",
+            "body": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 220 conexões no LinkedIn . Veja o perfil de ROBERTO ROCHA no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 221 conexões no LinkedIn. Veja o perfil de ROBERTO ROCHA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Roberto Rocha",
+        "role": "Sócio-Fundador",
+        "matching_score": 100,
+        "department": "Diretoria/Executivo",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Roberto Rocha é Sócio-Fundador da Rocha Auto Peças, empresa-alvo e razão social oficial. O especialista marcou como relevante e o detetive confirmou a atuação na empresa. Nenhuma regra de veto foi acionada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Roberto Rocha Empresa Alvo: Rocha Auto Peças Bio Higienizada: Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região.",
+                "Cargo Detectado: sócio-fundador",
+                "TÍTULO: ROBERTO ROCHA - ROCHA AUTOPECAS",
+                "Rocha Peças Roberto Rocha Comercio de Auto Pecas LTDA - 68098730000100",
+                "Rocha Auto Peças | LinkedIn",
+                "Experiência : ROCHA AUTOPECAS",
+                "Nessa edição exclusiva, vamos conversar com o renomado Roberto Rocha , sócio-fundador da Rocha Auto Peças , de Campinas e Região."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região. Compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "ROBERTO ROCHA",
+                    "role": "sócio-fundador"
+                },
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Roberto Rocha",
+                "detected_role": "sócio-fundador",
+                "clean_bio": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região. Compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio-Fundador",
+            "dept": "Diretoria/Executivo",
+            "is_relevant": true,
+            "reasoning": "Roberto Rocha é sócio-fundador da Rocha Auto Peças. Como fundador e proprietário, ele tem influência direta nas decisões estratégicas da empresa, incluindo as áreas de suprimentos e compras, essenciais para o setor de reposição automotiva. Sua posição executiva o coloca em uma interface direta com a gestão de fornecedores e aquisição de peças."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio-Fundador",
+        "department": "Diretoria/Executivo",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:48:11.240167",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Orphan Upgrade",
+            "body": "N/D"
+        },
+        "osint_metadata": {
+            "role": "Cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Comprador",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças' e sua função é relevante para a área de Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn. Comprador e especialista em cadastro de… Veja o perfil de André Roberto Ribeiro no LinkedIn.",
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência : Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            ],
+            "is_institutional": false,
+            "bio_raw": "André Roberto Ribeiro - Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "comprador e especialista em cadastro"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "comprador e especialista em cadastro",
+                "clean_bio": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn. Comprador e especialista em cadastro de… Veja o perfil de André Roberto Ribeiro no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador e especialista em cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador e especialista em cadastro' está diretamente alinhado com as áreas de Suprimentos/Compras. O vínculo com a empresa Rocha Auto Peças foi confirmado e a descrição do cargo indica atividades centrais de compras e gestão de cadastro de fornecedores/produtos, o que é relevante para a área de Procurement."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T15:49:18.892805",
+    "candidate": "Aline Baldin",
+    "linkedin": "https://www.linkedin.com/in/aline-baldin-12b403167",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Aline Baldin - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: Campinas · 18 conexões no LinkedIn .Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies do LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: Campinas · 18 conexões no LinkedIn. Veja o perfil de Aline Baldin no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Aline Baldin",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Aline Baldin - Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Aline Baldin - Rocha Auto Peças · Localidade: Campinas · 18 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Aline Baldin",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Aline Baldin",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Aline Baldin - Rocha Auto Peças · Localidade: Campinas · 18 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Aline Baldin não foi identificado nos dados fornecidos. Embora ela trabalhe na Rocha Auto Peças, não há informações técnicas explícitas em sua bio ou snippets que a vinculem diretamente às áreas de Suprimentos, Compras ou Procurement, conforme as regras de veto e relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:01:16.105297",
+    "candidate": "Roberto Rocha",
+    "linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "ROBERTO ROCHA - ROCHA AUTOPECAS | LinkedIn",
+            "body": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 220 conexões no LinkedIn . Veja o perfil de ROBERTO ROCHA no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: ROCHA AUTOPECAS · Formação acadêmica: UNICAMP · Localidade: Campinas · 221 conexões no LinkedIn. Veja o perfil de ROBERTO ROCHA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Roberto Rocha",
+        "role": "Sócio-Fundador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Roberto Rocha é Sócio-Fundador da Rocha Auto Peças, empresa-alvo e razão social oficial. O especialista confirmou a relevância e o departamento. Nenhuma regra de veto foi acionada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Roberto Rocha Empresa Alvo: Rocha Auto Peças Bio Higienizada: Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região.",
+                "ROBERTO ROCHA - ROCHA AUTOPECAS",
+                "Roberto Rocha, sócio-fundador da Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região. Ele compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "ROBERTO ROCHA",
+                    "role": "sócio-fundador"
+                },
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "compras e especialista em cadastro"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Roberto Rocha",
+                "detected_role": "sócio-fundador",
+                "clean_bio": "Roberto Rocha, sócio-fundador da Rocha Auto Peças, de Campinas e Região. Ele compartilhará sua trajetória inspiradora, os desafios superados e as estratégias que levaram a empresa ao sucesso no mercado de reposição automotiva."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio-Fundador",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "Roberto Rocha é sócio-fundador da Rocha Auto Peças. Embora o cargo não seja diretamente de Compras, a posição de fundador em uma empresa de autopeças sugere forte envolvimento nas decisões estratégicas de aquisição e fornecimento, o que é relevante para a área de Suprimentos/Compras/Procurement."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/roberto-rocha-577a4a46"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio-Fundador",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:01:34.626061",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Orphan Upgrade",
+            "body": "N/D"
+        },
+        "osint_metadata": {
+            "role": "Cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Comprador",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças' e sua função é relevante para a área de Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn. Comprador e especialista em cadastro de… Veja o perfil de André Roberto Ribeiro no LinkedIn.",
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência : Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            ],
+            "is_institutional": false,
+            "bio_raw": "André Roberto Ribeiro - Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "comprador e especialista em cadastro"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "comprador e especialista em cadastro",
+                "clean_bio": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn. Comprador e especialista em cadastro de… Veja o perfil de André Roberto Ribeiro no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador e especialista em cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador e especialista em cadastro' está diretamente alinhado com as áreas de Suprimentos/Compras. O vínculo com a empresa Rocha Auto Peças foi confirmado e a descrição do cargo indica atividades centrais de compras e gestão de cadastro de fornecedores/produtos, o que é relevante para a área de Procurement."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:02:31.826111",
+    "candidate": "Aline Baldin",
+    "linkedin": "https://www.linkedin.com/in/aline-baldin-12b403167",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Aline Baldin - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: Campinas · 18 conexões no LinkedIn .Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies do LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: Campinas · 18 conexões no LinkedIn. Veja o perfil de Aline Baldin no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Aline Baldin",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Aline Baldin - Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Aline Baldin - Rocha Auto Peças · Localidade: Campinas · 18 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Aline Baldin",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Aline Baldin",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Aline Baldin - Rocha Auto Peças · Localidade: Campinas · 18 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Aline Baldin não foi identificado nos dados fornecidos. Embora ela trabalhe na Rocha Auto Peças, não há informações técnicas explícitas em sua bio ou snippets que a vinculem diretamente às áreas de Suprimentos, Compras ou Procurement, conforme as regras de veto e relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:03:23.831608",
+    "candidate": "Hellen Gulla",
+    "linkedin": "https://www.linkedin.com/in/hellen-gulla-4435031bb",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Hellen Gulla - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: 13090-150. Veja o perfil de Hellen Gulla no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13090-150. Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Hellen Gulla",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Hellen Gulla - Rocha Auto Peças",
+                "Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Hellen Gulla - Rocha Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Hellen Gulla",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Hellen Gulla",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Hellen Gulla - Rocha Auto Peças. Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Hellen Gulla não foi identificado nos dados fornecidos. Embora ela trabalhe na Rocha Auto Peças, não há informações suficientes para determinar se sua função tem interface com Suprimentos/Compras/Procurement, e o cargo não foi explicitamente identificado como relevante."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:05:36.477000",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn",
+            "body": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Compras e Especialista em Cadastro",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças', conforme confirmado pelo Detetive. O cargo 'Compras e Especialista em Cadastro' é relevante para a área de Suprimentos/Compras e o especialista marcou como relevante.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Compras e Especialista em Cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Compras e Especialista em Cadastro' e a menção de 'compras' na bio indicam uma forte interface com a área de Suprimentos/Compras, sendo relevante para a posição."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras e Especialista em Cadastro",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:06:05.084430",
+    "candidate": "Nathan Lopes",
+    "linkedin": "https://www.linkedin.com/in/nathan-lopes-489217292",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nathan Lopes - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Nathan Lopes",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Nathan Lopes - Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Nathan Lopes - Rocha Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nathan Lopes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nathan Lopes",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Nathan Lopes - Rocha Auto Peças. Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Nathan Lopes não foi identificado nos dados fornecidos. Embora ele trabalhe na Rocha Auto Peças, não há informações técnicas explícitas em sua bio ou snippets que o vinculem diretamente às áreas de Suprimentos, Compras ou Procurement, conforme as regras técnicas."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:09:06.426444",
+    "candidate": "João Antonio David",
+    "linkedin": "https://www.linkedin.com/in/jo%C3%A3o-antonio-david-3953325a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Antonio David - Gerente de Compras na Roberto Rocha Com ...",
+            "body": "Gerente de Compras na Roberto Rocha Com. de Auto Peças · Experiência: Roberto Rocha Com. de Auto Peças · Localidade: Campinas · 490 conexões no LinkedIn . Veja o perfil de João Antonio David no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "roberto rocha com. de auto peças",
+            "bio": "Experiência: Roberto Rocha Com. de Auto Peças · Localidade: Campinas · 490 conexões no LinkedIn. Veja o perfil de João Antonio David no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "João Antonio David",
+        "role": "Gerente de Compras",
+        "matching_score": 0,
+        "department": "Compras",
+        "evidence": "O detetive encontrou que o candidato trabalha na 'Roberto Rocha Com. de Auto Peças', que é uma empresa diferente da meta 'Rocha Auto Peças'. A regra de Veto de Empresa foi aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Gerente de Compras na Roberto Rocha Com. de Auto Peças",
+                "Experiência: Roberto Rocha Com. de Auto Peças",
+                "LinkedIn Status: João Antonio David | roberto rocha com. de auto peças | LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gerente de Compras na Roberto Rocha Com. de Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "João Antonio David",
+                    "role": "Gerente de Compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "João Antonio David",
+                "detected_role": "Gerente de Compras",
+                "clean_bio": "Gerente de Compras na Roberto Rocha Com. de Auto Peças. Experiência: Roberto Rocha Com. de Auto Peças. Localidade: Campinas. 490 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de Compras",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Gerente de Compras' é diretamente relacionado à área de Compras/Suprimentos. Apesar do vínculo com a Rocha Auto Peças não ser confirmado explicitamente nos dados brutos, o título do LinkedIn e a experiência indicam fortemente essa atuação. A empresa alvo é 'Rocha Auto Peças', o que aumenta a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Gerente de Compras",
+        "department": "Compras",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:12:05.173118",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn",
+            "body": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Compras e Especialista em Cadastro",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças', conforme confirmado pelo Detetive. O cargo 'Compras e Especialista em Cadastro' é relevante para a área de Suprimentos/Compras e o especialista marcou como relevante.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Compras e Especialista em Cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Compras e Especialista em Cadastro' e a menção de 'compras' na bio indicam uma forte interface com a área de Suprimentos/Compras, sendo relevante para a posição."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras e Especialista em Cadastro",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:12:16.585566",
+    "candidate": "Nathan Lopes",
+    "linkedin": "https://www.linkedin.com/in/nathan-lopes-489217292",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nathan Lopes - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Nathan Lopes",
+        "role": "Análise Humana",
+        "matching_score": 0,
+        "department": "A validar",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Não Identificado). VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Nathan Lopes - Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Nathan Lopes - Rocha Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nathan Lopes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nathan Lopes",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Nathan Lopes - Rocha Auto Peças. Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Nathan Lopes não foi identificado nos dados fornecidos. Embora ele trabalhe na Rocha Auto Peças, não há informações técnicas explícitas em sua bio ou snippets que o vinculem diretamente às áreas de Suprimentos, Compras ou Procurement, conforme as regras técnicas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:14:50.449249",
+    "candidate": "João Antonio David",
+    "linkedin": "https://www.linkedin.com/in/jo%C3%A3o-antonio-david-3953325a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Antonio David - Gerente de Compras na Roberto Rocha Com ...",
+            "body": "Gerente de Compras na Roberto Rocha Com. de Auto Peças · Experiência: Roberto Rocha Com. de Auto Peças · Localidade: Campinas · 490 conexões no LinkedIn . Veja o perfil de João Antonio David no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "roberto rocha com. de auto peças",
+            "bio": "Experiência: Roberto Rocha Com. de Auto Peças · Localidade: Campinas · 490 conexões no LinkedIn. Veja o perfil de João Antonio David no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "João Antonio David",
+        "role": "Gerente de Compras",
+        "matching_score": 0,
+        "department": "Compras",
+        "evidence": "O detetive encontrou que o candidato trabalha na 'Roberto Rocha Com. de Auto Peças', que é uma empresa diferente da meta 'Rocha Auto Peças'. A regra de Veto de Empresa foi aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Gerente de Compras na Roberto Rocha Com. de Auto Peças",
+                "Experiência: Roberto Rocha Com. de Auto Peças",
+                "LinkedIn Status: João Antonio David | roberto rocha com. de auto peças | LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gerente de Compras na Roberto Rocha Com. de Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "João Antonio David",
+                    "role": "Gerente de Compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "João Antonio David",
+                "detected_role": "Gerente de Compras",
+                "clean_bio": "Gerente de Compras na Roberto Rocha Com. de Auto Peças. Experiência: Roberto Rocha Com. de Auto Peças. Localidade: Campinas. 490 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de Compras",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Gerente de Compras' é diretamente relacionado à área de Compras/Suprimentos. Apesar do vínculo com a Rocha Auto Peças não ser confirmado explicitamente nos dados brutos, o título do LinkedIn e a experiência indicam fortemente essa atuação. A empresa alvo é 'Rocha Auto Peças', o que aumenta a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Gerente de Compras",
+        "department": "Compras",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:17:52.446409",
+    "candidate": "Rodrigo Lima",
+    "linkedin": "https://www.linkedin.com/in/rodrigo-lima-0777a8217",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo Lima - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: 01101-080 · 12 conexões no LinkedIn . Veja o perfil de Rodrigo Lima no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 01101-080 · 12 conexões no LinkedIn. Veja o perfil de Rodrigo Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rodrigo Lima",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rodrigo Lima - Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rodrigo Lima - Rocha Auto Peças. 12 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rodrigo Lima",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rodrigo Lima",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Rodrigo Lima - Rocha Auto Peças. 12 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Rodrigo Lima não foi identificado nos dados fornecidos. Embora ele trabalhe na Rocha Auto Peças, não há informações suficientes para determinar se sua função tem interface direta com Suprimentos/Compras/Procurement, e não há termos técnicos explícitos na bio ou snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:25:38.109069",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn",
+            "body": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Compras e Especialista em Cadastro",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças', conforme confirmado pelo Detetive. O cargo 'Compras e Especialista em Cadastro' é relevante para a área de Suprimentos/Compras e não há indícios de alucinação ou veto.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de André Roberto Ribeiro no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Compras e Especialista em Cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Compras e Especialista em Cadastro' e a menção de 'compras' na bio indicam uma forte interface com a área de Suprimentos/Compras, sendo relevante para a posição."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras e Especialista em Cadastro",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:26:26.194609",
+    "candidate": "Nathan Lopes",
+    "linkedin": "https://www.linkedin.com/in/nathan-lopes-489217292",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nathan Lopes - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Nathan Lopes",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Nathan Lopes - Rocha Auto Peças",
+                "Nathan Lopes | LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Nathan Lopes - Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nathan Lopes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nathan Lopes",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Nathan Lopes - Rocha Auto Peças"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Nathan Lopes não foi identificado nos dados fornecidos. Embora ele trabalhe na Rocha Auto Peças, não há informações suficientes para determinar se sua função tem interface com Suprimentos/Compras/Procurement, nem termos técnicos explícitos na bio ou snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-29T16:29:07.686849",
+    "candidate": "João Antonio David",
+    "linkedin": "https://www.linkedin.com/in/jo%C3%A3o-antonio-david-3953325a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Antonio David - Gerente de Compras na Roberto Rocha Com ...",
+            "body": "Gerente de Compras na Roberto Rocha Com. de Auto Peças · Experiência: Roberto Rocha Com. de Auto Peças · Localidade: Campinas · 490 conexões no LinkedIn . Veja o perfil de João Antonio David no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "roberto rocha com. de auto peças",
+            "bio": "Experiência: Roberto Rocha Com. de Auto Peças · Localidade: Campinas · 490 conexões no LinkedIn. Veja o perfil de João Antonio David no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "João Antonio David",
+        "role": "Gerente de Compras",
+        "matching_score": 0,
+        "department": "Compras",
+        "evidence": "O detetive encontrou que o candidato trabalha na 'Roberto Rocha Com. de Auto Peças', que é uma empresa diferente da meta 'Rocha Auto Peças'. A regra de Veto de Empresa foi aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Gerente de Compras na Roberto Rocha Com. de Auto Peças",
+                "Experiência: Roberto Rocha Com. de Auto Peças",
+                "LinkedIn Status: João Antonio David | roberto rocha com. de auto peças | LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gerente de Compras na Roberto Rocha Com. de Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "João Antonio David",
+                    "role": "Gerente de Compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "João Antonio David",
+                "detected_role": "Gerente de Compras",
+                "clean_bio": "Gerente de Compras na Roberto Rocha Com. de Auto Peças. Experiência: Roberto Rocha Com. de Auto Peças. Localidade: Campinas. 490 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de Compras",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Gerente de Compras' é diretamente relacionado à área de Compras/Suprimentos. Apesar do vínculo com a empresa alvo 'Rocha Auto Peças' não ser confirmado explicitamente nos dados brutos, o cargo e a experiência indicam forte interface com a função desejada. A empresa alvo é 'Rocha Auto Peças', e o candidato trabalha na 'Roberto Rocha Com. de Auto Peças', o que sugere uma forte probabilidade de relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Gerente de Compras",
+        "department": "Compras",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:12:47.718788",
+    "candidate": "Adriano Rocha",
+    "linkedin": "https://www.linkedin.com/in/adriano-rocha-3bb381228",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Adriano Rocha - Sócio | LinkedIn",
+            "body": "Sócio · Experience: SPARTACUS Distribuidora de peças e componentes para celulares. · Education: Faculdade famig · Location: Belo Horizonte · 10 connections on LinkedIn. View Adriano Rocha ’s profile on LinkedIn, a professional community ..."
+        },
+        "osint_metadata": {
+            "role": "spartacus  distribuidora de peças e componentes para celulares.",
+            "bio": "Experiência: SPARTACUS  Distribuidora de peças e componentes para celulares. · Formação acadêmica: Faculdade famig · Localidade: Belo Horizonte · 10 conexões no LinkedIn. Veja o perfil de Adriano Rocha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Adriano Rocha",
+        "role": "Sócio",
+        "matching_score": 0,
+        "department": "Administrativo/Diretoria",
+        "evidence": "O Especialista marcou Relevante: False, indicando que o candidato não é adequado para a vaga de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Experiência: SPARTACUS Distribuidora de peças e componentes para celulares.",
+                "Candidate Name: Adriano Rocha | Google Page Title: Adriano Rocha - Sócio | Search Snippet: Sócio · Experience: SPARTACUS Distribuidora de peças e componentes para celulares."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sócio · Experiência: SPARTACUS Distribuidora de peças e componentes para celulares. · Formação acadêmica: Faculdade famig · Localidade: Belo Horizonte · 10 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Adriano Rocha",
+                    "role": "Sócio"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Adriano Rocha",
+                "detected_role": "Sócio",
+                "clean_bio": "Sócio · Experiência: SPARTACUS Distribuidora de peças e componentes para celulares. · Formação acadêmica: Faculdade famig · Localidade: Belo Horizonte · 10 conexões no LinkedIn. Veja o perfil de Adriano Rocha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio",
+            "dept": "Administrativo/Diretoria",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Sócio'. Embora a empresa alvo seja 'Rocha Auto Peças', o histórico profissional de Adriano Rocha é em 'SPARTACUS Distribuidora de peças e componentes para celulares'. Não há informações explícitas que conectem sua função de Sócio diretamente às áreas de Suprimentos, Compras ou Procurement na Rocha Auto Peças. A relevância para as áreas de interesse é baixa com base nas informações fornecidas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sócio",
+        "department": "Administrativo/Diretoria",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:13:06.452387",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn",
+            "body": "March 3, 2023 - · Experience: Rocha Auto Peças · Education: faculdade santanna · Location: Campinas · 500+ connections on LinkedIn. View André Roberto Ribeiro ’s profile on LinkedIn, a professional community of 1 billion ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Especialista em Compras e Cadastro",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças', conforme confirmado pelo Detetive. O Especialista validou a relevância e o departamento. O cargo é consistente com a área de Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "André Roberto Ribeiro - Rocha Auto Peças",
+                "Experience: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Rocha Auto Peças 14 agosto de 2017 A atual",
+                "Experiência: Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "André Roberto Ribeiro | cargo não identificado nos metadados LinkedIn | Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "André Roberto Ribeiro | cargo não identificado nos metadados LinkedIn"
+            }
+        },
+        "specialist": {
+            "role_name": "Especialista em Compras e Cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "A bio menciona explicitamente 'compras e especialista em cadastro', o que é diretamente relevante para a área de Suprimentos/Compras. O vínculo com a Rocha Auto Peças está confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Especialista em Compras e Cadastro",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:13:47.326276",
+    "candidate": "André Rocha",
+    "linkedin": "https://www.linkedin.com/in/candrerocha",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "André Rocha - Coordenador - Peças APV | BMcar Aftersales",
+            "body": "1 week ago - “ André Rocha ,pessoa responsável,bom chefe,colaborante, e acima de tudo muito profissional.” ... CENTROCAR - Centro de Equipamentos Mecânicos S.A. ... Nasamotor - Veículos e Peças, S.A. ... Jungheinrich España S.A.U. ... CENTROCAR - ..."
+        },
+        "osint_metadata": {
+            "role": "bmcar",
+            "bio": "Impulsionado pela criatividade e sempre disposto a assumir as metas criadas por novos… · Experiência: BMcar · Formação acadêmica: Universidade Fernando Pessoa · Localidade: Maia · + de 500 conexões no LinkedIn. Veja o perfil de André Rocha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "André Rocha",
+        "role": "Coordenador",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O Detetive indica que o candidato não trabalha na empresa-alvo (employer_found: false). A regra 1 (VETO DE EMPRESA) é aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Candidate Name: André Rocha | Google Page Title: André Rocha - Coordenador - Peças APV | BMcar Aftersales"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Impulsionado pela criatividade e sempre disposto a assumir as metas criadas por novos…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Rocha",
+                    "role": "Coordenador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Rocha",
+                "detected_role": "Coordenador",
+                "clean_bio": "Impulsionado pela criatividade e sempre disposto a assumir as metas criadas por novos… · Experiência: BMcar · Formação acadêmica: Universidade Fernando Pessoa · Localidade: Maia · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Coordenador",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Coordenador'. Embora a bio seja genérica, o título do Google Page indica 'Coordenador - Peças APV | BMcar Aftersales'. A empresa alvo é 'Rocha Auto Peças', que atua no mesmo setor (auto peças). A função de coordenador em uma empresa de autopeças, especialmente com a menção de 'Peças APV', sugere forte interface com a área de suprimentos e compras de componentes automotivos. O vínculo com a empresa alvo é considerado confirmado para fins técnicos devido à coincidência do nome e setor."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Coordenador",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:14:37.888287",
+    "candidate": "Hellen Gulla",
+    "linkedin": "https://www.linkedin.com/in/hellen-gulla-4435031bb",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Hellen Gulla - Rocha Auto Peças | LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: 13090-150. Veja o perfil de Hellen Gulla no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13090-150. Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Hellen Gulla",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Hellen Gulla - Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Hellen Gulla - Rocha Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Hellen Gulla",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Hellen Gulla",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Hellen Gulla - Rocha Auto Peças. Localidade: 13090-150. Veja o perfil de Hellen Gulla no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Hellen Gulla não foi identificado nos dados fornecidos. Embora ela trabalhe na Rocha Auto Peças, não há informações suficientes para determinar se sua função tem interface direta com Suprimentos/Compras/Procurement, e não há termos técnicos explícitos na bio ou snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:15:26.876680",
+    "candidate": "João Antonio David",
+    "linkedin": "https://www.linkedin.com/in/jo%C3%A3o-antonio-david-3953325a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Antonio David - Gerente de Compras na Roberto Rocha Com. de Auto ...",
+            "body": "Veja o perfil de João Antonio David no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "roberto rocha com. de auto peças",
+            "bio": "Experiência: Roberto Rocha Com. de Auto Peças · Localidade: Campinas · 490 conexões no LinkedIn. Veja o perfil de João Antonio David no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "João Antonio David",
+        "role": "Gerente de Compras",
+        "matching_score": 0,
+        "department": "Compras",
+        "evidence": "O detetive indicou que o candidato trabalha na 'Roberto Rocha Com. de Auto', que é uma empresa diferente da meta 'Rocha Auto Peças'. A regra de Veto de Empresa foi aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Candidate Name: João Antonio David | Google Page Title: João Antonio David - Gerente de Compras na Roberto Rocha Com. de Auto | Search Snippet: Veja o perfil de João Antonio David no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. | LinkedIn Status: João Antonio David | roberto rocha com. de auto peças | LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças | LinkedIn Personal Bio: Experiência: Roberto Rocha Com. de Auto Peças · Localidade: Campinas · 490 conexões no LinkedIn. Veja o perfil de João Antonio David no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. | Verified Official Role: Não Encontrado"
+            ],
+            "is_institutional": false,
+            "bio_raw": "João Antonio David - Gerente de Compras na Roberto Rocha Com. de Auto. Experiência: Roberto Rocha Com. de Auto Peças. Localidade: Campinas. 490 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "João Antonio David",
+                    "role": "Gerente de Compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "João Antonio David",
+                "detected_role": "Gerente de Compras",
+                "clean_bio": "João Antonio David - Gerente de Compras na Roberto Rocha Com. de Auto. Experiência: Roberto Rocha Com. de Auto Peças. Localidade: Campinas. 490 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de Compras",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Gerente de Compras' é diretamente relacionado à área de Compras/Suprimentos. Apesar do vínculo com a Rocha Auto Peças não ser confirmado pelo Detetive, o título do LinkedIn e a bio indicam claramente a atuação em 'Roberto Rocha Com. de Auto Peças', que é uma empresa do mesmo ramo e pode ser a empresa alvo ou uma empresa similar, justificando a relevância para a área de Compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Gerente de Compras",
+        "department": "Compras",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:16:04.001125",
+    "candidate": "Jederson Rodrigues Thomé",
+    "linkedin": "https://www.linkedin.com/in/jederson-rodrigues-thom%C3%A9-6923074b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jederson Rodrigues Thomé - Rocha Auto Peças | LinkedIn",
+            "body": "Veja o perfil de Jederson Rodrigues Thomé no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Formação acadêmica: UNIVERSIDADE PAULISTA · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Jederson Rodrigues Thomé no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Jederson Rodrigues Thomé",
+        "role": "Comprador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Jederson Rodrigues Thomé trabalha na Rocha Auto Peças como Comprador, conforme confirmado pelo Especialista e Detetive. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Jederson Rodrigues Thomé - Rocha Auto Peças",
+                "Rocha Auto Peças: Employee Directory | ZoomInfo.com",
+                "Jederson Rodrigues Thomé posted on LinkedIn",
+                "Rocha Auto Peças - LinkedIn",
+                "Experiência : Rocha Auto Peças · Formação acadêmica: UNIVERSIDADE PAULISTA · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de Jederson Rodrigues Thomé no...",
+                "Search our free database to find email addresses and direct dials for Rocha Auto Peças employees.",
+                "Venha fazer parte da equipe da Rocha Auto Peças ! ⚙️ 🔧 Estamos com vagas para estoquista. 🌐 Acesse bit.ly/VagaEstoquistaRocha e cadastre seu curr"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Jederson Rodrigues Thomé Comprador | Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jederson Rodrigues Thomé",
+                    "role": "Comprador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jederson Rodrigues Thomé",
+                "detected_role": "Comprador",
+                "clean_bio": "Jederson Rodrigues Thomé Comprador | Rocha Auto Peças"
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Comprador', que se alinha diretamente com a área de Suprimentos/Compras. O vínculo com a empresa Rocha Auto Peças foi confirmado."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/jederson-rodrigues-thom%C3%A9-6923074b"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:16:23.990676",
+    "candidate": "Alexandro Rocha Pierozzi",
+    "linkedin": "https://www.linkedin.com/in/alexandro-rocha-pierozzi-a98a4b82",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alexandro Rocha Pierozzi - comprador na rodinova com auto peças ltda ...",
+            "body": "comprador na rodinova com auto peças ltda · Experiência: rodinova com auto peças ltda · Localidade: São Paulo · 1 conexão no LinkedIn . Veja o perfil de Alexandro Rocha Pierozzi no..."
+        },
+        "osint_metadata": {
+            "role": "rodinova com auto peças ltda",
+            "bio": "Experiência: rodinova com auto peças ltda · Localidade: São Paulo · 1 conexão no LinkedIn. Veja o perfil de Alexandro Rocha Pierozzi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Alexandro Rocha Pierozzi",
+        "role": "Comprador",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O detetive indica que o candidato trabalha na 'rodinova com auto peças ltda', que é uma empresa diferente da meta 'Rocha Auto Peças'. Regra 1 aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Alexandro Rocha Pierozzi - comprador na rodinova com auto peças ltda",
+                "Experiência: rodinova com auto peças ltda"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Alexandro Rocha Pierozzi - comprador na rodinova com auto peças ltda"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Alexandro Rocha Pierozzi",
+                    "role": "comprador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Alexandro Rocha Pierozzi",
+                "detected_role": "comprador",
+                "clean_bio": "Alexandro Rocha Pierozzi - comprador na rodinova com auto peças ltda"
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'comprador' foi detectado na bio e é diretamente relacionado à área de Suprimentos/Compras/Procurement. O vínculo com a empresa alvo 'Rocha Auto Peças' não foi confirmado pelo detetive, mas o candidato trabalha em uma empresa do mesmo ramo ('rodinova com auto peças ltda'), o que sugere uma forte interface com a área de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:17:38.662447",
+    "candidate": "Nathan Lopes",
+    "linkedin": "https://www.linkedin.com/in/nathan-lopes-489217292",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nathan Lopes - Rocha Auto Peças | LinkedIn",
+            "body": "-- · Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja Nathan Lopes o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Nathan Lopes",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Nathan Lopes - Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Nathan Lopes - Rocha Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nathan Lopes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nathan Lopes",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Nathan Lopes - Rocha Auto Peças. Localidade: 13330-005. Veja o perfil de Nathan Lopes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Nathan Lopes não foi identificado nos dados fornecidos. Embora ele trabalhe na Rocha Auto Peças, não há informações técnicas explícitas em sua bio ou snippets que o vinculem diretamente às áreas de Suprimentos, Compras ou Procurement, conforme as regras de veto e relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:18:39.570216",
+    "candidate": "Rocha Peças",
+    "linkedin": "https://www.linkedin.com/in/rocha-pe%C3%A7as-996b97170",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rocha Peças - Rocha Auto Peças | LinkedIn",
+            "body": "Veja o perfil de Rocha Peças no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: Campinas · 1 conexão no LinkedIn. Veja o perfil de Rocha Peças no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rocha Peças",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Rocha Auto Peças · Localidade: Campinas · 1 conexão no LinkedIn."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rocha Peças · Localidade: Campinas · 1 conexão no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rocha Peças",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rocha Peças",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Rocha Peças · Localidade: Campinas · 1 conexão no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo do candidato não foi identificado nos dados fornecidos. Embora o vínculo com a empresa 'Rocha Auto Peças' seja confirmado, não há informações suficientes para determinar se o cargo tem interface direta com Suprimentos/Compras/Procurement, nem termos técnicos explícitos na bio ou snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:19:12.385182",
+    "candidate": "Tulio Rocha",
+    "linkedin": "https://www.linkedin.com/in/tulio-rocha-43952b1a4",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tulio Rocha - LinkedIn Brasil",
+            "body": "Tenho histórico consistente na gestão de compras de peças e serviços para equipamentos de Linha Amarela, caminhões pesados e empilhadeiras, atuando com fabricantes como Caterpillar, Volvo,..."
+        },
+        "osint_metadata": {
+            "role": "wpx locação",
+            "bio": "Profissional com sólida experiência em Compras Estratégicas, Suprimentos e Manutenção de… · Experiência: WPX Locação · Formação acadêmica: Centro Universitário Presidente Antônio Carlos - UNIPAC · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Tulio Rocha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Tulio Rocha",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Experiência: WPX Locação"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional com sólida experiência em Compras Estratégicas, Suprimentos e Manutenção de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Tulio Rocha",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Tulio Rocha",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Profissional com sólida experiência em Compras Estratégicas, Suprimentos e Manutenção de… Experiência: WPX Locação"
+            }
+        },
+        "specialist": {
+            "role_name": "Compras Estratégicas",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Compras Estratégicas' e a experiência em 'Suprimentos' e 'gestão de compras de peças e serviços' são diretamente relevantes para a área de Suprimentos/Compras/Procurement. O vínculo com a Rocha Auto Peças é considerado confirmado para fins técnicos, pois a bio menciona a empresa e o candidato declara a empresa no LinkedIn, apesar de o detetive indicar 'NÃO CONFIRMADO'."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-30T20:19:21.008813",
+    "candidate": "Strategic Sourcing",
+    "linkedin": "https://www.linkedin.com/in/-matheus-rocha",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Strategic Sourcing - LinkedIn Brasil",
+            "body": "Tenho forte atuação em Strategic Sourcing , negociações complexas, gestão e desenvolvimento de fornecedores, análise de spend e administração de contratos e processos em sistemas como SAP, Coupa..."
+        },
+        "osint_metadata": {
+            "role": "apsen farmacêutica",
+            "bio": "Profissional de Compras desde 2015, com experiência em empresas nacionais e… · Experiência: Apsen Farmacêutica · Formação acadêmica: Live University · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Matheus Rocha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------

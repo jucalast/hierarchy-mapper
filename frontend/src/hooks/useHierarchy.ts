@@ -17,6 +17,12 @@ export const useHierarchy = () => {
     const [error, setError] = useState<string | null>(null);
     const [streamAbortController, setStreamAbortController] = useState<AbortController | null>(null);
     const [activeJobId, setActiveJobId] = useState<string | null>(null);
+    const [isSmartSyncLoading, setIsSmartSyncLoading] = useState(false);
+
+    // Contexto para despacho do evento de conclusão ao chat
+    const chatContextRef = useRef({ chatPrompted: false, orgId: null as number | null, orgName: '' });
+    const scanFinishedRef = useRef(false);
+    const chatDoneDispatchedRef = useRef(false);
 
     // Auto-reconecta ao WebSocket se houver um job ativo persistido no localStorage
     useEffect(() => {
@@ -41,6 +47,69 @@ export const useHierarchy = () => {
             .replace(/\(\s*LinkedIn\s*\)/gi, '') // Remove "(LinkedIn)"
             .trim();
     };
+
+    /**
+     * Centraliza o despacho do evento 'hierarchy_scan_done'.
+     * Só dispara se:
+     * 1. O scan foi solicitado pelo chat (chatPrompted).
+     * 2. O worker do backend já terminou (scanFinishedRef).
+     * 3. Não há mais nenhum candidato com cargo "Análise Humana" pendente.
+     */
+    const checkAndDispatchChatEvent = useCallback((fromFallback = false) => {
+        const { chatPrompted, orgId, orgName } = chatContextRef.current;
+        if (!chatPrompted || chatDoneDispatchedRef.current) return;
+
+        // Se o scan ainda não terminou, não podemos concluir (a menos que seja fallback de erro/timeout)
+        if (!scanFinishedRef.current && !fromFallback) return;
+
+        // Verifica se ainda há algum funcionário pendente de análise humana
+        const hasPending = currentEmployeesRef.current.some(e => {
+            const role = (e.role || '').toLowerCase();
+            return role.includes('análise humana') || role.includes('analise humana');
+        });
+
+        // Se ainda há pendências e não é fallback, aguardamos o usuário terminar de clicar
+        if (hasPending && !fromFallback) {
+            console.log('[useHierarchy] Scan terminou, mas há Análise Humana pendente. Aguardando usuário...');
+            return;
+        }
+
+        chatDoneDispatchedRef.current = true;
+
+        // Filtra e formata os contatos finais para o agente
+        const contacts = currentEmployeesRef.current
+            .filter(e => {
+                if (e.id === 'root_company' || !e.name) return false;
+                const r = (e.role || '').toLowerCase();
+                const d = (e.department || '').toLowerCase();
+                // SEGURANÇA: Filtro case-insensitive para reprovados
+                if (r.includes('reprovado') || d.includes('reprovado')) return false;
+                return true;
+            })
+            .map(e => ({
+                name: e.name,
+                role: (e as any).role || '',
+                email: (e as any).email || undefined,
+                department: (e as any).department || undefined,
+                temperature: (e as any).temperature || undefined,
+                level: (e as any).level,
+                decision_maker: [
+                    'compras', 'procurement', 'suprimentos', 'logística', 'logistica',
+                    'supply chain', 'supply', 'materiais', 'aquisição', 'aquisicao',
+                    'estoque', 'sourcing'
+                ].some(k => ((e as any).role || '').toLowerCase().includes(k) || ((e as any).department || '').toLowerCase().includes(k)),
+            }));
+
+        console.log(`[useHierarchy] ✅ Disparando hierarchy_scan_done. ${contacts.length} contatos aprovados.`);
+        window.dispatchEvent(new CustomEvent('hierarchy_scan_done', {
+            detail: {
+                orgId,
+                orgName,
+                chatPrompted,
+                contacts,
+            },
+        }));
+    }, []);
 
     // 🛑 Função para cancelar o stream de descoberta
     const cancelDiscovery = useCallback(() => {
@@ -249,6 +318,7 @@ export const useHierarchy = () => {
                 });
 
                 setRawEmployees(refreshedNodes);
+                currentEmployeesRef.current = refreshedNodes; // ✅ Mantém o Ref sincronizado para o despacho do chat
                 const newEdges: Edge[] = [];
                 refreshedNodes.forEach((emp: any) => {
                     if (emp.manager_id) {
@@ -328,9 +398,71 @@ export const useHierarchy = () => {
         setError("");
         setRawBackendEdges([]);
 
-        // Ao iniciar novo scan, limpa imediatamente entradas de "Análise Humana" de scans anteriores.
-        // Se há initialEmployees (root + sócios), usa-os como base; caso contrário, zera tudo.
-        setRawEmployees(initialEmployees && initialEmployees.length > 0 ? initialEmployees : []);
+        // 🚀 INICIALIZAÇÃO IMEDIATA: Mantém apenas Root e Sócios se fornecidos ou já presentes.
+        // Isso atende ao requisito: "os employees devem sumir do front, menos root e sócios".
+        let keepers: HierarchyEmployee[] = [];
+        
+        if (initialEmployees && initialEmployees.length > 0) {
+            // Se já temos os nós, garantimos que o Root reflita a marca confirmada agora
+            keepers = initialEmployees.map(emp => {
+                if (emp.id === 'root_company' || emp.level === 0) {
+                    return {
+                        ...emp,
+                        name: confirmedBrand || emp.name,
+                        logo: confirmedLogo || emp.logo,
+                        company_logo: confirmedLogo || emp.company_logo,
+                        domain: explicitDomain || emp.domain
+                    };
+                }
+                return emp;
+            });
+        } else {
+            // Se não temos initialEmployees (ex: nova empresa), criamos o root e partners básicos
+            keepers.push({
+                id: 'root_company',
+                name: confirmedBrand || "Empresa",
+                role: "Holding / Matriz",
+                department: "Corporate Root",
+                level: 0,
+                logo: confirmedLogo,
+                company_logo: confirmedLogo,
+                domain: explicitDomain
+            });
+
+            partners.forEach((p, idx) => {
+                keepers.push({
+                    id: `partner_${idx}`,
+                    name: p.name || `Sócio ${idx + 1}`,
+                    role: p.role || "Sócio / Administrador",
+                    department: "Quadro de Sócios (QSA)",
+                    level: 6,
+                    manager_id: 'root_company',
+                    company: confirmedBrand
+                });
+            });
+        }
+
+        setRawEmployees(keepers);
+        currentEmployeesRef.current = [...keepers];
+        
+        // Gera arestas iniciais para os keepers
+        const initialEdges: Edge[] = [];
+        keepers.forEach(emp => {
+            if (emp.manager_id && emp.id !== "root_company") {
+                initialEdges.push({
+                    id: `e-${emp.manager_id}-${emp.id}`,
+                    source: emp.manager_id,
+                    target: emp.id,
+                    animated: false,
+                    style: { stroke: '#6e7681', strokeWidth: 1.5 }
+                });
+            }
+        });
+        setRawBackendEdges(initialEdges);
+        
+        // Reseta estados de controle de chat
+        scanFinishedRef.current = false;
+        chatDoneDispatchedRef.current = false;
         
         const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
 
@@ -381,6 +513,12 @@ export const useHierarchy = () => {
             };
             localStorage.setItem('active-discovery-job', JSON.stringify(jobData));
             setActiveJobId(job_id);
+
+            // Inicializa contexto de conclusão
+            chatContextRef.current = { chatPrompted, orgId: orgId || null, orgName: confirmedBrand };
+            scanFinishedRef.current = false;
+            chatDoneDispatchedRef.current = false;
+
             // Notifica o chat que o scan iniciou (para o HierarchyMappingCard atualizar status)
             window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
 
@@ -465,42 +603,6 @@ export const useHierarchy = () => {
 
         // ⏱️ WATCHDOG TIMEOUT: Se não receber NENHUMA mensagem (nem ping/batch) em 5 minutos, fecha a conexão
         let timeoutId: NodeJS.Timeout;
-        let scanDoneDispatched = false; // Flag para não disparar hierarchy_scan_done duas vezes
-        
-        const dispatchScanDone = (fromDone: boolean) => {
-            if (scanDoneDispatched) return;
-            scanDoneDispatched = true;
-            window.dispatchEvent(new CustomEvent('hierarchy_scan_done', {
-                detail: {
-                    orgId: orgId,
-                    orgName: confirmedBrand,
-                    chatPrompted: chatPrompted,
-                    contacts: currentEmployeesRef.current
-                        .filter(e => 
-                            e.id !== 'root_company' && 
-                            e.name &&
-                            (e as any).role !== 'Reprovado' &&
-                            (e as any).department !== 'Reprovado'
-                        )
-                        .map(e => ({
-                            name: e.name,
-                            role: (e as any).role || '',
-                            email: (e as any).email || undefined,
-                            department: (e as any).department || undefined,
-                            temperature: (e as any).temperature || undefined,
-                            level: (e as any).level,
-                            decision_maker: [
-                                'compras', 'procurement', 'suprimentos', 'logística', 'logistica',
-                                'supply chain', 'supply', 'materiais', 'aquisição', 'aquisicao',
-                                'estoque', 'sourcing'
-                            ].some(k => ((e as any).role || '').toLowerCase().includes(k) || ((e as any).department || '').toLowerCase().includes(k)),
-                        })),
-                },
-            }));
-            if (!fromDone) {
-                console.warn('[WebSocket] hierarchy_scan_done disparado por fallback (conexão encerrada antes do done)');
-            }
-        };
         
         const resetTimeout = () => {
             if (timeoutId) clearTimeout(timeoutId);
@@ -510,7 +612,7 @@ export const useHierarchy = () => {
                     ws.close();
                 }
                 // Despacha evento mesmo no timeout para não travar o HierarchyMappingCard
-                dispatchScanDone(false);
+                checkAndDispatchChatEvent(true);
                 setLoading(false);
                 localStorage.removeItem('active-discovery-job');
                 setActiveJobId(null);
@@ -521,9 +623,9 @@ export const useHierarchy = () => {
         ws.onclose = () => {
             console.log("[WebSocket] Conexão encerrada pelo servidor.");
             clearTimeout(timeoutId);
-            // Se o scan não terminou normalmente (chatPrompted e sem done), notifica o card
-            if (chatPrompted) {
-                dispatchScanDone(false);
+            // Se o scan não terminou normalmente (chatPrompted e sem done), tenta despachar via fallback
+            if (chatContextRef.current.chatPrompted && !chatDoneDispatchedRef.current) {
+                checkAndDispatchChatEvent(true);
             }
             setLoading(false);
             localStorage.removeItem('active-discovery-job');
@@ -553,9 +655,47 @@ export const useHierarchy = () => {
                 if (data.type === 'done') {
                     console.log("[Worker] Scan finalizado via WebSocket.");
                     if (onNotification) onNotification('success', "Mapeamento concluído com sucesso!");
-                    // Notifica o chat agent que o mapeamento terminou, passando os contatos reais
-                    dispatchScanDone(true);
+                    
+                    // ✅ Marca que o scan terminou no backend
+                    scanFinishedRef.current = true;
+                    // ✅ Tenta despachar para o chat (só vai se não houver Análise Humana pendente)
+                    checkAndDispatchChatEvent();
+
                     ws.close(); // Isso vai disparar o ws.onclose, que faz a limpeza e o refineHierarchy.
+                    return;
+                }
+
+                if (data.type === 'clear_nodes') {
+                    console.log("[WS] 🧹 Comando de limpeza recebido. Mantendo apenas Root e Sócios.");
+                    
+                    const keepers = currentEmployeesRef.current.filter(emp => {
+                        const isRoot = emp.id === 'root_company' || emp.level === 0;
+                        const isPartner = emp.level === 6 || String(emp.id).startsWith('partner_');
+                        const isPartnerDept = emp.department && (
+                            emp.department.includes('QSA') ||
+                            emp.department.includes('Sócio') ||
+                            emp.department.includes('Societário') ||
+                            emp.department.includes('Conselho')
+                        );
+                        return isRoot || isPartner || isPartnerDept;
+                    });
+                    
+                    currentEmployeesRef.current = keepers;
+                    setRawEmployees(keepers);
+                    
+                    const newEdges: Edge[] = [];
+                    keepers.forEach(emp => {
+                        if (emp.manager_id && emp.id !== "root_company") {
+                            newEdges.push({
+                                id: `e-${emp.manager_id}-${emp.id}`,
+                                source: emp.manager_id,
+                                target: emp.id,
+                                animated: false,
+                                style: { stroke: '#6e7681', strokeWidth: 1.5 }
+                            });
+                        }
+                    });
+                    setRawBackendEdges(newEdges);
                     return;
                 }
 
@@ -828,22 +968,53 @@ export const useHierarchy = () => {
         });
     }, []);
 
-    const smartSyncPipedrive = useCallback(async () => {
-        setLoading(true);
+    const smartSyncPipedrive = useCallback(async (onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void) => {
+        setIsSmartSyncLoading(true);
         setError("");
         try {
             const data = await orgsApi.triggerSmartSync();
-            if (data.status === 'success') {
-                console.log('[Pipedrive] Smart Sync concluído:', data.message);
+            if (data.status === 'queued' && data.job_id) {
+                console.log('[Pipedrive] Smart Sync iniciado em background:', data.message);
+                
+                const wsUrl = jobsApi.getJobWebSocketUrl(data.job_id);
+                const ws = new WebSocket(wsUrl);
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === 'job_done') {
+                            setIsSmartSyncLoading(false);
+                            ws.close();
+                            if (onNotification) onNotification('success', msg.message || "Sincronização com Pipedrive concluída!");
+                        } else if (msg.type === 'error') {
+                            setIsSmartSyncLoading(false);
+                            ws.close();
+                            if (onNotification) onNotification('error', msg.message || "Erro durante o Smart Sync.");
+                        }
+                    } catch (e) {
+                        console.error('Erro no WebSocket do Smart Sync:', e);
+                    }
+                };
+                
+                ws.onclose = () => {
+                    setIsSmartSyncLoading(false);
+                };
+                
+                return data;
+            } else if (data.status === 'success') {
+                setIsSmartSyncLoading(false);
+                if (onNotification) onNotification('success', data.message || "Sincronização com Pipedrive concluída!");
                 return data;
             } else {
                 setError(data.message || 'Erro no Smart Sync.');
+                setIsSmartSyncLoading(false);
+                if (onNotification) onNotification('error', data.message || "Erro no Smart Sync.");
             }
         } catch (e) {
             console.error('Smart Sync error:', (e as any).message || e);
             setError('Erro ao conectar com Pipedrive.');
-        } finally {
-            setLoading(false);
+            setIsSmartSyncLoading(false);
+            if (onNotification) onNotification('error', "Erro ao conectar com Pipedrive.");
         }
     }, []);
 
@@ -897,6 +1068,9 @@ export const useHierarchy = () => {
                 });
             }
 
+            // ✅ Verifica se esta ação completou o mapeamento para o chat
+            checkAndDispatchChatEvent();
+
             return data;
         } catch (e: any) {
             console.error(`[useHierarchy] Erro na ação ${action}:`, e.message);
@@ -930,6 +1104,9 @@ export const useHierarchy = () => {
                 String(edge.target) !== String(id)
             );
         });
+
+        // ✅ Verifica se esta remoção completou o mapeamento para o chat
+        checkAndDispatchChatEvent();
     }, []);
 
     return { 
@@ -952,6 +1129,7 @@ export const useHierarchy = () => {
         refineHierarchy,
         updateEmployee,
         smartSyncPipedrive,
+        isSmartSyncLoading,
         confirmIntelligence,
         setBrandOptions,
         resetHierarchy,

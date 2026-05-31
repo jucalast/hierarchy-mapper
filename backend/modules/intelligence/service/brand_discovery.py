@@ -10,6 +10,7 @@ Funcao publica: discover_company_brand(cnpj, domain, raw_name, force) -> dict
 """
 import re
 import html
+import asyncio
 from typing import List, Dict, Optional
 from modules.hierarchy.service.search_engine import get_duck_results
 import httpx
@@ -120,45 +121,63 @@ async def get_corporate_data(cnpj: str) -> Dict:
         f"https://receitaws.com.br/v1/cnpj/{clean_cnpj}"
     ]
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        for url in layers:
-            try:
-                print(f"[BrandDiscovery] 📡 Consultando: {url.split('/')[2]}...")
-                resp = await client.get(url)
-                if resp.status_code == 200:
-                    print(f"[BrandDiscovery] 🟢 Sucesso via {url.split('/')[2]}")
-                    data = resp.json()
-                    name = data.get("fantasia") or data.get("razao_social") or data.get("nome")
-                    fantasy = data.get("fantasia")
-                    email = data.get("email")
-                    phone = data.get("telefone") or data.get("tel")
-                    
-                    # Normaliza o QSA (Sócios)
-                    qsa_raw = data.get("qsa") or []
-                    partners = []
-                    for s in qsa_raw:
-                        partners.append({
-                            "name": s.get("nome_socio") or s.get("nome"),
-                            "role": s.get("qualificacao_socio") or s.get("qual") or "Sócio"
-                        })
+    async def fetch_layer(url: str, client: httpx.AsyncClient):
+        try:
+            print(f"[BrandDiscovery] 📡 Consultando: {url.split('/')[2]}...")
+            resp = await client.get(url)
+            if resp.status_code == 200:
+                print(f"[BrandDiscovery] 🟢 Sucesso via {url.split('/')[2]}")
+                return resp.json()
+        except Exception as e:
+            print(f"[BrandDiscovery] ⚠️ Falha na camada {url.split('/')[2]}: {e}")
+        return None
 
-                    if name:
-                        final_result["name"] = name
-                        final_result["fantasy"] = fantasy
-                        final_result["address"] = f"{data.get('logradouro')}, {data.get('numero')} - {data.get('bairro')}, {data.get('municipio')} - {data.get('uf')}"
-                        final_result["status"] = data.get("descricao_situacao_cadastral") or data.get("situacao") or "ATIVO"
-                        final_result["email"] = email
-                        final_result["phone"] = phone
-                        final_result["partners"] = partners
-                        final_result["success"] = True
-                        
-                        # Continua para as próximas APIs para enriquecer mais dados
-                        pass
-                else:
-                    print(f"[BrandDiscovery] 🔴 Erro {resp.status_code} via {url.split('/')[2]}")
-            except Exception as e:
-                print(f"[BrandDiscovery] ⚠️ Falha na conexão com {url.split('/')[2]}: {str(e)}")
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        # Consulta todas as camadas em paralelo
+        tasks = [fetch_layer(url, client) for url in layers]
+        responses = await asyncio.gather(*tasks)
+        
+        # Consolida os dados (dando prioridade para quem tem e-mail e QSA mais completo)
+        best_data = None
+        for data in responses:
+            if not data: continue
+            if not best_data:
+                best_data = data
                 continue
+            
+            # Se a camada atual tem e-mail e a anterior não, ou tem mais sócios
+            if data.get("email") and not best_data.get("email"):
+                best_data.update({"email": data.get("email")})
+            if len(data.get("qsa", [])) > len(best_data.get("qsa", [])):
+                best_data.update({"qsa": data.get("qsa")})
+            if data.get("fantasia") and not best_data.get("fantasia"):
+                best_data.update({"fantasia": data.get("fantasia")})
+
+        if best_data:
+            data = best_data
+            name = data.get("fantasia") or data.get("razao_social") or data.get("nome")
+            fantasy = data.get("fantasia")
+            email = data.get("email")
+            phone = data.get("telefone") or data.get("tel")
+            
+            # Normaliza o QSA (Sócios)
+            qsa_raw = data.get("qsa") or []
+            partners = []
+            for s in qsa_raw:
+                partners.append({
+                    "name": s.get("nome_socio") or s.get("nome"),
+                    "role": s.get("qualificacao_socio") or s.get("qual") or "Sócio"
+                })
+
+            if name:
+                final_result["name"] = name
+                final_result["fantasy"] = fantasy
+                final_result["address"] = f"{data.get('logradouro')}, {data.get('numero')} - {data.get('bairro')}, {data.get('municipio')} - {data.get('uf')}"
+                final_result["status"] = data.get("descricao_situacao_cadastral") or data.get("situacao") or "ATIVO"
+                final_result["email"] = email
+                final_result["phone"] = phone
+                final_result["partners"] = partners
+                final_result["success"] = True
                 
     return final_result
 

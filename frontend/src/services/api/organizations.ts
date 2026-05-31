@@ -24,6 +24,16 @@ export function createOrganization(data: Record<string, unknown>) {
   return api.post<{ id?: number }>('/pipedrive/organizations', data);
 }
 
+export function createPerson(data: Record<string, unknown>) {
+  return api.post<{ status?: string; message?: string; data?: unknown }>('/pipedrive/persons', data);
+}
+export function updatePerson(personId: number, data: Record<string, unknown>) {
+  return api.put<{ status?: string; message?: string }>(`/pipedrive/persons/${personId}`, data);
+}
+
+export function deletePerson(personId: number) {
+  return api.delete<{ status?: string; message?: string }>(`/pipedrive/persons/${personId}`);
+}
 export function resetOrganization(orgId: number) {
   return api.post<{ status?: string; message?: string }>(
     `/pipedrive/organizations/${orgId}/reset`,
@@ -40,10 +50,14 @@ export function triggerPipedriveSync() {
 }
 
 export function triggerSmartSync() {
-  return api.post<{ status?: string; message?: string }>('/pipedrive_smart_sync');
+  return api.post<{ status?: string; message?: string; job_id?: string }>('/pipedrive_smart_sync');
 }
 
 export function updateActivity(activityId: number | string, data: Record<string, unknown>) {
   return api.put<Record<string, unknown>>(`/pipedrive/activities/${activityId}`, data);
+}
+
+export function getPipelineBoard() {
+  return api.get<{ stages: any[]; deals: any[] }>('/pipedrive/pipeline/board');
 }
 

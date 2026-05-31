@@ -23,7 +23,9 @@ interface FocusedOrgViewProps {
     selectedOrgLogo?: string;
     graphEmployees?: any[];
     onEditEmployee?: (empId: string) => void;
-    onSaveToPipedrive?: (empId: string) => void;
+    onSaveToPipedrive?: (person: any) => Promise<void> | void;
+    onUpdateInPipedrive?: (person: any) => Promise<void> | void;
+    onDeleteFromPipedrive?: (person: any) => Promise<void> | void;
 }
 
 
@@ -47,6 +49,8 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
     graphEmployees = [],
     onEditEmployee,
     onSaveToPipedrive,
+    onUpdateInPipedrive,
+    onDeleteFromPipedrive
 }) => {
     const rawLinkedinUrl = focusedOrg?.linkedin || 
                            focusedOrg?.linkedin_url || 
@@ -233,17 +237,49 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                             const nameKey = emp.name ? emp.name.trim().toLowerCase() : '';
                                             if (nameKey && mappedByName.has(nameKey)) {
                                                 const existing = mappedByName.get(nameKey);
-                                                if (!existing.sources.includes('mapped')) {
-                                                    existing.sources.push('mapped');
+                                                if (!existing.profile_pic && (emp.profile_pic || emp.avatar)) {
+                                                    existing.profile_pic = emp.profile_pic || emp.avatar;
                                                 }
                                                 if (!existing.job_title && (emp.role || emp.title)) {
                                                     existing.job_title = emp.role || emp.title;
+                                                }
+                                                // Merge local email and phone if available
+                                                let hasPipedriveEmail = false;
+                                                if (existing.email) {
+                                                    if (Array.isArray(existing.email)) {
+                                                        hasPipedriveEmail = existing.email.some((e: any) => e?.value && typeof e.value === 'string' && e.value.trim() !== '' && e.value.includes('@') && !e.value.includes('Sem dados'));
+                                                    } else if (typeof existing.email === 'string') {
+                                                        hasPipedriveEmail = existing.email.trim() !== '' && existing.email.includes('@') && !existing.email.includes('Sem dados');
+                                                    }
+                                                }
+                                                if (emp.email && !hasPipedriveEmail) {
+                                                    existing.email = [{ value: emp.email, primary: true }];
+                                                }
+                                                
+                                                let hasPipedrivePhone = false;
+                                                if (existing.phone) {
+                                                    if (Array.isArray(existing.phone)) {
+                                                        hasPipedrivePhone = existing.phone.some((p: any) => p?.value && typeof p.value === 'string' && p.value.trim() !== '' && /\d/.test(p.value) && !p.value.includes('Sem dados'));
+                                                    } else if (typeof existing.phone === 'string') {
+                                                        hasPipedrivePhone = existing.phone.trim() !== '' && /\d/.test(existing.phone) && !existing.phone.includes('Sem dados');
+                                                    }
+                                                }
+                                                if (emp.phone && !hasPipedrivePhone) {
+                                                    existing.phone = [{ value: emp.phone, primary: true }];
+                                                }
+                                                if (!existing.linkedin && emp.linkedin) {
+                                                    existing.linkedin = emp.linkedin;
+                                                }
+                                                if (!existing.sources.includes('mapped')) {
+                                                    existing.sources.push('mapped');
                                                 }
                                             } else {
                                                 merged.push({
                                                     id: `mapped_${emp.id}`,
                                                     name: emp.name,
                                                     job_title: emp.role || emp.title || 'Cargo não informado',
+                                                    email: emp.email ? [{ value: emp.email, primary: true }] : undefined,
+                                                    phone: emp.phone ? [{ value: emp.phone, primary: true }] : undefined,
                                                     sources: ['mapped'],
                                                     linkedin: emp.linkedin,
                                                     profile_pic: emp.profile_pic || emp.avatar,
@@ -255,6 +291,8 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                     })()}
                                     onEditPerson={onEditEmployee}
                                     onSaveToPipedrive={onSaveToPipedrive}
+                                    onUpdateInPipedrive={onUpdateInPipedrive}
+                                    onDeleteFromPipedrive={onDeleteFromPipedrive}
                                 />
                             )}
 

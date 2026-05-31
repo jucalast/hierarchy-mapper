@@ -90,9 +90,29 @@ async def discover_employees_stream(
         
         db_org_id = org.id
         
-        # Removido: O bloco delete(Employee) que destruía a hierarquia (aprovados e pendentes) 
-        # a cada reconexão ou novo scan. O controle de duplicatas e rejeições já é feito 
-        # linha a linha durante o stream.
+        # 🚀 LIMPEZA IMEDIATA: Deleta funcionários antigos (MENOS os sócios)
+        # Isso atende ao requisito: "os employees devem sumir do front, menos root e sócios".
+        from sqlalchemy import delete, and_, not_, or_
+        await session.execute(
+            delete(Employee).where(
+                and_(
+                    Employee.company_id == db_org_id,
+                    not_(
+                        or_(
+                            Employee.department == "Quadro de Sócios (QSA)",
+                            Employee.department.ilike("%Sócio%"),
+                            Employee.department.ilike("%Societário%"),
+                            Employee.department.ilike("%Conselho%"),
+                            Employee.seniority == 6
+                        )
+                    )
+                )
+            )
+        )
+        await session.commit()
+        
+        # Avisa o front-end para limpar os nós existentes
+        yield [{"type": "clear_nodes"}]
 
     # 1. CLEAN BRAND FOR SEARCH (Remove ruído corporativo: GmbH, Ltda, etc)
     clean_brand = temp_brand.replace("Gmb H", "").replace("GmbH", "").replace("Ltda", "").replace("S.A.", "").strip()
@@ -137,7 +157,7 @@ async def discover_employees_stream(
             nodes_qsa.append({
                 "id": p.id,
                 "name": p.name,
-                "role": p.role or "Sócio",
+                "role": p.role or "Sócio / Administrador",
                 "department": "Quadro de Sócios (QSA)",
                 "level": 6,
                 "linkedin": p.linkedin_url,
@@ -149,21 +169,30 @@ async def discover_employees_stream(
         yield nodes_qsa
 
     # 3. Adiciona termos genéricos de sócios como fallback (apenas se não houver sócios no CNPJ)
-    if not qsa_partners:
+    # 🆕 OTIMIZAÇÃO: Verifica se algum sócio do QSA já tem LinkedIn para evitar buscas redundantes
+    has_partner_with_linkedin = any(p.linkedin_url and "linkedin.com/in/" in p.linkedin_url for p in qsa_partners)
+    
+    if not has_partner_with_linkedin:
         partner_terms = ["Sócio", "Fundador", "Owner"]
         for p_term in partner_terms:
             query = f'{clean_brand} {p_term} {search_location} linkedin'
             if query not in base_queries:
                 base_queries.append(query)
+    else:
+        print(f"[B2B Engine] Sócio com LinkedIn já identificado. Pulando buscas genéricas de sócios.")
         
     # 4. Gera as queries operacionais depois dos sócios
     for term in selected_terms:
         base_queries.append(f'{clean_brand} {term} {search_location} linkedin')
     
+    # 5. Adiciona query focada na empresa para pegar perfis variados (Deep Discovery)
+    base_queries.append(f'site:linkedin.com/in/ "{clean_brand}" {search_location}')
+
     if product_focus:
         from core.external.groq_service import expand_product_to_b2b_terms, evaluate_lead_temperature
         all_terms = await expand_product_to_b2b_terms(product_focus)
         for t in all_terms[:3]:
+            # Insere no topo para priorizar o foco de produto
             base_queries.insert(0, f'{temp_brand} {area_focus} {t} linkedin')
 
     from core.external.groq_service import evaluate_lead_temperature
@@ -208,6 +237,11 @@ async def discover_employees_stream(
             for person in pd_persons:
                 if not person.get("name"): continue
                 
+                # Se for o mesmo nome de um sócio já mapeado com LinkedIn, pula a busca CRM deste contato
+                if any(is_same_person(p.name, person.get("name")) and p.linkedin_url for p in qsa_partners):
+                    print(f"[B2B Engine] Pulando contato CRM '{person.get('name')}' pois já é um sócio mapeado.")
+                    continue
+
                 # Filtra atividades e notas desse contato
                 person_activities = [a for a in pd_activities if a.get("person_id") == person.get("id")]
                 person_notes = [n for n in pd_notes if n.get("person_id") == person.get("id")]
@@ -334,19 +368,34 @@ async def discover_employees_stream(
                 print(f"[B2B Engine] ⏹️ Cancelamento detectado para o job {job_id}!")
                 return True
         except Exception as e:
-            print(f"[B2B Engine] Erro ao verificar cancelamento: {e}")
+            # print(f"[B2B Engine] Erro ao verificar cancelamento: {e}")
+            pass
         return False
 
-    for idx, query in enumerate(base_queries[:12]):
+    # 🆕 OTIMIZAÇÃO: Filtra queries que buscam sócios por nome se o sócio já tiver LinkedIn
+    filtered_queries = []
+    for q in base_queries:
+        skip_query = False
+        for p in qsa_partners:
+            if p.linkedin_url and "linkedin.com/in/" in p.linkedin_url:
+                if p.name.lower() in q.lower():
+                    skip_query = True
+                    break
+        if not skip_query:
+            filtered_queries.append(q)
+    
+    base_queries = filtered_queries
+
+    for idx, query in enumerate(base_queries[:15]):
         if await is_cancelled():
             print(f"[B2B Engine] ⏹️ Parando escaneamento devido a cancelamento do job {job_id}.")
             break
 
         if idx > 0: 
-            wait_time = random.uniform(20.0, 30.0) # Aumentado para segurança total
+            # 🆕 ELEGÂNCIA: Delay adaptativo menor se a query anterior foi rápida ou falhou por rate limit
+            wait_time = random.uniform(15.0, 25.0) 
             print(f"      [B2B Engine] Aguardando {wait_time:.1f}s para a próxima busca...")
             
-            # Dorme em passos de 1 segundo para responder instantaneamente ao cancelamento
             slept = 0.0
             while slept < wait_time:
                 if await is_cancelled():
@@ -355,12 +404,26 @@ async def discover_employees_stream(
                 slept += 1.0
             
             if await is_cancelled():
-                print(f"[B2B Engine] ⏹️ Parando escaneamento devido a cancelamento do job {job_id}.")
                 break
         
         log_query_start(query)
-        results = await get_duck_results(query, max_results=30)
-        if not results: continue
+        
+        # 🆕 ELEGÂNCIA: Tentativa de busca com retry sutil e timeout
+        try:
+            results = await asyncio.wait_for(get_duck_results(query, max_results=30), timeout=35.0)
+        except asyncio.TimeoutError:
+            print(f"      [SearchEngine] ⚠️ Timeout na busca DuckDuckGo para: {query[:30]}...")
+            continue
+        except Exception as e:
+            print(f"      [SearchEngine] ⚠️ Erro na busca: {str(e)}")
+            # Se for 429, aumenta o próximo delay
+            if "429" in str(e):
+                await asyncio.sleep(10)
+            continue
+
+        if not results: 
+            print(f"      [SearchEngine] ⚪ Nenhum resultado encontrado para esta query.")
+            continue
 
         # Identifica se a query atual é uma busca por sócios/fundadores/proprietários
         query_lower = query.lower()

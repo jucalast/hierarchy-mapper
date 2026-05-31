@@ -214,18 +214,28 @@ class HierarchyScanService:
         """Ouvinte em background que lê comandos via stdin do parent process para interação remota (clique e escrita)."""
         import sys
         import asyncio
+        import threading
         
         loop = asyncio.get_running_loop()
+        cmd_queue = asyncio.Queue()
         
-        def read_line():
-            return sys.stdin.readline()
+        def reader():
+            while not self.graceful_stop:
+                try:
+                    line = sys.stdin.readline()
+                    if not line:
+                        break
+                    # Enfileira com segurança para a corrotina asyncio
+                    loop.call_soon_threadsafe(cmd_queue.put_nowait, line)
+                except Exception:
+                    break
+
+        t = threading.Thread(target=reader, daemon=True)
+        t.start()
             
         try:
-            while True:
-                line = await loop.run_in_executor(None, read_line)
-                if not line:
-                    break
-                
+            while not self.graceful_stop:
+                line = await cmd_queue.get()
                 clean_line = line.strip()
                 if not clean_line:
                     continue
@@ -296,9 +306,26 @@ class HierarchyScanService:
         :param company_url: URL da empresa no LinkedIn (ex: https://www.linkedin.com/company/grupobrasa/people/)
         :return: Lista de dicionários contendo os dados das pessoas.
         """
-        # Garante que a URL termine com /people/ ou /people
+        import urllib.parse
+
+        # 1. NORMALIZAÇÃO DE URL (CRÍTICO)
+        # Remove espaços e garante que a URL termine com /people/
+        company_url = company_url.strip()
         if not re.search(r"/people/?$", company_url):
             company_url = company_url.rstrip("/") + "/people/"
+
+        # Normaliza subdomínios (br., pt., etc -> www.) e encode do path (ex: ç -> %C3%A7)
+        try:
+            parsed = urllib.parse.urlparse(company_url)
+            if "linkedin.com" in parsed.netloc:
+                # Força www.linkedin.com para evitar redirecionamentos regionais instáveis
+                new_netloc = "www.linkedin.com"
+                # Unquote seguido de quote garante que não vamos "duplo-encodar" se já vier encodado
+                clean_path = urllib.parse.unquote(parsed.path)
+                encoded_path = urllib.parse.quote(clean_path, safe='/')
+                company_url = urllib.parse.urlunparse(parsed._replace(netloc=new_netloc, path=encoded_path))
+        except Exception as e:
+            log.warning("hierarchy_scan.normalization_error", error=str(e), url=company_url)
 
         log.info("hierarchy_scan.start_scraping", target_url=company_url)
         extracted_people = []
@@ -431,13 +458,22 @@ class HierarchyScanService:
                 await self._save_preview(page)
                 final_cards = await self._find_people_cards(page)
                 
-                for card in final_cards:
-                    profile_data = await self._parse_profile_card(card)
-                    if profile_data and profile_data.get("name"):
-                        # Evita duplicatas se as rotas/seleções baterem mais de uma vez
-                        if not any(p.get("linkedin_url") == profile_data["linkedin_url"] for p in extracted_people):
-                            extracted_people.append(profile_data)
-                            print(f"   👤 [Extraído] {profile_data['name']} - {profile_data['role']}")
+                # Otimização: Extração paralela em lotes de 20 para ser muito mais rápido
+                BATCH_SIZE = 20
+                for i in range(0, len(final_cards), BATCH_SIZE):
+                    batch = final_cards[i:i + BATCH_SIZE]
+                    tasks = [self._parse_profile_card(card) for card in batch]
+                    results = await asyncio.gather(*tasks)
+                    
+                    for profile_data in results:
+                        if profile_data and profile_data.get("name"):
+                            # Evita duplicatas
+                            if not any(p.get("linkedin_url") == profile_data["linkedin_url"] for p in extracted_people):
+                                extracted_people.append(profile_data)
+                                print(f"   👤 [Extraído] {profile_data['name']} - {profile_data['role']}")
+                    
+                    # Atualiza preview a cada lote apenas
+                    await self._save_preview(page)
                             
                 log.info("hierarchy_scan.extraction_done", total_extracted=len(extracted_people))
                 print(f"\n🎉 [Terminal Scraper] Extração concluída! Total extraído: {len(extracted_people)} colaboradores.")
@@ -567,10 +603,21 @@ class HierarchyScanService:
             avatar_url = ""
             img = await card.query_selector("img")
             if img:
-                src = await img.get_attribute("src")
-                # Filtra avatares padrão do LinkedIn / placeholders vazios
-                if src and not src.startswith("data:image"):
-                    avatar_url = src
+                try:
+                    await card.scroll_into_view_if_needed()
+                except Exception:
+                    pass
+                
+                # Aguarda até que o lazy loading do LinkedIn resolva a imagem real
+                for _ in range(30): # Tenta por até 3.0 segundos (30 * 100ms)
+                    delayed_src = await img.get_attribute("data-delayed-url")
+                    src = await img.get_attribute("src")
+                    final_src = delayed_src or src
+                    
+                    if final_src and not final_src.startswith("data:image") and "ghost-person" not in final_src:
+                        avatar_url = final_src
+                        break
+                    await asyncio.sleep(0.1)
 
             # 5. Localização / Conexões comuns (Informações extras se existirem)
             location = ""

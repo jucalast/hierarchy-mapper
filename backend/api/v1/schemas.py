@@ -35,6 +35,11 @@ class EmployeeNode(BaseModel):
     connections: Optional[str] = None
     highlights: Optional[str] = None
     observations: Optional[str] = None
+    evidence: Optional[str] = None
+    matching_score: Optional[int] = None
+    headline: Optional[str] = None
+    profile_pic: Optional[str] = None
+    seniority: Optional[int] = None
 
 class HierarchyResponse(BaseModel):
     company_name: str

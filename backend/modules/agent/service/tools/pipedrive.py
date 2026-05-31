@@ -196,16 +196,45 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
                         if is_noise or is_internal_domain or is_personal_domain or is_own_email:
                             continue
 
-                        if not any((p.get("name") or "").lower() == emp.name.lower() for p in result):
-                            phone = emp.whatsapp_number or emp.phone
-                            channels = [c for c, v in [("WhatsApp", phone), ("Email", emp.email)] if v]
+                        # Tenta encontrar contato já existente (vindo do Pipedrive) para enriquecer
+                        existing = next((p for p in result if (p.get("name") or "").lower() == emp.name.lower()), None)
+                        
+                        phone = emp.whatsapp_number or emp.phone
+                        channels = [c for c, v in [("WhatsApp", phone), ("Email", emp.email)] if v]
+                        
+                        if emp.role and emp.department:
+                            role_desc = f"{emp.role} - Setor: {emp.department}"
+                        elif emp.role:
+                            role_desc = emp.role
+                        elif emp.department:
+                            role_desc = f"Setor: {emp.department}"
+                        else:
+                            role_desc = "Contato Banco Local"
+
+                        if existing:
+                            # Enriquece o contato do Pipedrive com dados do Banco Local
+                            existing["local_id"] = emp.id
+                            # Prioriza o cargo do Banco Local que costuma ser mais preciso para Compras
+                            if role_desc and role_desc != "Contato Banco Local":
+                                existing["role"] = role_desc
+                            existing["department"] = emp.department
+                            existing["source"] = f"Pipedrive + Banco Local"
+                            # Se o Pipedrive não tinha contato mas o Banco Local tem, atualiza
+                            if not existing.get("phone") and phone:
+                                existing["phone"] = phone
+                                if "WhatsApp" not in existing["channels"]: existing["channels"].append("WhatsApp")
+                            if not existing.get("email") and emp.email:
+                                existing["email"] = emp.email
+                                if "Email" not in existing["channels"]: existing["channels"].append("Email")
+                        else:
                             result.append({
                                 "id": None,
                                 "local_id": emp.id,
                                 "name": emp.name,
                                 "phone": phone,
                                 "email": emp.email,
-                                "role": emp.department or "Contato Banco Local",
+                                "role": role_desc,
+                                "department": emp.department,
                                 "channels": channels,
                                 "source": "Banco Local",
                                 "temperature": emp.temperature,
@@ -264,6 +293,32 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
             except Exception as wa_err:
                 pass
 
+        # Analisa se existem decisores ICP (Compras/Logística) nos contatos locais
+        local_icp_contacts = []
+        for p in result:
+            source = p.get("source", "")
+            if "Banco Local" in source:
+                role_lower = str(p.get("role", "")).lower()
+                dept_lower = str(p.get("department", "")).lower() if p.get("department") else ""
+                is_icp = any(x in role_lower or x in dept_lower for x in ["compras", "logist", "suprimento", "adquir", "comprador"])
+                if is_icp:
+                    available_channels = []
+                    if p.get("phone"): available_channels.append("WhatsApp")
+                    if p.get("email"): available_channels.append("Email")
+                    
+                    if available_channels:
+                        channels_str = ", ".join(available_channels)
+                        if "WhatsApp" not in available_channels:
+                            channels_str += " (SEM WHATSAPP)"
+                    else:
+                        channels_str = "nenhum"
+                        
+                    local_icp_contacts.append(f"{p['name']} ({p.get('role')} - Canais: {channels_str})")
+
+        icp_str = ""
+        if local_icp_contacts:
+            icp_str = f" | [ALERTA: DECISOR LOCAL ENCONTRADO] " + ", ".join(local_icp_contacts)
+
         return {
             "ok": True,
             "org": match.get("name"),
@@ -274,7 +329,7 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
                 + ", ".join(
                     f"{p['name']} ({'WhatsApp:registrado' if p['phone'] and len(''.join(c for c in str(p['phone']) if c.isdigit())) > 13 else ('tel: ' + (p['phone'] or 'nenhum'))}, email: {p['email'] or 'nenhum'})"
                     for p in result[:4]
-                )
+                ) + icp_str
             ),
         }
     except Exception as e:

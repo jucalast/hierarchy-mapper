@@ -11,9 +11,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.infra.database import get_db
+from core.infra.database import get_db, async_session
+from core.infra.redis_config import redis_client
 from core.config import settings
+from core.observability.logging_config import get_logger
 from api.v1.schemas import EmployeeNode, HierarchyResponse, CandidateActionRequest, clean_cnpj
+
+log = get_logger(__name__)
 
 from .service.candidate_service import process_candidate_action
 from .service.hierarchy_loader import get_stored_hierarchy, get_stored_hierarchy_by_pipedrive
@@ -170,12 +174,30 @@ async def stream_company_hierarchy(
         initial_nodes.append(root_node)
         hierarchy_pool.append(EmployeeNode(**root_node))
 
-        for s_node in build_socio_nodes(qsa, razao_social):
-            initial_nodes.append(s_node)
-            hierarchy_pool.append(EmployeeNode(**s_node))
-
-        if org_id:
+        # 🚀 PERSISTÊNCIA IMEDIATA DOS SÓCIOS: Garante que apareçam no banco e no front na hora
+        if qsa and org_id:
             await persist_socios(db, org_id, qsa)
+            # Recarrega os sócios salvos para garantir IDs consistentes
+            from models import Employee
+            from sqlalchemy import select
+            stmt_p = select(Employee).where(Employee.company_id == org_id, Employee.department == "Quadro de Sócios (QSA)")
+            res_p = await db.execute(stmt_p)
+            db_partners = res_p.scalars().all()
+            
+            for p in db_partners:
+                s_node = {
+                    "id": f"node_{p.id}",
+                    "name": p.name,
+                    "role": p.role or "Sócio / Administrador",
+                    "department": "Quadro de Sócios (QSA)",
+                    "level": 6,
+                    "seniority": 6,
+                    "manager_id": "root_company",
+                    "linkedin": p.linkedin_url
+                }
+                initial_nodes.append(s_node)
+                hierarchy_pool.append(EmployeeNode(**s_node))
+        
         if not qsa:
             initial_nodes.append({"id": "aviso", "name": "Sem dados QSA", "role": "Publico Indisponivel",
                                    "department": "Aviso", "manager_id": "root_company", "level": 6})
@@ -401,7 +423,7 @@ async def stream_linkedin_scrape(
     script_path = os.path.join(backend_dir, "scripts", "test_hierarchy_scan.py")
     
     # Prepara o comando
-    cmd = [python_exe, "-X", "utf8", script_path, company_url, output_filepath]
+    cmd = [python_exe, "-X", "utf8", script_path, company_url, output_filepath, "--no-delay"]
     
     env = os.environ.copy()
     if session_cookie:
@@ -417,62 +439,156 @@ async def stream_linkedin_scrape(
             pass
 
     async def sse_generator():
-        # Spawna o processo capturando stdout e stderr em uma mesma pipe
-        # Sem janela cmd popup no Windows (startupinfo opcional) para rodar invisivelmente em background
-        startupinfo = None
-        if os.name == "nt":
-            # Oculta a janela de console do processo secundário quando redirecionamos a pipe
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = subprocess.SW_HIDE
+        # Helper para enviar log para o SSE e para o Terminal via Redis
+        async def send_log(message: str, msg_type: str = "log"):
+            yield_data = f"data: {json.dumps({'type': msg_type, 'message': message}, ensure_ascii=False)}\n\n"
+            if redis_client:
+                try:
+                    loop.run_in_executor(
+                        None, 
+                        lambda: redis_client.publish(
+                            "linkedin_scan_logs", 
+                            json.dumps({"message": message}, ensure_ascii=False)
+                        )
+                    )
+                except Exception:
+                    pass
+            return yield_data
 
-        process = subprocess.Popen(
-            cmd,
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            stdin=subprocess.PIPE,  # Habilita stdin para receber comandos de controle remoto
-            text=True,
-            encoding="utf-8",
-            bufsize=1,
-            startupinfo=startupinfo
-        )
+        # 🏢 IDENTIFICAÇÃO DA ORGANIZAÇÃO (CONTEXTO)
+        from sqlalchemy import select, func
+        from models.organization.organization import Organization
+        from models.people.employee import Employee
+        from .service.candidate_processor import CandidateProcessor
         
-        global active_scraper_process
-        active_scraper_process = process
-        
+        db_org = None
+        async with async_session() as session:
+            clean_url = company_url.split("/people/")[0].split("?")[0].rstrip("/")
+            res = await session.execute(
+                select(Organization).where(
+                    (Organization.linkedin_url.contains(clean_url)) | 
+                    (func.lower(Organization.name).contains(clean_url.split("/")[-1].replace("-", " ")))
+                )
+            )
+            db_org = res.scalars().first()
+            
+            if db_org:
+                yield await send_log(f"[Agent] Empresa identificada: {db_org.name} (ID: {db_org.id})")
+            else:
+                yield await send_log(f"[Agent] Empresa não encontrada no banco. Criando registro temporário para {clean_url.split('/')[-1]}...")
+                db_org = Organization(
+                    name=clean_url.split("/")[-1].replace("-", " ").title(),
+                    linkedin_url=company_url,
+                    source="discovery_scan"
+                )
+                session.add(db_org)
+                await session.commit()
+                await session.refresh(db_org)
+
+            # 🚀 LIMPEZA: Deleta funcionários antigos (MENOS Sócios/QSA) para iniciar mapeamento limpo
+            # Isso atende ao requisito: "nunca apague o card de root e de socios"
+            from sqlalchemy import delete, and_, not_, or_
+            await session.execute(
+                delete(Employee).where(
+                    and_(
+                        Employee.company_id == db_org.id,
+                        not_(
+                            or_(
+                                Employee.department == "Quadro de Sócios (QSA)",
+                                Employee.seniority == 6
+                            )
+                        )
+                    )
+                )
+            )
+            await session.commit()
+            yield f"data: {json.dumps({'type': 'clear_nodes'}, ensure_ascii=False)}\n\n"
+
+        # ─── Compatibilidade Windows: subprocess via thread + asyncio.Queue ───
+        # asyncio.create_subprocess_exec NÃO funciona no WindowsSelectorEventLoop.
+        import subprocess
+        import threading
+        import queue as thread_queue
+
         loop = asyncio.get_running_loop()
+        log.info("hierarchy.scrape.loop_check", loop_type=str(type(loop)))
+
+        line_queue: thread_queue.Queue = thread_queue.Queue()
+        process_ref: dict = {}
+
+        def run_scraper():
+            """Roda o subprocesso em thread bloqueante e enfileira linhas."""
+            try:
+                proc = subprocess.Popen(
+                    cmd,
+                    env=env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    stdin=subprocess.PIPE,
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                process_ref["proc"] = proc
+                global active_scraper_process
+                active_scraper_process = proc  # type: ignore[assignment]
+                for line in proc.stdout:  # type: ignore[union-attr]
+                    line_queue.put(("line", line.rstrip()))
+                # Stdout fechou — enfileira "done" ANTES de proc.wait()
+                # O proc.wait() pode demorar (cleanup do Playwright/Chromium),
+                # mas o frontend já pode começar a processar os resultados.
+                rc = proc.poll()  # Tenta pegar o returncode imediatamente
+                line_queue.put(("done", rc if rc is not None else 0))
+                proc.wait()  # Aguarda em background (sem bloquear a fila)
+            except Exception as exc:
+                line_queue.put(("error", str(exc)))
+
+        scraper_thread = threading.Thread(target=run_scraper, daemon=True)
+        scraper_thread.start()
         
-        def read_line(proc):
-            return proc.stdout.readline()
-            
         try:
-            yield f"data: {json.dumps({'type': 'log', 'message': '[Agent] Inicializando motor de automação Playwright...'}, ensure_ascii=False)}\n\n"
+            yield await send_log("[Agent] Inicializando motor de automação Playwright...")
             
+            returncode = 0
             while True:
-                # Lê a saída da pipe de forma não-bloqueante no executor
-                line = await loop.run_in_executor(None, read_line, process)
-                if not line and process.poll() is not None:
-                     break
-                     
-                clean_line = line.strip()
-                if not clean_line:
+                # Polling não-bloqueante da fila em asyncio
+                try:
+                    kind, payload = await loop.run_in_executor(
+                        None,
+                        lambda: line_queue.get(timeout=10)  # 10s entre mensagens é suficiente
+                    )
+                except Exception:
+                    # Timeout de 10s sem mensagem — verifica se o processo já terminou
+                    proc = process_ref.get("proc")
+                    if proc and proc.poll() is not None:
+                        # Processo já terminou — prossegue sem aguardar mais
+                        returncode = proc.returncode or 0
+                        yield await send_log("[Agent] Processo finalizado. Iniciando processamento...")
+                        break
+                    yield await send_log("[Agent] Aguardando resposta do scraper...")
                     continue
-                
-                # Intercepta notificações de novos screenshots e cookies capturados
-                if "[SCREENSHOT_UPDATED]" in clean_line:
-                    yield f"data: {json.dumps({'type': 'screenshot'})}\n\n"
-                elif clean_line.startswith("[COOKIE_CAPTURED] "):
-                    cookie_val = clean_line.split("[COOKIE_CAPTURED] ")[1].strip()
-                    yield f"data: {json.dumps({'type': 'cookie', 'cookie': cookie_val})}\n\n"
+
+                if kind == "done":
+                    returncode = payload
+                    break
+                elif kind == "error":
+                    yield await send_log(f"[Agent Fatal] Erro ao iniciar scraper: {payload}", "error")
+                    return
                 else:
-                    # Envia a linha de log do terminal original para o frontend
-                    yield f"data: {json.dumps({'type': 'log', 'message': clean_line}, ensure_ascii=False)}\n\n"
+                    line: str = payload
+                    if not line:
+                        continue
+                    # Intercepta notificações de novos screenshots e cookies capturados
+                    if "[SCREENSHOT_UPDATED]" in line:
+                        yield f"data: {json.dumps({'type': 'screenshot'})}\n\n"
+                    elif line.startswith("[COOKIE_CAPTURED] "):
+                        cookie_val = line.split("[COOKIE_CAPTURED] ")[1].strip()
+                        yield f"data: {json.dumps({'type': 'cookie', 'cookie': cookie_val})}\n\n"
+                    else:
+                        yield await send_log(line)
             
             # Aguarda a finalização definitiva
-            returncode = process.wait()
             if returncode != 0:
-                yield f"data: {json.dumps({'type': 'error', 'message': f'[Agent Error] O processo secundário encerrou com código de erro {returncode}'}, ensure_ascii=False)}\n\n"
+                yield await send_log(f"[Agent Error] O processo secundário encerrou com código de erro {returncode}", "error")
                 return
                 
             # Lê o JSON de saída final gerado pelo script
@@ -480,146 +596,245 @@ async def stream_linkedin_scrape(
                 with open(output_filepath, "r", encoding="utf-8") as f:
                     results_data = json.load(f)
                 
-                # Se area_focus ou product_focus estiverem definidos, aplica o filtro da IA
-                if results_data and (area_focus or product_focus):
-                    yield f"data: {json.dumps({'type': 'log', 'message': '[AI Filter] Iniciando filtragem inteligente de perfis...'}, ensure_ascii=False)}\n\n"
+                if results_data:
+                    yield await send_log(f"[AI Filter] Iniciando processamento inteligente de {len(results_data)} perfis...")
                     
-                    # 1. Deduplica por linkedin_url para garantir dados não duplicados
+                    # Deduplica por linkedin_url
                     unique_employees = []
                     seen_urls = set()
                     for emp in results_data:
                         url = emp.get("linkedin_url")
                         if url:
-                            if url not in seen_urls:
-                                seen_urls.add(url)
+                            clean_url_emp = url.split("?")[0].rstrip("/")
+                            if clean_url_emp not in seen_urls:
+                                seen_urls.add(clean_url_emp)
                                 unique_employees.append(emp)
                         else:
                             unique_employees.append(emp)
+                    
+                    # 🚀 PROCESSAMENTO COM CANDIDATE_PROCESSOR (Em Lotes de 10 para Performance)
+                    nodes_to_yield = []
+                    async with async_session() as session:
+                        stmt_rej = select(Employee).where(
+                            Employee.company_id == db_org.id,
+                            (Employee.role == "Reprovado") | (Employee.department == "Reprovado")
+                        )
+                        res_rej = await session.execute(stmt_rej)
+                        rejected_urls = {emp.linkedin_url.split("?")[0].rstrip("/") for emp in res_rej.scalars().all() if emp.linkedin_url}
+
+                        # Prepara candidatos válidos
+                        valid_candidates = []
+                        for idx, emp in enumerate(unique_employees):
+                            emp_url = emp.get("linkedin_url", "").split("?")[0].rstrip("/")
+                            if emp_url in rejected_urls:
+                                yield await send_log(f"⏩ [Ignorado] {emp.get('name')} já foi reprovado anteriormente.")
+                                continue
                             
-                    total_found = len(unique_employees)
-                    yield f"data: {json.dumps({'type': 'log', 'message': f'[AI Filter] Total de perfis únicos a avaliar: {total_found}'}, ensure_ascii=False)}\n\n"
-                    
-                    # 2. Divide em lotes de 15 perfis
-                    batch_size = 15
-                    filtered_employees = []
-                    
-                    if model:
-                        from core.llm import set_preferred_model
-                        set_preferred_model(model, False)
-                        
-                    for idx_start in range(0, total_found, batch_size):
-                        batch = unique_employees[idx_start : idx_start + batch_size]
-                        current_batch_num = idx_start // batch_size + 1
-                        total_batches = (total_found + batch_size - 1) // batch_size
-                        
-                        yield f"data: {json.dumps({'type': 'log', 'message': f'[AI Filter] Processando lote {current_batch_num} de {total_batches}...'}, ensure_ascii=False)}\n\n"
-                        
-                        # Cria lista simplificada para o prompt para economizar tokens
-                        batch_to_evaluate = []
-                        for emp_idx, emp in enumerate(batch):
-                            batch_to_evaluate.append({
-                                "index": emp_idx,
+                            valid_candidates.append({
+                                "idx": idx,
                                 "name": emp.get("name"),
                                 "role": emp.get("role"),
-                                "linkedin_url": emp.get("linkedin_url")
+                                "linkedin_url": emp_url,
+                                "context": [
+                                    f"--- DADOS RASPADO DO LINKEDIN ---",
+                                    f"NOME: {emp.get('name')}",
+                                    f"CARGO EXIBIDO: {emp.get('role')}",
+                                    f"LOCALIZAÇÃO: {emp.get('location', 'Brasil')}",
+                                    f"PERFIL: {emp_url}"
+                                ],
+                                "emp_raw": emp
                             })
+
+                        # Processa em lotes de 10
+                        from .service.role_engine import role_engine
+                        batch_size = 10
+                        for i in range(0, len(valid_candidates), batch_size):
+                            batch = valid_candidates[i:i + batch_size]
+                            yield await send_log(f"🧠 [AI Batch] Processando lote {i//batch_size + 1} ({len(batch)} perfis)...")
                             
-                        prompt = f"""
-Você é um especialista em estruturação organizacional B2B e prospecção de vendas.
-Sua tarefa é analisar uma lista de perfis do LinkedIn e decidir se cada perfil é RELEVANTE ou não para uma abordagem focada em compras e logística.
+                            try:
+                                batch_results = await role_engine.distill_roles_batch_v2(
+                                    batch,
+                                    db_org.name,
+                                    area_focus=area_focus or "compras",
+                                    product_focus=product_focus or "Geral B2B"
+                                )
+                                
+                                # 🚀 PROCESSAMENTO PARALELO DE E-MAILS PARA O LOTE
+                                approved_tasks = []
+                                approved_candidates_data = []
 
-Área de Foco principal: {area_focus or "Compras e Logística"}
-Produto/Serviço a ser vendido (opcional): {product_focus or "Geral B2B"}
+                                for c in batch:
+                                    res = batch_results.get(c['idx'])
+                                    if not res or not res.get("is_valid"):
+                                        yield await send_log(f"❌ [Filtrado] {c['name']} ({c['role']})")
+                                        continue
 
-Diretrizes de Classificação:
-1. Um perfil é RELEVANTE (relevant = true) se trabalhar com Compras, Procurement, Suprimentos, Logística, Supply Chain, Recebimento, Facilities, Importação/Exportação ou cargos de liderança operacional relacionados à cadeia de suprimentos.
-2. Níveis hierárquicos aceitos: de Diretores a Assistentes/Compradores, desde que na área especificada.
-3. Se um produto/serviço estiver especificado (ex: "Embalagens"), a relevância aumenta se o comprador for daquela categoria, mas qualquer comprador geral também é aceitável.
-4. Pessoas de RH, Marketing, Vendas, TI (exceto se focado em compras de TI), Administrativo puro, Financeiro, Consultores externos que não sejam da empresa, e outros cargos não relacionados a suprimentos devem ser REJEITADOS (relevant = false).
+                                    # Prepara dados para processamento
+                                    emp_name = res.get("proper_name", c['name'])
+                                    approved_candidates_data.append({
+                                        "res": res,
+                                        "candidate": c,
+                                        "emp_name": emp_name
+                                    })
 
-Lista de perfis do lote atual:
-{json.dumps(batch_to_evaluate, ensure_ascii=False, indent=2)}
-
-Retorne APENAS um objeto JSON com a chave "decisions" contendo um array de objetos. Cada objeto deve mapear o "linkedin_url" do perfil correspondente, definindo se é "relevant" (boolean) e uma breve "reason" (string em português):
-{{
-  "decisions": [
-    {{
-      "linkedin_url": "...",
-      "relevant": true,
-      "reason": "Comprador de embalagens, diretamente relevante para o produto papelão."
-    }}
-  ]
-}}
-"""
-                        try:
-                            from core.llm import ask_llm, LLMTier
-                            ai_res = await ask_llm(
-                                prompt=prompt,
-                                system="Você é um classificador especializado em leads B2B e organogramas de compras. Responda apenas com JSON estrito.",
-                                json_mode=True,
-                                tier=LLMTier.FAST,
-                                cacheable=True
-                            )
-                            
-                            data = ai_res.json_data or {}
-                            decisions = data.get("decisions", [])
-                            
-                            decisions_map = {}
-                            if isinstance(decisions, list):
-                                for dec in decisions:
-                                    url = dec.get("linkedin_url")
-                                    if url:
-                                        decisions_map[url] = dec.get("relevant", False)
-                                        
-                            for emp in batch:
-                                url = emp.get("linkedin_url")
-                                if url:
-                                    is_relevant = decisions_map.get(url, False)
-                                    if url not in decisions_map:
-                                        # Fallback por palavra-chave se não respondeu
-                                        keywords = ["compra", "suprimento", "procurement", "logistica", "logística", "supply", "facilities", "buyer", "sourcing"]
-                                        role_lower = emp.get("role", "").lower()
-                                        is_relevant = any(k in role_lower for k in keywords)
-                                        
-                                    emp_name = emp.get("name") or "Profissional"
-                                    emp_role = emp.get("role") or ""
-                                    if is_relevant:
-                                        filtered_employees.append(emp)
-                                        yield f"data: {json.dumps({'type': 'log', 'message': f'✅ [AI Aprovou] {emp_name} ({emp_role})'}, ensure_ascii=False)}\n\n"
+                                    # Cria tarefa de descoberta de e-mail se houver domínio
+                                    if db_org and db_org.domain:
+                                        try:
+                                            name_parts = emp_name.split()
+                                            first_name = name_parts[0] if name_parts else ""
+                                            last_name = name_parts[-1] if len(name_parts) > 1 else ""
+                                            if first_name and last_name:
+                                                from core.external.email_service import discover_and_validate_email
+                                                approved_tasks.append(discover_and_validate_email(
+                                                    first=first_name,
+                                                    last=last_name,
+                                                    domain=db_org.domain,
+                                                    do_smtp=True
+                                                ))
+                                            else:
+                                                approved_tasks.append(asyncio.sleep(0, result=None))
+                                        except Exception:
+                                            approved_tasks.append(asyncio.sleep(0, result=None))
                                     else:
-                                        yield f"data: {json.dumps({'type': 'log', 'message': f'❌ [AI Filtrou] {emp_name} ({emp_role})'}, ensure_ascii=False)}\n\n"
-                                else:
-                                    filtered_employees.append(emp)
-                        except Exception as e:
-                            yield f"data: {json.dumps({'type': 'log', 'message': f'⚠️ [AI Warning] Falha na IA no lote: {str(e)}. Executando fallback por palavra-chave...'}, ensure_ascii=False)}\n\n"
-                            keywords = ["compra", "suprimento", "procurement", "logistica", "logística", "supply", "facilities", "buyer", "sourcing"]
-                            for emp in batch:
-                                emp_name = emp.get("name") or "Profissional"
-                                emp_role = emp.get("role") or ""
-                                role_lower = emp_role.lower()
-                                if any(k in role_lower for k in keywords):
-                                    filtered_employees.append(emp)
-                                    yield f"data: {json.dumps({'type': 'log', 'message': f'✅ [Fallback Aprovou] {emp_name} ({emp_role})'}, ensure_ascii=False)}\n\n"
-                                else:
-                                    yield f"data: {json.dumps({'type': 'log', 'message': f'❌ [Fallback Filtrou] {emp_name} ({emp_role})'}, ensure_ascii=False)}\n\n"
+                                        approved_tasks.append(asyncio.sleep(0, result=None))
+
+                                # Executa todas as descobertas de e-mail em paralelo
+                                email_results = await asyncio.gather(*approved_tasks)
+
+                                # Processa cada aprovado com seu respectivo e-mail
+                                for idx, data in enumerate(approved_candidates_data):
+                                    res = data['res']
+                                    c = data['candidate']
+                                    emp_name = data['emp_name']
+                                    emp_email_data = email_results[idx]
+                                    emp_email = emp_email_data.get("email") if emp_email_data else None
+
+                                    final_role = res.get("role", c['role'])
+                                    dept = res.get("department", "A validar")
+                                    score = res.get("matching_score", 50)
+                                    evidence = res.get("evidence")
+                                    emp_url = c['linkedin_url']
+                                    emp_raw = c['emp_raw']
+
+                                    # Resolução resiliente da localização
+                                    fallback_loc = "Brasil"
+                                    if db_org and db_org.address:
+                                        normalized = db_org.address.replace(",", " - ")
+                                        addr_parts = [p.strip() for p in normalized.split(" - ") if p.strip()]
+                                        if len(addr_parts) >= 2:
+                                            city = addr_parts[-2].title()
+                                            state = addr_parts[-1].upper()
+                                            fallback_loc = f"{city}, {state}, Brasil" if len(state) == 2 else f"{city}, {state}"
+                                        else:
+                                            fallback_loc = db_org.address
+
+                                    emp_loc = emp_raw.get("location")
+                                    if not emp_loc or emp_loc == "Localização não identificada":
+                                        emp_loc = fallback_loc
+
+                                    existing_res = await session.execute(
+                                        select(Employee).where(Employee.linkedin_url == emp_url)
+                                    )
+                                    existing = existing_res.scalars().first()
                                     
-                    results_data = filtered_employees
-                    yield f"data: {json.dumps({'type': 'log', 'message': f'🎉 [AI Filter] Filtragem concluída! Mantidos {len(results_data)} de {total_found} perfis.'}, ensure_ascii=False)}\n\n"
+                                    if not existing:
+                                        new_emp = Employee(
+                                            name=emp_name,
+                                            role=final_role,
+                                            department=dept,
+                                            linkedin_url=emp_url,
+                                            profile_pic=emp_raw.get("avatar"),
+                                            location=emp_loc,
+                                            company_id=db_org.id,
+                                            is_discovery=1,
+                                            source="discovery_scan",
+                                            matching_score=score,
+                                            evidence=evidence,
+                                            description=c['role'],
+                                            email=emp_email,
+                                        )
+                                        session.add(new_emp)
+                                        await session.commit()
+                                        await session.refresh(new_emp)
+                                        employee_id = f"node_{new_emp.id}"
+                                    else:
+                                        existing.role = final_role
+                                        existing.department = dept
+                                        existing.matching_score = score
+                                        existing.company_id = db_org.id
+                                        if not existing.description: existing.description = c['role']
+                                        if not existing.profile_pic: existing.profile_pic = emp_raw.get("avatar")
+                                        if not existing.location or existing.location == "Localização não identificada":
+                                            existing.location = emp_loc
+                                        if not existing.evidence: existing.evidence = evidence
+                                        if not existing.email: existing.email = emp_email
+                                        await session.commit()
+                                        employee_id = f"node_{existing.id}"
+                                    
+                                    node = {
+                                        "id": employee_id,
+                                        "name": emp_name,
+                                        "role": final_role,
+                                        "department": dept,
+                                        "company": db_org.name,
+                                        "linkedin": emp_url,
+                                        "avatar": emp_raw.get("avatar"),
+                                        "profile_pic": emp_raw.get("avatar"),
+                                        "location": emp_loc,
+                                        "matching_score": score,
+                                        "observations": c['role'],
+                                        "evidence": evidence,
+                                        "email": emp_email or (existing.email if existing else None),
+                                    }
+                                    nodes_to_yield.append(node)
+                                    yield await send_log(f"✅ [Aprovado] {emp_name} -> {final_role} ({dept})")
+                                    
+                                    if len(nodes_to_yield) >= 3:
+                                        yield f"data: {json.dumps({'type': 'batch', 'nodes': nodes_to_yield}, ensure_ascii=False)}\n\n"
+                                        nodes_to_yield = []
+
+                                        
+                            except Exception as e:
+                                yield await send_log(f"⚠️ [Erro no Lote] {str(e)}", "error")
+
+                        if nodes_to_yield:
+                            yield f"data: {json.dumps({'type': 'batch', 'nodes': nodes_to_yield}, ensure_ascii=False)}\n\n"
+
+
+                    yield await send_log(f"🎉 Processamento concluído!")
                 
-                yield f"data: {json.dumps({'type': 'result', 'data': results_data}, ensure_ascii=False)}\n\n"
+                yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
                 
-                # Deleta o arquivo temporário
                 try:
                     os.remove(output_filepath)
                 except Exception:
                     pass
             else:
-                yield f"data: {json.dumps({'type': 'error', 'message': '[Agent Error] O arquivo de resultados não foi gerado pelo Scraper.'}, ensure_ascii=False)}\n\n"
+                yield await send_log("[Agent Error] O arquivo de resultados não foi gerado pelo Scraper.", "error")
+                yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
                 
         except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': f'[Agent Fatal Error] Falha na transmissão: {str(e)}'}, ensure_ascii=False)}\n\n"
-            if process.poll() is None:
-                process.terminate()
+            try:
+                yield f"data: {json.dumps({'type': 'error', 'message': f'[Agent Fatal Error] Falha na transmissão: {str(e)}'}, ensure_ascii=False)}\n\n"
+            except Exception:
+                pass
+        finally:
+            proc = process_ref.get("proc")
+            if proc:
+                try:
+                    proc.stdin.close()
+                except Exception:
+                    pass
+                try:
+                    proc.stdout.close()
+                except Exception:
+                    pass
+                try:
+                    if proc.poll() is None:
+                        proc.terminate()
+                except Exception:
+                    pass
                 
     return StreamingResponse(sse_generator(), media_type="text/event-stream")
 
@@ -638,7 +853,7 @@ async def linkedin_scrape_interact(
     """
     global active_scraper_process
     
-    if not active_scraper_process or active_scraper_process.poll() is not None:
+    if not active_scraper_process or active_scraper_process.returncode is not None:
         raise HTTPException(status_code=400, detail="Não há nenhum agente de raspagem ativo no momento.")
         
     try:
@@ -653,8 +868,8 @@ async def linkedin_scrape_interact(
             command = f"cmd_press {key}\n"
             
         if command:
-            active_scraper_process.stdin.write(command)
-            active_scraper_process.stdin.flush()
+            active_scraper_process.stdin.write(command.encode('utf-8'))
+            await active_scraper_process.stdin.drain()
             return {"status": "success", "message": f"Comando '{action}' enviado ao agente."}
         else:
             raise HTTPException(status_code=400, detail="Ação de interação inválida ou parâmetros insuficientes.")
@@ -671,12 +886,12 @@ async def linkedin_scrape_stop():
     """
     global active_scraper_process
     
-    if not active_scraper_process or active_scraper_process.poll() is not None:
+    if not active_scraper_process or active_scraper_process.returncode is not None:
         raise HTTPException(status_code=400, detail="Não há nenhum agente de raspagem ativo no momento.")
         
     try:
-        active_scraper_process.stdin.write("cmd_stop\n")
-        active_scraper_process.stdin.flush()
+        active_scraper_process.stdin.write("cmd_stop\n".encode('utf-8'))
+        await active_scraper_process.stdin.drain()
         return {"status": "success", "message": "Solicitação de parada graciosa enviada ao agente."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao parar o agente graciosamente: {str(e)}")

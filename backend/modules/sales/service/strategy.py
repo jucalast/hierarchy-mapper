@@ -34,6 +34,7 @@ class SalesStrategyService:
             "org_name": None, "deal_id": None, "deal_stage": None, "deal_value": None,
             "pending_activities": [], "contacts": [], "last_whatsapp": None,
             "last_email": None, "items_quoted": [], "competitors": [],
+            "prospect_evaluation": None,
         }
 
         for msg in messages:
@@ -85,6 +86,14 @@ class SalesStrategyService:
                                 emails_list = tc_data.get("emails", []) or []
                                 if emails_list:
                                     crm_snapshot["last_email"] = emails_list[-1] if emails_list else None
+                            elif tool_name == "evaluate_prospects":
+                                best_prospects = tc_data.get("best_prospects", [])
+                                overall_strategy = tc_data.get("overall_strategy", "")
+                                if best_prospects or overall_strategy:
+                                    crm_snapshot["prospect_evaluation"] = {
+                                        "best_prospects": best_prospects,
+                                        "overall_strategy": overall_strategy
+                                    }
                         except Exception:
                             pass
                 content = "\n".join(text_parts)
@@ -117,6 +126,16 @@ class SalesStrategyService:
             "Não há thread de email anterior. Se sugerir email, use email_send com destinatário real."
         )
 
+        prospects_section = ""
+        if crm_snapshot.get("prospect_evaluation"):
+            pe = crm_snapshot["prospect_evaluation"]
+            prospects_section = (
+                f"\n## AVALIAÇÃO DE PROSPECTOS (evaluate_prospects):\n"
+                f"- Estratégia Geral: {pe.get('overall_strategy', '')}\n"
+                f"- Melhores Prospectos (Tier A): {json.dumps(pe.get('best_prospects', []), ensure_ascii=False)}\n"
+                f"INSTRUÇÃO: Priorize ações para os prospectos Tier A identificados nesta avaliação.\n"
+            )
+
         system_prompt = f"""Você é o Diretor Comercial B2B e Coach de Vendas Sênior da J.Ferres.
 Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e PERSONALIZADO de próximos passos.
 
@@ -142,6 +161,13 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 - Contatos com canal: {contacts_str}
 - Contato principal: {contact_name or 'ver histórico'} {('| Tel: ' + phone) if phone else ''}
 - Hoje: {today}
+{prospects_section}
+## CHECKLIST B2B DE PROSPECÇÃO:
+1. Se a pessoa selecionada já possui um ID numérico (ex: ID 123), ELA JÁ ESTÁ NO PIPEDRIVE. É TERMINANTEMENTE PROIBIDO sugerir 'Criar Contato' para ela.
+2. Se a pessoa possui ID numérico mas o negócio não tem contatos associados (ou o contato selecionado não está associado), você DEVE sugerir a ação 'Atualizar negócio' (pipedrive_update_deal) para vinculá-la.
+3. Se a pessoa selecionada tem apenas `[ID:LocalDB]` (sem ID numérico), ela está só no banco local. Nesse caso, a sugestão correta é 'Criar contato' (pipedrive_create_person) para salvá-la no Pipedrive.
+4. Se a ação anterior foi enviar um e-mail de prospecção, é OBRIGATÓRIO sugerir 'Criar Tarefa' para follow-up.
+5. Não sugira 'Pesquisar contato secundário' se já identificamos e abordamos o decisor principal (Tier A).
 
 ## REGRAS PARA AS SUGESTÕES:
 1. Gere de 5 a 15 ações — cubra TODAS as categorias relevantes (comunicação, CRM, agendamento, estratégia).
@@ -155,6 +181,9 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 8. Para criar tarefas no Pipedrive, o prompt DEVE usar: pipedrive_create_task com subject='...', task_type='call' ou 'meeting', due_date='YYYY-MM-DD', deal_id={crm_snapshot.get('deal_id') or 'ID do deal'}, org_name='...'
 9. RECONHECER O ESTÁGIO DO DEAL (PREVENIR REGRESSÃO): Analise o histórico recente buscando menções a orçamentos, propostas, preços, amostras, visitas, especificação de caixas, pesos ou volumes. Se estes já existirem, o lead NÃO é inicial. Você está TERMINANTEMENTE PROIBIDO de sugerir ações/tarefas frias (como "Pesquisar empresa", "Iniciar contato", "Ligar para qualificar", "Revisar diferenciais"). Sugira apenas ações avançadas (ex: "Cobrar retorno da proposta de valores", "Negociar preços enviados", "Cobrar retorno sobre o volume de caixas").
 10. PREVENIR DUPLICIDADE DE CONTATOS: Se o contato (ex: "Ilda") já possui histórico no WhatsApp, E-mail ou timeline de atividades passadas, ele já está cadastrado ou identificado. Você está PROIBIDO de sugerir a criação do contato (pipedrive_create_person) nesses casos.
+11. PROIBIDO sugerir "Ligar para X" ou "WhatsApp para X" se o contato não tiver telefone listado em "Contatos com canal".
+12. Se a tarefa principal já foi realizada (ex: Encontrar contato concluído), a primeira sugestão DEVE ser marcar a atividade original como concluída.
+13. Se um contato relevante foi identificado mas não está associado ao Deal, sugira "Atualizar negócio" (pipedrive_update_deal) definindo o person_id.
 
 ## REGRAS PARA O CAMPO "label":
 - NÃO inclua o nome do canal no label (ex: PROIBIDO "WhatsApp: Cobrar retorno", CORRETO: "Cobrar retorno da cotação de Outubro")

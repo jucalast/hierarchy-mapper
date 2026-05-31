@@ -540,35 +540,40 @@
 }
 
 [data-theme='light'] .modelOption.selected {
-  background: #ffffff;
-  border: var(--sw-border-width) solid #ffffff;
+  background: #131313;
+  border: var(--sw-border-width) solid #131313;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+[data-theme='light'] .modelOption.selected:hover {
+  background: #1c1c1c;
+  border-color: #1c1c1c;
+}
+
 [data-theme='light'] .modelOption.selected .modelOptionName {
-  color: #000000;
+  color: #ffffff;
 }
 
 [data-theme='light'] .modelOption.selected .modelOptionDesc {
-  color: rgba(0, 0, 0, 0.7);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 [data-theme='light'] .modelOption.selected .modelOptionSpeedLabel {
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.6);
 }
 
-[data-theme='light'] .modelOption.selected .modelOptionLogo {
-  filter: none !important;
+[data-theme='light'] .modelOption.selected .modelOptionCheck svg {
+  color: #818cf8 !important;
 }
 
 [data-theme='light'] .modelOptionBadge {
-  background: rgba(0, 0, 0, 0.1);
-  color: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.5);
 }
 
 [data-theme='light'] .modelOption.selected .modelOptionBadge {
-  background: rgba(0, 0, 0, 0.1);
-  color: rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 [data-theme='light'] .modelOptionDesc {

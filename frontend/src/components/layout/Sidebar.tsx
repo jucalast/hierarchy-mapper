@@ -9,6 +9,7 @@ import {
     Bug,
     Workflow,
     Radar,
+    Loader2
 } from 'lucide-react';
 
 import styles from './Sidebar.module.css';
@@ -22,6 +23,7 @@ interface SidebarProps {
     onCopyData: () => void;
     onRefine?: () => void;
     onSmartSync?: () => void;
+    isSmartSyncLoading?: boolean;
     onOpenProspecting?: () => void;
     isProspecting?: boolean;
     onOpenPreferences?: () => void;
@@ -41,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onCopyData,
     onRefine,
     onSmartSync,
+    isSmartSyncLoading,
     onOpenProspecting,
     isProspecting,
     onOpenPreferences,
@@ -87,8 +90,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
 
-            <div className={styles.navIcon} title="Smart Sync" onClick={onSmartSync}>
-                <Zap size={20} className={styles.iconSide} />
+            <div className={styles.navIcon} title="Smart Sync" onClick={isSmartSyncLoading ? undefined : onSmartSync}>
+                {isSmartSyncLoading ? (
+                    <div className={styles.spin}>
+                        <Loader2 size={20} />
+                    </div>
+                ) : (
+                    <Zap size={20} className={styles.iconSide} />
+                )}
             </div>
 
             <div

@@ -228,11 +228,23 @@ async def _pipedrive_find_org(org_name: str):
     Retorna (match_dict, org_id) ou (None, None).
     """
     org_name = _fix_llama_corrupted_name(org_name)
-    from modules.crm.service.pipedrive_service import pipedrive_service
     import unicodedata
     import re
 
-    orgs = await pipedrive_service.list_organizations()
+    from core.infra.database import async_session as _async_session
+    from models import Organization
+    from sqlalchemy import select
+    orgs = []
+    try:
+        async with _async_session() as session:
+            stmt = select(Organization.pipedrive_id, Organization.id, Organization.name).where(Organization.is_excluded != 1)
+            res = await session.execute(stmt)
+            for row in res:
+                pid, lid, nm = row
+                orgs.append({"id": pid or lid, "name": nm})
+    except Exception:
+        pass
+
     if not orgs:
         return None, None
 
@@ -373,11 +385,22 @@ async def _pipedrive_find_org(org_name: str):
 
 
 async def _pipedrive_get_org_by_id(org_id: int):
-    """Retorna o match_dict de uma organização do Pipedrive pelo ID exato."""
-    from modules.crm.service.pipedrive_service import pipedrive_service
-    orgs = await pipedrive_service.list_organizations()
-    match = next((o for o in (orgs or []) if o.get("id") == org_id), None)
-    return match
+    """Retorna o match_dict de uma organização do Pipedrive pelo ID exato usando o banco local."""
+    try:
+        from core.infra.database import async_session as _async_session
+        from models import Organization
+        from sqlalchemy import select
+        async with _async_session() as session:
+            stmt = select(Organization).where(
+                (Organization.pipedrive_id == org_id) | (Organization.id == org_id)
+            )
+            res = await session.execute(stmt)
+            o = res.scalars().first()
+            if o:
+                return {"id": o.pipedrive_id or o.id, "name": o.name}
+    except Exception:
+        pass
+    return None
 
 
 async def _extract_org_domain(org_name: str, org_id: int | None = None) -> str | None:

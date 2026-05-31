@@ -131,25 +131,52 @@
     background: var(--sw-hover);
 }
 
+.mainHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
 .drawerInputWrapper {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    background: transparent;
     border-radius: 8px;
-    border: var(--sw-border-width) solid var(--sw-border);
-    transition: var(--transition-fast);
-    flex: 1;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
 }
 
-.drawerInputWrapper:focus-within {
-    border-color: var(--sw-primary);
-    background: rgba(255, 255, 255, 0.08);
+.drawerInputWrapper.expanded {
+    width: 200px;
+    background: var(--sw-bg);
+    border: var(--sw-border-width) solid var(--sw-primary);
+    padding: 0 8px;
 }
 
-.inputIcon {
+.searchToggleBtn {
+    background: transparent;
+    border: none;
     color: var(--sw-text-muted);
-    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.searchToggleBtn:hover {
+    color: var(--sw-text-base);
+}
+
+.expanded .searchToggleBtn {
+    min-width: 24px;
+    padding-right: 8px;
 }
 
 .drawerInput {
@@ -159,12 +186,41 @@
     font-size: var(--font-sm);
     outline: none;
     width: 100%;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.expanded .drawerInput {
+    opacity: 1;
+}
+
+.clearSearchBtn {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.clearSearchBtn:hover {
+    color: var(--sw-text-base);
+    background: var(--sw-hover);
+}
+
+.headerRightActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .backBtn {
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--sw-text-muted);
     cursor: pointer;
     padding: 6px;
     border-radius: 6px;
@@ -175,6 +231,6 @@
 }
 
 .backBtn:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.05);
+    color: var(--sw-text-base);
+    background: var(--sw-hover);
 }

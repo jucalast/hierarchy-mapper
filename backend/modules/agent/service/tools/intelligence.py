@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import httpx
+import os
 from typing import Any, Dict
 from core.observability.logging_config import get_logger
 from ._constants import WA_BASE, EMAIL_SERVICE_BASE, JFERRES_DOMAIN
@@ -15,6 +16,119 @@ from ._utils import (
 )
 
 log = get_logger(__name__)
+
+
+async def exec_deep_company_investigation(args: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Realiza uma investigação profunda sobre a empresa criando um Dossiê Pré-Abordagem.
+    Busca no banco, dados de CNPJ (Receita Federal) e Web.
+    """
+    import re as _re
+    from core.infra.database import async_session
+    from models.organization import Organization
+    from sqlalchemy import select
+    from modules.hierarchy.service.cnpj_resolver import fetch_company_data_by_cnpj, build_full_address
+
+    org_name = args.get("org_name", "")
+    cnpj_raw = args.get("cnpj", "")
+    cnpj_clean = _re.sub(r"\D", "", cnpj_raw or "")
+
+    if not org_name and not cnpj_clean:
+        return {"ok": False, "error": "Forneça org_name ou cnpj para investigação profunda."}
+
+    dossier = {
+        "local_intelligence": None,
+        "cnpj_data": None,
+        "web_research": "Informação não encontrada via OSINT básica."
+    }
+
+    # 1. Inteligência Local (Banco de Dados) e descoberta de CNPJ
+    try:
+        async with async_session() as session:
+            stmt = select(Organization).where(
+                (Organization.name.ilike(f"%{org_name}%")) | 
+                (Organization.cnpj == cnpj_clean if len(cnpj_clean) == 14 else False)
+            ).limit(1)
+            res = await session.execute(stmt)
+            org = res.scalar()
+            if org:
+                dossier["local_intelligence"] = {
+                    "category": org.category,
+                    "product_focus": org.product_focus,
+                    "prospecting_context": org.prospecting_context or "Sem contexto salvo."
+                }
+                if not cnpj_clean and org.cnpj:
+                    cnpj_clean = _re.sub(r"\D", "", org.cnpj)
+    except Exception: pass
+
+    # 2. Dados da Receita Federal (CNPJ)
+    if len(cnpj_clean) == 14:
+        try:
+            data = await fetch_company_data_by_cnpj(cnpj_clean)
+            if data:
+                dossier["cnpj_data"] = {
+                    "capital_social": data.get("capital_social"),
+                    "cnae": f"{data.get('cnae_fiscal', '')} - {data.get('cnae_fiscal_descricao', '')}",
+                    "address": build_full_address(data),
+                    "size": data.get("porte")
+                }
+        except Exception: pass
+
+    # 3. Web Research ( DuckDuckGo )
+    search_query = f'"{org_name}" site oficial atuação notícias 2024 2025'
+    try:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                "https://api.duckduckgo.com/",
+                params={"q": search_query, "format": "json", "no_html": 1},
+                timeout=10.0
+            )
+            if r.status_code == 200:
+                data = r.json()
+                abstract = data.get("AbstractText")
+                if abstract:
+                    dossier["web_research"] = abstract
+    except Exception: pass
+
+    # 4. Formata o Dossiê
+    dossier_text = f"Dossiê Pré-Abordagem para {org_name}:\n"
+    if dossier["local_intelligence"]:
+        dossier_text += f"- Categoria: {dossier['local_intelligence']['category']}\n"
+        dossier_text += f"- Foco do Produto: {dossier['local_intelligence']['product_focus']}\n"
+    if dossier["cnpj_data"]:
+        dossier_text += f"- Porte: {dossier['cnpj_data']['size']}\n"
+        dossier_text += f"- CNAE: {dossier['cnpj_data']['cnae']}\n"
+        dossier_text += f"- Capital Social: {dossier['cnpj_data']['capital_social']}\n"
+        dossier_text += f"- Endereço: {dossier['cnpj_data']['address']}\n"
+    dossier_text += f"- Pesquisa Web: {dossier['web_research']}\n"
+
+    # 5. Salva no banco (append)
+    try:
+        async with async_session() as session:
+            stmt = select(Organization).where(
+                (Organization.name.ilike(f"%{org_name}%")) | 
+                (Organization.cnpj == cnpj_clean if len(cnpj_clean) == 14 else False)
+            ).limit(1)
+            res = await session.execute(stmt)
+            org = res.scalar()
+            if org:
+                new_context = f"[Dossiê] {dossier_text[:1000]}"
+                if org.prospecting_context and new_context not in org.prospecting_context:
+                    org.prospecting_context += f" | {new_context}"
+                else:
+                    org.prospecting_context = new_context
+                await session.commit()
+    except Exception as e:
+        log.warning(f"Falha ao salvar dossiê: {e}")
+
+    summary = f"Investigação profunda concluída para {org_name}."
+
+    return {
+        "ok": True,
+        "org_name": org_name,
+        "data": dossier,
+        "summary": summary
+    }
 
 
 async def exec_web_search(args: Dict[str, Any]) -> Dict[str, Any]:
@@ -215,6 +329,15 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         history_serialized.append({"role": role, "content": str(content)})
 
     # Carrega diferenciais e contexto configurados no sistema
+    biz_data_str = "Diretrizes de Negócio: J.Ferres - Especialista em Embalagens B2B e Soluções Logísticas."
+    try:
+        protocol_path = "backend/intelligence_config/business_protocol.md"
+        if os.path.exists(protocol_path):
+            with open(protocol_path, "r", encoding="utf-8") as f:
+                biz_data_str = f.read()
+    except Exception as e:
+        log.warning(f"Erro ao carregar business_protocol: {e}")
+
     # ── Inteligência de Seleção de Canal
     # Se o usuário não pediu um canal específico (veio o default 'whatsapp'), 
     # analisamos o histórico para ver qual canal é o mais rico/recente.

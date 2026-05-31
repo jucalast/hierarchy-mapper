@@ -34,6 +34,7 @@ from .intelligence import (
     exec_open_hierarchy_drawer,
     exec_suggest_next_actions,
     exec_evaluate_prospects,
+    exec_deep_company_investigation,
 )
 
 log = get_logger(__name__)
@@ -341,6 +342,15 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "executor": exec_suggest_next_actions,
     },
 
+    "deep_company_investigation": {
+        "description": "Realiza uma investigação profunda sobre a empresa criando um Dossiê Pré-Abordagem. Busca no banco, dados de CNPJ (Receita Federal) e Web. Retorna um dossiê consolidado em 'data'.",
+        "args_schema": {
+            "org_name": "string (nome da empresa)",
+            "cnpj": "string opcional (CNPJ da empresa, se disponível)",
+        },
+        "type": "read",
+        "executor": exec_deep_company_investigation,
+    },
     # ── Web ────────────────────────────────────────────────────────────────────
     "web_search_external": {
         "description": "Pesquisa informações EXTERNAS na internet (notícias, mercado, concorrentes). PROIBIDO usar durante investigação de uma empresa específica. PROIBIDO usar para buscar dados de negócios, deals, contatos ou histórico de comunicação — use as ferramentas Pipedrive/WhatsApp/Email para isso.",
