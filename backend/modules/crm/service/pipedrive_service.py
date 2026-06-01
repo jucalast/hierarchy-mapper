@@ -413,6 +413,18 @@ class PipedriveService:
             log.warning("pipedrive.activity.delete_failed", error=str(e))
         return False
 
+    async def add_participant(self, deal_id: int, person_id: int) -> bool:
+        """Adiciona uma pessoa como participante de um negócio."""
+        resp = await self._request(
+            "POST", 
+            f"deals/{deal_id}/participants", 
+            json={"person_id": person_id}
+        )
+        if resp is not None and resp.status_code in (200, 201):
+            log.info("pipedrive.participant.added", deal_id=deal_id, person_id=person_id)
+            return True
+        return False
+
     async def delete_note(self, note_id: int) -> bool:
         resp = await self._request("DELETE", f"notes/{note_id}")
         if resp is None:

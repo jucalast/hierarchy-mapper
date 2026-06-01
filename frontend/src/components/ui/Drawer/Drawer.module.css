@@ -459,6 +459,9 @@
     margin-top: 12px;
     border-top: var(--sw-border-width) solid var(--sw-border);
     padding: 24px 24px 0 24px;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .detailsLoading {
@@ -838,7 +841,7 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
     overflow-x: hidden;
     height: 100%;
 }

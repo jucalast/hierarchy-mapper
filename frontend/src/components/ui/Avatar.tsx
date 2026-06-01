@@ -102,6 +102,8 @@ function AvatarBase({
 
   const fallback = genericPersonFallback;
 
+  const showPlaceholder = (!proxiedUrl && !retryUrl) || imgError;
+
   const baseStyle: React.CSSProperties = {
     width: pxSize,
     height: pxSize,
@@ -111,12 +113,12 @@ function AvatarBase({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    backgroundColor: kind === 'company' ? 'transparent' : 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: showPlaceholder
+      ? 'rgba(255, 255, 255, 0.05)'
+      : (kind === 'company' ? 'transparent' : 'rgba(255, 255, 255, 0.05)'),
     position: 'relative',
     ...style,
   };
-
-  const showPlaceholder = (!proxiedUrl && !retryUrl) || imgError;
 
   return (
     <span className={className} style={baseStyle} aria-label={alt || resolvedName}>
@@ -130,7 +132,7 @@ function AvatarBase({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'rgba(255, 255, 255, 0.15)',
+            color: 'rgba(255, 255, 255, 0.35)',
             pointerEvents: 'none',
           }}
         >
@@ -142,7 +144,7 @@ function AvatarBase({
         </span>
       )}
 
-      {(showPlaceholder && !noInitialFallback) ? (
+      {(showPlaceholder && !noInitialFallback && kind !== 'company') ? (
         <img
           src={fallback}
           alt={alt || resolvedName}

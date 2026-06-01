@@ -93,11 +93,8 @@ export const Header: React.FC<HeaderProps> = ({
                 ) : (
                     /* ── Modo normal ── */
                     <div className={styles.breadcrumbs}>
-                        <div className={styles.headerIconWrapper}>
-                            <Database size={14} className={styles.headerIcon} />
-                        </div>
-                        <span className={styles.breadcrumbItem}>Pipedrive Workspace</span>
-                        <span className={styles.breadcrumbDivider}>/</span>
+                        <span className={styles.breadcrumbItem}>Mapeamento de decisores</span>
+                        <span className={styles.breadcrumbDivider}>\</span>
                         <span className={styles.breadcrumbActive}>{confirmedBrand || 'OSINT Flow'}</span>
                         <span className={styles.statusBadge}>DRAFT</span>
                     </div>

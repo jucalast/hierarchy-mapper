@@ -79,8 +79,11 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
 "
 
 # 5. Iniciar Frontend
-Write-Host "Iniciando Frontend (Porta 3000)..." -ForegroundColor Cyan
+Write-Host "Limpando cache e Iniciando Frontend (Porta 3000)..." -ForegroundColor Cyan
 $frontendPath = Join-Path $PSScriptRoot "frontend"
+# Garante que o cache do Next.js não cause conflitos com a nova estrutura de rotas dinâmicas
+if (Test-Path (Join-Path $frontendPath ".next")) { Remove-Item -Path (Join-Path $frontendPath ".next") -Recurse -Force -ErrorAction SilentlyContinue }
+
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Frontend'
     Set-Location '$frontendPath'
@@ -120,12 +123,14 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
 Write-Host ""
 Write-Host "Tudo pronto! (com auto-reload)" -ForegroundColor Green
 Write-Host ""
-Write-Host "URLs:" -ForegroundColor Yellow
-Write-Host "   Frontend:  http://localhost:3000" -ForegroundColor Cyan
-Write-Host "   Backend:   http://localhost:8000" -ForegroundColor Cyan
-Write-Host "   Swagger:   http://localhost:8000/docs" -ForegroundColor Cyan
-Write-Host "   WhatsApp:  http://localhost:8001" -ForegroundColor Cyan
-Write-Host "   Email:     http://localhost:8002" -ForegroundColor Cyan
+Write-Host "URLs da Plataforma:" -ForegroundColor Yellow
+Write-Host "   Dashboard:     http://localhost:3000" -ForegroundColor Cyan
+Write-Host "   Prospecção:    http://localhost:3000/prospecting" -ForegroundColor Cyan
+Write-Host "   Configurações: http://localhost:3000/settings" -ForegroundColor Cyan
+Write-Host "   API Backend:   http://localhost:8000" -ForegroundColor Yellow
+Write-Host "   Swagger Docs:  http://localhost:8000/docs" -ForegroundColor Yellow
+Write-Host "   WhatsApp:      http://localhost:8001" -ForegroundColor Yellow
+Write-Host "   Email Service: http://localhost:8002" -ForegroundColor Yellow
 
 # 8. Iniciar LinkedIn Scraper Terminal
 Write-Host "Iniciando Terminal Interativo do LinkedIn Scraper..." -ForegroundColor Cyan

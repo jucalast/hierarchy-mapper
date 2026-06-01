@@ -23,6 +23,7 @@ from .communication import (
     exec_whatsapp_send_message,
     exec_email_get_inbox,
     exec_email_get_contact_history,
+    exec_batch_communication_search,
 )
 from .intelligence import (
     exec_web_search,
@@ -92,6 +93,17 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         },
         "type": "read",
         "executor": exec_email_get_contact_history,
+    },
+    "batch_communication_search": {
+        "description": "REALIZA BUSCA EXAUSTIVA DE HISTÓRICO (WhatsApp + Email) para múltiplos contatos e para a própria empresa de uma vez. Use esta ferramenta OBRIGATORIAMENTE quando precisar investigar o histórico de vários contatos de uma organização, em vez de chamar as ferramentas individuais repetidamente. Isso economiza tempo e sessões.",
+        "args_schema": {
+            "org_name": "string (nome da empresa investigada)",
+            "contacts": "array de objetos (lista de contatos com 'name', 'phone' opcional e 'email' opcional)",
+            "limit_wa": "int opcional (limite de msgs WA por contato, padrão 40)",
+            "limit_email": "int opcional (limite de emails por contato, padrão 15)"
+        },
+        "type": "read",
+        "executor": exec_batch_communication_search,
     },
     "email_send": {
         "description": (
@@ -724,15 +736,20 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
                     deals = details.get("deals", []) if isinstance(details, dict) else []
                     open_deal = next((d for d in deals if d.get("status") == "open"), deals[0] if deals else None)
                     if open_deal:
-                        deal_id = open_deal.get("id")
+                        deal_id = int(open_deal.get("id"))
                         await pipedrive_service.make_request(
                             "POST", "notes",
                             json={"content": f"👤 Novo contato adicionado via Assistente V2: {name} ({email or 'sem email'})", "deal_id": deal_id}
                         )
                         if person_id:
-                            await pipedrive_service.update_deal(deal_id, {"person_id": person_id})
-                except Exception:
-                    pass
+                            # 1. Tenta vincular como contato principal se estiver vazio
+                            if not open_deal.get("person_id"):
+                                await pipedrive_service.update_deal(deal_id, {"person_id": person_id})
+                            
+                            # 2. Adiciona OBRIGATORIAMENTE como participante (resolve múltiplos contatos no mesmo deal)
+                            await pipedrive_service.add_participant(deal_id, person_id)
+                except Exception as e:
+                    log.warning("pipedrive_create_person.link_failed", error=str(e))
             return {"ok": ok, "result": f"Contato '{name}' adicionado com sucesso" if ok else f"Erro ao adicionar contato: {result.get('error', 'desconhecido')}"}
         except Exception as e:
             return {"ok": False, "error": str(e)}

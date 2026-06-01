@@ -697,3 +697,87 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
             if contact_name:
                 return await exec_email_get_inbox({"from_name": contact_name, "limit": limit})
             return {"ok": False, "error": f"Erro ao acessar e-mail (tentativa {attempt}/{max_retries}): {e}"}
+
+
+async def exec_batch_communication_search(args: Dict[str, Any], org_id: int | None = None) -> Dict[str, Any]:
+    """
+    Realiza buscas em lote (WhatsApp + Email) para uma lista de contatos e para a própria empresa.
+    Otimiza a investigação reduzindo múltiplos turnos em um só.
+    """
+    contacts = args.get("contacts", [])
+    org_name = args.get("org_name", "")
+    limit_wa = int(args.get("limit_wa", 40))
+    limit_email = int(args.get("limit_email", 15))
+    
+    if not org_name and not contacts:
+        return {"ok": False, "error": "Forneça org_name ou uma lista de contacts."}
+
+    tasks = []
+
+    # 1. Busca para cada contato (limitado a 5 contatos para não sobrecarregar o bridge)
+    for p in contacts[:5]:
+        p_name = p.get("name")
+        p_phone = p.get("phone")
+        p_email = p.get("email")
+        
+        if p_name:
+            # WhatsApp task (apenas se tiver telefone ou se for busca por nome)
+            tasks.append(exec_whatsapp_get_messages({
+                "contact": p_name,
+                "phone": p_phone,
+                "org_name": org_name,
+                "limit": limit_wa
+            }, org_id=org_id))
+            
+            # Email task
+            tasks.append(exec_email_get_contact_history({
+                "contact_name": p_name,
+                "contact_email": p_email,
+                "org_name": org_name,
+                "limit": limit_email
+            }, org_id=org_id))
+
+    # 2. Busca para a organização (nome puro)
+    if org_name:
+        tasks.append(exec_whatsapp_get_messages({
+            "contact": org_name,
+            "org_name": org_name,
+            "limit": limit_wa
+        }, org_id=org_id))
+        
+        tasks.append(exec_email_get_contact_history({
+            "org_name": org_name,
+            "limit": limit_email
+        }, org_id=org_id))
+
+    # Executa tudo em paralelo
+    all_res = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Processa resultados bem-sucedidos
+    successful_results = []
+    summaries = []
+    
+    for r in all_res:
+        if isinstance(r, Exception):
+            log.warning(f"batch_search.task_failed: {r}")
+            continue
+        if r and r.get("ok"):
+            # Apenas inclui no relatório final se houver histórico real (count > 0)
+            if r.get("count", 0) > 0:
+                successful_results.append(r)
+                summaries.append(r.get("summary", ""))
+            
+    if not successful_results:
+        return {
+            "ok": True,
+            "results": [],
+            "count": 0,
+            "summary": f"Nenhum histórico de comunicação encontrado no WhatsApp ou Email para {org_name} e seus contatos."
+        }
+        
+    return {
+        "ok": True,
+        "results": successful_results,
+        "count": len(successful_results),
+        "summary": "✅ Busca em lote concluída. Históricos encontrados:\n- " + "\n- ".join(summaries)
+    }

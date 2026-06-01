@@ -1,7 +1,7 @@
 .container {
     display: flex;
-    height: calc(100vh - 24px);
-    width: 100vw;
+    height: 100%;
+    width: 100%;
     background-color: var(--sw-bg);
     color: var(--sw-text-base);
     font-family: var(--font-primary);

@@ -342,11 +342,17 @@ async def _agent_loop(
                 _missing_core = _CORE - _done
                 if _missing_core:
                     _force = True
-                    # Restringe ao próximo tool core em ordem — impede Gemini de pular para
-                    # whatsapp/email antes de terminar o Bloco 1 (Pipedrive).
+                    # Restringe ao próximo tool core em ordem
                     _next_core = next((t for t in _CORE_ORDER if t not in _done), None)
                     if _next_core:
                         _allowed_core = [_next_core]
+                else:
+                    # Fase 1 concluída. Se ainda não buscou histórico, permite usar o BATCH SEARCH
+                    _comm_tools = {"whatsapp_get_messages", "email_get_contact_history", "batch_communication_search"}
+                    _comm_done = _get_tools_called(messages, target_tools=_comm_tools)
+                    if not _comm_done:
+                        _force = True
+                        _allowed_core = ["batch_communication_search"]
 
             # Detector de loop: se whatsapp_get_messages ou email_get_contact_history
             # foram chamados 3+ vezes, injeta instrução para o modelo avançar para ação.
@@ -1180,6 +1186,27 @@ async def _agent_loop(
                     "is_error": False,
                 })
                 continue
+
+            # 🚀 INTERCEPTOR: Trava de Execução de Tarefa de Valor
+            # Impede fechar tarefas complexas (Otimização, Proposta, Follow-up) sem investigação prévia.
+            if tool_name == "pipedrive_update_task" and iteration == 0:
+                _subject = str(_first_msg_content).lower()
+                _is_value_task = any(kw in _subject for kw in ["otimização", "proposta", "follow-up", "apresentação", "enviar", "ligar"])
+                if _is_value_task:
+                    log.info("agent.interceptor.value_task_close_blocked", tool=tool_name)
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": tool_id,
+                        "tool_name": tool_name,
+                        "content": (
+                            "BLOQUEIO TÉCNICO DE SEGURANÇA: Você está tentando fechar uma Tarefa de Valor no primeiro turno. "
+                            "Isso é PROIBIDO. Você deve primeiro investigar o histórico da empresa e dos contatos (Blocos 1 e 2). "
+                            "Realize o trabalho comercial (rascunho de mensagem/proposta) antes de sugerir o fechamento. "
+                            "CHAME AGORA as ferramentas de investigação (pipedrive_get_org, pipedrive_get_persons, etc.)."
+                        ),
+                        "is_error": False,
+                    })
+                    continue
 
             if tool_name not in TOOLS:
                 tool_results.append({

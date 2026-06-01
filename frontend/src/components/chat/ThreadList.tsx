@@ -120,8 +120,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
                             src={selectedOrgLogo}
                             name={orgName}
                             size={32}
-                            noInitialFallback={true}
-                            style={{ border: selectedOrgLogo ? '1.5px solid var(--sw-border-strong)' : 'none' }}
+                            style={{ border: selectedOrgLogo ? '3px solid var(--sw-border-strong)' : 'none' }}
                         />
                         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0 }}>
                             <span style={{ color: 'var(--sw-text-muted)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>

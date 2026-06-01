@@ -75,12 +75,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [selectedCompanies, setSelectedCompanies] = useState<CompanyResult[]>([]);
     const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>>({});
     const [model, setModel] = useState<AIModel>(() => {
-        const saved = localStorage.getItem('ai_preferred_model');
-        return (saved as AIModel) || 'claude';
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('ai_preferred_model');
+            return (saved as AIModel) || 'claude';
+        }
+        return 'claude';
     });
     const [strictMode, setStrictMode] = useState<boolean>(() => {
-        const saved = localStorage.getItem('ai_strict_mode');
-        return saved === 'true';
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('ai_strict_mode');
+            return saved === 'true';
+        }
+        return false;
     });
     // Modelo ativo em tempo real durante fallback (só visível quando não está em strict mode)
     const [liveModel, setLiveModel] = useState<AIModel | null>(null);
@@ -240,6 +246,30 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     try {
                         const ev: AgentEvent = JSON.parse(line);
                         collected.push(ev);
+
+                        // Side effects based on tool results
+                        if (ev.type === 'tool_result' && ev.ok) {
+                            const tool = ev.tool || '';
+                            const isWriteTool = tool.includes('create') || tool.includes('update') || tool.includes('send') || tool.includes('reply');
+                            
+                            if ((tool.startsWith('pipedrive_') || tool.includes('send') || tool.includes('reply')) && isWriteTool) {
+                                window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                                if (tool === 'pipedrive_update_task') {
+                                    // Tenta extrair se foi concluída
+                                    try {
+                                        const summary = ev.summary || '';
+                                        if (summary.toLowerCase().includes('concluída') || summary.toLowerCase().includes('done')) {
+                                            window.dispatchEvent(new CustomEvent('crm_task_completed'));
+                                        } else {
+                                            window.dispatchEvent(new CustomEvent('crm_task_uncompleted'));
+                                        }
+                                    } catch {}
+                                }
+                                // Atualiza lista de atividades local
+                                refreshActivities();
+                            }
+                        }
+
                         setActiveRunningTask(prev => {
                             if (!prev) return null;
                             return {
@@ -337,6 +367,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 ...prev,
                 [taskKey]: finalStatus
             }));
+
+            // Persiste para o backend para garantir que o estado se mantenha ao sair/voltar
+            if (parentMessageId) {
+                conversations.updateSuggestedActionStatus(parentMessageId, index, finalStatus).catch(err => {
+                    console.error('Failed to persist task status', err);
+                });
+            }
             
             if (finalStatus === 'done') {
                 setTimeout(() => {
@@ -387,6 +424,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (activeRunningTask.parentMessageId) {
                 const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
                 setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
+
+                // Persiste para o backend para garantir persistência ao sair/voltar
+                conversations.updateSuggestedActionStatus(activeRunningTask.parentMessageId, activeRunningTask.actionIndex, finalStatus).catch(err => {
+                    console.error('Failed to persist task status', err);
+                });
             }
             if (finalStatus === 'done') {
                 const currentIdx = activeRunningTask.actionIndex;
@@ -462,6 +504,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (activeRunningTask.parentMessageId) {
                 const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
                 setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
+
+                // Persiste para o backend para garantir persistência ao sair/voltar
+                conversations.updateSuggestedActionStatus(activeRunningTask.parentMessageId, activeRunningTask.actionIndex, finalStatus).catch(err => {
+                    console.error('Failed to persist task status', err);
+                });
             }
             if (finalStatus === 'done') {
                 const currentIdx = activeRunningTask.actionIndex;
@@ -997,6 +1044,27 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         const event = JSON.parse(line);
                         collectedEvents.push(event);
 
+                        // Side effects based on tool results
+                        if (event.type === 'tool_result' && event.ok) {
+                            const tool = event.tool || '';
+                            const isWriteTool = tool.includes('create') || tool.includes('update') || tool.includes('send') || tool.includes('reply');
+
+                            if ((tool.startsWith('pipedrive_') || tool.includes('send') || tool.includes('reply')) && isWriteTool) {
+                                window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                                if (tool === 'pipedrive_update_task') {
+                                    try {
+                                        const summary = event.summary || '';
+                                        if (summary.toLowerCase().includes('concluída') || summary.toLowerCase().includes('done')) {
+                                            window.dispatchEvent(new CustomEvent('crm_task_completed'));
+                                        } else {
+                                            window.dispatchEvent(new CustomEvent('crm_task_uncompleted'));
+                                        }
+                                    } catch {}
+                                }
+                                refreshActivities();
+                            }
+                        }
+
                         // Modelo ativo — atualiza o selector e a barra de atividade
                         if (event.type === 'model_active') {
                             if (!strictMode) setLiveModel(event.provider as AIModel);
@@ -1362,6 +1430,28 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     try {
                         const event = JSON.parse(line);
                         collectedEvents.push(event);
+
+                        // Side effects based on tool results
+                        if (event.type === 'tool_result' && event.ok) {
+                            const tool = event.tool || '';
+                            const isWriteTool = tool.includes('create') || tool.includes('update') || tool.includes('send') || tool.includes('reply');
+
+                            if ((tool.startsWith('pipedrive_') || tool.includes('send') || tool.includes('reply')) && isWriteTool) {
+                                window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                                if (tool === 'pipedrive_update_task') {
+                                    try {
+                                        const summary = event.summary || '';
+                                        if (summary.toLowerCase().includes('concluída') || summary.toLowerCase().includes('done')) {
+                                            window.dispatchEvent(new CustomEvent('crm_task_completed'));
+                                        } else {
+                                            window.dispatchEvent(new CustomEvent('crm_task_uncompleted'));
+                                        }
+                                    } catch {}
+                                }
+                                refreshActivities();
+                            }
+                        }
+
                         setMessages(prev => prev.map(m =>
                             m.id === msgId ? { ...m, agentEvents: [...collectedEvents] } : m
                         ));
@@ -1638,8 +1728,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     src={selectedOrgLogo}
                     name={selectedOrgName}
                     size={32}
-                    noInitialFallback={true}
-                    style={{ border: selectedOrgLogo ? '1.5px solid var(--sw-border-strong)' : 'none' }}
+                    style={{ border: selectedOrgLogo ? '3px solid var(--sw-border-strong)' : 'none' }}
                 />
                 <div className={styles.chatSubHeaderInfo} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0 }}>
                     <span style={{ color: 'var(--sw-text-muted)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>

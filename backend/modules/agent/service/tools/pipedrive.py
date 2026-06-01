@@ -270,7 +270,12 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
                             continue
 
                         # Tenta encontrar contato já existente (vindo do Pipedrive) para enriquecer
-                        existing = next((p for p in result if (p.get("name") or "").lower() == emp.name.lower()), None)
+                        # Usa comparação robusta (sem acentos, lowercase, sem espaços extras)
+                        def normalize(s):
+                            return _remove_diacritics(str(s or "").lower().strip())
+                            
+                        emp_name_norm = normalize(emp.name)
+                        existing = next((p for p in result if normalize(p.get("name")) == emp_name_norm), None)
                         
                         phone = emp.whatsapp_number or emp.phone
                         channels = [c for c, v in [("WhatsApp", phone), ("Email", emp.email)] if v]
@@ -366,11 +371,11 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
             except Exception as wa_err:
                 pass
 
-        # Analisa se existem decisores ICP (Compras/Logística) nos contatos locais
+        # Analisa se existem decisores ICP (Compras/Logística) mapeados que NÃO estão no Pipedrive
         local_icp_contacts = []
         for p in result:
-            source = p.get("source", "")
-            if "Banco Local" in source:
+            # Apenas destaca como "Decisor Local" se ele NÃO tiver ID do Pipedrive
+            if p.get("id") is None:
                 role_lower = str(p.get("role", "")).lower()
                 dept_lower = str(p.get("department", "")).lower() if p.get("department") else ""
                 is_icp = any(x in role_lower or x in dept_lower for x in ["compras", "logist", "suprimento", "adquir", "comprador"])

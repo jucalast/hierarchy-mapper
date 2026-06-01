@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useReactFlow, ReactFlowProvider, Edge } from 'reactflow';
 import { HierarchyEmployee } from '@/types';
 import { PanelRight, PanelRightOpen, LogOut } from 'lucide-react';
@@ -139,8 +140,39 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
 
     // UI States
     const [showDrawer, setShowDrawer] = useState(false);
-    const [showChat, setShowChat] = useState(false);
-    const [activeView, setActiveView] = useLocalStorage<'graph' | 'prospecting' | 'preferences' | 'messages' | 'linkedin-scrape'>('active-view', 'graph');
+    
+    // O Chat agora é gerenciado pelo Layout global para ser persistente.
+    // Usamos um evento customizado para abrir o chat a partir de ações no Grafo.
+    const handleSetShowChat = (val: boolean) => {
+        window.dispatchEvent(new CustomEvent('toggle_chat', { detail: { open: val } }));
+    };
+    
+    const pathname = usePathname() || '/';
+    const router = useRouter();
+
+    const activeView = useMemo(() => {
+        if (pathname.startsWith('/prospecting')) return 'prospecting';
+        if (pathname.startsWith('/settings')) return 'preferences';
+        if (pathname.startsWith('/messages')) return 'messages';
+        if (pathname.startsWith('/linkedin-scrape')) return 'linkedin-scrape';
+        return 'graph';
+    }, [pathname]);
+
+    const setActiveView = useCallback((view: 'graph' | 'prospecting' | 'preferences' | 'messages' | 'linkedin-scrape') => {
+        if (view === 'graph') {
+           if (currentOrgId) router.push(`/org/${currentOrgId}`);
+           else router.push('/');
+        } else if (view === 'prospecting') {
+           router.push('/prospecting');
+        } else if (view === 'preferences') {
+           router.push('/settings');
+        } else if (view === 'messages') {
+           router.push('/messages');
+        } else if (view === 'linkedin-scrape') {
+           router.push('/linkedin-scrape');
+        }
+    }, [router, currentOrgId]);
+
     const [unreadCount, setUnreadCount] = useState(0);
     const prospecting = useProspecting();
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
@@ -319,9 +351,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     // Sync UI states to localStorage
     useEffect(() => {
         const savedDrawer = localStorage.getItem("show-drawer") === "true";
-        const savedChat = localStorage.getItem("show-chat") === "true";
         setShowDrawer(savedDrawer);
-        setShowChat(savedChat);
 
         const openDrawerHandler = () => {
             setShowDrawer(true);
@@ -334,11 +364,6 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     const handleSetShowDrawer = (val: boolean) => {
         setShowDrawer(val);
         localStorage.setItem("show-drawer", val.toString());
-    };
-
-    const handleSetShowChat = (val: boolean) => {
-        setShowChat(val);
-        localStorage.setItem("show-chat", val.toString());
     };
 
     // Persistence & Theme
@@ -466,7 +491,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
 
     // Handlers
     const handleOrgClick = useCallback(async (org: any, openChat = false) => {
-        setActiveView('graph');
+        router.push(`/org/${org.id}`);
         if (openChat) handleSetShowChat(true);
         resetHierarchy();
         setNodes([]);
@@ -573,7 +598,12 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         setEdges([]);
         resetWorkflow();
         resetHierarchy();
-    }, [setPipedriveOrgs, setNodes, setEdges, resetWorkflow, resetHierarchy]);
+        if (currentOrgId === orgId) {
+            setCurrentOrgId(null);
+            localStorage.removeItem('last-viewed-org');
+            router.push('/');
+        }
+    }, [setPipedriveOrgs, setNodes, setEdges, resetWorkflow, resetHierarchy, currentOrgId, router]);
 
     const handleNewCompany = useCallback(() => {
         // Abre o drawer e garante que ele volte para a lista (limpando cache de expansão)
@@ -583,12 +613,14 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         // Notifica o Drawer para resetar o estado interno de expansão
         window.dispatchEvent(new CustomEvent('drawer_reset_expansion'));
         
-        setActiveView('graph');
+        setCurrentOrgId(null);
+        localStorage.removeItem('last-viewed-org');
+        router.push('/');
         setNodes([]);
         setEdges([]);
         resetWorkflow();
         resetHierarchy();
-    }, [setActiveView, setNodes, setEdges, resetWorkflow, resetHierarchy]);
+    }, [router, setNodes, setEdges, resetWorkflow, resetHierarchy]);
 
     return (
         <div className={styles.container} data-theme={theme}>
@@ -636,100 +668,6 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
             />
 
             <div className={styles.mainWrapper}>
-                <header className={styles.globalHeader}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span className={styles.globalHeaderTitle}>LINKB2B Hierarchy Mapper</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
-                        <TriggerNotifications
-                            apiBase={API_BASE_URL}
-                            onOpenChat={(orgId, orgName) => {
-                                handleOrgClick({ id: orgId, name: orgName }, true);
-                            }}
-                        />
-                        {(activeView === 'graph' || activeView === 'prospecting') && (
-                            <button
-                                onClick={() => handleSetShowChat(!showChat)}
-                                className={`${styles.navIcon}`}
-                                style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    padding: '8px',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    color: showChat ? 'var(--sw-text-base)' : 'var(--sw-text-muted)'
-                                }}
-                                title={showChat ? "Fechar Assistente" : "Abrir Assistente"}
-                            >
-                                {showChat ? <PanelRightOpen size={20} /> : <PanelRight size={20} />}
-                            </button>
-                        )}
-                        {currentUser && (
-                            <div 
-                                className={styles.userProfile} 
-                                title={`Conectado como ${currentUser.name}`} 
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '8px', 
-                                    marginRight: '8px', 
-                                    borderRight: '1px solid var(--sw-border)', 
-                                    paddingRight: '16px', 
-                                    height: '24px' 
-                                }}
-                            >
-                                <Avatar
-                                    kind="person"
-                                    src={currentUser.avatar}
-                                    name={currentUser.name}
-                                    size={24}
-                                />
-                                <span 
-                                    style={{ 
-                                        fontSize: '12px', 
-                                        fontWeight: 500, 
-                                        color: 'var(--sw-text-base)', 
-                                        opacity: 0.85 
-                                    }}
-                                >
-                                    {currentUser.name}
-                                </span>
-                            </div>
-                        )}
-
-                        {onLogout && (
-                            <button
-                                onClick={onLogout}
-                                className={`${styles.navIcon}`}
-                                style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    padding: '8px',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    color: 'var(--sw-text-muted)',
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = '#f87171';
-                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = 'var(--sw-text-muted)';
-                                    e.currentTarget.style.background = 'transparent';
-                                }}
-                                title="Sair da Conta"
-                            >
-                                <LogOut size={20} />
-                            </button>
-                        )}
-                    </div>
-                </header>
-
                 <div className={styles.contentWrapper}>
                     {activeView !== 'preferences' && activeView !== 'messages' && (
                         <Drawer
@@ -824,7 +762,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                         cancelDiscovery={cancelDiscovery}
                                         activeJobId={activeJobId}
                                         showDrawer={showDrawer}
-                                        showChat={showChat}
+                                        showChat={false}
                                         approveCandidate={async (id) => {
                                             await approveCandidate(id);
                                             addNotification('success', "Perfil aprovado.");
@@ -948,7 +886,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                             brandOptions={[]}
                                             onBrandSelect={() => {}}
                                             isSidebarOpen={showDrawer}
-                                            isChatOpen={showChat}
+                                            isChatOpen={false}
                                             
                                             // Modo Prospecção
                                             isProspectingMode={true}
@@ -1028,23 +966,6 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                             </div>
                         )}
                     </div>
-
-                    {showChat && (activeView === 'graph' || activeView === 'prospecting' || activeView === 'messages') && (
-                        <ChatPanel
-                            showChat={showChat}
-                            setShowChat={handleSetShowChat}
-                            selectedOrgId={currentOrgId}
-                            selectedOrgName={confirmedBrand || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.name || "Empresa"}
-                            theme={theme}
-                            onToggleTheme={() => {
-                                const newTheme = theme === "dark" ? "light" : "dark";
-                                setTheme(newTheme);
-                                localStorage.setItem("preferred-theme", newTheme);
-                                document.documentElement.setAttribute("data-theme", newTheme);
-                            }}
-                            selectedOrgLogo={confirmedLogo || pipedriveOrgs.find(o => Number(o.id) === currentOrgId)?.logo || ""}
-                        />
-                    )}
                 </div>
             </div>
 

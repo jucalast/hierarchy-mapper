@@ -52,7 +52,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                 setFormPhone(emp.phone || '');
                 setFormLinkedin(emp.linkedin || emp.linkedin_url || '');
                 setFormLocation(emp.location || '');
-                setFormObservations(emp.observations || emp.description || '');
+                setFormObservations(typeof emp.observations === 'string' ? emp.observations : (typeof emp.description === 'string' ? emp.description : ''));
                 setFormEducation(emp.education || '');
             }
         }
@@ -79,7 +79,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                 setFormDepartment(e.department || formDepartment);
                 setFormLevel(e.seniority || e.level || formLevel);
                 setFormLocation(e.location || formLocation);
-                setFormObservations(e.observations || formObservations);
+                setFormObservations(typeof e.observations === 'string' ? e.observations : formObservations);
                 setFormEducation(e.education || formEducation);
                 // Opcional: Limpar o texto após sucesso
                 setLinkedinText('');
