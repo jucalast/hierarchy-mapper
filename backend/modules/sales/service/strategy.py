@@ -29,6 +29,9 @@ class SalesStrategyService:
         log.info("sales_strategy_service.analyze_and_suggest_actions", org_id=org_id)
 
         # ── 1. Extrai contexto estruturado do histórico de mensagens ──────────
+        from modules.agent.service.helpers import _get_tools_called
+        executed_tools = _get_tools_called(messages)
+        
         history_serialized = []
         crm_snapshot = {
             "org_name": None, "deal_id": None, "deal_stage": None, "deal_value": None,
@@ -36,10 +39,18 @@ class SalesStrategyService:
             "last_email": None, "items_quoted": [], "competitors": [],
             "prospect_evaluation": None,
         }
+        active_skill_rules = ""
 
         for msg in messages:
             role = msg.get("role", "")
             content = msg.get("content", "")
+            
+            # Extrai regras injetadas pelo sub-agente (skill) no histórico
+            if isinstance(content, str) and "REGRAS OBRIGATÓRIAS" in content:
+                import re
+                m = re.search(r"(REGRAS OBRIGATÓRIAS.*?)(?=\n\n|$)", content, re.DOTALL)
+                if m:
+                    active_skill_rules = m.group(1)
             if isinstance(content, list):
                 text_parts = []
                 for item in content:
@@ -56,13 +67,19 @@ class SalesStrategyService:
 
                         # Extrai snapshots do CRM dos resultados das ferramentas
                         try:
-                            tc_data = json.loads(item.get("content", "{}") or "{}")
+                            # Tenta parsear JSON robustamente
+                            tc_data = {}
+                            if isinstance(item.get("content"), dict):
+                                tc_data = item["content"]
+                            else:
+                                tc_data = json.loads(item.get("content", "{}") or "{}")
+                                
                             if tool_name == "pipedrive_get_org" and tc_data.get("org"):
                                 crm_snapshot["org_name"] = tc_data["org"].get("name")
                             elif tool_name == "pipedrive_get_activities":
-                                acts = tc_data.get("activities", []) or []
+                                acts = tc_data.get("activities", []) or tc_data.get("pending", []) or []
                                 crm_snapshot["pending_activities"] = [
-                                    {"id": a.get("id"), "subject": a.get("subject"), "due": a.get("due_date")}
+                                    {"id": a.get("id"), "subject": a.get("subject"), "due": a.get("due_date"), "person": a.get("person_name")}
                                     for a in acts if not a.get("done")
                                 ]
                             elif tool_name == "pipedrive_get_deals":
@@ -75,7 +92,7 @@ class SalesStrategyService:
                             elif tool_name == "pipedrive_get_persons":
                                 persons = tc_data.get("persons", []) or []
                                 crm_snapshot["contacts"] = [
-                                    {"name": p.get("name"), "phone": p.get("phone"), "email": p.get("email")}
+                                    {"name": p.get("name"), "phone": p.get("phone"), "email": p.get("email"), "id": p.get("id")}
                                     for p in persons if p.get("phone") or p.get("email")
                                 ]
                             elif tool_name == "whatsapp_get_messages":
@@ -117,6 +134,9 @@ class SalesStrategyService:
             last_email_subject = crm_snapshot["last_email"].get("subject", "")
 
         today = datetime.now().strftime("%A, %d/%m/%Y")
+        
+        # Lista de ferramentas que acabaram de ser executadas para injetar no prompt
+        executed_tools_str = ", ".join(executed_tools) if executed_tools else "nenhuma ferramenta de escrita executada neste turno"
 
         email_thread_rule = (
             f"REGRA CRÍTICA DE EMAIL: Há uma thread ativa com este contato (último email: \"{last_email_subject}\", "
@@ -136,15 +156,28 @@ class SalesStrategyService:
                 f"INSTRUÇÃO: Priorize ações para os prospectos Tier A identificados nesta avaliação.\n"
             )
 
-        system_prompt = f"""Você é o Diretor Comercial B2B e Coach de Vendas Sênior da J.Ferres.
+        system_prompt = f"""Você é o Diretor Comercial B2B e Coach de Vendas Sênior do Tenant.
 Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e PERSONALIZADO de próximos passos.
 
-## CONTEXTO DA J.FERRES:
+## CONTEXTO DA EMPRESA:
+- Empresa: {crm_snapshot['org_name'] or 'Não identificada'}
+- ID do Negócio: {crm_snapshot['deal_id'] or 'Não encontrado'}
+- Etapa Atual: {crm_snapshot['deal_stage'] or 'N/A'}
+
+## FERRAMENTAS JÁ EXECUTADAS NESTA SESSÃO (PROIBIDO REPETIR):
+{executed_tools_str}
+
+## REGRA DE OURO DA REDUNDÂNCIA (ZERO TOLERANCE):
+1. Se uma ferramenta de escrita (whatsapp_send_message, email_send, pipedrive_create_person, pipedrive_update_task) já consta na lista acima, é PROIBIDO sugeri-la novamente para o mesmo alvo.
+2. Se o histórico mostra que o contato já foi vinculado ao deal ou cadastrado, NÃO sugira `pipedrive_create_person` ou vinculação.
+3. Se a tarefa foi marcada como concluída no histórico recente, NÃO sugira 'Marcar como concluída'.
+
+## CONTEXTO DO NEGÓCIO (TENANT):
 {biz_data_str}
 
 ## FERRAMENTAS DISPONÍVEIS PARA O AGENTE (use nos prompts das ações):
 - whatsapp_send_message: envia WhatsApp (contact, phone, message, org_name)
-- email_send: envia email NOVO sem thread existente (to, subject, body)
+- email_send: envia email NOVO sem thread existente (to, subject, body, attachment_name)
 - email_reply: responde na thread existente do Outlook (entry_id, body) — USE ESTE quando há thread ativa
 - pipedrive_create_task: cria tarefa no CRM (subject, task_type=[call|meeting|task|deadline], due_date, deal_id, org_name, note)
 - pipedrive_update_deal: atualiza deal (deal_id, fields)
@@ -162,28 +195,31 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 - Contato principal: {contact_name or 'ver histórico'} {('| Tel: ' + phone) if phone else ''}
 - Hoje: {today}
 {prospects_section}
-## CHECKLIST B2B DE PROSPECÇÃO:
-1. Se a pessoa selecionada já possui um ID numérico (ex: ID 123), ELA JÁ ESTÁ NO PIPEDRIVE. É TERMINANTEMENTE PROIBIDO sugerir 'Criar Contato' para ela.
-2. Se a pessoa possui ID numérico mas o negócio não tem contatos associados (ou o contato selecionado não está associado), você DEVE sugerir a ação 'Atualizar negócio' (pipedrive_update_deal) para vinculá-la.
-3. Se a pessoa selecionada tem apenas `[ID:LocalDB]` (sem ID numérico), ela está só no banco local. Nesse caso, a sugestão correta é 'Criar contato' (pipedrive_create_person) para salvá-la no Pipedrive.
-4. Se a ação anterior foi enviar um e-mail de prospecção, é OBRIGATÓRIO sugerir 'Criar Tarefa' para follow-up.
-5. Não sugira 'Pesquisar contato secundário' se já identificamos e abordamos o decisor principal (Tier A).
+## CICLO B2B END-TO-END BASEADO NO CONTEXTO:
+1. INTRODUÇÃO: O primeiro contato DEVE ser um e-mail de apresentação focado no portfólio de soluções. Se houver uma apresentação PDF configurada ('presentation_path'), você DEVE anexá-la usando o parâmetro 'attachment_name'="apresentacao" na ferramenta email_send.
+2. FOLLOW-UP DE VALOR (SEM RESPOSTA): Se o cliente ignorou o contato inicial, NÃO envie mensagens genéricas de cobrança. Sugira enviar um Insight de Mercado baseado nos diferenciais da empresa e termine sugerindo uma reunião rápida.
+3. DIAGNÓSTICO (REUNIÃO): O objetivo de todo follow-up frio é marcar uma call de diagnóstico para mapear necessidades e dores.
+4. NEGOCIAÇÃO: Se a reunião já ocorreu ou amostras foram enviadas, o foco passa a ser defender o custo-benefício da solução frente à concorrência e fechar a proposta.
+
+## CHECKLIST B2B DE PROSPECÇÃO & HIGIENE CRM:
+1. PERSONA SEM REGISTRO: Se um contato foi identificado (especialmente Tier A) mas ele NÃO possui um ID numérico do Pipedrive (marcado como [ID:LocalDB] ou sem ID), a PRIMEIRA ação sugerida DEVE ser 'Criar contato' (pipedrive_create_person).
+2. NEGÓCIO ÓRFÃO: Se o negócio (Deal) no Pipedrive não possui nenhum contato principal associado (person_id nulo), e você identificou um decisor Tier A, sugira OBRIGATORIAMENTE 'Atualizar negócio' (pipedrive_update_deal) para vinculá-lo como o dono do negócio.
+3. REGRA DE OURO DA REDUNDÂNCIA: Antes de sugerir 'Criar contato' ou 'Vincular contato', verifique se o nome já consta na lista de 'Contatos com canal'. Se já tiver ID numérico, ele já está lá. NÃO sugira duplicatas.
+4. MÁXIMA EXAUSTIVIDADE: Não se limite a 5 ações. Se houver 3 decisores Tier A, sugira ações individuais para cada um. Se houver 10 negócios sem tarefas, sugira 10 tarefas. O limite agora é de 5 a 20 ações.
+5. Se a ação anterior foi enviar um e-mail ou WhatsApp, sugira SEMPRE a criação de uma tarefa de acompanhamento (follow-up) com data futura.
 
 ## REGRAS PARA AS SUGESTÕES:
-1. Gere de 5 a 15 ações — cubra TODAS as categorias relevantes (comunicação, CRM, agendamento, estratégia).
-   ATENÇÃO EXTREMA: Se o histórico tratar de uma LISTA MÚLTIPLA de negócios ou empresas (ex: varredura de negócios sem tarefas), VOCÊ DEVE GERAR UMA AÇÃO SEPARADA PARA CADA NEGÓCIO DA LISTA INDIVIDUALMENTE. NUNCA faça ações genéricas como "Criar tarefas para os demais". Liste TODOS os negócios. Avalie friamente o estado do negócio: se o item possuir "SEM CONTATO", a tarefa sugerida não deve ser um follow-up clássico, mas sim uma tarefa mandatória de "Encontrar Contato / Decisor".
-2. Se NÃO há atividades pendentes → OBRIGATÓRIO incluir sugestão de criar tarefa de acompanhamento no Pipedrive
-3. Se não há reunião agendada → sugira criar tarefa de ligação/reunião com plano de abordagem
-4. Baseie CADA sugestão no contexto real do histórico — cite itens, preços, datas, objeções reais
-5. Mensagens devem estar PRONTAS para envio (zero placeholders entre [colchetes])
-6. Priorize WhatsApp se é o canal mais ativo, email se há thread em aberto
-7. Varie os tipos: não coloque todas como WhatsApp — inclua email, tarefa CRM, atualização de deal quando fizer sentido
-8. Para criar tarefas no Pipedrive, o prompt DEVE usar: pipedrive_create_task com subject='...', task_type='call' ou 'meeting', due_date='YYYY-MM-DD', deal_id={crm_snapshot.get('deal_id') or 'ID do deal'}, org_name='...'
-9. RECONHECER O ESTÁGIO DO DEAL (PREVENIR REGRESSÃO): Analise o histórico recente buscando menções a orçamentos, propostas, preços, amostras, visitas, especificação de caixas, pesos ou volumes. Se estes já existirem, o lead NÃO é inicial. Você está TERMINANTEMENTE PROIBIDO de sugerir ações/tarefas frias (como "Pesquisar empresa", "Iniciar contato", "Ligar para qualificar", "Revisar diferenciais"). Sugira apenas ações avançadas (ex: "Cobrar retorno da proposta de valores", "Negociar preços enviados", "Cobrar retorno sobre o volume de caixas").
-10. PREVENIR DUPLICIDADE DE CONTATOS: Se o contato (ex: "Ilda") já possui histórico no WhatsApp, E-mail ou timeline de atividades passadas, ele já está cadastrado ou identificado. Você está PROIBIDO de sugerir a criação do contato (pipedrive_create_person) nesses casos.
-11. PROIBIDO sugerir "Ligar para X" ou "WhatsApp para X" se o contato não tiver telefone listado em "Contatos com canal".
-12. Se a tarefa principal já foi realizada (ex: Encontrar contato concluído), a primeira sugestão DEVE ser marcar a atividade original como concluída.
-13. Se um contato relevante foi identificado mas não está associado ao Deal, sugira "Atualizar negócio" (pipedrive_update_deal) definindo o person_id.
+1. Gere de 5 a 20 ações — cubra TODAS as categorias relevantes (comunicação, CRM, agendamento, estratégia).
+   ATENÇÃO EXTREMA: Se o histórico tratar de uma LISTA MÚLTIPLA de negócios ou empresas, VOCÊ DEVE GERAR UMA AÇÃO SEPARADA PARA CADA ITEM DA LISTA.
+2. GAP ANALYSIS: Analise o que falta no CRM (Contatos salvos? Contato vinculado ao Deal? Tarefa pendente?). Sugira preencher esses gaps ANTES ou JUNTO com as ações de comunicação.
+3. Se NÃO há atividades pendentes → OBRIGATÓRIO incluir sugestão de criar tarefa de acompanhamento.
+4. Baseie CADA sugestão no contexto real do histórico — cite itens, preços, datas, objeções reais.
+5. Mensagens devem estar PRONTAS para envio (zero placeholders entre [colchetes]).
+6. Priorize WhatsApp se é o canal mais ativo, email se há thread em aberto.
+7. Para criar tarefas no Pipedrive, o prompt DEVE usar: pipedrive_create_task com subject='...', task_type='call' ou 'meeting', due_date='YYYY-MM-DD', deal_id={crm_snapshot.get('deal_id') or 'ID do deal'}, org_name='...'.
+8. RECONHECER O ESTÁGIO DO DEAL (PREVENIR REGRESSÃO): Se já houve cotação ou visita, não sugira ações de "prospecção fria". Foque em fechamento e negociação.
+9. PREVENIR DUPLICIDADE: Se o contato já existe no CRM, PROIBIDO sugerir `pipedrive_create_person`.
+10. Se a tarefa principal já foi realizada (ex: Encontrar contato concluído), a primeira sugestão DEVE ser marcar a atividade original como concluída (se ainda não foi feito).
 
 ## REGRAS PARA O CAMPO "label":
 - NÃO inclua o nome do canal no label (ex: PROIBIDO "WhatsApp: Cobrar retorno", CORRETO: "Cobrar retorno da cotação de Outubro")
@@ -191,6 +227,8 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 - Para `tarefa_crm`: seja específico sobre O QUE a tarefa registra. PROIBIDO "Atualizar Deal [empresa]". CORRETO: "Avançar deal para etapa Proposta", "Registrar visita realizada em [data]", "Criar tarefa: ligar para [contato] até [data]"
 - Para `reuniao`: indique o propósito — "Agendar reunião de apresentação", "Reagendar visita técnica cancelada"
 - Máximo 55 caracteres. Sem nome de empresa no label (já aparece no contexto)
+
+{f"## {active_skill_rules}" if active_skill_rules else ""}
 
 ## FORMATO DE RESPOSTA (JSON estrito, sem markdown externo):
 {{

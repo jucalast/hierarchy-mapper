@@ -152,6 +152,16 @@ class CandidateProcessor:
             final_role = "Sócio / Administrador"
         
         confidence = ai_data.get("matching_score", 0)
+
+        # 🛡️ Proteção extra: headline nunca deve ser "Análise Humana"
+        raw_headline = enriched.get("role")
+        if not raw_headline or "não identificado" in raw_headline.lower() or "análise humana" in raw_headline.lower():
+            if final_role and "análise humana" not in final_role.lower():
+                final_headline = final_role
+            else:
+                final_headline = "Colaborador"
+        else:
+            final_headline = raw_headline
         
         node_data = {
             "id": f"node_{verified_linkedin.split('/in/')[-1].replace('/', '_')}" if verified_linkedin else f"node_orphan_{name.replace(' ', '_')}",
@@ -168,7 +178,7 @@ class CandidateProcessor:
             "location": enriched.get("location") or self.location or "Brasil",
             "observations": ai_data.get("evidence") or enriched.get("description"),
             "education": enriched.get("education"),
-            "headline": enriched.get("role") if (enriched.get("role") and "não identificado" not in enriched.get("role").lower()) else final_role,
+            "headline": final_headline,
             "matching_score": 100 if is_qsa else confidence,
             "evidence": ai_data.get("evidence")
         }
@@ -408,6 +418,16 @@ class CandidateProcessor:
                 return {"main": None, "orphans": potential_orphans}
 
         # 🎨 MONTAGEM DO NÓ PRINCIPAL
+        # 🛡️ Proteção extra: headline nunca deve ser "Análise Humana"
+        raw_headline = enriched.get("role")
+        if not raw_headline or "não identificado" in raw_headline.lower() or "análise humana" in raw_headline.lower():
+            if final_role and "análise humana" not in final_role.lower():
+                final_headline = final_role
+            else:
+                final_headline = "Colaborador"
+        else:
+            final_headline = raw_headline
+
         node_data = {
             "id": f"node_{href.split('/in/')[-1].replace('/', '_')}",
             "name": name,
@@ -423,7 +443,7 @@ class CandidateProcessor:
             "location": enriched.get("location") or self.location or "Brasil",
             "observations": enriched.get("description"), # A Bio vinda do OSINT
             "education": enriched.get("education"),
-            "headline": enriched.get("role") if (enriched.get("role") and "não identificado" not in enriched.get("role").lower()) else final_role,
+            "headline": final_headline,
             "matching_score": 100 if is_qsa else confidence,
             "evidence": ai_data.get("evidence")
         }

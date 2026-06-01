@@ -22,7 +22,10 @@ import {
     Trash2,
     Edit3,
     X,
-    Check
+    Check,
+    FileText,
+    Image as ImageIcon,
+    Upload
 } from 'lucide-react';
 import { ai } from '@/services/api';
 import { ModelSelector, AIModel } from '@/components/chat/ModelSelector';
@@ -150,6 +153,25 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
     const [sellerName, setSellerName] = useState('');
     const [sellerRole, setSellerRole] = useState('');
     const [companyDifferentials, setCompanyDifferentials] = useState<string[]>([]);
+    const [presentationPath, setPresentationPath] = useState<string | null>(null);
+    const [signaturePath, setSignaturePath] = useState<string | null>(null);
+    const [uploadingFile, setUploadingFile] = useState<'presentation' | 'signature' | null>(null);
+
+    const handleFileUpload = async (type: 'presentation' | 'signature', file: File) => {
+        setUploadingFile(type);
+        try {
+            const res = await ai.uploadProfileFile(type, file);
+            if (res.ok) {
+                if (type === 'presentation') setPresentationPath(res.path);
+                else setSignaturePath(res.path);
+                showToast('success', `${type === 'presentation' ? 'Apresentação' : 'Assinatura'} carregada com sucesso!`);
+            }
+        } catch (e) {
+            showToast('error', `Erro ao fazer upload da ${type === 'presentation' ? 'apresentação' : 'assinatura'}.`);
+        } finally {
+            setUploadingFile(null);
+        }
+    };
 
     // 📦 Catálogo de Produtos State
     const [productsList, setProductsList] = useState<any[]>([]);
@@ -225,6 +247,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                 setSellerName(ctx.seller_name || '');
                 setSellerRole(ctx.seller_role || '');
                 setCompanyDifferentials(ctx.company_differentials || []);
+                setPresentationPath(ctx.presentation_path || null);
+                setSignaturePath(ctx.signature_path || null);
 
                 // Produtos
                 const prods = ctx.products ? Object.values(ctx.products) : [];
@@ -1079,6 +1103,110 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 placeholder="Insira um diferencial e aperte Enter"
                                 description="Destaques exclusivos, prêmios ou diferenciais da sua empresa que a IA lerá para gerar argumentos de autoridade e convencimento."
                             />
+
+                            <div className={styles.sectionDivider}>
+                                <span className={styles.sectionLabel}>Documentos & Identidade Visual</span>
+                                
+                                <div className={styles.grid2} style={{ gap: '24px' }}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.label}>Apresentação PDF Padrão</label>
+                                        <p className={styles.fieldDesc}>
+                                            PDF enviado em e-mails de introdução.
+                                        </p>
+                                        <div className={styles.uploadArea}>
+                                            {presentationPath ? (
+                                                <div className={styles.uploadedFile}>
+                                                    <FileText size={20} className={styles.uploadedIcon} />
+                                                    <div className={styles.uploadedInfo}>
+                                                        <span className={styles.uploadedName} title={presentationPath}>
+                                                            {presentationPath.split(/[\\/]/).pop()?.replace(/^presentation_[a-f0-9]+_/, '')}
+                                                        </span>
+                                                        <span className={styles.uploadedStatus}>
+                                                            <Check size={10} /> Arquivo configurado
+                                                        </span>
+                                                    </div>
+                                                    <label className={styles.reuploadBtn}>
+                                                        <Upload size={12} /> Alterar
+                                                        <input 
+                                                            type="file" 
+                                                            accept=".pdf" 
+                                                            style={{ display: 'none' }} 
+                                                            onChange={(e) => e.target.files?.[0] && handleFileUpload('presentation', e.target.files[0])}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            ) : (
+                                                <label className={styles.uploadTrigger}>
+                                                    {uploadingFile === 'presentation' ? (
+                                                        <RefreshCw size={24} className={styles.spin} />
+                                                    ) : (
+                                                        <Upload size={24} />
+                                                    )}
+                                                    <div className={styles.uploadLabel}>
+                                                        <span className={styles.uploadText}>{uploadingFile === 'presentation' ? 'Enviando...' : 'Carregar PDF'}</span>
+                                                        <span className={styles.uploadSubtext}>Tamanho máx. 10MB</span>
+                                                    </div>
+                                                    <input 
+                                                        type="file" 
+                                                        accept=".pdf" 
+                                                        style={{ display: 'none' }} 
+                                                        onChange={(e) => e.target.files?.[0] && handleFileUpload('presentation', e.target.files[0])}
+                                                    />
+                                                </label>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.label}>Assinatura de E-mail (Imagem)</label>
+                                        <p className={styles.fieldDesc}>
+                                            Imagem embutida no final dos e-mails.
+                                        </p>
+                                        <div className={styles.uploadArea}>
+                                            {signaturePath ? (
+                                                <div className={styles.uploadedFile}>
+                                                    <ImageIcon size={20} className={styles.uploadedIcon} />
+                                                    <div className={styles.uploadedInfo}>
+                                                        <span className={styles.uploadedName} title={signaturePath}>
+                                                            {signaturePath.split(/[\\/]/).pop()?.replace(/^signature_[a-f0-9]+_/, '')}
+                                                        </span>
+                                                        <span className={styles.uploadedStatus}>
+                                                            <Check size={10} /> Imagem salva
+                                                        </span>
+                                                    </div>
+                                                    <label className={styles.reuploadBtn}>
+                                                        <Upload size={12} /> Alterar
+                                                        <input 
+                                                            type="file" 
+                                                            accept="image/*" 
+                                                            style={{ display: 'none' }} 
+                                                            onChange={(e) => e.target.files?.[0] && handleFileUpload('signature', e.target.files[0])}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            ) : (
+                                                <label className={styles.uploadTrigger}>
+                                                    {uploadingFile === 'signature' ? (
+                                                        <RefreshCw size={24} className={styles.spin} />
+                                                    ) : (
+                                                        <Upload size={24} />
+                                                    )}
+                                                    <div className={styles.uploadLabel}>
+                                                        <span className={styles.uploadText}>{uploadingFile === 'signature' ? 'Enviando...' : 'Carregar Imagem'}</span>
+                                                        <span className={styles.uploadSubtext}>PNG, JPG ou GIF</span>
+                                                    </div>
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        style={{ display: 'none' }} 
+                                                        onChange={(e) => e.target.files?.[0] && handleFileUpload('signature', e.target.files[0])}
+                                                    />
+                                                </label>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <button 
                                 className={styles.saveBtn}

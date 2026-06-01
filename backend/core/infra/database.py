@@ -133,15 +133,7 @@ async def seed_system_settings(session):
             "decision_makers": getattr(bc, "ICP", {}).get("decision_makers", []),
             "pain_points": getattr(bc, "ICP", {}).get("pain_points", []),
             "disqualifiers": getattr(bc, "ICP", {}).get("disqualifiers", []),
-            "icp_segments": [
-                "autopeças",
-                "montadora automotiva",
-                "máquinas industriais",
-                "ferramentas industriais",
-                "motores industriais",
-                "exportação industrial",
-                "metalúrgica",
-            ]
+            "icp_segments": []
         }
     except Exception as e:
         log.warning("database.seed.business_context_failed", error=str(e))
@@ -308,15 +300,15 @@ async def seed_tenant_data(session: AsyncSession):
         except: pass
 
     # 3. Criar Tenant e User
-    tenant = Tenant(name=profile_data.get("company_name", "J.Ferres"), domain="jferres.com.br")
+    tenant = Tenant(name=profile_data.get("company_name", "Meu Tenant B2B"), domain="meutenant.com.br")
     session.add(tenant)
     await session.flush() # Gerar ID do tenant
 
     user = User(
         tenant_id=tenant.id,
-        name=profile_data.get("seller_name", "João Luccas"),
-        email="joao@jferres.com.br",
-        role=profile_data.get("seller_role", "Representante Comercial"),
+        name=profile_data.get("seller_name", "Admin"),
+        email="admin@meutenant.com.br",
+        role=profile_data.get("seller_role", "Admin"),
         user_role="admin",
         hashed_password=hash_password("admin123")
     )
@@ -325,8 +317,8 @@ async def seed_tenant_data(session: AsyncSession):
     # 4. Perfil de Negócio
     business_profile = BusinessProfile(
         tenant_id=tenant.id,
-        segment=profile_data.get("company_segment"),
-        differentials=profile_data.get("company_differentials"),
+        segment=profile_data.get("company_segment", ""),
+        differentials=profile_data.get("company_differentials", []),
         methodology=profile_data.get("prospecting_methodology", ""),
         value_propositions=value_props_data
     )
@@ -355,22 +347,17 @@ async def seed_tenant_data(session: AsyncSession):
     # 7. ICP Config
     icp_config = ICPConfig(
         tenant_id=tenant.id,
-        industries_target=icp_data.get("target_industries"),
-        company_size_target=icp_data.get("company_profiles"),
-        decision_makers=icp_data.get("decision_makers"),
-        disqualifiers=icp_data.get("disqualifiers"),
+        industries_target=icp_data.get("target_industries", []),
+        company_size_target=icp_data.get("company_profiles", []),
+        decision_makers=icp_data.get("decision_makers", []),
+        disqualifiers=icp_data.get("disqualifiers", []),
         pain_points=icp_data.get("pain_points", [])
     )
     session.add(icp_config)
     await session.flush()
 
-    # Score Rules (Defaults do J.Ferres)
-    rules = [
-        ("segment", "autopeça", 40, "Setor automotivo estratégico"),
-        ("segment", "metalúrgica", 25, "Setor metalúrgico"),
-        ("export", "exportação", 25, "Foco em exportação (CKD)"),
-        ("size", "100+", 20, "Porte industrial médio/grande"),
-    ]
+    # Score Rules (Vazio por padrão, devem ser adicionadas pelo usuário)
+    rules = []
     for rtype, pattern, score, reason in rules:
         rule = ICPScoreRule(icp_config_id=icp_config.id, rule_type=rtype, value_pattern=pattern, weight_score=score, reason=reason)
         session.add(rule)
@@ -475,6 +462,8 @@ async def init_db():
             "ALTER TABLE business_profiles ADD COLUMN value_propositions JSON",
             "ALTER TABLE icp_configs ADD COLUMN pain_points JSON",
             "ALTER TABLE users ADD COLUMN hashed_password VARCHAR",
+            "ALTER TABLE business_profiles ADD COLUMN presentation_path VARCHAR",
+            "ALTER TABLE business_profiles ADD COLUMN signature_path VARCHAR",
             "ALTER TABLE contact_conversation_cache ADD COLUMN has_unread INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE contact_conversation_cache ADD COLUMN is_key_contact INTEGER NOT NULL DEFAULT 0",
         ]:

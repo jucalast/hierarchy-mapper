@@ -34,16 +34,8 @@ from modules.intelligence.service.brand_discovery import fetch_linkedin_logo
 
 log = get_logger(__name__)
 
-# Segmentos ICP derivados de business_context.py — buscamos todos automaticamente
-_ICP_SEGMENTS = [
-    "autopeças",
-    "montadora automotiva",
-    "máquinas industriais",
-    "ferramentas industriais",
-    "motores industriais",
-    "exportação industrial",
-    "metalúrgica",
-]
+# Segmentos ICP dinâmicos. Serão carregados do banco. Se não houver, falha ou usa lista vazia.
+_ICP_SEGMENTS = []
 
 # Delay entre processamento de leads para não explodir rate limits
 _INTER_LEAD_DELAY_SEC = 2.5

@@ -79,6 +79,8 @@ class BusinessContextService:
                 "company_segment": profile.segment if profile else "",
                 "company_differentials": profile.differentials if profile else [],
                 "value_propositions": profile.value_propositions if (profile and profile.value_propositions) else {},
+                "presentation_path": profile.presentation_path if profile else None,
+                "signature_path": profile.signature_path if profile else None,
                 "seller_name": user.name if user else "João Luccas",
                 "seller_role": user.role if user else "Representante Comercial",
                 "products": {

@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
-from .base import AgentSkill
+from .funnel_stage import FunnelStageSkill
 
-class OutreachSkill(AgentSkill):
+class OutreachSkill(FunnelStageSkill):
     """
     Skill for cold outreach and value generation.
     """
@@ -38,7 +38,7 @@ class OutreachSkill(AgentSkill):
         ]
         
     def get_instructions(self, context: Dict[str, Any]) -> str:
-        return (
+        base = (
             "1. Engineer Serendipity: ALWAYS check the company context first if not available.\n"
             "2. Lead with Value: The outreach message MUST reference a specific intent signal "
             "or company characteristic (CNAE, Size, Focus) and offer a specific insight or case study, "
@@ -46,12 +46,14 @@ class OutreachSkill(AgentSkill):
             "3. Draft the message using `generate_sales_message` and present it to the user. "
             "Send only upon approval."
         )
+        return base + super().get_instructions(context)
 
     def get_suggestion_rules(self) -> str:
-        return """
+        base = """
 REGRAS OBRIGATÓRIAS DE COLD OUTREACH:
 1. FOCO NA CONVERSÃO: As ações sugeridas devem sempre priorizar o envio do material (apresentação, case, e-mail de introdução).
    - Prompt: 'Execute email_send com subject=[ASSUNTO] e body=[CORPO]' ou 'Execute whatsapp_send_message'
 
 2. NÃO DESQUALIFIQUE ANTES DE TENTAR: Se a empresa parece ser Tier C (micro/varejo), não sugira a desqualificação. Sugira um Cold Outreach customizado (produtos de prateleira) e registre o status Tier C em uma nota ou negócio.
 """
+        return base + super().get_suggestion_rules()

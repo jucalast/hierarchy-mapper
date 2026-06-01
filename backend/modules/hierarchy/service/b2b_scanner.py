@@ -90,8 +90,8 @@ async def discover_employees_stream(
         
         db_org_id = org.id
         
-        # 🚀 LIMPEZA IMEDIATA: Deleta funcionários antigos (MENOS os sócios)
-        # Isso atende ao requisito: "os employees devem sumir do front, menos root e sócios".
+        # 🚀 LIMPEZA IMEDIATA: Deleta funcionários antigos (MENOS os sócios e decisões manuais)
+        # Preservamos contatos que já possuem cargo definido ou foram explicitamente reprovados
         from sqlalchemy import delete, and_, not_, or_
         await session.execute(
             delete(Employee).where(
@@ -103,7 +103,14 @@ async def discover_employees_stream(
                             Employee.department.ilike("%Sócio%"),
                             Employee.department.ilike("%Societário%"),
                             Employee.department.ilike("%Conselho%"),
-                            Employee.seniority == 6
+                            Employee.seniority == 6,
+                            # 🛡️ Preservar decisões: Qualquer coisa que não seja 'Análise Humana' ou genérico
+                            and_(
+                                Employee.role != "Análise Humana",
+                                Employee.role != "Não Identificado",
+                                Employee.role != "Erro no Processamento",
+                                Employee.role != "Professional"
+                            )
                         )
                     )
                 )
@@ -478,42 +485,33 @@ async def discover_employees_stream(
                                 break
 
                     if existing_emp:
-                        # Atualiza dados (Enriquecimento)
-                        existing_emp.name = node_data["name"]
-                        existing_emp.role = node_data["role"]
-                        existing_emp.department = node_data["department"]
-                        existing_emp.seniority = node_data["level"]
-                        existing_emp.company_id = db_org_id
-                        # Preenche o LinkedIn real se não tinha ou se era dummy do Pipedrive
-                        if not existing_emp.linkedin_url or "pipedrive_" in existing_emp.linkedin_url:
-                            existing_emp.linkedin_url = node_data["linkedin"]
-                        existing_emp.profile_pic = node_data.get("avatar") or existing_emp.profile_pic
-                        existing_emp.location = node_data.get("location") or existing_emp.location
-                        existing_emp.description = node_data.get("observations") or existing_emp.description
-                        existing_emp.education = node_data.get("education") or existing_emp.education
-                        existing_emp.matching_score = node_data.get("matching_score") or existing_emp.matching_score
-                        existing_emp.evidence = node_data.get("evidence") or existing_emp.evidence
-                        existing_emp.headline = node_data.get("headline") or existing_emp.headline
-                        existing_emp.last_scanned = func.now()
-                    else:
-                        emp = Employee(
-                            name=node_data["name"],
-                            role=node_data["role"],
-                            department=node_data["department"],
-                            seniority=node_data["level"],
-                            linkedin_url=node_data["linkedin"],
-                            email=node_data["email"],
-                            profile_pic=node_data.get("avatar"),
-                            location=node_data.get("location"),
-                            description=node_data.get("observations"),
-                            education=node_data.get("education"),
-                            matching_score=node_data.get("matching_score"),
-                            evidence=node_data.get("evidence"),
-                            headline=node_data.get("headline"),
-                            company_id=db_org_id
-                        )
-                        session.add(emp)
-                    await session.commit()
+                        # 🛡️ PROTEÇÃO: Não sobrescreve se o contato já foi aprovado ou se o novo status é "pior"
+                        current_is_valid = existing_emp.role and "análise humana" not in existing_emp.role.lower() and "reprovado" not in existing_emp.role.lower()
+                        new_is_vague = "análise humana" in node_data["role"].lower()
+                        
+                        if current_is_valid and new_is_vague:
+                            # Mantém o que já estava lá (decisão manual ou automática anterior)
+                            pass 
+                        else:
+                            # Atualiza dados (Enriquecimento)
+                            existing_emp.name = node_data["name"]
+                            existing_emp.role = node_data["role"]
+                            existing_emp.department = node_data["department"]
+                            existing_emp.seniority = node_data["level"]
+                            existing_emp.company_id = db_org_id
+                            # Preenche o LinkedIn real se não tinha ou se era dummy do Pipedrive
+                            if not existing_emp.linkedin_url or "pipedrive_" in existing_emp.linkedin_url:
+                                existing_emp.linkedin_url = node_data["linkedin"]
+                            existing_emp.profile_pic = node_data.get("avatar") or existing_emp.profile_pic
+                            existing_emp.location = node_data.get("location") or existing_emp.location
+                            existing_emp.description = node_data.get("observations") or existing_emp.description
+                            existing_emp.education = node_data.get("education") or existing_emp.education
+                            existing_emp.matching_score = node_data.get("matching_score") or existing_emp.matching_score
+                            existing_emp.evidence = node_data.get("evidence") or existing_emp.evidence
+                            existing_emp.headline = node_data.get("headline") or existing_emp.headline
+                            existing_emp.last_scanned = func.now()
+                        
+                        await session.commit()
                     
                     if not existing_emp:
                         await session.refresh(emp)

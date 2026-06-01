@@ -315,7 +315,7 @@ async def run_agent(
         query_type = "general"
         log.info("agent.context_followup.query_type_override")
 
-    active_skill = route_task_to_skill(query_type, message)
+    active_skill = await route_task_to_skill(message, org_id)
 
     final_response = ""
     collected_events = []

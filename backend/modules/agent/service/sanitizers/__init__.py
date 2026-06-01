@@ -285,11 +285,38 @@ def _sanitize_whatsapp(data: dict) -> str:
         result_text = _company_suffix_warning + result_text
     return result_text
 
+def _sanitize_evaluate_prospects(data: dict) -> str:
+    """Compacta o ranking de prospects em uma narrativa densa para o LLM."""
+    if not data or not isinstance(data, dict): return str(data)
+    prospects = data.get("best_prospects", [])
+    if not prospects: return "🔍 Nenhum prospect avaliado como adequado."
+
+    lines = [f"🔍 RANKING DE PROSPECTING PARA {data.get('org_name', 'a empresa')}:"]
+    for p in prospects[:10]:
+        score = p.get("suitability_score", 0)
+        tier = p.get("suitability_tier", "C")
+        role = p.get("role") or p.get("department") or "Contato"
+        reason = p.get("key_reason", "")
+        angle = p.get("angle_of_approach", "")
+        
+        lines.append(f"  • {p.get('name')} ({role}) | SCORE: {score} | TIER: {tier}")
+        if reason:
+            lines.append(f"    → Motivo: {reason[:200]}")
+        if angle:
+            lines.append(f"    → Abordagem: {angle[:200]}")
+    
+    strategy = data.get("overall_strategy", "")
+    if strategy:
+        lines.append(f"\n💡 ESTRATÉGIA GERAL: {strategy[:500]}")
+        
+    return "\n".join(lines)
+
 def _sanitize_result(tool_name: str, result: Any) -> Any:
     """Orquestra a limpeza retornando strings otimizadas para o LLM."""
     try:
         if not result: return "Sem resultados."
         if tool_name == "suggest_next_actions": return "Tarefas sugeridas criadas na interface para o usuário aprovar."
+        if tool_name == "evaluate_prospects": return _sanitize_evaluate_prospects(result)
         if "email" in tool_name: return _sanitize_email(result)
         if "pipedrive" in tool_name: return _sanitize_pipedrive(result)
         if "whatsapp" in tool_name: return _sanitize_whatsapp(result)

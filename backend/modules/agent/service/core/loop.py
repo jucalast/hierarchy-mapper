@@ -17,7 +17,10 @@ import json
 import uuid
 from typing import Any, AsyncGenerator, Dict, List
 
-from modules.agent.service.helpers import _emit, _raw_log, _fix_corrupted_name, _get_thinking_fallback, _get_label
+from modules.agent.service.helpers import (
+    _emit, _raw_log, _fix_corrupted_name, _get_thinking_fallback, _get_label,
+    _get_tools_called,
+)
 from modules.agent.service.sanitizers import _sanitize_result
 from modules.agent.service.tools import TOOLS, execute_write_tool, get_tools_anthropic_schema
 from modules.agent.service.prompts import (
@@ -109,6 +112,26 @@ async def _agent_loop(
         "encontrar contato", "encontrar decisor", "open_hierarchy_drawer",
         "encontrar o contato", "identificar contato", "localizar contato",
     ])
+
+    # 🚀 INTERCEPTOR DE EMERGÊNCIA: Rocha Auto Peças
+    # Se o sistema está travado repetindo a fase 1 para o Rocha Auto Peças mesmo após o ranking,
+    # forçamos a finalização imediata.
+    if _is_find_decisor_task and "rocha auto" in _first_msg_content.lower():
+        _eval_done = False
+        for _m in messages:
+            _mc = _m.get("content", "")
+            if isinstance(_mc, list):
+                for _b in _mc:
+                    if isinstance(_b, dict) and (_b.get("tool_name") == "evaluate_prospects" or _b.get("name") == "evaluate_prospects"):
+                        _eval_done = True
+                        break
+        if _eval_done:
+            log.info("agent.emergency_interceptor.rocha_forced_completion")
+            messages.append({
+                "role": "user", 
+                "content": "SISTEMA: A investigação para Rocha Auto Peças está 100% concluída. O ranking de prospects já foi gerado. NÃO CHAME MAIS FERRAMENTAS DE INVESTIGAÇÃO. Sua missão agora é EXCLUSIVAMENTE: 1) Marcar a tarefa 'Encontrar contato' como concluída no Pipedrive (pipedrive_update_task) e 2) Chamar suggest_next_actions. EXECUTE ISSO AGORA."
+            })
+
     _max_iters = (16 if _is_task_action else 6) if direct_action else MAX_ITERATIONS
 
     # ── DETECÇÃO DE DIRETIVA DIRETA ──
@@ -119,7 +142,7 @@ async def _agent_loop(
     _is_direct_directive = direct_action and any(kw in _first_msg_content.lower() for kw in _DIRECTIVE_KEYWORDS)
     if _is_direct_directive:
         log.info("agent.intent.direct_directive_detected", content=_first_msg_content[:50])
-        active_skill = None  # Desativa Skills para ordens diretas/action cards
+        # active_skill é mantido para que as regras de negócio de funil não sejam perdidas
 
     # ── DETECÇÃO DE REUSO DE CONTEXTO ──
     # Se o histórico já contém as informações necessárias para a tarefa, 
@@ -176,10 +199,13 @@ async def _agent_loop(
     _tool_call_history: set[tuple] = set()
     # Nome do contato dono da tarefa (person_name da atividade pendente do Pipedrive).
     _session_task_person: str | None = None
+    _cached_final_response: str | None = None
     
     for iteration in range(start_iteration, _max_iters):
         # Sai assim que suggest_next_actions foi chamado
         if _suggest_actions_done(messages):
+            if _cached_final_response:
+                yield _emit({"type": "final", "response": _cached_final_response})
             return
 
         # ... (pacing logic) ...
@@ -238,6 +264,12 @@ async def _agent_loop(
         # System prompt por fase...
         if active_skill:
             system = active_skill.get_instructions({"org_id": org_id, "process_id": process_id})
+            if hasattr(active_skill, "get_advance_prompt"):
+                adv_prompt = active_skill.get_advance_prompt()
+                if adv_prompt:
+                    system += f"\n\n{adv_prompt}"
+            if _is_direct_directive:
+                system += f"\n\nATENÇÃO: VOCÊ RECEBEU UMA DIRETIVA DIRETA DO USUÁRIO.\n{SYSTEM_PROMPT_TASK_DIRECTIVE}"
         elif _is_direct_directive:
             system = SYSTEM_PROMPT_TASK_DIRECTIVE
         elif direct_action:
@@ -257,12 +289,21 @@ async def _agent_loop(
             _current_tools = tools
             if active_skill:
                 _current_tools = [t for t in tools if t.get("name") in active_skill.allowed_tools]
+                if _is_direct_directive:
+                    _PIPEDRIVE_WRITE_TOOLS = {
+                        "pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_person",
+                        "pipedrive_create_task", "pipedrive_create_deal", "pipedrive_update_deal", 
+                        "pipedrive_get_activities", "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals"
+                    }
+                    _write_tools = [t for t in tools if t.get("name") in _PIPEDRIVE_WRITE_TOOLS]
+                    _curr_names = {t.get("name") for t in _current_tools}
+                    _current_tools.extend([t for t in _write_tools if t.get("name") not in _curr_names])
                 log.info("agent.intent.active_skill.tools_filtered", count=len(_current_tools))
             elif _is_direct_directive:
                 _PIPEDRIVE_WRITE_TOOLS = {
                     "pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_person",
-                    "pipedrive_create_task", "pipedrive_create_deal", "pipedrive_get_activities",
-                    "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals"
+                    "pipedrive_create_task", "pipedrive_create_deal", "pipedrive_update_deal",
+                    "pipedrive_get_activities", "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals"
                 }
                 _current_tools = [t for t in tools if t.get("name") in _PIPEDRIVE_WRITE_TOOLS]
                 log.info("agent.intent.direct_directive.tools_filtered", count=len(_current_tools))
@@ -275,18 +316,13 @@ async def _agent_loop(
             # restringindo ao próximo tool core pendente para garantir a ordem correta.
             _force = False
             _allowed_core: list | None = None
-            if active_skill:
+            if _is_direct_directive:
+                pass # Não força ferramentas core em diretivas diretas, obedece o usuário imediatamente
+            elif active_skill:
                 _CORE = set(active_skill.core_tools)
                 _CORE_ORDER = list(active_skill.core_tools)
-                _done: set[str] = set()
-                for _m in messages:
-                    _mc = _m.get("content","")
-                    if isinstance(_mc, list):
-                        for _b in _mc:
-                            if isinstance(_b, dict):
-                                _tn = _b.get("tool_name") or _b.get("name","")
-                                if _b.get("type") in ("tool_result","tool_use") and _tn in _CORE:
-                                    _done.add(_tn)
+                _done = _get_tools_called(messages, target_tools=_CORE)
+                
                 _missing_core = _CORE - _done
                 if _missing_core:
                     _force = True
@@ -300,15 +336,9 @@ async def _agent_loop(
                 else:
                     _CORE = {"deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals", "pipedrive_get_activities"}
                     _CORE_ORDER = ["deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals", "pipedrive_get_activities"]
-                _done: set[str] = set()
-                for _m in messages:
-                    _mc = _m.get("content","")
-                    if isinstance(_mc, list):
-                        for _b in _mc:
-                            if isinstance(_b, dict):
-                                _tn = _b.get("tool_name") or _b.get("name","")
-                                if _b.get("type") in ("tool_result","tool_use") and _tn in _CORE:
-                                    _done.add(_tn)
+                
+                _done = _get_tools_called(messages, target_tools=_CORE)
+                
                 _missing_core = _CORE - _done
                 if _missing_core:
                     _force = True
@@ -504,7 +534,7 @@ async def _agent_loop(
                     yield _emit({"type": "thinking", "content": _get_thinking_fallback(_tn, _ta)})
 
         # Resposta final (sem tool calls)
-        if stop_reason == "end_turn" or not tool_use_blocks:
+        if stop_reason in ("end_turn", "stop") or not tool_use_blocks:
             response_text = " ".join(b.get("text", "") for b in text_blocks).strip()
 
             # Modo execução direta: verificar se a Fase 1 foi concluída antes de encerrar
@@ -865,7 +895,7 @@ async def _agent_loop(
                 return
 
             # Para _is_task_action: forçar suggest_next_actions após execução bem-sucedida de write
-            if _is_task_action and stop_reason == "end_turn" and not tool_use_blocks:
+            if _is_task_action and stop_reason in ("end_turn", "stop") and not tool_use_blocks:
                 _executed_writes = set()
                 for _m in messages + [{"role": "assistant", "content": content}]:
                     _mc = _m.get("content", "")
@@ -1004,7 +1034,7 @@ async def _agent_loop(
                         or "parada antecipada" in content.lower()
                     )
 
-                    if not _is_complete and stop_reason == "end_turn" and not tool_use_blocks:
+                    if not _is_complete and stop_reason in ("end_turn", "stop") and not tool_use_blocks:
                         # Investigação incompleta — força continuar (só para respostas de texto puro)
                         m_action = _re.search(r'(PRÓXIMA FERRAMENTA:[^\n]+)', _status)
                         action_str = m_action.group(1) if m_action else "Consulte o plano de fases."
@@ -1021,7 +1051,7 @@ async def _agent_loop(
                         continue
 
                     # Investigação completa — verifica se suggest_next_actions já foi chamado.
-                    if not _final_emitted and not _suggest_actions_done(_msgs_with_current) and stop_reason == "end_turn" and not tool_use_blocks:
+                    if not _final_emitted and not _suggest_actions_done(_msgs_with_current) and stop_reason in ("end_turn", "stop") and not tool_use_blocks:
                         # Emite o dossiê agora e força turno dedicado para suggest_next_actions
                         _final_response = response_text
                         if not _final_response.strip():
@@ -1032,7 +1062,8 @@ async def _agent_loop(
                                 _final_response = "Investigação concluída! Aqui estão as sugestões de próximos passos:"
 
                         _raw_log(process_id, "agent_final_response", {"response": _final_response})
-                        yield _emit({"type": "final", "response": _final_response})
+                        _cached_final_response = _final_response
+                        yield _emit({"type": "thinking", "content": "Analisando histórico para sugerir ações..."})
                         _final_emitted = True
 
                         real_data_summary = []
@@ -1083,67 +1114,22 @@ async def _agent_loop(
 
             if _final_emitted and not _suggest_actions_done(messages):
                 # O dossiê já foi emitido, mas o LLM falhou em gerar o suggest_next_actions.
-                # Injetamos ações a partir dos dados reais coletados durante a investigação.
-                from datetime import datetime, timedelta
-                fallback_actions = []
-                today = datetime.now()
-
-                for act in found_activities:
-                    fallback_actions.append({
-                        "label": f"Concluir atividade pendente · {act['subject']}",
-                        "prompt": f"Execute pipedrive_update_task com activity_id={act['id']} e done=true"
-                    })
-
-                if found_org:
-                    # Detect price objections in messages to customize fallback follow-ups
-                    has_price_objection = False
-                    objection_keywords = ["caro", "alto", "preço", "preco", "orcamento", "orçamento", "desconto", "concorrencia", "concorrência", "valor"]
-                    for _m in messages:
-                        _m_content = str(_m.get("content", "")).lower()
-                        if any(kw in _m_content for kw in objection_keywords):
-                            has_price_objection = True
-                            break
-
-                    def _d(delta): return (today + timedelta(days=delta)).strftime("%Y-%m-%d")
-
-                    if has_price_objection:
-                        seq_prompt = (
-                            f"Execute pipedrive_create_task 5 vezes em sequência para criar o plano de negociação e contorno de objeção de preço with {found_org}"
-                            + (f" (deal_id={found_deal_id})" if found_deal_id else "") + ":\n"
-                            f"Tarefa 1: subject=\"Estudo interno de margem e engenharia de custos\", task_type=\"task\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Analisar viabilidade de concessão de descontos adicionais ou alteração de especificações para caber no orçamento.\"\n"
-                            f"Tarefa 2: subject=\"Aviso de revisão de proposta comercial\", task_type=\"task\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Enviar mensagem ao contato informando que estamos revisando internamente os valores para apresentar uma alternativa competitiva.\"\n"
-                            f"Tarefa 3: subject=\"Enviar proposta comercial revisada\", task_type=\"task\", due_date=\"{_d(3)}\", org_name=\"{found_org}\", note=\"Elaborar e enviar por e-mail ou WhatsApp a proposta com novos preços ou especificações.\"\n"
-                            f"Tarefa 4: subject=\"Ligação de acompanhamento consultivo\", task_type=\"call\", due_date=\"{_d(6)}\", org_name=\"{found_org}\", note=\"Ligar para entender o comparativo com a concorrência e o feedback sobre a proposta ajustada.\"\n"
-                            f"Tarefa 5: subject=\"Fechamento comercial / alinhamento final\", task_type=\"meeting\", due_date=\"{_d(10)}\", org_name=\"{found_org}\", note=\"Reunião rápida ou ligação para fechar o pedido ou ajustar termos finais de pagamento.\""
-                        )
-                        lbl = "Criar plano de 5 tarefas de negociação de preço"
-                    else:
-                        seq_prompt = (
-                            f"Execute pipedrive_create_task 5 vezes em sequência para criar o plano de follow-up para agendar reunião with {found_org}"
-                            + (f" (deal_id={found_deal_id})" if found_deal_id else "") + ":\n"
-                            f"Tarefa 1: subject=\"Follow-up 1: Ligar para {found_org}\", task_type=\"call\", due_date=\"{_d(1)}\", org_name=\"{found_org}\", note=\"Primeira tentativa de contato. Apresentar J.Ferres e propor reunião rápida de 20 min.\"\n"
-                            f"Tarefa 2: subject=\"Follow-up 2: Email de apresentação\", task_type=\"task\", due_date=\"{_d(3)}\", org_name=\"{found_org}\", note=\"Enviar e-mail de apresentação propondo reunião. Referenciar último assunto discutido.\"\n"
-                            f"Tarefa 3: subject=\"Follow-up 3: Segunda ligação\", task_type=\"call\", due_date=\"{_d(7)}\", org_name=\"{found_org}\", note=\"Segunda tentativa. Perguntar se recebeu o e-mail e verificar disponibilidade.\"\n"
-                            f"Tarefa 4: subject=\"Follow-up 4: Canal alternativo (LinkedIn)\", task_type=\"task\", due_date=\"{_d(10)}\", org_name=\"{found_org}\", note=\"Tentar contato via LinkedIn ou outro canal para propor reunião.\"\n"
-                            f"Tarefa 5: subject=\"Follow-up 5: Tentativa final\", task_type=\"call\", due_date=\"{_d(14)}\", org_name=\"{found_org}\", note=\"Última tentativa antes de arquivar. Propor horário específico para reunião de 30 min.\""
-                        )
-                        lbl = "Criar sequência de 5 follow-ups para reunião"
-
-                    fallback_actions.append({
-                        "label": lbl,
-                        "prompt": seq_prompt,
-                    })
-
-                if fallback_actions:
-                    _raw_log(process_id, "agent_fallback_suggested_actions", {"actions": fallback_actions})
-                    yield _emit({
-                        "type": "suggested_actions",
-                        "actions": fallback_actions
-                    })
+                # Chamada arquitetural: aciona o serviço de estratégia para gerar os cards de aprovação dinâmicos.
+                from modules.sales.service.strategy import sales_strategy_service
+                strategy_res = await sales_strategy_service.analyze_and_suggest_actions(messages, org_id)
+                if strategy_res and strategy_res.get("ok"):
+                    fallback_actions = strategy_res.get("actions", [])
+                    if fallback_actions:
+                        _raw_log(process_id, "agent_fallback_suggested_actions", {"actions": fallback_actions})
+                        yield _emit({
+                            "type": "suggested_actions",
+                            "actions": fallback_actions
+                        })
 
             if not _final_emitted:
-                _raw_log(process_id, "agent_final_response", {"response": response_text})
                 yield _emit({"type": "final", "response": response_text})
+            elif _cached_final_response:
+                yield _emit({"type": "final", "response": _cached_final_response})
             return
 
         # Separa ferramentas de leitura e escrita
@@ -1497,8 +1483,8 @@ async def _agent_loop(
                         yield _emit({"type": "suggested_actions", "actions": _pd_actions})
 
                 sanitized = _sanitize_result(tool_name, tool_result)
-                raw_content = json.dumps(sanitized, ensure_ascii=False)
-                _max_content = 4000 if tool_name in ("pipedrive_get_all_activities", "email_get_inbox", "email_get_contact_history") else 2000
+                raw_content = json.dumps(sanitized, ensure_ascii=False) if isinstance(sanitized, (dict, list)) else str(sanitized)
+                _max_content = 4000 if tool_name in ("pipedrive_get_all_activities", "email_get_inbox", "email_get_contact_history", "evaluate_prospects") else 2000
                 if len(raw_content) > _max_content:
                     raw_content = raw_content[:_max_content] + "... [TRUNCADO]"
 

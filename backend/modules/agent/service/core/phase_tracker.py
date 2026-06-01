@@ -14,6 +14,7 @@ from typing import Optional
 
 from core.observability.logging_config import get_logger
 from modules.agent.service.prompts import SYSTEM_PROMPT_POWERFUL
+from modules.agent.service.helpers import _get_tools_called
 
 log = get_logger(__name__)
 
@@ -21,17 +22,22 @@ log = get_logger(__name__)
 def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_id: int | None = None) -> str:
     """
     Constrói o system prompt completo para a fase atual da investigação.
-    Cada fase inclui todas as instruções comportamentais relevantes para ela —
-    sem enviar o que não é necessário naquele momento.
-    Fase 1 ~80 tokens, Fase 2 ~120, Fase 3 ~200, Fase 4 ~150.
-    Fallback: SYSTEM_PROMPT_POWERFUL completo se qualquer exceção ocorrer.
     """
     import re as _re
 
     today = datetime.now().strftime('%Y-%m-%d')
 
-    # ── Extrai estado da investigação ────────────────────────────────────────
-    tools_called: set[str] = set()   # todas as ferramentas já chamadas
+    # ── Extrai estado da investigação de forma robusta ──────────────────────
+    # Inclui TODAS as ferramentas fundamentais para evitar loops
+    _CORE_TRACKED = {
+        "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals",
+        "pipedrive_get_activities", "pipedrive_get_all_activities",
+        "whatsapp_get_messages", "email_get_contact_history",
+        "generate_call_script", "open_hierarchy_drawer", "pipedrive_create_task",
+        "generate_dossier", "deep_company_investigation", "evaluate_prospects"
+    }
+    tools_called = _get_tools_called(messages, target_tools=_CORE_TRACKED)
+    
     contacts_found: list[str] = []   # contatos encontrados no pipedrive_get_persons
     contact_phones: dict[str, str] = {} # Mapeamento nome -> telefone
     org_name: str = ""
@@ -43,59 +49,12 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
         role = msg.get("role", "")
         content = msg.get("content", "")
 
-        # Se for string representando uma lista/dicionário, tenta parsear usando json ou ast
-        if isinstance(content, str):
-            content_trimmed = content.strip()
-            if content_trimmed.startswith("[") or content_trimmed.startswith("{"):
-                try:
-                    import json as _json
-                    content = _json.loads(content_trimmed)
-                except Exception:
-                    try:
-                        import ast as _ast
-                        content = _ast.literal_eval(content_trimmed)
-                    except Exception:
-                        pass
-            
-            # Fallback robusto se ainda for string simples (extração por substring)
-            if isinstance(content, str):
-                for t_name in [
-                    "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals",
-                    "pipedrive_get_activities", "pipedrive_get_all_activities",
-                    "whatsapp_get_messages", "email_get_contact_history",
-                    "generate_call_script", "open_hierarchy_drawer", "pipedrive_create_task",
-                    "generate_dossier"
-                ]:
-                    if t_name in content_trimmed:
-                        tools_called.add(t_name)
-                        
-                # Heurísticas baseadas nas strings renderizadas pelo frontend para manter o contexto
-                content_lower = content_trimmed.lower()
-                if "consultando " in content_lower and "no pipedrive" in content_lower:
-                    tools_called.add("pipedrive_get_org")
-                if "buscando contatos de" in content_lower:
-                    tools_called.add("pipedrive_get_persons")
-                if "buscando deals de" in content_lower:
-                    tools_called.add("pipedrive_get_deals")
-                if "buscando atividades de" in content_lower:
-                    tools_called.add("pipedrive_get_activities")
-                if "buscando mensagens de" in content_lower:
-                    tools_called.add("whatsapp_get_messages")
-                if "buscando e-mails de" in content_lower or "buscando emails de" in content_lower:
-                    tools_called.add("email_get_contact_history")
-                if "generate sales message" in content_lower:
-                    tools_called.add("generate_sales_message")
-
-        # ── Lê ARGS das tool_use blocks (mensagens do assistente)
-        # Mais confiável que parsear o resultado — captura o que FOI pedido.
-        # Também popula tools_called para rastrear fase mesmo se o tool_result for truncado.
+        # Extração de metadados para controle fino (Nomes, WhatsApps, Emails)
         if role == "assistant" and isinstance(content, list):
             for block in content:
                 if not isinstance(block, dict) or block.get("type") != "tool_use":
                     continue
                 tn = block.get("name", "")
-                if tn:
-                    tools_called.add(tn)
                 args = block.get("input") or {}
                 if tn == "pipedrive_get_org" and args.get("org_name"):
                     org_name = args["org_name"].strip()
@@ -109,93 +68,29 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                     if name:
                         email_searched.add(name.lower())
 
-        # ── Lê RESULTADOS das tool_result blocks (mensagens do user/tool)
-        if not isinstance(content, list):
-            continue
-        for item in content:
-            if not isinstance(item, dict):
-                continue
-            tn = item.get("tool_name", "")
-            tc = str(item.get("content", ""))
-            if not tn:
-                continue
+        if isinstance(content, list):
+            for item in content:
+                if not isinstance(item, dict) or item.get("type") != "tool_result":
+                    continue
+                tn = item.get("tool_name", "")
+                tc = str(item.get("content", ""))
+                
+                if tn == "pipedrive_get_org" and not org_name:
+                    m_sum = _re.search(r'"summary"\s*:\s*"([^|]+)\|', tc)
+                    if m_sum: org_name = m_sum.group(1).strip()
 
-            tools_called.add(tn)
-
-            if tn == "pipedrive_get_org" and not org_name:
-                m_sum = _re.search(r'"summary"\s*:\s*"([^|]+)\|', tc)
-                if m_sum:
-                    org_name = m_sum.group(1).strip()
-                if not org_name:
-                    m_name = _re.search(r'"name"\s*:\s*"([^"]+)"', tc)
-                    if m_name:
-                        org_name = m_name.group(1).strip()
-                if not org_name:
-                    m_org = _re.search(r'🏢 ORG:\s*([^\n\\]+)', tc)
-                    if m_org:
-                        org_name = m_org.group(1).strip()
-
-            # Extrai TODOS os contatos do resultado de pipedrive_get_persons
-            if tn == "pipedrive_get_persons" and not contacts_found:
-                parsed_ok = False
-                try:
-                    import json as _json
-                    data = _json.loads(tc)
-                    persons_list = data.get("persons", []) if isinstance(data, dict) else []
-                    for p in persons_list:
-                        if isinstance(p, dict) and p.get("name"):
-                            name = p["name"].strip()
-                            name_lower = name.lower()
-                            is_company = any(suffix in name_lower for suffix in [
-                                "gmbh", "ltda", "s.a", "sa", "participaco", "participaço", 
-                                "holding", "corp", "s/a", "industria", "indústria", 
-                                "comercio", "comércio", "servico", "serviço", "eireli", 
-                                "me", "epp", "grupo"
-                            ])
-                            if is_company:
-                                continue
-                            if name and name not in contacts_found:
-                                contacts_found.append(name)
-                                # Captura telefone se disponível
-                                if p.get("phone"):
-                                    contact_phones[name] = str(p["phone"]).strip()
-                    parsed_ok = len(contacts_found) > 0
-                except Exception:
-                    pass
-
-                if not parsed_ok:
-                    import unicodedata as _uc
-                    def _strip_acc(s: str) -> str:
-                        return "".join(c for c in _uc.normalize("NFD", s.lower()) if _uc.category(c) != "Mn")
-
-                    raw = tc
-                    names = _re.findall(
-                        r'([A-ZÁÉÍÓÚÃÕÂÊÎÔÛ][a-záéíóúãõâêîôûç]+(?:\s+[A-ZÁÉÍÓÚÃÕÂÊÎÔÛ][a-záéíóúãõâêîôûç]+)*)',
-                        raw,
-                    )
-                    # Normaliza org_name SEM acento para comparação robusta
-                    org_words_norm = set(_strip_acc(org_name or "").split())
-                    for n in names:
-                        n_lower = n.lower()
-                        is_company = any(suffix in n_lower for suffix in [
-                            "gmbh", "ltda", "s.a", "sa", "participaco", "participaço", 
-                            "holding", "corp", "s/a", "industria", "indústria", 
-                            "comercio", "comércio", "servico", "serviço", "eireli", 
-                            "me", "epp", "grupo"
-                        ])
-                        if is_company:
-                            continue
-                        n_words_norm = set(_strip_acc(n).split())
-                        stopwords_ext = {"do", "da", "de", "dos", "das", "ltda", "sa", "s.a", "cia"}
-                        # Descarta se for o nome da org (comparação sem acento)
-                        if not n_words_norm.issubset(org_words_norm | stopwords_ext):
-                            if n not in contacts_found:
-                                contacts_found.append(n)
-                                # Tenta buscar telefone no entorno do nome via regex simples
-                                m_ph = _re.search(rf'{_re.escape(n)}[^\n·]*?(?:\+|tel:|cel:)?\s*([\d\s\-\(\)\+]{8,20})', raw)
-                                if m_ph:
-                                    contact_phones[n] = m_ph.group(1).strip()
-                contacts_found = contacts_found[:15]
+                if tn == "pipedrive_get_persons":
+                    try:
+                        import json as _json
+                        data = _json.loads(tc)
+                        persons_list = data.get("persons", []) if isinstance(data, dict) else []
+                        for p in persons_list:
+                            if isinstance(p, dict) and p.get("name"):
+                                name = p["name"].strip()
+                                if name not in contacts_found:
+                                    contacts_found.append(name)
+                                    if p.get("phone"): contact_phones[name] = str(p["phone"]).strip()
+                    except Exception: pass
 
             # Rastreia WhatsApp por resultado (fallback quando args não disponíveis)
             if tn == "whatsapp_get_messages" and not any(True for _ in []):

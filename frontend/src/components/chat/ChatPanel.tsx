@@ -10,6 +10,7 @@ import { AgentMessage, AgentEvent, TaskStatus, InlineEventStream, MappedContact 
 import { ModelActivityEvent } from './ModelActivityBar';
 import { ActivitySidebar } from './ActivitySidebar';
 import { ThreadList } from './ThreadList';
+import { ConversationContextAccordion } from './ConversationContextAccordion';
 import { Avatar, Modal, Button } from '../ui';
 
 import { useSpeechToText } from '../../hooks/useSpeechToText';
@@ -1681,6 +1682,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     </button>
                 </div>
             </div>
+
+            {/* Accordion de Contexto da Investigação */}
+            <ConversationContextAccordion 
+                messages={messages} 
+                orgId={selectedOrgId}
+                orgName={cleanOrgName}
+                dealId={activeThread?.meta?.deal_id}
+            />
 
             {/* Body: messages + optional sidebar */}
             <div className={`${styles.chatBody} ${messages.length === 0 ? styles.emptyChatBody : ''}`}>

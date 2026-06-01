@@ -15,11 +15,12 @@ from core.infra.database import get_db, async_session
 from core.infra.redis_config import redis_client
 from core.config import settings
 from core.observability.logging_config import get_logger
-from api.v1.schemas import EmployeeNode, HierarchyResponse, CandidateActionRequest, clean_cnpj
+from api.v1.schemas import EmployeeNode, HierarchyResponse, CandidateActionRequest, EnrichManualRequest, EmployeeUpdateRequest, clean_cnpj
 
 log = get_logger(__name__)
 
 from .service.candidate_service import process_candidate_action
+from .service.manual_enricher import enrich_employee_manually, update_employee_details
 from .service.hierarchy_loader import get_stored_hierarchy, get_stored_hierarchy_by_pipedrive
 from .service.hierarchy_refiner import refine_and_persist
 from .service.b2b_scanner import discover_employees, discover_employees_stream
@@ -38,6 +39,18 @@ active_scraper_process = None
 async def candidate_action(payload: CandidateActionRequest, db: AsyncSession = Depends(get_db)):
     """Aprova ou rejeita um candidato em análise humana."""
     return await process_candidate_action(payload.employee_id, payload.action, db)
+
+
+@router.post("/enrich-manual")
+async def enrich_manual(payload: EnrichManualRequest, db: AsyncSession = Depends(get_db)):
+    """Enriquece um funcionário via texto bruto do LinkedIn."""
+    return await enrich_employee_manually(payload.employee_id, payload.raw_text, db)
+
+
+@router.post("/update-employee")
+async def update_employee(payload: EmployeeUpdateRequest, employee_id: str = Query(...), db: AsyncSession = Depends(get_db)):
+    """Atualiza manualmente os detalhes de um funcionário."""
+    return await update_employee_details(employee_id, payload.dict(), db)
 
 
 @router.post("/refine")
@@ -485,8 +498,8 @@ async def stream_linkedin_scrape(
                 await session.commit()
                 await session.refresh(db_org)
 
-            # 🚀 LIMPEZA: Deleta funcionários antigos (MENOS Sócios/QSA) para iniciar mapeamento limpo
-            # Isso atende ao requisito: "nunca apague o card de root e de socios"
+            # 🚀 LIMPEZA: Deleta funcionários antigos (MENOS Sócios/QSA e decisões manuais)
+            # Preservamos contatos que já possuem cargo definido (aprovados) ou foram reprovados
             from sqlalchemy import delete, and_, not_, or_
             await session.execute(
                 delete(Employee).where(
@@ -495,7 +508,14 @@ async def stream_linkedin_scrape(
                         not_(
                             or_(
                                 Employee.department == "Quadro de Sócios (QSA)",
-                                Employee.seniority == 6
+                                Employee.seniority == 6,
+                                # 🛡️ Preservar decisões: Qualquer coisa que não seja 'Análise Humana' ou genérico
+                                and_(
+                                    Employee.role != "Análise Humana",
+                                    Employee.role != "Não Identificado",
+                                    Employee.role != "Erro no Processamento",
+                                    Employee.role != "Professional"
+                                )
                             )
                         )
                     )
@@ -759,17 +779,26 @@ async def stream_linkedin_scrape(
                                         await session.refresh(new_emp)
                                         employee_id = f"node_{new_emp.id}"
                                     else:
-                                        existing.role = final_role
-                                        existing.department = dept
-                                        existing.matching_score = score
-                                        existing.company_id = db_org.id
-                                        if not existing.description: existing.description = c['role']
-                                        if not existing.profile_pic: existing.profile_pic = emp_raw.get("avatar")
-                                        if not existing.location or existing.location == "Localização não identificada":
-                                            existing.location = emp_loc
-                                        if not existing.evidence: existing.evidence = evidence
-                                        if not existing.email: existing.email = emp_email
-                                        await session.commit()
+                                        # 🛡️ PROTEÇÃO: Não sobrescreve se o contato já foi aprovado ou se o novo status é "pior"
+                                        current_is_valid = existing.role and "análise humana" not in existing.role.lower() and "reprovado" not in existing.role.lower()
+                                        new_is_vague = "análise humana" in final_role.lower()
+                                        
+                                        if current_is_valid and new_is_vague:
+                                            # Mantém o que já estava lá (decisão manual ou automática anterior)
+                                            yield await send_log(f"ℹ️ [Preservado] {emp_name} já possui cargo definido.")
+                                        else:
+                                            existing.role = final_role
+                                            existing.department = dept
+                                            existing.matching_score = score
+                                            existing.company_id = db_org.id
+                                            if not existing.description: existing.description = c['role']
+                                            if not existing.profile_pic: existing.profile_pic = emp_raw.get("avatar")
+                                            if not existing.location or existing.location == "Localização não identificada":
+                                                existing.location = emp_loc
+                                            if not existing.evidence: existing.evidence = evidence
+                                            if not existing.email: existing.email = emp_email
+                                            await session.commit()
+                                        
                                         employee_id = f"node_{existing.id}"
                                     
                                     node = {

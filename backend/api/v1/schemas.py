@@ -60,6 +60,22 @@ class CandidateActionRequest(BaseModel):
     employee_id: str
     action: str # 'approve' or 'reject'
 
+class EnrichManualRequest(BaseModel):
+    employee_id: str
+    raw_text: str
+
+class EmployeeUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    department: Optional[str] = None
+    level: Optional[int] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    linkedin: Optional[str] = None
+    location: Optional[str] = None
+    observations: Optional[str] = None
+    education: Optional[str] = None
+
 # --- SaaS / Settings Schemas ---
 
 class ProductSchema(BaseModel):
@@ -81,6 +97,8 @@ class BusinessProfileSchema(BaseModel):
     seller_name: Optional[str] = None
     seller_role: Optional[str] = None
     value_propositions: Optional[dict] = None
+    presentation_path: Optional[str] = None
+    signature_path: Optional[str] = None
 
 class ICPRuleSchema(BaseModel):
     rule_type: str

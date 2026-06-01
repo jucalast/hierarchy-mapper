@@ -11,8 +11,7 @@ Write-Host ""
 # 1. Limpar processos antigos
 Write-Host "🧹 Limpando servicos e terminais antigos..." -ForegroundColor Yellow
 Get-Process | Where-Object { $_.MainWindowTitle -like "*LINKB2B-*" } | Stop-Process -Force
-Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
-Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-NetTCPConnection -LocalPort 3000, 8000, 8001, 8002 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
 Get-Process headless_shell -ErrorAction SilentlyContinue | Stop-Process -Force
 
 Start-Sleep -Seconds 1

@@ -173,6 +173,17 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "type": "read",
         "executor": exec_pipedrive_get_deals_without_tasks,
     },
+    "pipedrive_advance_deal": {
+        "description": "Move o negócio para o próximo estágio do funil de vendas, ou para um estágio específico. Use quando uma etapa-chave foi concluída (ex: reunião realizada, proposta enviada).",
+        "args_schema": {
+            "deal_id": "int (ID do negócio no Pipedrive)",
+            "target_stage": "string ('next' para avançar automaticamente para a próxima etapa ou o ID numérico da etapa destino)",
+            "reason": "string opcional (motivo do avanço para registrar como nota no deal)"
+        },
+        "type": "write",
+        "executor": None,
+        "confirm_label": lambda args: f"Avançar deal #{args.get('deal_id')} para '{args.get('target_stage')}'",
+    },
     "pipedrive_update_deal": {
         "description": "Atualiza campos de um deal no Pipedrive (stage_id, status, value etc.). Requer confirmação.",
         "args_schema": {
@@ -443,11 +454,16 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
     # ── Email: envio novo ──────────────────────────────────────────────────────
     elif tool_name == "email_send":
         import os as _os
+        from modules.ai.service.context.business_context_service import BusinessContextService
+        
         to = args.get("to", "")
         subject = args.get("subject", "")
         body = args.get("body", "")
 
-        # Resolve attachment_name → caminho absoluto via settings
+        # Busca contexto para pegar anexo padrão e assinatura
+        ctx = await BusinessContextService.get_tenant_context()
+        
+        # Resolve attachment_name → caminho absoluto via settings ou contexto
         attachment_paths: list[str] = []
         
         # Adiciona anexo customizado feito pelo usuário na confirmação
@@ -457,25 +473,47 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
             
         att_name = args.get("attachment_name", "")
         if att_name:
-            try:
-                from core.config import settings as _s
-                _ATTACHMENT_MAP = {
-                    "apresentacao_linkb2b": getattr(_s, "LINKB2B_PRESENTATION_PATH", ""),
-                }
-                path = _ATTACHMENT_MAP.get(att_name, "")
+            # Se o agente pediu 'apresentacao', usamos o PDF configurado no banco
+            if "apresentacao" in att_name.lower():
+                path = ctx.get("presentation_path")
                 if path and _os.path.exists(path):
                     attachment_paths.append(path)
-                elif path:
-                    import logging as _log
-                    _log.warning(f"[email_send] Anexo '{att_name}' configurado mas arquivo não encontrado: {path}")
-            except Exception:
-                pass
+            else:
+                # Fallback legado para compatibilidade
+                try:
+                    from core.config import settings as _s
+                    _ATTACHMENT_MAP = {
+                        "apresentacao_linkb2b": getattr(_s, "LINKB2B_PRESENTATION_PATH", ""),
+                    }
+                    path = _ATTACHMENT_MAP.get(att_name, "")
+                    if path and _os.path.exists(path):
+                        attachment_paths.append(path)
+                except Exception:
+                    pass
+
+        # Append signature se houver imagem configurada
+        final_body = body
+        sig_path = ctx.get("signature_path")
+        if sig_path and _os.path.exists(sig_path):
+            try:
+                import base64 as _base64
+                from pathlib import Path as _Path
+                ext = _Path(sig_path).suffix.lower().replace(".", "")
+                if ext in ("png", "jpg", "jpeg", "gif"):
+                    with open(sig_path, "rb") as f:
+                        b64_data = _base64.b64encode(f.read()).decode()
+                    mime = f"image/{ext}" if ext != "jpg" else "image/jpeg"
+                    sig_html = f'<br><br><img src="data:{mime};base64,{b64_data}" style="max-width: 300px; height: auto;" />'
+                    final_body += sig_html
+            except Exception as sig_err:
+                import logging as _log
+                _log.warning(f"Erro ao embutir assinatura: {sig_err}")
 
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 r = await client.post(
                     f"{EMAIL_SERVICE_BASE}/send",
-                    json={"to_email": to, "subject": subject, "body": body, "attachment_paths": attachment_paths or None},
+                    json={"to": to, "subject": subject, "body": final_body, "attachment_paths": attachment_paths or None},
                 )
                 ok = r.status_code in (200, 201, 202)
                 if ok:
@@ -491,9 +529,13 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
 
     # ── Email: resposta ────────────────────────────────────────────────────────
     elif tool_name == "email_reply":
+        from modules.ai.service.context.business_context_service import BusinessContextService
         entry_id = args.get("entry_id", "")
         body = args.get("body", "")
         
+        # Busca contexto para pegar assinatura
+        ctx = await BusinessContextService.get_tenant_context()
+
         attachment_paths: list[str] = []
         user_attachment_path = args.get("attachment_path")
         if user_attachment_path and _os.path.exists(user_attachment_path):
@@ -501,11 +543,30 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
             
         if not entry_id or not body:
             return {"ok": False, "error": "entry_id e body são obrigatórios"}
+            
+        # Append signature se houver imagem configurada
+        final_body = body
+        sig_path = ctx.get("signature_path")
+        if sig_path and _os.path.exists(sig_path):
+            try:
+                import base64 as _base64
+                from pathlib import Path as _Path
+                ext = _Path(sig_path).suffix.lower().replace(".", "")
+                if ext in ("png", "jpg", "jpeg", "gif"):
+                    with open(sig_path, "rb") as f:
+                        b64_data = _base64.b64encode(f.read()).decode()
+                    mime = f"image/{ext}" if ext != "jpg" else "image/jpeg"
+                    sig_html = f'<br><br><img src="data:{mime};base64,{b64_data}" style="max-width: 300px; height: auto;" />'
+                    final_body += sig_html
+            except Exception as sig_err:
+                import logging as _log
+                _log.warning(f"Erro ao embutir assinatura no reply: {sig_err}")
+
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 r = await client.post(
                     f"{EMAIL_SERVICE_BASE}/reply",
-                    json={"entry_id": entry_id, "body": body, "reply_all": True, "attachment_paths": attachment_paths or None},
+                    json={"entry_id": entry_id, "body": final_body, "reply_all": True, "attachment_paths": attachment_paths or None},
                 )
                 ok = r.status_code in (200, 201, 202)
                 if ok:
@@ -525,6 +586,9 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
             return {"ok": False, "error": str(e)}
 
     # ── Pipedrive: atualizar deal ──────────────────────────────────────────────
+    elif tool_name == "pipedrive_advance_deal":
+        return await exec_pipedrive_advance_deal(args, org_id=org_id)
+
     elif tool_name == "pipedrive_update_deal":
         deal_id = args.get("deal_id")
         fields = args.get("fields", {})

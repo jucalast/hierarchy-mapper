@@ -467,6 +467,13 @@ async def _call_with_tools(
                 valid_models.sort(key=_gemini_size_sort_key)
                 models = valid_models
 
+            gemini_allowed_names = None
+            if force_tool_call and allowed_tool_names:
+                _avail = {t["name"] for t in tools}
+                gemini_allowed_names = [n for n in allowed_tool_names if n in _avail]
+                if not gemini_allowed_names:
+                    gemini_allowed_names = None
+
             payload = {
                 "contents": gemini_msgs,
                 "systemInstruction": {"parts": [{"text": system}]},
@@ -477,8 +484,8 @@ async def _call_with_tools(
                         "mode": "ANY" if force_tool_call else "AUTO",
                         # Restringe às ferramentas de investigação enquanto contexto incompleto
                         # Modelo escolhe qual usar livremente — só não pode chamar ações prematuras
-                        **({"allowedFunctionNames": allowed_tool_names}
-                           if force_tool_call and allowed_tool_names else {}),
+                        **({"allowedFunctionNames": gemini_allowed_names}
+                           if gemini_allowed_names else {}),
                     },
                 },
                 "generationConfig": {

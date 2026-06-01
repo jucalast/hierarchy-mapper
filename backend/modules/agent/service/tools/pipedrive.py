@@ -17,6 +17,79 @@ from ._utils import (
 log = get_logger(__name__)
 
 
+async def exec_pipedrive_advance_deal(args: Dict[str, Any], org_id: int | None = None) -> Dict[str, Any]:
+    deal_id = args.get("deal_id")
+    target_stage = args.get("target_stage")
+    reason = args.get("reason", "")
+    
+    if not deal_id or not target_stage:
+        return {"ok": False, "error": "deal_id e target_stage são obrigatórios"}
+        
+    STAGE_FLOW = {
+        # Novos Negócios
+        2: 18,   # Entrada -> Qualificação
+        18: 19,  # Qualificação -> Contatado
+        19: 4,   # Contatado -> Reunião Agendada
+        4: 26,   # Reunião Agendada -> Reunião Realizada
+        26: 27,  # Reunião Realizada -> Proposta em Andamento
+        27: 28,  # Proposta em Andamento -> Em Negociação
+        # Clientes Carteira
+        14: 16,  # Entrada -> Contato
+        16: 17,  # Contato -> Proposta
+        17: 32   # Proposta -> Programação
+    }
+    
+    STAGE_NAMES = {
+        2: "Entrada (Novos Negócios)", 18: "Qualificação", 19: "Contatado", 
+        4: "Reunião Agendada", 26: "Reunião Realizada", 27: "Proposta em Andamento", 28: "Em Negociação",
+        14: "Entrada (Carteira)", 16: "Contato", 17: "Proposta", 32: "Programação"
+    }
+
+    try:
+        from modules.crm.service.pipedrive_service import pipedrive_service
+        # Fetch current deal state
+        deal_res = await pipedrive_service.make_request("GET", f"deals/{deal_id}")
+        if not deal_res or deal_res.status_code != 200:
+            return {"ok": False, "error": f"Deal {deal_id} não encontrado."}
+            
+        deal_data = deal_res.json().get("data", {})
+        current_stage_id = deal_data.get("stage_id")
+        
+        next_stage_id = None
+        if target_stage.lower() == "next":
+            next_stage_id = STAGE_FLOW.get(current_stage_id)
+            if not next_stage_id:
+                return {"ok": False, "error": f"Não há estágio mapeado após o estágio atual ({current_stage_id})."}
+        else:
+            # We assume target_stage is provided as the stage ID (int) if it's not "next"
+            try:
+                next_stage_id = int(target_stage)
+            except ValueError:
+                return {"ok": False, "error": "target_stage deve ser 'next' ou um ID numérico de estágio."}
+                
+        # Advance the deal
+        update_res = await pipedrive_service.update_deal(int(deal_id), {"stage_id": next_stage_id})
+        ok = update_res.get("success", False)
+        
+        if ok:
+            stage_name = STAGE_NAMES.get(next_stage_id, str(next_stage_id))
+            note_content = f"⏩ Deal avançado para '{stage_name}' via Assistente V2."
+            if reason:
+                note_content += f"\nMotivo: {reason}"
+            try:
+                await pipedrive_service.make_request(
+                    "POST", "notes",
+                    json={"content": note_content, "deal_id": int(deal_id)}
+                )
+            except Exception:
+                pass
+            return {"ok": True, "result": f"Deal movido para a etapa {stage_name}.", "new_stage_id": next_stage_id, "new_stage_name": stage_name}
+        else:
+            return {"ok": False, "error": f"Erro ao avançar deal: {update_res.get('error', 'desconhecido')}"}
+            
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
 async def exec_pipedrive_get_org(args: Dict[str, Any], org_id: int | None = None) -> Dict[str, Any]:
     org_name = args.get("org_name", "")
     # Aceita org_id nos args (quando agente conhece o ID mas não o nome)

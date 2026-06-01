@@ -108,6 +108,12 @@ export function updateIntegration(type: string, payload: any) {
   return api.post<any>(`/settings/v2/integrations/${type}`, payload);
 }
 
+export function uploadProfileFile(fileType: 'presentation' | 'signature', file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post<any>(`/settings/v2/profile/upload?file_type=${fileType}`, formData);
+}
+
 export function searchEntities(query: string) {
   return api.get<any[]>(`/ai/search-entities?q=${encodeURIComponent(query)}`);
 }

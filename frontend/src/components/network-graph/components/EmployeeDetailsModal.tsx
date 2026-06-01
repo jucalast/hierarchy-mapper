@@ -6,6 +6,9 @@ import { ChevronDown, Mail, Phone, MapPin } from 'lucide-react';
 import { LinkedInIcon } from '../../icons/LinkedInIcon';
 import styles from '../../ui/Drawer/Drawer.module.css';
 import { HierarchyEmployee } from '@/types';
+import { hierarchy as hierarchyApi } from '@/services/api';
+import { Sparkles, Brain } from 'lucide-react';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface EmployeeDetailsModalProps {
     isOpen: boolean;
@@ -22,6 +25,7 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
     rawEmployees,
     handleUpdateEmployee
 }) => {
+    const { success, error } = useNotifications();
     const [formName, setFormName] = useState('');
     const [formRole, setFormRole] = useState('');
     const [formDepartment, setFormDepartment] = useState('');
@@ -30,7 +34,11 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
     const [formPhone, setFormPhone] = useState('');
     const [formLinkedin, setFormLinkedin] = useState('');
     const [formLocation, setFormLocation] = useState('');
+    const [formObservations, setFormObservations] = useState('');
+    const [formEducation, setFormEducation] = useState('');
+    const [linkedinText, setLinkedinText] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isEnriching, setIsEnriching] = useState(false);
 
     useEffect(() => {
         if (isOpen && empId) {
@@ -44,9 +52,46 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                 setFormPhone(emp.phone || '');
                 setFormLinkedin(emp.linkedin || emp.linkedin_url || '');
                 setFormLocation(emp.location || '');
+                setFormObservations(emp.observations || emp.description || '');
+                setFormEducation(emp.education || '');
             }
         }
     }, [isOpen, empId, rawEmployees]);
+
+    const handleEnrichManual = async () => {
+        if (!empId || !linkedinText.trim()) return;
+
+        setIsEnriching(true);
+        try {
+            // Limpeza básica para reduzir payload e ruído
+            const cleanedText = linkedinText
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .join('\n')
+                .slice(0, 15000); // Limite de segurança
+
+            const data = await hierarchyApi.enrichManual(empId, cleanedText);
+            if (data.employee) {
+                const e = data.employee;
+                setFormName(e.name || formName);
+                setFormRole(e.role || formRole);
+                setFormDepartment(e.department || formDepartment);
+                setFormLevel(e.seniority || e.level || formLevel);
+                setFormLocation(e.location || formLocation);
+                setFormObservations(e.observations || formObservations);
+                setFormEducation(e.education || formEducation);
+                // Opcional: Limpar o texto após sucesso
+                setLinkedinText('');
+                success(`Dados de ${e.name} refinados com sucesso via IA!`);
+            }
+        } catch (err: any) {
+            console.error(err);
+            error("Erro ao refinar perfil: " + (err.response?.data?.detail || err.message));
+        } finally {
+            setIsEnriching(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,7 +107,9 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                 email: formEmail,
                 phone: formPhone,
                 linkedin: formLinkedin,
-                location: formLocation
+                location: formLocation,
+                observations: formObservations,
+                education: formEducation
             });
             onClose();
         } catch (err) {
@@ -213,6 +260,91 @@ export const EmployeeDetailsModal: React.FC<EmployeeDetailsModalProps> = ({
                             />
                         </div>
                     </div>
+                </div>
+
+                <div className={styles.formSectionTitle}>Informações Adicionais (IA)</div>
+                <div className={styles.formGroup}>
+                    <label>Biografia / Observações</label>
+                    <textarea 
+                        value={formObservations} 
+                        onChange={(e) => setFormObservations(e.target.value)} 
+                        className={styles.formInput}
+                        placeholder="Resumo profissional e evidências..."
+                        style={{ height: '80px', resize: 'vertical' }}
+                    />
+                </div>
+                <div className={styles.formGroup}>
+                    <label>Educação / Formação</label>
+                    <textarea 
+                        value={formEducation} 
+                        onChange={(e) => setFormEducation(e.target.value)} 
+                        className={styles.formInput}
+                        placeholder="Principais formações acadêmicas..."
+                        style={{ height: '60px', resize: 'vertical' }}
+                    />
+                </div>
+
+                <div className={styles.formSectionTitle} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} color="#6366f1" />
+                    Refinar com IA (LinkedIn)
+                </div>
+                <div className={styles.formGroup}>
+                    <label style={{ fontSize: '0.75rem', opacity: 0.7, marginBottom: '8px', display: 'block' }}>
+                        Copie todo o texto da página do perfil no LinkedIn (Ctrl+A, Ctrl+C) e cole abaixo para que a IA extraia os detalhes automaticamente.
+                    </label>
+                    <textarea 
+                        value={linkedinText}
+                        onChange={(e) => setLinkedinText(e.target.value)}
+                        placeholder="Cole aqui o conteúdo do perfil LinkedIn..."
+                        className={styles.formInput}
+                        style={{ height: '120px', resize: 'vertical', padding: '12px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.2)' }}
+                    />
+                    <button 
+                        type="button"
+                        onClick={handleEnrichManual}
+                        disabled={isEnriching || !linkedinText.trim()}
+                        style={{ 
+                            marginTop: '12px', 
+                            background: isEnriching || !linkedinText.trim() ? 'rgba(255, 255, 255, 0.05)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                            color: isEnriching || !linkedinText.trim() ? 'rgba(255, 255, 255, 0.4)' : '#ffffff',
+                            border: isEnriching || !linkedinText.trim() ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+                            padding: '12px 24px',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: '10px',
+                            width: '100%',
+                            cursor: isEnriching || !linkedinText.trim() ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s ease',
+                            boxShadow: isEnriching || !linkedinText.trim() ? 'none' : '0 4px 12px rgba(99, 102, 241, 0.3)'
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!isEnriching && linkedinText.trim()) {
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(99, 102, 241, 0.4)';
+                            }
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!isEnriching && linkedinText.trim()) {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
+                            }
+                        }}
+                    >
+                        {isEnriching ? (
+                            <>
+                                <Spinner size={16} inline />
+                                <span>Processando Perfil...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Brain size={18} />
+                                <span>Extrair Dados via IA</span>
+                            </>
+                        )}
+                    </button>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>

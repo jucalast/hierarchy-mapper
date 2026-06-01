@@ -958,7 +958,8 @@ export const useHierarchy = () => {
         }
     }, []);
 
-    const updateEmployee = useCallback((id: string, updates: Partial<HierarchyEmployee>) => {
+    const updateEmployee = useCallback(async (id: string, updates: Partial<HierarchyEmployee>) => {
+        // Atualiza estado local imediatamente
         setRawEmployees(prev => {
             const index = prev.findIndex(e => e.id === id);
             if (index === -1) return prev;
@@ -966,6 +967,16 @@ export const useHierarchy = () => {
             updated[index] = { ...updated[index], ...updates };
             return updated;
         });
+
+        // Persiste no backend se for um ID estável (node_...)
+        if (id.startsWith('node_')) {
+            try {
+                await hierarchyApi.updateEmployeeDetails(id, updates);
+                console.log(`[useHierarchy] Funcionário ${id} atualizado no banco.`);
+            } catch (e) {
+                console.error(`[useHierarchy] Erro ao salvar atualização no banco:`, e);
+            }
+        }
     }, []);
 
     const smartSyncPipedrive = useCallback(async (onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void) => {

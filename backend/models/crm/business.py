@@ -22,6 +22,8 @@ class BusinessProfile(Base):
     differentials = Column(JSON) # List of strings
     methodology = Column(Text) # Guia de prospecção do agente
     value_propositions = Column(JSON) # Dictionary of value propositions
+    presentation_path = Column(String) # Caminho para o PDF de apresentação
+    signature_path = Column(String) # Caminho para a imagem de assinatura
 
     tenant = relationship("Tenant", back_populates="business_profiles")
 

@@ -13082,3 +13082,1101 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T20:47:23.206921",
+    "candidate": "Acácia Auto peças",
+    "linkedin": "https://www.linkedin.com/in/ac%C3%A1cia-auto-pe%C3%A7as-8b175b30b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Acácia Auto peças - São Paulo, São Paulo, Brasil - LinkedIn Brasil",
+            "body": "Formação acadêmica: Alura · Localidade: 01101-080. Veja o perfil de Acácia Auto peças no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "são paulo, são paulo, brasil",
+            "bio": "Formação acadêmica: Alura · Localidade: 01101-080. Veja o perfil de Acácia Auto peças no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Acácia Auto peças",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças",
+                "Formação acadêmica: Alura · Localidade: 01101-080. Veja o perfil de Acácia Auto peças no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Formação acadêmica: Alura · Localidade: 01101-080. Veja o perfil de Acácia Auto peças no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Acácia Auto peças",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Acácia Auto peças",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Formação acadêmica: Alura · Localidade: 01101-080. Veja o perfil de Acácia Auto peças no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo não foi identificado e não há termos técnicos explícitos relacionados a Suprimentos/Compras/Procurement na bio ou nos snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T20:54:40.141183",
+    "candidate": "Edson Luís de Almeida",
+    "linkedin": "https://www.linkedin.com/in/edson-lu%C3%ADs-de-almeida-9327a632",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Edson Luís de Almeida - Acacia Auto Peças | LinkedIn",
+            "body": "30 de out. de 2025 · Experiência. Gráfico Acacia Auto Peças. Acacia Auto Peças. Brasil. -. Campinas SP. -. Hortolândia, São Paulo, Brasil. Formação acadêmica."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Objetivo:\nLogística (Supply Chain, Projetos e Melhoria Contínua).\n\nEspecialista… · Experiência: Acacia Auto Peças · Formação acadêmica: Fundação Getulio Vargas · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Edson Luís de Almeida no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Edson Luís de Almeida",
+        "role": "Head of Logistics Interface and Customer Supply Chain, LEAN and Quality Processes",
+        "matching_score": 95,
+        "department": "Logística / Supply Chain",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato trabalha na empresa-alvo 'Acacia Auto Peças', conforme confirmado pelo Detetive. O cargo é relevante para a área de Suprimentos/Logística e não há indícios de veto.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Edson Luís de Almeida is associated with Acacia Auto Peças.",
+                "Experiência : Acacia Auto Peças",
+                "No meu caso, no meio do caminho, estava a Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Edson Luís de Almeida is associated with Acacia Auto Peças. His role is Head of Logistics Interface and Customer Supply Chain, LEAN and Quality Processes. He is proud of the logistics team that supported the operation in recent months and especially the engagement of everyone."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Edson Luís De Almeida",
+                    "role": "Head of Logistics Interface and Customer Supply Chain, LEAN and Quality Processes"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Edson Luís de Almeida",
+                "detected_role": "Head of Logistics Interface and Customer Supply Chain, LEAN and Quality Processes",
+                "clean_bio": "Edson Luís de Almeida is associated with Acacia Auto Peças. His role is Head of Logistics Interface and Customer Supply Chain, LEAN and Quality Processes. He is proud of the logistics team that supported the operation in recent months and especially the engagement of everyone."
+            }
+        },
+        "specialist": {
+            "role_name": "Head of Logistics Interface and Customer Supply Chain, LEAN and Quality Processes",
+            "dept": "Logística / Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Head of Logistics Interface and Customer Supply Chain, com foco em LEAN e Processos de Qualidade, tem interface direta com a gestão de fornecedores e fluxo de materiais, o que é relevante para a área de Suprimentos/Compras. A logística e supply chain são áreas intrinsecamente ligadas ao procurement."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/edson-lu%C3%ADs-de-almeida-9327a632"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Head of Logistics Interface and Customer Supply Chain, LEAN and Quality Processes",
+        "department": "Logística / Supply Chain",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T20:57:08.986820",
+    "candidate": "Atyla Lima",
+    "linkedin": "https://www.linkedin.com/in/atyla-lima-432158235",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Atyla Lima - Acacia Auto Peças | LinkedIn",
+            "body": "Experiência: Acacia Auto Peças · Localidade: Brasil. Veja o perfil de Atyla Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Acacia Auto Peças · Localidade: Brasil. Veja o perfil de Atyla Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Atyla Lima",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Atyla Lima - Acacia Auto Peças",
+                "Experiência: Acacia Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Atyla Lima - Acacia Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Atyla Lima",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Atyla Lima",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Atyla Lima - Acacia Auto Peças. Veja o perfil de Atyla Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Atyla Lima não foi identificado nos dados fornecidos. Embora haja um vínculo confirmado com a Acacia Auto Peças, não há informações suficientes para determinar se a função possui interface direta com Suprimentos/Compras/Procurement, nem termos técnicos explícitos na bio ou snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T20:57:44.243430",
+    "candidate": "Eva Maria Costa Navarro",
+    "linkedin": "https://www.linkedin.com/in/eva-maria-costa-navarro-770b61167",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Eva Maria Costa Navarro - AutoZone - LinkedIn",
+            "body": "Experiência: AutoZone · Formação acadêmica: DR. ARCHIMEDES LAMMOGLIA- FATEC · Localidade: Salto · 194 conexões no LinkedIn. Veja o perfil de Eva Maria Costa ..."
+        },
+        "osint_metadata": {
+            "role": "autozone",
+            "bio": "Experiência: AutoZone · Formação acadêmica: DR. ARCHIMEDES LAMMOGLIA- FATEC · Localidade: Salto · 194 conexões no LinkedIn. Veja o perfil de Eva Maria Costa Navarro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Eva Maria Costa Navarro",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Experiência: AutoZone · Formação acadêmica: DR. ARCHIMEDES LAMMOGLIA- FATEC · Localidade: Salto · 194 conexões no LinkedIn.",
+                "Google Page Title: Eva Maria Costa Navarro - AutoZone",
+                "Search Snippet: Experiência: AutoZone · Formação acadêmica: DR. ARCHIMEDES LAMMOGLIA- FATEC · Localidade: Salto · 194 conexões no LinkedIn.",
+                "CURRENT COMPANY (Declarada): Acacia Auto Peças | LinkedIn Personal Bio: Experiência: AutoZone · Formação acadêmica: DR. ARCHIMEDES LAMMOGLIA- FATEC · Localidade: Salto · 194 conexões no LinkedIn."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Eva Maria Costa Navarro - AutoZone"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Eva Maria Costa Navarro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Eva Maria Costa Navarro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Eva Maria Costa Navarro - AutoZone · Formação acadêmica: DR. ARCHIMEDES LAMMOGLIA- FATEC · Localidade: Salto · 194 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Eva Maria Costa Navarro não foi identificado nos dados fornecidos. Embora a empresa alvo seja Acacia Auto Peças, a experiência listada é na AutoZone. Sem um cargo explícito relacionado a Suprimentos/Compras/Procurement, a relevância não pode ser confirmada."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T20:57:55.147821",
+    "candidate": "Prof. Dr. Eric Winandy",
+    "linkedin": "https://www.linkedin.com/in/ericwinandy",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Prof. Dr. Eric Winandy - Empresário - LinkedIn",
+            "body": "Sou doutor em Ciências pela Universidade de São Paulo - USP, em minha tese de doutorado estudei exaustivamente a gestão de risco nas empresas de comércio ..."
+        },
+        "osint_metadata": {
+            "role": "webdas",
+            "bio": "Minhas áreas de trabalho, estudo e de pesquisa são o Comércio Eletrônico, a Internet, a… · Experiência: Webdas - Sua Empresa na Internet - Sua Loja na Internet - Aplicativos Jundiaí · Formação acadêmica: Faculdade de Economia, Administração, Contabilidade e Atuária da Universidade de São Paulo · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Prof. Dr. Eric Winandy no LinkedI..."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T20:59:03.088097",
+    "candidate": "Aline Bernardes",
+    "linkedin": "https://www.linkedin.com/in/aline-bernardes-190289168",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Aline Bernardes - Acacia Auto Peças | LinkedIn",
+            "body": "· Experiência: Acacia Auto Peças · Formação acadêmica: Anhanguera Educacional · Localidade: Campinas · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou uma profissional graduada em Administração, apaixonada por construir ambientes de… · Experiência: Acacia Auto Peças · Formação acadêmica: Anhanguera Educacional · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Aline Bernardes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Aline Bernardes",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Acacia Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sou uma profissional graduada em Administração, apaixonada por construir ambientes de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Aline Bernardes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Aline Bernardes",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Sou uma profissional graduada em Administração, apaixonada por construir ambientes de… Experiência: Acacia Auto Peças Formação acadêmica: Anhanguera Educacional Localidade: Campinas + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos / Compras / Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Aline Bernardes não foi identificado nos dados fornecidos. Embora ela trabalhe na Acacia Auto Peças, não há informações suficientes para determinar se sua função está relacionada a Suprimentos/Compras/Procurement. A bio é genérica e não contém termos técnicos explícitos da área."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T20:59:25.622791",
+    "candidate": "Luís Guilherme Borges",
+    "linkedin": "https://www.linkedin.com/in/lu%C3%ADs-guilherme-borges-18154b38",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luís Guilherme Borges - Acácia Auto Peças Ltda - LinkedIn",
+            "body": "Experiência: Acácia Auto Peças Ltda · Formação acadêmica: Consultoria Nortegubisian · Localidade: Campinas · + de 500 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Acácia Auto Peças Ltda · Formação acadêmica: Consultoria Nortegubisian · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Luís Guilherme Borges no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Luís Guilherme Borges",
+        "role": "Nenhum",
+        "matching_score": 0,
+        "department": "Nenhum",
+        "evidence": "Veto Mecânico Detectado e Especialista marcou Relevante: False. O cargo é 'Não Identificado' e não há 'Cargo Oficial Verificado' para contradizer o especialista.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Luís Guilherme Borges - Acácia Auto Peças Ltda",
+                "Acácia Auto Peças Ltda",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Luís Guilherme Borges - Acácia Auto Peças Ltda. Experiência: Acácia Auto Peças Ltda. Formação acadêmica: Consultoria Nortegubisian. Localidade: Campinas. + de 500 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luís Guilherme Borges",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luís Guilherme Borges",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Luís Guilherme Borges - Acácia Auto Peças Ltda. Experiência: Acácia Auto Peças Ltda. Formação acadêmica: Consultoria Nortegubisian. Localidade: Campinas. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Luís Guilherme Borges não foi identificado nos dados fornecidos. Embora ele trabalhe na Acacia Auto Peças, não há informações explícitas em sua bio ou snippets que o conectem diretamente às áreas de Suprimentos, Compras ou Procurement, nem termos técnicos que justifiquem a relevância com base na instrução 9."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Nenhum",
+        "department": "Nenhum",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T20:59:47.262264",
+    "candidate": "Aline Cristine Toledo",
+    "linkedin": "https://www.linkedin.com/in/aline-cristine-toledo-2a4704141",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Aline Cristine Toledo - Acacia Auto Peças - LinkedIn",
+            "body": "Qualificações: • Gerência de loja: Liderança e gestão de equipe • Planejamento… · Experiência: Acacia Auto Peças · Formação acadêmica: Pontifícia ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Qualificações:\n\n•\tGerência de loja: Liderança e gestão de equipe\n•\tPlanejamento… · Experiência: Acacia Auto Peças · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: Campinas · 458 conexões no LinkedIn. Veja o perfil de Aline Cristine Toledo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Aline Cristine Toledo",
+        "role": "Gerente de Loja",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato trabalha na empresa-alvo 'Acacia Auto Peças' e o cargo 'Gerente de Loja' é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Acacia Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gerência de loja: Liderança e gestão de equipe. Planejamento. Experiência na Acacia Auto Peças. Formada pela PUC Campinas. Reside em Campinas com 458 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Aline Cristine Toledo",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Aline Cristine Toledo",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Qualificações: • Gerência de loja: Liderança e gestão de equipe • Planejamento… · Experiência: Acacia Auto Peças · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: Campinas · 458 conexões no LinkedIn. Veja o perfil de Aline Cristine Toledo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de Loja",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Gerente de Loja' com foco em 'Liderança e gestão de equipe' e 'Planejamento', combinado com a experiência na empresa 'Acacia Auto Peças', sugere uma interface com a gestão de estoque e possivelmente com a cadeia de suprimentos, o que é relevante para Compras. A formação acadêmica e a localidade também são consistentes."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Gerente de Loja",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:00:17.547955",
+    "candidate": "FABIO LUIZ PIRES",
+    "linkedin": "https://www.linkedin.com/in/fabio-luiz-pires-02700715a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "FABIO LUIZ PIRES - Acacia Auto Peças | LinkedIn",
+            "body": "Sou formado em Superior de Tecnologia em Logística pelo Centro Universitário SENAC, com… · Experiência: Acacia Auto Peças · Formação acadêmica: Senac Brasil ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou formado em Superior de Tecnologia em Logística pelo Centro Universitário SENAC, com… · Experiência: Acacia Auto Peças · Formação acadêmica: Senac Brasil · Localidade: Campinas · 110 conexões no LinkedIn. Veja o perfil de FABIO LUIZ PIRES no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "FABIO LUIZ PIRES",
+        "role": "Nao Identificado",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico, indicando uma inconsistência ou regra de rejeição automática aplicada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Acacia Auto Peças",
+                "FABIO LUIZ PIRES - Acacia Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sou formado em Superior de Tecnologia em Logística pelo Centro Universitário SENAC, com experiência na Acacia Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "FABIO LUIZ PIRES",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "FABIO LUIZ PIRES",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Sou formado em Superior de Tecnologia em Logística pelo Centro Universitário SENAC, com… · Experiência: Acacia Auto Peças · Formação acadêmica: Senac Brasil · Localidade: Campinas · 110 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de FABIO LUIZ PIRES não foi identificado nos dados fornecidos. Embora ele trabalhe na Acacia Auto Peças e tenha formação em Logística, não há informações explícitas em sua bio ou snippets que o conectem diretamente a atividades de Suprimentos, Compras ou Procurement, como interface com fornecedores ou materiais. A formação em Logística, por si só, não garante relevância para a área de Compras sem essa interface explícita."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Nao Identificado",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:00:50.889182",
+    "candidate": "Cristiano Cardoso Gomes",
+    "linkedin": "https://www.linkedin.com/in/cristiano-cardoso-gomes-a282a8a0",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Cristiano Cardoso Gomes - Acacia Auto Peças - LinkedIn",
+            "body": "Profissional com experiência nas áreas de Telecomunicações, Operações Industriais e… · Experiência: Acacia Auto Peças · Formação acadêmica: Centro ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Profissional com experiência nas áreas de Telecomunicações, Operações Industriais e… · Experiência: Acacia Auto Peças · Formação acadêmica: Centro Universitário Salesiano de São Paulo · Localidade: Hortolândia · + de 500 conexões no LinkedIn. Veja o perfil de Cristiano Cardoso Gomes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Cristiano Cardoso Gomes",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Acacia Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional com experiência nas áreas de Telecomunicações, Operações Industriais e…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Cristiano Cardoso Gomes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Cristiano Cardoso Gomes",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Profissional com experiência nas áreas de Telecomunicações, Operações Industriais e… Experiência: Acacia Auto Peças Formação acadêmica: Centro Universitário Salesiano de São Paulo Localidade: Hortolândia + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Cristiano Cardoso Gomes não foi identificado nos dados fornecidos. Embora ele trabalhe na Acacia Auto Peças, não há informações explícitas em sua bio ou snippets que o vinculem diretamente às áreas de Suprimentos, Compras ou Procurement, nem termos técnicos que justifiquem a relevância para a vaga."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:01:32.838247",
+    "candidate": "Pedro C. Andrade Junior",
+    "linkedin": "https://www.linkedin.com/in/pedro-c-andrade-junior-4317811a6",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Pedro C. Andrade Junior - Acácia Auto Peças - LinkedIn",
+            "body": "Experiência: Acácia Auto Peças · Localidade: 13170-001 · + de 500 conexões no LinkedIn. Veja Pedro C. Andrade Junior o perfil no LinkedIn, uma comunidade ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Acácia Auto Peças · Localidade: 13170-001 · + de 500 conexões no LinkedIn. Veja Pedro C. Andrade Junior  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Pedro C. Andrade Junior",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Acácia Auto Peças",
+                "Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Pedro C. Andrade Junior - Acácia Auto Peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Pedro C. Andrade Junior",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Pedro C. Andrade Junior",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Pedro C. Andrade Junior - Acácia Auto Peças. Localidade: 13170-001. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Pedro C. Andrade Junior não foi identificado nos dados fornecidos. Embora ele trabalhe na Acacia Auto Peças, não há informações suficientes para determinar se sua função tem interface direta com Suprimentos/Compras/Procurement, nem termos técnicos explícitos na bio ou snippets que justifiquem relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:01:52.966271",
+    "candidate": "Samuel Reis",
+    "linkedin": "https://www.linkedin.com/in/samuel-reis-255099223",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Samuel Reis - -- | LinkedIn",
+            "body": "Experiência. Gráfico Acácia Auto Peças. Gerente de loja. Acácia Auto Peças. nov. de 2021 - nov. de 2023 2 anos 1 mês. Campinas, São Paulo, Brasil."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Profissional do varejo com mais de  10 anos no setor comercial de peças automotivas, com… · Experiência: Acácia Auto Peças · Formação acadêmica: Unasp · Localidade: Sumaré · 300 conexões no LinkedIn. Veja o perfil de Samuel Reis no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Samuel Reis",
+        "role": "Gerente de loja",
+        "matching_score": 0,
+        "department": "Varejo Automotivo",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Gerente de loja). O candidato trabalha na empresa-alvo 'Acacia Auto Peças' como Gerente de loja, o que é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Gráfico Acácia Auto Peças. Gerente de loja. Acácia Auto Peças. nov. de 2021 - nov. de 2023 2 anos 1 mês. Campinas, São Paulo, Brasil.",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças",
+                "Experiência: Acácia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional do varejo com mais de 10 anos no setor comercial de peças automotivas."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Samuel Reis",
+                    "role": "Gerente de loja"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Samuel Reis",
+                "detected_role": "Gerente de loja",
+                "clean_bio": "Profissional do varejo com mais de 10 anos no setor comercial de peças automotivas."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de loja",
+            "dept": "Varejo Automotivo",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Gerente de loja', que está diretamente ligado à área comercial e de varejo, não possuindo interface direta com Suprimentos/Compras/Procurement. A bio menciona 'setor comercial', reforçando essa classificação. Não há termos técnicos explícitos de compras ou suprimentos na bio ou snippets que justifiquem relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Gerente de loja",
+        "department": "Varejo Automotivo",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:02:13.876640",
+    "candidate": "Douglas Eto",
+    "linkedin": "https://www.linkedin.com/in/douglas-eto",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Douglas Eto - Acacia Auto Peças | LinkedIn",
+            "body": "Profissional da área comercial com mais de 5 anos de experiência em vendas no segmento de… · Experiência: Acacia Auto Peças · Formação acadêmica: UniCesumar ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Profissional da área comercial com mais de 5 anos de experiência em vendas no segmento de… · Experiência: Acacia Auto Peças · Formação acadêmica: UniCesumar · Localidade: Hortolândia · 412 conexões no LinkedIn. Veja o perfil de Douglas Eto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Douglas Eto",
+        "role": "Comercial",
+        "matching_score": 0,
+        "department": "Comercial",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Não Identificado). O candidato trabalha na empresa alvo 'Acacia Auto Peças', conforme confirmado pelo Detetive. A experiência declarada é na área comercial, o que é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Acacia Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças",
+                "Profissional da área comercial com mais de 5 anos de experiência em vendas no segmento de… · Experiência: Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional da área comercial com mais de 5 anos de experiência em vendas no segmento de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Douglas Eto",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Douglas Eto",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Profissional da área comercial com mais de 5 anos de experiência em vendas no segmento de… Experiência: Acacia Auto Peças Formação acadêmica: UniCesumar Localidade: Hortolândia 412 conexões no LinkedIn. Veja o perfil de Douglas Eto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Douglas Eto não foi identificado nos dados fornecidos. A bio indica experiência na área comercial e vendas, o que é explicitamente vetado para as áreas de Suprimentos/Compras/Procurement. Não há termos técnicos explícitos de Suprimentos/Compras/Procurement na bio ou snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Comercial",
+        "department": "Comercial",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:03:07.428585",
+    "candidate": "RENATO GABRIEL DA SILVA",
+    "linkedin": "https://www.linkedin.com/in/renato-gabriel-da-silva-8396a24a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "RENATO GABRIEL DA SILVA - GERENTE DE COMPRAS na ACACIA AUTO ...",
+            "body": "GERENTE DE COMPRAS na ACACIA AUTO PEÇAS LTDA · Experiência: ACACIA AUTO PEÇAS LTDA · Formação acadêmica: UNIPINHAL · Localidade: Campinas · 330 conexões no LinkedIn . Veja o perfil..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: ACACIA AUTO PEÇAS LTDA · Formação acadêmica: UNIPINHAL · Localidade: Campinas · 330 conexões no LinkedIn. Veja o perfil de RENATO GABRIEL DA SILVA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "RENATO GABRIEL DA SILVA",
+        "role": "Gerente de Compras",
+        "matching_score": 100,
+        "department": "Compras",
+        "evidence": "O candidato RENATO GABRIEL DA SILVA trabalha na empresa-alvo Acacia Auto Peças, conforme confirmado pelo Detetive e pelo Especialista. O cargo de Gerente de Compras é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "RENATO GABRIEL DA SILVA - GERENTE DE COMPRAS na ACACIA AUTO PEÇAS LTDA",
+                "Experiência: ACACIA AUTO PEÇAS LTDA",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "RENATO GABRIEL DA SILVA - GERENTE DE COMPRAS na ACACIA AUTO PEÇAS LTDA."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "RENATO GABRIEL DA SILVA",
+                    "role": "GERENTE DE COMPRAS"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "RENATO GABRIEL DA SILVA",
+                "detected_role": "GERENTE DE COMPRAS",
+                "clean_bio": "RENATO GABRIEL DA SILVA - GERENTE DE COMPRAS na ACACIA AUTO PEÇAS LTDA. Experiência: ACACIA AUTO PEÇAS LTDA. Formação acadêmica: UNIPINHAL. Localidade: Campinas. 330 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de Compras",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Gerente de Compras' está diretamente alinhado com a área de Suprimentos/Compras/Procurement. O vínculo com a empresa Acacia Auto Peças é confirmado e o candidato possui experiência relevante na área."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Gerente de Compras",
+        "department": "Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:03:27.614938",
+    "candidate": "edson magalhaes",
+    "linkedin": "https://www.linkedin.com/in/edson-magalhaes-92ba0198",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "edson magalhaes - comprador na acacia auto peças ltda | LinkedIn",
+            "body": "comprador na acacia auto peças ltda · Experiência: acacia auto peças ltda · Localidade: Campinas · 16 conexões no LinkedIn . Veja o perfil de edson magalhaes no LinkedIn , uma..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: acacia auto peças ltda · Localidade: Campinas · 16 conexões no LinkedIn. Veja o perfil de edson magalhaes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "edson magalhaes",
+        "role": "Comprador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Acacia Auto Peças' como Comprador, conforme confirmado pelo Detetive e Especialista.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "edson magalhaes - comprador na acacia auto peças ltda",
+                "Experiência: acacia auto peças ltda",
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "edson magalhaes - comprador na acacia auto peças ltda"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "edson magalhaes",
+                    "role": "comprador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "edson magalhaes",
+                "detected_role": "comprador",
+                "clean_bio": "edson magalhaes - comprador na acacia auto peças ltda"
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador' foi detectado diretamente na bio e no snippet, e está diretamente alinhado com a área de Suprimentos/Compras. O vínculo com a empresa Acacia Auto Peças foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:04:31.494545",
+    "candidate": "Fabiano Mendes",
+    "linkedin": "https://www.linkedin.com/in/fabiano-mendes-10395035",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fabiano Mendes - Acácia Auto Peças | LinkedIn",
+            "body": "· Experiência: Acácia Auto Peças · Formação acadêmica: Anhanguera Educacional · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de Fabiano Mendes no LinkedIn , uma..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "° Profissional com vivência em empresas de pequeno, médio e grande porte, atuando a mais… · Experiência: Acácia Auto Peças · Formação acadêmica: Anhanguera Educacional · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Fabiano Mendes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Fabiano Mendes",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Acácia Auto Peças",
+                "Candidate Name: Fabiano Mendes | Google Page Title: Fabiano Mendes - Acácia Auto Peças",
+                "CURRENT COMPANY (Declarada): Acacia Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional com vivência em empresas de pequeno, médio e grande porte, atuando a mais…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Fabiano Mendes",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Fabiano Mendes",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Profissional com vivência em empresas de pequeno, médio e grande porte, atuando a mais… Experiência: Acácia Auto Peças Formação acadêmica: Anhanguera Educacional Localidade: Campinas + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Fabiano Mendes não foi identificado nos dados fornecidos. Embora ele trabalhe na Acacia Auto Peças, não há informações suficientes para determinar se sua função tem interface direta com Suprimentos/Compras/Procurement, e a bio é genérica. Portanto, não é possível confirmar a relevância para a área de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:04:53.358707",
+    "candidate": "Leonardo De Oliveira",
+    "linkedin": "https://www.linkedin.com/in/leonardodeoliveiradev",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leonardo De Oliveira - Acacia Auto Peças | LinkedIn",
+            "body": "· Experiência: Acacia Auto Peças · Formação acadêmica: Dev Club · Localidade: 13170-001 · + de 500 conexões no LinkedIn . Veja o perfil de Leonardo De Oliveira no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "- Vendedor de peças automotivas na Acácia auto peças.\n\nCompetências\n\n-… · Experiência: Acacia Auto Peças · Formação acadêmica: Dev Club · Localidade: 13170-001 · + de 500 conexões no LinkedIn. Veja o perfil de Leonardo De Oliveira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Leonardo De Oliveira",
+        "role": "Vendedor de Peças Automotivas",
+        "matching_score": 0,
+        "department": "Suprimentos",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Não Identificado). O candidato trabalha na empresa alvo 'Acacia Auto Peças' como Vendedor de Peças Automotivas, o que é relevante para a área de Suprimentos/Compras. Não há indícios de veto por regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Vendedor de peças automotivas na Acácia auto peças.",
+                "Experiência: Acacia Auto Peças",
+                "CURRENT COMPANY (Declarada): Acacia Auto Peças",
+                "Vendedor de peças automotivas na Acácia auto peças."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Vendedor de peças automotivas na Acácia auto peças."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leonardo De Oliveira",
+                    "role": "Vendedor de peças automotivas"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leonardo De Oliveira",
+                "detected_role": "Vendedor de peças automotivas",
+                "clean_bio": "Vendedor de peças automotivas na Acácia auto peças."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Vendedor de peças automotivas', que se enquadra em vendas e é explicitamente vetado pelas instruções técnicas. Não há termos técnicos explícitos de Suprimentos/Compras/Procurement na bio ou snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Vendedor de Peças Automotivas",
+        "department": "Suprimentos",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-05-31T21:05:43.178405",
+    "candidate": "Acácia Galli",
+    "linkedin": "https://www.linkedin.com/in/acaciaperigo/pt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Acácia Galli - Regional Procurement Senior Director ...",
+            "body": "Veja o perfil de Acácia Galli no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "l'occitane group (b corp)",
+            "bio": "Executiva de Procurement e Operações com mais de 18 anos de experiência liderando… · Experiência: L'OCCITANE Group (B Corp) · Formação acadêmica: Universidade de São Paulo · Localidade: Nova York · + de 500 conexões no LinkedIn. Veja o perfil de Acácia Galli no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Acácia Galli",
+        "role": "Regional Procurement Senior Director",
+        "matching_score": 0,
+        "department": "Procurement",
+        "evidence": "O detetive encontrou que o candidato trabalha na L'OCCITANE Group, que é uma empresa diferente da META_COMPANY_DECLARADA 'Acacia Auto Peças'. A Regra 1 (VETO DE EMPRESA) foi aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Acacia Auto Peças",
+                "L'OCCITANE Group (B Corp)"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Executiva de Procurement e Operações com mais de 18 anos de experiência liderando…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Acácia Galli",
+                    "role": "Regional Procurement Senior Director"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Acácia Galli",
+                "detected_role": "Regional Procurement Senior Director",
+                "clean_bio": "Executiva de Procurement e Operações com mais de 18 anos de experiência liderando… Experiência: L'OCCITANE Group (B Corp) Formação acadêmica: Universidade de São Paulo Localidade: Nova York + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Regional Procurement Senior Director",
+            "dept": "Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Regional Procurement Senior Director' está diretamente alinhado com a área de Suprimentos/Compras/Procurement. A bio confirma experiência em liderança de Procurement. Apesar do vínculo com a empresa alvo não ser confirmado pelo Detetive, o cargo em si é altamente relevante."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Regional Procurement Senior Director",
+        "department": "Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------

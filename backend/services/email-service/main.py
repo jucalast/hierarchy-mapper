@@ -89,13 +89,14 @@ async def send_email(
     to: str = Body(..., embed=True),
     subject: str = Body(..., embed=True),
     body: str = Body(..., embed=True),
+    attachment_paths: Optional[List[str]] = Body(None, embed=True),
     tracking_id: Optional[str] = Body(None, embed=True),
     request_receipt: bool = Body(False, embed=True)
 ):
     """Envia um email utilizando o Outlook Desktop ou SMTP."""
     c = await get_client()
     try:
-        success = c.send_outbound_email(to, subject, body, tracking_id, request_read_receipt=request_receipt)
+        success = c.send_outbound_email(to, subject, body, tracking_id, request_read_receipt=request_receipt, attachment_paths=attachment_paths)
         if success:
             return {"success": True, "to": to, "subject": subject}
         raise HTTPException(status_code=500, detail="Erro ao enviar email.")
@@ -108,12 +109,13 @@ async def send_email(
 async def reply_email(
     entry_id: str = Body(..., embed=True),
     body: str = Body(..., embed=True),
+    attachment_paths: Optional[List[str]] = Body(None, embed=True),
     reply_all: bool = Body(True, embed=True)
 ):
     """Responde a um email existente (Thread) usando o EntryID do Outlook."""
     c = await get_client()
     try:
-        success = c.reply_to_email(entry_id, body, reply_all)
+        success = c.reply_to_email(entry_id, body, reply_all, attachment_paths=attachment_paths)
         if success:
             return {"success": True, "entry_id": entry_id}
         raise HTTPException(status_code=500, detail="Erro ao responder email.")

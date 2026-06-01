@@ -171,7 +171,6 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                         className={`${styles.expandToggle} ${isOverdue ? styles.overdue : isToday ? styles.today : isNoTask ? styles.noTask : ''}`}
                         onClick={(e) => onToggleExpand(e, orgId)}
                         title={isOverdue ? 'Tarefa atrasada' : isToday ? 'Tarefa hoje' : isNoTask ? 'Sem tarefa agendada' : 'Expandir'}
-                        style={{ position: 'relative', top: 'auto', right: 'auto', flexShrink: 0 }}
                     >
                         <ChevronRight size={16} />
                     </button>

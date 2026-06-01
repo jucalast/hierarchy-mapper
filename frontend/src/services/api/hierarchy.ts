@@ -74,6 +74,24 @@ export function candidateAction(employeeId: string, action: 'approve' | 'reject'
   });
 }
 
+export function enrichManual(employeeId: string, rawText: string) {
+  return api.post<{ status: string; message: string; employee: HierarchyEmployee }>(
+    '/hierarchy/enrich-manual',
+    {
+      employee_id: String(employeeId),
+      raw_text: rawText,
+    },
+    { timeout: TIMEOUTS.long }
+  );
+}
+
+export function updateEmployeeDetails(employeeId: string, updates: Partial<HierarchyEmployee>) {
+  return api.post<Record<string, unknown>>(
+    `/hierarchy/update-employee?employee_id=${employeeId}`,
+    updates
+  );
+}
+
 export interface ConfirmIntelligencePayload {
   name: string;
   cnpj?: string;

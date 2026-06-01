@@ -118,6 +118,59 @@ def _fix_corrupted_name(name: str, fallback: str = "a empresa") -> str:
     return repaired or fallback
 
 
+def _get_tools_called(messages: list, target_tools: set[str] | None = None) -> set[str]:
+    """Extrai de forma robusta todos os nomes de ferramentas chamadas com sucesso no histórico.
+    Lida com content em formato list (tool blocks) ou string (JSON serializado do DB)."""
+    import json
+    import ast
+    tools = set()
+
+    for m in messages:
+        content = m.get("content", "")
+        blocks = []
+        
+        if isinstance(content, list):
+            blocks = content
+        elif isinstance(content, str):
+            content_trimmed = content.strip()
+            if content_trimmed.startswith("[") or content_trimmed.startswith("{"):
+                try:
+                    blocks = json.loads(content_trimmed)
+                except Exception:
+                    try:
+                        blocks = ast.literal_eval(content_trimmed)
+                    except Exception:
+                        pass
+        
+        if not isinstance(blocks, list):
+            # Se for um único dicionário (bloco individual)
+            if isinstance(blocks, dict):
+                blocks = [blocks]
+            else:
+                continue
+
+        for b in blocks:
+            if not isinstance(b, dict):
+                continue
+            
+            # Captura de tool_use (o que o assistente pediu)
+            if b.get("type") == "tool_use":
+                tn = b.get("name")
+                if tn:
+                    if target_tools is None or tn in target_tools:
+                        tools.add(tn)
+            
+            # Captura de tool_result (o que efetivamente retornou ok)
+            elif b.get("type") == "tool_result":
+                tn = b.get("tool_name")
+                # Só considera "feito" se não for erro
+                if tn and not b.get("is_error"):
+                    if target_tools is None or tn in target_tools:
+                        tools.add(tn)
+                        
+    return tools
+
+
 def _get_thinking_fallback(tool_name: str, args: dict) -> str:
     """Thinking mínimo contextual quando o modelo não gera texto e o auxiliar falha.
     Diferente do _get_label — explica o raciocínio, não só o que está sendo feito."""
@@ -127,21 +180,25 @@ def _get_thinking_fallback(tool_name: str, args: dict) -> str:
     contact = args.get("contact") or args.get("contact_name") or "o contato"
     templates = {
         "pipedrive_get_org":
-            f"Vou começar mapeando {org} no Pipedrive para ter a visão geral: deals, contatos e status.",
+            f"Vou verificar os dados de {org} no CRM para entender o contexto do negócio.",
         "pipedrive_get_persons":
-            f"Com a visão geral mapeada, agora listo todos os contatos de {org} — preciso dos nomes para investigar as comunicações.",
+            f"Buscando os contatos responsáveis em {org} para identificar os decisores.",
         "pipedrive_get_deals":
-            f"Com os contatos identificados, verifico os detalhes do deal de {org}: funil, valor e etapa atual.",
+            f"Analisando os negócios em aberto de {org} para ver o estágio atual.",
         "pipedrive_get_activities":
-            f"Com o deal mapeado, busco as tarefas e atividades de {org} para entender o histórico e priorizar quem contatar.",
+            f"Verificando o histórico de tarefas e compromissos com {org}.",
         "whatsapp_get_messages":
-            f"Com o Pipedrive mapeado, verifico as mensagens de WhatsApp de {contact} para cruzar com o que o CRM registrou.",
+            f"Recuperando conversas recentes com {contact} para alinhar o discurso.",
         "email_get_contact_history":
-            f"Verifico o histórico de e-mails de {contact} para complementar o que o WhatsApp e o Pipedrive já revelaram.",
+            f"Analisando histórico de e-mails de {contact} para complementar a visão.",
         "generate_dossier":
-            "Todas as fontes foram investigadas. Vou organizar os dados em um dossiê final para o usuário.",
+            "Consolidando toda a investigação em um dossiê estratégico.",
+        "evaluate_prospects":
+            f"Avaliando quais perfis em {org} são os melhores para abordar agora.",
+        "deep_company_investigation":
+            f"Realizando pesquisa externa e OSINT para enriquecer os dados de {org}.",
     }
-    return templates.get(tool_name, f"Verificando {tool_name.replace('_', ' ')} para continuar a investigação.")
+    return templates.get(tool_name, f"Verificando {tool_name.replace('_', ' ')} para prosseguir.")
 
 
 def _get_label(tool_name: str, args: dict) -> str:

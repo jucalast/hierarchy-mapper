@@ -14,17 +14,77 @@ Rotas principais:
     POST /settings/v2/products  -> substitui lista de produtos
     POST /settings/v2/icp       -> atualiza ICPConfig e scoring rules
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import Dict, Any
+from sqlalchemy import select, delete
+from sqlalchemy.orm import selectinload
+from typing import Dict, Any, List, Optional
+import os
+import uuid
+from pathlib import Path
 
 from core.infra.database import get_db
 from models.system.system_setting import SystemSetting
 from core.observability.logging_config import get_logger
+from models import (
+    Tenant, User, BusinessProfile, Product, ReferenceClient, 
+    ICPConfig, ICPScoreRule, HierarchyConfig, Integration
+)
+from api.v1.schemas import (
+    BusinessProfileSchema, ProductSchema, ReferenceClientSchema, 
+    ICPConfigSchema, HierarchyConfigSchema
+)
 
 router = APIRouter()
 log = get_logger(__name__)
+
+@router.post("/v2/profile/upload")
+async def upload_profile_file(
+    file_type: str, # 'presentation' or 'signature'
+    file: UploadFile = File(...),
+    session: AsyncSession = Depends(get_db)
+):
+    """Faz upload de PDF de apresentação ou Imagem de assinatura."""
+    if file_type not in ("presentation", "signature"):
+        raise HTTPException(status_code=400, detail="Tipo de arquivo inválido.")
+        
+    upload_dir = Path("backend/uploads/settings")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Validação básica de extensão
+    ext = Path(file.filename).suffix.lower()
+    if file_type == "presentation" and ext != ".pdf":
+        raise HTTPException(status_code=400, detail="A apresentação deve ser um arquivo PDF.")
+    if file_type == "signature" and ext not in (".png", ".jpg", ".jpeg"):
+        raise HTTPException(status_code=400, detail="A assinatura deve ser uma imagem (PNG/JPG).")
+
+    # Salva arquivo
+    file_id = uuid.uuid4().hex[:8]
+    safe_name = "".join(c for c in file.filename if c.isalnum() or c in " ._-")
+    final_name = f"{file_type}_{file_id}_{safe_name}"
+    file_path = upload_dir / final_name
+    
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+
+    # Atualiza BusinessProfile
+    res = await session.execute(select(Tenant).limit(1))
+    tenant = res.scalars().first()
+    
+    profile_res = await session.execute(select(BusinessProfile).where(BusinessProfile.tenant_id == tenant.id))
+    profile = profile_res.scalars().first()
+    if not profile:
+        profile = BusinessProfile(tenant_id=tenant.id)
+        session.add(profile)
+    
+    abs_path = str(file_path.absolute())
+    if file_type == "presentation":
+        profile.presentation_path = abs_path
+    else:
+        profile.signature_path = abs_path
+        
+    await session.commit()
+    return {"ok": True, "path": abs_path}
 
 @router.get("")
 async def get_all_settings(session: AsyncSession = Depends(get_db)) -> Dict[str, Any]:

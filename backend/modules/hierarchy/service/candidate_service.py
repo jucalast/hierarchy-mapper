@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import Employee
-from .filters import get_department_tag
+from .filters import get_department_tag, get_seniority_level
 
 
 async def resolve_employee_by_node_id(node_id: str, db: AsyncSession) -> Employee | None:
@@ -62,11 +62,19 @@ async def process_candidate_action(employee_id: str, action: str, db: AsyncSessi
         raise HTTPException(status_code=404, detail="Funcionário não encontrado.")
 
     if action == "approve":
+        # Se o cargo atual for Análise Humana, tentamos restaurar um cargo real
         if emp.role == "Análise Humana":
-            emp.role = emp.headline or "Colaborador"
+            new_role = emp.headline or "Colaborador"
+            # Se o headline também for Análise Humana (loop de erro), forçamos Colaborador
+            if not new_role or "análise humana" in new_role.lower():
+                new_role = "Colaborador"
+            
+            emp.role = new_role
             emp.department = await get_department_tag(emp.role)
+            emp.seniority = await get_seniority_level(emp.role)
+            
         await db.commit()
-        return {"status": "success", "message": f"Candidato {emp.name} aprovado."}
+        return {"status": "success", "message": f"Candidato {emp.name} aprovado e movido para {emp.role}."}
 
     elif action == "reject":
         emp.role = "Reprovado"

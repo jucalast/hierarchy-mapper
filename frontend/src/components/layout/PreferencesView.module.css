@@ -674,6 +674,124 @@
   color: var(--sw-text-base) !important;
 }
 
+/* --- Upload Area Redesign --- */
+.uploadArea {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.uploadTrigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.015) !important;
+  border: 1px dashed var(--sw-border) !important;
+  border-radius: 8px !important;
+  color: var(--sw-text-muted) !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: var(--font-xs);
+  padding: 16px;
+  text-align: center;
+}
+
+.uploadTrigger:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: var(--sw-primary) !important;
+  color: var(--sw-text-base) !important;
+}
+
+.uploadedFile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 100px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.025) !important;
+  border: 1px solid var(--sw-border) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.uploadedIcon {
+  color: var(--sw-primary);
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.uploadedInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.uploadedName {
+  font-size: var(--font-sm);
+  color: var(--sw-text-base);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.uploadedStatus {
+  font-size: 10px;
+  color: var(--sw-status-success);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+
+.reuploadBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--sw-border) !important;
+  border-radius: 6px !important;
+  color: var(--sw-text-base) !important;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.reuploadBtn:hover {
+  background: var(--sw-hover) !important;
+  border-color: var(--sw-border-strong) !important;
+}
+
+.uploadLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.uploadText {
+  font-weight: 500;
+  color: var(--sw-text-base);
+}
+
+.uploadSubtext {
+  font-size: 10px;
+  color: var(--sw-text-muted);
+}
+
 /* --- Flat Inline Add Form Overhaul --- */
 .inlineForm {
   padding: 16px 0;

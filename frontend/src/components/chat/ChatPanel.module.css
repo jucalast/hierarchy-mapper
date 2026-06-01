@@ -13,6 +13,7 @@
   border-left: var(--sw-border-width) solid var(--sw-border);
   animation: slideInRight var(--chat-transition-smooth);
   transition: background var(--chat-transition-fast), border-color var(--chat-transition-fast);
+  isolation: isolate;
 }
 
 /* Light Mode (default) */
@@ -496,23 +497,23 @@
   flex-direction: column;
   gap: var(--space-8);
   padding: 8px;
-  background: var(--chat-bg-primary);
+  background: rgba(19, 19, 19, 0.7) !important;
   border: 3px solid var(--chat-border-weak);
   border-radius: var(--chat-radius-lg);
   pointer-events: auto;
-  transform: translateZ(0);
   transition: all var(--chat-transition-fast);
-
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  isolation: isolate;
 }
 
 [data-theme='light'] .inputBox {
+  background: rgba(255, 255, 255, 0.7) !important;
   border-color: rgba(0, 0, 0, 0.15);
 }
 
 .chatPanel.dark .inputBox {
-  background: rgba(19, 19, 19, 0.85);
-
+  background: rgba(19, 19, 19, 0.75) !important;
 }
 
 .inputBoxInterior {
@@ -4119,9 +4120,9 @@
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  
+
   /* Use system standard purple (var(--chat-accent-color)) */
-  background-image: 
+  background-image:
     linear-gradient(var(--chat-accent-color) 1px, transparent 1px),
     linear-gradient(90deg, var(--chat-accent-color) 1px, transparent 1px);
   background-size: 40px 40px;
@@ -4144,24 +4145,67 @@
 .emptyWelcomeContainer::after {
   animation: movePurpleSpotlight2 30s infinite ease-in-out;
   animation-delay: -5s;
-  opacity: 0.3; /* Slightly different opacity for depth */
+  opacity: 0.3;
+  /* Slightly different opacity for depth */
 }
 
 @keyframes movePurpleSpotlight1 {
-  0%   { -webkit-mask-position: 5% 5%; mask-position: 5% 5%; }
-  20%  { -webkit-mask-position: 85% 15%; mask-position: 85% 15%; }
-  40%  { -webkit-mask-position: 15% 75%; mask-position: 15% 75%; }
-  60%  { -webkit-mask-position: 75% 85%; mask-position: 75% 85%; }
-  80%  { -webkit-mask-position: 50% 30%; mask-position: 50% 30%; }
-  100% { -webkit-mask-position: 5% 5%; mask-position: 5% 5%; }
+  0% {
+    -webkit-mask-position: 5% 5%;
+    mask-position: 5% 5%;
+  }
+
+  20% {
+    -webkit-mask-position: 85% 15%;
+    mask-position: 85% 15%;
+  }
+
+  40% {
+    -webkit-mask-position: 15% 75%;
+    mask-position: 15% 75%;
+  }
+
+  60% {
+    -webkit-mask-position: 75% 85%;
+    mask-position: 75% 85%;
+  }
+
+  80% {
+    -webkit-mask-position: 50% 30%;
+    mask-position: 50% 30%;
+  }
+
+  100% {
+    -webkit-mask-position: 5% 5%;
+    mask-position: 5% 5%;
+  }
 }
 
 @keyframes movePurpleSpotlight2 {
-  0%   { -webkit-mask-position: 90% 90%; mask-position: 90% 90%; }
-  25%  { -webkit-mask-position: 10% 80%; mask-position: 10% 80%; }
-  50%  { -webkit-mask-position: 40% 10%; mask-position: 40% 10%; }
-  75%  { -webkit-mask-position: 85% 40%; mask-position: 85% 40%; }
-  100% { -webkit-mask-position: 90% 90%; mask-position: 90% 90%; }
+  0% {
+    -webkit-mask-position: 90% 90%;
+    mask-position: 90% 90%;
+  }
+
+  25% {
+    -webkit-mask-position: 10% 80%;
+    mask-position: 10% 80%;
+  }
+
+  50% {
+    -webkit-mask-position: 40% 10%;
+    mask-position: 40% 10%;
+  }
+
+  75% {
+    -webkit-mask-position: 85% 40%;
+    mask-position: 85% 40%;
+  }
+
+  100% {
+    -webkit-mask-position: 90% 90%;
+    mask-position: 90% 90%;
+  }
 }
 
 /* Light mode specific */
@@ -4171,7 +4215,8 @@
 
 .chatPanel.light .emptyWelcomeContainer::before,
 .chatPanel.light .emptyWelcomeContainer::after {
-  opacity: 0.6; /* More visible in light mode */
+  opacity: 0.6;
+  /* More visible in light mode */
 }
 
 /* Dark mode specific */
@@ -4208,4 +4253,186 @@
   pointer-events: auto !important;
   width: 100% !important;
   background: transparent !important;
+}
+
+/* === CONVERSATION CONTEXT ACCORDION === */
+.contextAccordionContainer {
+  margin: 0;
+  border-bottom: var(--sw-border-width) solid var(--sw-border);
+  background: var(--chat-bg-primary);
+  position: relative;
+  z-index: 1000;
+  transition: all 0.2s ease;
+}
+
+.chatPanel.light .contextAccordionContainer {
+  background: var(--chat-bg-primary) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.contextAccordionContainer:hover {
+  background: var(--chat-bg-secondary);
+}
+
+.chatPanel.light .contextAccordionContainer:hover {
+  background: rgba(0, 0, 0, 0.03) !important;
+}
+
+.contextAccordionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.chatPanel.light .contextHeaderTitle,
+.chatPanel.light .contextHeaderRight {
+  color: #9ca3af;
+  transition: color 0.2s ease;
+}
+
+.chatPanel.light .contextAccordionHeader:hover .contextHeaderTitle,
+.chatPanel.light .contextAccordionHeader:hover .contextHeaderRight {
+  color: #000000;
+  opacity: 1;
+}
+
+.contextAccordionHeader:hover {
+  background: transparent;
+}
+
+.contextHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.contextBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(122, 139, 255, 0.1);
+  color: #7a8bff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.contextHeaderTitle {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--sw-text-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contextHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.contextHeaderHint {
+  font-size: 0.75rem;
+  color: var(--sw-text-muted);
+  white-space: nowrap;
+}
+
+.rotated {
+  transform: rotate(180deg);
+}
+
+.contextAccordionBodyMarkdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: calc(100vh - 130px);
+  display: flex;
+  flex-direction: column;
+  z-index: 10000;
+  border-bottom: 1px solid var(--sw-border);
+  animation: fadeInOnly 0.3s ease-out;
+  background: var(--chat-bg-primary) !important;
+  overflow: hidden;
+}
+
+[data-theme='light'] .contextAccordionBodyMarkdown {
+  background-color: var(--chat-bg-primary) !important;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.contextAccordionScrollArea {
+  padding: 16px 20px 80px 20px;
+  overflow-y: auto;
+  flex: 1;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--sw-text-base);
+  position: relative;
+  z-index: 1;
+}
+
+.chatPanel.light .contextAccordionScrollArea {
+  color: var(--sw-text-base);
+}
+
+@keyframes fadeInOnly {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.contextAccordionScrollArea h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--sw-primary);
+  margin: 16px 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.contextAccordionBodyMarkdown h3:first-child {
+  margin-top: 0;
+}
+
+.contextAccordionScrollArea p {
+  margin-bottom: 12px;
+  opacity: 0.95;
+}
+
+.contextAccordionScrollArea ul,
+.contextAccordionScrollArea ol {
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.contextAccordionScrollArea li {
+  margin-bottom: 4px;
+}
+
+.contextAccordionScrollArea hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 16px 0;
+}
+
+.chatPanel.light .contextAccordionScrollArea hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 16px 0;
 }

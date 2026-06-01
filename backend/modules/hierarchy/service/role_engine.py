@@ -463,4 +463,66 @@ Responda APENAS um JSON onde as chaves são os IDs dos candidatos:
             # Fallback seguro: marca todos como inválidos para não poluir
             return {c['idx']: {"is_valid": False, "role": "Erro no Processamento"} for c in candidates}
 
+    async def distill_manual_profile(self, raw_text: str, area_focus: str = "compras", target_brand: str = "") -> Dict:
+        """
+        Processa texto bruto copiado manualmente do LinkedIn para extrair dados estruturados.
+        Diferente do distill_role (snippets), este foca em textos longos de perfis completos.
+        """
+        api_key = GROQ_API_KEY or os.getenv("GROQ_API_KEY") or settings.GROQ_API_KEY
+        if not api_key:
+            return {"error": "API Key não configurada"}
+
+        area_label = "SUPRIMENTOS / COMPRAS / PROCUREMENT" if area_focus == "compras" else "LOGÍSTICA / SUPPLY CHAIN"
+
+        prompt = f"""
+Você é um Especialista em Inteligência de Pessoas B2B. Recebeu o texto bruto de uma página de perfil do LinkedIn e deve extrair dados LIMPOS e ESTRUTURADOS.
+
+TEXTO BRUTO DO PERFIL:
+---
+{raw_text[:12000]}
+---
+
+TAREFA:
+1. IDENTIFIQUE A PESSOA: Extraia o nome completo.
+2. CARGO ATUAL: Identifique a função principal que a pessoa exerce HOJE.
+3. EMPRESA ATUAL: Verifique em qual empresa a pessoa trabalha. (Empresa Alvo Sugerida: '{target_brand}')
+4. DEPARTAMENTO: Classifique entre [Procurement, Logistics, Supply Chain, Comex, Planning, Executive Management, Operations, Sales, Marketing, HR, Finance].
+5. SENIORIDADE (TIER): Classifique de 1 a 6:
+   - 6: Board / C-Level / Sócio
+   - 5: Diretor / Regional Head
+   - 4: Gerente / Group Leader
+   - 3: Coordenador / Supervisor / Especialista Sr.
+   - 2: Analista / Engenheiro / Comprador Pleno
+   - 1: Auxiliar / Assistente / Estagiário / Operacional
+6. HEADLINE: Extraia a frase de apresentação do perfil.
+7. BIO/OBSERVATIONS: Resuma em 2 a 3 parágrafos a trajetória e competências principais citadas no texto.
+8. EDUCAÇÃO: Liste as principais formações acadêmicas.
+
+REGRAS RÍGIDAS:
+- Se o texto for insuficiente para determinar o cargo, use "Colaborador".
+- NÃO invente informações. Se algo não constar no texto, deixe nulo ou use fallbacks seguros.
+- Mantenha o foco em {area_label}.
+
+Responda APENAS JSON:
+{{
+  "name": "string",
+  "role": "string",
+  "company": "string",
+  "department": "string",
+  "seniority": int,
+  "headline": "string",
+  "observations": "string",
+  "education": "string",
+  "location": "string",
+  "is_valid": bool,
+  "evidence": "Explicação curta do veredito técnico"
+}}
+"""
+        try:
+            # Usamos o modelo standard para análise de perfil para evitar falhas de timeout/provider no tier deep
+            return await self.groq.ask(prompt, json_mode=True, tier=LLMTier.STANDARD)
+        except Exception as e:
+            print(f"      [RoleEngine] Error in Manual Distill: {e}")
+            return {"error": str(e), "is_valid": False}
+
 role_engine = RoleEngine()

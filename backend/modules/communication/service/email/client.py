@@ -229,7 +229,7 @@ class EmailClient:
                 log.error("email.sent.error", provider="smtp", error=e)
                 return False
 
-    def reply_to_email(self, entry_id: str, html_body: str, reply_all: bool = True):
+    def reply_to_email(self, entry_id: str, html_body: str, reply_all: bool = True, attachment_paths: Optional[List[str]] = None):
         """
         Responde a um e-mail específico mantendo a Thread (In-Reply-To).
         """
@@ -274,6 +274,15 @@ class EmailClient:
                         if account.SmtpAddress.lower() == self.email_address.lower():
                             reply_msg._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
                             break
+
+                # Anexos
+                if attachment_paths:
+                    for ap in attachment_paths:
+                        if ap and os.path.exists(ap):
+                            try:
+                                reply_msg.Attachments.Add(ap)
+                            except Exception as ae:
+                                log.warning("email.outlook.reply_attachment_failed", path=ap, error=ae)
 
                 reply_msg.Send()
                 log.info("email.reply.success", entry_id=entry_id[:10])

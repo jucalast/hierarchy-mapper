@@ -328,15 +328,9 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
             content = "\n".join(text_parts)
         history_serialized.append({"role": role, "content": str(content)})
 
-    # Carrega diferenciais e contexto configurados no sistema
-    biz_data_str = "Diretrizes de Negócio: J.Ferres - Especialista em Embalagens B2B e Soluções Logísticas."
-    try:
-        protocol_path = "backend/intelligence_config/business_protocol.md"
-        if os.path.exists(protocol_path):
-            with open(protocol_path, "r", encoding="utf-8") as f:
-                biz_data_str = f.read()
-    except Exception as e:
-        log.warning(f"Erro ao carregar business_protocol: {e}")
+    # Carrega diferenciais e contexto configurados no banco de dados
+    from modules.ai.service.context.business_context import get_business_context_for_prompt
+    biz_data_str = await get_business_context_for_prompt()
 
     # ── Inteligência de Seleção de Canal
     # Se o usuário não pediu um canal específico (veio o default 'whatsapp'), 
@@ -416,6 +410,9 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         "**MODO 4 — RETORNO DE FÉRIAS / RAPPORT (SOFT FOLLOW-UP)**\n"
         "Use quando: o histórico recente (seja WhatsApp ou e-mail) indicar que o contato esteve de férias, ausente, viajando ou fora do escritório recentemente (ou se desculpou pelo atraso devido a esses motivos).\n"
         "→ Mensagem calorosa, empática e acolhedora. Dê as boas-vindas no retorno das férias/ausência, deseje que tenha descansado, tire ABSOLUTAMENTE toda a pressão de cobrança comercial e se coloque à disposição para quando a rotina dele normalizar. NÃO tente vender novos produtos cartonados ou cobrar cotações anteriores nesse momento. A prioridade máxima é gerar conexão (rapport) e se colocar à disposição. Feche de forma super leve e profissional.\n\n"
+        "**MODO 5 — FOLLOW-UP DE VALOR (SEM RESPOSTA AO CONTATO INICIAL)**\n"
+        "Use quando: a J.Ferres enviou a apresentação inicial ou um e-mail frio e o cliente NÃO respondeu (ghosting).\n"
+        "→ PROIBIDO perguntar 'Você viu meu e-mail?'. Envie um Insight de Mercado. Dê uma dica ou compartilhe um dado sobre embalagens (ex: como a estrutura correta da onda do papelão reduz perdas logísticas no empilhamento de pallets). O objetivo não é vender de imediato, mas agregar valor técnico. Termine SEMPRE sugerindo uma reunião rápida de 15 minutos para mapeamento e diagnóstico da operação logística do cliente.\n\n"
         "## REGRAS UNIVERSAIS:\n"
         "- ALINHAMENTO CRONOLÓGICO: Analise rigorosamente a linha do tempo. Identifique e priorize o fato MAIS RECENTE da conversa. Nunca retome ou cobre cotações antigas que já foram canceladas ou substituídas se a negociação já avançou para outra etapa (ex: estudo de caixas, pesos, desenvolvimento de amostras físicas). Fale estritamente do status atual em aberto.\n"
         "- ZERO REDUNDÂNCIA: Não pergunte o que já foi respondido na mensagem mais recente (ex: se o cliente disse 'não obtive retorno ainda', não pergunte 'como está o andamento', mas sim valide que entende a correria e se coloque à disposição).\n"
@@ -438,8 +435,9 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         "5. Se há objeções não respondidas do cliente\n"
         "6. Qual é o momento real da negociação (ex: envio de amostras físicas, análise de resistência)\n\n"
         "Depois escolha o modo correto e escreva a mensagem:\n"
+        "- Contato ignorou apresentação inicial → MODO 5 (Insight de mercado + Reunião)\n"
         "- Contato retornou de férias/ausência recentemente → MODO 4 (rapport, empático, sem pressão)\n"
-        "- Sem objeções ativas → MODO 1 (follow-up simples, breve)\n"
+        "- Sem objeções ativas e no meio do fluxo → MODO 1 (follow-up simples, breve)\n"
         "- Com objeção não respondida → MODO 2 (follow-up + argumento cirúrgico)\n"
         "- Primeiro contato / venda ativa → MODO 3 (diferenciais + SPIN + dados reais)"
     )

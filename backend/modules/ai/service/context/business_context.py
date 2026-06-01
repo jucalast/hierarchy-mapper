@@ -12,45 +12,29 @@ from typing import Any, Dict
 from modules.ai.service.context.business_context_service import BusinessContextService
 
 # =============================================================================
-# FALLBACKS ESTÁTICOS (J.FERRES)
+# FALLBACKS ESTÁTICOS (REMOVIDOS - USE O BANCO DE DADOS)
 # =============================================================================
 
-COMPANY_NAME = "J.Ferres"
-COMPANY_SEGMENT = "Embalagens de Papelão Ondulado Sob Medida"
-COMPANY_DIFFERENTIALS = [
-    "Especialistas em embalagens manuais e personalizadas que as grandes fábricas não conseguem",
-    "Caixas de exportação CKD (Complete Knock Down)",
-    "Modelo Kanban: estoque em fábrica com retirada just-in-time",
-]
+COMPANY_NAME = "Empresa B2B"
+COMPANY_SEGMENT = "Segmento"
+COMPANY_DIFFERENTIALS = []
 
-SELLER_NAME = "João Luccas"
-SELLER_ROLE = "Representante Comercial"
+SELLER_NAME = "Vendedor"
+SELLER_ROLE = "Representante"
 
-PRODUCTS = {
-    "caixas_onduladas": {
-        "name": "Caixas de Papelão Ondulado",
-        "description": "Caixas corrugadas personalizadas em qualquer dimensão",
-        "use_cases": ["Peças automotivas", "Componentes industriais"]
-    }
-}
+PRODUCTS = {}
 
 ICP = {
-    "industries": ["Autopeças", "Máquinas Industriais"],
-    "company_profiles": ["Médio e grande porte (100+ funcionários)"],
-    "decision_makers": ["Gerente de Compras", "Supply Chain"],
-    "pain_points": ["Ruptura de estoque", "Lead time longo"],
-    "disqualifiers": ["Varejo", "Microempresas"]
+    "industries": [],
+    "company_profiles": [],
+    "decision_makers": [],
+    "pain_points": [],
+    "disqualifiers": []
 }
 
-REFERENCE_CLIENTS = [
-    {"name": "Toyota TMD", "segment": "Montadora automotiva"},
-    {"name": "Cobreq", "segment": "Autopeças"},
-]
+REFERENCE_CLIENTS = []
 
-VALUE_PROPOSITIONS = {
-    "plano_b": "Toda indústria precisa de um Plano B de embalagem.",
-    "kanban_stock": "Trabalhamos com modelo Kanban: estocamos em fábrica."
-}
+VALUE_PROPOSITIONS = {}
 
 # =============================================================================
 # FUNÇÕES DINÂMICAS
