@@ -237,6 +237,7 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         EMAIL_PASSWORD: str = Field(default="")
         EMAIL_PORT: int = Field(default=8002)
         API_BASE_URL: str = Field(default="http://localhost:8000")
+        ABSTRACT_API_EMAIL_KEY: str = Field(default="")
 
         # --- Attachments conhecidos (caminhos absolutos no filesystem) ---
         LINKB2B_PRESENTATION_PATH: str = Field(default="")  # ex: C:\Users\João\Docs\Apresentação LINKB2B.pdf
@@ -393,6 +394,7 @@ else:
         EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")
         EMAIL_PORT: int = int(os.getenv("EMAIL_PORT", 8002))
         API_BASE_URL: str = os.getenv("API_BASE_URL", "http://localhost:8000")
+        ABSTRACT_API_EMAIL_KEY: str = os.getenv("ABSTRACT_API_EMAIL_KEY", "")
 
         WHATSAPP_SERVICE_URL: str = os.getenv("WHATSAPP_SERVICE_URL", "http://localhost:8001/api/whatsapp")
         WHATSAPP_APP_ID: str = os.getenv("WHATSAPP_APP_ID", "")

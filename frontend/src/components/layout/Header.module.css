@@ -284,7 +284,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    background: linear-gradient(135deg, #1e2145 30%, #131313 80%);
+    background: var(--sw-sidebar);
     border-bottom: var(--sw-border-width) solid var(--sw-border);
     flex-shrink: 0;
     z-index: 10;
@@ -292,7 +292,7 @@
 }
 
 :global([data-theme="light"]) .globalHeader {
-    background: linear-gradient(135deg, #e0e7ff 30%, #ffffff 80%);
+    background: var(--sw-sidebar);
     border-bottom: var(--sw-border-width) solid var(--sw-border);
 }
 
@@ -306,6 +306,6 @@
 }
 
 :global([data-theme="light"]) .globalHeaderTitle {
-    color: var(--sw-primary);
+    color: var(--sw-text-muted);
     opacity: 0.6;
 }

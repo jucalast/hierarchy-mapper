@@ -13,10 +13,10 @@ function BackendGate({ children }: { children: React.ReactNode }) {
   if (state === 'checking') {
     return (
       <div style={{
-        height: '100vh', width: '100vw', background: '#05060b',
+        height: '100vh', width: '100vw', background: 'var(--sw-sidebar)',
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
         alignItems: 'center', gap: '8px',
-        color: 'rgba(255,255,255,0.3)', fontFamily: 'Inter, sans-serif', fontSize: '12px',
+        color: 'var(--sw-text-muted)', fontFamily: 'var(--font-primary)', fontSize: '12px',
         letterSpacing: '0.08em',
       }}>
         <span>CONECTANDO AO SERVIDOR{elapsed > 2 ? ` (${elapsed}s)` : '...'}</span>
@@ -27,18 +27,18 @@ function BackendGate({ children }: { children: React.ReactNode }) {
   if (state === 'timeout') {
     return (
       <div style={{
-        height: '100vh', width: '100vw', background: '#05060b',
+        height: '100vh', width: '100vw', background: 'var(--sw-sidebar)',
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
         alignItems: 'center', gap: '12px',
-        color: 'rgba(255,100,100,0.7)', fontFamily: 'Inter, sans-serif', fontSize: '12px',
+        color: 'var(--sw-status-danger)', fontFamily: 'var(--font-primary)', fontSize: '12px',
         letterSpacing: '0.08em',
       }}>
         <span>SERVIDOR INDISPONÍVEL</span>
         <button
           onClick={() => window.location.reload()}
           style={{
-            background: 'transparent', border: '1px solid rgba(255,100,100,0.4)',
-            color: 'rgba(255,100,100,0.7)', padding: '6px 16px', cursor: 'pointer',
+            background: 'transparent', border: '1px solid var(--sw-status-danger)',
+            color: 'var(--sw-status-danger)', padding: '6px 16px', cursor: 'pointer',
             fontSize: '11px', letterSpacing: '0.08em', borderRadius: '4px',
           }}
         >

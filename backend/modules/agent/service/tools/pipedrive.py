@@ -228,6 +228,7 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
                 "name": p.get("name", ""),
                 "phone": phone,
                 "email": email,
+                "email_validated": True if email else False,
                 "role": p.get("job_title", ""),
                 "channels": channels,
                 "source": "Pipedrive"
@@ -311,6 +312,7 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
                                 "name": emp.name,
                                 "phone": phone,
                                 "email": emp.email,
+                                "email_validated": True if emp.email else False,
                                 "role": role_desc,
                                 "department": emp.department,
                                 "channels": channels,
@@ -371,6 +373,10 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
             except Exception as wa_err:
                 pass
 
+        # Garante o campo email_validated para todos os contatos
+        for p in result:
+            p["email_validated"] = True if p.get("email") else False
+
         # Analisa se existem decisores ICP (Compras/Logística) mapeados que NÃO estão no Pipedrive
         local_icp_contacts = []
         for p in result:
@@ -405,7 +411,7 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
             "summary": (
                 f"{len(result)} contatos em {match.get('name')}: "
                 + ", ".join(
-                    f"{p['name']} ({'WhatsApp:registrado' if p['phone'] and len(''.join(c for c in str(p['phone']) if c.isdigit())) > 13 else ('tel: ' + (p['phone'] or 'nenhum'))}, email: {p['email'] or 'nenhum'})"
+                    f"{p['name']} ({'WhatsApp:registrado' if p['phone'] and len(''.join(c for c in str(p['phone']) if c.isdigit())) > 13 else ('tel: ' + (p['phone'] or 'nenhum'))}, email: {p['email'] + ' [VALIDADO]' if p['email'] else 'nenhum'})"
                     for p in result[:4]
                 ) + icp_str
             ),

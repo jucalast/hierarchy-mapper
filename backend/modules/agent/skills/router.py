@@ -96,23 +96,21 @@ async def route_task_to_skill(message: str, org_id: Optional[int] = None) -> Age
         deal_stage_name=deal_stage_name
     ) if org_id and deal_stage_id else None
 
-    # 1. Se é um direct_command, usa o stage do funil como contexto primário
-    if intent == "direct_command" and deal_stage_id:
-        skill_class = STAGE_TO_SKILL.get(deal_stage_id, FollowUpSkill)
-        return skill_class(sales_context)
+    # 1. Se o intent é CLARO (não unknown e não direct_command), ele tem precedência
+    # sobre o stage do funil para respeitar a ordem direta do usuário.
+    if intent not in ("unknown", "direct_command"):
+        skill_by_intent = get_skill_by_intent(intent)
+        if skill_by_intent:
+            if isinstance(skill_by_intent, FunnelStageSkill):
+                skill_by_intent.sales_context = sales_context
+            return skill_by_intent
 
-    # 2. Conflito intent vs stage -> prioridade: stage do CRM
+    # 2. Se o intent é unknown ou direct_command, usa o stage do funil como contexto primário
     skill_by_stage_class = STAGE_TO_SKILL.get(deal_stage_id) if deal_stage_id else None
     
     if skill_by_stage_class:
         return skill_by_stage_class(sales_context)
         
-    # 3. Fallback para intent
-    skill_by_intent = get_skill_by_intent(intent)
-    if skill_by_intent:
-        if isinstance(skill_by_intent, FunnelStageSkill):
-            skill_by_intent.sales_context = sales_context
-        return skill_by_intent
-        
+    # 3. Fallback final
     default_skill = FollowUpSkill(sales_context)
     return default_skill

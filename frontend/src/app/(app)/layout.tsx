@@ -125,11 +125,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, currentOrg]);
 
+  // Escuta evento externo de alteração de tema (ex: do Sidebar no NetworkGraph)
+  useEffect(() => {
+    const handleThemeChanged = (e: CustomEvent<"light" | "dark">) => {
+      if (e.detail && (e.detail === "light" || e.detail === "dark")) {
+        setTheme(e.detail);
+      }
+    };
+    window.addEventListener('theme_changed', handleThemeChanged as EventListener);
+    return () => window.removeEventListener('theme_changed', handleThemeChanged as EventListener);
+  }, []);
+
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
     localStorage.setItem("preferred-theme", newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
+    window.dispatchEvent(new CustomEvent('theme_changed', { detail: newTheme }));
   };
 
   const handleLogout = () => {
@@ -148,16 +160,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         alignItems: 'center', 
         justifyContent: 'space-between', 
         padding: '0 24px',
-        background: 'linear-gradient(135deg, #1e2145 30%, #131313 80%)',
+        background: theme === 'dark' 
+          ? 'linear-gradient(135deg, #1e2145 30%, #131313 80%)' 
+          : 'linear-gradient(135deg, #eef2ff 30%, #f9fafb 80%)',
         borderBottom: '1px solid var(--sw-border)',
-        zIndex: 100
+        zIndex: 100,
+        transition: 'background var(--transition-fast)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ 
             fontFamily: 'Inter, sans-serif', 
             fontSize: '12px', 
             fontWeight: 600, 
-            color: 'rgba(255,255,255,0.6)', 
+            color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)', 
             letterSpacing: '0.08em', 
             textTransform: 'uppercase' 
           }}>
@@ -187,7 +202,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
-              color: 'rgba(255,255,255,0.6)',
+              color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
               marginRight: '8px'
             }}
             title="Abrir Assistente"
@@ -201,7 +216,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 alignItems: 'center', 
                 gap: '8px', 
                 marginRight: '8px', 
-                borderRight: '1px solid rgba(255,255,255,0.1)', 
+                borderRight: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'var(--sw-border)'}`, 
                 paddingRight: '16px', 
                 height: '24px' 
             }}>
@@ -211,7 +226,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     src={currentUser.avatar}
                     size={24}
                 />
-                <span style={{ fontSize: '12px', fontWeight: 500, color: 'white', opacity: 0.8 }}>
+                <span style={{ fontSize: '12px', fontWeight: 500, color: theme === 'dark' ? 'white' : 'var(--sw-text-base)', opacity: 0.8 }}>
                     {currentUser.name}
                 </span>
             </div>
@@ -224,7 +239,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 border: 'none',
                 cursor: 'pointer',
                 padding: '8px',
-                color: 'rgba(255,255,255,0.6)',
+                color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
                 display: 'flex',
                 alignItems: 'center'
             }}

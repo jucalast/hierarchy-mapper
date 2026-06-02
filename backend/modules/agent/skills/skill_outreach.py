@@ -21,11 +21,15 @@ class OutreachSkill(FunnelStageSkill):
             "pipedrive_get_persons",
             "pipedrive_get_deals",
             "pipedrive_get_activities",
+            "whatsapp_get_messages",
+            "email_get_contact_history",
             "generate_sales_message", 
             "email_send", 
             "whatsapp_send_message", 
             "pipedrive_update_task", 
             "deep_company_investigation",
+            "evaluate_prospects",
+            "discover_and_validate_email",
             "suggest_next_actions"
         ]
 
@@ -34,7 +38,8 @@ class OutreachSkill(FunnelStageSkill):
         return [
             "pipedrive_get_org",
             "pipedrive_get_persons",
-            "deep_company_investigation"
+            "deep_company_investigation",
+            "evaluate_prospects"
         ]
         
     def get_instructions(self, context: Dict[str, Any]) -> str:

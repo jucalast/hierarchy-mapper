@@ -88,8 +88,8 @@ def generate_all_patterns(first: str, last: str, domain: str):
     l = last.lower().strip()
     # Remove accents for email
     import unicodedata
-    f = ''.join(c for c in unicodedata.normalize('NFD', f) if unicodedata.category(c) != 'Mn')
-    l = ''.join(c for c in unicodedata.normalize('NFD', l) if unicodedata.category(c) != 'Mn')
+    f = ''.join(c for c in unicodedata.normalize('NFD', f) if unicodedata.category(c) != 'Mn').replace(" ", "")
+    l = ''.join(c for c in unicodedata.normalize('NFD', l) if unicodedata.category(c) != 'Mn').replace(" ", "")
     seen = set()
     results = []
     for pid, fn in _ALL_PATTERNS:
@@ -179,19 +179,72 @@ async def smtp_probe(email: str, mx_host: str, timeout: float = 5.0) -> str:
     except Exception:
         return 'unknown'
 
+async def verify_email_via_abstract_api(email: str, api_key: str) -> str:
+    """
+    Verifica um e-mail através da Abstract API.
+    Retorna 'valid', 'invalid' ou 'unknown'.
+    """
+    import httpx
+    try:
+        url = "https://emailvalidation.abstractapi.com/v1/"
+        params = {"api_key": api_key, "email": email}
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(url, params=params)
+            if r.status_code == 200:
+                data = r.json()
+                deliverability = (data.get("deliverability") or "").lower()
+                if deliverability == "deliverable":
+                    return "valid"
+                elif deliverability == "undeliverable":
+                    return "invalid"
+            return "unknown"
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"[AbstractAPI] Falha ao verificar email {email}: {e}")
+        return "unknown"
+
+async def verify_email_via_vrfymail(email: str, api_key: str) -> str:
+    """
+    Verifica um e-mail através da API verifymail.io (Vrfymail).
+    Retorna 'valid', 'invalid' ou 'unknown'.
+    """
+    import httpx
+    try:
+        url = f"https://verifymail.io/api/{email}"
+        params = {"key": api_key}
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(url, params=params)
+            if r.status_code == 200:
+                data = r.json()
+                if data.get("deliverable_email") is True:
+                    return "valid"
+                elif data.get("deliverable_email") is False:
+                    return "invalid"
+            return "unknown"
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"[Vrfymail] Falha ao verificar email {email}: {e}")
+        return "unknown"
+
 async def discover_and_validate_email(
     first: str, last: str, domain: str,
     known_pattern=None,
-    do_smtp: bool = True
+    do_smtp: bool = True,
+    additional_candidates: list[str] = None
 ) -> dict:
     """
     Full email discovery pipeline:
-    1. Generates all patterns
+    1. Generates all patterns + merges web-harvested candidates
     2. If known_pattern exists, puts it first
-    3. Validates via MX + optional SMTP probe
+    3. Validates via Abstract API key (if set) OR falls back to MX + SMTP probe
     Returns dict with: email, pattern, confidence ('high'|'medium'|'low'), mx_valid, smtp_result
     """
     candidates = generate_all_patterns(first, last, domain)
+
+    if additional_candidates:
+        all_emails = list(dict.fromkeys(additional_candidates + [e for e, _ in candidates]))
+        candidates_map = {e: p for e, p in candidates}
+        candidates = [(e, candidates_map.get(e, "web_harvested")) for e in all_emails]
 
     # Put known pattern first if provided
     if known_pattern:
@@ -212,6 +265,40 @@ async def discover_and_validate_email(
             "all_candidates": [e for e, _ in candidates]
         }
 
+    # --- EXTERNAL VALIDATION (APIs) ---
+    import os
+    from core.config import settings
+    
+    # 1. Tenta Vrfymail (Maior volume: 5.000 créditos)
+    vrfy_key = os.environ.get("VRFYMAIL_API_KEY")
+    if vrfy_key and mx_valid:
+        for email, pattern in candidates[:3]:
+            result = await verify_email_via_vrfymail(email, vrfy_key)
+            if result == 'valid':
+                return {
+                    "email": email, "pattern": pattern,
+                    "confidence": "high", "mx_valid": True, "smtp_result": "valid",
+                    "all_candidates": [e for e, _ in candidates]
+                }
+            if result == 'invalid':
+                continue
+
+    # 2. Tenta Abstract API (Alta precisão: 100 créditos)
+    abstract_key = getattr(settings, "EMAIL_API_KEY", None) or os.environ.get("EMAIL_API_KEY")
+    if abstract_key and mx_valid:
+        for email, pattern in candidates[:3]:
+            result = await verify_email_via_abstract_api(email, abstract_key)
+            if result == 'valid':
+                return {
+                    "email": email, "pattern": pattern,
+                    "confidence": "high", "mx_valid": True, "smtp_result": "valid",
+                    "all_candidates": [e for e, _ in candidates]
+                }
+            if result == 'invalid':
+                continue
+            # Se for 'unknown', cai no SMTP probe normal como fallback!
+
+    # --- INTERNAL VALIDATION (SMTP Probe Fallback) ---
     # SMTP probe only the top candidates (max 3 to avoid being blocked)
     if do_smtp and mx_host:
         for email, pattern in candidates[:3]:

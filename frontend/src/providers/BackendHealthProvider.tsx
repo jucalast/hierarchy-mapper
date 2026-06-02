@@ -104,25 +104,23 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    background: 'var(--sw-sidebar)',
+    fontFamily: 'var(--font-primary)',
   } as React.CSSProperties,
   
   card: {
-    background: 'white',
-    borderRadius: '12px',
+    background: 'transparent',
     padding: '40px',
     textAlign: 'center' as const,
-    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
     minWidth: '300px',
   },
   
   spinner: {
-    width: '50px',
-    height: '50px',
-    margin: '0 auto 20px',
-    border: 'var(--sw-border-width) solid var(--sw-border)',
-    borderTop: '4px solid #667eea',
+    width: '40px',
+    height: '40px',
+    margin: '0 auto 24px',
+    border: '2px solid var(--sw-border)',
+    borderTop: '2px solid var(--sw-primary)',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
   } as React.CSSProperties,
@@ -134,32 +132,34 @@ const styles = {
   
   title: {
     margin: '0 0 10px',
-    fontSize: '24px',
-    color: '#333',
+    fontSize: 'var(--font-lg)',
+    fontWeight: 600,
+    color: 'var(--sw-text-base)',
   },
   
   subtitle: {
     margin: '0',
-    color: '#666',
-    fontSize: '14px',
+    color: 'var(--sw-text-muted)',
+    fontSize: 'var(--font-sm)',
   },
   
   error: {
     margin: '10px 0',
-    color: '#dc3545',
-    fontSize: '14px',
+    color: 'var(--sw-status-danger)',
+    fontSize: 'var(--font-sm)',
   },
   
   button: {
-    marginTop: '20px',
-    padding: '10px 20px',
-    background: '#667eea',
+    marginTop: '24px',
+    padding: '12px 24px',
+    background: 'var(--sw-primary)',
     color: 'white',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: 'var(--radius-md)',
     cursor: 'pointer',
-    fontSize: '14px',
+    fontSize: 'var(--font-sm)',
     fontWeight: '600',
+    transition: 'var(--transition-fast)',
   } as React.CSSProperties,
 };
 

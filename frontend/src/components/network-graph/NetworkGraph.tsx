@@ -375,6 +375,14 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         const savedTheme = localStorage.getItem("preferred-theme") || "dark";
         setTheme(savedTheme);
         document.documentElement.setAttribute("data-theme", savedTheme);
+
+        const handleThemeChanged = (e: CustomEvent<string>) => {
+            if (e.detail) {
+                setTheme(e.detail);
+            }
+        };
+        window.addEventListener('theme_changed', handleThemeChanged as EventListener);
+        return () => window.removeEventListener('theme_changed', handleThemeChanged as EventListener);
     }, []);
 
     // Reconnection & Initial Load logic
@@ -634,6 +642,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     setTheme(newTheme);
                     localStorage.setItem("preferred-theme", newTheme);
                     document.documentElement.setAttribute("data-theme", newTheme);
+                    window.dispatchEvent(new CustomEvent('theme_changed', { detail: newTheme }));
                 }}
                 onReset={handleNewCompany}
                 onCopyData={() => {

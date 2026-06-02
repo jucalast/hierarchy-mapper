@@ -27,6 +27,9 @@ class FollowUpSkill(FunnelStageSkill):
             "whatsapp_send_message",
             "email_reply",
             "pipedrive_update_task",
+            "deep_company_investigation",
+            "evaluate_prospects",
+            "discover_and_validate_email",
             "suggest_next_actions"
         ]
 

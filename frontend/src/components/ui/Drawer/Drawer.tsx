@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './Drawer.module.css';
 import { Spinner } from '../';
-import { organizations as orgsApi } from '@/services/api';
+import { organizations as orgsApi, hierarchy as hierarchyApi } from '@/services/api';
 import type { NotificationType } from '../Notification';
 import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal, OrgDetailsModal } from './components';
 
@@ -524,6 +524,79 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
+    const handleDiscoverEmail = async (person: any, orgId: number) => {
+        const contactName = person.name;
+        const orgName = focusedOrg?.name || '';
+        const domain = focusedOrg?.domain || orgDetails[orgId]?.domain || orgDetails[orgId]?.org?.website || '';
+
+        addNotification('info', `Buscando e-mail profissional para ${contactName}...`);
+        try {
+            const res = await hierarchyApi.discoverEmail({
+                contact_name: contactName,
+                org_name: orgName,
+                domain: domain || undefined
+            });
+
+            if (res.ok && res.recommended) {
+                addNotification('success', `E-mail descoberto: ${res.recommended}`);
+
+                // 1. Se o contato tem emp_id, atualiza no banco local de hierarquia!
+                if (person.emp_id) {
+                    try {
+                        await hierarchyApi.updateEmployeeDetails(person.emp_id, {
+                            email: res.recommended
+                        });
+                    } catch (err: any) {
+                        console.error("Erro ao salvar email no banco local:", err);
+                    }
+                }
+
+                // 2. Se está cadastrado no Pipedrive, atualiza o Pipedrive também!
+                if (person.sources?.includes('pipedrive')) {
+                    try {
+                        await handleUpdateInPipedrive({ ...person, email: [{ value: res.recommended, primary: true }] }, orgId);
+                    } catch (err: any) {
+                        console.error("Erro ao atualizar email no Pipedrive:", err);
+                    }
+                }
+
+                // 3. Atualiza no estado local do drawer para atualizar a tela instantaneamente
+                setOrgDetails(prev => {
+                    const current = prev[orgId];
+                    if (!current) return prev;
+                    
+                    const updatedPersons = (current.persons || []).map((p: any) => {
+                        const isTarget = p.id === person.id || (p.name && person.name && p.name.trim().toLowerCase() === person.name.trim().toLowerCase());
+                        if (isTarget) {
+                            return {
+                                ...p,
+                                email: [{ value: res.recommended, primary: true }]
+                            };
+                        }
+                        return p;
+                    });
+
+                    return {
+                        ...prev,
+                        [orgId]: {
+                            ...current,
+                            persons: updatedPersons
+                        }
+                    };
+                });
+
+                // 4. Dispara evento para sinalizar ao pai/sistema que a hierarquia mudou
+                const changeEvent = new CustomEvent('crm_timeline_changed');
+                window.dispatchEvent(changeEvent);
+            } else {
+                addNotification('error', res.error || `Não foi possível encontrar um e-mail válido para ${contactName}.`);
+            }
+        } catch (e: any) {
+            console.error('Erro ao descobrir e-mail:', e);
+            addNotification('error', e.message || 'Erro ao processar descoberta de e-mail.');
+        }
+    };
+
     // Filtra a organização que está em foco
     const focusedOrg = expandedOrgId ? filteredOrgs.find(o => Number(o.id) === expandedOrgId) : null;
 
@@ -570,6 +643,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         onSaveToPipedrive={(person) => handleSaveToPipedrive(person, expandedOrgId!)}
                         onUpdateInPipedrive={(person) => handleUpdateInPipedrive(person, expandedOrgId!)}
                         onDeleteFromPipedrive={(person) => handleDeleteFromPipedrive(person, expandedOrgId!)}
+                        onDiscoverEmail={(person) => handleDiscoverEmail(person, expandedOrgId!)}
                     />
                 ) : (
                     <OrgList 

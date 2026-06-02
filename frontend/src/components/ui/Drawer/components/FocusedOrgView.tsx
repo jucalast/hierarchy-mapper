@@ -26,6 +26,7 @@ interface FocusedOrgViewProps {
     onSaveToPipedrive?: (person: any) => Promise<void> | void;
     onUpdateInPipedrive?: (person: any) => Promise<void> | void;
     onDeleteFromPipedrive?: (person: any) => Promise<void> | void;
+    onDiscoverEmail?: (person: any) => Promise<void> | void;
 }
 
 
@@ -50,7 +51,8 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
     onEditEmployee,
     onSaveToPipedrive,
     onUpdateInPipedrive,
-    onDeleteFromPipedrive
+    onDeleteFromPipedrive,
+    onDiscoverEmail
 }) => {
     const rawLinkedinUrl = focusedOrg?.linkedin || 
                            focusedOrg?.linkedin_url || 
@@ -202,6 +204,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
 
                             {activeTab === 'persons' && (
                                 <ContactList
+                                    orgName={focusedOrg.name}
                                     persons={(() => {
                                         const pipedrivePersons = orgDetails[expandedOrgId]?.persons || [];
                                         const validEmps = graphEmployees.filter(emp =>
@@ -293,6 +296,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                     onSaveToPipedrive={onSaveToPipedrive}
                                     onUpdateInPipedrive={onUpdateInPipedrive}
                                     onDeleteFromPipedrive={onDeleteFromPipedrive}
+                                    onDiscoverEmail={onDiscoverEmail}
                                 />
                             )}
 

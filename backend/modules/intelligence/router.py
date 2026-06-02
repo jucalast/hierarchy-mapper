@@ -8,7 +8,8 @@ Rotas:
     POST /intelligence/sync                -> dispara sync manual do Pipedrive
 """
 from fastapi import APIRouter, Query, HTTPException
-from typing import Optional
+from typing import Optional, Any, Dict
+from pydantic import BaseModel
 from sqlalchemy import select, delete, func
 from core.infra.database import async_session
 from models import Organization, Employee
@@ -16,6 +17,36 @@ from api.v1.schemas import ConfirmEnrichRequest
 from .service import intelligence_service
 
 router = APIRouter()
+
+class EmailDiscoveryRequest(BaseModel):
+    contact_name: str
+    org_name: Optional[str] = None
+    domain: Optional[str] = None
+
+@router.post("/discover-email")
+async def discover_email(payload: EmailDiscoveryRequest):
+    """
+    Endpoint manual para a ferramenta discover_and_validate_email.
+    Utilizado para descobrir e validar e-mails profissionais via Drawer.
+    """
+    from modules.agent.service.tools.intelligence import exec_discover_and_validate_email
+    
+    try:
+        args = {
+            "contact_name": payload.contact_name,
+            "org_name": payload.org_name,
+            "domain": payload.domain
+        }
+        
+        result = await exec_discover_and_validate_email(args)
+        
+        if not result.get("ok"):
+            return {"ok": False, "error": result.get("error")}
+            
+        return result
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao processar descoberta de e-mail: {str(e)}")
 
 
 @router.get("/enrich")

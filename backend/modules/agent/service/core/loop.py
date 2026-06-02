@@ -37,7 +37,7 @@ from core.observability.logging_config import get_logger
 
 log = get_logger(__name__)
 
-MAX_ITERATIONS = 20
+MAX_ITERATIONS = 30
 
 # Compartilhado com runner.py — ações de escrita pendentes aguardando confirmação
 _PENDING: Dict[str, Dict[str, Any]] = {}
@@ -113,36 +113,22 @@ async def _agent_loop(
         "encontrar o contato", "identificar contato", "localizar contato",
     ])
 
-    # 🚀 INTERCEPTOR DE EMERGÊNCIA: Rocha Auto Peças
-    # Se o sistema está travado repetindo a fase 1 para o Rocha Auto Peças mesmo após o ranking,
-    # forçamos a finalização imediata.
-    if _is_find_decisor_task and "rocha auto" in _first_msg_content.lower():
-        _eval_done = False
-        for _m in messages:
-            _mc = _m.get("content", "")
-            if isinstance(_mc, list):
-                for _b in _mc:
-                    if isinstance(_b, dict) and (_b.get("tool_name") == "evaluate_prospects" or _b.get("name") == "evaluate_prospects"):
-                        _eval_done = True
-                        break
-        if _eval_done:
-            log.info("agent.emergency_interceptor.rocha_forced_completion")
-            messages.append({
-                "role": "user", 
-                "content": "SISTEMA: A investigação para Rocha Auto Peças está 100% concluída. O ranking de prospects já foi gerado. NÃO CHAME MAIS FERRAMENTAS DE INVESTIGAÇÃO. Sua missão agora é EXCLUSIVAMENTE: 1) Marcar a tarefa 'Encontrar contato' como concluída no Pipedrive (pipedrive_update_task) e 2) Chamar suggest_next_actions. EXECUTE ISSO AGORA."
-            })
+    # ...
+    # Yielding start event
+    yield _emit({"type": "agent_start", "process_id": process_id, "message": _first_msg_content[:100]})
 
-    _max_iters = (16 if _is_task_action else 6) if direct_action else MAX_ITERATIONS
+    _max_iters = (25 if _is_task_action else 12) if direct_action else MAX_ITERATIONS
 
     # ── DETECÇÃO DE DIRETIVA DIRETA ──
     # Se o usuário deu uma ordem direta de escrita (Ex: "atualize a nota", "marque como feita"),
     # ativamos o modo "Direct Directive". Nesse modo, o agente é proibido de sugerir
     # ações proativas (como rascunhar e-mail) antes de cumprir o comando original.
-    _DIRECTIVE_KEYWORDS = ["atualize", "marque", "crie", "delete", "remova", "altere", "nota", "escreva", "execute"]
-    _is_direct_directive = direct_action and any(kw in _first_msg_content.lower() for kw in _DIRECTIVE_KEYWORDS)
+    _DIRECTIVE_KEYWORDS = ["atualize", "marque", "crie", "delete", "remova", "altere", "nota", "escreva"]
+    _is_direct_directive = direct_action and any(kw in _first_msg_content.lower() for kw in _DIRECTIVE_KEYWORDS) and not _is_task_action
     if _is_direct_directive:
         log.info("agent.intent.direct_directive_detected", content=_first_msg_content[:50])
         # active_skill é mantido para que as regras de negócio de funil não sejam perdidas
+
 
     # ── DETECÇÃO DE REUSO DE CONTEXTO ──
     # Se o histórico já contém as informações necessárias para a tarefa, 
@@ -588,12 +574,25 @@ async def _agent_loop(
                     })
                     continue
 
+                _ai_response_text = " ".join(b.get("text", "") for b in text_blocks).lower()
+
+                # Detecta se já gerou rascunho de mensagem
+                _has_draft = False
+                for _m in messages + [{"role": "assistant", "content": content}]:
+                    _mc = _m.get("content", "")
+                    if isinstance(_mc, list):
+                        for _b in _mc:
+                            if isinstance(_b, dict) and (_b.get("tool_name") == "generate_sales_message" or (_b.get("type") == "tool_use" and _b.get("name") == "generate_sales_message")):
+                                _has_draft = True
+                                break
+                    if _has_draft: break
+
                 # ── Interceptor: contatos com canal ainda não investigados ─────────────
                 # Para tarefas de follow-up/comunicação, garante que TODOS os contatos
                 # ── Interceptor: Email obrigatório para contato-tarefa ──────────────────────
                 # Para tarefas com contato específico (_session_task_person), sempre busca
                 # TAMBÉM o email após WhatsApp — independente do resultado do WhatsApp.
-                if _session_task_person and _is_task_action and iteration < _max_iters - 2:
+                if _session_task_person and _is_task_action and not _has_draft and iteration < _max_iters - 2:
                     _tpn_first = _session_task_person.split()[0].lower()
                     _task_wa_done = False
                     _task_email_done = False
@@ -626,11 +625,36 @@ async def _agent_loop(
                 # com canal registrado (WhatsApp ou telefone/email) sejam buscados antes
                 # de o agente finalizar. Impede que o modelo conclua "sem histórico" depois
                 # de buscar apenas o contato principal.
-                if iteration < _max_iters - 2:
-                    # Prioriza o contato dono da tarefa — usa _session_task_person capturado
-                    # durante a execução de pipedrive_get_activities (dado raw, antes da sanitização).
-                    if _session_task_person:
-                        _tpn_lower = _session_task_person.lower()
+                # Se já gerou rascunho, PULA estas investigações forçadas para economizar turnos.
+                if not _has_draft and iteration < _max_iters - 2:
+                    # PRIORIDADE E FAST-TRACK: Se é uma tarefa para uma pessoa específica e já temos o contato dela, 
+                    # não forçamos a busca de outros contatos para economizar turnos.
+                    _skip_others = False
+                    if _session_task_person and _is_task_action:
+                        _tpn_f = _session_task_person.lower().split()[0]
+                        
+                        # Verifica se já buscamos o histórico da pessoa alvo
+                        _target_searched = False
+                        for _m in messages + [{"role": "assistant", "content": content}]:
+                            _mc = _m.get("content", "")
+                            if not isinstance(_mc, list): continue
+                            for _b in _mc:
+                                if isinstance(_b, dict) and _b.get("type") == "tool_use":
+                                    _tn_s = _b.get("name", "")
+                                    _ta_s = _b.get("input") or {}
+                                    if _tn_s == "whatsapp_get_messages" and _tpn_f in str(_ta_s.get("contact", "")).lower():
+                                        _target_searched = True
+                                    if _tn_s == "email_get_contact_history" and (_tpn_f in str(_ta_s.get("contact_name", "")).lower() or _tpn_f in str(_ta_s.get("org_name", "")).lower()):
+                                        _target_searched = True
+                        
+                        if _target_searched:
+                            _skip_others = True # Já investigou o alvo, não precisa investigar o resto da empresa agora
+                    
+                    if not _skip_others:
+                        # Prioriza o contato dono da tarefa — usa _session_task_person capturado
+                        # durante a execução de pipedrive_get_activities (dado raw, antes da sanitização).
+                        if _session_task_person:
+                            _tpn_lower = _session_task_person.lower()
                         # WA
                         _task_entry_wa = next((p for p in _persons_with_wa if _tpn_lower in p[0].lower() or p[0].lower().split()[0] in _tpn_lower), None)
                         if _task_entry_wa and _persons_with_wa.index(_task_entry_wa) != 0:
@@ -844,6 +868,18 @@ async def _agent_loop(
                                     _has_sent_now = True
                     
                     if _has_draft_now and not _has_sent_now:
+                        # Recupera attachment_name do rascunho se disponível
+                        _att_name = ""
+                        for _m in messages + [{"role": "assistant", "content": content}]:
+                            _mc = _m.get("content", "")
+                            if isinstance(_mc, list):
+                                for _b in _mc:
+                                    if isinstance(_b, dict) and _b.get("tool_name") == "generate_sales_message":
+                                        try:
+                                            _rd = json.loads(_b.get("content", "{}"))
+                                            _att_name = _rd.get("attachment_name") or ""
+                                        except: pass
+
                         # Força o envio do rascunho
                         messages.append({"role": "assistant", "content": content})
                         messages.append({
@@ -851,11 +887,28 @@ async def _agent_loop(
                             "content": (
                                 "REGRA DE OURO: Você gerou um rascunho de mensagem mas não chamou a ferramenta de envio para aprovação.\n"
                                 "O 'Sucesso' da sua tarefa é fazer o card de aprovação aparecer para o João Luccas.\n"
-                                "CHAME AGORA: whatsapp_send_message (ou email_send) com o texto do rascunho.\n"
+                                f"CHAME AGORA: whatsapp_send_message (ou email_send/email_reply) com o texto do rascunho"
+                                + (f" e attachment_name='{_att_name}'" if _att_name else "") + ".\n"
                                 "É PROIBIDO terminar o turno apenas com texto quando há um rascunho pronto."
                             ),
                         })
                         continue
+
+                    # ── Interceptor: Investigação concluída mas rascunho NÃO gerado ──────────
+                    _COMM_KEYWORDS = ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow"]
+                    _is_comm_task = any(k in _first_msg_content.lower() for k in _COMM_KEYWORDS)
+                    
+                    if _is_comm_task and not _missing_core and not _has_draft_now and not _has_sent_now:
+                         messages.append({"role": "assistant", "content": content})
+                         messages.append({
+                             "role": "user",
+                             "content": (
+                                 "Você concluiu a fase de investigação de dados e histórico. "
+                                 "OBRIGATÓRIO: Use `generate_sales_message` agora para criar o rascunho da comunicação "
+                                 "baseado em tudo que você descobriu. Não encerre apenas com o resumo ou prometendo enviar depois."
+                             ),
+                         })
+                         continue
 
                     # ── Interceptor: Histórico encontrado mas rascunho NÃO gerado (OBRIGATÓRIO PARA FOLLOW-UP) ──
                     if not _has_draft_now and not _has_sent_now:
@@ -863,35 +916,45 @@ async def _agent_loop(
                         if _is_followup:
                             _found_history = False
                             # Verifica tanto o histórico quanto os resultados do turno atual
-                            all_recent_results = []
-                            for _m in messages:
+                            for _hm in messages + [{"role": "assistant", "content": content}]:
                                 _mc = _m.get("content", "")
-                                if isinstance(_mc, list):
-                                    all_recent_results.extend([_b for _b in _mc if isinstance(_b, dict)])
-                            all_recent_results.extend([_b for _b in tool_results if isinstance(_b, dict)])
-
-                            for _b in all_recent_results:
-                                if _b.get("type") == "tool_result" and _b.get("tool_name") in ("whatsapp_get_messages", "email_get_contact_history"):
-                                    _res_content = str(_b.get("content", "")).lower()
-                                    if ("nenhuma mensagem" not in _res_content and 
-                                        "0 mensagens" not in _res_content and 
-                                        "nenhum e-mail" not in _res_content and
-                                        "0 e-mails" not in _res_content):
+                                if not isinstance(_mc, list): continue
+                                for _b in _mc:
+                                    if not isinstance(_b, dict): continue
+                                    if _b.get("type") == "tool_result" and _b.get("tool_name") in ("whatsapp_get_messages", "email_get_contact_history"):
                                         _found_history = True
-                                        break
                             
                             if _found_history:
                                 messages.append({"role": "assistant", "content": content})
                                 messages.append({
                                     "role": "user",
-                                    "content": (
-                                        "ATENÇÃO: Você encontrou histórico de comunicação relevante mas NÃO gerou o rascunho de follow-up.\n"
-                                        "Para tarefas de follow-up/cobrar retorno, sua missão OBRIGATORIAMENTE deve terminar com um rascunho pronto para envio.\n"
-                                        "CHAME AGORA: generate_sales_message para criar a mensagem agressiva/técnica baseada no histórico encontrado.\n"
-                                        "É PROIBIDO finalizar a tarefa apenas relatando que encontrou as mensagens."
-                                    ),
+                                    "content": "Você já encontrou o histórico de comunicações. OBRIGATÓRIO: Use `generate_sales_message` agora para propor a próxima mensagem."
                                 })
                                 continue
+
+                # ── Interceptor: Anti-questionamento de nome de empresa (Anti-Bottleneck) ──────────────
+                _ai_text_full = " ".join(b.get("text", "") for b in text_blocks).lower()
+                if "confirmar o nome da empresa" in _ai_text_full or "qual o nome da empresa" in _ai_text_full:
+                    # Tenta recuperar o nome da org_name_for_search
+                    _org_name_final = ""
+                    for _m in messages:
+                        _mc = _m.get("content", "")
+                        if not isinstance(_mc, list): continue
+                        for _b in _mc:
+                            if not isinstance(_b, dict): continue
+                            if _b.get("type") == "tool_result" and _b.get("tool_name") == "pipedrive_get_org":
+                                try:
+                                    _od = json.loads(_b.get("content", "{}"))
+                                    _org_name_final = (_od.get("org") or {}).get("name") or _od.get("name") or ""
+                                except Exception: pass
+                    
+                    if _org_name_final:
+                        messages.append({"role": "assistant", "content": content})
+                        messages.append({
+                            "role": "user",
+                            "content": f"O nome da empresa é '{_org_name_final}'. Você já tem essa informação no histórico do Pipedrive. NÃO peça confirmação novamente. Prossiga com a tarefa imediatamente usando as ferramentas adequadas."
+                        })
+                        continue
 
             # Emite resultado final
             if direct_action and not _is_task_action:
@@ -899,36 +962,6 @@ async def _agent_loop(
                     _raw_log(process_id, "agent_final_response", {"response": response_text})
                     yield _emit({"type": "final", "response": response_text})
                 return
-
-            # Para _is_task_action: forçar suggest_next_actions após execução bem-sucedida de write
-            if _is_task_action and stop_reason in ("end_turn", "stop") and not tool_use_blocks:
-                _executed_writes = set()
-                for _m in messages + [{"role": "assistant", "content": content}]:
-                    _mc = _m.get("content", "")
-                    if isinstance(_mc, list):
-                        for _b in _mc:
-                            if isinstance(_b, dict) and _b.get("type") in ("tool_use", "tool_result"):
-                                _tn = _b.get("name") or _b.get("tool_name", "")
-                                if _tn in ("pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_task", "pipedrive_create_person"):
-                                    _executed_writes.add(_tn)
-                if _executed_writes and not _suggest_actions_done(messages + [{"role": "assistant", "content": content}]):
-                    if not _final_emitted:
-                        _final_response = response_text.strip() or "Ação realizada com sucesso! Aqui estão as sugestões de próximos passos:"
-                        _raw_log(process_id, "agent_final_response", {"response": _final_response})
-                        yield _emit({"type": "final", "response": _final_response})
-                        _final_emitted = True
-                    messages.append({"role": "assistant", "content": content})
-                    messages.append({
-                        "role": "user",
-                        "content": (
-                            f"Tarefa concluída com sucesso ({', '.join(_executed_writes)}).\n"
-                            "Agora você é um Consultor de Vendas B2B sênior. "
-                            "Chame OBRIGATORIAMENTE 'suggest_next_actions' com 2 a 5 sugestões de próximos passos comerciais relevantes para esta empresa. "
-                            "Use IDs REAIS já coletados no histórico. Não invente IDs. "
-                            "NÃO escreva texto adicional — apenas chame suggest_next_actions."
-                        ),
-                    })
-                    continue
 
             # Interceptor anti-permissão...
             _PERMISSION_PHRASES = [
@@ -1029,16 +1062,56 @@ async def _agent_loop(
                     _is_non_investigation = not _is_investigation
                     _is_complete = (
                         _is_non_investigation
-                        or _is_task_action
                         or "Fase final" in _status
                         or "resposta final" in _status.lower()
                         or "responda à pergunta" in _status.lower()
                         or "apresente os" in _status.lower()
                         or "escreva a resposta final" in _status.lower()
                         or "não chame mais ferramentas" in _status.lower()
-                        or "regra de ouro" in content.lower()
-                        or "parada antecipada" in content.lower()
+                        or "regra de ouro" in str(content).lower()
+                        or "parada antecipada" in str(content).lower()
                     )
+
+                    # Se for uma tarefa CRM (_is_task_action), ela só está completa se:
+                    # 1. Já gerou um rascunho de mensagem (se for tarefa de comunicação)
+                    # 2. Já chamou suggest_next_actions (final absoluto)
+                    if _is_task_action:
+                        _SEND_TOOLS = {"whatsapp_send_message", "email_send", "email_reply"}
+                        _has_sent_global = False
+                        _has_draft_global = False
+                        
+                        # Verifica no histórico de resultados de ferramentas
+                        for _m in messages:
+                             _mc = _m.get("content", "")
+                             if isinstance(_mc, list):
+                                 for _b in _mc:
+                                     if not isinstance(_b, dict): continue
+                                     _tn_check = _b.get("tool_name") or _b.get("name")
+                                     if _tn_check == "generate_sales_message":
+                                         _has_draft_global = True
+                                     if _tn_check in _SEND_TOOLS:
+                                         try:
+                                             _res = json.loads(_b.get("content", "{}"))
+                                             if _res.get("ok"): _has_sent_global = True
+                                         except: pass
+                        
+                        # Verifica se está no turno atual (assistant content)
+                        if not _has_sent_global or not _has_draft_global:
+                            for _b in content if isinstance(content, list) else []:
+                                if isinstance(_b, dict) and _b.get("type") == "tool_use":
+                                    _tn_curr = _b.get("name")
+                                    if _tn_curr in _SEND_TOOLS: _has_sent_global = True
+                                    if _tn_curr == "generate_sales_message": _has_draft_global = True
+
+                        _COMM_KEYWORDS = ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow"]
+                        _is_comm_task = any(k in _first_msg_content.lower() for k in _COMM_KEYWORDS)
+                        
+                        # A tarefa de comunicação está "completa para o loop" se já tem o rascunho.
+                        # Isso permite que o assistente pare para mostrar o texto ao usuário.
+                        if _is_comm_task and (_has_sent_global or _has_draft_global):
+                            _is_complete = True
+                        elif _is_comm_task:
+                            _is_complete = False # Força a passar pelos interceptores de rascunho/envio
 
                     if not _is_complete and stop_reason in ("end_turn", "stop") and not tool_use_blocks:
                         # Investigação incompleta — força continuar (só para respostas de texto puro)
@@ -1061,8 +1134,20 @@ async def _agent_loop(
                         # Emite o dossiê agora e força turno dedicado para suggest_next_actions
                         _final_response = response_text
                         if not _final_response.strip():
-                            _has_update_task = any("pipedrive_update_task" in str(m) for m in messages)
-                            if _has_update_task:
+                            # Verifica se houve algum write de sucesso real no histórico
+                            _real_write_success = False
+                            _WRITE_TOOLS_CHECK = {"pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_task", "pipedrive_create_person", "whatsapp_send_message", "email_send", "email_reply"}
+                            for _m in messages:
+                                _mc = _m.get("content", "")
+                                if isinstance(_mc, list):
+                                    for _b in _mc:
+                                        if isinstance(_b, dict) and _b.get("type") == "tool_result" and _b.get("tool_name") in _WRITE_TOOLS_CHECK:
+                                            try:
+                                                _rd = json.loads(_b.get("content", "{}"))
+                                                if _rd.get("ok"): _real_write_success = True
+                                            except: pass
+                            
+                            if _real_write_success:
                                 _final_response = "Ação realizada com sucesso! Aqui estão as sugestões de próximos passos:"
                             else:
                                 _final_response = "Investigação concluída! Aqui estão as sugestões de próximos passos:"
@@ -1071,6 +1156,14 @@ async def _agent_loop(
                         _cached_final_response = _final_response
                         yield _emit({"type": "thinking", "content": "Analisando histórico para sugerir ações..."})
                         _final_emitted = True
+
+                        # Se for tarefa de ação (_is_task_action), injeta um aviso extra no prompt de sugestão
+                        _task_action_hint = ""
+                        if _is_task_action:
+                            _task_action_hint = (
+                                f"\nTAREFA CRM CONCLUÍDA: A atividade #{_first_msg_content[:20]}... foi processada.\n"
+                                "Agora gere sugestões focadas no PÓS-CONTATO ou em novas frentes de prospecção."
+                            )
 
                         real_data_summary = []
                         if found_org:
@@ -1098,6 +1191,7 @@ async def _agent_loop(
                             "content": (
                                 f"Dossiê entregue. DADOS REAIS EXTRAÍDOS DO HISTÓRICO (USE APENAS ESTES IDS):\n{real_data_str}\n\n"
                                 f"RESUMO DAS FONTES:\n{context_str}\n\n"
+                                f"{_task_action_hint}\n"
                                 "Você é um Consultor de Vendas B2B sênior e altamente estratégico. "
                                 "Chame OBRIGATORIAMENTE 'suggest_next_actions' com ações específicas, contextualizadas e comercialmente brilhantes.\n"
                                 "ATENÇÃO: Se a busca retornou uma LISTA de entidades (ex: 12 negócios sem tarefas, múltiplos prospects), "
@@ -1187,26 +1281,270 @@ async def _agent_loop(
                 })
                 continue
 
+            # 🚀 INTERCEPTOR: Validação de E-mail Obrigatória
+            if tool_name in ("email_send", "email_reply"):
+                _target_email = tool_args.get("to") or ""
+                _contact_name = tool_args.get("contact_name") or ""
+
+                # 🚀 AUTO-ENRICH: Adiciona assinatura e apresentação automaticamente para exibição no front-end
+                try:
+                    import os as _os
+                    from modules.ai.service.context.business_context_service import BusinessContextService
+                    
+                    # 1. Força a Apresentação se não estiver definida
+                    if tool_name == "email_send" and not tool_args.get("attachment_name"):
+                        tool_args["attachment_name"] = "apresentacao_linkb2b"
+
+                    # 2. Embutir assinatura no corpo do email para visualização imediata no frontend
+                    _body = tool_args.get("body") or ""
+                    if "<!-- SIGNATURE_START -->" not in _body and "J.Ferres" not in _body:
+                        ctx = await BusinessContextService.get_tenant_context()
+                        sig_path = ctx.get("signature_path")
+                        if sig_path and _os.path.exists(sig_path):
+                            try:
+                                import base64 as _base64
+                                from pathlib import Path as _Path
+                                ext = _Path(sig_path).suffix.lower().replace(".", "")
+                                if ext in ("png", "jpg", "jpeg", "gif"):
+                                    with open(sig_path, "rb") as f:
+                                        b64_data = _base64.b64encode(f.read()).decode()
+                                    mime = f"image/{ext}" if ext != "jpg" else "image/jpeg"
+                                    sig_html = f'<br><br><!-- SIGNATURE_START --><img src="data:{mime};base64,{b64_data}" style="max-width: 400px; height: auto;" /><!-- SIGNATURE_END -->'
+                                    if sig_html not in _body:
+                                        tool_args["body"] = _body + sig_html
+                            except Exception as sig_err:
+                                log.warning(f"Erro ao embutir assinatura em loop.py: {sig_err}")
+                        else:
+                            # Assinatura em texto se não houver imagem
+                            sig_text = "<br><br>--<br><b>João Luccas</b><br>Equipe Comercial J.Ferres"
+                            if sig_text not in _body:
+                                tool_args["body"] = _body + sig_text
+                except Exception as enrich_err:
+                    log.warning(f"Erro ao enriquecer email com assinatura/apresentação: {enrich_err}")
+                
+                # Só intercepta se ainda não validou NESTA sessão
+                _already_validated = False
+                for _m in messages:
+                    _mc = _m.get("content", "")
+                    if isinstance(_mc, list):
+                        for _b in _mc:
+                            if isinstance(_b, dict) and _b.get("tool_name") == "discover_and_validate_email":
+                                try:
+                                    _res = json.loads(_b.get("content", "{}"))
+                                    if _res.get("recommended") == _target_email or _target_email in str(_res.get("valid_emails")):
+                                        _already_validated = True
+                                        break
+                                except Exception:
+                                    pass
+
+                # Se ainda não detectado na sessão, verifica nos contatos carregados da sessão
+                if not _already_validated and _target_email:
+                    _session_contacts = []
+                    for _m in messages:
+                        _m_content = _m.get("content", "")
+                        if isinstance(_m_content, list):
+                            for _item in _m_content:
+                                if isinstance(_item, dict) and _item.get("type") == "tool_result":
+                                    _t_name = _item.get("tool_name", "")
+                                    _t_content = str(_item.get("content", ""))
+                                    try:
+                                        _t_data = json.loads(_t_content) if _t_content.strip().startswith(("{", "[")) else {}
+                                    except Exception:
+                                        _t_data = {}
+                                    if _t_name in ("pipedrive_get_org", "pipedrive_get_persons"):
+                                        _p_list = _t_data.get("persons") or []
+                                        for _p in _p_list:
+                                            _p_name = _p.get("name")
+                                            if _p_name:
+                                                _p_name_clean = _p_name.strip().lower()
+                                                if _p_name_clean not in [c.get("name", "").strip().lower() for c in _session_contacts]:
+                                                    _session_contacts.append(_p)
+
+                    for _c in _session_contacts:
+                        _c_email = _c.get("email") or ""
+                        if _c_email.lower().strip() == _target_email.lower().strip():
+                            # Se está cadastrado e possui e-mail não nulo, consideramos válido (e.g. validado manualmente no UI/DB)
+                            log.info("agent.interceptor.email_validated_via_session_contacts", email=_target_email)
+                            _already_validated = True
+                            break
+
+                # Se ainda não detectado, faz uma busca no banco local pelo endereço de e-mail (para pegar validações do UI/históricas)
+                if not _already_validated and _target_email:
+                    try:
+                        from core.infra.database import async_session
+                        from models.people.employee import Employee
+                        from sqlalchemy import select
+                        
+                        async with async_session() as session:
+                            stmt = select(Employee).where(Employee.email == _target_email)
+                            res = await session.execute(stmt)
+                            db_emp = res.scalar_one_or_none()
+                            if db_emp:
+                                log.info("agent.interceptor.email_validated_via_local_db", email=_target_email)
+                                _already_validated = True
+                    except Exception as db_err:
+                        log.warning(f"Erro ao verificar email no banco local: {db_err}")
+                
+                # Se não validou e o e-mail parece um padrão gerado (contém pontos/under ou é curto)
+                # ou se o usuário explicitamente pediu para validar (via Alerta de Contexto)
+                _looks_like_pattern = _target_email and ("." in _target_email.split("@")[0] or "_" in _target_email.split("@")[0])
+                
+                if not _already_validated and (_looks_like_pattern or not _target_email):
+                    log.info("agent.interceptor.email_validation_forced", email=_target_email)
+                    
+                    # 🚀 NOVA LÓGICA: Auto-validação inline
+                    _auto_validated = False
+                    _auto_validated_email = None
+                    try:
+                        from modules.agent.service.tools.intelligence import exec_discover_and_validate_email
+                        
+                        # Tenta obter domínio para a busca
+                        _domain = ""
+                        if org_id:
+                            from modules.crm.service.pipedrive_service import pipedrive_service
+                            org_details = await pipedrive_service.get_organization_details(org_id)
+                            if isinstance(org_details, dict):
+                                _domain = org_details.get("domain") or org_details.get("website") or ""
+                        
+                        if not _domain:
+                            from core.infra.database import async_session
+                            from models.organization import Organization
+                            from sqlalchemy import select
+                            async with async_session() as session:
+                                stmt = select(Organization).where((Organization.id == org_id) | (Organization.pipedrive_id == org_id))
+                                res = await session.execute(stmt)
+                                o_db = res.scalar_one_or_none()
+                                if o_db:
+                                    _domain = o_db.domain or ""
+                        
+                        validation_args = {
+                            "contact_name": _contact_name,
+                            "org_name": tool_args.get("org_name", ""),
+                            "domain": _domain
+                        }
+                        
+                        log.info("agent.interceptor.auto_validating_inline", args=validation_args)
+                        val_res = await exec_discover_and_validate_email(validation_args)
+                        if val_res.get("ok") and val_res.get("recommended"):
+                            _auto_validated_email = val_res.get("recommended")
+                            log.info("agent.interceptor.auto_validation_success", email=_auto_validated_email)
+                            tool_args["to"] = _auto_validated_email
+                            _auto_validated = True
+                            _already_validated = True
+                    except Exception as val_err:
+                        log.warning(f"Falha na validação inline automática: {val_err}")
+                    
+                    # Se não conseguiu auto-validar, fazemos um retorno suave de instrução para a IA em vez de crashar
+                    if not _auto_validated:
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": tool_id,
+                            "tool_name": tool_name,
+                            "content": (
+                                f"AVISO DE SEGURANÇA: O e-mail '{_target_email}' para o contato '{_contact_name}' "
+                                "precisa ser validado antes do envio real para evitar que caia em SPAM ou retorne erro.\n\n"
+                                "Por favor, chame a ferramenta `discover_and_validate_email` no próximo passo para confirmar o e-mail.\n"
+                                f"Chame: discover_and_validate_email(contact_name='{_contact_name}', org_name='{tool_args.get('org_name', '')}')"
+                            ),
+                            "is_error": False,
+                        })
+                        continue
+
+
             # 🚀 INTERCEPTOR: Trava de Execução de Tarefa de Valor
-            # Impede fechar tarefas complexas (Otimização, Proposta, Follow-up) sem investigação prévia.
-            if tool_name == "pipedrive_update_task" and iteration == 0:
-                _subject = str(_first_msg_content).lower()
-                _is_value_task = any(kw in _subject for kw in ["otimização", "proposta", "follow-up", "apresentação", "enviar", "ligar"])
-                if _is_value_task:
-                    log.info("agent.interceptor.value_task_close_blocked", tool=tool_name)
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tool_id,
-                        "tool_name": tool_name,
-                        "content": (
-                            "BLOQUEIO TÉCNICO DE SEGURANÇA: Você está tentando fechar uma Tarefa de Valor no primeiro turno. "
-                            "Isso é PROIBIDO. Você deve primeiro investigar o histórico da empresa e dos contatos (Blocos 1 e 2). "
-                            "Realize o trabalho comercial (rascunho de mensagem/proposta) antes de sugerir o fechamento. "
-                            "CHAME AGORA as ferramentas de investigação (pipedrive_get_org, pipedrive_get_persons, etc.)."
-                        ),
-                        "is_error": False,
-                    })
-                    continue
+            # Impede fechar tarefas complexas (Otimização, Proposta, Follow-up) sem antes realizar a ação.
+            if tool_name == "pipedrive_update_task":
+                _done_val = tool_args.get("done")
+                _is_marking_done = _done_val is True or str(_done_val).lower() in ("true", "1", "yes", "y")
+                
+                if _is_marking_done:
+                    # Verifica intenção de comunicação em TODO o histórico (não apenas na primeira mensagem)
+                    _full_history_text = " ".join(str(m.get("content", "")).lower() for m in messages)
+                    _is_comm_task = any(kw in _full_history_text for kw in ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow", "otimização", "ligar"])
+                    
+                    if _is_comm_task:
+                        _comm_proposed = False
+                        _COMM_TOOLS = {"whatsapp_send_message", "email_send", "email_reply", "generate_sales_message"}
+                        
+                        # Verifica se houve rascunho ou envio no histórico
+                        for _m in messages:
+                            _mc = _m.get("content", "")
+                            if isinstance(_mc, list):
+                                for _b in _mc:
+                                    if not isinstance(_b, dict): continue
+                                    _tn_hist = _b.get("tool_name") or _b.get("name")
+                                    if _tn_hist in _COMM_TOOLS:
+                                        _comm_proposed = True
+                                        break
+                        
+                        # Verifica se está propondo AGORA no mesmo bloco
+                        if not _comm_proposed:
+                            for _b in tool_use_blocks:
+                                if _b.get("name") in _COMM_TOOLS:
+                                    _comm_proposed = True
+                        
+                        if not _comm_proposed:
+                            log.info("agent.interceptor.value_task_close_blocked", tool=tool_name, reason="no_comm_found")
+                            tool_results.append({
+                                "type": "tool_result",
+                                "tool_use_id": tool_id,
+                                "tool_name": tool_name,
+                                "content": (
+                                    "ERRO DE FLUXO: Você está tentando concluir uma Tarefa de Comunicação no Pipedrive, "
+                                    "mas ainda NÃO gerou o rascunho da mensagem nem propôs o envio real.\n\n"
+                                    "É PROIBIDO fechar a tarefa sem antes realizar o trabalho comercial.\n"
+                                    "OBRIGATÓRIO AGORA: \n"
+                                    "1. Use `generate_sales_message` para criar o e-mail/WhatsApp.\n"
+                                    "2. Use `email_send` ou `whatsapp_send_message` para propor o envio ao João.\n"
+                                    "3. Somente após essas etapas você poderá marcar a tarefa como concluída."
+                                ),
+                                "is_error": False,
+                            })
+                            continue
+
+            # 🚀 INTERCEPTOR: Trava de Sugestão Prematura
+            if tool_name == "suggest_next_actions" and _is_task_action:
+                 # Se for uma tarefa de comunicação, não pode sugerir próximos passos 
+                 # sem antes ter proposto o envio da mensagem desta tarefa.
+                 _full_history_text = " ".join(str(m.get("content", "")).lower() for m in messages)
+                 _is_comm_task = any(kw in _full_history_text for kw in ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow", "otimização", "ligar"])
+                 
+                 if _is_comm_task:
+                     _has_sent_global = False
+                     _SEND_TOOLS = {"whatsapp_send_message", "email_send", "email_reply"}
+                     
+                     for _m in messages:
+                         _mc = _m.get("content", "")
+                         if isinstance(_mc, list):
+                             for _b in _mc:
+                                 if not isinstance(_b, dict): continue
+                                 _tn_check = _b.get("tool_name") or _b.get("name")
+                                 if _tn_check in _SEND_TOOLS:
+                                     _has_sent_global = True
+                                     break
+                     
+                     if not _has_sent_global:
+                         log.info("agent.interceptor.suggestion_blocked_comm_pending", tool=tool_name)
+                         tool_results.append({
+                             "type": "tool_result",
+                             "tool_use_id": tool_id,
+                             "tool_name": tool_name,
+                             "content": (
+                                 "BLOQUEIO: Você está tentando sugerir próximos passos (suggest_next_actions), "
+                                 "mas ainda não realizou a ação principal desta tarefa (enviar e-mail/WhatsApp). "
+                                 "OBRIGATÓRIO: Use `generate_sales_message` e depois a ferramenta de envio correspondente "
+                                 "ANTES de chamar suggest_next_actions. A tarefa só acaba quando a comunicação é proposta."
+                             ),
+                             "is_error": False,
+                             "summary": "SKIPPED: Ação pendente"
+                         })
+                         # Adiciona um marcador no histórico para o LLM saber que deve focar na comunicação
+                         messages.append({"role": "assistant", "content": content})
+                         messages.append({
+                             "role": "user",
+                             "content": "Atenção: A chamada de `suggest_next_actions` foi ignorada pelo sistema porque você ainda não enviou a mensagem desta tarefa. Foque em gerar o rascunho e propor o envio agora."
+                         })
+                         continue
 
             if tool_name not in TOOLS:
                 tool_results.append({

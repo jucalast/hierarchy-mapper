@@ -127,3 +127,23 @@ export function enrichIntelligence(params: { name?: string; cnpj: string; force?
     };
   }>(`/intelligence/enrich?${qs.toString()}`, { timeout: TIMEOUTS.long });
 }
+
+export interface DiscoverEmailPayload {
+  contact_name: string;
+  org_name?: string | null;
+  domain?: string | null;
+}
+
+export interface DiscoverEmailResponse {
+  ok: boolean;
+  contact_name?: string;
+  domain?: string;
+  valid_emails?: Array<{ email: string; status: string; source: string }>;
+  recommended?: string;
+  error?: string;
+}
+
+export function discoverEmail(payload: DiscoverEmailPayload) {
+  return api.post<DiscoverEmailResponse>('/intelligence/discover-email', payload);
+}
+

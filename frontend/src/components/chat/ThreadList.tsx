@@ -83,7 +83,7 @@ export const ThreadList: React.FC<ThreadListProps> = ({
     return (
         <div className={styles.threadListPanel}>
             {/* Header */}
-            <div className={styles.tlHeader} style={{ paddingLeft: '16px', gap: '12px' }}>
+            <div className={styles.chatHeader} style={{ paddingLeft: '16px', gap: '12px' }}>
                 {selectedThreads.size > 0 ? (
                     <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={toggleSelectAll}>

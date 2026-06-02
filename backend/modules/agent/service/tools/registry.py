@@ -36,6 +36,7 @@ from .intelligence import (
     exec_suggest_next_actions,
     exec_evaluate_prospects,
     exec_deep_company_investigation,
+    exec_discover_and_validate_email,
 )
 
 log = get_logger(__name__)
@@ -390,6 +391,16 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "type": "read",
         "executor": exec_evaluate_prospects,
     },
+    "discover_and_validate_email": {
+        "description": "Descobre e valida o e-mail profissional de um contato usando o domínio da empresa e pesquisa na web. Gera padrões comuns (joao.moura, j.moura) e verifica se o e-mail é válido via DNS.",
+        "args_schema": {
+            "contact_name": "string (nome completo do contato)",
+            "org_name": "string opcional (nome da empresa)",
+            "domain": "string opcional (domínio da empresa — ex: empresa.com.br)"
+        },
+        "type": "read",
+        "executor": exec_discover_and_validate_email,
+    },
 }
 
 
@@ -483,7 +494,11 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
         if user_attachment_path and _os.path.exists(user_attachment_path):
             attachment_paths.append(user_attachment_path)
             
+        # Prioriza 'apresentacao_linkb2b' se mencionado no body ou se veio nos args
         att_name = args.get("attachment_name", "")
+        if not att_name and any(kw in body.lower() for kw in ["apresentação", "pdf", "anexo"]):
+            att_name = "apresentacao_linkb2b"
+
         if att_name:
             # Se o agente pediu 'apresentacao', usamos o PDF configurado no banco
             if "apresentacao" in att_name.lower():
@@ -515,11 +530,16 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
                     with open(sig_path, "rb") as f:
                         b64_data = _base64.b64encode(f.read()).decode()
                     mime = f"image/{ext}" if ext != "jpg" else "image/jpeg"
-                    sig_html = f'<br><br><img src="data:{mime};base64,{b64_data}" style="max-width: 300px; height: auto;" />'
-                    final_body += sig_html
+                    sig_html = f'<br><br><img src="data:{mime};base64,{b64_data}" style="max-width: 400px; height: auto;" />'
+                    if sig_html not in final_body:
+                        final_body += sig_html
             except Exception as sig_err:
                 import logging as _log
                 _log.warning(f"Erro ao embutir assinatura: {sig_err}")
+        else:
+             # Se não tem imagem, coloca uma assinatura de texto profissional se não houver
+             if "J.Ferres" not in final_body:
+                 final_body += "<br><br>--<br><b>João Luccas</b><br>Equipe Comercial J.Ferres"
 
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
@@ -556,6 +576,12 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
         if not entry_id or not body:
             return {"ok": False, "error": "entry_id e body são obrigatórios"}
             
+        # Prioriza 'apresentacao_linkb2b' se mencionado no body
+        if any(kw in body.lower() for kw in ["apresentação", "pdf", "anexo"]):
+            path = ctx.get("presentation_path")
+            if path and _os.path.exists(path):
+                attachment_paths.append(path)
+
         # Append signature se houver imagem configurada
         final_body = body
         sig_path = ctx.get("signature_path")
@@ -568,11 +594,15 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
                     with open(sig_path, "rb") as f:
                         b64_data = _base64.b64encode(f.read()).decode()
                     mime = f"image/{ext}" if ext != "jpg" else "image/jpeg"
-                    sig_html = f'<br><br><img src="data:{mime};base64,{b64_data}" style="max-width: 300px; height: auto;" />'
-                    final_body += sig_html
+                    sig_html = f'<br><br><img src="data:{mime};base64,{b64_data}" style="max-width: 400px; height: auto;" />'
+                    if sig_html not in final_body:
+                        final_body += sig_html
             except Exception as sig_err:
                 import logging as _log
                 _log.warning(f"Erro ao embutir assinatura no reply: {sig_err}")
+        else:
+             if "J.Ferres" not in final_body:
+                 final_body += "<br><br>--<br><b>João Luccas</b><br>Equipe Comercial J.Ferres"
 
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:

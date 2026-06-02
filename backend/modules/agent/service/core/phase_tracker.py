@@ -34,9 +34,13 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
         "pipedrive_get_activities", "pipedrive_get_all_activities",
         "whatsapp_get_messages", "email_get_contact_history",
         "generate_call_script", "open_hierarchy_drawer", "pipedrive_create_task",
-        "generate_dossier", "deep_company_investigation", "evaluate_prospects"
+        "generate_dossier", "deep_company_investigation", "evaluate_prospects",
+        "generate_sales_message", "email_send", "whatsapp_send_message"
     }
     tools_called = _get_tools_called(messages, target_tools=_CORE_TRACKED)
+    
+    # Detecta rascunho pronto
+    draft_done = "generate_sales_message" in tools_called
     
     contacts_found: list[str] = []   # contatos encontrados no pipedrive_get_persons
     contact_phones: dict[str, str] = {} # Mapeamento nome -> telefone
@@ -425,7 +429,12 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
     org_wapp_done  = bool(org_name and _searched(org_name, whatsapp_searched))
     org_email_done = bool(org_name and _searched(org_name, email_searched))
 
-    if active_contacts:
+    if draft_done:
+        # SE JÁ TEM RASCUNHO, A INVESTIGAÇÃO ESTÁ CONCLUÍDA POR DEFINIÇÃO.
+        # Isso impede que o agente entre em loop buscando históricos de outros contatos
+        # após já ter decidido o que falar.
+        comms_complete = True
+    elif active_contacts:
         # Se encontramos um contato ativo com histórico substancial (PARADA ANTECIPADA),
         # a fase de comunicação é considerada concluída, liberando o agente para agir
         # (criar tarefas, sugerir ações, dossiê) sem forçá-lo a esgotar os demais contatos irrelevantes.

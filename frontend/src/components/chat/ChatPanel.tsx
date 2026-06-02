@@ -1674,7 +1674,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     if (view === 'list') {
         return (
-            <div className={`${styles.chatPanel} ${styles[theme]}`} data-theme={theme}>
+            <div className={styles.chatPanel} data-theme={theme}>
                 <ThreadList
                     orgName={hasValidOrg ? cleanOrgName : 'Geral'}
                     threads={threads}
@@ -1719,10 +1719,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // RENDER: Chat view
     // ═══════════════════════════════════════════
     return (
-        <div className={`${styles.chatPanel} ${styles[theme]}`} data-theme={theme}>
+        <div className={styles.chatPanel} data-theme={theme}>
 
             {/* Chat sub-header: back + thread title + activities toggle */}
-            <div className={styles.chatSubHeader} style={{ paddingLeft: '16px', gap: '12px' }}>
+            <div className={styles.chatHeader} style={{ paddingLeft: '16px', gap: '12px' }}>
                 <Avatar 
                     kind="company"
                     src={selectedOrgLogo}
@@ -1730,7 +1730,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     size={32}
                     style={{ border: selectedOrgLogo ? '3px solid var(--sw-border-strong)' : 'none' }}
                 />
-                <div className={styles.chatSubHeaderInfo} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0 }}>
+                <div className={styles.chatHeaderInfo} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0 }}>
                     <span style={{ color: 'var(--sw-text-muted)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
                         {activeThread?.title || 'Nova conversa'}
                     </span>

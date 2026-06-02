@@ -12,6 +12,8 @@ import {
 import toast from 'react-hot-toast';
 import styles from './ContactList.module.css';
 import { Dropdown } from '../ui/Dropdown';
+import { Spinner } from '../ui/Spinner';
+import { EmailDiscoveryView } from './EmailDiscoveryView';
 
 interface ContactListProps {
     persons: any[];
@@ -19,9 +21,50 @@ interface ContactListProps {
     onSaveToPipedrive?: (person: any) => Promise<void> | void;
     onUpdateInPipedrive?: (person: any) => Promise<void> | void;
     onDeleteFromPipedrive?: (person: any) => Promise<void> | void;
+    onDiscoverEmail?: (person: any) => Promise<void> | void;
+    orgName?: string;
 }
 
-export const ContactList: React.FC<ContactListProps> = ({ persons, onEditPerson, onSaveToPipedrive, onUpdateInPipedrive, onDeleteFromPipedrive }) => {
+export const ContactList: React.FC<ContactListProps> = ({ 
+    persons, 
+    onEditPerson, 
+    onSaveToPipedrive, 
+    onUpdateInPipedrive, 
+    onDeleteFromPipedrive,
+    onDiscoverEmail,
+    orgName = "Empresa"
+}) => {
+    const [loadingDiscover, setLoadingDiscover] = React.useState<Record<string, boolean>>({});
+    const [discoveryActiveId, setDiscoveryActiveId] = React.useState<string | null>(null);
+    const [anchorRect, setAnchorRect] = React.useState<DOMRect | null>(null);
+
+    const handleDiscoverEmail = (person: any, e: React.MouseEvent) => {
+        // Tenta encontrar o elemento de e-mail na mesma linha do contato
+        const row = e.currentTarget.closest(`.${styles.contactRow}`);
+        const emailEl = row?.querySelector(`.${styles.metaItem}`);
+        
+        const rect = emailEl ? emailEl.getBoundingClientRect() : e.currentTarget.getBoundingClientRect();
+        setAnchorRect(rect);
+        setDiscoveryActiveId(person.id);
+    };
+
+    const handleDiscoveryComplete = async (email: string) => {
+        if (!onDiscoverEmail || !discoveryActiveId) return;
+        
+        // Localiza a pessoa ativa
+        const person = persons.find(p => p.id === discoveryActiveId);
+        if (!person) return;
+
+        setLoadingDiscover(prev => ({ ...prev, [person.id]: true }));
+        try {
+            await onDiscoverEmail(person);
+        } catch (error) {
+            console.error("Erro na descoberta manual de e-mail:", error);
+        } finally {
+            setLoadingDiscover(prev => ({ ...prev, [person.id]: false }));
+        }
+    };
+
     const getDropdownItems = (person: any) => {
         const items = [];
         const email = person.email?.[0]?.value || person.email;
@@ -32,6 +75,16 @@ export const ContactList: React.FC<ContactListProps> = ({ persons, onEditPerson,
                 label: 'Detalhes e Configurações',
                 onClick: () => onEditPerson(person.emp_id),
                 icon: <Info size={14} />
+            });
+        }
+
+        if (onDiscoverEmail) {
+            const isDiscovering = loadingDiscover[person.id];
+            items.push({
+                label: isDiscovering ? 'Descobrindo E-mail...' : 'Descobrir E-mail',
+                onClick: (e: React.MouseEvent) => handleDiscoverEmail(person, e),
+                icon: isDiscovering ? <Spinner size={14} inline /> : <Mail size={14} />,
+                style: isDiscovering ? { opacity: 0.5, pointerEvents: 'none' as const } : undefined
             });
         }
 
@@ -151,13 +204,16 @@ export const ContactList: React.FC<ContactListProps> = ({ persons, onEditPerson,
                                         {person.job_title || 'Cargo não informado'}
                                     </div>
                                 </div>
-                                <Dropdown 
-                                    items={dropdownItems}
-                                    iconType="horizontal"
-                                    iconSize={16}
-                                    title="Ações do contato"
-                                    triggerClassName={styles.actionBtn}
-                                />
+                                
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <Dropdown 
+                                        items={dropdownItems}
+                                        iconType="horizontal"
+                                        iconSize={16}
+                                        title="Ações do contato"
+                                        triggerClassName={styles.actionBtn}
+                                    />
+                                </div>
                             </div>
 
                             <div className={styles.metaList}>
@@ -166,7 +222,7 @@ export const ContactList: React.FC<ContactListProps> = ({ persons, onEditPerson,
                                         <Mail size={12} />
                                         <a 
                                             href={`mailto:${person.email[0].value}`} 
-                                            className={styles.emailLink}
+                                            className={`${styles.emailLink} ${discoveryActiveId === person.id ? styles.emailDiscovering : ''}`}
                                         >
                                             {person.email[0].value}
                                         </a>
@@ -191,6 +247,16 @@ export const ContactList: React.FC<ContactListProps> = ({ persons, onEditPerson,
                     </div>
                 );
             })}
+
+            {discoveryActiveId && anchorRect && (
+                <EmailDiscoveryView
+                    personName={persons.find(p => p.id === discoveryActiveId)?.name || ''}
+                    orgName={orgName}
+                    anchorRect={anchorRect}
+                    onClose={() => setDiscoveryActiveId(null)}
+                    onComplete={handleDiscoveryComplete}
+                />
+            )}
         </div>
     );
 };

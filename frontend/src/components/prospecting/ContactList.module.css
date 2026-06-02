@@ -136,6 +136,25 @@
     text-decoration: underline;
 }
 
+.emailDiscovering {
+    background: linear-gradient(
+        90deg, 
+        var(--sw-text-muted) 0%, 
+        #818cf8 50%, 
+        var(--sw-text-muted) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmerEmail 1.5s linear infinite;
+}
+
+@keyframes shimmerEmail {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
 .actions {
     display: flex;
     gap: 12px;

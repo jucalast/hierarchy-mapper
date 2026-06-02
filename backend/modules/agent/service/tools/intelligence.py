@@ -333,44 +333,46 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
     biz_data_str = await get_business_context_for_prompt()
 
     # ── Inteligência de Seleção de Canal
-    # Se o usuário não pediu um canal específico (veio o default 'whatsapp'), 
-    # analisamos o histórico para ver qual canal é o mais rico/recente.
     requested_channel = args.get("channel")
     auto_channel = None
     
-    if not requested_channel or requested_channel.lower() == "whatsapp":
-        wa_count = 0
-        email_count = 0
-        last_wa_date = None
-        last_email_date = None
-        
-        for msg in messages:
-            if msg.get("role") == "user":
-                content = str(msg.get("content", ""))
-                if "whatsapp_get_messages" in content:
-                    import re
-                    # Tenta capturar o count do sumário: "10 mensagens com..."
-                    m = re.search(r"(\d+)\s+mensagens\s+com", content)
-                    if m: wa_count += int(m.group(1))
-                elif "email_get_contact_history" in content:
-                    import re
-                    m = re.search(r"(\d+)\s+e-mails\s+encontrados", content)
-                    if m: email_count += int(m.group(1))
+    # 1. Prioridade: Intent explícito no Goal ou Subject da tarefa
+    # Analisamos o histórico recente para ver se o usuário pediu 'email' ou 'whatsapp'
+    _combined_context = f"{goal} " + " ".join(str(m.get("content", "")) for m in messages[-2:]).lower()
+    
+    if "email" in _combined_context or "e-mail" in _combined_context:
+        auto_channel = "email"
+        log.info("generate_sales_message.intent_detected", channel="email")
+    elif "whatsapp" in _combined_context or "whats" in _combined_context:
+        auto_channel = "whatsapp"
+        log.info("generate_sales_message.intent_detected", channel="whatsapp")
+    
+    # 2. Se não houver intent claro, usa a lógica de histórico
+    if not auto_channel:
+        if not requested_channel or requested_channel.lower() == "whatsapp":
+            wa_count = 0
+            email_count = 0
+            for msg in messages:
+                if msg.get("role") == "user":
+                    content = str(msg.get("content", ""))
+                    if "whatsapp_get_messages" in content:
+                        import re
+                        m = re.search(r"(\d+)\s+mensagens\s+com", content)
+                        if m: wa_count += int(m.group(1))
+                    elif "email_get_contact_history" in content:
+                        import re
+                        m = re.search(r"(\d+)\s+e-mails\s+encontrados", content)
+                        if m: email_count += int(m.group(1))
 
-        # Regra de Ouro: Se só temos e-mail no banco, usamos e-mail.
-        if email_count > 0 and wa_count == 0:
-            auto_channel = "email"
-            log.info("generate_sales_message.auto_channel_forced", reason="only_email_found")
-        elif wa_count > 0 and email_count == 0:
-            auto_channel = "whatsapp"
-        elif wa_count > 0 and email_count > 0:
-            # Se tem ambos, mantém o default ou escolhe por data se disponível no histórico
-            auto_channel = "whatsapp" # WhatsApp costuma ser mais ágil
+            if email_count > 0 and wa_count == 0:
+                auto_channel = "email"
+            elif wa_count > 0 and email_count == 0:
+                auto_channel = "whatsapp"
+            else:
+                # Default para o que foi pedido ou whatsapp
+                auto_channel = requested_channel.lower() if requested_channel else "whatsapp"
             
-    if auto_channel:
-        channel = auto_channel
-    else:
-        channel = requested_channel.lower() if requested_channel else "whatsapp"
+    channel = auto_channel or "whatsapp"
 
     channel_tone = (
         "CANAL: WhatsApp — seja direto, natural e conversacional. Parágrafos curtos. "
@@ -381,6 +383,7 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         "CANAL: Email — pode ter mais profundidade técnica. Linha de assunto impactante. Evite parágrafos longos. "
         f"Comece com '{greeting_hint}, [Nome]'. "
         "Escreva o corpo do e-mail de forma profissional. "
+        "Como a apresentação comercial em PDF será anexada automaticamente, você DEVE fazer referência a ela no texto do e-mail (ex: 'Estou enviando em anexo nossa apresentação...', 'Segue anexo nossa apresentação comercial...'). "
         "NÃO inclua saudações finais como 'Atenciosamente' ou 'Obrigado', pois a assinatura será inserida automaticamente."
     )
 
@@ -443,6 +446,21 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
     )
 
     try:
+        # Busca contexto do tenant para anexos e assinaturas
+        tenant_ctx = await BusinessContextService.get_tenant_context()
+        
+        # 1. Sugestão Proativa de Anexos
+        # Sempre sugerimos a apresentação 'apresentacao_linkb2b' se o canal for 'email' e houver apresentação configurada.
+        # Caso contrário, mantemos a lógica condicional baseada no objetivo.
+        suggested_attachment = None
+        if tenant_ctx.get("presentation_path"):
+            if channel == "email":
+                suggested_attachment = "apresentacao_linkb2b"
+            else:
+                goal_lower = goal.lower()
+                if any(kw in goal_lower for kw in ["apresentação", "apresentar", "introdução", "conhecer"]):
+                    suggested_attachment = "apresentacao_linkb2b"
+
         res = await ask_llm(
             prompt=prompt_user,
             system=system_prompt,
@@ -457,6 +475,7 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         # ── Injeção de Assinatura para Email (se disponível)
         if channel == "email":
             try:
+                # Prioridade 1: Signature via endpoint local
                 import httpx
                 async with httpx.AsyncClient(timeout=5.0) as client:
                     resp = await client.get("http://localhost:8002/api/email/signature")
@@ -464,15 +483,22 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
                         signature = resp.json().get("signature", "")
                         if signature:
                             draft = f"{draft}<br><br><!-- SIGNATURE_START -->{signature}<!-- SIGNATURE_END -->"
+                    else:
+                        # Prioridade 2: Signature via path no tenant_ctx (o executor email_send tratará o carregamento da imagem)
+                        if tenant_ctx.get("signature_path"):
+                            draft = f"{draft}<br><br>--<br><i>Enviado via Assistente Comercial J.Ferres</i>"
             except:
-                pass
+                # Fallback manual se tudo falhar
+                if tenant_ctx.get("signature_path"):
+                    draft = f"{draft}<br><br>--<br><i>Enviado via Assistente Comercial J.Ferres</i>"
 
         return {
             "ok": True,
             "contact_name": contact_name,
             "channel": channel,
             "recommended_message": draft,
-            "summary": f"Estratégia e rascunho para {channel} gerados com sucesso para {contact_name}. O rascunho está disponível em 'recommended_message'."
+            "attachment_name": suggested_attachment, # Passa para o frontend/próxima ferramenta
+            "summary": f"Estratégia e rascunho para {channel} gerados com sucesso para {contact_name}." + (f" (Anexo sugerido: {suggested_attachment})" if suggested_attachment else "")
         }
     except Exception as e:
         log.exception("exec_generate_sales_message.failed", exc_info=e)
@@ -712,6 +738,129 @@ RETORNE EXATAMENTE UM JSON COM ESTA ESTRUTURA:
     except Exception as e:
         log.exception("exec_evaluate_prospects.failed")
         return {"ok": False, "error": str(e)}
+
+
+async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Descobre e valida o e-mail profissional de um contato.
+    Gera padrões comuns (ex: joao.moura, j.moura) e valida via DNS/Sintaxe.
+    Pode usar pesquisa na web para encontrar e-mails reais citados publicamente.
+    """
+    import re as _re
+    from email_validator import validate_email, EmailNotValidError
+    from modules.hierarchy.service.search_engine import get_duck_results as search_duckduckgo
+    
+    contact_name = (args.get("contact_name") or "").strip()
+    company_name = (args.get("org_name") or "").strip()
+    domain = (args.get("domain") or "").strip().lower()
+
+    if not contact_name:
+        return {"ok": False, "error": "Forneça o nome do contato."}
+
+    # 1. Tenta descobrir o domínio se não fornecido
+    if not domain and company_name:
+        from modules.intelligence.service import intelligence_service
+        enrich_res = await intelligence_service.enrich_company(company_name)
+        if enrich_res.get("success") and enrich_res.get("main_option"):
+            domain = enrich_res["main_option"].get("domain") or ""
+
+    if not domain:
+        return {"ok": False, "error": "Domínio da empresa não encontrado. Forneça o domínio ou certifique-se de que a empresa está enriquecida."}
+
+    # Limpa o domínio (remove www. se houver)
+    domain = domain.replace("www.", "")
+
+    # 2. Gera candidatos baseados em padrões comuns (normalizando acentos)
+    import unicodedata
+    normalized_name = "".join(
+        c for c in unicodedata.normalize("NFKD", contact_name.lower())
+        if not unicodedata.combining(c)
+    )
+    name_parts = _re.sub(r"[^\w\s]", "", normalized_name).split()
+    if not name_parts:
+        return {"ok": False, "error": "Nome do contato inválido."}
+    
+    first = name_parts[0]
+    last = name_parts[-1] if len(name_parts) > 1 else ""
+    initial = first[0] if first else ""
+
+    candidates = []
+    if first and last:
+        candidates.append(f"{first}.{last}@{domain}")
+        candidates.append(f"{initial}.{last}@{domain}")
+        candidates.append(f"{first}{last}@{domain}")
+        candidates.append(f"{first}_{last}@{domain}")
+        candidates.append(f"{first}@{domain}")
+    elif first:
+        candidates.append(f"{first}@{domain}")
+
+    # 3. Pesquisa na Web por e-mails reais (Dorking)
+    found_in_web = []
+    search_query = f'"{contact_name}" "{domain}" email'
+    try:
+        results = await search_duckduckgo(search_query, max_results=5)
+        for r in results:
+            snippet = r.get("snippet", "") + " " + r.get("title", "")
+            # Regex para pescar emails no snippet
+            emails_found = _re.findall(r'[\w\.-]+@' + _re.escape(domain), snippet.lower())
+            for e in emails_found:
+                # Remove acentos do e-mail colhido da web
+                normalized_e = "".join(
+                    c for c in unicodedata.normalize("NFKD", e)
+                    if not unicodedata.combining(c)
+                )
+                if normalized_e not in found_in_web:
+                    found_in_web.append(normalized_e)
+    except Exception: pass
+
+    # 4. Validação unificada via email_service (suporta SMTP Probe local e Abstract API externa!)
+    from core.external.email_service import discover_and_validate_email
+    
+    discovery_res = await discover_and_validate_email(
+        first=first,
+        last=last,
+        domain=domain,
+        do_smtp=True,
+        additional_candidates=found_in_web
+    )
+    
+    valid_emails = []
+    # Converte o resultado unificado para o formato esperado pelo drawer
+    if discovery_res.get("email"):
+        smtp_res = discovery_res.get("smtp_result")
+        status_str = "Válido (SMTP OK)" if smtp_res == "valid" else "Válido (DNS OK)"
+        
+        # O e-mail recomendado fica sempre em primeiro lugar
+        valid_emails.append({
+            "email": discovery_res["email"],
+            "status": status_str,
+            "source": "Web" if discovery_res["email"] in found_in_web else "Padrão Sugerido"
+        })
+        
+        # Adiciona os outros candidatos testados como opções secundárias no Drawer
+        for email in discovery_res.get("all_candidates", []):
+            if email != discovery_res["email"]:
+                valid_emails.append({
+                    "email": email,
+                    "status": "Sugestão",
+                    "source": "Web" if email in found_in_web else "Padrão Sugerido"
+                })
+
+    if not valid_emails:
+        return {
+            "ok": False, 
+            "error": f"Não foi possível encontrar um e-mail válido para {contact_name} no domínio {domain}.",
+            "tried_patterns": candidates[:3]
+        }
+
+    return {
+        "ok": True,
+        "contact_name": contact_name,
+        "domain": domain,
+        "valid_emails": valid_emails,
+        "recommended": valid_emails[0]["email"],
+        "summary": discovery_res.get("summary") or f"Encontrado(s) {len(valid_emails)} e-mail(s) provável(is) para {contact_name}. Recomendado: {valid_emails[0]['email']}"
+    }
 
 
 async def exec_generate_dossier(args: dict) -> dict:

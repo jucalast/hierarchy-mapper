@@ -27,6 +27,7 @@ class ProspectingSkill(FunnelStageSkill):
             "pipedrive_update_deal",
             "pipedrive_create_person",
             "pipedrive_update_task",
+            "discover_and_validate_email",
             "suggest_next_actions"
         ]
 
