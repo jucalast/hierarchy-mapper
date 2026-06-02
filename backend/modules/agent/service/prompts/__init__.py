@@ -412,7 +412,7 @@ FOLLOW-UP / COBRAR RETORNO ("follow-up", "cobrar retorno", "acompanhar"):
 
   IMPORTANTE: A missão NÃO termina no botão de Aprovar. A missão só termina quando você tiver sugerido os próximos passos (suggest_next_actions) após a aprovação.
 
-LIGAÇÃO ("ligar", "chamada", "ligar para"):
+LIGAÇÃO (apenas quando a tarefa for explicitamente uma ligação telefônica e NÃO um envio de e-mail/mensagem):
   Verifique se há telefone real em pipedrive_get_persons.
   Com contexto do histórico → generate_call_script (telefone real, nunca inventado).
   Sem telefone → email propondo conversa ou open_hierarchy_drawer.
@@ -575,7 +575,7 @@ BLOCO 3 — Ação (SOMENTE depois de concluir Blocos 1 e 2):
   → MARCAR COMO FEITO: Após encontrar, feche a tarefa usando `pipedrive_update_task` com `done=true`.
   → Sem contato válido: open_hierarchy_drawer. Aguarde "Mapeamento concluído" antes de continuar.
 
-── LIGAÇÃO ("ligar", "ligação", "chamada", "ligar para [nome]"):
+── LIGAÇÃO (apenas quando a tarefa for de ligação telefônica, e NÃO um envio de e-mail/mensagem/WhatsApp):
   → Há telefone real em pipedrive_get_persons? → generate_call_script (telefone real, nunca inventado)
   → Sem telefone mas tem email → email_send propondo conversa por telefone (aprovação do João)
   → Sem nenhum canal → open_hierarchy_drawer

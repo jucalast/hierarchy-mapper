@@ -828,7 +828,12 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
     # Converte o resultado unificado para o formato esperado pelo drawer
     if discovery_res.get("email"):
         smtp_res = discovery_res.get("smtp_result")
-        status_str = "Válido (SMTP OK)" if smtp_res == "valid" else "Válido (DNS OK)"
+        if smtp_res == "valid":
+            status_str = "Válido (SMTP OK)"
+        elif smtp_res == "invalid":
+            status_str = "Inválido"
+        else:
+            status_str = "Estimado (DNS OK - Sem chave API)"
         
         # O e-mail recomendado fica sempre em primeiro lugar
         valid_emails.append({
@@ -858,7 +863,8 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
         "contact_name": contact_name,
         "domain": domain,
         "valid_emails": valid_emails,
-        "recommended": valid_emails[0]["email"],
+        "recommended": valid_emails[0]["email"] if valid_emails else None,
+        "smtp_result": discovery_res.get("smtp_result"),
         "summary": discovery_res.get("summary") or f"Encontrado(s) {len(valid_emails)} e-mail(s) provável(is) para {contact_name}. Recomendado: {valid_emails[0]['email']}"
     }
 

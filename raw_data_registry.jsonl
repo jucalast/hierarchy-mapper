@@ -14180,3 +14180,66 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-02T10:17:07.392381",
+    "candidate": "André Roberto Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/andr%C3%A9-roberto-ribeiro-7b339697",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "André Roberto Ribeiro - Rocha Auto Peças | LinkedIn",
+            "body": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Rocha Auto Peças 14 \nagosto de 2017 A atual\ncompras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "André Roberto Ribeiro",
+        "role": "Especialista em Compras e Cadastro",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Rocha Auto Peças', conforme confirmado pelo Detetive. O Especialista validou a relevância da função em Suprimentos/Compras. Não há indícios de alucinação ou veto por outras regras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Localidade: Campinas · + de 500 conexões no LinkedIn.",
+                "André Roberto Ribeiro - Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "André Roberto Ribeiro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "André Roberto Ribeiro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Rocha Auto Peças 14 agosto de 2017 A atual compras e especialista em cadastro de… · Experiência: Rocha Auto Peças · Formação acadêmica: faculdade santanna · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de André Roberto Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Especialista em Compras e Cadastro",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O candidato trabalha na Rocha Auto Peças e a bio menciona 'compras e especialista em cadastro', o que é diretamente relevante para a área de Suprimentos/Compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Especialista em Compras e Cadastro",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------

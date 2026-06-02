@@ -1337,36 +1337,8 @@ async def _agent_loop(
                                 except Exception:
                                     pass
 
-                # Se ainda não detectado na sessão, verifica nos contatos carregados da sessão
-                if not _already_validated and _target_email:
-                    _session_contacts = []
-                    for _m in messages:
-                        _m_content = _m.get("content", "")
-                        if isinstance(_m_content, list):
-                            for _item in _m_content:
-                                if isinstance(_item, dict) and _item.get("type") == "tool_result":
-                                    _t_name = _item.get("tool_name", "")
-                                    _t_content = str(_item.get("content", ""))
-                                    try:
-                                        _t_data = json.loads(_t_content) if _t_content.strip().startswith(("{", "[")) else {}
-                                    except Exception:
-                                        _t_data = {}
-                                    if _t_name in ("pipedrive_get_org", "pipedrive_get_persons"):
-                                        _p_list = _t_data.get("persons") or []
-                                        for _p in _p_list:
-                                            _p_name = _p.get("name")
-                                            if _p_name:
-                                                _p_name_clean = _p_name.strip().lower()
-                                                if _p_name_clean not in [c.get("name", "").strip().lower() for c in _session_contacts]:
-                                                    _session_contacts.append(_p)
-
-                    for _c in _session_contacts:
-                        _c_email = _c.get("email") or ""
-                        if _c_email.lower().strip() == _target_email.lower().strip():
-                            # Se está cadastrado e possui e-mail não nulo, consideramos válido (e.g. validado manualmente no UI/DB)
-                            log.info("agent.interceptor.email_validated_via_session_contacts", email=_target_email)
-                            _already_validated = True
-                            break
+                # Força a validação de e-mails em tempo real sem assumir que dados crus do Pipedrive sejam válidos de antemão.
+                # Só pulamos a validação se ela já foi explicitamente executada nesta sessão (via discover_and_validate_email).
 
                 # Se ainda não detectado, faz uma busca no banco local pelo endereço de e-mail (para pegar validações do UI/históricas)
                 if not _already_validated and _target_email:
@@ -1427,7 +1399,11 @@ async def _agent_loop(
                         val_res = await exec_discover_and_validate_email(validation_args)
                         if val_res.get("ok") and val_res.get("recommended"):
                             _auto_validated_email = val_res.get("recommended")
-                            log.info("agent.interceptor.auto_validation_success", email=_auto_validated_email)
+                            _smtp_result = val_res.get("smtp_result")
+                            if _smtp_result == "valid":
+                                log.info("agent.interceptor.auto_validation_success_smtp", email=_auto_validated_email)
+                            else:
+                                log.warning(f"E-mail {_auto_validated_email} estimado por heuristica (SMTP result: {_smtp_result}). Recomenda-se configurar a VRFYMAIL_API_KEY no arquivo .env para validacao completa.")
                             tool_args["to"] = _auto_validated_email
                             _auto_validated = True
                             _already_validated = True

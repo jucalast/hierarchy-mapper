@@ -179,10 +179,42 @@ async def smtp_probe(email: str, mx_host: str, timeout: float = 5.0) -> str:
     except Exception:
         return 'unknown'
 
+_GENERIC_DOMAINS = {
+    "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "live.com",
+    "uol.com.br", "bol.com.br", "terra.com.br", "ig.com.br", "yahoo.com.br",
+    "outlook.com.br", "hotmail.com.br", "icloud.com", "aol.com"
+}
+
+async def verify_email_via_quickemailverification(email: str, api_key: str) -> str:
+    """
+    Verifica um e-mail através da API QuickEmailVerification.
+    Retorna 'valid', 'invalid', 'rate_limited' ou 'unknown'.
+    """
+    import httpx
+    try:
+        url = "https://api.quickemailverification.com/v1/verify"
+        params = {"apikey": api_key, "email": email}
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.get(url, params=params)
+            if r.status_code == 200:
+                data = r.json()
+                res = (data.get("result") or "").lower()
+                if res == "valid":
+                    return "valid"
+                elif res == "invalid":
+                    return "invalid"
+            elif r.status_code in (401, 402, 403, 429):
+                return "rate_limited"
+            return "unknown"
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"[QuickEmailVerification] Falha ao verificar email {email}: {e}")
+        return "unknown"
+
 async def verify_email_via_abstract_api(email: str, api_key: str) -> str:
     """
     Verifica um e-mail através da Abstract API.
-    Retorna 'valid', 'invalid' ou 'unknown'.
+    Retorna 'valid', 'invalid', 'rate_limited' ou 'unknown'.
     """
     import httpx
     try:
@@ -197,6 +229,8 @@ async def verify_email_via_abstract_api(email: str, api_key: str) -> str:
                     return "valid"
                 elif deliverability == "undeliverable":
                     return "invalid"
+            elif r.status_code in (401, 402, 403, 429):
+                return "rate_limited"
             return "unknown"
     except Exception as e:
         import logging
@@ -206,7 +240,7 @@ async def verify_email_via_abstract_api(email: str, api_key: str) -> str:
 async def verify_email_via_vrfymail(email: str, api_key: str) -> str:
     """
     Verifica um e-mail através da API verifymail.io (Vrfymail).
-    Retorna 'valid', 'invalid' ou 'unknown'.
+    Retorna 'valid', 'invalid', 'rate_limited' ou 'unknown'.
     """
     import httpx
     try:
@@ -220,11 +254,24 @@ async def verify_email_via_vrfymail(email: str, api_key: str) -> str:
                     return "valid"
                 elif data.get("deliverable_email") is False:
                     return "invalid"
+            elif r.status_code in (401, 402, 403, 429):
+                return "rate_limited"
             return "unknown"
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f"[Vrfymail] Falha ao verificar email {email}: {e}")
         return "unknown"
+
+def parse_api_keys(key_string: str) -> List[str]:
+    """Separa chaves por vírgula, limpa espaços e barras invertidas."""
+    if not key_string:
+        return []
+    keys = []
+    for k in key_string.split(','):
+        cleaned = k.rstrip("\\").strip()
+        if cleaned:
+            keys.append(cleaned)
+    return keys
 
 async def discover_and_validate_email(
     first: str, last: str, domain: str,
@@ -235,9 +282,10 @@ async def discover_and_validate_email(
     """
     Full email discovery pipeline:
     1. Generates all patterns + merges web-harvested candidates
-    2. If known_pattern exists, puts it first
-    3. Validates via Abstract API key (if set) OR falls back to MX + SMTP probe
-    Returns dict with: email, pattern, confidence ('high'|'medium'|'low'), mx_valid, smtp_result
+    2. If known_pattern exists, puts it first (economiza créditos validando apenas 1 candidato)
+    3. Validates candidates via APIs (QuickEmailVerification / Abstract / Vrfymail)
+    4. Dynamically filters out candidates proven invalid by APIs to prevent false positives
+    5. Falls back to MX + SMTP probe for remaining non-invalid candidates
     """
     candidates = generate_all_patterns(first, last, domain)
 
@@ -246,7 +294,7 @@ async def discover_and_validate_email(
         candidates_map = {e: p for e, p in candidates}
         candidates = [(e, candidates_map.get(e, "web_harvested")) for e in all_emails]
 
-    # Put known pattern first if provided
+    # Put known pattern first if provided to achieve maximum credit efficiency (tests just 1 credit if valid)
     if known_pattern:
         reordered = [(e, p) for e, p in candidates if p == known_pattern]
         reordered += [(e, p) for e, p in candidates if p != known_pattern]
@@ -265,43 +313,109 @@ async def discover_and_validate_email(
             "all_candidates": [e for e, _ in candidates]
         }
 
+    # Evita desperdício de créditos para provedores de e-mail genéricos/públicos (ex: gmail)
+    is_generic = domain in _GENERIC_DOMAINS
+    invalid_candidates = set()
+
     # --- EXTERNAL VALIDATION (APIs) ---
     import os
     from core.config import settings
     
-    # 1. Tenta Vrfymail (Maior volume: 5.000 créditos)
-    vrfy_key = os.environ.get("VRFYMAIL_API_KEY")
-    if vrfy_key and mx_valid:
-        for email, pattern in candidates[:3]:
-            result = await verify_email_via_vrfymail(email, vrfy_key)
-            if result == 'valid':
-                return {
-                    "email": email, "pattern": pattern,
-                    "confidence": "high", "mx_valid": True, "smtp_result": "valid",
-                    "all_candidates": [e for e, _ in candidates]
-                }
-            if result == 'invalid':
-                continue
+    if not is_generic and mx_valid:
+        # 1. Tenta QuickEmailVerification (Altíssimo volume: 100 créditos/dia grátis)
+        qev_keys = parse_api_keys(os.environ.get("QUICKEMAIL_API_KEY", ""))
+        if qev_keys:
+            current_key_idx = 0
+            for email, pattern in candidates[:6]:
+                if email in invalid_candidates:
+                    continue
+                
+                while current_key_idx < len(qev_keys):
+                    key = qev_keys[current_key_idx]
+                    result = await verify_email_via_quickemailverification(email, key)
+                    if result == 'rate_limited':
+                        current_key_idx += 1
+                        continue
+                    elif result == 'valid':
+                        return {
+                            "email": email, "pattern": pattern,
+                            "confidence": "high", "mx_valid": True, "smtp_result": "valid",
+                            "all_candidates": [e for e, _ in candidates]
+                        }
+                    elif result == 'invalid':
+                        invalid_candidates.add(email)
+                        break
+                    else:
+                        break
 
-    # 2. Tenta Abstract API (Alta precisão: 100 créditos)
-    abstract_key = getattr(settings, "EMAIL_API_KEY", None) or os.environ.get("EMAIL_API_KEY")
-    if abstract_key and mx_valid:
-        for email, pattern in candidates[:3]:
-            result = await verify_email_via_abstract_api(email, abstract_key)
-            if result == 'valid':
-                return {
-                    "email": email, "pattern": pattern,
-                    "confidence": "high", "mx_valid": True, "smtp_result": "valid",
-                    "all_candidates": [e for e, _ in candidates]
-                }
-            if result == 'invalid':
-                continue
-            # Se for 'unknown', cai no SMTP probe normal como fallback!
+        # 2. Tenta Abstract API (Alta precisão: 100 créditos/mês)
+        abstract_keys = parse_api_keys(getattr(settings, "EMAIL_API_KEY", None) or os.environ.get("EMAIL_API_KEY", ""))
+        if abstract_keys:
+            current_key_idx = 0
+            for email, pattern in candidates[:3]:
+                if email in invalid_candidates:
+                    continue
+                    
+                while current_key_idx < len(abstract_keys):
+                    key = abstract_keys[current_key_idx]
+                    result = await verify_email_via_abstract_api(email, key)
+                    if result == 'rate_limited':
+                        current_key_idx += 1
+                        continue
+                    elif result == 'valid':
+                        return {
+                            "email": email, "pattern": pattern,
+                            "confidence": "high", "mx_valid": True, "smtp_result": "valid",
+                            "all_candidates": [e for e, _ in candidates]
+                        }
+                    elif result == 'invalid':
+                        invalid_candidates.add(email)
+                        break
+                    else:
+                        break
+
+        # 3. Tenta Vrfymail (Fallback final: 3 créditos/dia)
+        vrfy_keys = parse_api_keys(os.environ.get("VRFYMAIL_API_KEY", ""))
+        if vrfy_keys:
+            current_key_idx = 0
+            for email, pattern in candidates[:6]:
+                if email in invalid_candidates:
+                    continue
+                
+                while current_key_idx < len(vrfy_keys):
+                    key = vrfy_keys[current_key_idx]
+                    result = await verify_email_via_vrfymail(email, key)
+                    if result == 'rate_limited':
+                        current_key_idx += 1
+                        continue
+                    elif result == 'valid':
+                        return {
+                            "email": email, "pattern": pattern,
+                            "confidence": "high", "mx_valid": True, "smtp_result": "valid",
+                            "all_candidates": [e for e, _ in candidates]
+                        }
+                    elif result == 'invalid':
+                        invalid_candidates.add(email)
+                        break
+                    else:
+                        break
+
+    # Filtra e-mails comprovadamente inválidos
+    remaining_candidates = [(e, p) for e, p in candidates if e not in invalid_candidates]
+
+    if not remaining_candidates:
+        # Todos os candidatos possíveis foram testados pelas APIs e são comprovadamente inválidos
+        best = candidates[0] if candidates else (f"{first}.{last}@{domain}", "first.last")
+        return {
+            "email": best[0], "pattern": best[1],
+            "confidence": "low", "mx_valid": True, "smtp_result": "invalid",
+            "all_candidates": [e for e, _ in candidates]
+        }
 
     # --- INTERNAL VALIDATION (SMTP Probe Fallback) ---
-    # SMTP probe only the top candidates (max 3 to avoid being blocked)
+    # Testa apenas os candidatos restantes (máximo 3) para evitar bloqueios de IP
     if do_smtp and mx_host:
-        for email, pattern in candidates[:3]:
+        for email, pattern in remaining_candidates[:3]:
             result = await smtp_probe(email, mx_host)
             if result == 'valid':
                 return {
@@ -309,18 +423,21 @@ async def discover_and_validate_email(
                     "confidence": "high", "mx_valid": True, "smtp_result": "valid",
                     "all_candidates": [e for e, _ in candidates]
                 }
-            if result == 'invalid':
+            elif result == 'invalid':
+                invalid_candidates.add(email)
                 continue
-            # 'unknown' — server is catch-all or blocked, use pattern heuristic
-            best = candidates[0]
+            
+            # 'unknown' — servidor deu greylisting ou bloqueou porta 25.
+            # Retorna o primeiro candidato restante que NÃO é comprovadamente inválido
+            best = remaining_candidates[0]
             return {
                 "email": best[0], "pattern": best[1],
                 "confidence": "medium", "mx_valid": True, "smtp_result": "unknown",
                 "all_candidates": [e for e, _ in candidates]
             }
 
-    # No SMTP — return best candidate with medium confidence
-    best = candidates[0] if candidates else (f"{first}.{last}@{domain}", "first.last")
+    # Sem SMTP e sem resposta positiva de API — retorna o melhor candidato restante como estimativa
+    best = remaining_candidates[0]
     return {
         "email": best[0], "pattern": best[1],
         "confidence": "medium" if mx_valid else "low",
