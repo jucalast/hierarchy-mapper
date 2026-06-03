@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import {
     Asterisk,
     CirclePlus,
@@ -9,7 +10,8 @@ import {
     Bug,
     Workflow,
     Radar,
-    Loader2
+    Loader2,
+    Headset
 } from 'lucide-react';
 
 import styles from './Sidebar.module.css';
@@ -31,6 +33,8 @@ interface SidebarProps {
     onOpenLinkedinScrape?: () => void;
     isLinkedinScrape?: boolean;
     isScanActive?: boolean;
+    onOpenLigacao?: () => void;
+    isLigacao?: boolean;
 }
 
 
@@ -51,6 +55,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onOpenLinkedinScrape,
     isLinkedinScrape,
     isScanActive,
+    onOpenLigacao,
+    isLigacao,
 }) => {
 
     return (
@@ -106,6 +112,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={onOpenProspecting}
             >
                 <Radar size={20} className={styles.iconSide} />
+            </div>
+
+            <div
+                className={`${styles.navIcon} ${isLigacao ? styles.navIconActive : ''}`}
+                title="Copiloto de Vendas"
+                onClick={onOpenLigacao}
+            >
+                <Headset size={20} className={styles.iconSide} />
             </div>
 
             <div

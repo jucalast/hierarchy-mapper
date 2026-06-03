@@ -12,8 +12,10 @@ email_validator==2.3.0
 # === HTTP Client (assíncrono, único) ===
 httpx[http2]==0.27.0            # http2 para multiplexação e pooling melhor
 
-# === AI SDKs ===
+# === AI SDKs & Transcription ===
 # anthropic==0.34.2             # Preparado para Claude no futuro — ative quando tiver a chave
+SpeechRecognition==3.10.3       # Usado para transcrição rápida do loopback (Google Speech API)
+pyaudiowpatch==0.2.12.post4     # Usado para capturar áudio de loopback (WASAPI) no Windows
 
 # === Database ===
 sqlalchemy==2.0.48

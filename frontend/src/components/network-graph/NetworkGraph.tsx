@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useReactFlow, ReactFlowProvider, Edge } from 'reactflow';
 import { HierarchyEmployee } from '@/types';
 import { PanelRight, PanelRightOpen, LogOut } from 'lucide-react';
@@ -9,6 +9,7 @@ import { getAvatarUrl, getProxiedUrl } from '../../utils/avatarUtils';
 
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { MessagesView } from '../messages/MessagesView';
+import { LigacaoView } from '../ligacao/LigacaoView';
 import graphStyles from './styles/Graph.module.css';
 import haStyles from './styles/HumanAnalysis.module.css';
 import sidebarStyles from '../layout/Sidebar.module.css';
@@ -149,16 +150,18 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     
     const pathname = usePathname() || '/';
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const activeView = useMemo(() => {
         if (pathname.startsWith('/prospecting')) return 'prospecting';
         if (pathname.startsWith('/settings')) return 'preferences';
         if (pathname.startsWith('/messages')) return 'messages';
         if (pathname.startsWith('/linkedin-scrape')) return 'linkedin-scrape';
+        if (pathname.startsWith('/ligacao') || searchParams?.get('view') === 'ligacao') return 'ligacao';
         return 'graph';
-    }, [pathname]);
+    }, [pathname, searchParams]);
 
-    const setActiveView = useCallback((view: 'graph' | 'prospecting' | 'preferences' | 'messages' | 'linkedin-scrape') => {
+    const setActiveView = useCallback((view: 'graph' | 'prospecting' | 'preferences' | 'messages' | 'linkedin-scrape' | 'ligacao') => {
         if (view === 'graph') {
            if (currentOrgId) router.push(`/org/${currentOrgId}`);
            else router.push('/');
@@ -170,6 +173,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
            router.push('/messages');
         } else if (view === 'linkedin-scrape') {
            router.push('/linkedin-scrape');
+        } else if (view === 'ligacao') {
+           router.push('/?view=ligacao');
         }
     }, [router, currentOrgId]);
 
@@ -673,12 +678,14 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 isPreferences={activeView === 'preferences'}
                 onOpenLinkedinScrape={() => setActiveView(activeView === 'linkedin-scrape' ? 'graph' : 'linkedin-scrape')}
                 isLinkedinScrape={activeView === 'linkedin-scrape'}
+                onOpenLigacao={() => setActiveView(activeView === 'ligacao' ? 'graph' : 'ligacao')}
+                isLigacao={activeView === 'ligacao'}
                 isScanActive={scan.isScanning}
             />
 
             <div className={styles.mainWrapper}>
                 <div className={styles.contentWrapper}>
-                    {activeView !== 'preferences' && activeView !== 'messages' && (
+                    {activeView !== 'preferences' && activeView !== 'messages' && activeView !== 'ligacao' && (
                         <Drawer
                             showDrawer={showDrawer}
                             setShowDrawer={handleSetShowDrawer}
@@ -719,7 +726,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     )}
 
                     <div className={styles.mainContent}>
-                        {activeView !== 'preferences' && (
+                        {activeView !== 'preferences' && activeView !== 'ligacao' && (
                             <Header
                                 confirmedBrand={confirmedBrand}
                                 activeView={activeView}
@@ -852,6 +859,9 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
 
                             {activeView === 'messages' && (
                                 <MessagesView onBack={() => setActiveView('graph')} orgId={currentOrgId} />
+                            )}
+                            {activeView === 'ligacao' && (
+                                <LigacaoView onBack={() => setActiveView('graph')} />
                             )}
                             {activeView === 'prospecting' && (
                                 <>

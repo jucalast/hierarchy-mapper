@@ -25,7 +25,7 @@ Prefixos canônicos:
     (sem prefixo)   → CRM/Pipedrive sync
 """
 from fastapi import APIRouter
-from api.v1.routers import proxy, brand, jobs, ai, organizations, search, conversations, agent, settings, auth, messages
+from api.v1.routers import proxy, brand, jobs, ai, organizations, search, conversations, agent, settings, auth, messages, calls
 from modules.prospecting   import router as prospecting_router
 from modules.intelligence  import router as intelligence_router
 from modules.crm           import router as crm_router
@@ -52,3 +52,4 @@ api_router.include_router(agent.router,          prefix="/agent",         tags=[
 api_router.include_router(prospecting_router,    prefix="/prospecting",   tags=["prospecting"])
 api_router.include_router(communication_router,  prefix="/communication", tags=["communication"])
 api_router.include_router(messages.router,       prefix="/messages",      tags=["messages"])
+api_router.include_router(calls.router,          prefix="/calls",         tags=["calls"])

@@ -17,6 +17,11 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
+.container.error {
+    background: var(--sw-status-danger, #ef4444);
+    border-color: #b91c1c;
+}
+
 .container::after {
     content: '';
     position: absolute;
@@ -29,6 +34,13 @@
     border-left: 3px solid #00c870;
     border-bottom: 3px solid #00c870;
     z-index: -1;
+    transition: all 0.25s ease;
+}
+
+.container.error::after {
+    background: var(--sw-status-danger, #ef4444);
+    border-left-color: #b91c1c;
+    border-bottom-color: #b91c1c;
 }
 
 @keyframes popIn {
@@ -53,6 +65,10 @@
     flex: 1;
 }
 
+.container.error .emailSuccess {
+    color: #fff;
+}
+
 .securityIcon {
     color: #008a4a;
     flex-shrink: 0;
@@ -63,6 +79,10 @@
     font-weight: 500;
     color: rgba(0, 0, 0, 0.6);
     white-space: nowrap;
+}
+
+.container.error .instruction {
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .loadingText {
@@ -79,6 +99,11 @@
     font-weight: 700;
     color: #000;
     opacity: 0.6;
+}
+
+.container.error .closeHint {
+    color: #fff;
+    opacity: 0.9;
 }
 
 .spin { 

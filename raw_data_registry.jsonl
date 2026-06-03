@@ -14243,3 +14243,274 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-02T10:32:31.765395",
+    "candidate": "Caique Machado",
+    "linkedin": "https://www.linkedin.com/in/caique-machado-60338320b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Caique Machado - Rocha Auto Peças | LinkedIn",
+            "body": "· Experiência: Rocha Auto Peças · Formação acadêmica: E.E. Prof. Hilton Federici · Localidade: 13090-150 · 5 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Ex militar formado no ensino médio, busco minha primeira oportunidade no mercado de… · Experiência: Rocha Auto Peças · Formação acadêmica: E.E. Prof. Hilton Federici · Localidade: 13090-150 · 5 conexões no LinkedIn. Veja o perfil de Caique Machado no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Caique Machado",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Google Page Title: Caique Machado - Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Ex militar formado no ensino médio, busco minha primeira oportunidade no mercado de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Caique Machado",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Caique Machado",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Ex militar formado no ensino médio, busco minha primeira oportunidade no mercado de…"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Caique Machado não foi identificado nos dados fornecidos. A bio indica que ele busca sua primeira oportunidade no mercado de trabalho, o que não permite inferir uma atuação em Suprimentos/Compras/Procurement. O vínculo com a Rocha Auto Peças está confirmado, mas sem um cargo específico, não é possível determinar a relevância para a área de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-02T10:33:04.126579",
+    "candidate": "Sergio Hideki Honma",
+    "linkedin": "https://www.linkedin.com/in/sergio-hideki-honma-b4771361",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Sergio Hideki Honma - Assistente, líder, produção, gerente ... - LinkedIn",
+            "body": "Assistente, líder, produção, gerente, pós vendas, administrativo. · Experiência: Rocha Auto Peças · Formação acadêmica: Universidade Anhembi Morumbi ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: Indaiatuba · 379 conexões no LinkedIn. Veja o perfil de Sergio Hideki Honma no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Sergio Hideki Honma",
+        "role": "Nao Identificado",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico Detectado, indicando uma inconsistência ou regra de veto acionada que impede a qualificação.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sergio Hideki Honma - Experiência: Rocha Auto Peças · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: Indaiatuba · 379 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Sergio Hideki Honma",
+                    "role": "Assistente"
+                },
+                {
+                    "name": "Sergio Hideki Honma",
+                    "role": "líder"
+                },
+                {
+                    "name": "Sergio Hideki Honma",
+                    "role": "produção"
+                },
+                {
+                    "name": "Sergio Hideki Honma",
+                    "role": "gerente"
+                },
+                {
+                    "name": "Sergio Hideki Honma",
+                    "role": "pós vendas"
+                },
+                {
+                    "name": "Sergio Hideki Honma",
+                    "role": "administrativo"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Sergio Hideki Honma",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Sergio Hideki Honma - Experiência: Rocha Auto Peças · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: Indaiatuba · 379 conexões no LinkedIn. Veja o perfil de Sergio Hideki Honma no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Sergio Hideki Honma não foi identificado claramente. Embora ele trabalhe na Rocha Auto Peças, não há informações suficientes nos snippets para determinar se sua função tem interface direta com Suprimentos/Compras/Procurement. Os cargos listados nos snippets ('Assistente', 'líder', 'produção', 'gerente', 'pós vendas', 'administrativo') não são suficientes para confirmar relevância, e alguns deles são explicitamente vetados."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Nao Identificado",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-02T10:33:28.877328",
+    "candidate": "Jederson Rodrigues Thomé",
+    "linkedin": "https://www.linkedin.com/in/jederson-rodrigues-thom%C3%A9-6923074b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jederson Rodrigues Thomé - Comprador | Rocha Auto Peças",
+            "body": "Comprador | Rocha Auto Peças · Experiência: Rocha Auto Peças · Formação acadêmica: UNIVERSIDADE PAULISTA · Localidade: Campinas · + de 500 conexões no ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Formação acadêmica: UNIVERSIDADE PAULISTA · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Jederson Rodrigues Thomé no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Jederson Rodrigues Thomé",
+        "role": "Comprador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato Jederson Rodrigues Thomé trabalha na empresa alvo Rocha Auto Peças, com o cargo de Comprador, o que é relevante para a área de Suprimentos/Compras. Não há vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Comprador | Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "LinkedIn CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Comprador na Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jederson Rodrigues Thomé",
+                    "role": "Comprador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jederson Rodrigues Thomé",
+                "detected_role": "Comprador",
+                "clean_bio": "Comprador | Rocha Auto Peças · Experiência: Rocha Auto Peças · Formação acadêmica: UNIVERSIDADE PAULISTA · Localidade: Campinas · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador' foi detectado na Bio Higienizada e confirmado pelos snippets. Este cargo tem interface direta com a área de Suprimentos/Compras, que é o foco da análise."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-02T10:34:34.878901",
+    "candidate": "Rodrigo Santos Ramos",
+    "linkedin": "https://www.linkedin.com/in/rodrigo-santos-ramos-9906ab252",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo Santos Ramos - Rocha Auto Peças - LinkedIn",
+            "body": "Experiência: Rocha Auto Peças · Localidade: Campinas · 1 conexão no LinkedIn. Veja o perfil de Rodrigo Santos Ramos no LinkedIn, uma comunidade profissional ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Rocha Auto Peças · Localidade: Campinas · 1 conexão no LinkedIn. Veja o perfil de Rodrigo Santos Ramos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rodrigo Santos Ramos",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rodrigo Santos Ramos - Rocha Auto Peças",
+                "Experiência: Rocha Auto Peças",
+                "CURRENT COMPANY (Declarada): Rocha Auto Peças"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rodrigo Santos Ramos - Rocha Auto Peças"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rodrigo Santos Ramos",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rodrigo Santos Ramos",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Rodrigo Santos Ramos - Rocha Auto Peças · Localidade: Campinas · 1 conexão no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Rodrigo Santos Ramos não foi identificado nos dados fornecidos. Embora ele trabalhe na Rocha Auto Peças, não há informações técnicas explícitas em sua bio ou nos snippets que o vinculem diretamente a Suprimentos/Compras/Procurement, nem a áreas correlatas como Logística com interface em fornecedores. Portanto, a relevância é falsa."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------

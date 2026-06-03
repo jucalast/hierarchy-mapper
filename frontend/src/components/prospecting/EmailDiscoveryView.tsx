@@ -67,7 +67,7 @@ export const EmailDiscoveryView: React.FC<EmailDiscoveryViewProps> = ({
 
     return createPortal(
         <div 
-            className={styles.container} 
+            className={`${styles.container} ${step === 'error' ? styles.error : ''}`} 
             style={popoverStyle} 
             onClick={(e) => {
                 e.stopPropagation();
