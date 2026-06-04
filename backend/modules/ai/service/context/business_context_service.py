@@ -29,12 +29,19 @@ class BusinessContextService:
     Suporta multi-tenancy e fornece dados para os prompts da IA.
     """
 
+    # Cache local simples (em memória) para evitar excesso de queries
+    _context_cache = {}
+
     @staticmethod
-    async def get_tenant_context(tenant_id: str = None) -> Dict[str, Any]:
+    async def get_tenant_context(tenant_id: str = None, force_refresh: bool = False) -> Dict[str, Any]:
         """
         Carrega todo o contexto de negócio para um Tenant.
         Se tenant_id for None, carrega o primeiro Tenant encontrado (Default).
         """
+        cache_key = tenant_id or "default"
+        if not force_refresh and cache_key in BusinessContextService._context_cache:
+            return BusinessContextService._context_cache[cache_key]
+
         async with async_session() as session:
             # 1. Buscar Tenant
             if tenant_id:
@@ -83,6 +90,7 @@ class BusinessContextService:
                 "signature_path": profile.signature_path if profile else None,
                 "seller_name": user.name if user else "João Luccas",
                 "seller_role": user.role if user else "Representante Comercial",
+                "seller_email": user.email if user else "contato@empresa.com.br",
                 "products": {
                     p.name.lower().replace(" ", "_"): {
                         "name": p.name,
@@ -117,6 +125,9 @@ class BusinessContextService:
                     "department_mapping": hier.department_mapping_rules if hier else {}
                 }
             }
+
+            # Popula o cache antes de retornar
+            BusinessContextService._context_cache[cache_key] = context
 
             return context
 

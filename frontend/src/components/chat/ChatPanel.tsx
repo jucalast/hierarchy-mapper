@@ -325,6 +325,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             ...prev,
             [taskKey]: 'streaming'
         }));
+        setIsLoading(true);
+        setAgentStreaming(true);
 
         const newTask = {
             label: action.label,
@@ -354,12 +356,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
             const hierarchyEv = collected.find(e => e.type === 'hierarchy_mapping_required');
             const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
+            const ligacaoEv = collected.find(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
             
             let finalStatus: TaskStatus = 'done';
             if (hierarchyEv) {
                 finalStatus = 'awaiting_mapping';
             } else if (pendingConfirm) {
                 finalStatus = 'awaiting_confirm';
+            } else if (ligacaoEv) {
+                finalStatus = 'streaming'; // Mantém em loading
             }
 
             setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
@@ -367,6 +372,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 ...prev,
                 [taskKey]: finalStatus
             }));
+
+            if (finalStatus !== 'streaming') {
+                setIsLoading(false);
+                setAgentStreaming(false);
+            }
 
             // Persiste para o backend para garantir que o estado se mantenha ao sair/voltar
             if (parentMessageId) {
@@ -393,6 +403,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 ...prev,
                 [taskKey]: 'error'
             }));
+            setIsLoading(false);
+            setAgentStreaming(false);
         }
     };
 
@@ -406,6 +418,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
             setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'streaming' }));
         }
+        setIsLoading(true);
+        setAgentStreaming(true);
 
         try {
             const collected = await streamTaskInto(AGENT_CONFIRM_URL, {
@@ -415,9 +429,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             }, activeRunningTask);
             
             const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
+            const ligacaoEv = collected.find(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
             let finalStatus: TaskStatus = 'done';
             if (pendingConfirm) {
                 finalStatus = 'awaiting_confirm';
+            } else if (ligacaoEv) {
+                finalStatus = 'streaming'; // Mantém em loading
             }
 
             setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
@@ -430,6 +447,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     console.error('Failed to persist task status', err);
                 });
             }
+
+            if (finalStatus !== 'streaming') {
+                setIsLoading(false);
+                setAgentStreaming(false);
+            }
+
             if (finalStatus === 'done') {
                 const currentIdx = activeRunningTask.actionIndex;
                 setTimeout(() => {
@@ -445,6 +468,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
                 setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'error' }));
             }
+            setIsLoading(false);
+            setAgentStreaming(false);
         }
     };
 
@@ -979,7 +1004,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     };
 
     // ─── Agente: executar workflow ────────────────────────────
-    const executeAgent = async (text: string, threadId: string, historyForApi: any[]) => {
+    const executeAgent = async (text: string, threadId: string, historyForApi: any[], directAction: boolean = false) => {
         setIsLoading(true);
         setAgentEvents([]);
         setAgentStreaming(true);
@@ -1004,6 +1029,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         let hasMappingRequired = false;
         let hasConfirmationRequired = false;
+        let hasLigacaoView = false;
 
         let apiMessage = text;
         if (selectedOrgId && selectedOrgName) {
@@ -1014,7 +1040,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             const response = await fetch(AGENT_STREAM_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: apiMessage, history: historyForApi, org_id: selectedOrgId, thread_id: threadId }),
+                body: JSON.stringify({ message: apiMessage, history: historyForApi, org_id: selectedOrgId, thread_id: threadId, direct_action: directAction }),
                 signal: controller.signal,
             });
 
@@ -1109,6 +1135,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     }));
                 }
                 if (ev.type === 'confirmation_required') hasConfirmationRequired = true;
+                if (ev.type === 'tool_call' && ev.tool === 'open_ligacao_view') {
+                    hasLigacaoView = true;
+                }
             }
 
             // Marca streaming como concluído, limpa modelos live
@@ -1135,10 +1164,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             
             
             setMessages(prev => prev.map(m =>
-                m.id === msgId ? { ...m, agentStreaming: hasMappingRequired ? true : false } : m
+                m.id === msgId ? { ...m, agentStreaming: (hasMappingRequired || hasLigacaoView) ? true : false } : m
             ));
 
-            if (!hasMappingRequired && !hasConfirmationRequired) {
+            if (!hasMappingRequired && !hasConfirmationRequired && !hasLigacaoView) {
                 setIsLoading(false);
                 setAgentStreaming(false);
             }
@@ -1472,14 +1501,23 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (abortControllerRef.current === controller) {
                 abortControllerRef.current = null;
             }
-            setIsLoading(false);
-            setAgentStreaming(false);
+            
+            // Verifica se precisamos manter o loading ativo por conta da view de ligacao
+            setMessages(prev => {
+                const targetMsg = prev.find(m => m.id === msgId);
+                const isLigacaoOpen = targetMsg?.agentEvents?.some(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
+                if (!isLigacaoOpen) {
+                    setIsLoading(false);
+                    setAgentStreaming(false);
+                }
+                return prev;
+            });
         }
     };
 
     // ─── Send message ────────────────────────────────────────
-    const handleSendMessage = async (text: string, companiesSelected: CompanyResult[], isSuggestedAction: boolean = false) => {
-        if (!text.trim() && companiesSelected.length === 0) return;
+    const handleSendMessage = async (text: string, companiesSelected: CompanyResult[] = [], isSuggestedAction: boolean = false, directAction: boolean = false) => {
+        if (!text.trim() && (!companiesSelected || companiesSelected.length === 0)) return;
 
         // Garante transição visual para a tela do chat ativo ao enviar qualquer mensagem
         setView('chat');
@@ -1492,7 +1530,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             role: 'user',
             content: text,
             timestamp: new Date(),
-            selectedCompanies: companiesSelected.length > 0 ? [...companiesSelected] : undefined,
+            selectedCompanies: companiesSelected && companiesSelected.length > 0 ? [...companiesSelected] : undefined,
         };
 
         const historyForApi = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
@@ -1502,14 +1540,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setInputValue('');
         setSelectedCompanies([]);
 
-        await executeAgent(text, threadId, historyForApi);
+        await executeAgent(text, threadId, historyForApi, directAction);
     };
 
     useEffect(() => {
         const handleAgentPrompt = (e: Event) => {
-            const customEvent = e as CustomEvent<{ prompt: string }>;
+            const customEvent = e as CustomEvent<{ prompt: string, direct_action?: boolean }>;
             if (customEvent.detail && customEvent.detail.prompt) {
-                handleSendMessage(customEvent.detail.prompt, [], false);
+                handleSendMessage(customEvent.detail.prompt, [], false, customEvent.detail.direct_action);
             }
         };
         window.addEventListener('submit_agent_prompt', handleAgentPrompt);
@@ -1624,11 +1662,24 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
     };
 
-    if (!showChat) return null;
+    // ─── Call Ended Listener ─────────────────────────────────
+    useEffect(() => {
+        const handleCallEnded = (e: any) => {
+            // Remove o estado de loading da mensagem que chamou a ligação
+            setMessages(prev => prev.map(m => ({ ...m, agentStreaming: false })));
+            setIsLoading(false);
+            setAgentStreaming(false);
 
-    // ═══════════════════════════════════════════
-    // RENDER: List view
-    // ═══════════════════════════════════════════
+            const { contactName } = e.detail || {};
+            const text = contactName 
+                ? `A ligação com ${contactName} terminou. Analise o que foi discutido e sugira os próximos passos (ex: atualizar CRM, enviar e-mail de resumo, agendar follow-up).`
+                : "A ligação terminou. Analise a conversa e sugira os próximos passos estratégicos.";
+            
+            handleSendMessage(text, [], false);
+        };
+        window.addEventListener('call_ended', handleCallEnded);
+        return () => window.removeEventListener('call_ended', handleCallEnded);
+    }, [handleSendMessage]);
 
     // ═══════════════════════════════════════════
     // RENDER: Collapsed handle view
@@ -1718,6 +1769,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // ═══════════════════════════════════════════
     // RENDER: Chat view
     // ═══════════════════════════════════════════
+
     return (
         <div className={styles.chatPanel} data-theme={theme}>
 

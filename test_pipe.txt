@@ -1,0 +1,10 @@
+ETAPAS PARA ESTA ATIVIDADE DE LIGAÇÃO (siga nesta ordem):
+  1. pipedrive_get_persons → obter número de telefone REAL do CRM (nunca invente)
+     → ⚠️ SE O CONTATO NÃO TIVER TELEFONE: Informe ao João no chat que o contato não possui telefone e PEÇA PARA ELE INFORMAR O NÚMERO. Você OBRIGATORIAMENTE deve escrever a frase 'PARADA ANTECIPADA' na sua resposta para destravar o sistema, e então PARE IMEDIATAMENTE após pedir! (NÃO gere script, NÃO abra a tela de ligação e é ESTRITAMENTE PROIBIDO chamar pipedrive_update_task).
+  2. prepare_live_coaching_session(contact_name, phone) → Prepara o plano de voo (passo a passo) para a ligação usando SPIN Selling.
+  3. open_ligacao_view() → Abra a interface de transcrição ao vivo IMEDIATAMENTE após preparar a sessão. Não peça aprovação!
+  4. Apresente ao usuário o plano de voo gerado e informe que a tela de ligação foi aberta.
+⛔ PROIBIDO: NUNCA chame pipedrive_update_task para esta atividade agora. A tarefa só será concluída após a ligação terminar.
+⛔ PROIBIDO: nunca invente ou assuma um número de telefone — use APENAS o retornado pelo CRM.
+⛔ PROIBIDO: não envie emails ou mensagens diretas sem que o usuário solicite explicitamente — o foco aqui é a ligação telefônica.
+

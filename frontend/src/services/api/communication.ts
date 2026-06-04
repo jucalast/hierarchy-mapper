@@ -143,3 +143,24 @@ export function markConversationRead(contactIdentifier: string, channel: string)
     {}
   );
 }
+
+export interface SavedCallSession {
+  id: string;
+  pipedrive_activity_id?: string;
+  org_id?: number;
+  contact_name: string;
+  phone: string;
+  profile_pic?: string;
+  flight_plan?: any;
+  latest_insight?: any;
+  message_count: number;
+  created_at?: string;
+}
+
+export function fetchCallHistory() {
+  return api.get<{ ok: boolean; calls: SavedCallSession[] }>('/calls/history');
+}
+
+export function fetchCallSession(sessionId: string) {
+  return api.get<any>(`/calls/session?session_id=${encodeURIComponent(sessionId)}`);
+}

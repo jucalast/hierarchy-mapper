@@ -411,8 +411,8 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
             "summary": (
                 f"{len(result)} contatos em {match.get('name')}: "
                 + ", ".join(
-                    f"{p['name']} ({'WhatsApp:registrado' if p['phone'] and len(''.join(c for c in str(p['phone']) if c.isdigit())) > 13 else ('tel: ' + (p['phone'] or 'nenhum'))}, email: {p['email'] if p['email'] else 'nenhum'})"
-                    for p in result[:4]
+                    f"{p['name']} (ID Pipedrive: {p['id'] if p['id'] else 'NULO/NÃO CADASTRADO'}, tel: {p['phone'] or 'nenhum'}, email: {p['email'] or 'nenhum'})"
+                    for p in result[:6]
                 ) + icp_str
             ),
         }

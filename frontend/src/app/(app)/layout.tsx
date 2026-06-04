@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { organizations as orgsApi } from '@/services/api';
 import { TriggerNotifications } from '@/components/ui/TriggerNotifications';
 import { API_BASE_URL } from '@/services/config';
@@ -12,6 +12,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel';
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showChat, setShowChat] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [currentOrg, setCurrentOrg] = useState<{ id: number; name: string; logo: string } | null>(null);
@@ -124,6 +125,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       setCurrentOrg(null);
     }
   }, [pathname, currentOrg]);
+
+  // Esconde o ChatPanel automaticamente na rota /messages (ou ?view=messages) para não conflitar com o MessagesView
+  useEffect(() => {
+    const isMessages = pathname?.startsWith('/messages') || searchParams?.get('view') === 'messages';
+    if (isMessages && showChat) {
+      setShowChat(false);
+      // Não salva no localStorage para restaurar quando sair
+    } else if (!isMessages) {
+      // Ao sair de /messages, restaura o estado salvo no localStorage
+      const savedChat = localStorage.getItem("show-chat") === "true";
+      setShowChat(savedChat);
+    }
+  }, [pathname, searchParams]);
 
   // Escuta evento externo de alteração de tema (ex: do Sidebar no NetworkGraph)
   useEffect(() => {

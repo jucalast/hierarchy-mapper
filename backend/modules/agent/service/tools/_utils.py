@@ -405,6 +405,11 @@ async def _pipedrive_get_org_by_id(org_id: int):
 
 async def _extract_org_domain(org_name: str, org_id: int | None = None) -> str | None:
     """Busca o domínio de e-mail de uma empresa no banco local ou no Pipedrive."""
+    from modules.ai.service.context.business_context_service import BusinessContextService
+    ctx = await BusinessContextService.get_tenant_context()
+    seller_email = ctx.get("seller_email", "")
+    seller_domain = seller_email.split("@")[1].lower() if "@" in seller_email else JFERRES_DOMAIN
+
     INVALID_DOMAINS = {
         "gmail.com", "hotmail.com", "yahoo.com", "yahoo.com.br", "outlook.com", 
         "icloud.com", "bol.com.br", "uol.com.br", "terra.com.br", "ig.com.br",
@@ -437,7 +442,7 @@ async def _extract_org_domain(org_name: str, org_id: int | None = None) -> str |
             match = await _pipedrive_get_org_by_id(org_id)
         if match:
             pd_domain = (match.get("domain") or "").lower().replace("www.", "").strip()
-            if pd_domain and not pd_domain.endswith(JFERRES_DOMAIN) and pd_domain not in INVALID_DOMAINS:
+            if pd_domain and not pd_domain.endswith(seller_domain) and pd_domain not in INVALID_DOMAINS:
                 return pd_domain
 
         # 3. Fallback: Busca via contatos no Pipedrive
@@ -446,7 +451,7 @@ async def _extract_org_domain(org_name: str, org_id: int | None = None) -> str |
         for p in (details.get("persons") or []):
             for em in (p.get("email") or []):
                 val = (em.get("value") or "").strip()
-                if val and "@" in val and not val.endswith(JFERRES_DOMAIN):
+                if val and "@" in val and not val.endswith(seller_domain):
                     extracted = val.split("@")[1].lower()
                     if extracted and extracted not in INVALID_DOMAINS:
                         return extracted

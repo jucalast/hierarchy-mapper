@@ -486,7 +486,20 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     return [<strong key={`bold-${i}-${ti}`} style={{ fontWeight: 700 }}>{tPart.slice(2, -2)}</strong>];
                 }
                 if (tPart.startsWith('`') && tPart.endsWith('`')) {
-                    return [<code key={`code-${i}-${ti}`} style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '2px 4px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.9em' }}>{tPart.slice(1, -1)}</code>];
+                    return [<span key={`code-${i}-${ti}`} style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        background: 'var(--sw-hover)',
+                        color: 'var(--sw-text-base)',
+                        fontSize: '0.85em',
+                        fontWeight: 500,
+                        margin: '0 2px',
+                        fontFamily: 'monospace',
+                        verticalAlign: 'baseline',
+                        lineHeight: '1.4'
+                    }}>{tPart.slice(1, -1)}</span>];
                 }
                 const linkMatch = tPart.match(/^\[(.*?)\]\((.*?)\)$/);
                 if (linkMatch) {
@@ -646,9 +659,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             )}
 
             <div className={styles.aiMessageWrapper}>
-                <div className={styles.aiMessageIconArea}>
-                    <AIAsterisk model={model} />
-                </div>
+
                 <div className={styles.aiMessage}>
                     {renderMarkdown(message.content, message.data)}
                 </div>

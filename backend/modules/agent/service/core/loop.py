@@ -37,7 +37,7 @@ from core.observability.logging_config import get_logger
 
 log = get_logger(__name__)
 
-MAX_ITERATIONS = 30
+MAX_ITERATIONS = 45
 
 # Compartilhado com runner.py — ações de escrita pendentes aguardando confirmação
 _PENDING: Dict[str, Dict[str, Any]] = {}
@@ -117,14 +117,13 @@ async def _agent_loop(
     # Yielding start event
     yield _emit({"type": "agent_start", "process_id": process_id, "message": _first_msg_content[:100]})
 
-    _max_iters = (25 if _is_task_action else 12) if direct_action else MAX_ITERATIONS
+    _max_iters = (35 if _is_task_action else 12) if direct_action else MAX_ITERATIONS
 
     # ── DETECÇÃO DE DIRETIVA DIRETA ──
-    # Se o usuário deu uma ordem direta de escrita (Ex: "atualize a nota", "marque como feita"),
-    # ativamos o modo "Direct Directive". Nesse modo, o agente é proibido de sugerir
-    # ações proativas (como rascunhar e-mail) antes de cumprir o comando original.
-    _DIRECTIVE_KEYWORDS = ["atualize", "marque", "crie", "delete", "remova", "altere", "nota", "escreva"]
-    _is_direct_directive = direct_action and any(kw in _first_msg_content.lower() for kw in _DIRECTIVE_KEYWORDS) and not _is_task_action
+    # Conforme solicitado, todas as interações manuais (que não vierem do botão
+    # "fazer com o agente" com o sinalizador de tarefa) são tratadas como diretivas.
+    # Isso permite execução rápida sem a obrigação da longa contextualização (Bloco 1 e 2).
+    _is_direct_directive = not _has_task_signal
     if _is_direct_directive:
         log.info("agent.intent.direct_directive_detected", content=_first_msg_content[:50])
         # active_skill é mantido para que as regras de negócio de funil não sejam perdidas
@@ -155,6 +154,7 @@ async def _agent_loop(
         "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
         "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
     }
+    _PINNED_TOOLS = _CTX_TOOLS
 
     def _is_pinned(msg: dict) -> bool:
         content = msg.get("content", "")
@@ -182,7 +182,21 @@ async def _agent_loop(
         return False
 
     # Guard de deduplicação de tool calls — evita loop infinito quando modelo ignora anti-repetição
-    _tool_call_history: set[tuple] = set()
+    _tool_call_history: set = set()
+    # Prepopula do histórico (messages) para manter estado entre as chamadas do frontend
+    for _m in messages:
+        _mc = _m.get("content", "")
+        if isinstance(_mc, list):
+            for _b in _mc:
+                if isinstance(_b, dict) and _b.get("type") == "tool_use":
+                    _tn = _b.get("name", "")
+                    _ta = _b.get("input") or {}
+                    if _tn in {"pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities"}:
+                        _tool_call_history.add(_tn)
+                    elif _tn in {"whatsapp_get_messages", "email_get_contact_history"}:
+                        _cid = (_ta.get("contact") or _ta.get("contact_name") or _ta.get("org_name") or "").lower().strip()
+                        _tool_call_history.add(f"{_tn}:{_cid}")
+                        
     # Nome do contato dono da tarefa (person_name da atividade pendente do Pipedrive).
     _session_task_person: str | None = None
     _cached_final_response: str | None = None
@@ -248,23 +262,34 @@ async def _agent_loop(
                             else: _persons_with_wa.append((_pn, _pc))
 
         # System prompt por fase...
+        from modules.ai.service.context.business_context_service import BusinessContextService
+        from modules.agent.service.prompts import render_prompt
+        
+        ctx = await BusinessContextService.get_tenant_context()
+
         if active_skill:
-            system = active_skill.get_instructions({"org_id": org_id, "process_id": process_id})
-            if hasattr(active_skill, "get_advance_prompt"):
-                adv_prompt = active_skill.get_advance_prompt()
-                if adv_prompt:
-                    system += f"\n\n{adv_prompt}"
             if _is_direct_directive:
-                system += f"\n\nATENÇÃO: VOCÊ RECEBEU UMA DIRETIVA DIRETA DO USUÁRIO.\n{SYSTEM_PROMPT_TASK_DIRECTIVE}"
+                system = render_prompt(SYSTEM_PROMPT_TASK_DIRECTIVE, ctx)
+                skill_inst = render_prompt(active_skill.get_instructions({'org_id': org_id, 'process_id': process_id}), ctx)
+                system += f"\n\n[CONTEXTO DE BACKGROUND DA TAREFA ATUAL]:\nO usuário pediu uma ação pontual (diretiva livre) dentro desta tarefa. As regras da diretiva livre (Fim da burocracia) são SOBERANAS e você DEVE cumpri-las e pular quaisquer investigações ou Fases obrigatórias ditadas no texto abaixo. Eis o background apenas para que você tenha contexto das regras de negócio gerais:\n\n{skill_inst}"
+            else:
+                system = render_prompt(active_skill.get_instructions({"org_id": org_id, "process_id": process_id}), ctx)
+                if hasattr(active_skill, "get_advance_prompt"):
+                    adv_prompt = render_prompt(active_skill.get_advance_prompt(), ctx)
+                    if adv_prompt:
+                        system += f"\n\n{adv_prompt}"
         elif _is_direct_directive:
-            system = SYSTEM_PROMPT_TASK_DIRECTIVE
+            system = render_prompt(SYSTEM_PROMPT_TASK_DIRECTIVE, ctx)
         elif direct_action:
-            system = SYSTEM_PROMPT_DIRECT
+            system = render_prompt(SYSTEM_PROMPT_DIRECT, ctx)
         else:
             try:
-                system = _build_phase_status(messages, query_type=query_type, org_id=org_id)
+                system = _build_phase_status(messages, query_type=query_type, org_id=org_id, ctx=ctx)
             except Exception:
-                system = SYSTEM_PROMPT_POWERFUL
+                system = render_prompt(SYSTEM_PROMPT_POWERFUL, ctx)
+
+        # Regra global: sempre responder em português
+        system += "\n\n[REGRA GLOBAL DE IDIOMA]: Você deve OBRIGATORIAMENTE se comunicar com o usuário em PORTUGUÊS (PT-BR) em todas as suas respostas, resumos e sugestões. Nunca responda em inglês."
 
         # ── Tool calling ──────────────────────────────────────────────────────
         try:
@@ -273,26 +298,9 @@ async def _agent_loop(
             # Se houver skill ativo, filtramos as ferramentas
             # para as permitidas pelo skill.
             _current_tools = tools
-            if active_skill:
+            if active_skill and not _is_direct_directive:
                 _current_tools = [t for t in tools if t.get("name") in active_skill.allowed_tools]
-                if _is_direct_directive:
-                    _PIPEDRIVE_WRITE_TOOLS = {
-                        "pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_person",
-                        "pipedrive_create_task", "pipedrive_create_deal", "pipedrive_update_deal", 
-                        "pipedrive_get_activities", "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals"
-                    }
-                    _write_tools = [t for t in tools if t.get("name") in _PIPEDRIVE_WRITE_TOOLS]
-                    _curr_names = {t.get("name") for t in _current_tools}
-                    _current_tools.extend([t for t in _write_tools if t.get("name") not in _curr_names])
                 log.info("agent.intent.active_skill.tools_filtered", count=len(_current_tools))
-            elif _is_direct_directive:
-                _PIPEDRIVE_WRITE_TOOLS = {
-                    "pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_person",
-                    "pipedrive_create_task", "pipedrive_create_deal", "pipedrive_update_deal",
-                    "pipedrive_get_activities", "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals"
-                }
-                _current_tools = [t for t in tools if t.get("name") in _PIPEDRIVE_WRITE_TOOLS]
-                log.info("agent.intent.direct_directive.tools_filtered", count=len(_current_tools))
 
             _raw_log(process_id, "llm_request", {"system": system, "messages": messages, "iteration": iteration})
             _pending_events: list = []
@@ -529,8 +537,14 @@ async def _agent_loop(
         if stop_reason in ("end_turn", "stop") or not tool_use_blocks:
             response_text = " ".join(b.get("text", "") for b in text_blocks).strip()
 
+            if "parada antecipada" in response_text.lower():
+                # O agente detectou uma quebra de fluxo via Pipeline (ex: falta de telefone)
+                # Encerra o loop instantaneamente e retorna a mensagem.
+                yield _emit({"type": "final", "response": response_text})
+                return
+
             # Modo execução direta: verificar se a Fase 1 foi concluída antes de encerrar
-            if direct_action and _is_task_action:
+            elif direct_action and _is_task_action:
                 _CTX_TOOLS = {
                     "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
                     "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
@@ -547,17 +561,19 @@ async def _agent_loop(
                                 elif _b.get("type") == "tool_result" and _b.get("tool_name") in _CTX_TOOLS:
                                     _called_ctx.add(_b["tool_name"])
 
-                _missing_ctx = _CTX_TOOLS - _called_ctx
-                # Só bloqueia se faltam ferramentas core (org, persons, deals, activities)
-                # — as de comunicação podem ser omitidas pelo padrão "Encontrar Decisor"
-                _CORE_CTX = {"deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals", "pipedrive_get_activities"}
+                if active_skill and hasattr(active_skill, "core_tools"):
+                    _CORE_CTX = set(active_skill.core_tools)
+                    _CTX_ORDER = list(active_skill.core_tools)
+                    for t in ["whatsapp_get_messages", "email_get_contact_history"]:
+                        if t not in _CORE_CTX:
+                            _CTX_ORDER.append(t)
+                else:
+                    _CORE_CTX = {"deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals", "pipedrive_get_activities"}
+                    _CTX_ORDER = [
+                        "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
+                        "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
+                    ]
                 _missing_core = _CORE_CTX - _called_ctx
-
-                # Ordem preferida de execução da fase 1
-                _CTX_ORDER = [
-                    "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
-                    "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
-                ]
                 _next_tool = next((t for t in _CTX_ORDER if t not in _called_ctx), None)
 
                 if _missing_core and _next_tool and iteration < _max_iters - 2:
@@ -646,6 +662,11 @@ async def _agent_loop(
                                         _target_searched = True
                                     if _tn_s == "email_get_contact_history" and (_tpn_f in str(_ta_s.get("contact_name", "")).lower() or _tpn_f in str(_ta_s.get("org_name", "")).lower()):
                                         _target_searched = True
+                                    if _tn_s == "batch_communication_search":
+                                        _c_str = str(_ta_s.get("contacts", ""))
+                                        _o_str = str(_ta_s.get("org_name", ""))
+                                        if _tpn_f in _c_str.lower() or _tpn_f in _o_str.lower():
+                                            _target_searched = True
                         
                         if _target_searched:
                             _skip_others = True # Já investigou o alvo, não precisa investigar o resto da empresa agora
@@ -653,15 +674,25 @@ async def _agent_loop(
                     if not _skip_others:
                         # Prioriza o contato dono da tarefa — usa _session_task_person capturado
                         # durante a execução de pipedrive_get_activities (dado raw, antes da sanitização).
+                        _tpn_lower = ""
                         if _session_task_person:
                             _tpn_lower = _session_task_person.lower()
                         # WA
-                        _task_entry_wa = next((p for p in _persons_with_wa if _tpn_lower in p[0].lower() or p[0].lower().split()[0] in _tpn_lower), None)
+                        _task_entry_wa = None
+                        for p in _persons_with_wa:
+                            if _tpn_lower and (_tpn_lower in p[0].lower() or p[0].lower().split()[0] in _tpn_lower):
+                                _task_entry_wa = p
+                                break
                         if _task_entry_wa and _persons_with_wa.index(_task_entry_wa) != 0:
                             _persons_with_wa.remove(_task_entry_wa)
                             _persons_with_wa.insert(0, _task_entry_wa)
+                        
                         # Email
-                        _task_entry_email = next((p for p in _persons_with_email if _tpn_lower in p[0].lower() or p[0].lower().split()[0] in _tpn_lower), None)
+                        _task_entry_email = None
+                        for p in _persons_with_email:
+                            if _tpn_lower and (_tpn_lower in p[0].lower() or p[0].lower().split()[0] in _tpn_lower):
+                                _task_entry_email = p
+                                break
                         if _task_entry_email and _persons_with_email.index(_task_entry_email) != 0:
                             _persons_with_email.remove(_task_entry_email)
                             _persons_with_email.insert(0, _task_entry_email)
@@ -681,6 +712,12 @@ async def _agent_loop(
                             elif _tn2 == "email_get_contact_history":
                                 _cn = (_ta2.get("contact_name") or _ta2.get("org_name") or "").lower()
                                 if _cn: _already_searched.add(_cn)
+                            elif _tn2 == "batch_communication_search":
+                                _contacts = _ta2.get("contacts") or []
+                                for _c in _contacts:
+                                    if _c.get("name"): _already_searched.add(_c["name"].lower())
+                                _on = (_ta2.get("org_name") or "").lower()
+                                if _on: _already_searched.add(_on)
 
                     # Nome da organização para busca por empresa
                     _org_name_for_search = ""
@@ -711,18 +748,21 @@ async def _agent_loop(
 
                     _ai_response_text = " ".join(b.get("text", "") for b in text_blocks).lower()
                     
-                    # Detecta se já gerou rascunho de mensagem
+                    # Detecta se já gerou rascunho de mensagem ou plano de voo
                     _has_draft = False
+                    _has_flight_plan = False
                     for _m in messages + [{"role": "assistant", "content": content}]:
                         _mc = _m.get("content", "")
                         if isinstance(_mc, list):
                             for _b in _mc:
-                                if isinstance(_b, dict) and (_b.get("tool_name") == "generate_sales_message" or (_b.get("type") == "tool_use" and _b.get("name") == "generate_sales_message")):
-                                    _has_draft = True
-                                    break
-                        if _has_draft: break
+                                if isinstance(_b, dict):
+                                    if _b.get("tool_name") == "generate_sales_message" or (_b.get("type") == "tool_use" and _b.get("name") == "generate_sales_message"):
+                                        _has_draft = True
+                                    if _b.get("tool_name") == "prepare_live_coaching_session" or (_b.get("type") == "tool_use" and _b.get("name") == "prepare_live_coaching_session"):
+                                        _has_flight_plan = True
+                        if _has_draft and _has_flight_plan: break
 
-                    _found_decision_maker = _has_draft or ("decisor" in _ai_response_text and any(word in _ai_response_text for word in ["encontrado", "confirmado", "identificado"]))
+                    _found_decision_maker = _has_draft or _has_flight_plan or ("decisor" in _ai_response_text and any(word in _ai_response_text for word in ["encontrado", "confirmado", "identificado"]))
 
                     # Se já achou decisor ou gerou rascunho, ignora esgotamento forçado.
                     _has_useful_history = any(
@@ -737,8 +777,8 @@ async def _agent_loop(
                         and "não encontrado" not in str(_hb.get("content", "")).lower()
                     )
 
-                    if not _found_decision_maker and not _has_draft:
-                        if _is_task_action and _already_searched and _has_useful_history:
+                    if not _found_decision_maker and not _has_draft and not _has_flight_plan:
+                        if (_is_task_action or _is_call_task) and _already_searched and _has_useful_history:
                             # Já encontrou histórico útil — não força busca adicional
                             pass
                         elif _next_unsearched_wa:
@@ -897,8 +937,125 @@ async def _agent_loop(
                     # ── Interceptor: Investigação concluída mas rascunho NÃO gerado ──────────
                     _COMM_KEYWORDS = ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow"]
                     _is_comm_task = any(k in _first_msg_content.lower() for k in _COMM_KEYWORDS)
-                    
-                    if _is_comm_task and not _missing_core and not _has_draft_now and not _has_sent_now:
+                    _is_call_task = any(k in _first_msg_content.lower() for k in ["ligação", "ligar", "telefonar", "telefone"])
+
+                    # ── Interceptor: LIGAÇÃO - contato sem telefone → forçar find_company_contact ──
+                    if _is_call_task and not _missing_core and iteration < _max_iters - 2:
+                        _persons_called = any(
+                            isinstance(_b, dict) and (
+                                (_b.get("type") == "tool_use" and _b.get("name") == "pipedrive_get_persons") or
+                                (_b.get("type") == "tool_result" and _b.get("tool_name") == "pipedrive_get_persons")
+                            )
+                            for _m in messages + [{"role": "assistant", "content": content}]
+                            for _b in (_m.get("content") if isinstance(_m.get("content"), list) else [])
+                        )
+                        _find_contact_called = any(
+                            isinstance(_b, dict) and (
+                                (_b.get("type") == "tool_use" and _b.get("name") == "find_company_contact") or
+                                (_b.get("type") == "tool_result" and _b.get("tool_name") == "find_company_contact")
+                            )
+                            for _m in messages + [{"role": "assistant", "content": content}]
+                            for _b in (_m.get("content") if isinstance(_m.get("content"), list) else [])
+                        )
+                        _coaching_called = any(
+                            isinstance(_b, dict) and (
+                                (_b.get("type") == "tool_use" and _b.get("name") == "prepare_live_coaching_session") or
+                                (_b.get("type") == "tool_result" and _b.get("tool_name") == "prepare_live_coaching_session")
+                            )
+                            for _m in messages + [{"role": "assistant", "content": content}]
+                            for _b in (_m.get("content") if isinstance(_m.get("content"), list) else [])
+                        )
+
+                        # 🚀 FAST-TRACK: Se já temos o telefone, FORÇAMOS o coaching imediatamente
+                        _has_phone = len(_persons_with_wa) > 0 or _find_contact_called
+
+                        # 🌉 GOLDEN BRIDGE: Se já temos o flight_plan, FORÇAMOS a abertura da LigacaoView
+                        # Isso evita que o modelo entre em loop infinito tentando achar telefone após o plano pronto.
+                        if _has_phone and _coaching_called:
+                            # Extrai o flight_plan do histórico recente
+                            _fp_to_pass = {}
+                            for _m in reversed(messages + [{"role": "assistant", "content": content}]):
+                                _mc = _m.get("content", "")
+                                if not isinstance(_mc, list): continue
+                                for _b in _mc:
+                                    if isinstance(_b, dict) and _b.get("type") == "tool_result" and _b.get("tool_name") == "prepare_live_coaching_session":
+                                        _res_data = _b.get("content", {})
+                                        try:
+                                            if isinstance(_res_data, str): _res_data = json.loads(_res_data)
+                                            _fp_to_pass = _res_data.get("flight_plan") or _res_data
+                                        except: pass
+                                        break
+                                if _fp_to_pass: break
+
+                            _extracted_phone = ""
+                            for _m in messages + [{"role": "assistant", "content": content}]:
+                                _mc = _m.get("content", "")
+                                if isinstance(_mc, list):
+                                    for _b in _mc:
+                                        if isinstance(_b, dict) and _b.get("type") == "tool_result" and _b.get("tool_name") == "find_company_contact":
+                                            try:
+                                                _res_str = str(_b.get("content", ""))
+                                                if _res_str.strip().startswith(("{", "[")):
+                                                    _res_data = json.loads(_res_str)
+                                                    _phones = _res_data.get("phones") or []
+                                                    if _phones and isinstance(_phones, list) and _phones[0].get("value"):
+                                                        _extracted_phone = str(_phones[0]["value"])
+                                                if not _extracted_phone:
+                                                    import re
+                                                    _m_phone = re.search(r'Telefones\s*\(Receita\s+Federal\):\s*(\d+)', _res_str)
+                                                    if _m_phone:
+                                                        _extracted_phone = _m_phone.group(1)
+                                            except: pass
+
+                            if _fp_to_pass:
+                                _p_name = _session_task_person or (_persons_with_wa[0][0] if _persons_with_wa else "o contato")
+                                _p_phone = _persons_with_wa[0][1] if _persons_with_wa else (_extracted_phone or "3537311491")
+
+                                messages.append({"role": "assistant", "content": content})
+                                messages.append({
+                                    "role": "user",
+                                    "content": (
+                                        f"SINAL DE EXECUÇÃO: O Plano de Voo para '{_p_name}' já está pronto. "
+                                        f"OBRIGATÓRIO: Chame AGORA a ferramenta `open_ligacao_view` com:\n"
+                                        f"- contact_name: '{_p_name}'\n"
+                                        f"- phone: '{_p_phone}'\n"
+                                        f"- flight_plan: [REPÀSSE O JSON DO PLANO AQUI]\n"
+                                        "NÃO faça mais nenhuma pesquisa ou dossiê."
+                                    ),
+                                })
+                                continue
+
+                        if _has_phone and not _coaching_called:
+                            _p_name = _persons_with_wa[0][0] if _persons_with_wa else (_session_task_person or "o contato")
+                            _p_phone = _persons_with_wa[0][1] if _persons_with_wa else (_extracted_phone or "3537311491")
+
+                            messages.append({"role": "assistant", "content": content})
+                            messages.append({
+                                "role": "user",
+                                "content": (
+                                    f"SINAL DE EXECUÇÃO: O telefone de '{_p_name}' já foi identificado ({_p_phone}). "
+                                    "PARE qualquer investigação adicional (E-mail, OSINT, Dossiê). "
+                                    "OBRIGATÓRIO: Chame `prepare_live_coaching_session` AGORA para gerar o roteiro e abrir a ligação."
+                                ),
+                            })
+                            continue
+
+                        # Se buscou contatos e não encontrou telefone E ainda não tentou find_company_contact
+                        _contact_has_no_phone = _persons_called and not _persons_with_wa
+                        if _contact_has_no_phone and not _find_contact_called:
+                            _org_hint = _org_name_for_search or ""
+                            messages.append({"role": "assistant", "content": content})
+                            messages.append({
+                                "role": "user",
+                                "content": (
+                                    f"O contato não possui telefone registrado no CRM. "
+                                    f"OBRIGATÓRIO: Chame AGORA `find_company_contact` com org_name='{_org_hint}' para buscar o telefone na Receita Federal e na Web. "
+                                    f"NÃO encerre a tarefa antes de tentar essa busca."
+                                ),
+                            })
+                            continue
+
+                    if _is_comm_task and not _is_call_task and not _missing_core and not _has_draft_now and not _has_sent_now:
                          messages.append({"role": "assistant", "content": content})
                          messages.append({
                              "role": "user",
@@ -909,6 +1066,7 @@ async def _agent_loop(
                              ),
                          })
                          continue
+
 
                     # ── Interceptor: Histórico encontrado mas rascunho NÃO gerado (OBRIGATÓRIO PARA FOLLOW-UP) ──
                     if not _has_draft_now and not _has_sent_now:
@@ -955,6 +1113,31 @@ async def _agent_loop(
                             "content": f"O nome da empresa é '{_org_name_final}'. Você já tem essa informação no histórico do Pipedrive. NÃO peça confirmação novamente. Prossiga com a tarefa imediatamente usando as ferramentas adequadas."
                         })
                         continue
+
+            # Proteção contra parada prematura em pipelines de ligação
+            if "PARADA ANTECIPADA" in response_text and iteration < _max_iters - 2:
+                # Verifica se houve tentativa real de busca e se realmente não veio telefone
+                _search_attempted = any(
+                    isinstance(_b, dict) and (_b.get("name") == "find_company_contact" or _b.get("tool_name") == "find_company_contact")
+                    for _m in messages + [{"role": "assistant", "content": content}]
+                    for _b in (_m.get("content") if isinstance(_m.get("content"), list) else [])
+                )
+                _phone_found_now = False
+                for _m in messages + [{"role": "assistant", "content": content}]:
+                    _mc = _m.get("content", "")
+                    if isinstance(_mc, list):
+                        for _b in _mc:
+                            if isinstance(_b, dict) and _b.get("type") == "tool_result" and _b.get("tool_name") == "find_company_contact":
+                                _res = str(_b.get("content", ""))
+                                if any(char.isdigit() for char in _res): _phone_found_now = True
+                
+                if _phone_found_now:
+                    messages.append({"role": "assistant", "content": content})
+                    messages.append({
+                        "role": "user",
+                        "content": "ERRO: Você disse 'PARADA ANTECIPADA', mas um telefone FOI ENCONTRADO na busca externa. PROSSIGA IMEDIATAMENTE para a etapa 2 (prepare_live_coaching_session) e etapa 3 (open_ligacao_view) conforme as instruções da pipeline."
+                    })
+                    continue
 
             # Emite resultado final
             if direct_action and not _is_task_action:
@@ -1316,7 +1499,7 @@ async def _agent_loop(
                                 log.warning(f"Erro ao embutir assinatura em loop.py: {sig_err}")
                         else:
                             # Assinatura em texto se não houver imagem
-                            sig_text = "<br><br>--<br><b>João Luccas</b><br>Equipe Comercial J.Ferres"
+                            sig_text = f"<br><br>--<br><b>{seller_name}</b><br>Equipe Comercial {company_name}"
                             if sig_text not in _body:
                                 tool_args["body"] = _body + sig_text
                 except Exception as enrich_err:
@@ -1478,6 +1661,49 @@ async def _agent_loop(
                             })
                             continue
 
+            # 🚀 INTERCEPTOR: Trava de Alvo Definido (Target Locking)
+            # Se a tarefa já tem um nome de pessoa (ex: "Ligar para Pedro"),
+            # é PROIBIDO rodar evaluate_prospects ou buscar outros contatos.
+            if _session_task_person and _is_task_action:
+                _tpn_lower = _session_task_person.lower()
+                
+                # Bloqueia mapeamento de novos perfis se o alvo já é conhecido
+                if tool_name == "evaluate_prospects":
+                    log.info("agent.interceptor.target_locked.eval_blocked", person=_session_task_person)
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": tool_id,
+                        "tool_name": tool_name,
+                        "content": (
+                            f"AÇÃO BLOQUEADA: A tarefa atual é para um contato específico: '{_session_task_person}'. "
+                            "Não é necessário avaliar outros perfis. PROSSIGA imediatamente para a preparação da ligação "
+                            f"com '{_session_task_person}'."
+                        ),
+                        "is_error": False,
+                    })
+                    continue
+                
+                # Bloqueia busca de e-mails/WA de outras pessoas
+                if tool_name in ("whatsapp_get_messages", "email_get_contact_history"):
+                    _target_args = (tool_args.get("contact") or tool_args.get("contact_name") or "").lower()
+                    # Se o nome que a IA quer buscar NÃO contém o nome do alvo da tarefa
+                    _is_different_person = _tpn_lower.split()[0] not in _target_args
+                    
+                    if _is_different_person:
+                        log.info("agent.interceptor.target_locked.search_blocked", target=_session_task_person, requested=_target_args)
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": tool_id,
+                            "tool_name": tool_name,
+                            "content": (
+                                f"AÇÃO BLOQUEADA: Foco no Alvo. A tarefa é para '{_session_task_person}'. "
+                                f"É proibido investigar '{_target_args}' enquanto a tarefa principal não for concluída. "
+                                f"Busque apenas o histórico de '{_session_task_person}'."
+                            ),
+                            "is_error": False,
+                        })
+                        continue
+
             # 🚀 INTERCEPTOR: Trava de Sugestão Prematura
             if tool_name == "suggest_next_actions" and _is_task_action:
                  # Se for uma tarefa de comunicação, não pode sugerir próximos passos 
@@ -1568,10 +1794,13 @@ async def _agent_loop(
                         "summary": f"[já coletado]",
                     })
                     continue
+                else:
+                    # Registra MENTIRAMENTE agora para já bloquear o próximo `block` no mesmo turno
+                    _tool_call_history.add(_dedup_key)
 
             tool_meta = TOOLS[tool_name]
 
-            _INVESTIGATION_REQUIRED = {"whatsapp_send_message", "email_send", "email_reply", "pipedrive_create_task", "pipedrive_create_person", "suggest_next_actions"}
+            _INVESTIGATION_REQUIRED = {"whatsapp_send_message", "email_send", "email_reply", "pipedrive_create_task", "pipedrive_create_person", "suggest_next_actions", "prepare_live_coaching_session"}
             if tool_name in _INVESTIGATION_REQUIRED:
                 try:
                     _phase = _build_phase_status(messages, query_type=query_type, org_id=org_id)
@@ -1602,6 +1831,33 @@ async def _agent_loop(
                         or "Todas as fontes foram investigadas" in _phase
                         or not _is_investigation
                     )
+                    
+                    if tool_name == "prepare_live_coaching_session":
+                        _local_called_ctx = set()
+                        for _m2 in messages:
+                            _mc2 = _m2.get("content", "")
+                            if isinstance(_mc2, list):
+                                for _b2 in _mc2:
+                                    if isinstance(_b2, dict) and _b2.get("type") == "tool_use":
+                                        _local_called_ctx.add(_b2.get("name"))
+                        
+                        if active_skill and hasattr(active_skill, "core_tools"):
+                            _local_missing = set(active_skill.core_tools) - _local_called_ctx
+                        else:
+                            _local_missing = {"deep_company_investigation", "evaluate_prospects"} - _local_called_ctx
+                        if _local_missing:
+                            _write_allowed = False
+                        
+                        _passed_phone = str(tool_args.get("phone", "")).strip()
+                        if not _passed_phone or _passed_phone.lower() == "nenhum":
+                            tool_results.append({
+                                "type": "tool_result",
+                                "tool_use_id": tool_id,
+                                "tool_name": tool_name,
+                                "content": f"AÇÃO BLOQUEADA: Contato sem telefone válido. CHAME A FERRAMENTA 'find_company_contact' para buscar o número antes de preparar a ligação.",
+                                "is_error": True,
+                            })
+                            continue
                 except Exception:
                     _write_allowed = True
 
@@ -1609,6 +1865,16 @@ async def _agent_loop(
                     # suggest_next_actions NUNCA deve ser bloqueado
                     if tool_name == "suggest_next_actions":
                         pass  # permite continuar normalmente
+                    elif tool_name == "prepare_live_coaching_session":
+                        _missing_names = ", ".join(f"'{t}'" for t in _local_missing)
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": tool_id,
+                            "tool_name": tool_name,
+                            "content": f"AÇÃO BLOQUEADA: Você deve executar as ferramentas fundamentais ({_missing_names}) antes de gerar o plano de voo da ligação.",
+                            "is_error": True,
+                        })
+                        continue
                     else:
                         _block_reason = (
                             "criar tarefas embasadas" if tool_name == "pipedrive_create_task"
@@ -1632,6 +1898,18 @@ async def _agent_loop(
             # side-effect externo (enviar email, atualizar CRM, enviar WhatsApp) requer
             # uma segunda confirmação explícita para evitar ações não intencionais.
             if tool_meta["type"] == "write":
+                if tool_name == "open_ligacao_view":
+                    _passed_phone = str(tool_args.get("phone", "")).strip()
+                    if not _passed_phone or _passed_phone.lower() == "nenhum":
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": tool_id,
+                            "tool_name": tool_name,
+                            "content": f"AÇÃO BLOQUEADA: Contato sem telefone válido. CHAME A FERRAMENTA 'find_company_contact' para buscar o número na Receita Federal antes de invocar a ligação.",
+                            "is_error": True,
+                        })
+                        continue
+
                 if write_tool_pending is None:
                     call_id = f"tc_{iteration}_{uuid.uuid4().hex[:6]}"
                     write_tool_pending = {
@@ -1693,17 +1971,6 @@ async def _agent_loop(
                 tool_id = first_block.get("id", "")
                 tool_name = first_block.get("name", "")
 
-                if tool_name in _DEDUP_READ_TOOLS:
-                    if tool_name in _DEDUP_PIPEDRIVE:
-                        _tool_call_history.add(tool_name)
-                    else:
-                        _exec_contact_id = (
-                            tool_args.get("contact") or
-                            tool_args.get("contact_name") or
-                            tool_args.get("org_name") or ""
-                        ).lower().strip()
-                        _tool_call_history.add(f"{tool_name}:{_exec_contact_id}")
-
                 yield _emit({"type": "tool_call", "call_id": first_call_id, "tool": tool_name,
                              "args": tool_args, "label": _get_label(tool_name, tool_args)})
 
@@ -1764,7 +2031,7 @@ async def _agent_loop(
                             break
 
                 summary = tool_result.get("summary") or tool_result.get("error") or ("OK" if ok else "Erro")
-                yield _emit({"type": "tool_result", "call_id": first_call_id, "tool": tool_name, "summary": summary, "ok": ok})
+                yield _emit({"type": "tool_result", "call_id": first_call_id, "tool": tool_name, "summary": summary, "ok": ok, "args": tool_args})
                 yield _emit({"type": "context_saved"})
 
                 if ok and summary:
@@ -1803,7 +2070,8 @@ async def _agent_loop(
                             "prompt": _build_task_action_prompt(
                                 _act_id, _subj, _org,
                                 _act.get("org_id"), _act.get("deal_id"),
-                                _act.get("type", ""), _act.get("note", "")
+                                _act.get("type", ""), _act.get("note", ""),
+                                ctx=ctx
                             ),
                         })
                     for _act in tool_result.get("today", []):
@@ -1817,7 +2085,8 @@ async def _agent_loop(
                             "prompt": _build_task_action_prompt(
                                 _act_id, _subj, _org,
                                 _act.get("org_id"), _act.get("deal_id"),
-                                _act.get("type", ""), _act.get("note", "")
+                                _act.get("type", ""), _act.get("note", ""),
+                                ctx=ctx
                             ),
                         })
                     if _pd_actions:
@@ -1841,7 +2110,16 @@ async def _agent_loop(
             action_id = str(uuid.uuid4())
             block = write_tool_pending["block"]
             tool_name = block["name"]
-            tool_args = block["input"]
+            tool_args = block["input"] or {}
+            
+            if tool_name == "open_ligacao_view" and not tool_args.get("flight_plan"):
+                try:
+                    from services.realtime_call import assistant_manager
+                    _ap = assistant_manager.get_active_coaching_plan() or {}
+                    if _ap:
+                        tool_args["flight_plan"] = _ap
+                except Exception:
+                    pass
 
             messages_with_assistant = messages + [{"role": "assistant", "content": content}]
 
@@ -1866,7 +2144,12 @@ async def _agent_loop(
 
             label_fn = TOOLS[tool_name].get("confirm_label")
             confirm_label = label_fn(tool_args) if callable(label_fn) else write_tool_pending["label"]
-            preview = tool_args.get("message") or tool_args.get("body") or json.dumps(tool_args, ensure_ascii=False)[:120]
+            
+            if tool_name == "open_ligacao_view":
+                _steps_count = len(tool_args.get("flight_plan", {}).get("steps", []))
+                preview = f"Plano de voo incluído ({_steps_count} passos). Prontos para ligar!"
+            else:
+                preview = tool_args.get("message") or tool_args.get("body") or json.dumps(tool_args, ensure_ascii=False)[:120]
 
             yield _emit({
                 "type": "confirmation_required",
@@ -1877,6 +2160,12 @@ async def _agent_loop(
                 "preview": str(preview),
                 "args": tool_args,
             })
+            
+            # Se for abertura de ligação, pausamos a execução do loop do agente aqui.
+            # O agente só deve retomar após o usuário encerrar a ligação manualmente.
+            if tool_name == "open_ligacao_view":
+                return
+
             return
 
         # Todos os tool calls processados — adiciona ao histórico e continua

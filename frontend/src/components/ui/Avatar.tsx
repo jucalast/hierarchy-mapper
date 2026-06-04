@@ -100,7 +100,9 @@ function AvatarBase({
   // Imagem de silhueta genérica e elegante
   const genericPersonFallback = "/imagem_linkedin.png";
 
-  const fallback = genericPersonFallback;
+  const fallback = (kind === 'person' && !noInitialFallback && resolvedName !== 'P')
+    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}&background=${fallbackBg}&color=${fallbackColor}&bold=true&rounded=true&size=${size}`
+    : genericPersonFallback;
 
   const showPlaceholder = (!proxiedUrl && !retryUrl) || imgError;
 

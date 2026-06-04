@@ -220,26 +220,23 @@ async def exec_find_company_contact(args: dict) -> dict:
     # Monta resumo legível
     parts = []
     if phones:
-        parts.append("📞 Telefones (Receita Federal): " + " | ".join(p["value"] for p in phones))
+        parts.append("Telefones (Receita Federal): " + " | ".join(p["value"] for p in phones))
     else:
-        parts.append("📞 Nenhum telefone encontrado na Receita Federal.")
+        parts.append("Nenhum telefone encontrado na Receita Federal.")
     if emails:
-        parts.append("📧 E-mail (Receita Federal): " + " | ".join(e["value"] for e in emails))
-    else:
-        parts.append("📧 Nenhum e-mail encontrado na Receita Federal.")
+        parts.append("E-mail (Receita Federal): " + " | ".join(e["value"] for e in emails))
     if address:
-        parts.append(f"📍 Endereço: {address}")
+        parts.append(f"Endereco: {address}")
     if web_snippets:
-        parts.append("🌐 Web: " + " | ".join(web_snippets[:2]))
+        parts.append("Web: " + " | ".join(web_snippets[:2]))
 
     can_create = bool(phones or emails)
     if can_create:
         parts.append(
-            "✅ Dados suficientes para criar contato no Pipedrive. "
-            "Use pipedrive_create_person com os dados acima para salvar o contato."
+            "Dados encontrados. Se necessario, use pipedrive_create_person para salvar o contato."
         )
     else:
-        parts.append("⚠️ Nenhum contato encontrado. Informe o usuário e finalize.")
+        parts.append("Nenhum contato encontrado. Informe o usuario e finalize com PARADA ANTECIPADA.")
 
     return {
         "ok": True,
@@ -252,33 +249,213 @@ async def exec_find_company_contact(args: dict) -> dict:
     }
 
 
-async def exec_generate_call_script(args: dict) -> dict:
-    """Sinaliza que a investigação terminou e o agente deve gerar o script de ligação."""
-    import re as _re
+def extract_activity_id(args: dict, messages: list | None) -> str | None:
+    # 1. Verifica se veio nos args
+    activity_id = args.get("activity_id")
+    if activity_id:
+        return str(activity_id)
+
+    # 2. Se não veio, analisa as mensagens do histórico
+    if not messages:
+        return None
+
+    import re
+    # Procura no conteúdo textual das mensagens de trás para frente
+    for m in reversed(messages):
+        content = m.get("content") or ""
+        if isinstance(content, list):
+            content_str = " ".join(
+                str(x.get("text", "")) if isinstance(x, dict) else str(x)
+                for x in content
+            )
+        else:
+            content_str = str(content)
+
+        patterns = [
+            r"ID da tarefa no Pipedrive:\s*(\d+)",
+            r"activity_id[\"\s:]+(\d+)",
+            r"tarefa no Pipedrive:\s*(\d+)",
+            r"activity_id=(\d+)",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, content_str, re.IGNORECASE)
+            if match:
+                return match.group(1)
+
+    # 3. Fallback: extrai do tool_result de pipedrive_get_activities
+    from modules.agent.service.core.runner import _extract_first_activity_id
+    try:
+        val = _extract_first_activity_id(messages)
+        if val:
+            return str(val)
+    except Exception:
+        pass
+
+    return None
+
+
+async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = None, messages: list | None = None) -> dict:
+    """Gera um plano de voo (passo a passo) para a ligação usando SPIN Selling e salva no banco de dados."""
+    from core.llm.router import ask_llm
+    from core.llm.base import LLMTier
+    from modules.ai.service.context.business_context_service import BusinessContextService
+    import json
+
     contact_name = args.get("contact_name", "")
     phone = args.get("phone", "")
-    digits = _re.sub(r"\D", "", phone or "")
-    if len(digits) < 8:
+    profile_pic = args.get("profile_pic", None)
+    activity_id = extract_activity_id(args, messages)
+
+    # Busca contexto dinâmico da empresa
+    ctx = await BusinessContextService.get_tenant_context()
+    company_name = ctx.get("company_name", "a Empresa")
+    company_segment = ctx.get("company_segment", "seu segmento")
+    differentials = "\n".join([f"- {d}" for d in ctx.get("company_differentials", [])])
+    seller_name = ctx.get("seller_name", "João Luccas")
+    
+    prompt = f"""
+    Você é um treinador de vendas B2B (Copiloto) da {company_name}, especialista em {company_segment}.
+    Gere um plano de voo (passo a passo) de alta performance para uma ligação fria (Cold Call) com o contato: {contact_name} (Tel: {phone}).
+    
+    CONTEXTO DA {company_name.upper()}:
+    Segmento: {company_segment}
+    Diferenciais:
+    {differentials}
+
+    Diretrizes Estratégicas (Metodologia SPIN Otimizada):
+    1. ABERTURA (Interrupção de Padrão): Peça 30 segundos para explicar o motivo da ligação. Respeite o tempo do prospect e dê o controle a ele. Nunca pergunte "Como você está hoje?".
+    2. SITUAÇÃO + PROBLEMA (Elevator Pitch Provocativo): Não faça perguntas abertas demais. Traga hipóteses de dores baseadas nos diferenciais da {company_name}.
+    3. IMPLICAÇÃO (Aprofundando a Ferida): Faça o prospect verbalizar o prejuízo financeiro e operacional se não resolver os problemas citados.
+    4. NECESSIDADE (A Ponte): Proponha uma análise técnica ou engenharia reversa para encontrar viabilidade técnica e comercial usando os pontos fortes da {company_name}.
+    5. FECHAMENTO (Foco no Presencial): O objetivo é a visita técnica. Use a técnica do "Ou/Ou" para agendar o café presencial.
+
+    O plano deve ter passos claros com as labels: "ABERTURA", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "NECESSIDADE" e "FECHAMENTO".
+    Para cada passo, forneça uma sugestão de fala direta, curta e matadora para o vendedor {seller_name}.
+
+    Retorne o resultado em formato JSON:
+    {{
+        "contact_name": "{contact_name}",
+        "phone": "{phone}",
+        "steps": [
+            {{"label": "ABERTURA", "content": "..."}},
+            {{"label": "SITUAÇÃO + PROBLEMA", "content": "..."}},
+            {{"label": "IMPLICAÇÃO", "content": "..."}},
+            {{"label": "NECESSIDADE", "content": "..."}},
+            {{"label": "FECHAMENTO", "content": "..."}}
+        ]
+    }}
+    """
+    
+    plan_data = {}
+    try:
+        res = await ask_llm(
+            prompt=prompt,
+            system="Retorne EXATAMENTE o JSON estruturado do plano de voo. Use as chaves 'label' e 'content' para cada passo.",
+            json_mode=True,
+            tier=LLMTier.STANDARD
+        )
+        plan_data = res.json_data or {}
+        
+        # Salvar o plano de voo ativo na sessão em tempo real (best-effort)
+        try:
+            from services.realtime_call import assistant_manager
+            assistant_manager.set_active_coaching_plan(plan_data)
+        except Exception as _am_err:
+            log.warning(f"assistant_manager não disponível: {_am_err}")
+            
+    except Exception as e:
+        log.error(f"Erro ao gerar plano de voo: {e}")
+
+    # Salva no banco de dados SQLite
+    try:
+        from core.infra.database import async_session
+        from models.conversation.conversation import CallSession
+        from sqlalchemy import select
+        
+        async with async_session() as session:
+            stmt = select(CallSession).where(
+                (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
+            )
+            res = await session.execute(stmt)
+            db_session = res.scalar_one_or_none()
+            
+            if not db_session:
+                db_session = CallSession(
+                    pipedrive_activity_id=activity_id,
+                    org_id=org_id,
+                    contact_name=contact_name,
+                    phone=phone,
+                    profile_pic=profile_pic,
+                    flight_plan=plan_data
+                )
+                session.add(db_session)
+            else:
+                db_session.contact_name = contact_name
+                db_session.phone = phone
+                if profile_pic:
+                    db_session.profile_pic = profile_pic
+                db_session.flight_plan = plan_data
+                db_session.latest_insight = None  # Limpa o insight da chamada anterior
+                if org_id:
+                    db_session.org_id = org_id
+                if activity_id:
+                    db_session.pipedrive_activity_id = activity_id
+                
+                # Deleta as mensagens da chamada anterior
+                from sqlalchemy import delete
+                from models.conversation.conversation import CallMessage
+                stmt_del = delete(CallMessage).where(CallMessage.call_session_id == db_session.id)
+                await session.execute(stmt_del)
+            
+            await session.commit()
+            log.info(f"CallSession salva no banco: activity_id={activity_id}, phone={phone}")
+    except Exception as db_err:
+        log.warning(f"Falha ao salvar CallSession no banco: {db_err}")
+        
+    if plan_data:
         return {
-            "ok": False,
-            "error": (
-                "Nenhum telefone válido confirmado na investigação. "
-                "PRÓXIMO PASSO: use find_company_contact (com org_name e cnpj se disponível) "
-                "para buscar telefone/email da empresa via Receita Federal e web. "
-                "NÃO chame open_hierarchy_drawer novamente — o mapeamento já foi feito. NÃO invente dados."
-            ),
+            "ok": True,
+            "contact_name": contact_name,
+            "phone": phone,
+            "activity_id": activity_id,
+            "flight_plan": plan_data,
+            "summary": "Plano de voo gerado com sucesso. Use a ferramenta 'open_ligacao_view' AGORA passando APENAS contact_name e phone."
         }
+    else:
+        return {
+            "ok": True,
+            "contact_name": contact_name,
+            "phone": phone,
+            "activity_id": activity_id,
+            "flight_plan": {},
+            "summary": f"Não foi possível gerar o plano de voo, mas o número {phone} está disponível. Chame 'open_ligacao_view' com contact_name='{contact_name}' e phone='{phone}' IMEDIATAMENTE."
+        }
+
+
+async def exec_open_ligacao_view(args: dict, org_id: int | None = None, messages: list | None = None) -> dict:
+    """Solicita ao frontend que abra a interface de ligação (LigacaoView)."""
+    contact_name = args.get("contact_name", "")
+    phone = args.get("phone", "")
+    flight_plan = args.get("flight_plan", {})
+    activity_id = extract_activity_id(args, messages)
+    
+    # Faz fallback para o último plano de voo em memória, se o agente não o passou implicitamente
+    if not flight_plan:
+        try:
+            from services.realtime_call import assistant_manager
+            flight_plan = assistant_manager.get_active_coaching_plan() or {}
+        except Exception:
+            pass
+
     return {
         "ok": True,
+        "status": "ligacao_view_requested",
         "contact_name": contact_name,
         "phone": phone,
-        "summary": (
-            f"Investigação concluída. Gere agora o SCRIPT DE LIGAÇÃO para {contact_name} ({phone}). "
-            "Siga EXATAMENTE o formato especificado. "
-            "PROIBIDO repetir contexto de investigação — escreva apenas o script."
-        ),
+        "activity_id": activity_id,
+        "flight_plan": flight_plan,
+        "summary": f"Solicitação para abrir a interface de Ligação ao Vivo com {contact_name} ({phone}) enviada ao frontend."
     }
-
 
 async def exec_generate_sales_message(args: dict, messages: list | None = None, org_id: int | None = None) -> dict:
     """Gera uma mensagem comercial: o LLM decide o modo (follow-up leve vs. venda ativa) com base no histórico e objetivo."""

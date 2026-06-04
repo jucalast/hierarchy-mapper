@@ -1,4 +1,5 @@
-import pyaudiowpatch as pyaudio
+# pyaudiowpatch é importado de forma lazy dentro de _speaker_listener para evitar
+# crash em ambientes sem o módulo instalado (ex: worker sem dispositivo de áudio)
 import time
 import io
 import wave
@@ -8,6 +9,7 @@ import logging
 import audioop
 import os
 import httpx
+import asyncio
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +56,13 @@ class CallAssistantManager:
         self.is_running = False
         self.context_history = []
         self.speaker_thread = None
+        self.active_coaching_plan = None
+        self.current_session_id = 0
 
+    def set_active_coaching_plan(self, plan: dict):
+        self.active_coaching_plan = plan        
+    def get_active_coaching_plan(self) -> dict:
+        return self.active_coaching_plan
     def add_to_history(self, role: str, text: str):
         self.context_history.append(f"{role}: {text}")
         if len(self.context_history) > 20:
@@ -67,6 +75,11 @@ class CallAssistantManager:
             })
 
     def _speaker_listener(self):
+        try:
+            import pyaudiowpatch as pyaudio
+        except ImportError:
+            log.warning("pyaudiowpatch não instalado — captura de áudio desabilitada.")
+            return
         p = pyaudio.PyAudio()
         try:
             wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
@@ -216,21 +229,30 @@ class CallAssistantManager:
                 "type": "partial_transcription", "role": "Cliente", "text": ""
             })
 
-    def start(self):
-        self.stop()
-        time.sleep(0.5)
+    async def start(self):
+        await self.stop()
+        await asyncio.sleep(0.5)
+        self.current_session_id += 1
         self.stop_event.clear()
         self.speaker_thread = threading.Thread(target=self._speaker_listener, daemon=True)
         self.speaker_thread.start()
         self.is_running = True
-        return True
+        return self.current_session_id
 
-    def stop(self):
+    async def stop(self, session_id: int = None):
+        if session_id is not None and session_id != self.current_session_id:
+            log.info(f"Ignorando stop para session_id antigo {session_id} (atual: {self.current_session_id})")
+            return
+
         self.stop_event.set()
         if self.speaker_thread and self.speaker_thread.is_alive():
-            self.speaker_thread.join(timeout=2.0)
+            try:
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(None, self.speaker_thread.join, 2.0)
+            except RuntimeError:
+                self.speaker_thread.join(timeout=2.0)
         self.is_running = False
-        log.info("Call Assistant Manager parado.")
+        log.info(f"Call Assistant Manager parado para session {self.current_session_id}.")
 
 
 assistant_manager = CallAssistantManager()

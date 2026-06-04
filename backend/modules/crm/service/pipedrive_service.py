@@ -88,18 +88,40 @@ class PipedriveService:
         if age < PipedriveService._OPEN_ORG_IDS_TTL:
             return
         try:
-            deals_resp = await self._request("GET", "deals", params={"status": "open", "limit": 500})
-            if deals_resp is not None and deals_resp.status_code == 200:
-                ids: set = set()
-                for d in (deals_resp.json().get("data") or []):
-                    org_info = d.get("org_id")
-                    if org_info:
-                        oid = org_info.get("value") if isinstance(org_info, dict) else org_info
-                        if oid:
-                            ids.add(int(oid))
-                PipedriveService._open_org_ids_cache = ids
-                PipedriveService._open_org_ids_cache_ts = time.time()
-                log.info("pipedrive.open_org_ids_cache.refreshed", count=len(ids))
+            ids: set = set()
+            start = 0
+            limit = 500
+            has_more = True
+            
+            while has_more:
+                deals_resp = await self._request("GET", "deals", params={"status": "open", "limit": limit, "start": start})
+                if deals_resp is not None and deals_resp.status_code == 200:
+                    data = deals_resp.json()
+                    deals = data.get("data") or []
+                    if not deals:
+                        break
+                        
+                    for d in deals:
+                        org_info = d.get("org_id")
+                        if org_info:
+                            oid = org_info.get("value") if isinstance(org_info, dict) else org_info
+                            if oid:
+                                ids.add(int(oid))
+                                
+                    pagination = data.get("additional_data", {}).get("pagination", {})
+                    has_more = pagination.get("more_items_in_collection", False)
+                    if has_more:
+                        start = pagination.get("next_start")
+                else:
+                    break
+                    
+                # Stop gap to avoid infinite loops
+                if start > 10000:
+                    break
+
+            PipedriveService._open_org_ids_cache = ids
+            PipedriveService._open_org_ids_cache_ts = time.time()
+            log.info("pipedrive.open_org_ids_cache.refreshed", count=len(ids))
         except Exception as e:
             log.warning("pipedrive.open_org_ids_cache.refresh_failed", error=str(e))
 

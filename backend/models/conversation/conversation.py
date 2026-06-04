@@ -160,3 +160,50 @@ class AgentPendingConfirmation(Base):
     id         = Column(String, primary_key=True)  # O action_id
     payload    = Column(JSON, nullable=False)      # O dicionário completo do _PENDING[action_id]
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+# ─────────────────────────────────────────────
+# CallSession and CallMessage
+# ─────────────────────────────────────────────
+
+class CallSession(Base):
+    """Armazena o estado de uma ligação telefônica e suas transcrições/sugestões de IA."""
+    __tablename__ = "call_sessions"
+
+    id                    = Column(String, primary_key=True, default=_new_uuid)
+    pipedrive_activity_id = Column(String, nullable=True, index=True)
+    pipedrive_deal_id     = Column(String, nullable=True, index=True)
+    org_id                = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    contact_name          = Column(String, nullable=False)
+    phone                 = Column(String, nullable=True)
+    profile_pic           = Column(String, nullable=True)   # URL/base64 da foto do contato
+    flight_plan           = Column(JSON, nullable=True)     # JSON contendo os passos SPIN
+    latest_insight        = Column(JSON, nullable=True)     # O último copiloto insight
+    created_at            = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at            = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    messages = relationship(
+        "CallMessage",
+        back_populates="call_session",
+        cascade="all, delete-orphan",
+        order_by="CallMessage.timestamp",
+        lazy="select",
+    )
+
+
+class CallMessage(Base):
+    """Armazena cada mensagem transcrita na ligação (Vendedor ou Cliente)."""
+    __tablename__ = "call_messages"
+
+    id              = Column(String, primary_key=True, default=_new_uuid)
+    call_session_id = Column(String, ForeignKey("call_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    role            = Column(String, nullable=False)        # "Vendedor" | "Cliente"
+    text            = Column(Text, nullable=False)
+    latency_ms      = Column(Integer, nullable=True)
+    buffer_secs     = Column(Integer, nullable=True)
+    timestamp       = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # Relacionamento
+    call_session = relationship("CallSession", back_populates="messages")
+

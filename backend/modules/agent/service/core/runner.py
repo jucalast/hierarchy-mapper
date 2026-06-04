@@ -158,34 +158,57 @@ async def run_agent(
     Gerador assíncrono — yields strings NDJSON.
     Usa native tool calling da API Anthropic.
     """
+    # === PIPELINE INJECTION FOR FRONTEND TASKS ===
+    if message and message.startswith("Execute a seguinte atividade do CRM:"):
+        import re
+        from modules.agent.service.core.pipelines.registry import PipelineRegistry
+        id_match = re.search(r'\(ID da tarefa no Pipedrive:\s*(\d+)\)', message)
+        title_match = re.search(r'"([^"]+)"', message)
+        if id_match and title_match:
+            try:
+                act_id = int(id_match.group(1))
+                subject = title_match.group(1)
+                etapas = PipelineRegistry.dispatch(subject=subject, act_type="", act_id=act_id, org_pd_id=org_id, deal_id=None)
+                if etapas:
+                    message = message + "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
+            except Exception as e:
+                import logging
+                logging.warning(f"Failed to inject pipeline: {e}")
+
     tools = get_tools_anthropic_schema()
     if direct_action:
         # Filtra ferramentas para as mencionadas na mensagem + ferramentas de decisão sempre presentes.
         # "Ferramentas de decisão" são as que o agente pode precisar independente do prompt antigo:
-        # - generate_call_script: para quando encontra telefone
+        # - prepare_live_coaching_session: para quando encontra telefone
         # - open_hierarchy_drawer: para quando não tem contato
         # - pipedrive_create_task: para criar tarefa de rastreamento
-        # Para tarefas de follow-up/cobrar retorno, generate_call_script é irrelevante
+        # Para tarefas de follow-up/cobrar retorno, prepare_live_coaching_session é irrelevante
         _msg_lower = message.lower()
         _is_followup_task = any(kw in _msg_lower for kw in [
             "cobrar retorno", "follow-up", "follow up", "followup",
             "acompanhar", "cobrar informações", "aguardar retorno",
         ])
-        _ALWAYS_AVAILABLE_IN_TASK = {
+        
+        _CTX_TOOLS = {
+            "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
+            "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history", "find_company_contact",
+        }
+        
+        _ALWAYS_AVAILABLE_IN_TASK = _CTX_TOOLS | {
             "open_hierarchy_drawer", "pipedrive_create_task",
-            # generate_call_script só disponível se NÃO for follow-up
-            *( set() if _is_followup_task else {"generate_call_script"} ),
+            # prepare_live_coaching_session só disponível se NÃO for follow-up
+            *( set() if _is_followup_task else {"prepare_live_coaching_session"} ),
         }
         from modules.agent.service.tools import TOOLS
         matched_tools = [name for name in TOOLS.keys() if name in message]
         if matched_tools:
             allowed = set(matched_tools) | _ALWAYS_AVAILABLE_IN_TASK
             if _is_followup_task:
-                allowed.discard("generate_call_script")
+                allowed.discard("prepare_live_coaching_session")
             tools = [t for t in tools if t["name"] in allowed]
             log.info("agent.direct_action.tools_filtered", matched=list(allowed), is_followup=_is_followup_task)
         elif _is_followup_task:
-            tools = [t for t in tools if t["name"] != "generate_call_script"]
+            tools = [t for t in tools if t["name"] != "prepare_live_coaching_session"]
             log.info("agent.direct_action.followup_call_script_removed")
 
     # Resolve o nome real da org no Pipedrive quando org_id é fornecido
@@ -288,7 +311,7 @@ async def run_agent(
 
     # Detecta micro-ação sobre contexto já investigado e injeta diretiva de não-reinvestigação
     _context_followup_active = False
-    if not direct_action:
+    if not direct_action and "[INSTRUÇÕES DA PIPELINE]" not in message:
         _ctx_directive = _detect_context_followup(message, history)
         if _ctx_directive:
             user_content += _ctx_directive
@@ -594,7 +617,12 @@ async def resume_after_confirmation(
             if attachment_path:
                 tool_args["attachment_path"] = attachment_path
             _raw_log(pending_process_id, "tool_execute_write_start", {"tool": tool_name, "args": tool_args})
-            result = await execute_write_tool(tool_name, tool_args, org_id=pending_org_id)
+            result = await execute_write_tool(
+                tool_name, 
+                tool_args, 
+                org_id=pending_org_id, 
+                messages=pending.get("messages_snapshot")
+            )
             _raw_log(pending_process_id, "tool_execute_write_result", {"tool": tool_name, "result_raw": result})
         except Exception as e:
             result = {"ok": False, "error": str(e)}
@@ -605,9 +633,19 @@ async def resume_after_confirmation(
     summary = result.get("result") or result.get("error") or ("OK" if ok else "Erro")
 
     # Emite o tool result e adiciona no logs
-    tr_event = {"type": "tool_result", "call_id": call_id, "tool": tool_name, "summary": summary, "ok": ok}
+    tr_event = {"type": "tool_result", "call_id": call_id, "tool": tool_name, "summary": summary, "ok": ok, "args": tool_args, "data": result}
     collected_events.append(tr_event)
     yield _emit(tr_event)
+
+    # Se for abertura de ligação, pausamos a execução do agente aqui, mas mantemos o estado de streaming/pensando
+    # para que o João veja o spinner de "IA trabalhando" até ele desligar.
+    if tool_name == "open_ligacao_view":
+        yield _emit({
+            "type": "thinking",
+            "content": "Aguardando o término da sua ligação para analisar os próximos passos estratégicos...",
+            "status": "awaiting_call_end"
+        })
+        return
 
     # Monta a lista completa de tool results (reads anteriores + write confirmado)
     write_result = {

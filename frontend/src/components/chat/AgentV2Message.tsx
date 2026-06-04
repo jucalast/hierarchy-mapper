@@ -39,6 +39,7 @@ export interface AgentEvent {
     activity_id?: number | null;
     pre_task_id?: number | null;
     error?: string;
+    data?: any;
 }
 
 import { AIModel } from './ModelSelector';
@@ -88,7 +89,8 @@ const TOOL_COLORS: Record<string, string> = {
     find_company_contact: '#60a5fa',
     evaluate_prospects: '#a78bfa',
     generate_dossier: '#a78bfa',
-    generate_call_script: '#3b82f6',
+    prepare_live_coaching_session: '#3b82f6',
+    open_ligacao_view: '#10b981',
     open_hierarchy_drawer: '#818cf8',
     suggest_next_actions: '#10b981',
 };
@@ -294,11 +296,33 @@ const HierarchyMappingCard: React.FC<{
 // ─── Markdown simples ─────────────────────────────────────────────────────────
 
 const renderInline = (text: string): React.ReactNode[] =>
-    text.split(/(\*\*.*?\*\*)/g).map((part, i) =>
-        part.startsWith('**') && part.endsWith('**')
-            ? <strong key={i}>{part.slice(2, -2)}</strong>
-            : part as any
-    );
+    text.split(/(\*\*.*?\*\*|`.*?`)/g).map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith('`') && part.endsWith('`')) {
+            const inner = part.slice(1, -1);
+            return (
+                <span key={i} style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    background: 'var(--sw-hover)',
+                    color: 'var(--sw-text-base)',
+                    fontSize: '0.85em',
+                    fontWeight: 500,
+                    margin: '0 2px',
+                    fontFamily: 'monospace',
+                    verticalAlign: 'baseline',
+                    lineHeight: '1.4'
+                }}>
+                    {inner}
+                </span>
+            );
+        }
+        return part as any;
+    });
 
 const renderMarkdown = (text: string): React.ReactNode => {
     if (!text) return null;
@@ -358,15 +382,16 @@ const ConfirmationCard: React.FC<{
     const tool = event.tool || '';
     const isEmail = tool === 'email_send' || tool === 'email_reply';
     const isPipedrive = tool.startsWith('pipedrive_');
+    const isCall = tool === 'open_ligacao_view';
     
     // Configurações visuais por canal
     const channelConfig = {
         bg: 'transparent',
         border: 'var(--sw-border)',
         headerBg: 'var(--sw-hover)',
-        icon: isEmail ? '/outlook.png' : isPipedrive ? '/pipedrive.png' : '/wppicon.png',
+        icon: isEmail ? '/outlook.png' : isPipedrive ? '/pipedrive.png' : isCall ? '/telefone.png' : '/wppicon.png',
         iconSize: isEmail ? 16 : isPipedrive ? 16 : 14,
-        accentColor: isEmail ? '#0078d4' : isPipedrive ? '#f36e21' : '#22c55e',
+        accentColor: isEmail ? '#0078d4' : isPipedrive ? '#f36e21' : isCall ? '#10b981' : '#22c55e',
         labelColor: 'var(--sw-text-muted)',
     };
 
@@ -406,9 +431,12 @@ const ConfirmationCard: React.FC<{
                 borderBottom: 'var(--sw-border-width) solid var(--sw-border)', 
                 background: 'var(--chat-console-bg)' 
             }}>
-                <img src={channelConfig.icon} alt="Channel" style={{ width: channelConfig.iconSize, height: channelConfig.iconSize, borderRadius: 3 }} />
+                {isCall
+                    ? <img src="/telefone.png" alt="Ligação" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                    : <img src={channelConfig.icon!} alt="Channel" style={{ width: channelConfig.iconSize, height: channelConfig.iconSize, borderRadius: 3 }} />
+                }
                 <span style={{ fontSize: 'var(--font-xs)', color: 'var(--sw-text-muted)', letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>
-                    {isEmail ? 'CONFIRMAR E-MAIL' : isPipedrive ? 'CONFIRMAR PIPEDRIVE' : 'CONFIRMAR WHATSAPP'}
+                    {isEmail ? 'CONFIRMAR E-MAIL' : isPipedrive ? 'CONFIRMAR PIPEDRIVE' : isCall ? 'INICIAR LIGAÇÃO' : 'CONFIRMAR WHATSAPP'}
                 </span>
                 {hasAttachment && (
                     <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#a855f7', background: 'rgba(168,85,247,0.12)', borderRadius: 4, padding: '2px 7px', fontWeight: 600 }}>
@@ -436,7 +464,7 @@ const ConfirmationCard: React.FC<{
                         {previewText}
                     </div>
                 )}
-                {event.action_id && (
+                {event.action_id && !isCall && (
                     <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                         <input
                             value={refineText}
@@ -543,7 +571,7 @@ const ConfirmationCard: React.FC<{
                             padding: '8px 12px', 
                             borderRadius: 7, 
                             border: 'none', 
-                            background: 'transparent', 
+                            background: isCall ? `${channelConfig.accentColor}18` : 'transparent', 
                             color: channelConfig.accentColor, 
                             fontSize: 12, 
                             fontWeight: 600, 
@@ -554,10 +582,11 @@ const ConfirmationCard: React.FC<{
                             gap: 5,
                             transition: 'all 0.15s ease'
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = `${channelConfig.accentColor}12`; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = `${channelConfig.accentColor}22`; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isCall ? `${channelConfig.accentColor}18` : 'transparent'; }}
                     >
-                        <Check size={13} strokeWidth={2.5} /> Confirmar
+                        <Check size={13} strokeWidth={2.5} />
+                        {isCall ? 'Ligar agora' : 'Confirmar'}
                     </button>
                     <button 
                         onClick={() => onConfirm(event.action_id!, false)} 
@@ -652,9 +681,7 @@ export const InlineEventStream: React.FC<{
                     if (showIcon) iconShown = true;
                     return (
                         <div key={i} className={styles.aiMessageWrapper} style={{ marginBottom: 4 }}>
-                            <div className={styles.aiMessageIconArea}>
-                                {showIcon && <AIAsterisk model={displayModel} />}
-                            </div>
+
                             <div className={styles.aiMessage}>
                                 {renderMarkdown(ev.content || '')}
                             </div>
@@ -698,9 +725,7 @@ export const InlineEventStream: React.FC<{
                     if (showIcon) iconShown = true;
                     return (
                         <div key={i} className={styles.aiMessageWrapper} style={{ marginTop: 6 }}>
-                            <div className={styles.aiMessageIconArea}>
-                                {showIcon && <AIAsterisk model={displayModel} />}
-                            </div>
+
                             <div className={styles.aiMessage}>
                                 {renderMarkdown(ev.response || '')}
                             </div>
@@ -1259,6 +1284,28 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                     if (ev.tool.startsWith('pipedrive_update_') || ev.tool.startsWith('pipedrive_create_') || ev.tool.startsWith('pipedrive_delete_')) {
                         hasNewCrmUpdate = true;
                     }
+                    if (ev.tool === 'open_ligacao_view') {
+                        // O backend enviou o pedido de abrir a LigacaoView após confirmação
+                        console.log("[AgentV2Message] open_ligacao_view detected", ev);
+                        const originalCall = events.find(e => (e.type === 'confirmation_required' || e.type === 'tool_call') && e.call_id === ev.call_id);
+                        let detailData = {
+                            ...(originalCall?.args || {}),
+                            ...(ev.args || {}),
+                            ...(ev.data || {})
+                        };
+
+                        // 🚀 SEGURANÇA: Garante que flight_plan não venha como string JSON
+                        if (typeof detailData.flight_plan === 'string') {
+                            try {
+                                detailData.flight_plan = JSON.parse(detailData.flight_plan);
+                            } catch (e) {
+                                console.error("[AgentV2Message] Failed to parse flight_plan string", e);
+                            }
+                        }
+                        
+                        console.log("[AgentV2Message] Dispatching open_ligacao_view event with detail", detailData);
+                        window.dispatchEvent(new CustomEvent('open_ligacao_view', { detail: detailData }));
+                    }
                 }
             }
         }
@@ -1303,9 +1350,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
             if (showIcon) iconShown = true;
             orderedItems.push(
                 <div key={`think-${i}`} className={styles.aiMessageWrapper} style={{ marginBottom: 4 }}>
-                    <div className={styles.aiMessageIconArea}>
-                        {showIcon && <AIAsterisk model={displayModel} />}
-                    </div>
+
                     <div className={styles.aiMessage}>{renderMarkdown(ev.content || '')}</div>
                 </div>
             );
@@ -1460,9 +1505,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
             {/* Dossiê final */}
             {finalEvent && (
                 <div className={styles.aiMessageWrapper}>
-                    <div className={styles.aiMessageIconArea}>
-                        {!iconShown && <AIAsterisk model={(finalEvent.model as any) || model} />}
-                    </div>
+
                     <div className={styles.aiMessage}>{renderMarkdown(finalEvent.response || '')}</div>
                 </div>
             )}

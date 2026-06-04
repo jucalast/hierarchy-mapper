@@ -441,6 +441,11 @@ async def exec_email_get_inbox(args: Dict[str, Any]) -> Dict[str, Any]:
 
 async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | None = None) -> Dict[str, Any]:
     log.info("exec_email_get_contact_history", tool_args=args, org_id=org_id)
+    from modules.ai.service.context.business_context_service import BusinessContextService
+    ctx = await BusinessContextService.get_tenant_context()
+    seller_email = ctx.get("seller_email", "")
+    seller_domain = seller_email.split("@")[1].lower() if "@" in seller_email else JFERRES_DOMAIN
+
     contact_name = (args.get("contact_name") or "").lower()
     contact_email = (args.get("contact_email") or "").lower()
     org_name = (args.get("org_name") or "").strip()
@@ -655,10 +660,11 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                     "preview": (m.get("body") or "")[:200].strip(),
                     "body": (m.get("body") or "").strip(),
                     "entryId": m.get("entryId", ""),
-                    "direction": "sent" if JFERRES_DOMAIN in (m.get("sender") or "").lower() else "received",
-                }
-                for m in unique_messages[:10]
-            ]
+                    "direction": "sent" if seller_domain in (m.get("sender") or "").lower() else "received",
+                    }
+                    for m in unique_messages[:10]
+                    ]
+
 
             label = contact_name or contact_email or org_name
             # Persiste no cache para a UI de mensagens (não bloqueia o retorno)

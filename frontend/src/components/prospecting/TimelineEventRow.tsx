@@ -173,7 +173,7 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
         }
  
         const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction} (ID da tarefa no Pipedrive: ${String(event.id).replace('act-', '')}). Use as ferramentas disponíveis para executar isso agora.`;
-        window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText } }));
+        window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText, direct_action: true } }));
     };
 
  

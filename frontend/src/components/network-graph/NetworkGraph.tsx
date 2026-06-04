@@ -141,6 +141,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
 
     // UI States
     const [showDrawer, setShowDrawer] = useState(false);
+    const [ligacaoData, setLigacaoData] = useState<any>(null);
     
     // O Chat agora é gerenciado pelo Layout global para ser persistente.
     // Usamos um evento customizado para abrir o chat a partir de ações no Grafo.
@@ -158,6 +159,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         if (pathname.startsWith('/messages')) return 'messages';
         if (pathname.startsWith('/linkedin-scrape')) return 'linkedin-scrape';
         if (pathname.startsWith('/ligacao') || searchParams?.get('view') === 'ligacao') return 'ligacao';
+        if (searchParams?.get('view') === 'messages') return 'messages';
         return 'graph';
     }, [pathname, searchParams]);
 
@@ -170,11 +172,14 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         } else if (view === 'preferences') {
            router.push('/settings');
         } else if (view === 'messages') {
-           router.push('/messages');
+           // Se estiver dentro de uma empresa, mantém o contexto da org
+           if (currentOrgId) router.push(`/org/${currentOrgId}?view=messages`);
+           else router.push('/messages');
         } else if (view === 'linkedin-scrape') {
            router.push('/linkedin-scrape');
         } else if (view === 'ligacao') {
-           router.push('/?view=ligacao');
+           if (currentOrgId) router.push(`/org/${currentOrgId}?view=ligacao`);
+           else router.push('/?view=ligacao');
         }
     }, [router, currentOrgId]);
 
@@ -370,6 +375,68 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         setShowDrawer(val);
         localStorage.setItem("show-drawer", val.toString());
     };
+
+    useEffect(() => {
+        const handleOpenLigacaoView = (e: any) => {
+            if (e.detail) {
+                let enrichedDetail = { ...e.detail };
+                if (rawEmployees && rawEmployees.length > 0) {
+                    const normalizeName = (name: string) => name ? name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim() : '';
+                    const contactName = normalizeName(e.detail.contact_name);
+                    
+                    // Tentativa 1: Busca exata ignorando acentos e case
+                    let emp = rawEmployees.find((n: any) => normalizeName(n.name) === contactName);
+                    
+                    // Tentativa 2: Busca por substring (ex: 'Edson' ou 'Edson Magalhaes')
+                    if (!emp) {
+                        emp = rawEmployees.find((n: any) => normalizeName(n.name).includes(contactName) || contactName.includes(normalizeName(n.name)));
+                    }
+
+                    if (emp) {
+                        enrichedDetail.profile_pic = emp.profile_pic || emp.photo || emp.avatar_url || emp.avatar;
+                        enrichedDetail.originalEmployee = emp;
+                        enrichedDetail.linkedin = emp.linkedin || emp.linkedin_url;
+                        enrichedDetail.email = emp.email;
+                    }
+                }
+
+                setLigacaoData(enrichedDetail);
+                try {
+                    sessionStorage.setItem('active-ligacao-data', JSON.stringify(enrichedDetail));
+                } catch (err) {
+                    console.error("Failed to save ligacao data to sessionStorage", err);
+                }
+            }
+            
+            // Tenta obter orgId da URL se o estado estiver vazio
+            let orgId = currentOrgId;
+            if (!orgId) {
+                const match = window.location.pathname.match(/\/org\/(\d+)/);
+                if (match) orgId = parseInt(match[1]);
+            }
+
+            if (orgId) router.push(`/org/${orgId}?view=ligacao`);
+            else router.push('/?view=ligacao');
+            
+            setShowDrawer(false);
+        };
+        window.addEventListener('open_ligacao_view', handleOpenLigacaoView);
+        return () => window.removeEventListener('open_ligacao_view', handleOpenLigacaoView);
+    }, [currentOrgId, router, rawEmployees]);
+
+    // Carrega dados de ligação persistidos ao montar (ex: após refresh/navegação)
+    useEffect(() => {
+        if (activeView === 'ligacao' && !ligacaoData) {
+            const saved = sessionStorage.getItem('active-ligacao-data');
+            if (saved) {
+                try {
+                    setLigacaoData(JSON.parse(saved));
+                } catch (e) {
+                    console.error("Failed to parse saved ligacao data", e);
+                }
+            }
+        }
+    }, [activeView, ligacaoData]);
 
     // Persistence & Theme
     useEffect(() => {
@@ -858,10 +925,10 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                             )}
 
                             {activeView === 'messages' && (
-                                <MessagesView onBack={() => setActiveView('graph')} orgId={currentOrgId} />
+                                <MessagesView key={`${pathname}?view=messages`} onBack={() => setActiveView('graph')} orgId={currentOrgId} />
                             )}
                             {activeView === 'ligacao' && (
-                                <LigacaoView onBack={() => setActiveView('graph')} />
+                                <LigacaoView onBack={() => setActiveView('graph')} initialData={ligacaoData} />
                             )}
                             {activeView === 'prospecting' && (
                                 <>

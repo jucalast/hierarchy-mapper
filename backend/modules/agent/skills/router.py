@@ -5,6 +5,7 @@ from .funnel_stage import SalesContext, FunnelStageSkill
 from .skill_prospecting import ProspectingSkill
 from .skill_outreach import OutreachSkill
 from .skill_followup import FollowUpSkill
+from .skill_call import CallSkill
 
 # Missing specialized skills just fallback to FollowUpSkill for now,
 # but we can map them conceptually.
@@ -29,7 +30,9 @@ def classify_intent(message: str) -> str:
     """Classifies user intent based on the message."""
     message_lower = message.lower()
     
-    # Very basic intent classification
+    # Tarefas de ligação têm precedência máxima
+    if any(keyword in message_lower for keyword in ["ligar para", "realizar ligação", "fazer ligação", "ligação", "telefonar", "call"]):
+        return "call"
     if any(keyword in message_lower for keyword in ["encontrar", "decisor", "mapear", "prospectar"]):
         return "prospect"
     if any(keyword in message_lower for keyword in ["apresentação", "apresentar", "cold", "outreach"]):
@@ -49,6 +52,7 @@ def classify_intent(message: str) -> str:
 
 def get_skill_by_intent(intent: str) -> AgentSkill:
     INTENT_TO_SKILL = {
+        "call": CallSkill,
         "prospect": ProspectingSkill,
         "outreach": OutreachSkill,
         "followup": FollowUpSkill,

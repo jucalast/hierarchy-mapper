@@ -433,6 +433,7 @@ async def init_db():
         Tenant, User, BusinessProfile, Product, ReferenceClient,
         ICPConfig, ICPScoreRule, HierarchyConfig, Integration,
         ContactConversationCache, AgentPendingConfirmation,
+        CallSession, CallMessage,
     )
     
     async with engine.begin() as conn:

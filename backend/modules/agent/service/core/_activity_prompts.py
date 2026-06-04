@@ -24,8 +24,12 @@ def _dispatch_activity_etapas(subject: str, act_id: Any, org_pd_id: Any, deal_id
     )
 
 
-def _build_task_action_prompt(act_id: Any, subject: str, org: str, org_pd_id: Any, deal_id: Any, act_type: str, note: str) -> str:
+def _build_task_action_prompt(act_id: Any, subject: str, org: str, org_pd_id: Any, deal_id: Any, act_type: str, note: str, ctx: dict | None = None) -> str:
     """Gera um prompt inteligente e contextualizado para cada tipo de atividade do Pipedrive."""
+    if not ctx: ctx = {}
+    company_name = ctx.get("company_name", "J.Ferres")
+    seller_name = ctx.get("seller_name", "João Luccas")
+
     _note_hint = f" (nota: {note})" if note else ""
 
     # Sem nome de empresa — passa o org_id/deal_id como contexto para o agente raciocinar
@@ -33,11 +37,11 @@ def _build_task_action_prompt(act_id: Any, subject: str, org: str, org_pd_id: An
         _ctx = f"org_id={org_pd_id}" if org_pd_id else (f"deal_id={deal_id}" if deal_id else "sem empresa vinculada")
         _note_ctx = f"\nNota: {note}" if note else ""
         return (
-            f"Você é o assistente comercial de João Luccas (vendedor da J.Ferres).\n\n"
+            f"Você é o assistente comercial de {seller_name} (vendedor da {company_name}).\n\n"
             f"ATIVIDADE #{act_id} A EXECUTAR: {subject}\n"
             f"Contexto CRM: {_ctx}{_note_ctx}\n\n"
             f"Raciocine sobre o que a tarefa requer e use as ferramentas disponíveis para executá-la.\n"
-            f"Para ações externas (envios, marcar como concluído), apresente o resultado ao João e aguarde aprovação."
+            f"Para ações externas (envios, marcar como concluído), apresente o resultado ao {seller_name.split()[0]} e aguarde aprovação."
         )
 
     _org_hint = f"\nEmpresa: {org} (org_id={org_pd_id})" if org_pd_id else f"\nEmpresa: {org}"
@@ -48,8 +52,8 @@ def _build_task_action_prompt(act_id: Any, subject: str, org: str, org_pd_id: An
     _etapas = _dispatch_activity_etapas(subject, act_id, org_pd_id, deal_id, act_type)
 
     return (
-        f"Você é o assistente comercial de João Luccas (vendedor da J.Ferres).\n"
-        f"O cliente é '{org}' — nunca confunda com a J.Ferres.\n\n"
+        f"Você é o assistente comercial de {seller_name} (vendedor da {company_name}).\n"
+        f"O cliente é '{org}' — nunca confunda com a {company_name}.\n\n"
         f"ATIVIDADE #{act_id} A EXECUTAR: {subject}"
         f"{_org_hint}{_deal_hint_full}{_note_hint_full}\n\n"
         f"{_etapas}"
@@ -58,7 +62,7 @@ def _build_task_action_prompt(act_id: Any, subject: str, org: str, org_pd_id: An
         f"  • whatsapp_get_messages / email_get_contact_history\n"
         f"  • discover_and_validate_email (contact_name, org_name, domain)\n"
         f"  • open_hierarchy_drawer (org_name, org_id, deal_id, activity_id)\n"
-        f"  • generate_call_script (contact_name, phone)\n"
+        f"  • prepare_live_coaching_session (contact_name, phone)\n"
         f"  • generate_sales_message\n"
         f"  • email_send / whatsapp_send_message\n"
         f"  • pipedrive_update_task / pipedrive_get_activities\n"
@@ -66,9 +70,9 @@ def _build_task_action_prompt(act_id: Any, subject: str, org: str, org_pd_id: An
         f"REGRAS DE OURO:\n"
         f"  1. PROIBIDO questionar ou pedir confirmação sobre o nome da empresa '{org}'. Ele é um fato absoluto do CRM.\n"
         f"  2. Se `evaluate_prospects` identificar um decisor (ICP) melhor que o contato da tarefa, VOCÊ DEVE priorizar a abordagem para esse novo decisor. Gere a mensagem para ele imediatamente e explique o motivo no seu raciocínio.\n"
-        f"  3. (CRÍTICO) VALIDAÇÃO DE E-MAIL: Antes de enviar um e-mail, se o endereço for desconhecido, parecer inválido ou for um padrão genérico, você DEVE obrigatoriamente usar `discover_and_validate_email` para encontrar o padrão correto (ex: joao.moura@empresa.com.br) e validar o DNS.\n"
+        f"  3. (CRÍTICO) VALIDAÇÃO DE E-MAIL: Antes de enviar um e-mail, se o endereço for desconhecido, parecer inválido ou for um padrão genérico, você DEVE obrigatoriamente usar `discover_and_validate_email` para encontrar o padrão correto (ex: seu.nome@empresa.com.br) e validar o DNS.\n"
         f"  4. Use apenas dados reais retornados pelas ferramentas — nunca invente nomes, números ou histórico.\n"
-        f"  5. Para ações externas (enviar mensagem, marcar concluído), apresente ao João e aguarde aprovação.\n"
+        f"  5. Para ações externas (enviar mensagem, marcar concluído), apresente ao {seller_name.split()[0]} e aguarde aprovação.\n"
         f"  6. Não marque a atividade #{act_id} como concluída a menos que seja o objetivo explícito da tarefa.\n\n"
         f"Execute agora, começando pelo raciocínio sobre o que a tarefa requer."
     )

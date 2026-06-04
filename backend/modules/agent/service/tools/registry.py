@@ -28,7 +28,8 @@ from .communication import (
 from .intelligence import (
     exec_web_search,
     exec_find_company_contact,
-    exec_generate_call_script,
+    exec_prepare_live_coaching_session,
+    exec_open_ligacao_view,
     exec_generate_sales_message,
     exec_generate_dossier,
     exec_update_prospecting_context,
@@ -216,6 +217,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
             "note": "string opcional (descrição ou instruções)",
             "deal_id": "int opcional (ID do deal — preferível se souber)",
             "org_name": "string opcional (nome da empresa — usado para resolver o deal se deal_id não for fornecido)",
+            "person_id": "int opcional (MUITO IMPORTANTE: O ID numérico da pessoa. Se o usuário pedir para atribuir/relacionar uma pessoa e você não tiver o ID exato, PARE e chame 'pipedrive_get_persons' primeiro para encontrá-lo. Nunca passe null se a intenção for atribuir alguém.)",
         },
         "type": "write",
         "executor": None,
@@ -229,6 +231,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
             "due_date": "string opcional (reagendar — formato YYYY-MM-DD)",
             "note": "string opcional (atualizar descrição)",
             "subject": "string opcional (novo título)",
+            "person_id": "int opcional (MUITO IMPORTANTE: O ID numérico da pessoa. Se o usuário pedir para atribuir/relacionar uma pessoa e você não tiver o ID exato, PARE e chame 'pipedrive_get_persons' primeiro para encontrá-lo. Nunca passe null se a intenção for atribuir alguém.)",
         },
         "type": "write",
         "executor": None,
@@ -278,25 +281,43 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "executor": exec_find_company_contact,
     },
 
-    # ── Geração de Scripts ─────────────────────────────────────────────────────
-    "generate_call_script": {
+    # ── Geração de Scripts e Planos de Voo ──────────────────────────────────────
+    "prepare_live_coaching_session": {
         "description": (
-            "Gera script de ligação. "
+            "Gera um plano de voo (passo a passo) para a ligação usando SPIN Selling. "
             "CONDIÇÕES OBRIGATÓRIAS para chamar (TODAS devem ser verdadeiras):\n"
-            "  1. A descrição da tarefa é EXPLICITAMENTE uma ligação (contém 'ligar', 'ligação', 'chamada', 'call').\n"
-            "     PROIBIDO chamar se a tarefa for 'cobrar retorno', 'follow-up', 'acompanhamento' ou similar — "
-            "     nesses casos use email_reply ou whatsapp_send_message após ler o histórico.\n"
-            "  2. Você JÁ executou TODOS os 6 passos da Fase 1: pipedrive_get_org, pipedrive_get_persons, "
-            "     pipedrive_get_deals, pipedrive_get_activities, whatsapp_get_messages, email_get_contact_history.\n"
-            "  3. pipedrive_get_persons retornou um telefone REAL para o contato (não placeholder, não inventado).\n"
-            "NÃO chame se qualquer condição não for atendida."
+            "  1. A descrição da tarefa é EXPLICITAMENTE uma ligação.\n"
+            "  2. Você JÁ executou buscas necessárias no Pipedrive.\n"
+            "  3. Você tem um telefone válido. (IMPORTANTE: Se o CRM não tiver telefone, USE a ferramenta 'find_company_contact' ANTES desta tool para descobrir o número).\n"
+            "PROIBIDO descrever o roteiro em texto antes de chamar esta tool.\n"
+            "MUITO IMPORTANTE: Esta ferramenta DEVE SER CHAMADA SEMPRE ANTES de 'open_ligacao_view'."
         ),
         "args_schema": {
-            "contact_name": "string — nome do contato que será ligado",
-            "phone": "string — telefone real retornado por pipedrive_get_persons",
+            "contact_name": "string — nome do contato",
+            "phone": "string — telefone",
+            "activity_id": "string opcional — ID da atividade/tarefa no Pipedrive",
+            "profile_pic": "string opcional — URL da foto/avatar do contato (se disponível no Pipedrive ou no mapeamento)",
         },
         "type": "read",
-        "executor": exec_generate_call_script,
+        "executor": exec_prepare_live_coaching_session,
+    },
+    "open_ligacao_view": {
+        "description": (
+            "Abre a interface de ligação ao vivo (LigacaoView). "
+            "REGRA DE OURO: Você é ESTRITAMENTE PROIBIDO de chamar esta ferramenta sem antes ter chamado 'prepare_live_coaching_session'. "
+            "Requer confirmação do usuário via card. "
+            "Passe APENAS o nome do contato, o telefone e o activity_id opcional. O sistema resgatará o plano de voo automaticamente da memória ou banco."
+        ),
+        "args_schema": {
+            "contact_name": "string — nome do contato a ser ligado",
+            "phone": "string — número de telefone (obtido do CRM ou find_company_contact)",
+            "activity_id": "string opcional — ID da atividade/tarefa no Pipedrive",
+        },
+        "type": "write",
+        "executor": exec_open_ligacao_view,
+        "confirm_label": lambda args: (
+            f"Iniciar Ligacao com {args.get('contact_name', 'contato')} • {args.get('phone', 'sem numero')}"
+        ),
     },
     "generate_sales_message": {
         "description": "Usa o Coach de Vendas Sênior para gerar um rascunho de mensagem (WhatsApp ou E-mail) altamente estratégico baseado no histórico real. Use quando identificar que o canal preferido de contato é digital (WhatsApp/Email).",
@@ -456,7 +477,7 @@ def get_tools_anthropic_schema() -> list:
 
 # ─── Executor de ferramentas de ESCRITA (após confirmação) ────────────────────
 
-async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) -> Dict[str, Any]:
+async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, messages: list | None = None) -> Dict[str, Any]:
     """Executa uma ferramenta de escrita após confirmação do usuário."""
 
     # ── WhatsApp ──────────────────────────────────────────────────────────────
@@ -473,6 +494,10 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
                 org_id=org_id,
             )
         return result
+
+    # ── Ligação ao vivo ───────────────────────────────────────────────────────────────────────
+    elif tool_name == "open_ligacao_view":
+        return await exec_open_ligacao_view(args, org_id=org_id, messages=messages)
 
     # ── Email: envio novo ──────────────────────────────────────────────────────
     elif tool_name == "email_send":
@@ -683,6 +708,8 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
                 data["org_id"] = int(pd_org_id)
             if due_date:
                 data["due_date"] = due_date
+            if args.get("person_id"):
+                data["person_id"] = int(args["person_id"])
 
             result = await pipedrive_service.create_activity(data)
             ok = result.get("success", False)
@@ -709,6 +736,8 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None) 
             data["note"] = args["note"]
         if args.get("subject"):
             data["subject"] = args["subject"]
+        if args.get("person_id"):
+            data["person_id"] = int(args["person_id"])
         try:
             from modules.crm.service.pipedrive_service import pipedrive_service
             ok = await pipedrive_service.update_activity(int(activity_id), data)

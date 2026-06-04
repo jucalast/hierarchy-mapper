@@ -40,6 +40,6 @@ class CommunicationPipeline(BasePipeline):
             f"  3. generate_sales_message → (OBRIGATÓRIO) criar o rascunho da mensagem personalizada usando o histórico e anotações do CRM.\n"
             f"  4. email_send / whatsapp_send_message → apresentar o rascunho de {canal_preferencial} para aprovação do João no chat.\n"
             f"  5. pipedrive_update_task(activity_id={act_id}, done=true) → marcar como concluída após a aprovação do envio.\n"
-            f"⛔ PROIBIDO: NÃO chame generate_call_script e NÃO crie roteiros de ligação, pois esta tarefa é de comunicação escrita.\n"
+            f"⛔ PROIBIDO: NÃO chame prepare_live_coaching_session e NÃO crie roteiros de ligação, pois esta tarefa é de comunicação escrita.\n"
             f"⛔ PROIBIDO: Nunca envie a mensagem antes do João aprovar no card correspondente.\n\n"
         )
