@@ -306,7 +306,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
 
         try {
-            await orgsApi.renameOrganization(orgId, editingNameValue.trim());
+            await orgsApi.updateOrganization(orgId, { name: editingNameValue.trim() });
 
             // Atualizar no local state (mutação controlada do array do pai)
             const updatedOrg = filteredOrgs.find(o => Number(o.id) === orgId);

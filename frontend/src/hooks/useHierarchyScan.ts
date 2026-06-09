@@ -64,6 +64,8 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
         model?: string
     ) => {
         setIsScanning(true);
+        // ✅ Notifica o chat panel que uma varredura iniciou (independente do modo)
+        window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
         setScanError(null);
         setScanResults([]);
         setScanProgress(0);

@@ -235,7 +235,6 @@
   font-weight: 500;
   box-shadow: none;
   border: var(--sw-border-width) solid transparent;
-  max-width: 85%;
   word-wrap: break-word;
   line-height: 1.4;
   transition: all var(--transition-fast);
@@ -1937,6 +1936,19 @@
   color: var(--chat-text-secondary);
   padding: 4px 0;
   transition: all var(--chat-transition-fast);
+}
+
+.logLineClickable {
+  cursor: pointer;
+  border-radius: var(--chat-radius-sm);
+  padding: 4px 8px !important;
+  margin: 0 -8px;
+  transition: all var(--chat-transition-fast);
+}
+
+.logLineClickable:hover {
+  background: var(--sw-hover);
+  color: var(--sw-text-base);
 }
 
 .waPreviewCard {

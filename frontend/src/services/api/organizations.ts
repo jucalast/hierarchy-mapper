@@ -40,9 +40,7 @@ export function resetOrganization(orgId: number) {
   );
 }
 
-export function renameOrganization(orgId: number, name: string) {
-  return api.post<Record<string, unknown>>(`/pipedrive/organizations/${orgId}/rename`, { name });
-}
+
 
 /** Sincronização completa Pipedrive → banco local (heavy). */
 export function triggerPipedriveSync() {

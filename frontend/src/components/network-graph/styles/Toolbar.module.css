@@ -11,13 +11,17 @@
 .toolbarUnifiedWrapper {
     position: relative;
     width: fit-content;
-    max-width: 100%;
+    max-width: min(500px, calc(100% - 40px));
     z-index: 1000;
     display: flex;
     flex-direction: column;
     align-items: center;
     pointer-events: none;
     overflow: visible;
+}
+
+.toolbarUnifiedWrapper[data-sidebar-open="false"][data-chat-open="false"] {
+    max-width: min(600px, calc(100% - 40px));
 }
 
 .toolbarUnifiedWrapper>* {
@@ -277,23 +281,27 @@
     box-shadow: none !important; /* Remove o box shadow que sangra para cima no carrossel */
 }
 
-/* Carrossel — Ultra Minimalist Glassmorphism (Idêntico ao refineTab) */
+/* Carrossel — Flutuante conectado */
 .optionsContainer {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
     width: 100%;
+    min-width: 0;
     box-sizing: border-box;
     background: var(--sw-sidebar);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: var(--sw-border-width) solid var(--sw-border);
     border-bottom: none;
-    padding: 6px 12px; /* Padding idêntico ao do floating toolbar */
-    min-height: 56px; /* Altura compacta elegante */
+    padding: 6px 12px;
+    min-height: 56px;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap !important;
     align-items: center;
-    gap: 8px; /* Espaçamento idêntico ao do floating toolbar */
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0; /* Radius do topo idêntico ao do floating toolbar */
+    gap: 8px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     overflow-x: auto;
     scrollbar-width: none;
     box-shadow: var(--sw-shadow);
@@ -922,6 +930,7 @@
     backdrop-filter: blur(16px) saturate(180%);
     padding: 0;
     border-radius: var(--radius-lg);
+    min-width: 0;
 }
 
 .mainToolbarSection {
@@ -930,6 +939,8 @@
     align-items: stretch; /* Garante que o carrossel ocupe toda a largura disponível da seção */
     width: fit-content;
     max-width: 100%;
+    min-width: 0;
+    position: relative;
 }
 
 .mappingModeToggle {

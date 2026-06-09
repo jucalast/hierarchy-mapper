@@ -24,8 +24,28 @@ export const useHierarchy = () => {
     const scanFinishedRef = useRef(false);
     const chatDoneDispatchedRef = useRef(false);
 
+    // ✅ NOVO: Recupera contexto de chat independente de job ativo (ex: para o Scanner manual)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const pending = localStorage.getItem('pending-hierarchy-continuation');
+        if (pending) {
+            try {
+                const parsed = JSON.parse(pending);
+                if (parsed && parsed.org_id) {
+                    console.log('[useHierarchy] Chat aguardando mapeamento para org:', parsed.org_id);
+                    chatContextRef.current = {
+                        chatPrompted: true,
+                        orgId: Number(parsed.org_id),
+                        orgName: parsed.org_name || ''
+                    };
+                }
+            } catch (e) { /* ignore */ }
+        }
+    }, []);
+
     // Auto-reconecta ao WebSocket se houver um job ativo persistido no localStorage
     useEffect(() => {
+        if (typeof window === 'undefined') return;
         const saved = localStorage.getItem('active-discovery-job');
         if (!saved) return;
         let jobData: any;
@@ -228,16 +248,26 @@ export const useHierarchy = () => {
                                 console.log(`[Stream] Novo candidato: ${event.name}`);
                                 streamedCandidates.push(event);
                                 
-                                // 🔄 Atualiza IMEDIATAMENTE com os candidatos encontrados até agora
-                                const cleaned = streamedCandidates
-                                    .map((opt: any) => ({
-                                        ...opt,
-                                        name: cleanName(opt.name)
-                                    }))
+                                // 🔄 Atualiza IMEDIATAMENTE com os candidatos encontrados até agora (removendo duplicatas)
+                                const uniqueCandidates = new Map();
+                                streamedCandidates.forEach((opt: any) => {
+                                    const cleanedName = cleanName(opt.name);
+                                    const key = opt.url || cleanedName.toLowerCase();
+                                    if (!uniqueCandidates.has(key)) {
+                                        uniqueCandidates.set(key, { ...opt, name: cleanedName });
+                                    } else {
+                                        const existing = uniqueCandidates.get(key);
+                                        if ((opt.score || 0) > (existing.score || 0)) {
+                                            uniqueCandidates.set(key, { ...opt, name: cleanedName });
+                                        }
+                                    }
+                                });
+                                
+                                const cleaned = Array.from(uniqueCandidates.values())
                                     .sort((a: any, b: any) => (b.score || 0) - (a.score || 0)); // Ordena por score
                                 
                                 setBrandOptions(cleaned);
-                                console.log(`[Stream] 📊 Carrossel atualizado com ${cleaned.length} perfis`);
+                                console.log(`[Stream] 📊 Carrossel atualizado com ${cleaned.length} perfis únicos`);
 
                                 // Callback para atualizar o carrossel em tempo real
                                 if (onCandidateFound) {
@@ -251,11 +281,21 @@ export const useHierarchy = () => {
                                 
                                 // 🏆 Atualiza com os candidatos ordenados por score
                                 if (event.top_alternatives && event.top_alternatives.length > 0) {
-                                    const finalCandidates = event.top_alternatives.map((opt: any) => ({
-                                        ...opt,
-                                        name: cleanName(opt.name)
-                                    }));
-                                    console.log(`[Stream] Finalizando com ${finalCandidates.length} candidatos ordenados por score`);
+                                    const uniqueFinal = new Map();
+                                    event.top_alternatives.forEach((opt: any) => {
+                                        const cleanedName = cleanName(opt.name);
+                                        const key = opt.url || cleanedName.toLowerCase();
+                                        if (!uniqueFinal.has(key)) {
+                                            uniqueFinal.set(key, { ...opt, name: cleanedName });
+                                        } else {
+                                            const existing = uniqueFinal.get(key);
+                                            if ((opt.score || 0) > (existing.score || 0)) {
+                                                uniqueFinal.set(key, { ...opt, name: cleanedName });
+                                            }
+                                        }
+                                    });
+                                    const finalCandidates = Array.from(uniqueFinal.values());
+                                    console.log(`[Stream] Finalizando com ${finalCandidates.length} candidatos únicos ordenados por score`);
                                     setBrandOptions(finalCandidates);
                                 }
                             } else if (event.error) {
@@ -345,6 +385,13 @@ export const useHierarchy = () => {
                 keysToDelete.forEach(key => localStorage.removeItem(key));
                 console.log(`[useHierarchy] Limpou ${keysToDelete.length} caches de layout/arestas antigas.`);
                 console.log("[useHierarchy] Hierarquia refinada e reconectada com sucesso.");
+
+                // ✅ Se o chat está esperando, e acabamos de refinar (seja via discovery ou scan manual), notificamos
+                if (chatContextRef.current.chatPrompted && !chatDoneDispatchedRef.current) {
+                    console.log("[useHierarchy] Notificando chat após refinamento IA.");
+                    scanFinishedRef.current = true; // Força como terminado pois o refinamento é o passo final
+                    checkAndDispatchChatEvent();
+                }
             }
 
         } catch (err: any) {
@@ -959,9 +1006,10 @@ export const useHierarchy = () => {
     }, []);
 
     const updateEmployee = useCallback(async (id: string, updates: Partial<HierarchyEmployee>) => {
+        const safeId = String(id); // guard against numeric IDs from backend
         // Atualiza estado local imediatamente
         setRawEmployees(prev => {
-            const index = prev.findIndex(e => e.id === id);
+            const index = prev.findIndex(e => String(e.id) === safeId);
             if (index === -1) return prev;
             const updated = [...prev];
             updated[index] = { ...updated[index], ...updates };
@@ -969,10 +1017,10 @@ export const useHierarchy = () => {
         });
 
         // Persiste no backend se for um ID estável (node_...)
-        if (id.startsWith('node_')) {
+        if (safeId.startsWith('node_')) {
             try {
-                await hierarchyApi.updateEmployeeDetails(id, updates);
-                console.log(`[useHierarchy] Funcionário ${id} atualizado no banco.`);
+                await hierarchyApi.updateEmployeeDetails(safeId, updates);
+                console.log(`[useHierarchy] Funcionário ${safeId} atualizado no banco.`);
             } catch (e) {
                 console.error(`[useHierarchy] Erro ao salvar atualização no banco:`, e);
             }

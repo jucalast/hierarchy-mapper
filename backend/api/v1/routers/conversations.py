@@ -217,6 +217,7 @@ async def update_suggested_action_status(
 ):
     from sqlalchemy.orm.attributes import flag_modified
     status = payload.get("status")
+    logs = payload.get("logs")  # Optional: execution logs to persist
     if not status:
         raise HTTPException(status_code=400, detail="status is required")
         
@@ -231,9 +232,11 @@ async def update_suggested_action_status(
     runs = msg_data.get("suggested_actions_runs", {})
     idx_str = str(action_index)
     if idx_str not in runs:
-        runs[idx_str] = {"status": status, "logs": [], "timestamp": datetime.utcnow().isoformat()}
+        runs[idx_str] = {"status": status, "logs": logs or [], "timestamp": datetime.utcnow().isoformat()}
     else:
         runs[idx_str]["status"] = status
+        if logs is not None:
+            runs[idx_str]["logs"] = logs
         
     msg_data["suggested_actions_runs"] = runs
     msg.data = msg_data

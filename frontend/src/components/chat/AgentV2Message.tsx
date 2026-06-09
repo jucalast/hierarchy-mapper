@@ -4,7 +4,7 @@ import {
     Copy, RotateCcw, Clock, AlertCircle, Network,
     Phone, Mail, Calendar, Building2, User, Paperclip,
     FileText, Package, Lightbulb, Target, ClipboardList,
-    Box, Layers, MessageSquare, TrendingUp, Wand2,
+    Box, Layers, MessageSquare, TrendingUp, Wand2, Terminal,
 } from 'lucide-react';
 import styles from './ChatPanel.module.css';
 import timelineStyles from '../prospecting/HistoryTimeline.module.css';
@@ -40,6 +40,7 @@ export interface AgentEvent {
     pre_task_id?: number | null;
     error?: string;
     data?: any;
+    options?: any[];
 }
 
 import { AIModel } from './ModelSelector';
@@ -62,6 +63,7 @@ export interface AgentMessageProps {
     onApproveSuggestedAction?: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => void;
     onHierarchyMappingDone?: (contacts: any[], event?: AgentEvent) => void;
     model: AIModel;
+    onOpenTaskConsole?: (action: any, index: number, parentMessageId?: string) => void;
 }
 
 // ─── Cores por ferramenta ─────────────────────────────────────────────────────
@@ -188,6 +190,16 @@ const HierarchyMappingCard: React.FC<{
                     }
                 } catch { /* ignore */ }
             }
+            // Se o chat está esperando por este mapeamento, começamos como 'waiting' (útil para scan manual)
+            const pending = window.localStorage.getItem('pending-hierarchy-continuation');
+            if (pending) {
+                try {
+                    const parsed = JSON.parse(pending);
+                    if (parsed && (parsed.org_id === event.org_id || Number(parsed.org_id) === Number(event.org_id))) {
+                        return 'waiting';
+                    }
+                } catch { /* ignore */ }
+            }
         }
         return isStreaming ? 'waiting' : 'done';
     });
@@ -199,6 +211,7 @@ const HierarchyMappingCard: React.FC<{
 
     useEffect(() => {
         let isActiveJobRunning = false;
+        let isWaitingForChat = false;
         if (typeof window !== 'undefined') {
             const saved = window.localStorage.getItem('active-discovery-job');
             if (saved) {
@@ -209,11 +222,20 @@ const HierarchyMappingCard: React.FC<{
                     }
                 } catch { /* ignore */ }
             }
+            const pending = window.localStorage.getItem('pending-hierarchy-continuation');
+            if (pending) {
+                try {
+                    const parsed = JSON.parse(pending);
+                    if (parsed && (parsed.org_id === event.org_id || Number(parsed.org_id) === Number(event.org_id))) {
+                        isWaitingForChat = true;
+                    }
+                } catch { /* ignore */ }
+            }
         }
 
-        // Só encerra prematuramente se: não está em streaming, sem job ativo no
-        // localStorage E o drawer nunca foi aberto nesta sessão do componente.
-        if (!isStreaming && !isActiveJobRunning && !drawerOpenedRef.current) {
+        // Só encerra prematuramente se: não está em streaming, sem job ativo, sem pendência de chat 
+        // E o drawer nunca foi aberto nesta sessão do componente.
+        if (!isStreaming && !isActiveJobRunning && !isWaitingForChat && !drawerOpenedRef.current) {
             setStatus('done');
             return;
         }
@@ -414,6 +436,9 @@ const ConfirmationCard: React.FC<{
         ? (labelStr.match(/\+\s*anexo:\s*([^)]+)\)/i)?.[1]?.trim() || 'Arquivo')
         : null;
 
+    const options = event.options || [];
+    const hasOptions = options.length > 0;
+
     return (
         <div style={{ 
             borderRadius: 10, 
@@ -436,7 +461,7 @@ const ConfirmationCard: React.FC<{
                     : <img src={channelConfig.icon!} alt="Channel" style={{ width: channelConfig.iconSize, height: channelConfig.iconSize, borderRadius: 3 }} />
                 }
                 <span style={{ fontSize: 'var(--font-xs)', color: 'var(--sw-text-muted)', letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>
-                    {isEmail ? 'CONFIRMAR E-MAIL' : isPipedrive ? 'CONFIRMAR PIPEDRIVE' : isCall ? 'INICIAR LIGAÇÃO' : 'CONFIRMAR WHATSAPP'}
+                    {hasOptions ? 'DECISÃO NECESSÁRIA' : isEmail ? 'CONFIRMAR E-MAIL' : isPipedrive ? 'CONFIRMAR PIPEDRIVE' : isCall ? 'INICIAR LIGAÇÃO' : 'CONFIRMAR WHATSAPP'}
                 </span>
                 {hasAttachment && (
                     <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#a855f7', background: 'rgba(168,85,247,0.12)', borderRadius: 4, padding: '2px 7px', fontWeight: 600 }}>
@@ -446,7 +471,7 @@ const ConfirmationCard: React.FC<{
             </div>
             <div style={{ padding: '12px' }}>
                 <div style={{ fontSize: 'var(--font-sm)', color: 'var(--sw-text-base)', marginBottom: 8, fontWeight: 700, lineHeight: '1.4' }}>
-                    {hasAttachment ? labelStr.replace(/\s*\(.*?anexo.*?\)/i, '') : labelStr}
+                    {hasOptions ? (event.label || 'O que deseja fazer?') : hasAttachment ? labelStr.replace(/\s*\(.*?anexo.*?\)/i, '') : labelStr}
                 </div>
                 {previewText && (
                     <div style={{
@@ -464,7 +489,7 @@ const ConfirmationCard: React.FC<{
                         {previewText}
                     </div>
                 )}
-                {event.action_id && !isCall && (
+                {event.action_id && !isCall && !hasOptions && (
                     <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                         <input
                             value={refineText}
@@ -564,52 +589,84 @@ const ConfirmationCard: React.FC<{
                     </div>
                 )}
                 <div style={{ display: 'flex', gap: 8 }}>
-                    <button 
-                        onClick={() => onConfirm(event.action_id!, true, attachedFile || undefined)} 
-                        style={{ 
-                            flex: 1, 
-                            padding: '8px 12px', 
-                            borderRadius: 7, 
-                            border: 'none', 
-                            background: isCall ? `${channelConfig.accentColor}18` : 'transparent', 
-                            color: channelConfig.accentColor, 
-                            fontSize: 12, 
-                            fontWeight: 600, 
-                            cursor: 'pointer', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
-                            gap: 5,
-                            transition: 'all 0.15s ease'
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = `${channelConfig.accentColor}22`; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = isCall ? `${channelConfig.accentColor}18` : 'transparent'; }}
-                    >
-                        <Check size={13} strokeWidth={2.5} />
-                        {isCall ? 'Ligar agora' : 'Confirmar'}
-                    </button>
-                    <button 
-                        onClick={() => onConfirm(event.action_id!, false)} 
-                        style={{ 
-                            flex: 1, 
-                            padding: '8px 12px', 
-                            borderRadius: 7, 
-                            border: 'var(--sw-border-width) solid var(--sw-border)', 
-                            background: 'transparent', 
-                            color: 'var(--sw-text-subtle)', 
-                            fontSize: 12, 
-                            cursor: 'pointer', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
-                            gap: 5,
-                            transition: 'all 0.15s ease'
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--sw-text-base)'; e.currentTarget.style.background = 'var(--sw-hover)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--sw-text-subtle)'; e.currentTarget.style.background = 'transparent'; }}
-                    >
-                        <X size={13} /> Cancelar
-                    </button>
+                    {hasOptions ? (
+                        options.map((opt: any, idx: number) => (
+                            <button
+                                key={idx}
+                                onClick={() => onConfirm(event.action_id!, idx === 0)}
+                                style={{
+                                    flex: 1,
+                                    padding: '8px 12px',
+                                    borderRadius: 7,
+                                    border: idx === 0 ? 'none' : 'var(--sw-border-width) solid var(--sw-border)',
+                                    background: idx === 0 ? channelConfig.accentColor : 'transparent',
+                                    color: idx === 0 ? '#fff' : 'var(--sw-text-base)',
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 5,
+                                    transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={e => { if (idx !== 0) e.currentTarget.style.background = 'var(--sw-hover)'; }}
+                                onMouseLeave={e => { if (idx !== 0) e.currentTarget.style.background = 'transparent'; }}
+                            >
+                                {idx === 0 ? <Check size={13} strokeWidth={2.5} /> : <X size={13} />}
+                                {opt.label}
+                            </button>
+                        ))
+                    ) : (
+                        <>
+                            <button 
+                                onClick={() => onConfirm(event.action_id!, true, attachedFile || undefined)} 
+                                style={{ 
+                                    flex: 1, 
+                                    padding: '8px 12px', 
+                                    borderRadius: 7, 
+                                    border: 'none', 
+                                    background: isCall ? `${channelConfig.accentColor}18` : 'transparent', 
+                                    color: channelConfig.accentColor, 
+                                    fontSize: 12, 
+                                    fontWeight: 600, 
+                                    cursor: 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    gap: 5,
+                                    transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = `${channelConfig.accentColor}22`; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = isCall ? `${channelConfig.accentColor}18` : 'transparent'; }}
+                            >
+                                <Check size={13} strokeWidth={2.5} />
+                                {isCall ? 'Ligar agora' : 'Confirmar'}
+                            </button>
+                            <button 
+                                onClick={() => onConfirm(event.action_id!, false)} 
+                                style={{ 
+                                    flex: 1, 
+                                    padding: '8px 12px', 
+                                    borderRadius: 7, 
+                                    border: 'var(--sw-border-width) solid var(--sw-border)', 
+                                    background: 'transparent', 
+                                    color: 'var(--sw-text-subtle)', 
+                                    fontSize: 12, 
+                                    cursor: 'pointer', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    gap: 5,
+                                    transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.color = 'var(--sw-text-base)'; e.currentTarget.style.background = 'var(--sw-hover)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.color = 'var(--sw-text-subtle)'; e.currentTarget.style.background = 'transparent'; }}
+                            >
+                                <X size={13} /> Cancelar
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
@@ -690,6 +747,7 @@ export const InlineEventStream: React.FC<{
                 }
                 if (ev.type === 'tool_call' && ev.call_id && !seenIds.has(ev.call_id)) {
                     seenIds.add(ev.call_id);
+                    if (ev.tool === 'suggest_next_actions') return null;
                     const result = resultMap[ev.call_id];
                     const running = !result && isStreaming;
                     const ok = result?.ok;
@@ -775,35 +833,7 @@ export const InlineEventStream: React.FC<{
                     );
                 }
                 if (ev.type === 'suggested_actions') {
-                    const actions = ev.actions || [];
-                    if (actions.length === 0) return null;
-                    return (
-                        <div key={i} style={{ marginTop: 12, marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                            <div style={{ fontSize: 'var(--font-sm)', fontWeight: 500, color: 'var(--sw-text-subtle)' }}>Próximas ações sugeridas:</div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                {actions.map((act: any, idx: number) => (
-                                    <button 
-                                        key={idx}
-                                        onClick={() => onAction && onAction(act.prompt)}
-                                        style={{
-                                            padding: '6px 10px',
-                                            borderRadius: 6,
-                                            border: '1px solid var(--sw-border)',
-                                            background: 'var(--sw-bg)',
-                                            color: 'var(--sw-text-base)',
-                                            fontSize: 'var(--font-sm)',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.15s ease'
-                                        }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--sw-hover)'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = 'var(--sw-bg)'; }}
-                                    >
-                                        {act.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    );
+                    return null;
                 }
                 return null;
             })}
@@ -856,7 +886,8 @@ const SuggestedActionTask: React.FC<{
     isLast?: boolean;
     sameCompanyAsNext?: boolean;
     model: AIModel;
-}> = ({ action, streamV2Url, confirmV2Url, orgId, selectedOrgName, threadId, parentMessageId, actionIndex, approvedSuggestedActions = {}, onApproveSuggestedAction, onAction, isLast = false, sameCompanyAsNext = false, model }) => {
+    onOpenTaskConsole?: (action: any, index: number, parentMessageId?: string) => void;
+}> = ({ action, streamV2Url, confirmV2Url, orgId, selectedOrgName, threadId, parentMessageId, actionIndex, approvedSuggestedActions = {}, onApproveSuggestedAction, onAction, isLast = false, sameCompanyAsNext = false, model, onOpenTaskConsole }) => {
     const taskKey = `${parentMessageId}-${actionIndex}`;
     const externalStatus = approvedSuggestedActions[taskKey];
     const [localStatus, setLocalStatus] = useState<TaskStatus>(action.status || 'pending');
@@ -963,10 +994,14 @@ const SuggestedActionTask: React.FC<{
 
         const hierarchyEv = collected.find(e => e.type === 'hierarchy_mapping_required');
         const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
+        const hasError = collected.length === 0 || collected.some(e => e.type === 'error' || (e.type === 'tool_result' && e.ok === false));
+
         if (hierarchyEv) {
             setLocalStatus('awaiting_mapping');
         } else if (pendingConfirm) {
             setLocalStatus('awaiting_confirm');
+        } else if (hasError) {
+            setLocalStatus('error');
         } else {
             setLocalStatus('done');
         }
@@ -994,11 +1029,12 @@ const SuggestedActionTask: React.FC<{
             `EXECUTE ESTAS ETAPAS EM ORDEM:\n` +
             `1. Mapeamento de hierarquia concluído para "${hierarchyEv.org_name}". ${contactsSummary}\n` +
             `2. REGRA DE INTELIGÊNCIA: Os contatos listados acima foram recém-mapeados do LinkedIn (cold leads) e são 100% novos. Como você já investigou a empresa e não havia histórico anterior de e-mail ou WhatsApp, VOCÊ ESTÁ PROIBIDO de chamar 'whatsapp_get_messages', 'email_get_contact_history' ou 'whatsapp_list_chats' para qualquer uma dessas novas pessoas, pois não existe histórico com elas.\n` +
-            `3. ANÁLISE E EXECUÇÃO ("Encontrar contato"): Analise os perfis mapeados acima e selecione o(s) melhor(es) contato(s) (priorizando decisores de compras, cargos de liderança ou temperature=hot/warm). Em seguida, CONCLUA A TAREFA CADASTRANDO ESTE CONTATO NO PIPEDRIVE chamando a ferramenta 'pipedrive_create_person' atrelado à organização org_id=${orgId}` +
+            `3. PLANO DE PROSPECÇÃO: Use a ferramenta 'generate_prospecting_plan' passando org_id=${orgId} para cruzar os contatos mapeados com nosso portfólio de produtos e gerar/salvar automaticamente o plano SPIN Selling no contexto da empresa.\n` +
+            `4. ANÁLISE E EXECUÇÃO ("Encontrar contato"): Analise os perfis mapeados acima e selecione o(s) melhor(es) contato(s) (priorizando decisores de compras, cargos de liderança ou temperature=hot/warm). Em seguida, CONCLUA A TAREFA CADASTRANDO ESTE CONTATO NO PIPEDRIVE chamando a ferramenta 'pipedrive_create_person' atrelado à organização org_id=${orgId}` +
             (hierarchyEv.deal_id ? ` e vinculado ao negócio deal_id=${hierarchyEv.deal_id}` : '') + `.\n` +
-            (preTaskClause ? `4. ${preTaskClause}\n` : '') +
+            (preTaskClause ? `5. ${preTaskClause}\n` : '') +
             (hierarchyEv.activity_id
-                ? `5. A atividade original activity_id=${hierarchyEv.activity_id} NÃO deve ser marcada como concluída — ela só termina após a ligação real. Sugira criar uma nova tarefa "Ligar para [nome do decisor]".\n`
+                ? `6. A atividade original activity_id=${hierarchyEv.activity_id} NÃO deve ser marcada como concluída — ela só termina após a ligação real. Sugira criar uma nova tarefa "Ligar para [nome do decisor]".\n`
                 : '') +
             `PROIBIDO: NÃO invente dados. Use APENAS os contatos listados acima.`
         );
@@ -1014,8 +1050,12 @@ const SuggestedActionTask: React.FC<{
         });
 
         const pendingConfirm = newEvents.find(e => e.type === 'confirmation_required' && e.action_id);
+        const hasError = newEvents.length === 0 || newEvents.some(e => e.type === 'error' || (e.type === 'tool_result' && e.ok === false));
+
         if (pendingConfirm) {
             setLocalStatus('awaiting_confirm');
+        } else if (hasError) {
+            setLocalStatus('error');
         } else {
             setLocalStatus('done');
         }
@@ -1024,12 +1064,17 @@ const SuggestedActionTask: React.FC<{
     const handleInlineConfirm = async (action_id: string, approved: boolean) => {
         setInlineConfirmed(prev => ({ ...prev, [action_id]: approved }));
         setLocalStatus('streaming');
-        await streamInto(confirmV2Url, {
+        const newEvents = await streamInto(confirmV2Url, {
             action_id,
             approved,
             thread_id: threadId,
         });
-        setLocalStatus('done');
+        const hasError = newEvents.length === 0 || newEvents.some(e => e.type === 'error' || (e.type === 'tool_result' && e.ok === false));
+        if (hasError) {
+            setLocalStatus('error');
+        } else {
+            setLocalStatus('done');
+        }
     };
 
     const canExpand = status !== 'pending' && status !== 'rejected';
@@ -1062,16 +1107,79 @@ const SuggestedActionTask: React.FC<{
 
     // Estado compacto (concluído / rejeitado / erro)
     if (status === 'done' || status === 'rejected' || status === 'error') {
+        const isClickable = status === 'done' || status === 'error';
+        const statusColor = status === 'done' ? accentColor : status === 'error' ? '#ef4444' : 'var(--sw-text-muted)';
+        const statusLabel = status === 'done' ? 'executado' : status === 'rejected' ? 'ignorado' : 'erro';
         return (
-            <div className={styles.logLine} style={{ marginBottom: isLast ? 0 : 6 }}>
-                {status === 'done'
-                    ? <CheckCircle2 size={12} style={{ color: accentColor, flexShrink: 0 }} />
-                    : status === 'error'
-                        ? <XCircle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />
-                        : <XCircle size={12} style={{ color: 'var(--sw-text-muted)', opacity: 0.4, flexShrink: 0 }} />
+            <div
+                onClick={isClickable ? () => onOpenTaskConsole && onOpenTaskConsole(action, actionIndex!, parentMessageId) : undefined}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '5px 8px',
+                    marginBottom: isLast ? 0 : 10,
+                    borderRadius: 8,
+                    opacity: status === 'rejected' ? 0.45 : 1,
+                    cursor: isClickable ? 'pointer' : 'default',
+                    transition: 'background 0.15s ease',
+                }}
+                onMouseEnter={isClickable ? (e) => {
+                    (e.currentTarget as HTMLDivElement).style.background = 'var(--sw-hover)';
+                } : undefined}
+                onMouseLeave={isClickable ? (e) => {
+                    (e.currentTarget as HTMLDivElement).style.background = 'transparent';
+                } : undefined}
+            >
+                {/* Ícone de canal */}
+                {channelCfg.img
+                    ? <img src={channelCfg.img} alt={channelCfg.label} style={{ width: 13, height: 13, borderRadius: 2, objectFit: 'contain', flexShrink: 0, opacity: status === 'rejected' ? 0.5 : 1 }} />
+                    : <span style={{ color: accentColor, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{catCfg.icon}</span>
                 }
-                <span style={{ opacity: status === 'rejected' ? 0.35 : 1 }}>{action.label}</span>
-                <span style={{ opacity: 0.3 }}>· {status === 'done' ? 'executado' : status === 'rejected' ? 'ignorado' : 'erro'}</span>
+
+                {/* Label da ação */}
+                <span style={{
+                    flex: 1,
+                    fontSize: 'var(--font-sm)',
+                    fontWeight: 500,
+                    color: 'var(--sw-text-base)',
+                    lineHeight: 1.4,
+                    minWidth: 0,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                }}>
+                    {cleanLabel}
+                </span>
+
+                {/* Badge de status */}
+                <span style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: 'calc(var(--font-xs) - 1px)',
+                    fontWeight: 600,
+                    color: statusColor,
+                    background: `${statusColor}14`,
+                    borderRadius: 5,
+                    padding: '2px 7px',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    flexShrink: 0,
+                }}>
+                    {status === 'done'
+                        ? <CheckCircle2 size={10} style={{ flexShrink: 0 }} />
+                        : status === 'error'
+                            ? <XCircle size={10} style={{ flexShrink: 0 }} />
+                            : <XCircle size={10} style={{ flexShrink: 0 }} />
+                    }
+                    {statusLabel}
+                </span>
+
+                {/* Hint de clique */}
+                {isClickable && (
+                    <Terminal size={12} style={{ color: 'var(--sw-text-muted)', opacity: 0.4, flexShrink: 0 }} />
+                )}
             </div>
         );
     }
@@ -1280,6 +1388,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
     onApproveSuggestedAction,
     onHierarchyMappingDone,
     model,
+    onOpenTaskConsole,
 }) => {
     const [copied, setCopied] = useState(false);
     const notifiedToolResultsRef = useRef<Set<string>>(new Set());
@@ -1545,6 +1654,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                                 isLast={idx === suggestedActions.length - 1}
                                 sameCompanyAsNext={sameCompanyAsNext}
                                 model={model}
+                                onOpenTaskConsole={onOpenTaskConsole}
                             />
                         );
                     })}

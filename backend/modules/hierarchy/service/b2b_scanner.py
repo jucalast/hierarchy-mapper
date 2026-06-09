@@ -502,6 +502,7 @@ async def discover_employees_stream(
                             # Preenche o LinkedIn real se não tinha ou se era dummy do Pipedrive
                             if not existing_emp.linkedin_url or "pipedrive_" in existing_emp.linkedin_url:
                                 existing_emp.linkedin_url = node_data["linkedin"]
+                            existing_emp.email = node_data.get("email") or existing_emp.email
                             existing_emp.profile_pic = node_data.get("avatar") or existing_emp.profile_pic
                             existing_emp.location = node_data.get("location") or existing_emp.location
                             existing_emp.description = node_data.get("observations") or existing_emp.description
@@ -514,8 +515,26 @@ async def discover_employees_stream(
                         await session.commit()
                     
                     if not existing_emp:
-                        await session.refresh(emp)
-                        node_data["id"] = emp.id
+                        new_emp = Employee(
+                            name=node_data["name"],
+                            role=node_data["role"],
+                            company_id=db_org_id,
+                            department=node_data["department"],
+                            seniority=node_data["level"],
+                            linkedin_url=node_data["linkedin"],
+                            email=node_data.get("email"),
+                            profile_pic=node_data.get("avatar"),
+                            location=node_data.get("location"),
+                            description=node_data.get("observations"),
+                            education=node_data.get("education"),
+                            matching_score=node_data.get("matching_score"),
+                            evidence=node_data.get("evidence"),
+                            headline=node_data.get("headline")
+                        )
+                        session.add(new_emp)
+                        await session.commit()
+                        await session.refresh(new_emp)
+                        node_data["id"] = new_emp.id
                     else:
                         node_data["id"] = existing_emp.id
                 

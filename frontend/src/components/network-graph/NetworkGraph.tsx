@@ -893,8 +893,14 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                                         const isShowing = brandOptions.length > 0 && brandOptions[0]?.type === 'person';
                                                         if (isShowing) { setBrandOptions([]); return; }
                                                         setBrandOptions(pending.map(p => ({
-                                                            name: p.name, logo: getAvatarUrl(p), followers: p.department || 'Pendente',
-                                                            type: 'person', id: p.id, originalEmployee: p
+                                                            name: p.name,
+                                                            logo: getAvatarUrl(p),
+                                                            followers: p.department || 'Pendente',
+                                                            type: 'person',
+                                                            id: p.id,
+                                                            originalEmployee: p,
+                                                            // Expõe o LinkedIn real para o NormalToolbar usar diretamente via opt.url
+                                                            url: p.linkedin_url || p.linkedin || p.url || undefined,
                                                         })));
                                                     }}
                                                 >

@@ -378,11 +378,42 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 setAgentStreaming(false);
             }
 
-            // Persiste para o backend para garantir que o estado se mantenha ao sair/voltar
+            // Captura os logs acumulados no activeRunningTask (via ref de closure)
+            // para persistir no backend e no estado local de messages
+            const finalLogs = (() => {
+                // Lê os logs do state atual (closure sobre setActiveRunningTask)
+                return collected;
+            })();
+
+            // Persiste status + logs no backend
             if (parentMessageId) {
-                conversations.updateSuggestedActionStatus(parentMessageId, index, finalStatus).catch(err => {
-                    console.error('Failed to persist task status', err);
+                conversations.updateSuggestedActionStatus(parentMessageId, index, finalStatus, finalLogs).catch(err => {
+                    console.error('Failed to persist task status/logs', err);
                 });
+            }
+
+            // Atualiza messages state localmente para que o console mostre os logs
+            // imediatamente ao clicar no card concluído (sem precisar recarregar)
+            if (parentMessageId) {
+                setMessages(prev => prev.map(m => {
+                    if (m.id !== parentMessageId) return m;
+                    const existingData = m.data || {};
+                    const existingRuns = existingData.suggested_actions_runs || {};
+                    return {
+                        ...m,
+                        data: {
+                            ...existingData,
+                            suggested_actions_runs: {
+                                ...existingRuns,
+                                [String(index)]: {
+                                    ...(existingRuns[String(index)] || {}),
+                                    status: finalStatus,
+                                    logs: finalLogs,
+                                },
+                            },
+                        },
+                    };
+                }));
             }
             
             if (finalStatus === 'done') {
@@ -406,6 +437,56 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             setIsLoading(false);
             setAgentStreaming(false);
         }
+    };
+
+    const handleOpenTaskConsole = (action: any, index: number, parentMessageId?: string) => {
+        let logs: AgentEvent[] = [];
+        if (action.logs) {
+            if (typeof action.logs === 'string') {
+                try {
+                    const parsed = JSON.parse(action.logs);
+                    logs = Array.isArray(parsed) ? parsed : [];
+                } catch {}
+            } else if (Array.isArray(action.logs)) {
+                logs = action.logs;
+            }
+        }
+
+        if (logs.length === 0 && parentMessageId) {
+            const msg = messages.find(m => m.id === parentMessageId);
+            const run = msg?.data?.suggested_actions_runs?.[index];
+            if (run && run.logs) {
+                if (typeof run.logs === 'string') {
+                    try {
+                        const parsed = JSON.parse(run.logs);
+                        logs = Array.isArray(parsed) ? parsed : [];
+                    } catch {}
+                } else if (Array.isArray(run.logs)) {
+                    logs = run.logs;
+                }
+            }
+        }
+
+        const taskKey = `${parentMessageId}-${index}`;
+        const currentStatus = approvedSuggestedActions[taskKey] || action.status || 'done';
+
+        // Toggle if clicking the same one that is already active
+        if (activeRunningTask && activeRunningTask.parentMessageId === parentMessageId && activeRunningTask.actionIndex === index) {
+            setActiveRunningTask(prev => prev ? { ...prev, isExpanded: !prev.isExpanded } : null);
+            return;
+        }
+
+        setActiveRunningTask({
+            label: action.label,
+            prompt: action.prompt,
+            status: currentStatus as TaskStatus,
+            logs: logs,
+            isExpanded: true,
+            orgId: selectedOrgId,
+            threadId: activeThread?.id,
+            actionIndex: index,
+            parentMessageId,
+        });
     };
 
     const handleTaskInlineConfirm = async (action_id: string, approved: boolean) => {
@@ -439,13 +520,38 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
             setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
             if (activeRunningTask.parentMessageId) {
-                const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+                const { parentMessageId: pid, actionIndex: aidx } = activeRunningTask;
+                const taskKey = `${pid}-${aidx}`;
                 setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
 
-                // Persiste para o backend para garantir persistência ao sair/voltar
-                conversations.updateSuggestedActionStatus(activeRunningTask.parentMessageId, activeRunningTask.actionIndex, finalStatus).catch(err => {
-                    console.error('Failed to persist task status', err);
+                // Lê os logs acumulados no activeRunningTask para persistir
+                const allLogs = [...(activeRunningTask.logs || []), ...collected];
+
+                // Persiste status + logs no backend
+                conversations.updateSuggestedActionStatus(pid, aidx, finalStatus, allLogs).catch(err => {
+                    console.error('Failed to persist task status/logs', err);
                 });
+
+                // Atualiza messages state localmente
+                setMessages(prev => prev.map(m => {
+                    if (m.id !== pid) return m;
+                    const existingData = m.data || {};
+                    const existingRuns = existingData.suggested_actions_runs || {};
+                    return {
+                        ...m,
+                        data: {
+                            ...existingData,
+                            suggested_actions_runs: {
+                                ...existingRuns,
+                                [String(aidx)]: {
+                                    ...(existingRuns[String(aidx)] || {}),
+                                    status: finalStatus,
+                                    logs: allLogs,
+                                },
+                            },
+                        },
+                    };
+                }));
             }
 
             if (finalStatus !== 'streaming') {
@@ -527,13 +633,38 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             }
             setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
             if (activeRunningTask.parentMessageId) {
-                const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+                const { parentMessageId: pid, actionIndex: aidx } = activeRunningTask;
+                const taskKey = `${pid}-${aidx}`;
                 setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
 
-                // Persiste para o backend para garantir persistência ao sair/voltar
-                conversations.updateSuggestedActionStatus(activeRunningTask.parentMessageId, activeRunningTask.actionIndex, finalStatus).catch(err => {
-                    console.error('Failed to persist task status', err);
+                // Logs = os que já existiam + os novos desta fase de mapeamento
+                const allLogs = [...(activeRunningTask.logs || []), ...newEvents];
+
+                // Persiste status + logs no backend
+                conversations.updateSuggestedActionStatus(pid, aidx, finalStatus, allLogs).catch(err => {
+                    console.error('Failed to persist task status/logs', err);
                 });
+
+                // Atualiza messages state localmente
+                setMessages(prev => prev.map(m => {
+                    if (m.id !== pid) return m;
+                    const existingData = m.data || {};
+                    const existingRuns = existingData.suggested_actions_runs || {};
+                    return {
+                        ...m,
+                        data: {
+                            ...existingData,
+                            suggested_actions_runs: {
+                                ...existingRuns,
+                                [String(aidx)]: {
+                                    ...(existingRuns[String(aidx)] || {}),
+                                    status: finalStatus,
+                                    logs: allLogs,
+                                },
+                            },
+                        },
+                    };
+                }));
             }
             if (finalStatus === 'done') {
                 const currentIdx = activeRunningTask.actionIndex;
@@ -659,18 +790,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         void syncPreference();
     }, [model, strictMode]);
 
-    // ─── Open thread ─────────────────────────────────────────
-    const openThread = useCallback(async (thread: ThreadOut) => {
-        setActiveThread(thread);
-        if (typeof window !== 'undefined') {
-            const targetOrgId = selectedOrgId || 0;
-            window.localStorage.setItem(`active-thread-id-${targetOrgId}`, thread.id);
-            window.localStorage.setItem('chat-panel-view', 'chat');
-        }
-        setView('chat');
-
+    // ─── Refresh messages ────────────────────────────────────
+    const refreshMessages = useCallback(async (threadId: string) => {
         try {
-            const msgs = await conversations.getMessages(thread.id);
+            const msgs = await conversations.getMessages(threadId);
             if (msgs.length === 0) {
                 setMessages([{
                     id: 'welcome',
@@ -721,7 +844,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                                         logs: run.logs || [],
                                         isExpanded: true, // Expande ao carregar para o usuário ver os botões de ação e status
                                         orgId: selectedOrgId,
-                                        threadId: thread.id,
+                                        threadId,
                                         actionIndex: Number(idx),
                                         parentMessageId: m.id,
                                     };
@@ -844,7 +967,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 if (hasActiveJobLoading) {
                     setIsLoading(true);
                 }
-                setApprovedSuggestedActions(initialSuggestedActions);
+                setApprovedSuggestedActions(prev => ({ ...prev, ...initialSuggestedActions }));
                 if (restoredTask) {
                     setActiveRunningTask(restoredTask);
                 } else {
@@ -853,15 +976,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 setMessages(mappedMsgs);
             }
         } catch (err) {
-            console.error('[ChatPanel] Erro ao carregar mensagens:', err);
-            setMessages([{
-                id: 'welcome',
-                role: 'assistant',
-                content: hasValidOrg ? `Como posso te ajudar com a @${cleanOrgName}?` : "Como posso te ajudar hoje?",
-                timestamp: new Date(),
-            }]);
+            console.error('[ChatPanel] Erro ao carregar/atualizar mensagens:', err);
         }
     }, [selectedOrgId, selectedOrgName, hasValidOrg, cleanOrgName]);
+
+    // ─── Open thread ─────────────────────────────────────────
+    const openThread = useCallback(async (thread: ThreadOut) => {
+        setActiveThread(thread);
+        if (typeof window !== 'undefined') {
+            const targetOrgId = selectedOrgId || 0;
+            window.localStorage.setItem(`active-thread-id-${targetOrgId}`, thread.id);
+            window.localStorage.setItem('chat-panel-view', 'chat');
+        }
+        setView('chat');
+        await refreshMessages(thread.id);
+    }, [selectedOrgId, refreshMessages]);
 
     // ─── Load threads and activities ────────────────────────
     const loadThreads = useCallback(async () => {
@@ -1162,7 +1291,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 abortControllerRef.current = null;
             }
             
-            
             setMessages(prev => prev.map(m =>
                 m.id === msgId ? { ...m, agentStreaming: (hasMappingRequired || hasLigacaoView) ? true : false } : m
             ));
@@ -1170,6 +1298,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (!hasMappingRequired && !hasConfirmationRequired && !hasLigacaoView) {
                 setIsLoading(false);
                 setAgentStreaming(false);
+            }
+
+            if (threadId) {
+                void refreshMessages(threadId);
             }
         }
     };
@@ -1241,7 +1373,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 taskInstruction =
                     `${contactsBlock}\n\n` +
                     `ANÁLISE: ${best.name} (${best.role}) é decisor de compras/logística — contato ideal para a prospecção.\n` +
-                    createCmd;
+                    `Cadastre ${best.name} no Pipedrive chamando pipedrive_create_person (org_id=${orgId}${dealClause}${best.email ? `, email="${best.email}"` : ''}). ` +
+                    `Após cadastrar, você DEVE gerar um plano de prospecção usando a ferramenta generate_sales_message (com os dados do contato) e, em seguida, usar a ferramenta suggest_next_actions.`;
             } else if (best.role === 'Análise Humana') {
                 // Cenário D: todos os contatos precisam de análise humana — não há cargo definido
                 taskInstruction =
@@ -1257,7 +1390,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     `ANÁLISE: Nenhum aprovado tem cargo de compras/logística. ` +
                     `${best.name} (${best.role}) é o contato mais relevante disponível. ` +
                     `Nota para tarefas de prospecção: ${best.name} pode servir como porta de entrada para chegar ao decisor de compras via indicação interna.\n` +
-                    createCmd;
+                    `Cadastre ${best.name} no Pipedrive chamando pipedrive_create_person (org_id=${orgId}${dealClause}${best.email ? `, email="${best.email}"` : ''}). ` +
+                    `Após cadastrar, você DEVE gerar um plano de prospecção usando a ferramenta generate_sales_message e, em seguida, chamar suggest_next_actions.`;
             }
         }
 
@@ -1902,6 +2036,7 @@ ${transcriptText}
                                             onApproveSuggestedAction={handleApproveSuggestedAction}
                                             onHierarchyMappingDone={handleMainChatMappingDone}
                                             model={model}
+                                            onOpenTaskConsole={handleOpenTaskConsole}
                                         />
                                     );
                                 }

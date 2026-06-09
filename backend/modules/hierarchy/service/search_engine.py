@@ -128,7 +128,7 @@ async def _get_bing_fallback(query: str, is_company: bool = False) -> List[Dict]
         
     return []
 
-async def get_duck_results(query: str, max_results: int = 50, is_company: bool = False) -> List[Dict]:
+async def get_duck_results(query: str, max_results: int = 50, is_company: bool = False, filter_linkedin: bool = True) -> List[Dict]:
     """
     Motor DuckDuckGo Otimizado com Fallback imediato para Bing Search.
     Focado em evitar bloqueios, silenciar avisos de rate limit e garantir consistência absoluta.
@@ -154,20 +154,23 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
             print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4) com UA: {ua[:30]}...")
 
             with DDGS(timeout=15) as ddgs:
-                # Backend 'lite' é mais rápido e menos detectável para scraping básico
-                raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results, backend="lite"))
+                # Backend 'html' é confiável e não aciona o loop de auto-fallback
+                raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results, backend="html"))
 
                 if raw_results:
-                    valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
-                    filtered = []
-                    for r in raw_results:
-                        href = r.get("href", "")
-                        if any(p in href for p in valid_patterns):
-                            r["href"] = normalize_linkedin_url(href)
-                            filtered.append(r)
+                    if filter_linkedin:
+                        valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
+                        filtered = []
+                        for r in raw_results:
+                            href = r.get("href", "")
+                            if any(p in href for p in valid_patterns):
+                                r["href"] = normalize_linkedin_url(href)
+                                filtered.append(r)
+                    else:
+                        filtered = raw_results
                             
                     if filtered:
-                        print(f"[SearchEngine] ✅ Sucesso (DDG)! {len(filtered)} perfis LinkedIn filtrados.")
+                        print(f"[SearchEngine] ✅ Sucesso (DDG)! {len(filtered)} resultados encontrados.")
                         ddg_results = filtered
                         ddg_success = True
                         break

@@ -112,10 +112,124 @@ class SalesStrategyService:
                                         "overall_strategy": overall_strategy
                                     }
                         except Exception:
-                            pass
+                            # Fallback: extrai dados do texto formatado usando expressões regulares
+                            try:
+                                import re
+                                if "pipedrive" in tool_name or tool_name == "evaluate_prospects":
+                                    # Extrai nome da organização
+                                    m_org = re.search(r'🏢 ORG:\s*([^\n]+)', tool_content)
+                                    if m_org:
+                                        crm_snapshot["org_name"] = m_org.group(1).strip()
+                                    
+                                    # Extrai informações do Deal
+                                    m_deal = re.search(r'•\s*\[ID:([^\]]+)\]\s*([^|]+)\|\s*([^|]+)\|\s*([^|]+)\|\s*Funil:\s*([^\n]+)', tool_content)
+                                    if m_deal:
+                                        crm_snapshot["deal_id"] = int(m_deal.group(1)) if m_deal.group(1).isdigit() else m_deal.group(1)
+                                        crm_snapshot["deal_stage"] = m_deal.group(5).strip()
+                                        try:
+                                            crm_snapshot["deal_value"] = float(m_deal.group(4).replace("R$", "").replace(",", "").strip())
+                                        except:
+                                            crm_snapshot["deal_value"] = 0.0
+
+                                    # Extrai contatos
+                                    contact_matches = re.finditer(r'•\s*\[ID:([^\]]+)\]\s*([^-(\n]+?)\s*(?:\(([^)]+)\))?(?:\s*-\s*Cargo:\s*([^\n\[]+))?', tool_content)
+                                    for m in contact_matches:
+                                        c_id = m.group(1).strip()
+                                        c_name = m.group(2).strip()
+                                        c_info = m.group(3).strip() if m.group(3) else ""
+                                        c_id_val = None if c_id == "LocalDB" else int(c_id) if c_id.isdigit() else c_id
+                                        email = c_info if "@" in c_info else None
+                                        phone = c_info if c_info and "@" not in c_info and c_info != "sem contato" else None
+                                        if not any(c["name"] == c_name for c in crm_snapshot["contacts"]):
+                                            crm_snapshot["contacts"].append({
+                                                "name": c_name,
+                                                "phone": phone,
+                                                "email": email,
+                                                "id": c_id_val
+                                            })
+
+                                    # Extrai atividades pendentes
+                                    act_matches = re.finditer(r'◯\s*\[ID:([^\]]+)\]\s*([^(]+?)\s*\(venc:\s*([^)]+)\)(?:\s*\|\s*([^\n]+))?', tool_content)
+                                    for m in act_matches:
+                                        a_id = m.group(1).strip()
+                                        a_subject = m.group(2).strip()
+                                        a_due = m.group(3).strip()
+                                        a_id_val = int(a_id) if a_id.isdigit() else a_id
+                                        if not any(a["id"] == a_id_val for a in crm_snapshot["pending_activities"]):
+                                            crm_snapshot["pending_activities"].append({
+                                                "id": a_id_val,
+                                                "subject": a_subject,
+                                                "due": a_due,
+                                                "person": None
+                                            })
+
+                                    # Extrai avaliação de prospectos
+                                    if tool_name == "evaluate_prospects":
+                                        strategy_match = re.search(r'💡 ESTRATÉGIA GERAL:\s*(.*)', tool_content, re.DOTALL)
+                                        overall_strategy = strategy_match.group(1).strip() if strategy_match else ""
+                                        
+                                        best_prospects = []
+                                        prospect_matches = re.finditer(r'•\s*([^-(\n]+?)\s*\(([^)]+)\)\s*\|\s*SCORE:\s*(\d+)\s*\|\s*TIER:\s*([A-C])', tool_content)
+                                        for pm in prospect_matches:
+                                            p_name = pm.group(1).strip()
+                                            p_role = pm.group(2).strip()
+                                            p_score = int(pm.group(3))
+                                            p_tier = pm.group(4).strip()
+                                            best_prospects.append({
+                                                "name": p_name,
+                                                "role": p_role,
+                                                "suitability_score": p_score,
+                                                "suitability_tier": p_tier
+                                            })
+                                        if best_prospects or overall_strategy:
+                                            crm_snapshot["prospect_evaluation"] = {
+                                                "best_prospects": best_prospects,
+                                                "overall_strategy": overall_strategy
+                                            }
+                            except Exception as parse_err:
+                                log.warning(f"Erro ao parsear dados com regex em strategy.py: {parse_err}")
+
                 content = "\n".join(text_parts)
 
             history_serialized.append({"role": role, "content": str(content)})
+
+        # ── 1.5. Injeção Hard de Dados Reais do CRM (Prevenção de Alucinação) ──
+        if org_id:
+            try:
+                from modules.crm.service.pipedrive_service import pipedrive_service
+                details = await pipedrive_service.get_organization_details(org_id)
+                if isinstance(details, dict):
+                    # Deals
+                    deals = details.get("deals") or []
+                    if deals:
+                        d = deals[0]
+                        crm_snapshot["deal_id"] = d.get("id")
+                        crm_snapshot["deal_stage"] = d.get("stage_name") or d.get("stage") or d.get("stage_id")
+                        crm_snapshot["deal_value"] = d.get("value")
+                    # Activities
+                    activities = details.get("activities") or []
+                    if activities:
+                        crm_snapshot["pending_activities"] = [
+                            {"id": a.get("id"), "subject": a.get("subject"), "due": a.get("due_date"), "person": a.get("person_name")}
+                            for a in activities if not a.get("done")
+                        ]
+                    # Contacts
+                    persons = details.get("persons") or []
+                    if persons:
+                        crm_snapshot["contacts"] = []
+                        for p in persons:
+                            phone_list = p.get("phone", [])
+                            email_list = p.get("email", [])
+                            phone_val = next((x.get("value") for x in phone_list if x.get("value")), None) if isinstance(phone_list, list) else None
+                            email_val = next((x.get("value") for x in email_list if x.get("value")), None) if isinstance(email_list, list) else None
+                            crm_snapshot["contacts"].append({
+                                "name": p.get("name"), 
+                                "phone": phone_val, 
+                                "email": email_val, 
+                                "id": p.get("id")
+                            })
+            except Exception as e:
+                log.warning(f"Erro ao buscar snapshot hard do CRM para estrategia: {e}")
 
         # ── 2. Carrega contexto de negócio ────────────────────────────────────
         business_context = await BusinessContextService.get_tenant_context()
@@ -184,6 +298,7 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 - email_send: envia email NOVO sem thread existente (to, subject, body, attachment_name)
 - email_reply: responde na thread existente do Outlook (entry_id, body) — USE ESTE quando há thread ativa
 - pipedrive_create_task: cria tarefa no CRM (subject, task_type=[call|meeting|task|deadline], due_date, deal_id, org_name, note)
+- pipedrive_update_task: atualiza ou conclui tarefa existente (activity_id, done=true/false, subject, due_date)
 - pipedrive_update_deal: atualiza deal (deal_id, fields)
 - pipedrive_create_note: cria nota no deal (deal_id, content)
 - whatsapp_get_messages: busca histórico WhatsApp (contact, phone, org_name)

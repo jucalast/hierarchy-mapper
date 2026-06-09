@@ -545,9 +545,18 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             
             # Detecta comandos diretos
             content_lower = msg_content.lower().strip()
-            import re as _re
-            if _re.search(r'\b(execute|realizar|realize|marque|crie|adicione|atualize|altere|mande|envie|agende|ligue)\b', content_lower):
-                command_mode_active = True
+            _is_task_crm = any(s.lower() in content_lower for s in [
+                "execute a seguinte atividade do crm",
+                "atividade #",
+                "execute agora, começando pelo raciocínio",
+                "execute estas etapas em ordem",
+                "etapa 1 — pipedrive",
+                "investigue a empresa"
+            ])
+            if not _is_task_crm:
+                import re as _re
+                if _re.search(r'\b(execute|realizar|realize|marque|crie|adicione|atualize|altere|mande|envie|agende|ligue)\b', content_lower):
+                    command_mode_active = True
 
     # Se estiver dentro de um chat de uma empresa específica (org_id > 0), é sempre sobre um negócio específico,
     # exigindo a investigação completa, a menos que estejamos no MODO CONTEXTO, puxando tarefas globais,

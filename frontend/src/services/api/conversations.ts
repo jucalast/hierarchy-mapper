@@ -61,6 +61,6 @@ export function listActivities(orgId: number, limit = 30): Promise<ActivityOut[]
     return api.get<ActivityOut[]>(`/conversations/${orgId}/activities?limit=${limit}`);
 }
 
-export function updateSuggestedActionStatus(messageId: string, actionIndex: number, status: string): Promise<{ ok: boolean }> {
-    return api.patch<{ ok: boolean }>(`/conversations/message/${messageId}/suggested_actions/${actionIndex}`, { status });
+export function updateSuggestedActionStatus(messageId: string, actionIndex: number, status: string, logs?: any[]): Promise<{ ok: boolean }> {
+    return api.patch<{ ok: boolean }>(`/conversations/message/${messageId}/suggested_actions/${actionIndex}`, { status, ...(logs ? { logs } : {}) });
 }

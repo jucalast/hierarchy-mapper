@@ -403,6 +403,25 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
         if local_icp_contacts:
             icp_str = f" | [ALERTA: DECISOR LOCAL ENCONTRADO] " + ", ".join(local_icp_contacts)
 
+        # 🚀 NOVO: Se encontramos apenas contatos locais e nenhum no Pipedrive, o agente deve perguntar ao usuário
+        # se deve usar o local ou se deve abrir o mapeador de hierarquia para buscar novos.
+        has_pipedrive = any(p.get("id") is not None for p in result)
+        if not has_pipedrive and result:
+            local_best = next((p for p in result if p.get("source") == "Banco Local"), result[0])
+            return {
+                "ok": True,
+                "status": "confirmation_required",
+                "message": f"Identifiquei {local_best['name']} ({local_best['role']}) em nosso banco local, mas este contato não está cadastrado no CRM. Deseja prosseguir com este contato ou prefere que eu abra o mapeador de hierarquia para buscar novos nomes?",
+                "options": [
+                    {"label": "Usar contato local", "prompt": f"Prossiga com o contato local {local_best['name']}. Cadastre-o no CRM e execute o mapeamento de histórico."},
+                    {"label": "Mapear novos contatos", "prompt": "Não utilize o contato local. Abra o mapeador de hierarquia (open_hierarchy_drawer) para buscar contatos atualizados."}
+                ],
+                "contacts": result,
+                "org_id": org_id,
+                "org_name": match.get("name"),
+                "summary": f"Encontrado contato local {local_best['name']} (não está no CRM). Aguardando decisão do usuário."
+            }
+
         return {
             "ok": True,
             "org": match.get("name"),

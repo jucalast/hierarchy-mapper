@@ -89,6 +89,30 @@ async def _agent_loop(
     # vs. aprovação de ação única — marcador injetado por _build_task_action_prompt
     _first_msg_content = messages[0].get("content", "") if messages else ""
 
+    # Compila apenas as instruções textuais reais do usuário (filtrando tool results da execução anterior ou atual)
+    _user_msgs = []
+    for _m in messages:
+        if _m.get("role") == "user":
+            _mc = _m.get("content", "")
+            if isinstance(_mc, list):
+                if _mc and isinstance(_mc[0], dict) and (_mc[0].get("type") == "tool_result" or "tool_name" in _mc[0] or "tool_use_id" in _mc[0]):
+                    continue
+                _user_msgs.append(" ".join(_b.get("text", "") for _b in _mc if isinstance(_b, dict) and _b.get("type") == "text"))
+            elif isinstance(_mc, str):
+                _user_msgs.append(_mc)
+
+    # Limpa alertas de sistema e metadados envoltos em colchetes [ ... ]
+    import re as _re
+    _user_instructions_clean = []
+    for _text in _user_msgs:
+        if isinstance(_text, str):
+            _user_instructions_clean.append(_re.sub(r'\[.*?\]', '', _text, flags=_re.DOTALL))
+    _user_instructions_text = " ".join(_user_instructions_clean).lower()
+
+    _first_msg_content_clean = ""
+    if isinstance(_first_msg_content, str):
+        _first_msg_content_clean = _re.sub(r'\[.*?\]', '', _first_msg_content, flags=_re.DOTALL)
+
     # Sinais que identificam um prompt de execução de tarefa CRM — gerado por
     # _build_task_action_prompt OU enviado manualmente via chat com o prefixo padrão.
     _TASK_SIGNALS = [
@@ -108,10 +132,11 @@ async def _agent_loop(
         direct_action = True
 
     _is_task_action = direct_action and _has_task_signal
-    _is_find_decisor_task = any(kw in _first_msg_content.lower() for kw in [
+    _is_find_decisor_task = any(kw in _first_msg_content_clean.lower() for kw in [
         "encontrar contato", "encontrar decisor", "open_hierarchy_drawer",
         "encontrar o contato", "identificar contato", "localizar contato",
     ])
+
 
     # ...
     # Yielding start event
@@ -191,7 +216,7 @@ async def _agent_loop(
                 if isinstance(_b, dict) and _b.get("type") == "tool_use":
                     _tn = _b.get("name", "")
                     _ta = _b.get("input") or {}
-                    if _tn in {"pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities"}:
+                    if _tn in {"pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities", "batch_communication_search"}:
                         _tool_call_history.add(_tn)
                     elif _tn in {"whatsapp_get_messages", "email_get_contact_history"}:
                         _cid = (_ta.get("contact") or _ta.get("contact_name") or _ta.get("org_name") or "").lower().strip()
@@ -268,12 +293,26 @@ async def _agent_loop(
         ctx = await BusinessContextService.get_tenant_context()
 
         if active_skill:
+            # Extrai activity_id do prompt para injetar no contexto da skill
+            import re as _re_act
+            _last_content = messages[-1].get('content', '') if messages else ''
+            # content pode ser lista de blocos (formato Anthropic) — extrai texto
+            if isinstance(_last_content, list):
+                _last_content = ' '.join(
+                    b.get('text', '') if isinstance(b, dict) else str(b)
+                    for b in _last_content
+                )
+            _act_id_match = _re_act.search(r'ID da tarefa no Pipedrive:\s*(\d+)', _last_content)
+            _skill_ctx = {"org_id": org_id, "process_id": process_id}
+            if _act_id_match:
+                _skill_ctx["activity_id"] = int(_act_id_match.group(1))
+
             if _is_direct_directive:
                 system = render_prompt(SYSTEM_PROMPT_TASK_DIRECTIVE, ctx)
-                skill_inst = render_prompt(active_skill.get_instructions({'org_id': org_id, 'process_id': process_id}), ctx)
+                skill_inst = render_prompt(active_skill.get_instructions(_skill_ctx), ctx)
                 system += f"\n\n[CONTEXTO DE BACKGROUND DA TAREFA ATUAL]:\nO usuário pediu uma ação pontual (diretiva livre) dentro desta tarefa. As regras da diretiva livre (Fim da burocracia) são SOBERANAS e você DEVE cumpri-las e pular quaisquer investigações ou Fases obrigatórias ditadas no texto abaixo. Eis o background apenas para que você tenha contexto das regras de negócio gerais:\n\n{skill_inst}"
             else:
-                system = render_prompt(active_skill.get_instructions({"org_id": org_id, "process_id": process_id}), ctx)
+                system = render_prompt(active_skill.get_instructions(_skill_ctx), ctx)
                 if hasattr(active_skill, "get_advance_prompt"):
                     adv_prompt = render_prompt(active_skill.get_advance_prompt(), ctx)
                     if adv_prompt:
@@ -936,8 +975,9 @@ async def _agent_loop(
 
                     # ── Interceptor: Investigação concluída mas rascunho NÃO gerado ──────────
                     _COMM_KEYWORDS = ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow"]
-                    _is_comm_task = any(k in _first_msg_content.lower() for k in _COMM_KEYWORDS)
-                    _is_call_task = any(k in _first_msg_content.lower() for k in ["ligação", "ligar", "telefonar", "telefone"])
+                    _is_comm_task = any(k in _first_msg_content_clean.lower() for k in _COMM_KEYWORDS)
+                    _is_call_task = any(k in _first_msg_content_clean.lower() for k in ["ligação", "ligar", "telefonar", "telefone"])
+
 
                     # ── Interceptor: LIGAÇÃO - contato sem telefone → forçar find_company_contact ──
                     if _is_call_task and not _missing_core and iteration < _max_iters - 2:
@@ -1070,7 +1110,8 @@ async def _agent_loop(
 
                     # ── Interceptor: Histórico encontrado mas rascunho NÃO gerado (OBRIGATÓRIO PARA FOLLOW-UP) ──
                     if not _has_draft_now and not _has_sent_now:
-                        _is_followup = any(kw in _first_msg_content.lower() for kw in ["follow-up", "cobrar retorno", "acompanhar", "orçamento"])
+                        _is_followup = any(kw in _first_msg_content_clean.lower() for kw in ["follow-up", "cobrar retorno", "acompanhar", "orçamento"])
+
                         if _is_followup:
                             _found_history = False
                             # Verifica tanto o histórico quanto os resultados do turno atual
@@ -1287,7 +1328,8 @@ async def _agent_loop(
                                     if _tn_curr == "generate_sales_message": _has_draft_global = True
 
                         _COMM_KEYWORDS = ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow"]
-                        _is_comm_task = any(k in _first_msg_content.lower() for k in _COMM_KEYWORDS)
+                        _is_comm_task = any(k in _first_msg_content_clean.lower() for k in _COMM_KEYWORDS)
+
                         
                         # A tarefa de comunicação está "completa para o loop" se já tem o rascunho.
                         # Isso permite que o assistente pare para mostrar o texto ao usuário.
@@ -1618,8 +1660,8 @@ async def _agent_loop(
                 
                 if _is_marking_done:
                     # Verifica intenção de comunicação em TODO o histórico (não apenas na primeira mensagem)
-                    _full_history_text = " ".join(str(m.get("content", "")).lower() for m in messages)
-                    _is_comm_task = any(kw in _full_history_text for kw in ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow", "otimização", "ligar"])
+                    _is_comm_task = any(kw in _user_instructions_text for kw in ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow", "otimização", "ligar"])
+
                     
                     if _is_comm_task:
                         _comm_proposed = False
@@ -1708,8 +1750,8 @@ async def _agent_loop(
             if tool_name == "suggest_next_actions" and _is_task_action:
                  # Se for uma tarefa de comunicação, não pode sugerir próximos passos 
                  # sem antes ter proposto o envio da mensagem desta tarefa.
-                 _full_history_text = " ".join(str(m.get("content", "")).lower() for m in messages)
-                 _is_comm_task = any(kw in _full_history_text for kw in ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow", "otimização", "ligar"])
+                 _is_comm_task = any(kw in _user_instructions_text for kw in ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow", "otimização", "ligar"])
+
                  
                  if _is_comm_task:
                      _has_sent_global = False
@@ -1810,11 +1852,20 @@ async def _agent_loop(
                     for msg in messages:
                         if msg.get("role") == "user":
                             _content = str(msg.get("content", "")).lower()
-                            if "[MODO CONTEXTO" in _content:
+                            if "[modo contexto" in _content:
                                 context_mode_active = True
-                            import re as _re
-                            if _re.search(r'\b(execute|realizar|realize|marque|crie|adicione|atualize|altere|mande|envie|agende|ligue)\b', _content):
-                                command_mode_active = True
+                            _is_task_crm = any(s.lower() in _content for s in [
+                                "execute a seguinte atividade do crm",
+                                "atividade #",
+                                "execute agora, começando pelo raciocínio",
+                                "execute estas etapas em ordem",
+                                "etapa 1 — pipedrive",
+                                "investigue a empresa"
+                            ])
+                            if not _is_task_crm:
+                                import re as _re
+                                if _re.search(r'\b(execute|realizar|realize|marque|crie|adicione|atualize|altere|mande|envie|agende|ligue)\b', _content):
+                                    command_mode_active = True
 
                     _is_investigation = query_type in ("deal_status", "agent_workflow") or (
                         org_id is not None
@@ -2039,6 +2090,43 @@ async def _agent_loop(
 
                 if ok and summary:
                     _collected_tool_summaries.append(f"[{tool_name}] {summary}")
+
+                if ok and tool_result.get("status") == "confirmation_required":
+                    # ✅ INTERCEPTOR DE CONFIRMAÇÃO DINÂMICA
+                    # Se uma ferramenta (ex: pipedrive_get_persons) retornar que precisa de confirmação,
+                    # emitimos o card e encerramos o loop para aguardar o usuário.
+                    action_id = f"act_{uuid.uuid4().hex[:6]}"
+                    
+                    # ✅ SALVA O ESTADO PARA RETOMADA (Crucial para o runner.py encontrar este action_id)
+                    _PENDING[action_id] = {
+                        "call_id": first_call_id,
+                        "tool_use_id": first_call_id,
+                        "tool": tool_name,
+                        "args": tool_args,
+                        "label": _get_label(tool_name, tool_args),
+                        "org_id": org_id,
+                        "process_id": process_id,
+                        "messages_snapshot": list(messages),
+                        "prior_results": [], 
+                        "iteration": iteration + 1,
+                        "query_type": query_type,
+                        "options": tool_result.get("options"), # Salva as opções para o runner saber o que foi escolhido
+                    }
+
+                    yield _emit({
+                        "type": "confirmation_required",
+                        "action_id": action_id,
+                        "tool": tool_name,
+                        "label": tool_result.get("summary", "Confirmação necessária"),
+                        "preview": tool_result.get("message", ""),
+                        "org_id": org_id,
+                        "org_name": tool_result.get("org_name"),
+                        "options": tool_result.get("options")
+                    })
+                    if not _final_emitted:
+                        _final_emitted = True
+                        yield _emit({"type": "final", "response": tool_result.get("message", "Aguardando sua decisão para prosseguir.")})
+                    return
 
                 if ok and tool_name == "suggest_next_actions":
                     actions = tool_result.get("actions", [])

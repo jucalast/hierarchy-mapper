@@ -1,0 +1,1271 @@
+{
+    "timestamp": "2026-06-09T11:19:06.083724",
+    "candidate": "Tiago Frederico Sigrist",
+    "linkedin": "https://www.linkedin.com/in/tiago-frederico-sigrist-797001147",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tiago Frederico Sigrist - Indaiatuba, São Paulo, Brasil ... Home - PID Pid Automação Industrial - Processos - Jusbrasil PID AUTOMACAO INDUSTRIAL LTDA Company Profile | INDAIATUBA ... PID AUTOMACAO INDUSTRIAL LTDA - CNPJ 08409317000198 PID AUTOMACAO INDUSTRIAL LTDA - CNPJ 08.409.317/ | Consulta ... PID Automação Industrial Management Team | Org Chart",
+            "body": "Localidade: Indaiatuba · 361 conexões no LinkedIn . Veja o perfil de Tiago Frederico Sigrist no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. PID AUTOMAÇÃO INDUSTRIALA SOLUÇÃO AO SEU ALCANCEContamos com equipe comercial com grande conhecimento técnico Entre em contato Fundada em 2006, somos uma empresa direcionada na distribuição de soluções para Automação Industrial . Nosso objetivo é apresentar soluções para a redução de perdas de produção e otimização de processos industriais , aumentando assim a produtividade e ... Aug 26, 2021 · O Jusbrasil encontrou 10 processos que mencionam o nome PID Automação Industrial . A maioria é do TJSP, seguido por TJSPCR. Desses processos encontrados, Fernando Galesi Ducatti foi a parte que mais apareceu, seguido por Tiago Frederico Sigrist . Find company research, competitor information, contact details & financial data for PID AUTOMACAO INDUSTRIAL LTDA of INDAIATUBA, SAO PAULO. Get the latest business insights from Dun & Bradstreet. Oct 10, 2006 · 10/10/2006 Capital Social R$ 104.500 Natureza Jurídica 2062 - SOCIEDADE EMPRESÁRIA LIMITADA Empresa MEI Não Logradouro RUA SOROCABA Número 168 Complemento CEP 13339-390 Bairro JARDIM AMERICA Município INDAIATUBA UF SP Telefone 19 99604-5738 E-MAIL TIAGO @PIDINDUSTRIAL.COM. BR Quadro Societário TIAGO FREDERICO SIGRIST - Sócio-Administrador ... CNPJ 08.409.317/0001-98 - PID AUTOMACAO INDUSTRIAL LTDA em INDAIATUBA/SP. Atividade: Comércio atacadista de Máquinas e equipamentos para uso industrial . Consulte sócios, endereço, situação cadastral e capital social. PID Automação Industrial employs 7 employees. The PID Automação Industrial management team includes Rosemary Araujo (Executivo de Vendas), Muryel Souza (Supervisora de vendas), and Kaique Medeiros (Vendedor externo)."
+        },
+        "osint_metadata": {
+            "role": "indaiatuba, são paulo, brasil",
+            "bio": "Localidade: Indaiatuba · 361 conexões no LinkedIn. Veja o perfil de Tiago Frederico Sigrist no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Tiago Frederico Sigrist",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "PID AUTOMAÇÃO INDUSTRIALA SOLUÇÃO AO SEU ALCANCEContamos com equipe comercial com grande conhecimento técnico Entre em contato Fundada em 2006, somos uma empresa direcionada na distribuição de soluções para Automação Industrial . Nosso objetivo é apresentar soluções para a redução de perdas de produção e otimização de processos industriais , aumentando assim a produtividade e"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Localidade: Indaiatuba · 361 conexões no LinkedIn. Veja o perfil de Tiago Frederico Sigrist no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Tiago Frederico Sigrist",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Tiago Frederico Sigrist",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Localidade: Indaiatuba · 361 conexões no LinkedIn. Veja o perfil de Tiago Frederico Sigrist no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Tiago Frederico Sigrist não foi identificado. Embora a empresa alvo seja 'Pid Automação Industrial', não há informações suficientes no perfil para determinar se ele atua em áreas de Suprimentos, Compras ou Procurement, nem para confirmar seu vínculo com a empresa. A bio e os snippets não contêm termos técnicos explícitos relacionados a essas áreas."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T11:19:45.333346",
+    "candidate": "PID Industrial",
+    "linkedin": "https://www.linkedin.com/in/pid-industrial-79a936180",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "PID Industrial - Automação industrial - Pid Automacao ... | LinkedIn",
+            "body": "A PID Automação tem o objetivo claro de promover soluções industriais atendendo o público do interior paulista através dos nossos produtos que dispõe de um grande leque de possibilidades e aplicações, seja da área alimentícia até a automotiva."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Olá, nós somos a PID Automação Industrial!\nEstamos localizados na cidade de Indaiatuba… · Experiência: Pid Automacao Industrial · Localidade: Indaiatuba · 398 conexões no LinkedIn. Veja o perfil de PID Industrial no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "role": "Perfil Institucional",
+        "matching_score": 0,
+        "department": "N/D",
+        "evidence": "VETO FUZZY: Perfil de empresa."
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Perfil Institucional",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T11:48:20.159815",
+    "candidate": "PID Brasil Automação Industrial",
+    "linkedin": "https://www.linkedin.com/in/pid-brasil-automa%C3%A7%C3%A3o-industrial-910645270",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "PID Brasil Automação Industrial - Diretor | LinkedIn",
+            "body": "Diretor · Experiência: Autônomo · Localidade: Londrina e Região · 1 conexão no LinkedIn . Veja o perfil de PID Brasil Automação Industrial no LinkedIn , uma comunidade profissional de 1..."
+        },
+        "osint_metadata": {
+            "role": "autônomo",
+            "bio": "Experiência: Autônomo · Localidade: Londrina e Região · 1 conexão no LinkedIn. Veja o perfil de PID Brasil Automação Industrial no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "role": "Perfil Institucional",
+        "matching_score": 0,
+        "department": "N/D",
+        "evidence": "VETO FUZZY: Perfil de empresa."
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Perfil Institucional",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T11:48:24.437618",
+    "candidate": "PID Industrial",
+    "linkedin": "https://www.linkedin.com/in/pid-industrial-79a936180",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "PID Industrial - Pid Automacao Industrial | LinkedIn",
+            "body": "Veja o perfil de PID Industrial no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Olá, nós somos a PID Automação Industrial!\nEstamos localizados na cidade de Indaiatuba… · Experiência: Pid Automacao Industrial · Localidade: Indaiatuba · 398 conexões no LinkedIn. Veja o perfil de PID Industrial no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "role": "Perfil Institucional",
+        "matching_score": 0,
+        "department": "N/D",
+        "evidence": "VETO FUZZY: Perfil de empresa."
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Perfil Institucional",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T15:30:48.122943",
+    "candidate": "Adnan Formigoni",
+    "linkedin": "https://www.linkedin.com/in/adnan-formigoni-34b2961b5",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Adnan Formigoni - Advantec Manutenção e Automação ... | LinkedIn",
+            "body": "Experiência: Advantec Manutenção e Automação Industrial · Localidade: Itupeva · 44 conexões no LinkedIn . Veja o perfil de Adnan Formigoni no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "advantec manutenção e automação industrial",
+            "bio": "Experiência: Advantec Manutenção e Automação Industrial · Localidade: Itupeva · 44 conexões no LinkedIn. Veja o perfil de Adnan Formigoni no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Adnan Formigoni",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Adnan Formigoni - Advantec Manutenção e Automação Industrial.",
+                "Candidate Name: Adnan Formigoni | Google Page Title: Adnan Formigoni - Advantec Manutenção e Automação | Search Snippet: Experiência: Advantec Manutenção e Automação Industrial · Localidade: Itupeva · 44 conexões no LinkedIn . Veja o perfil de Adnan Formigoni no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. | LinkedIn Status: Adnan Formigoni | advantec manutenção e automação industrial | LinkedIn CURRENT COMPANY (Declarada): Advantec Industria De Maquinas E Automação | LinkedIn Personal Bio: Experiência: Advantec Manutenção e Automação Industrial · Localidade: Itupeva · 44 conexões no LinkedIn. Veja o perfil de Adnan Formigoni no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Adnan Formigoni - Advantec Manutenção e Automação Industrial. Localidade: Itupeva."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Adnan Formigoni",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Adnan Formigoni",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Adnan Formigoni - Advantec Manutenção e Automação Industrial. Localidade: Itupeva. 44 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Adnan Formigoni não foi identificado nos dados fornecidos. Embora ele trabalhe na Advantec Industria De Maquinas E Automação, não há informações suficientes para determinar se sua função tem interface com Suprimentos/Compras/Procurement. A ausência de termos técnicos explícitos na bio ou nos snippets impede a marcação como relevante."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T15:31:30.037371",
+    "candidate": "TATIANE FORMIGONI",
+    "linkedin": "https://www.linkedin.com/in/tatiane-formigoni-1157b9b8",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "TATIANE FORMIGONI - ADVANTEC MANUTENÇÃO... | LinkedIn",
+            "body": "Experiência: ADVANTEC MANUTENÇÃO E AUTOMAÇÃO INDUSTRIAL LTDA · Localidade: São Paulo e Região · 122 conexões no LinkedIn . Veja o perfil de TATIANE FORMIGONI no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "advantec manutenção e automação industrial ltda",
+            "bio": "Experiência: ADVANTEC MANUTENÇÃO E AUTOMAÇÃO INDUSTRIAL LTDA · Localidade: São Paulo e Região · 121 conexões no LinkedIn. Veja o perfil de TATIANE FORMIGONI no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "TATIANE FORMIGONI",
+        "role": "Nao Identificado",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico, indicando uma possível inconsistência ou regra de rejeição automática acionada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "TATIANE FORMIGONI - ADVANTEC MANUTENÇÃO E AUTOMAÇÃO INDUSTRIAL LTDA",
+                "TATIANE FORMIGONI | advantec manutenção e automação industrial ltda",
+                "Experiência: ADVANTEC MANUTENÇÃO E AUTOMAÇÃO INDUSTRIAL LTDA",
+                "LinkedIn CURRENT COMPANY (Declarada): Advantec Industria De Maquinas E Automação"
+            ],
+            "is_institutional": false,
+            "bio_raw": "TATIANE FORMIGONI - ADVANTEC MANUTENÇÃO E AUTOMAÇÃO INDUSTRIAL LTDA"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "TATIANE FORMIGONI",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "TATIANE FORMIGONI",
+                "detected_role": "Não Identificado",
+                "clean_bio": "TATIANE FORMIGONI - ADVANTEC MANUTENÇÃO E AUTOMAÇÃO INDUSTRIAL LTDA · Localidade: São Paulo e Região · 122 conexões no LinkedIn . Veja o perfil de TATIANE FORMIGONI no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. TATIANE FORMIGONI | advantec manutenção e automação industrial ltda"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Tatiane Formigoni não foi identificado nos dados fornecidos. Embora ela trabalhe na Advantec Industria De Maquinas E Automação, não há informações explícitas em sua bio ou nos snippets que a vinculem diretamente a funções de Suprimentos, Compras ou Procurement. Sem essa informação, não é possível determinar a relevância para a área de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Nao Identificado",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T15:32:05.890794",
+    "candidate": "Rodrigo Takaki",
+    "linkedin": "https://www.linkedin.com/in/rodrigo-takaki-05151417b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo Takaki - Advantec Industria de Maquinas e Automação ... Adnan Formigoni - Diretor Técnico Advantec Máquinas | LinkedIn Advantech Brasil - LinkedIn Alexandre Augusto Oliveira Souza - Advantec Industria de ...",
+            "body": "Experiência: Advantec Industria de Maquinas e Automação · Formação acadêmica: Grupo Anchieta · Localidade: Jundiaí · 42 conexões no LinkedIn . Veja o perfil de Rodrigo Takaki no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Diretor Técnico Advantec Máquinas · Experiência: Advantec Manutenção e Automação Industrial · Localidade: Itupeva · 44 conexões no LinkedIn . Veja o perfil de Adnan Formigoni no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Advantech Brasil | 9,270 位 LinkedIn 關注者。Fundada em 1983, a Advantech tem a visão corporativa de \"Possibilitar um Planeta Inteligente\". A empresa é líder global nas áreas de sistemas inteligentes de IoT e plataformas embarcadas. Para abraçar as tendências de IoT, big data e inteligência artificial, a Advantech promove soluções de hardware e software de IoT com Edge ... Experiência adquirida em 10 anos em compras de peças para manutenção e contratação de … · Experiência: Advantec Industria de Maquinas e Automação · Formação acadêmica: Universidade Paulista / UNIP · Localidade: Jundiaí · 468 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência:  Advantec Industria de Maquinas e Automação · Formação acadêmica: Grupo Anchieta · Localidade: Jundiaí · 42 conexões no LinkedIn. Veja o perfil de Rodrigo Takaki no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Rodrigo Takaki",
+        "role": "Diretor Técnico",
+        "matching_score": 100,
+        "department": "Técnico",
+        "evidence": "Rejeitado pelo Veredito de Relevância (Veto Técnico), pois o Especialista marcou 'Relevante: False' e não há Cargo Oficial Verificado que contradiga.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rodrigo Takaki - Advantec Industria de Maquinas e Automação",
+                "Diretor Técnico Advantec Máquinas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rodrigo Takaki - Advantec Industria de Maquinas e Automação. Diretor Técnico Advantec Máquinas."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rodrigo Takaki",
+                    "role": "Diretor Técnico"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rodrigo Takaki",
+                "detected_role": "Diretor Técnico",
+                "clean_bio": "Rodrigo Takaki - Advantec Industria de Maquinas e Automação. Diretor Técnico Advantec Máquinas."
+            }
+        },
+        "specialist": {
+            "role_name": "Diretor Técnico",
+            "dept": "Técnico",
+            "is_relevant": false,
+            "reasoning": "O cargo de Diretor Técnico não tem interface direta com as áreas de Suprimentos/Compras/Procurement. A relevância é negada com base nas regras de veto absoluto e foco técnico."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Diretor Técnico",
+        "department": "Técnico",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T15:32:25.843948",
+    "candidate": "Alexandre Augusto Oliveira Souza",
+    "linkedin": "https://www.linkedin.com/in/alexandre-augusto-oliveira-souza-9a867743",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alexandre Augusto Oliveira Souza - Advantec Industria de ...",
+            "body": "Experiência adquirida em 10 anos em compras de peças para manutenção e contratação de … · Experiência: Advantec Industria de Maquinas e Automação · Formação acadêmica: Universidade Paulista / UNIP · Localidade: Jundiaí · 468 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência adquirida em 10 anos em compras de peças para manutenção e contratação de… · Experiência:  Advantec Industria de Maquinas e Automação · Formação acadêmica: Universidade Paulista / UNIP · Localidade: Jundiaí · 468 conexões no LinkedIn. Veja o perfil de Alexandre Augusto Oliveira Souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Alexandre Augusto Oliveira Souza",
+        "role": "Comprador",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa-alvo 'Advantec Industria De Maquinas E Automação', conforme confirmado pelo Detetive. A especialidade em 'Compras de Peças para Manutenção' é altamente relevante para a área de Suprimentos/Compras. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Advantec Industria de Maquinas e Automação",
+                "LinkedIn CURRENT COMPANY (Declarada): Advantec Industria De Maquinas E Automação"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência adquirida em 10 anos em compras de peças para manutenção e contratação de …"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Alexandre Augusto Oliveira Souza",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Alexandre Augusto Oliveira Souza",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência adquirida em 10 anos em compras de peças para manutenção e contratação de … · Experiência: Advantec Industria de Maquinas e Automação · Formação acadêmica: Universidade Paulista / UNIP · Localidade: Jundiaí · 468 conexões no LinkedIn ."
+            }
+        },
+        "specialist": {
+            "role_name": "Compras de Peças para Manutenção",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O candidato possui experiência explícita em 'compras de peças para manutenção', o que se alinha diretamente com a área de Suprimentos/Compras. O vínculo com a empresa Advantec Industria De Maquinas E Automação foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T15:33:24.691788",
+    "candidate": "João Peretto",
+    "linkedin": "https://www.linkedin.com/in/jo%C3%A3o-peretto-00265b283",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Peretto - Advantec Industria de Maquinas e Automação",
+            "body": "Veja o perfil de João Peretto no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Cadastre-se para ver o perfil. Advantec Industria de Maquinas e Automação . Denunciar este perfil."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência:  Advantec Industria de Maquinas e Automação · Localidade: 01101-080. Veja o perfil de João Peretto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "João Peretto",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Veja o perfil de João Peretto no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Cadastre-se para ver o perfil. Advantec Industria de Maquinas e Automação .",
+                "LinkedIn CURRENT COMPANY (Declarada): Advantec Industria De Maquinas E Automação",
+                "Experiência: Advantec Industria de Maquinas e Automação · Localidade: 01101-080. Veja o perfil de João Peretto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Veja o perfil de João Peretto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. Advantec Industria de Maquinas e Automação."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "João Peretto",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "João Peretto",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Veja o perfil de João Peretto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. Advantec Industria de Maquinas e Automação."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de João Peretto não foi identificado nos dados fornecidos. Embora ele trabalhe na Advantec Industria De Maquinas E Automação, não há informações suficientes para determinar se sua função tem interface direta com Suprimentos/Compras/Procurement, nem termos técnicos explícitos na bio ou snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T15:33:44.051151",
+    "candidate": "Jose Demilson S Soares",
+    "linkedin": "https://www.linkedin.com/in/josedemilsonssoaresengproducao",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jose Demilson S Soares - Advantec Industria de Maquinas e ...",
+            "body": "Graduação em Engenharia de Produção Mecânica pela Universidade Paulista. Experiência em… · Experiência: Advantec Industria de Maquinas e Automação · Formação acadêmica: Universidade Paulista · Localidade: Campinas · 102 conexões no LinkedIn . Veja o perfil de Jose Demilson S Soares no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Graduação em Engenharia de Produção Mecânica pela Universidade Paulista. Experiência em… · Experiência: Advantec Industria de Maquinas e Automação · Formação acadêmica: Universidade Paulista · Localidade: Campinas · 102 conexões no LinkedIn. Veja o perfil de Jose  Demilson S Soares no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Jose Demilson S Soares",
+        "role": "Nao Identificado",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico, indicando uma possível inconsistência ou regra de rejeição automática ativada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Advantec Industria de Maquinas e Automação",
+                "LinkedIn CURRENT COMPANY (Declarada): Advantec Industria De Maquinas E Automação"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Graduação em Engenharia de Produção Mecânica pela Universidade Paulista. Experiência em…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jose Demilson S Soares",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jose Demilson S Soares",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Graduação em Engenharia de Produção Mecânica pela Universidade Paulista. Experiência em… · Experiência: Advantec Industria de Maquinas e Automação · Formação acadêmica: Universidade Paulista · Localidade: Campinas · 102 conexões no LinkedIn . Veja o perfil de Jose Demilson S Soares no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Jose Demilson S Soares não foi identificado nos dados fornecidos. Embora ele trabalhe na Advantec Industria De Maquinas E Automação, não há informações suficientes para determinar se sua função está relacionada a Suprimentos/Compras/Procurement. A formação em Engenharia de Produção Mecânica não garante automaticamente essa relevância sem um cargo explícito."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Nao Identificado",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T15:34:54.603175",
+    "candidate": "Cesar Reis",
+    "linkedin": "https://www.linkedin.com/in/cesar-reis121190",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Cesar Reis - Advantec Industria de Maquinas e Automação ...",
+            "body": "Comprador e planejamento na Área de Supply chain com foco em redução de custos… · Experiência: Advantec Industria de Maquinas e Automação · Formação acadêmica: UNOPAR - Universidade Norte do Paraná · Localidade: Campo Limpo Paulista · 121 conexões no LinkedIn . Veja o perfil de Cesar Reis no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Comprador e planejamento na Área de Supply chain com foco em redução de custos… · Experiência:  Advantec Industria de Maquinas e Automação · Formação acadêmica: UNOPAR - Universidade Norte do Paraná · Localidade: Campo Limpo Paulista · 122 conexões no LinkedIn. Veja o perfil de Cesar Reis no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Cesar Reis",
+        "role": "Comprador",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Cesar Reis trabalha na Advantec Industria De Maquinas E Automação, conforme confirmado pelo Detetive e alinhado com a meta. O cargo de Comprador na área de Supply Chain é relevante para Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Advantec Industria de Maquinas e Automação",
+                "LinkedIn CURRENT COMPANY (Declarada): Advantec Industria De Maquinas E Automação"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Comprador e planejamento na Área de Supply chain com foco em redução de custos…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Cesar Reis",
+                    "role": "Comprador e planejamento na Área de Supply chain"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Cesar Reis",
+                "detected_role": "Comprador e planejamento na Área de Supply chain",
+                "clean_bio": "Comprador e planejamento na Área de Supply chain com foco em redução de custos…"
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador e Planejamento na Área de Supply Chain",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador e Planejamento na Área de Supply Chain' está diretamente alinhado com as áreas de Suprimentos/Compras/Procurement, com foco em redução de custos, o que é relevante para a posição."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T15:36:05.225938",
+    "candidate": "Allan Patrick",
+    "linkedin": "https://www.linkedin.com/in/allan-patrick-65034a273",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Allan Patrick - Advantec Máquinas | LinkedIn",
+            "body": "Allan pode apresentar você a 1 pessoas na empresa Advantec Industria de Maquinas e Automação"
+        },
+        "osint_metadata": {
+            "role": "advantec máquinas",
+            "bio": "Experiência: Advantec Máquinas · Formação acadêmica: Senai São Paulo · Localidade: 13201-720 · 20 conexões no LinkedIn. Veja o perfil de Allan Patrick no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Allan Patrick",
+        "role": "Nao Identificado",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "Veto Mecânico Detectado e Especialista marcou Relevante: False.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Candidate Name: Allan Patrick | Google Page Title: Allan Patrick - Advantec Máquinas | Search Snippet: Allan pode apresentar você a 1 pessoas na empresa Advantec Industria de Maquinas e Automação | LinkedIn Status: Allan Patrick | advantec máquinas | LinkedIn CURRENT COMPANY (Declarada): Advantec Industria De Maquinas E Automação | LinkedIn Personal Bio: Experiência: Advantec Máquinas · Formação acadêmica: Senai São Paulo · Localidade: 13201-720 · 20 conexões no LinkedIn. Veja o perfil de Allan Patrick no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. | Verified Official Role: Não Encontrado"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Allan Patrick | advantec máquinas"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Allan Patrick",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Allan Patrick",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Allan Patrick | advantec máquinas"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Allan Patrick não foi identificado nos dados fornecidos. Embora ele trabalhe na Advantec Industria De Maquinas E Automação, não há informações explícitas em sua bio ou snippets que o vinculem diretamente a funções de Suprimentos, Compras ou Procurement, nem termos técnicos que justifiquem a relevância para a área de foco."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Nao Identificado",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T16:57:15.535583",
+    "candidate": "Marli Deróide",
+    "linkedin": "https://www.linkedin.com/in/marli-der%C3%B3ide-457790b1",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Deróide - Coord. Administrativo na Roder Ferramentas ...",
+            "body": "Coord. Administrativo na Roder Ferramentas · Experiência: Roder Ferramentas · Localidade: São Paulo · 65 conexões no LinkedIn . Veja o perfil de Marli Deróide no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Roder Ferramentas · Localidade: São Paulo · 65 conexões no LinkedIn. Veja o perfil de Marli Deróide no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Marli Deróide",
+        "role": "Coord. Administrativo",
+        "matching_score": 0,
+        "department": "Administrativo",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico, indicando uma inconsistência ou regra de rejeição automática ativada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Marli Deróide - Coord. Administrativo na Roder Ferramentas",
+                "Experiência: Roder Ferramentas",
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Marli Deróide - Coord. Administrativo na Roder Ferramentas."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Marli Deróide",
+                    "role": "Coord. Administrativo"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Marli Deróide",
+                "detected_role": "Coord. Administrativo",
+                "clean_bio": "Marli Deróide - Coord. Administrativo na Roder Ferramentas. Experiência: Roder Ferramentas. Localidade: São Paulo. 65 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Coord. Administrativo",
+            "dept": "Administrativo",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Coord. Administrativo' não possui interface direta com as áreas de Suprimentos, Compras ou Procurement. A relevância técnica para as áreas solicitadas é baixa."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Coord. Administrativo",
+        "department": "Administrativo",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T16:57:23.747582",
+    "candidate": "Marli Pereira da Silva",
+    "linkedin": "https://www.linkedin.com/in/marli-pereira-da-silva-4372a71",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Pereira da Silva - São Paulo, São Paulo, Brasil - LinkedIn Brasil",
+            "body": "Veja o perfil de Marli Pereira da Silva no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "são paulo, são paulo, brasil",
+            "bio": "Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Marli Pereira da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T16:57:27.873107",
+    "candidate": "Marli Pereira Da Silva",
+    "linkedin": "https://www.linkedin.com/in/marli-pereira-da-silva-30667731b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Pereira Da Silva - Rondonópolis, Mato Grosso, Brasil | LinkedIn",
+            "body": "Ao clicar em Continuar para se cadastrar ou entrar, você aceita o Contrato do Usuário, a Política de Privacidade e a Política de Cookies do LinkedIn . Nunca usou o LinkedIn ? Cadastre-se agora. Marli Pereira Da Silva gostou. Formação acadêmica. Sesi senai Rondonópolis MT."
+        },
+        "osint_metadata": {
+            "role": "rondonópolis, mato grosso, brasil",
+            "bio": "Formação acadêmica: Sesi senai Rondonópolis  MT · Localidade: Rondonópolis. Veja o perfil de Marli Pereira Da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T16:57:34.132492",
+    "candidate": "Marli Pereira da Silva",
+    "linkedin": "https://www.linkedin.com/in/marlipereiradasilva",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Pereira da Silva - LinkedIn Brasil",
+            "body": "Um ambiente de trabalho saudável, caracterizado por uma cultura organizacional positiva, apoio ao desenvolvimento pessoal e profissional, e um equilíbrio entre vida pessoal e trabalho, é..."
+        },
+        "osint_metadata": {
+            "role": "m w a (kodilar) comercio de produtos alimentícios ltda",
+            "bio": "Profissional com mais de 30 anos de experiência como auxiliar de produção e operadora de… · Experiência: M W A (kodilar) Comercio de Produtos Alimentícios LTDA · Formação acadêmica: Centro Universitário do Instituto de Ensino Superior COC · Localidade: São José do Rio Preto · 68 conexões no LinkedIn. Veja o perfil de Marli Pereira da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de us..."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T16:58:12.814721",
+    "candidate": "Rodrigo Michelini",
+    "linkedin": "https://www.linkedin.com/in/rodrigomichelini",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo Michelini - Diretor | Roder Ferramentas | LinkedIn",
+            "body": "· Experiência: Roder Ferramentas · Formação acadêmica: METROCAMP · Localidade: Valinhos · + de 500 conexões no LinkedIn . Veja o perfil de Rodrigo Michelini no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "- Sólida experiência e carreira nas áreas de Manufatura, Manutenção, Logística… · Experiência: Roder Ferramentas · Formação acadêmica: METROCAMP · Localidade: Valinhos · + de 500 conexões no LinkedIn. Veja o perfil de Rodrigo Michelini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rodrigo Michelini",
+        "role": "Diretor",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Rodrigo Michelini trabalha na Roder Ferramentas, que é a empresa-alvo declarada. O especialista confirmou que o cargo é Diretor e o departamento é Suprimentos/Compras/Procurement, sendo relevante para a busca.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Roder Ferramentas",
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sólida experiência e carreira nas áreas de Manufatura, Manutenção, Logística…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rodrigo Michelini",
+                    "role": "Diretor"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rodrigo Michelini",
+                "detected_role": "Diretor",
+                "clean_bio": "Sólida experiência e carreira nas áreas de Manufatura, Manutenção, Logística… Veja o perfil de Rodrigo Michelini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Diretor",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Diretor' e o candidato trabalha na 'Roder Ferramentas'. A bio menciona experiência em Manufatura, Manutenção e Logística, áreas que frequentemente interagem com Suprimentos/Compras. Não há termos de veto explícitos na bio ou no cargo."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Diretor",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T16:58:17.637311",
+    "candidate": "Nivaldo João",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-jo%C3%A3o-367a51257",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nivaldo João - LinkedIn Brasil",
+            "body": "-- · Experiência: ArtCor Brasil · Localidade: 08550-130. Veja Nivaldo João o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "artcor brasil",
+            "bio": "Experiência: ArtCor Brasil · Localidade: 08550-130. Veja o perfil de Nivaldo João no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T16:58:22.120458",
+    "candidate": "Nivaldo Michelini",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-michelini-bab082aa",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nivaldo Michelini - Profissional de Software | LinkedIn",
+            "body": "Profissional de Software · Experiência: particular · Localidade: Valinhos · 18 conexões no LinkedIn . Veja o perfil de Nivaldo Michelini no LinkedIn , uma comunidade profissional de 1 bilhão..."
+        },
+        "osint_metadata": {
+            "role": "particular",
+            "bio": "Experiência: particular · Localidade: Valinhos · 18 conexões no LinkedIn. Veja o perfil de Nivaldo Michelini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T16:59:05.908632",
+    "candidate": "Leandro Deróide",
+    "linkedin": "https://www.linkedin.com/in/leandro-der%C3%B3ide-7aa91b54",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leandro Deróide - Roder Ferramentas Sócio -Diretor | LinkedIn",
+            "body": "Roder Ferramentas Sócio -Diretor. Campinas, São Paulo, Brasil . 2 mil seguidores + de 500 conexões.No Brasil temos diversos heróis e heroínas, infelizmente ainda vemos lixos sendo condecorados heróis e heroínas, pura criação da ignorância ou…"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Fabricação  e Afiação de Ferramentas de corte em geral · Experiência: Roder Ferramentas · Formação acadêmica: UNIVERSIDADE SAO JUDAS TADEU · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Leandro Deróide no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Leandro Deróide",
+        "role": "Sócio - Diretor",
+        "matching_score": 0,
+        "department": "Diretoria",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Sócio - Diretor). O candidato Leandro Deróide trabalha na empresa-alvo Roder Ferramentas, conforme confirmado pelo Detetive e pela Etapa 0. O especialista marcou a relevância como False, mas o cargo de Sócio - Diretor na diretoria é relevante para a área de suprimentos/compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Leandro Deróide - Roder Ferramentas Sócio -Diretor",
+                "Roder Ferramentas Sócio -Diretor.",
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "Experiência: Roder Ferramentas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Fabricação e Afiação de Ferramentas de corte em geral"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leandro Deróide",
+                    "role": "Sócio -Diretor"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leandro Deróide",
+                "detected_role": "Sócio -Diretor",
+                "clean_bio": "Fabricação e Afiação de Ferramentas de corte em geral"
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio - Diretor",
+            "dept": "Diretoria",
+            "is_relevant": false,
+            "reasoning": "O cargo de Sócio-Diretor, embora confirme o vínculo com a empresa Roder Ferramentas, não indica uma interface direta com as áreas de Suprimentos, Compras ou Procurement. A bio menciona fabricação e afiação de ferramentas, o que sugere um foco em produção ou gestão geral, e não em atividades de compra ou gestão de fornecedores."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sócio - Diretor",
+        "department": "Diretoria",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T17:00:52.283898",
+    "candidate": "Leandro Deróide",
+    "linkedin": "https://www.linkedin.com/in/leandro-roder-ferramentas-051a8555",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leandro Roder Ferramentas - LinkedIn Brasil",
+            "body": "Veja o perfil de Leandro Roder Ferramentas no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "roder ferramentas industriais",
+            "bio": "Experiência: RODER FERRAMENTAS INDUSTRIAIS · Formação acadêmica: senai · Localidade: São Paulo · 36 conexões no LinkedIn. Veja o perfil de Leandro Roder Ferramentas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Leandro Deróide",
+        "role": "Proprietário",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Leandro Deróide trabalha na Roder Ferramentas como Proprietário no departamento de Suprimentos/Compras/Procurement, o que o qualifica para a vaga.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Veja o perfil de Leandro Deróide no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.",
+                "Leandro Deróide - Roder Ferramentas Proprietário | LinkedIn"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Veja o perfil de Leandro Deróide no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leandro Roder Ferramentas",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Leandro Deróide",
+                    "role": "Proprietário"
+                },
+                {
+                    "name": "Leandro Alboledo",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leandro Deróide",
+                "detected_role": "Proprietário",
+                "clean_bio": "Veja o perfil de Leandro Deróide no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Proprietário",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Proprietário' e o vínculo com a 'Roder Ferramentas' é confirmado. Embora 'Proprietário' seja um cargo genérico, a instrução 4 permite a consideração de perfis de Logística/Supply Chain com interface com fornecedores ou materiais. Como proprietário de uma empresa de ferramentas, é altamente provável que Leandro tenha interface direta com a cadeia de suprimentos, negociação com fornecedores e aquisição de materiais, o que o torna relevante para a área de Suprimentos/Compras/Procurement."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/leandro-roder-ferramentas-051a8555"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Proprietário",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T17:01:51.133564",
+    "candidate": "Leandro Alboledo",
+    "linkedin": "https://www.linkedin.com/in/leandro-alboledo-442a6027",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Orphan Upgrade",
+            "body": "N/D"
+        },
+        "osint_metadata": {
+            "role": "ALBOFERR FERRAMENTAS DE FIXAÇÃO",
+            "bio": "Experiência: ALBOFERR FERRAMENTAS DE FIXAÇÃO · Localidade: Osasco · 228 conexões no LinkedIn. Veja o perfil de Leandro Alboledo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Leandro Alboledo",
+        "role": "Nenhum",
+        "matching_score": 0,
+        "department": "Nenhum",
+        "evidence": "O candidato trabalha na ALBOFERR FERRAMENTAS DE FIXAÇÃO, não na Roder Ferramentas. O Detetive confirmou que o empregador encontrado não é a empresa alvo. Além disso, o Especialista marcou Relevante: False.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Leandro Alboledo - ALBOFERR FERRAMENTAS DE FIXAÇÃO | LinkedIn",
+                "Experiência : ALBOFERR FERRAMENTAS DE FIXAÇÃO · Localidade: Osasco · 228 conexões no LinkedIn",
+                "Veja o perfil de Leandro Roder Ferramentas no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.",
+                "Leandro Deróide - Roder Ferramentas Proprietário | LinkedIn",
+                "Rodrigo Michelini - Proprietário | Roder Ferramentas | LinkedIn"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Leandro Alboledo - ALBOFERR FERRAMENTAS DE FIXAÇÃO"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leandro Alboledo",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Leandro Roder Ferramentas",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Leandro Deróide",
+                    "role": "Proprietário"
+                },
+                {
+                    "name": "Rodrigo Michelini",
+                    "role": "Proprietário"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leandro Alboledo",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Leandro Alboledo - ALBOFERR FERRAMENTAS DE FIXAÇÃO | LinkedIn. Experiência : ALBOFERR FERRAMENTAS DE FIXAÇÃO · Localidade: Osasco · 228 conexões no LinkedIn . Veja o perfil de Leandro Alboledo no LinkedIn , uma comunidade profissional de 1 bilhão de..."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Leandro Alboledo não foi identificado nos dados fornecidos. Embora ele trabalhe na ALBOFERR FERRAMENTAS DE FIXAÇÃO, não há informações suficientes para determinar uma relevância direta com Suprimentos/Compras/Procurement na Roder Ferramentas, e o vínculo com a Roder Ferramentas não foi confirmado."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/leandro-alboledo-442a6027"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Nenhum",
+        "department": "Nenhum",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T17:03:11.321479",
+    "candidate": "Gustavo Duarte",
+    "linkedin": "https://www.linkedin.com/in/gustavo-duarte-b55b01194",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gustavo Duarte - Roder Ferramentas | LinkedIn",
+            "body": "Experiência: Roder Ferramentas · Localidade: Campinas e Região · 108 conexões no LinkedIn . Veja o perfil de Gustavo Duarte no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Roder Ferramentas · Localidade: Campinas e Região · 109 conexões no LinkedIn. Veja o perfil de Gustavo Duarte no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Gustavo Duarte",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Gustavo Duarte - Roder Ferramentas",
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "Experiência: Roder Ferramentas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gustavo Duarte - Roder Ferramentas. Localidade: Campinas e Região. 108 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Gustavo Duarte",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Gustavo Duarte",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Gustavo Duarte - Roder Ferramentas. Localidade: Campinas e Região. 108 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Gustavo Duarte não foi identificado nos dados fornecidos. Embora ele trabalhe na Roder Ferramentas, não há informações suficientes para determinar se sua função tem interface com Suprimentos/Compras/Procurement, e não há termos técnicos explícitos na bio ou snippets que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T17:03:55.917084",
+    "candidate": "Wallyson Aquino",
+    "linkedin": "https://www.linkedin.com/in/wallyson-aquino-76403a23b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Wallyson Aquino - Roder Ferramentas | LinkedIn",
+            "body": "Veja o perfil de Wallyson Aquino no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Roder Ferramentas · Formação acadêmica: Escola SENAI \"Roberto Mange\"​ · Localidade: 13090-150 · 15 conexões no LinkedIn. Veja o perfil de Wallyson Aquino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Wallyson Aquino",
+        "role": "Proprietário",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Wallyson Aquino é proprietário da Roder Ferramentas, empresa que atua na fabricação e recondicionamento de ferramentas de corte. O departamento indicado pelo especialista é Suprimentos/Compras/Procurement, o que é relevante para a busca. Não há indícios de falsos positivos ou de que o candidato trabalhe em outra empresa.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Veja o perfil de Wallyson Aquino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. Roder Ferramentas é uma empresa de fabricação e recondicionamento de ferramentas de corte, estabelecida desde 2005 e localizada em Sumaré, São Paulo. Proprietário | Roder Ferramentas - Sólida experiência e carreira nas áreas de Manufatura, Manutenção, Logística, Qualidade, Segurança, Melhoria Contínua e Planejamento Estratégico, com 10 anos de atuação em cargos de liderança, em empresas nacionais e multinacionais de grande porte. Responsável pela estratégia de manufatura de unidades de negócio, tendo como objetivo ... Cargo Detectado: Proprietário Verified Official Role: Não Encontrado Outras pessoas mapeadas no mesmo snippet: [{\"name\": \"Wallyson Aquino\", \"role\": \"Proprietário\"}] [DADOS BRUTOS ORIGINAIS (BACKUP)]: --- DADOS DE REPESCAGEM (PESQUISA DIRETA) --- | TÍTULO: Wallyson Aquino - Roder Ferramentas | LinkedIn Roder Ferramentas - LinkedIn Rodrigo Michelini - Proprietário | Roder Ferramentas | LinkedIn LinkedIn Brasil: entre ou cadastre-se Wallyson Rodrigues - GRUPO SBF | LinkedIn Wallyson Rodrigo - motorista caminhão de carga na cristal ... 60+ \"Wallyson Rodrigues\" profiles | LinkedIn",
+                "Experiência : Roder Ferramentas · Formação acadêmica: Escola SENAI \"Roberto Mange\" · Localidade: 13090-150 · 15 conexões no LinkedIn . Veja o perfil de Wallyson Aquino no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Roder Ferramentas é uma empresa de fabricação e recondicionamento de ferramentas de corte, estabelecida desde 2005 e localizada em Sumaré, São Paulo Proprietário | Roder Ferra"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Proprietário com sólida experiência em Manufatura, Manutenção, Logística, Qualidade, Segurança, Melhoria Contínua e Planejamento Estratégico. 10 anos em cargos de liderança em empresas nacionais e multinacionais. Responsável pela estratégia de manufatura."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Wallyson Aquino",
+                    "role": "Proprietário"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Wallyson Aquino",
+                "detected_role": "Proprietário",
+                "clean_bio": "Veja o perfil de Wallyson Aquino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. Roder Ferramentas é uma empresa de fabricação e recondicionamento de ferramentas de corte, estabelecida desde 2005 e localizada em Sumaré, São Paulo. Proprietário | Roder Ferramentas - Sólida experiência e carreira nas áreas de Manufatura, Manutenção, Logística, Qualidade, Segurança, Melhoria Contínua e Planejamento Estratégico, com 10 anos de atuação em cargos de liderança, em empresas nacionais e multinacionais de grande porte. Responsável pela estratégia de manufatura de unidades de negócio, tendo como objetivo ..."
+            }
+        },
+        "specialist": {
+            "role_name": "Proprietário",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo de Proprietário em uma empresa de fabricação e recondicionamento de ferramentas de corte, como a Roder Ferramentas, implica em responsabilidade estratégica sobre as operações, incluindo a gestão de fornecedores e aquisição de materiais. A experiência mencionada em Manufatura, Logística e Planejamento Estratégico, juntamente com a natureza da empresa, sugere uma forte interface com as áreas de Suprimentos/Compras/Procurement."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/wallyson-aquino-76403a23b"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Proprietário",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------

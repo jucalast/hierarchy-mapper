@@ -224,7 +224,7 @@ async def discover_domain_osint(name: str) -> Optional[str]:
     
     for query in queries:
         try:
-            results = await get_duck_results(query, max_results=3)
+            results = await get_duck_results(query, max_results=3, filter_linkedin=False)
             for r in results:
                 url = r.get("url") or r.get("link")
                 if not url: continue

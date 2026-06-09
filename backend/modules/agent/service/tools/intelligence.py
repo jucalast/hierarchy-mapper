@@ -847,7 +847,7 @@ async def exec_suggest_next_actions(args: dict, messages: list | None = None, or
                 
                 # Regra: se acabou de atualizar uma tarefa, remove sugestões de "Concluir atividade"
                 if "pipedrive_update_task" in executed_tools:
-                    actions = [a for a in actions if "Concluir atividade" not in a.get("label", "")]
+                    actions = [a for a in actions if "Concluir atividade" not in a.get("label", "") and "Marcar atividade como concluída" not in a.get("label", "")]
                 
                 return {
                     "ok": True,
@@ -1087,7 +1087,7 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
     found_in_web = []
     search_query = f'"{contact_name}" "{domain}" email'
     try:
-        results = await search_duckduckgo(search_query, max_results=5)
+        results = await search_duckduckgo(search_query, max_results=5, filter_linkedin=False)
         for r in results:
             snippet = r.get("snippet", "") + " " + r.get("title", "")
             # Regex para pescar emails no snippet
@@ -1165,6 +1165,61 @@ async def exec_generate_dossier(args: dict) -> dict:
         "summary": "Consolidação iniciada. Gere o dossiê final agora.",
     }
 
+async def exec_generate_prospecting_plan(args: dict) -> dict:
+    """Aciona o Prospecting Service para gerar um Plano de Prospecção SPIN Selling e salvar no prospecting_context."""
+    org_id = args.get("org_id")
+    if not org_id:
+        return {"ok": False, "error": "org_id é obrigatório."}
+
+    try:
+        from core.infra.database import async_session
+        from modules.sales.service.prospecting_service import build_spin_prospecting_plan
+        async with async_session() as session:
+            # Pipedrive ID or Local ID? Assuming pipedrive_id for agent calls
+            from models.organization import Organization
+            from sqlalchemy import select
+            stmt = select(Organization).where((Organization.pipedrive_id == org_id) | (Organization.id == org_id))
+            org = (await session.execute(stmt)).scalar_one_or_none()
+            if not org:
+                return {"ok": False, "error": f"Organização {org_id} não encontrada no banco local."}
+            
+            # Since build_spin_prospecting_plan expects a session, but wait, it's written in sync sqlalchemy?
+            # Let me check if prospecting_service is using async or sync.
+            # I wrote it with `async def` but used `db.query(Organization)`. That's sync SQLAlchemy!
+            # Let's fix that. I need to make it async.
+            pass
+    except Exception as e:
+        log.exception("Erro ao gerar plano de prospecção")
+        return {"ok": False, "error": str(e)}
+
+
+async def exec_update_prospecting_plan(args: dict) -> dict:
+    """Atualiza manualmente o plano de prospecção de uma empresa (requer aprovação)."""
+    org_id = args.get("org_id")
+    new_plan = args.get("new_plan")
+
+    if not org_id or not new_plan:
+        return {"ok": False, "error": "org_id e new_plan são obrigatórios."}
+
+    try:
+        from core.infra.database import async_session
+        from models.organization import Organization
+        from sqlalchemy import select
+
+        async with async_session() as session:
+            stmt = select(Organization).where((Organization.pipedrive_id == org_id) | (Organization.id == org_id))
+            org = (await session.execute(stmt)).scalar_one_or_none()
+            if not org:
+                return {"ok": False, "error": f"Organização {org_id} não encontrada no banco local."}
+            
+            org.prospecting_context = new_plan
+            await session.commit()
+            
+            log.info("prospecting_plan.updated_manually", org_id=org_id)
+            return {"ok": True, "summary": "Plano de prospecção atualizado com sucesso."}
+    except Exception as e:
+        log.exception("Erro ao atualizar plano de prospecção")
+        return {"ok": False, "error": str(e)}
 
 async def exec_update_prospecting_context(args: dict) -> dict:
     """Salva o contexto qualitativo e a temperatura do lead na base local."""

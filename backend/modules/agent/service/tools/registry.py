@@ -39,6 +39,8 @@ from .intelligence import (
     exec_evaluate_prospects,
     exec_deep_company_investigation,
     exec_discover_and_validate_email,
+    exec_generate_prospecting_plan,
+    exec_update_prospecting_plan,
 )
 
 log = get_logger(__name__)
@@ -211,10 +213,10 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "confirm_label": lambda args: f"Avançar deal #{args.get('deal_id')} para '{args.get('target_stage')}'",
     },
     "pipedrive_update_deal": {
-        "description": "Atualiza campos de um deal no Pipedrive (stage_id, status, value etc.). Requer confirmação.",
+        "description": "Atualiza campos de um deal no Pipedrive (stage_id, status, value etc.). MUITO IMPORTANTE: Se precisar vincular uma pessoa (person_id), você DEVE passar o ID numérico inteiro. Se tiver apenas o nome da pessoa, PARE e chame 'pipedrive_get_persons' ou 'pipedrive_get_org' primeiro para descobrir o ID correto. Requer confirmação.",
         "args_schema": {
             "deal_id": "int (ID do deal)",
-            "fields": "dict (campos a atualizar, ex: {\"stage_id\": 5, \"status\": \"won\"})",
+            "fields": "dict (campos a atualizar, ex: {\"stage_id\": 5, \"status\": \"won\", \"person_id\": 1234})",
         },
         "type": "write",
         "executor": None,
@@ -433,6 +435,25 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         },
         "type": "read",
         "executor": exec_discover_and_validate_email,
+    },
+    "generate_prospecting_plan": {
+        "description": "Sub-agente que gera o Plano de Prospecção (SPIN Selling) detalhado para a empresa. Cruze os dados mapeados da empresa (decisores) com o perfil e produtos da base para gerar um super-prompt em formato Markdown e salvar no prospecting_context da empresa.",
+        "args_schema": {
+            "org_id": "int (ID numérico obrigatório da empresa)",
+        },
+        "type": "write",
+        "executor": exec_generate_prospecting_plan,
+        "confirm_label": lambda args: f"Gerar Plano de Prospecção (SPIN) para a empresa #{args.get('org_id')}",
+    },
+    "update_prospecting_plan": {
+        "description": "Atualiza e substitui o plano de prospecção atual por um novo. Use isto quando aprender novas informações vitais em conversas com clientes que alteram a estratégia SPIN Selling.",
+        "args_schema": {
+            "org_id": "int (ID numérico da empresa)",
+            "new_plan": "string (O texto em formato Markdown contendo o novo plano de prospecção completo atualizado)"
+        },
+        "type": "write",
+        "executor": exec_update_prospecting_plan,
+        "confirm_label": lambda args: f"Atualizar Plano de Prospecção para a empresa #{args.get('org_id')}",
     },
 }
 
@@ -674,6 +695,14 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
     elif tool_name == "pipedrive_update_deal":
         deal_id = args.get("deal_id")
         fields = args.get("fields", {})
+        
+        # Converte person_id para int caso o agente tenha enviado como string
+        if isinstance(fields, dict) and "person_id" in fields:
+            try:
+                fields["person_id"] = int(fields["person_id"])
+            except (ValueError, TypeError):
+                pass
+                
         try:
             from modules.crm.service.pipedrive_service import pipedrive_service
             result = await pipedrive_service.update_deal(int(deal_id), fields)
