@@ -16,6 +16,7 @@ from .pipedrive import (
     exec_pipedrive_get_deals,
     exec_pipedrive_get_all_activities,
     exec_pipedrive_get_deals_without_tasks,
+    exec_pipedrive_bulk_update_tasks,
 )
 from .communication import (
     exec_whatsapp_get_messages,
@@ -186,6 +187,17 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "args_schema": {},
         "type": "read",
         "executor": exec_pipedrive_get_deals_without_tasks,
+    },
+    "pipedrive_bulk_update_tasks": {
+        "description": "Atualiza tarefas em massa para todos os negócios em uma determinada etapa (stage_id) do funil. Busca negócios abertos que tenham uma tarefa contendo 'task_keyword', conclui essa tarefa e opcionalmente cria novas tarefas em sequência (concluídas ou pendentes). Use isso quando o usuário pedir para marcar uma atividade como feita para várias empresas e já agendar o próximo passo.",
+        "args_schema": {
+            "stage_id": "int (ID numérico da etapa no Pipedrive. Mapeamento: Novos Negócios [2: Entrada, 18: Qualificação, 19: Contatado, 4: Reunião Agendada, 26: Reunião Realizada, 27: Proposta em Andamento, 28: Em Negociação]; Carteira [14: Entrada, 16: Contato, 17: Proposta, 32: Programação])",
+            "task_keyword": "string (Palavra-chave para encontrar a tarefa alvo, ex: 'encontrar contato' ou 'ciesp')",
+            "create_completed_task": "string opcional (Nome de uma nova tarefa a ser criada já como concluída, ex: 'Enviar apresentação')",
+            "create_pending_task": "string opcional (Nome de uma nova tarefa a ser criada como pendente para o dia seguinte, ex: 'Marcar reunião')"
+        },
+        "type": "write",
+        "executor": None,
     },
     "pipedrive_advance_deal": {
         "description": "Move o negócio para o próximo estágio do funil de vendas, ou para um estágio específico. Use quando uma etapa-chave foi concluída (ex: reunião realizada, proposta enviada).",
@@ -655,6 +667,9 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
     # ── Pipedrive: atualizar deal ──────────────────────────────────────────────
     elif tool_name == "pipedrive_advance_deal":
         return await exec_pipedrive_advance_deal(args, org_id=org_id)
+
+    elif tool_name == "pipedrive_bulk_update_tasks":
+        return await exec_pipedrive_bulk_update_tasks(args)
 
     elif tool_name == "pipedrive_update_deal":
         deal_id = args.get("deal_id")

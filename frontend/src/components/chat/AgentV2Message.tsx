@@ -694,6 +694,9 @@ export const InlineEventStream: React.FC<{
                     const running = !result && isStreaming;
                     const ok = result?.ok;
                     const color = TOOL_COLORS[ev.tool || ''] || '#888';
+                    const isFindContact = ev.tool === 'find_company_contact';
+                    const quota = result?.data?.quota;
+
                     return (
                         <div key={i} className={styles.logLine}>
                             {running
@@ -702,8 +705,14 @@ export const InlineEventStream: React.FC<{
                                     ? <CheckCircle2 size={12} style={{ color: '#10b981', flexShrink: 0 }} />
                                     : <XCircle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />
                             }
-                            <span>
-                                {ev.label}
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <span>{ev.label}</span>
+                                {isFindContact && quota && (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--sw-hover)', padding: '2px 6px', borderRadius: 12, fontSize: 10, border: 'var(--sw-border-width) solid var(--sw-border)', opacity: 0.9 }}>
+                                        <img src="/Google_Maps.svg.png" alt="Google Maps" style={{ width: 10, height: 10, marginRight: 4 }} />
+                                        {quota.used}/{quota.limit}
+                                    </span>
+                                )}
                                 {result?.summary && <span style={{ opacity: 0.5, marginLeft: 5 }}>· {result.summary}</span>}
                             </span>
                         </div>

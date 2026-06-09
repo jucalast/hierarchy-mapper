@@ -393,6 +393,7 @@ class LLMRouter:
         preferred_model: Optional[str] = None,
         strict_model: bool = False,
         cache_prefix: Optional[str] = None,
+        bypass_throttle: bool = False,
     ) -> LLMResult:
         """
         Tenta cada provider em sequência. Retorna no primeiro sucesso.
@@ -482,17 +483,11 @@ class LLMRouter:
         daily_quota_exhausted_error: Optional[GeminiDailyQuotaExhaustedError] = None
 
         # Throttle global: serializa chamadas LLM e garante gap mínimo entre elas.
-        # Isso evita disparar múltiplas chamadas simultâneas que explodem o rate limit
-        # das APIs gratuitas (Gemini free tier, Groq free: mais restrito ainda).
         global _last_llm_call_time
-        async with _llm_semaphore:
-            now = time.monotonic()
-            gap = _MIN_CALL_GAP_SEC - (now - _last_llm_call_time)
-            if gap > 0:
-                log.debug("llm.throttle.wait", gap_ms=round(gap * 1000))
-                await asyncio.sleep(gap)
-            _last_llm_call_time = time.monotonic()
-
+        
+        # Função interna para executar a tentativa nos provedores
+        async def _run_providers():
+            nonlocal any_available, last_error, daily_quota_exhausted_error
             for provider in providers:
                 if not provider.available:
                     log.debug("llm.provider.unavailable", provider=provider.name)
@@ -523,7 +518,6 @@ class LLMRouter:
                 any_available = True
 
                 # Retry loop para o provedor atual
-                # Em strict mode: retry agressivo (até 10x) com backoff exponencial
                 max_provider_retries = 15 if strict_model else 3
                 for attempt in range(1, max_provider_retries + 1):
                     try:
@@ -534,73 +528,77 @@ class LLMRouter:
                             tier=tier,
                             preferred_model=preferred_model,
                         )
-                        # Sucesso — limpa cooldown do provider
                         _provider_rate_limited_until.pop(provider.name, None)
                         if cache_enabled and key:
                             self._cache.set(key, result)
                         return result
 
                     except GeminiDailyQuotaExhaustedError as e:
-                        # Cota diária do Gemini esgotada — não adianta retry
                         daily_quota_exhausted_error = e
                         last_error = f"gemini_daily_quota_exhausted"
-                        log.warning("llm.gemini.daily_quota_exhausted_router",
-                                    strict_mode=strict_model)
+                        log.warning("llm.gemini.daily_quota_exhausted_router", strict_mode=strict_model)
                         if strict_model:
-                            # Em strict mode: não cai em outro provider — avisa o usuário
                             raise e
-                        # Em modo normal: tenta próximo provider
                         break
 
                     except LLMError as e:
                         last_error = f"{provider.name}: {e}"
                         is_rate_limit = "rate_limit" in str(e).lower() or "429" in str(e).lower()
 
-                        # LOG DE FALLBACK: Avisa que vamos tentar o próximo (apenas se não for strict mode)
                         if not strict_model:
                             next_provider_idx = providers.index(provider) + 1
                             if next_provider_idx < len(providers):
                                 next_p = providers[next_provider_idx]
-                                log.warning("llm.fallback",
-                                            reason=f"Falha no {provider.name} ({str(e)[:100]})",
-                                            next_attempt=next_p.name)
+                                log.warning("llm.fallback", reason=f"Falha no {provider.name} ({str(e)[:100]})", next_attempt=next_p.name)
 
                         if is_rate_limit:
                             import re as _re
                             m = _re.search(r"retry_after[=:]\s*(\d+)", str(e).lower())
-
                             if strict_model:
-                                # Strict mode: backoff exponencial, sempre retry
                                 base_wait = int(m.group(1)) if m else 5
                                 cooldown = min(base_wait * (2 ** (attempt - 1)), 120)
-                                log.warning("llm.strict.retry",
-                                            provider=provider.name, attempt=attempt, wait_sec=cooldown)
+                                log.warning("llm.strict.retry", provider=provider.name, attempt=attempt, wait_sec=cooldown)
                                 if attempt < max_provider_retries:
                                     await asyncio.sleep(cooldown)
                                     continue
                             else:
                                 cooldown = int(m.group(1)) if m else (30 * attempt)
                                 _provider_rate_limited_until[provider.name] = time.monotonic() + cooldown
-                                log.warning("llm.provider.rate_limit_retry",
-                                            provider=provider.name, attempt=attempt, wait_sec=min(cooldown, 10))
+                                log.warning("llm.provider.rate_limit_retry", provider=provider.name, attempt=attempt, wait_sec=min(cooldown, 10))
                                 if attempt < max_provider_retries:
                                     await asyncio.sleep(min(cooldown, 5))
                                     continue
 
-                        log.warning("llm.provider.failed",
-                                    provider=provider.name, error=str(e)[:200])
+                        log.warning("llm.provider.failed", provider=provider.name, error=str(e)[:200])
                         break
 
                     except Exception as e:
                         last_error = f"{provider.name}: {type(e).__name__}: {e}"
                         log.exception("llm.provider.unexpected", provider=provider.name)
-
                         if not strict_model:
                             next_provider_idx = providers.index(provider) + 1
                             if next_provider_idx < len(providers):
                                 next_p = providers[next_provider_idx]
                                 log.warning("llm.fallback.unexpected", next_attempt=next_p.name)
                         break
+            return None
+
+        if bypass_throttle:
+            # Executa sem o _llm_semaphore e sem sleep
+            result = await _run_providers()
+            if result:
+                return result
+        else:
+            async with _llm_semaphore:
+                now = time.monotonic()
+                gap = _MIN_CALL_GAP_SEC - (now - _last_llm_call_time)
+                if gap > 0:
+                    log.debug("llm.throttle.wait", gap_ms=round(gap * 1000))
+                    await asyncio.sleep(gap)
+                _last_llm_call_time = time.monotonic()
+                result = await _run_providers()
+                if result:
+                    return result
 
         if not any_available:
             raise NoProviderAvailableError(
@@ -639,6 +637,7 @@ async def ask_llm(
     preferred_model: Optional[str] = None,
     strict_model: bool = False,
     cache_prefix: Optional[str] = None,
+    bypass_throttle: bool = False,
 ) -> LLMResult:
     # Se o chamador não especificou um modelo, usa o preferido do request atual
     effective_model = preferred_model or get_preferred_model()
@@ -654,6 +653,7 @@ async def ask_llm(
         preferred_model=effective_model,
         strict_model=effective_strict,
         cache_prefix=cache_prefix,
+        bypass_throttle=bypass_throttle,
     )
 
 

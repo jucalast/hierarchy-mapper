@@ -600,3 +600,103 @@ async def exec_pipedrive_get_deals_without_tasks(args: Dict[str, Any]) -> Dict[s
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
+async def exec_pipedrive_bulk_update_tasks(args: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Ferramenta para atualizar tarefas em massa filtrando por stage_id (etapa do funil) e texto da tarefa.
+    - Fecha a tarefa encontrada.
+    - Cria a nova tarefa concluída (se create_completed_task for informado).
+    - Cria a nova tarefa pendente (se create_pending_task for informado).
+    """
+    stage_id = args.get("stage_id")
+    task_keyword = args.get("task_keyword", "").lower()
+    create_completed_task = args.get("create_completed_task")
+    create_pending_task = args.get("create_pending_task")
+    
+    if not stage_id or not task_keyword:
+        return {"ok": False, "error": "stage_id e task_keyword são obrigatórios"}
+        
+    try:
+        from modules.crm.service.pipedrive_service import pipedrive_service
+        from datetime import date, timedelta
+        
+        deals_resp = await pipedrive_service.make_request("GET", f"deals?stage_id={stage_id}&limit=500&status=open")
+        if not deals_resp or deals_resp.status_code != 200:
+            return {"ok": False, "error": "Erro ao buscar deals no Pipedrive"}
+            
+        deals = deals_resp.json().get("data", [])
+        if not deals:
+            return {"ok": True, "summary": f"Nenhum deal encontrado na etapa {stage_id}."}
+            
+        count_updated = 0
+        details = []
+        
+        today_str = date.today().isoformat()
+        tomorrow_str = (date.today() + timedelta(days=1)).isoformat()
+        
+        for d in deals:
+            deal_id = d.get("id")
+            title = d.get("title")
+            org_id = d.get("org_id")
+            if isinstance(org_id, dict):
+                org_id = org_id.get("value")
+                
+            act_resp = await pipedrive_service.make_request("GET", f"deals/{deal_id}/activities")
+            if not act_resp or act_resp.status_code != 200:
+                continue
+                
+            acts = act_resp.json().get("data") or []
+            
+            target_act = None
+            for a in acts:
+                subject_lower = a.get("subject", "").lower()
+                if task_keyword in subject_lower:
+                    target_act = a
+                    break
+                    
+            if target_act:
+                count_updated += 1
+                deal_log = f"Deal {deal_id} ({title}): "
+                
+                # 1. Fechar a tarefa atual se estiver pendente
+                if not target_act.get("done"):
+                    await pipedrive_service.update_activity(target_act.get("id"), {"done": 1})
+                    deal_log += f"Tarefa '{target_act.get('subject')}' fechada. "
+                
+                # 2. Criar tarefa concluida
+                if create_completed_task:
+                    has_completed = any(create_completed_task.lower() in a.get("subject", "").lower() for a in acts)
+                    if not has_completed:
+                        payload_comp = {
+                            "subject": create_completed_task,
+                            "done": 1,
+                            "deal_id": deal_id,
+                            "org_id": org_id,
+                            "type": "task",
+                            "due_date": today_str
+                        }
+                        await pipedrive_service.make_request("POST", "activities", json=payload_comp)
+                        deal_log += f"Tarefa '{create_completed_task}' criada (concluída). "
+                
+                # 3. Criar proxima tarefa pendente
+                if create_pending_task:
+                    has_pending = any(create_pending_task.lower() in a.get("subject", "").lower() for a in acts)
+                    if not has_pending:
+                        payload_pend = {
+                            "subject": create_pending_task,
+                            "done": 0,
+                            "deal_id": deal_id,
+                            "org_id": org_id,
+                            "type": "task",
+                            "due_date": tomorrow_str
+                        }
+                        await pipedrive_service.make_request("POST", "activities", json=payload_pend)
+                        deal_log += f"Tarefa '{create_pending_task}' criada (pendente para amanhã). "
+                        
+                details.append(deal_log)
+                
+        summary = f"Massa atualizada com sucesso. {count_updated} negócios alterados.\n" + "\n".join(details)
+        return {"ok": True, "count": count_updated, "summary": summary}
+        
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+

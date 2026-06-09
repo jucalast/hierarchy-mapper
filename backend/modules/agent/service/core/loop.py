@@ -2031,7 +2031,10 @@ async def _agent_loop(
                             break
 
                 summary = tool_result.get("summary") or tool_result.get("error") or ("OK" if ok else "Erro")
-                yield _emit({"type": "tool_result", "call_id": first_call_id, "tool": tool_name, "summary": summary, "ok": ok, "args": tool_args})
+                emitted_result = {"type": "tool_result", "call_id": first_call_id, "tool": tool_name, "summary": summary, "ok": ok, "args": tool_args}
+                if "quota" in tool_result:
+                    emitted_result["data"] = {"quota": tool_result.get("quota")}
+                yield _emit(emitted_result)
                 yield _emit({"type": "context_saved"})
 
                 if ok and summary:

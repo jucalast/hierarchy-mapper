@@ -125,11 +125,13 @@ const restartClient = async () => {
 };
 
 let isReady = false;
+let latestQR = null;
 
 console.log('[WA Service] 🚀 Iniciando processo de autenticação e bot...');
 
 client.on('qr', (qr) => {
-    console.log('[WA Service] ⚠️ QR Code recebido! Por favor, escaneie com o WhatsApp do celular:');
+    latestQR = qr;
+    console.log('[WA Service] ⚠️ QR Code recebido! Por favor, escaneie com o WhatsApp do celular (ou acesse http://localhost:8001/api/whatsapp/qr):');
     qrcode.generate(qr, { small: true });
 });
 
@@ -138,6 +140,7 @@ client.on('loading_screen', (percent, message) => {
 });
 
 client.on('authenticated', () => {
+    latestQR = null;
     console.log('[WA Service] ✅ Autenticado com sucesso!');
 });
 
@@ -321,6 +324,28 @@ app.get('/api/whatsapp/status', (req, res) => {
         platform: process.platform,
         fatalErrors: fatalErrorCount
     });
+});
+
+// Endpoint para renderizar o QR Code no navegador
+app.get('/api/whatsapp/qr', (req, res) => {
+    if (isReady) return res.send('<h2 style="font-family:sans-serif;text-align:center;margin-top:50px;">✅ WhatsApp já está logado e pronto!</h2>');
+    if (!latestQR) return res.send('<h2 style="font-family:sans-serif;text-align:center;margin-top:50px;">⏳ QR Code ainda não foi gerado. Aguarde alguns segundos e recarregue a página.</h2><script>setTimeout(() => location.reload(), 3000);</script>');
+    
+    res.send(`
+        <html>
+        <head><title>WhatsApp Login</title></head>
+        <body style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:sans-serif;background-color:#f0f2f5;">
+            <h2>Escaneie o QR Code com o WhatsApp</h2>
+            <div style="background:white;padding:20px;border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(latestQR)}&size=300x300" alt="QR Code" />
+            </div>
+            <p style="color:#666;margin-top:20px;">Esta página se atualizará automaticamente.</p>
+            <script>
+                setInterval(() => location.reload(), 5000);
+            </script>
+        </body>
+        </html>
+    `);
 });
 
 // Endpoint para buscar chats por nome (fuzzy search)

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { organizations as orgsApi } from '@/services/api';
 import { TriggerNotifications } from '@/components/ui/TriggerNotifications';
-import { API_BASE_URL } from '@/services/config';
+import { API_BASE_URL, apiGet } from '@/services/config';
 import { PanelRight, LogOut } from 'lucide-react';
 import { Avatar } from '@/components/ui';
 import { ChatPanel } from '@/components/chat/ChatPanel';
@@ -64,11 +64,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Busca atualizada do backend
+      // Busca atualizada do backend usando apiGet para garantir headers de auth
       try {
-        const resp = await fetch(`${API_BASE_URL}/api/v1/pipedrive/current-user`);
-        if (resp.ok) {
-          const data = await resp.json();
+        const data = await apiGet('/pipedrive/current-user');
+        if (data) {
           setCurrentUser(data);
           localStorage.setItem('pipedrive-current-user', JSON.stringify(data));
         }

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { Headset, Phone, PhoneOff, Zap, Mic, MicOff, Volume2, MessageSquare, AlertOctagon, Target, ChevronRight, Loader2 } from "lucide-react";
+import { Headset, Phone, PhoneOff, Zap, Mic, MicOff, Volume2, MessageSquare, AlertOctagon, Target, ChevronRight, Loader2, PhoneForwarded, Bug } from "lucide-react";
 import { Avatar } from "../ui";
 import styles from "./LigacaoView.module.css";
-import { apiGet } from "../../services/config";
+import { apiGet, API_BASE_URL } from "../../services/config";
 import { getAvatarUrl, getProxiedUrl } from "../../utils/avatarUtils";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -48,55 +48,59 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
   // 🚀 EXTRAÇÃO E PARSE DE DADOS 🚀
   const contactName = initialData?.contact_name;
   const contactPhone = initialData?.phone;
+  const companyLogo = initialData?.company_logo;
   
   useEffect(() => {
     console.log("[LigacaoView] Raw initialData received:", initialData);
   }, [initialData]);
 
-  const flightPlan = (() => {
-    let raw = initialData?.flight_plan;
+  const [activeFlightPlan, setActiveFlightPlan] = useState<any>(null);
+  const [isTransferred, setIsTransferred] = useState(false);
+  const isCompanyPhone = activeFlightPlan?.is_company_phone === true || activeFlightPlan?.is_company_phone === "true";
+
+  // Helper de parse e normalização de flight_plan
+  const parseFlightPlan = useCallback((raw: any) => {
     if (!raw) return null;
-    
-    // Se for string, tenta fazer o parse
     if (typeof raw === 'string') {
-      try {
-        raw = JSON.parse(raw);
-      } catch (e) {
-        console.error("[LigacaoView] Error parsing flight_plan string", e);
-        return null;
-      }
+      try { raw = JSON.parse(raw); } catch (_) { return null; }
     }
     
-    // Normalização agressiva para achar o array de passos
     let stepsArr: any[] = [];
-    
     if (Array.isArray(raw.steps)) stepsArr = raw.steps;
     else if (Array.isArray(raw.flight_plan?.steps)) stepsArr = raw.flight_plan.steps;
     else if (Array.isArray(raw.flight_plan)) stepsArr = raw.flight_plan;
     else if (Array.isArray(raw)) stepsArr = raw;
 
     if (stepsArr.length > 0) {
-        // Normaliza cada passo para garantir que tenha label e content
-        const normalizedSteps = stepsArr.map(s => {
-            if (typeof s === 'string') return { label: "Etapa", content: s };
-            
-            // Tenta achar qualquer chave que pareça um título ou conteúdo
-            // Prioriza as novas chaves 'label' e 'content'
-            const label = s.label || s.action || s.name || s.title || s.step || "Etapa";
-            const content = s.content || s.suggested_talk_track || s.intention || s.text || s.description || s.desc || s.value || "";
-            
-            // Fallback total: se não achou nada acima, pega qualquer valor que sobrou
-            const remainingKeys = Object.keys(s).filter(k => !['label', 'action', 'name', 'title', 'step'].includes(k));
-            const finalContent = content || (remainingKeys.length > 0 ? s[remainingKeys[0]] : "");
+      const normalizedSteps = stepsArr.map(s => {
+        if (typeof s === 'string') return { label: "Etapa", content: s };
+        const label = s.label || s.action || s.name || s.title || s.step || "Etapa";
+        const content = s.content || s.suggested_talk_track || s.intention || s.text || s.description || s.desc || s.value || "";
+        const remainingKeys = Object.keys(s).filter(k => !['label', 'action', 'name', 'title', 'step'].includes(k));
+        const finalContent = content || (remainingKeys.length > 0 ? s[remainingKeys[0]] : "");
+        return { label, content: finalContent, is_lightning: s.is_lightning === true };
+      });
+      let isCompanyPhoneFlag = false;
+      if (raw.is_company_phone !== undefined) isCompanyPhoneFlag = raw.is_company_phone;
+      else if (raw.flight_plan?.is_company_phone !== undefined) isCompanyPhoneFlag = raw.flight_plan.is_company_phone;
 
-            return { label, content: finalContent };
-        });
-        return { steps: normalizedSteps };
+      return { steps: normalizedSteps, is_company_phone: isCompanyPhoneFlag };
     }
     return null;
-  })();
+  }, []);
+
+  // Inicializa o plano de voo
+  useEffect(() => {
+    if (initialData?.flight_plan) {
+      const parsed = parseFlightPlan(initialData.flight_plan);
+      if (parsed) {
+        setActiveFlightPlan(parsed);
+      }
+    }
+  }, [initialData, parseFlightPlan]);
 
   const [messages, setMessages] = useState<TranscribedMessage[]>([]);
+  const [debugLogs, setDebugLogs] = useState<{timestamp: Date, role: string, text: string}[]>([]);
   const [partialMic, setPartialMic] = useState<PartialState | null>(null);
   const [partialSpeaker, setPartialSpeaker] = useState<PartialState | null>(null);
   const [latestInsight, setLatestInsight] = useState<LiveCoachingInsight | null>(null);
@@ -111,6 +115,13 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
   const isListeningRef = useRef(false);
   const clientScrollRef = useRef<HTMLDivElement>(null);
   const vendorScrollRef = useRef<HTMLDivElement>(null);
+
+  const speakerMeterRef = useRef<MeterState>(speakerMeter);
+  useEffect(() => {
+    speakerMeterRef.current = speakerMeter;
+  }, [speakerMeter]);
+
+  const lastClientMessageRef = useRef<{ text: string; timestamp: number | null }>({ text: "", timestamp: null });
 
   // Auto-scroll client transcription
   useEffect(() => {
@@ -149,17 +160,29 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
 
   // Load Vendor Avatar
   useEffect(() => {
-    try {
-      const pipedriveUserStr = localStorage.getItem('pipedrive-current-user');
-      if (pipedriveUserStr) {
-        const parsed = JSON.parse(pipedriveUserStr);
-        if (parsed?.avatar) {
-          setVendorAvatarUrl(parsed.avatar);
+    const loadVendorAvatar = async () => {
+      try {
+        const pipedriveUserStr = localStorage.getItem('pipedrive-current-user');
+        if (pipedriveUserStr) {
+          const parsed = JSON.parse(pipedriveUserStr);
+          if (parsed?.avatar) {
+            setVendorAvatarUrl(parsed.avatar);
+            return;
+          }
         }
+        
+        // Fallback: busca atualizada do backend usando apiGet para garantir headers de auth
+        const data = await apiGet('/pipedrive/current-user');
+        if (data && data.avatar) {
+          setVendorAvatarUrl(data.avatar);
+          localStorage.setItem('pipedrive-current-user', JSON.stringify(data));
+        }
+      } catch (e) {
+        console.error("Error loading vendor avatar:", e);
       }
-    } catch (e) {
-      console.error("Error loading vendor avatar:", e);
-    }
+    };
+    
+    loadVendorAvatar();
   }, []);
 
   // Load saved session (messages and latest coaching insights) from database
@@ -182,6 +205,12 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
           }
           if (data.latest_insight) {
             setLatestInsight(data.latest_insight);
+            if (data.latest_insight.transfer_detected) {
+              setIsTransferred(true);
+            }
+            if (data.latest_insight.updated_steps) {
+              setActiveFlightPlan({ steps: data.latest_insight.updated_steps });
+            }
           }
         }
       } catch (err) {
@@ -236,6 +265,13 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
 
     recognition.onresult = (event: any) => {
       if (recognition !== recognitionRef.current) return;
+      
+      // 1. Evita eco em tempo real: se o alto-falante estiver ativo (cliente falando), ignora captação do mic
+      if (speakerMeterRef.current.speaking || speakerMeterRef.current.status === "Falando...") {
+        console.log("[LigacaoView] Ignorando captação de mic: Cliente está falando no alto-falante.");
+        return;
+      }
+
       let interim = "";
       let final = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -245,6 +281,35 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
 
       if (final) {
         const text = final.trim();
+        
+        // 2. Previne vazamento de eco (echo leakage) por similaridade de texto com fala recente do cliente
+        const lastClient = lastClientMessageRef.current;
+        if (lastClient.timestamp && Date.now() - lastClient.timestamp < 4000) {
+          const cleanText = (t: string) => 
+            t.toLowerCase()
+             .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "")
+             .replace(/\s+/g, " ")
+             .trim()
+             .split(" ")
+             .filter(w => w.length > 2);
+          
+          const sellerWords = cleanText(text);
+          const clientWords = cleanText(lastClient.text);
+          
+          if (sellerWords.length > 0 && clientWords.length > 0) {
+            let matches = 0;
+            for (const w of sellerWords) {
+              if (clientWords.includes(w)) matches++;
+            }
+            const ratio = matches / sellerWords.length;
+            if (ratio > 0.4 || matches >= 3) {
+              console.log("[LigacaoView] Eco descartado com sucesso:", text);
+              setPartialMic(null);
+              return;
+            }
+          }
+        }
+
         setMessages((prev) => [
           ...prev,
           { id: crypto.randomUUID(), type: "transcription", role: "Vendedor", text },
@@ -341,7 +406,6 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
       } catch (_) {}
     }
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const queryParams = [];
     if (initialData?.activity_id) {
       queryParams.push(`activity_id=${initialData.activity_id}`);
@@ -350,8 +414,8 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
       queryParams.push(`phone=${encodeURIComponent(initialData.phone)}`);
     }
     const queryString = queryParams.length > 0 ? `?${queryParams.join("&")}` : "";
-    const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-    const ws = new WebSocket(`${protocol}//${host}:8000/api/v1/calls/ws${queryString}`);
+    const wsBaseUrl = API_BASE_URL.replace(/^http/, "ws");
+    const ws = new WebSocket(`${wsBaseUrl}/api/v1/calls/ws${queryString}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -374,8 +438,14 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
               ...prev,
               { id: crypto.randomUUID(), ...data } as TranscribedMessage,
             ]);
+            setDebugLogs((prev) => [...prev, { timestamp: new Date(), role: data.role, text: data.text }]);
             if (data.role === "Vendedor") setPartialMic(null);
-            else setPartialSpeaker(null);
+            else {
+              setPartialSpeaker(null);
+              if (data.text) {
+                lastClientMessageRef.current = { text: data.text, timestamp: Date.now() };
+              }
+            }
             break;
 
           case "partial_transcription":
@@ -387,7 +457,26 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
 
           case "insight":
           case "live_coaching":
-            setLatestInsight(data.data || data.text);
+            const insightData = data.data || data.text;
+            setLatestInsight(insightData);
+            if (insightData && insightData.transfer_detected) {
+              setIsTransferred(true);
+            }
+            if (insightData && Array.isArray(insightData.updated_steps)) {
+              setActiveFlightPlan({ steps: insightData.updated_steps });
+              
+              // Debug Log para Agente
+              const activeIdx = insightData.updated_steps.findIndex((s: any) => s.content && s.content !== "Pendente...");
+              if (activeIdx !== -1) {
+                const step = insightData.updated_steps[activeIdx];
+                const agentText = `[${step.label}]\n${step.content}`;
+                setDebugLogs((prev) => {
+                  const lastAgentLog = [...prev].reverse().find(l => l.role === "Agente");
+                  if (lastAgentLog && lastAgentLog.text === agentText) return prev;
+                  return [...prev, { timestamp: new Date(), role: "Agente", text: agentText }];
+                });
+              }
+            }
             break;
 
           case "debug_audio":
@@ -467,6 +556,7 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
         detail: { 
             contactName, 
             phone: contactPhone,
+            transcript: messages,
             transcriptCount: messages.length 
         } 
     }));
@@ -482,15 +572,31 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
     }
   };
 
+  // ── Handlers de Interface ────────────────────────────────────────────────
+  const copyDebugLogs = () => {
+    const logStr = debugLogs.map(l => {
+      const time = l.timestamp.toLocaleTimeString("pt-BR", { hour12: false }) + ":" + String(l.timestamp.getMilliseconds()).padStart(3, '0');
+      return `[${time}] ${l.role}:\n${l.text}\n`;
+    }).join("\n");
+    navigator.clipboard.writeText(logStr).then(() => alert("Log cronológico com segundos/milissegundos copiado para a área de transferência!"));
+  };
+
+  const copyTranscript = () => {
+    const logStr = messages.map(l => {
+      return `[${l.role}]:\n${l.text}\n`;
+    }).join("\n");
+    navigator.clipboard.writeText(logStr).then(() => alert("Log copiado para a área de transferência!"));
+  };
+
   // ── Helpers ───────────────────────────────────────────────────────────
   const meterWidth = (rms: number) => Math.min(100, rms * 80000);
 
   const getActiveStepIndex = () => {
-    if (!latestInsight?.current_step || !flightPlan?.steps) return -1;
+    if (!latestInsight?.current_step || !activeFlightPlan?.steps) return -1;
     const currentClean = latestInsight.current_step.toLowerCase().trim();
     
     // Tenta encontrar uma correspondência
-    return flightPlan.steps.findIndex((step: any) => {
+    return activeFlightPlan.steps.findIndex((step: any) => {
       const labelClean = (step.label || '').toLowerCase().trim();
       return labelClean.includes(currentClean) || currentClean.includes(labelClean);
     });
@@ -500,7 +606,20 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
   const clientAvatarRaw = getAvatarUrl(initialData);
   const clientAvatarUrl = clientAvatarRaw ? getProxiedUrl(clientAvatarRaw) : null;
   const clientFallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(contactName || "Cliente")}&background=6366f1&color=fff&bold=true&rounded=true&size=120`;
-  const resolvedClientUrl = clientAvatarUrl || clientFallbackUrl;
+  
+  let resolvedClientUrl = clientAvatarUrl || clientFallbackUrl;
+  let displayTitle = contactName || "Contato";
+  let displaySubtitle = "Em Chamada";
+
+  if (isCompanyPhone && !isTransferred) {
+    if (companyLogo) {
+      resolvedClientUrl = getProxiedUrl(companyLogo) || `https://ui-avatars.com/api/?name=PABX&background=6366f1&color=fff&bold=true&rounded=true&size=120`;
+    } else {
+      resolvedClientUrl = `https://ui-avatars.com/api/?name=PABX&background=6366f1&color=fff&bold=true&rounded=true&size=120`;
+    }
+    displayTitle = "Recepção / PABX";
+    displaySubtitle = `Alvo: ${contactName}`;
+  }
 
   const vendorAvatarProxied = vendorAvatarUrl ? getProxiedUrl(vendorAvatarUrl) : null;
   const vendorFallbackUrl = `https://ui-avatars.com/api/?name=Voc%C3%AA&background=10b981&color=fff&size=200&font-size=0.4&rounded=true`;
@@ -513,21 +632,31 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
       <aside className={styles.sidebar}>
         <div className={styles.sidebarBody}>
           {/* RENDERIZAÇÃO DO PLANO DE VOO (S.P.I.N) EM FORMATO DE PIPELINE/TIMELINE */}
-          {flightPlan && flightPlan.steps && Array.isArray(flightPlan.steps) && (
+          {/* RENDERIZAÇÃO DO PLANO DE VOO (S.P.I.N) EM FORMATO DE PIPELINE/TIMELINE */}
+          {activeFlightPlan && activeFlightPlan.steps && Array.isArray(activeFlightPlan.steps) && (
             <div className={styles.pipeline}>
-              {flightPlan.steps.map((step: any, idx: number) => {
+              {activeFlightPlan.steps.map((step: any, idx: number) => {
                 const isActive = idx === activeIdx;
                 const isPast = idx < activeIdx;
+                const isLightning = step.is_lightning === true;
+                
                 return (
                   <div key={idx} className={styles.pipelineRow}>
                     <div className={styles.pipelineSide}>
-                      <div className={`${styles.pipelineDot} ${isActive ? styles.active : ''} ${isPast ? styles.past : ''}`} />
-                      {idx < flightPlan.steps.length - 1 && (
+                      {isLightning ? (
+                        <div className={`${styles.pipelineDotLightning} ${isActive ? styles.active : ''} ${isPast ? styles.past : ''}`}>
+                          <Zap size={14} className={styles.zapIconLightning} />
+                        </div>
+                      ) : (
+                        <div className={`${styles.pipelineDot} ${isActive ? styles.active : ''} ${isPast ? styles.past : ''}`} />
+                      )}
+                      
+                      {idx < activeFlightPlan.steps.length - 1 && (
                         <div className={`${styles.pipelineLine} ${isPast ? styles.active : ''}`} />
                       )}
                     </div>
-                    <div className={styles.pipelineCard}>
-                      <strong className={`${styles.pipelineStepLabel} ${isActive ? styles.active : ''}`}>
+                    <div className={`${styles.pipelineCard} ${isLightning ? styles.pipelineCardLightning : ''}`}>
+                      <strong className={`${styles.pipelineStepLabel} ${isActive ? styles.active : ''} ${isLightning ? styles.lightningLabel : ''}`}>
                         {step.label}
                       </strong>
                       <span className={`${styles.pipelineStepContent} ${isActive ? styles.active : ''}`}>
@@ -538,21 +667,15 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
                       {isActive && latestInsight && (
                         <div className={styles.coachingInnerContainer} style={{ marginTop: 12 }}>
                           {latestInsight.suggestion && (
-                            <div className={styles.suggestionBox}>
-                              <div className={styles.suggestionHeader}>
-                                <MessageSquare size={14} />
-                                <span>Sugestão</span>
-                              </div>
-                              <p>{latestInsight.suggestion}</p>
+                            <div className={styles.suggestionTextOnly}>
+                              <MessageSquare size={14} />
+                              <p><em>{latestInsight.suggestion}</em></p>
                             </div>
                           )}
                           {latestInsight.objection_handling && (
-                            <div className={styles.objectionBox} style={{ marginTop: 8 }}>
-                              <div className={styles.objectionHeader}>
-                                <AlertOctagon size={14} />
-                                <span>Objeção Detectada!</span>
-                              </div>
-                              <p>{latestInsight.objection_handling}</p>
+                            <div className={styles.objectionTextOnly}>
+                              <AlertOctagon size={14} />
+                              <p><em>{latestInsight.objection_handling}</em></p>
                             </div>
                           )}
                         </div>
@@ -565,7 +688,7 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
           )}
 
           {/* Caso não haja plano de voo ou o insight ativo não corresponda a nenhum passo */}
-          {(!flightPlan || !flightPlan.steps || activeIdx === -1) && latestInsight && (
+          {(!activeFlightPlan || !activeFlightPlan.steps || activeIdx === -1) && latestInsight && (
             <div className={styles.coachingCard}>
               <div className={styles.insightHeader}>
                 <Zap size={14} className={styles.zapIcon} />
@@ -578,28 +701,22 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
                 </div>
               )}
               {latestInsight.suggestion && (
-                <div className={styles.suggestionBox}>
-                  <div className={styles.suggestionHeader}>
-                    <MessageSquare size={14} />
-                    <span>Sugestão</span>
-                  </div>
-                  <p>{latestInsight.suggestion}</p>
+                <div className={styles.suggestionTextOnly}>
+                  <MessageSquare size={14} />
+                  <p><em>{latestInsight.suggestion}</em></p>
                 </div>
               )}
               {latestInsight.objection_handling && (
-                <div className={styles.objectionBox}>
-                  <div className={styles.objectionHeader}>
-                    <AlertOctagon size={14} />
-                    <span>Objeção Detectada!</span>
-                  </div>
-                  <p>{latestInsight.objection_handling}</p>
+                <div className={styles.objectionTextOnly}>
+                  <AlertOctagon size={14} />
+                  <p><em>{latestInsight.objection_handling}</em></p>
                 </div>
               )}
             </div>
           )}
 
           {/* Estado vazio padrão */}
-          {!flightPlan && !latestInsight && (
+          {!activeFlightPlan && !latestInsight && (
             <div className={styles.emptySidebar}>
               <Headset size={32} strokeWidth={1.2} />
               <p>O Copiloto analisará o áudio em tempo real para sugerir gatilhos do SPIN Selling.</p>
@@ -627,15 +744,15 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
                 <div className={`${styles.avatarRing} ${speakerMeter.speaking ? styles.speaking : ""}`} />
                 <Avatar 
                   kind="person" 
-                  name={contactName || "Cliente"} 
-                  data={initialData}
+                  name={displayTitle} 
+                  src={resolvedClientUrl}
                   size={120} 
                 />
               </div>
-              <h2 className={styles.sideName}>{contactName || "Contato"}</h2>
+              <h2 className={styles.sideName}>{displayTitle}</h2>
               <div className={styles.statusBadge} style={{ marginTop: 8 }}>
                 <div className={`${styles.statusDot} ${styles.active}`} />
-                <span>Em Chamada</span>
+                <span>{displaySubtitle}</span>
               </div>
             </div>
 
@@ -734,9 +851,19 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
 
         {/* Call control buttons directly on screen */}
         <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 16, alignItems: 'center', zIndex: 10 }}>
+          
           <button className={`${styles.controlBtn} ${styles.hangup}`} onClick={handleHangup}>
             <PhoneOff size={20} />
             <span>Desligar</span>
+          </button>
+
+          <button 
+            className={styles.transcriptionToggleBtn} 
+            onClick={copyDebugLogs} 
+            title="Copiar Log de Debug" 
+            style={{ background: "#333", color: "#fff" }}
+          >
+            <Bug size={20} />
           </button>
 
           <button 

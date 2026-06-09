@@ -8,6 +8,27 @@ class CallSkill(FunnelStageSkill):
     Foca em obter o número do CRM, preparar o roteiro e abrir a tela de ligação.
     """
 
+    # Regras estruturadas de vendas para centralizar a inteligência das ligações
+    SPIN_SELLING_RULES = """
+    DIRETRIZES DA METODOLOGIA SPIN SELLING:
+    - S (Situação): Perguntas sobre o cenário atual do cliente (ex: tipo de caixas utilizadas, volume de expedição).
+    - P (Problema): Identificação de gargalos (ex: avarias em trânsito, montagem manual lenta, atraso de fornecedores).
+    - I (Implicação): Mapeamento das consequências financeiras/operacionais das dores (ex: atrasos em exportação, custo extra de retrabalho).
+    - N (Necessidade de Solução): Fazer o cliente concordar com o valor de uma solução personalizada (ex: protótipo sob medida, caixas CKD).
+    - FECHAMENTO: Foco total em agendar a visita técnica/reunião usando a técnica do "Ou/Ou" (ex: terça de manhã ou quinta à tarde).
+    """
+
+    OBJECTION_HANDLING_RULES = """
+    REGRAS DE CONTORNO DE OBJEÇÃO B2B (COLD CALLS):
+    1. É terminantemente PROIBIDO concordar passivamente com o envio de e-mails ou reagendamentos vagos. Se o cliente pedir para 'enviar por e-mail' ou disser que 'não pode falar agora', você deve reter o controle usando ganchos de atração.
+    2. Se o cliente pedir e-mail ("me manda por e-mail"): sugira um contorno focado em qualificar a dor ou forçar uma data específica.
+       - Exemplo: "Claro, mando sim. Mas para eu enviar o material certo: vocês têm sofrido com avarias nas caixas?" ou "Vou enviar. Mas o que acha de garantirmos 5 minutos na terça ou quinta para eu te apresentar?"
+    3. Se o cliente alegar pressa ("estou sem tempo"): use ganchos rápidos de valor (máx 10 segundos) e proponha data/hora alternativa.
+    4. Se o cliente disser que já tem fornecedor ("já temos fornecedor"): explore a segurança ou o histórico de avarias/atrasos deles para gerar dúvida.
+       - Exemplo: "Entendo. E com que frequência os atrasos ou avarias deles afetam sua linha hoje?"
+    5. O objetivo de todo contorno de objeção é reter a atenção, qualificar a dor ou fechar o compromisso (reunião/visita), nunca concordar passivamente.
+    """
+
     @property
     def name(self) -> str:
         return "Execução de Ligação Telefônica"

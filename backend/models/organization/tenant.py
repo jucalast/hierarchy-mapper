@@ -40,6 +40,7 @@ class User(Base):
     email = Column(String, nullable=False, index=True)
     role = Column(String) # Ex: Representante Comercial
     user_role = Column(String, default="seller") # admin | seller | viewer
+    avatar = Column(String, nullable=True) # URL do avatar (Pipedrive ou gravado local)
     hashed_password = Column(String, nullable=True) # Senha criptografada para login
     phone = Column(String)
     signature_template = Column(String) # Assinatura HTML customizada

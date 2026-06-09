@@ -17,6 +17,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from core.infra.database import get_db
 from .service import pipedrive_service
+from core.observability.logging_config import get_logger
+
+log = get_logger(__name__)
 
 router = APIRouter()
 
@@ -291,32 +294,71 @@ async def delete_pipedrive_org(org_id: int):
 
 @router.get("/pipedrive/current-user")
 async def get_current_user():
-    """Retorna o nome e avatar do usuário logado (João Luccas) do Pipedrive."""
+    """Retorna o nome e avatar do usuário logado do Pipedrive."""
     try:
         users_map = await pipedrive_service.get_users_map()
         users_pics_map = await pipedrive_service.get_users_pics_map()
         user_id = pipedrive_service.user_id # e.g. 24921888
+        
+        log.info(f"Buscando usuário atual: ID={user_id}. Disponíveis: {list(users_map.keys())}")
         
         name = users_map.get(user_id, "João Luccas")
         avatar = users_pics_map.get(user_id)
         
         # Se por algum motivo o user_id configurado não estiver no cache, pega o primeiro que combine com João ou o primeiro da lista
         if not avatar and users_pics_map:
+            log.info("Avatar não encontrado pelo ID, tentando busca por nome 'João'...")
             for uid, pic in users_pics_map.items():
                 uname = users_map.get(uid, "")
                 if "joao" in uname.lower() or "joão" in uname.lower():
                     name = uname
                     avatar = pic
+                    log.info(f"Encontrado fallback por nome: {name}, ID={uid}")
                     break
             else:
                 # Fallback para o primeiro com foto
+                log.info("Fallback por nome falhou, pegando primeiro usuário com foto disponível.")
                 for uid, pic in users_pics_map.items():
                     if pic:
                         name = users_map.get(uid, name)
                         avatar = pic
+                        log.info(f"Encontrado fallback genérico: {name}, ID={uid}")
                         break
                         
+        log.info(f"Resultado final get_current_user: {name}, avatar={'sim' if avatar else 'não'}")
+        
+        # Sincroniza com o banco local
+        from core.infra.database import async_session
+        from models import User, Tenant
+        async with async_session() as db_sess:
+            # Tenta pegar o tenant_id do primeiro tenant se não soubermos
+            tenant_res = await db_sess.execute(select(Tenant).limit(1))
+            tenant = tenant_res.scalars().first()
+            t_id = tenant.id if tenant else None
+
+            user_stmt = select(User).where(User.name.ilike(f"%{name}%")).limit(1)
+            user_res = await db_sess.execute(user_stmt)
+            db_user = user_res.scalars().first()
+            
+            if db_user:
+                if avatar and db_user.avatar != avatar:
+                    log.info(f"Sincronizando avatar para usuário {db_user.name} no banco local.")
+                    db_user.avatar = avatar
+                    await db_sess.commit()
+            elif t_id:
+                # Cria usuário se não existir (raro, mas evita erro)
+                new_user = User(
+                    tenant_id=t_id,
+                    name=name,
+                    email=f"{name.lower().replace(' ', '.')}@empresa.com.br",
+                    avatar=avatar,
+                    user_role="seller"
+                )
+                db_sess.add(new_user)
+                await db_sess.commit()
+
         return {"id": user_id, "name": name, "avatar": avatar}
     except Exception as e:
+        log.error(f"Erro em get_current_user: {e}")
         return {"id": None, "name": "João Luccas", "avatar": None}
 

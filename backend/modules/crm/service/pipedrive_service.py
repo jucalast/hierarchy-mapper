@@ -221,9 +221,31 @@ class PipedriveService:
             if resp.status_code == 429:
                 self._update_retry_after(resp)
                 wait = PipedriveService._retry_after_until - time.time()
+                # Se for um rate limit de curta duração (<= 3 segundos), tenta aguardar e refazer a chamada
+                if 0 < wait <= 3.0:
+                    import random
+                    jitter = random.uniform(0.1, 0.4)
+                    sleep_time = wait + jitter
+                    log.info("pipedrive.rate_limit.retry_sleep", seconds=round(sleep_time, 2))
+                    await asyncio.sleep(sleep_time)
+                    try:
+                        resp = await client.request(
+                            method, url, json=json, params=params, timeout=t_out
+                        )
+                        if resp.status_code != 429:
+                            PipedriveService._retry_after_until = 0.0
+                            if resp.status_code < 500:
+                                self._breaker.record_success()
+                                update_circuit_metric(self._breaker.name, False)
+                            return resp
+                    except Exception:
+                        pass
+
+                # Se ainda persistir ou for maior que 3 segundos
+                wait = PipedriveService._retry_after_until - time.time()
                 if wait > 0:
                     raise RuntimeError(
-                        f"Pipedrive Rate Limit. Tente novamente em {int(wait)}s"
+                        f"Pipedrive Rate Limit. Tente novamente em {max(1, int(wait + 0.99))}s"
                     )
 
             if resp.status_code == 429:

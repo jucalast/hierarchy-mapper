@@ -31,6 +31,7 @@ import { Sidebar } from '../layout/Sidebar';
 import { ProspectingView } from '../prospecting/ProspectingView';
 import { Header } from '../layout/Header';
 import { Drawer } from '../ui/Drawer';
+import { apiGet } from '../../services/config';
 import { Avatar } from '../ui';
 import { ChatPanel } from '../chat/ChatPanel';
 import { PreferencesView } from '../layout/PreferencesView';
@@ -200,9 +201,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     }
                 }
                 
-                const resp = await fetch(`${API_BASE_URL}/api/v1/pipedrive/current-user`);
-                if (resp.ok) {
-                    const data = await resp.json();
+                const data = await apiGet('/pipedrive/current-user');
+                if (data) {
                     setCurrentUser(data);
                     if (typeof window !== 'undefined') {
                         window.localStorage.setItem('pipedrive-current-user', JSON.stringify(data));
@@ -397,6 +397,12 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                         enrichedDetail.originalEmployee = emp;
                         enrichedDetail.linkedin = emp.linkedin || emp.linkedin_url;
                         enrichedDetail.email = emp.email;
+                    }
+                    
+                    // Adiciona o avatar da empresa caso seja uma ligação PABX
+                    const rootEmp = rawEmployees.find((n: any) => n.id === 'root_company');
+                    if (rootEmp) {
+                        enrichedDetail.company_logo = rootEmp.logo || rootEmp.company_logo || rootEmp.profile_pic || rootEmp.avatar;
                     }
                 }
 

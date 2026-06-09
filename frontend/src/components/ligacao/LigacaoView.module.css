@@ -185,69 +185,36 @@
   font-weight: 500;
 }
 
-.suggestionBox {
-  background: var(--chat-accent-soft);
-  border: var(--chat-border-width) solid rgba(129, 140, 248, 0.25);
-  border-radius: var(--chat-radius-md);
-  padding: var(--space-16);
+.suggestionTextOnly, .objectionTextOnly {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-8);
+  padding: var(--space-4) 0;
+  animation: swFadeIn var(--chat-transition-smooth);
 }
 
-.suggestionHeader {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
+.suggestionTextOnly svg {
   color: var(--chat-accent-color);
-  font-size: var(--font-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  margin-top: 4px;
 }
 
-.suggestionBox p {
-  margin: 0;
-  font-size: var(--font-sm);
-  color: var(--chat-text-primary);
-  line-height: 1.6;
-}
-
-.objectionBox {
-  background: rgba(239, 68, 68, 0.06);
-  border: var(--chat-border-width) solid rgba(239, 68, 68, 0.2);
-  border-left: 3.5px solid var(--sw-status-danger);
-  border-radius: var(--chat-radius-md);
-  padding: var(--space-16);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-
-@keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
-}
-
-.objectionHeader {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
+.objectionTextOnly svg {
   color: #ef4444;
-  font-size: var(--font-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  flex-shrink: 0;
+  margin-top: 4px;
 }
 
-.objectionBox p {
+.suggestionTextOnly p, .objectionTextOnly p {
   margin: 0;
   font-size: var(--font-sm);
-  color: var(--chat-text-primary);
-  line-height: 1.6;
+  color: var(--chat-accent-color);
+  line-height: 1.5;
+}
+
+@keyframes swFadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .emptySidebar {
@@ -360,6 +327,57 @@
 .pipelineStepContent.active {
   opacity: 1;
   font-weight: 500;
+}
+
+/* ===== LIGHTNING STEP STYLES ===== */
+.pipelineDotLightning {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--chat-bg-primary);
+  border: 2px solid #eab308; /* yellow-500 */
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--chat-transition-fast);
+  color: #eab308;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
+}
+
+.pipelineDotLightning.active {
+  background: #eab308;
+  color: #fff;
+  border-color: #ca8a04;
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.6);
+  transform: scale(1.1);
+}
+
+.pipelineDotLightning.past {
+  border-color: #ca8a04;
+  color: #ca8a04;
+}
+
+.zapIconLightning {
+  animation: pulseLightning 2s infinite;
+}
+
+@keyframes pulseLightning {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8)); }
+  100% { transform: scale(1); }
+}
+
+.pipelineCardLightning {
+  background: rgba(234, 179, 8, 0.05);
+  border-left: 2px solid #eab308;
+  border-radius: 0 var(--chat-radius-md) var(--chat-radius-md) 0;
+  margin-left: -2px; /* Pull it slightly left to overlap line if needed */
+  padding-left: 14px; /* Adjust padding to compensate border */
+}
+
+.lightningLabel {
+  color: #eab308 !important;
 }
 
 .coachingInnerContainer {
@@ -590,9 +608,9 @@
 }
 
 .transcriptionToggleBtn {
-  background: transparent;
+  background: #ffffff;
   border: none;
-  color: var(--sw-text-muted);
+  color: #131313;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -601,16 +619,22 @@
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme='light']) .transcriptionToggleBtn {
+  background: #131313;
+  color: #ffffff;
 }
 
 .transcriptionToggleBtn:hover {
-  background: var(--sw-hover);
-  color: var(--sw-text-base);
+  transform: scale(1.05);
+  filter: brightness(0.9);
 }
 
 .transcriptionToggleBtn.active {
-  color: var(--sw-text-base);
-  background: var(--sw-hover);
+  background: var(--chat-accent-color);
+  color: #ffffff;
 }
 
 .transcriptionToggleBtn.connecting {

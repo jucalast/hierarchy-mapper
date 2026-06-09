@@ -91,6 +91,7 @@ class BusinessContextService:
                 "seller_name": user.name if user else "João Luccas",
                 "seller_role": user.role if user else "Representante Comercial",
                 "seller_email": user.email if user else "contato@empresa.com.br",
+                "seller_avatar": user.avatar if user else None,
                 "products": {
                     p.name.lower().replace(" ", "_"): {
                         "name": p.name,

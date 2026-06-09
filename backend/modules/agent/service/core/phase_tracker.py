@@ -506,6 +506,25 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
                 ctx
             )
 
+    # ── Tratamento Específico: Resumo de Ligação (Pós-Chamada) ──────────────
+    _is_call_summary = any("[ALERTA DE CONTEXTO: LIGAÇÃO FINALIZADA]" in str(m.get("content", "")) for m in messages[-2:])
+    if _is_call_summary:
+        return render_prompt(
+            f"Data: {today}. Você é o Agente Comercial LinkB2B — especialista em CRM e fechamento.\n"
+            "Uma ligação acabou de ser finalizada e você recebeu a transcrição completa.\n\n"
+            "SUA MISSÃO CRÍTICA:\n"
+            "1. ANALISE: Leia a transcrição e identifique: dores do cliente, preços citados, compromissos firmados e reuniões agendadas.\n"
+            "2. RESUMO EXECUTIVO: Escreva um resumo curto e matador da conversa.\n"
+            "3. ATUALIZAÇÃO DO CRM (AÇÃO IMEDIATA):\n"
+            "   - Identifique a tarefa de ligação no Pipedrive (use `pipedrive_get_activities`).\n"
+            "   - Marque-a como concluída (`done=true`) e adicione o resumo como nota.\n"
+            "   - Se uma nova reunião ou follow-up foi acordado, use `pipedrive_create_task` para agendar.\n"
+            "4. REGRA DE OURO (NÃO DUPLICAR): Antes de sugerir ou criar QUALQUER nova tarefa, você DEVE obrigatoriamente chamar `pipedrive_get_activities` para ver as tarefas futuras. Se já existir uma tarefa para o mesmo objetivo (ex: 'Enviar proposta'), VOCÊ ESTÁ PROIBIDO de sugerir uma nova. Apenas atualize a nota da tarefa existente se necessário.\n"
+            "5. CONTINUIDADE: Sua missão só termina quando o CRM refletir a realidade da ligação. Sugira os botões de ação necessários.\n\n"
+            "Seja proativo. Se o cliente pediu uma proposta, sua sugestão de próximo passo DEVE ser rascunhar essa proposta.",
+            ctx
+        )
+
     # ── MODO AGENTE UNIVERSAL (Copilot-style) ────────────────────────────────
     # Para QUALQUER query que NÃO seja investigação de empresa (deal_status/agent_workflow),
     # o modelo recebe um prompt universal com TODAS as ferramentas e decide sozinho.

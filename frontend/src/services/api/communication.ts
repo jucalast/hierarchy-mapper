@@ -148,6 +148,8 @@ export interface SavedCallSession {
   id: string;
   pipedrive_activity_id?: string;
   org_id?: number;
+  org_logo?: string;
+  org_domain?: string;
   contact_name: string;
   phone: string;
   profile_pic?: string;

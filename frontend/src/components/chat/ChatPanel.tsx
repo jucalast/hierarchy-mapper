@@ -1670,10 +1670,26 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             setIsLoading(false);
             setAgentStreaming(false);
 
-            const { contactName } = e.detail || {};
-            const text = contactName 
-                ? `A ligação com ${contactName} terminou. Analise o que foi discutido e sugira os próximos passos (ex: atualizar CRM, enviar e-mail de resumo, agendar follow-up).`
-                : "A ligação terminou. Analise a conversa e sugira os próximos passos estratégicos.";
+            const { contactName, transcript } = e.detail || {};
+            
+            // Converte o array de transcrição em texto legível
+            const transcriptText = Array.isArray(transcript) 
+                ? transcript.map((m: any) => `[${m.role}]: ${m.text}`).join('\n')
+                : "Sem transcrição disponível.";
+
+            const text = `[ALERTA DE CONTEXTO: LIGAÇÃO FINALIZADA]
+A ligação com ${contactName || "o contato"} terminou.
+
+### TRANSCRIÇÃO DA CONVERSA:
+${transcriptText}
+
+### SUA MISSÃO AGORA:
+1. **Resuma** os pontos principais discutidos.
+2. **Identifique** compromissos, reuniões agendadas ou dores mencionadas.
+3. **Próximos Passos**: Sugira ações concretas no CRM (marcar tarefa atual como feita, criar nota com resumo, agendar follow-up).
+4. **Inteligência**: NÃO sugira tarefas que já existem no Pipedrive. Verifique o histórico de atividades primeiro.
+5. **Ação**: Se houver algo claro para atualizar, emita a chamada da ferramenta imediatamente.
+`;
             
             handleSendMessage(text, [], false);
         };

@@ -180,7 +180,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 break; // Sucesso, sai do loop
             } catch (e: any) {
                 const errMsg = e.message || e;
-                if (typeof errMsg === 'string' && errMsg.toLowerCase().includes('cooldown')) {
+                if (typeof errMsg === 'string' && (errMsg.toLowerCase().includes('cooldown') || errMsg.toLowerCase().includes('rate limit'))) {
                     attempt++;
                     if (attempt < maxAttempts) {
                         console.warn(`Rate limit do Pipedrive atingido. Tentando novamente em 2.5s (Tentativa ${attempt}/${maxAttempts})...`);

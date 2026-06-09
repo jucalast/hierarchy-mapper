@@ -68,11 +68,11 @@ class CallAssistantManager:
         if len(self.context_history) > 20:
             self.context_history.pop(0)
 
-        if len(self.context_history) % 3 == 0:
-            self.transcription_queue.put({
-                "type": "trigger_insight",
-                "history": "\n".join(self.context_history[-10:])
-            })
+        # Trigger insight on every new message for real-time response
+        self.transcription_queue.put({
+            "type": "trigger_insight",
+            "history": "\n".join(self.context_history[-6:])
+        })
 
     def _speaker_listener(self):
         try:
@@ -232,6 +232,7 @@ class CallAssistantManager:
     async def start(self):
         await self.stop()
         await asyncio.sleep(0.5)
+        self.context_history = []  # Clear history from previous calls
         self.current_session_id += 1
         self.stop_event.clear()
         self.speaker_thread = threading.Thread(target=self._speaker_listener, daemon=True)

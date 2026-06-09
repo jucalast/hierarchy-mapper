@@ -463,7 +463,7 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
     if not term and not org_name and not org_id:
         return {"ok": False, "error": "Informe contact_name, contact_email, domain, org_name ou org_id"}
 
-    max_retries = 2
+    max_retries = 1
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -537,7 +537,7 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                 _sw = {"grupo", "cia", "ltda", "sistemas", "comercio", "industria", "servicos", "energia", "eletrica"}
                 _fallback_query = next((w for w in _words if len(w) > 3 and w not in _sw), _words[0] if _words else None)
 
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=15.0) as client:
                 # "conversations" varre TODAS as pastas do Outlook recursivamente
                 all_r = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "conversations", "limit": limit * 2, "q": search_query})
 

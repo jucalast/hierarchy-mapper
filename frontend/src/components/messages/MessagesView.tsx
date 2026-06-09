@@ -1010,6 +1010,8 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
                         message_count: call.message_count,
                         org_name: '',
                         profile_pic: call.profile_pic || null,
+                        org_logo: call.org_logo || null,
+                        org_domain: call.org_domain || null,
                     } as any,
                     threadId: call.id,
                     subject: call.contact_name,
@@ -1109,8 +1111,8 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
                                                         height: 14,
                                                         borderRadius: '50%',
                                                         objectFit: 'cover',
-                                                        background: '#0d0d0d',
-                                                        border: '1.5px solid #0d0d0d',
+                                                        background: 'var(--sw-bg)',
+                                                        border: '1.5px solid var(--sw-bg)',
                                                     }}
                                                 />
                                             )}

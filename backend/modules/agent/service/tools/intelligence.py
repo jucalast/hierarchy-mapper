@@ -151,8 +151,9 @@ async def exec_web_search(args: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def exec_find_company_contact(args: dict) -> dict:
-    """Busca contato da empresa via Receita Federal (BrasilAPI) e web search."""
+    """Busca contato da empresa via Google Maps API (Principal), Receita Federal (BrasilAPI) e web search."""
     import re as _re
+    import os
     org_name = args.get("org_name", "")
     cnpj_raw = args.get("cnpj", "")
     cnpj_clean = _re.sub(r"\D", "", cnpj_raw or "")
@@ -174,8 +175,79 @@ async def exec_find_company_contact(args: dict) -> dict:
 
     phones, emails, address, web_snippets = [], [], "", []
 
-    # 1. Receita Federal via BrasilAPI / MinhReceita / ReceitaWS
-    if len(cnpj_clean) == 14:
+    # 1. Tentativa via Google Maps API (Principal)
+    from dotenv import dotenv_values
+    env_dict = dotenv_values(".env")
+    google_maps_api_key = os.environ.get("GOOGLE_MAPS_API_KEY") or env_dict.get("GOOGLE_MAPS_API_KEY")
+    quota = None
+    if org_name and google_maps_api_key:
+        import json
+        from datetime import datetime
+        quota_file = "google_maps_quota.json"
+        today = datetime.now().strftime("%Y-%m-%d")
+        used = 0
+        limit = int(os.environ.get("GOOGLE_MAPS_DAILY_LIMIT", "200"))
+        
+        try:
+            if os.path.exists(quota_file):
+                with open(quota_file, "r", encoding="utf-8") as f:
+                    qdata = json.load(f)
+                    if qdata.get("date") == today:
+                        used = qdata.get("used", 0)
+        except Exception:
+            pass
+
+        quota = {"used": used, "limit": limit}
+
+        if used < limit:
+            try:
+                async with httpx.AsyncClient(timeout=8.0) as client:
+                    headers = {
+                        "X-Goog-Api-Key": google_maps_api_key,
+                        "X-Goog-FieldMask": "places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.formattedAddress",
+                    }
+                    body = {
+                        "textQuery": org_name,
+                        "languageCode": "pt-BR"
+                    }
+                    r = await client.post(
+                        "https://places.googleapis.com/v1/places:searchText",
+                        headers=headers,
+                        json=body
+                    )
+                    if r.status_code == 200:
+                        used += 1
+                        quota["used"] = used
+                        try:
+                            with open(quota_file, "w", encoding="utf-8") as f:
+                                json.dump({"date": today, "used": used, "limit": limit}, f)
+                        except Exception:
+                            pass
+                        
+                        data = r.json()
+                        places = data.get("places", [])
+                        if places:
+                            place = places[0]
+                            # Tenta pegar nacional primeiro, depois internacional
+                            phone = place.get("nationalPhoneNumber") or place.get("internationalPhoneNumber")
+                            if phone:
+                                phones.append({"source": "Google Maps", "value": phone})
+                            
+                            website = place.get("websiteUri")
+                            if website:
+                                web_snippets.append(f"Site Oficial: {website}")
+                            
+                            g_address = place.get("formattedAddress")
+                            if g_address and not address:
+                                address = g_address
+                    else:
+                        print(f"Google Maps API Error: {r.status_code} - {r.text}")
+            except Exception as e:
+                print(f"Erro na requisição do Google Maps: {e}")
+                pass
+
+    # 2. Receita Federal via BrasilAPI / MinhReceita / ReceitaWS (Fallback se não achar telefone no Google Maps)
+    if len(cnpj_clean) == 14 and not phones:
         try:
             from modules.hierarchy.service.cnpj_resolver import fetch_company_data_by_cnpj, build_full_address
             data = await fetch_company_data_by_cnpj(cnpj_clean)
@@ -187,11 +259,12 @@ async def exec_find_company_contact(args: dict) -> dict:
                 email_rf = (data.get("email") or "").strip().lower()
                 if email_rf and "@" in email_rf:
                     emails.append({"source": "Receita Federal", "value": email_rf})
-                address = build_full_address(data)
+                if not address:
+                    address = build_full_address(data)
         except Exception:
             pass
 
-    # 2. Web search via DuckDuckGo Instant Answer
+    # 3. Web search via DuckDuckGo Instant Answer
     if org_name:
         try:
             queries = [
@@ -220,11 +293,11 @@ async def exec_find_company_contact(args: dict) -> dict:
     # Monta resumo legível
     parts = []
     if phones:
-        parts.append("Telefones (Receita Federal): " + " | ".join(p["value"] for p in phones))
+        parts.append("Telefones: " + " | ".join(f"{p['value']} ({p['source']})" for p in phones))
     else:
-        parts.append("Nenhum telefone encontrado na Receita Federal.")
+        parts.append("Nenhum telefone encontrado nas buscas.")
     if emails:
-        parts.append("E-mail (Receita Federal): " + " | ".join(e["value"] for e in emails))
+        parts.append("E-mail: " + " | ".join(f"{e['value']} ({e['source']})" for e in emails))
     if address:
         parts.append(f"Endereco: {address}")
     if web_snippets:
@@ -246,6 +319,7 @@ async def exec_find_company_contact(args: dict) -> dict:
         "web_snippets": web_snippets,
         "can_create_contact": can_create,
         "summary": "\n".join(parts),
+        "quota": quota
     }
 
 
@@ -299,6 +373,7 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
     from core.llm.router import ask_llm
     from core.llm.base import LLMTier
     from modules.ai.service.context.business_context_service import BusinessContextService
+    from modules.agent.skills.skill_call import CallSkill
     import json
 
     contact_name = args.get("contact_name", "")
@@ -306,42 +381,79 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
     profile_pic = args.get("profile_pic", None)
     activity_id = extract_activity_id(args, messages)
 
+    # Tenta buscar profile_pic no banco local se não foi fornecida
+    if not profile_pic and (contact_name or phone):
+        try:
+            from core.infra.database import async_session
+            from models.people.employee import Employee
+            from sqlalchemy import select, or_
+            async with async_session() as session:
+                stmt = select(Employee.profile_pic).where(
+                    or_(
+                        Employee.name.ilike(f"%{contact_name}%") if contact_name else False,
+                        Employee.whatsapp_number == phone if phone else False
+                    )
+                ).limit(1)
+                res = await session.execute(stmt)
+                db_pic = res.scalar()
+                if db_pic:
+                    profile_pic = db_pic
+        except Exception as _pic_err:
+            log.debug(f"Erro ao buscar profile_pic de fallback: {_pic_err}")
+
     # Busca contexto dinâmico da empresa
     ctx = await BusinessContextService.get_tenant_context()
     company_name = ctx.get("company_name", "a Empresa")
     company_segment = ctx.get("company_segment", "seu segmento")
     differentials = "\n".join([f"- {d}" for d in ctx.get("company_differentials", [])])
     seller_name = ctx.get("seller_name", "João Luccas")
-    
+
+    # Determina se o telefone é da empresa (geral) ou direto do contato
+    is_company_phone = False
+    if messages:
+        for msg in reversed(messages):
+            if isinstance(msg.get("content"), list):
+                for b in msg["content"]:
+                    if b.get("type") == "tool_result" and b.get("tool_name") == "find_company_contact":
+                        if phone in str(b.get("content")):
+                            is_company_phone = True
+                            break
+
+    objective_instruction = f"Gere um plano de voo (passo a passo) de alta performance para uma ligação fria (Cold Call) com o contato: {contact_name} (Tel: {phone})."
+    if is_company_phone:
+        objective_instruction = f"""ATENÇÃO: O telefone identificado ({phone}) é o contato geral da empresa (Recepção/PABX), e não o número direto de {contact_name}. 
+    O objetivo desta ligação NÃO é vender o produto na recepção, mas sim conseguir ser transferido para o decisor {contact_name} ou conseguir o e-mail/celular dele.
+    - A ABERTURA deve ser focada em contornar o gatekeeper (ex: 'Bom dia, gostaria de falar com o responsável por X, o Pedro...').
+    - SITUAÇÃO + PROBLEMA devem ser usados se o gatekeeper bloquear (ex: 'Qual o assunto? É sobre a embalagem X...').
+    - O FECHAMENTO da ligação deve ser a transferência bem-sucedida ou a captura do contato direto."""
+
     prompt = f"""
     Você é um treinador de vendas B2B (Copiloto) da {company_name}, especialista em {company_segment}.
-    Gere um plano de voo (passo a passo) de alta performance para uma ligação fria (Cold Call) com o contato: {contact_name} (Tel: {phone}).
+    {objective_instruction}
     
     CONTEXTO DA {company_name.upper()}:
     Segmento: {company_segment}
     Diferenciais:
     {differentials}
 
-    Diretrizes Estratégicas (Metodologia SPIN Otimizada):
-    1. ABERTURA (Interrupção de Padrão): Peça 30 segundos para explicar o motivo da ligação. Respeite o tempo do prospect e dê o controle a ele. Nunca pergunte "Como você está hoje?".
-    2. SITUAÇÃO + PROBLEMA (Elevator Pitch Provocativo): Não faça perguntas abertas demais. Traga hipóteses de dores baseadas nos diferenciais da {company_name}.
-    3. IMPLICAÇÃO (Aprofundando a Ferida): Faça o prospect verbalizar o prejuízo financeiro e operacional se não resolver os problemas citados.
-    4. NECESSIDADE (A Ponte): Proponha uma análise técnica ou engenharia reversa para encontrar viabilidade técnica e comercial usando os pontos fortes da {company_name}.
-    5. FECHAMENTO (Foco no Presencial): O objetivo é a visita técnica. Use a técnica do "Ou/Ou" para agendar o café presencial.
+    {CallSkill.SPIN_SELLING_RULES}
 
     O plano deve ter passos claros com as labels: "ABERTURA", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "NECESSIDADE" e "FECHAMENTO".
-    Para cada passo, forneça uma sugestão de fala direta, curta e matadora para o vendedor {seller_name}.
+    IMPORTANTE: Gere APENAS a sugestão de fala direta e matadora para a etapa de "ABERTURA". 
+    NUNCA utilize placeholders como [Seu Nome], [Sua Empresa] ou [Nome do Contato]. O vendedor é "{seller_name}", sua empresa é "{company_name}" e o contato é "{contact_name}". O script deve vir pronto para leitura!
+    Para as etapas "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "NECESSIDADE" e "FECHAMENTO", você DEVE definir o valor do campo "content" estritamente como a string "Pendente...". As próximas etapas serão geradas progressivamente em tempo real de acordo com as respostas do cliente.
 
     Retorne o resultado em formato JSON:
     {{
         "contact_name": "{contact_name}",
         "phone": "{phone}",
+        "is_company_phone": {"true" if is_company_phone else "false"},
         "steps": [
             {{"label": "ABERTURA", "content": "..."}},
-            {{"label": "SITUAÇÃO + PROBLEMA", "content": "..."}},
-            {{"label": "IMPLICAÇÃO", "content": "..."}},
-            {{"label": "NECESSIDADE", "content": "..."}},
-            {{"label": "FECHAMENTO", "content": "..."}}
+            {{"label": "SITUAÇÃO + PROBLEMA", "content": "Pendente..."}},
+            {{"label": "IMPLICAÇÃO", "content": "Pendente..."}},
+            {{"label": "NECESSIDADE", "content": "Pendente..."}},
+            {{"label": "FECHAMENTO", "content": "Pendente..."}}
         ]
     }}
     """

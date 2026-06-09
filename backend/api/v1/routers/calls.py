@@ -115,13 +115,16 @@ async def get_call_session(
 @router.get("/history")
 async def get_call_history():
     try:
+        from models.organization import Organization
         async with async_session() as session:
-            stmt = select(CallSession).order_by(CallSession.created_at.desc())
+            stmt = select(CallSession, Organization.logo, Organization.domain).outerjoin(
+                Organization, CallSession.org_id == Organization.id
+            ).order_by(CallSession.created_at.desc())
             res = await session.execute(stmt)
-            sessions = res.scalars().all()
+            rows = res.all()
             
             result = []
-            for s in sessions:
+            for s, org_logo, org_domain in rows:
                 stmt_count = select(CallMessage).where(CallMessage.call_session_id == s.id)
                 res_count = await session.execute(stmt_count)
                 msg_count = len(res_count.scalars().all())
@@ -132,6 +135,8 @@ async def get_call_history():
                         "id": s.id,
                         "pipedrive_activity_id": s.pipedrive_activity_id,
                         "org_id": s.org_id,
+                        "org_logo": org_logo,
+                        "org_domain": org_domain,
                         "contact_name": s.contact_name,
                         "phone": s.phone,
                         "profile_pic": s.profile_pic,
@@ -142,6 +147,7 @@ async def get_call_history():
                     })
             return {"ok": True, "calls": result}
     except Exception as e:
+        log.error(f"Error fetching call history: {e}")
         return {"ok": False, "error": str(e)}
 
 
@@ -159,6 +165,33 @@ async def call_assistant_websocket(websocket: WebSocket):
         await websocket.send_json({"type": "error", "message": "Failed to initialize audio devices."})
         await websocket.close()
         return
+
+    # Sincronizar plano de voo e histórico a partir do SQLite
+    try:
+        async with async_session() as session:
+            stmt = select(CallSession).where(
+                (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
+            )
+            res = await session.execute(stmt)
+            db_session = res.scalar_one_or_none()
+            if db_session:
+                if db_session.latest_insight and "updated_steps" in db_session.latest_insight:
+                    fp = dict(db_session.flight_plan) if db_session.flight_plan else {}
+                    fp["steps"] = db_session.latest_insight["updated_steps"]
+                    assistant_manager.set_active_coaching_plan(fp)
+                elif db_session.flight_plan:
+                    assistant_manager.set_active_coaching_plan(db_session.flight_plan)
+                
+                # Se for reconexão, carregar histórico de mensagens anteriores para a IA
+                stmt_msg = select(CallMessage).where(CallMessage.call_session_id == db_session.id).order_by(CallMessage.timestamp.asc())
+                res_msg = await session.execute(stmt_msg)
+                db_messages = res_msg.scalars().all()
+                if db_messages:
+                    assistant_manager.context_history = [
+                        f"{m.role}: {m.text}" for m in db_messages
+                    ][-20:]
+    except Exception as e:
+        log.error(f"Erro ao carregar detalhes da CallSession para o WebSocket: {e}")
 
     # Acumuladores em memória temporários para esta sessão websocket
     session_messages = []
@@ -247,6 +280,10 @@ async def call_assistant_websocket(websocket: WebSocket):
                         latest_ins = getattr(websocket, "latest_insight", None)
                         if latest_ins:
                             db_session.latest_insight = latest_ins
+                            if "updated_steps" in latest_ins:
+                                fp = dict(db_session.flight_plan) if db_session.flight_plan else {}
+                                fp["steps"] = latest_ins["updated_steps"]
+                                db_session.flight_plan = fp
                         
                         await session.commit()
                         log.info("[calls] Sessao de ligacao salva com sucesso no banco SQLite.")
@@ -255,48 +292,100 @@ async def call_assistant_websocket(websocket: WebSocket):
 
 
 async def handle_ai_insight(websocket: WebSocket, history: str, activity_id: str | None, phone: str | None):
+    from modules.agent.skills.skill_call import CallSkill
     from modules.ai.service.context.business_context_service import BusinessContextService
     
     plan_text = "Nenhum plano de voo ativo."
     if assistant_manager.active_coaching_plan:
         plan_text = json.dumps(assistant_manager.active_coaching_plan, ensure_ascii=False, indent=2)
 
-    # Busca contexto dinâmico da empresa
+    # Buscar contexto de negócio dinâmico
     ctx = await BusinessContextService.get_tenant_context()
-    company_name = ctx.get("company_name", "a Empresa")
-    seller_name = ctx.get("seller_name", "o Vendedor")
+    seller_name = ctx.get('seller_name', 'Vendedor')
+    company_name = ctx.get('company_name', 'Empresa')
+    differentials = ", ".join(ctx.get("company_differentials", []))
+    products_info = []
+    for p_key, p_data in ctx.get("products", {}).items():
+        products_info.append(f"- {p_data.get('name')}: {p_data.get('description')}")
+    products_str = "\n".join(products_info)
+    reference_clients = ", ".join([c.get("name", "") for c in ctx.get("reference_clients", [])])
 
-    prompt = f"""Você é um Copiloto de Vendas B2B da {company_name} acompanhando uma ligação em tempo real.
-Seu objetivo é ajudar o vendedor ({seller_name}) a seguir o plano de voo de alta performance e converter a visita presencial.
+    prompt = f"""Você é o Copiloto de Vendas da {company_name}, analisando uma ligação B2B em tempo real.
+Seu objetivo é guiar o vendedor ({seller_name}) pelas etapas do plano de voo, detectar objeções do cliente imediatamente, fornecer contornos assertivos, rápidos e ADAPTAR dinamicamente o plano de voo ao linguajar e revelações do cliente.
 
-DIRETRIZES DE COACHING:
-1. Tonalidade: Recomende um tom de voz calmo, de consultor especialista, não de vendedor insistente.
-2. Silêncio: Após perguntas de Implicação, sugira que o vendedor faça silêncio para deixar o prospect falar.
-3. Objeção "Já tenho fornecedor": Instrua a responder que o objetivo não é trocar o fornecedor, mas ser uma segunda opção homologada para emergências.
-4. Foco: O objetivo final é sempre o agendamento da visita técnica presencial.
-
-PLANO DE VOO ATIVO:
+PLANO DE VOO DA LIGAÇÃO (ATUAL):
 {plan_text}
 
-TRANSCRIÇÃO RECENTE:
+HISTÓRICO RECENTE DA CONVERSA:
 {history}
 
-Analise a transcrição e retorne EXATAMENTE um JSON:
-- "current_step": Passo atual (ABERTURA, SITUAÇÃO + PROBLEMA, IMPLICAÇÃO, NECESSIDADE, FECHAMENTO).
-- "suggestion": Sugestão curta, direta e "matadora" para o momento.
-- "objection_detected": true/false.
-- "objection_handling": Como contornar de forma elegante se detectado.
+CONTEXTO DA EMPRESA E VENDEDOR (Use isso para persuadir e gerar autoridade):
+- Vendedor: {seller_name}
+- Empresa: {company_name}
+- Nossos Diferenciais: {differentials}
+- Clientes de Referência: {reference_clients}
+- Nossos Produtos:
+{products_str}
 
-Seja cirúrgico. Ajude o vendedor a manter o controle da conversa.
+DIRETRIZES DE VENDAS E CONTORNO DE OBJEÇÕES:
+{CallSkill.SPIN_SELLING_RULES}
+{CallSkill.OBJECTION_HANDLING_RULES}
+
+INSTRUÇÕES DE ANÁLISE E ADAPTAÇÃO:
+1. Identifique em qual etapa do plano de voo a conversa está. O valor do campo "current_step" DEVE corresponder EXATAMENTE ao nome (ou label) de uma das etapas presentes no plano de voo (ex: "ABERTURA", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "NECESSIDADE", "FECHAMENTO", ou uma "Etapa Relâmpago" previamente criada). Se não houver correspondência clara, use o nome mais próximo possível dentre os definidos no plano de voo.
+2. **USO DE CONTEXTO**: Ao redigir as falas do vendedor (em Etapas Relâmpago ou na Próxima Etapa), use sutilmente os diferenciais, produtos e clientes de referência acima. Ex: se ele tem objeção de confiança, cite um cliente; se ele tem problema de qualidade, conecte com o nosso produto. Construa um "pitch" inteligente e persuasivo.
+3. Detecte se o cliente expressou qualquer objeção (ex: falta de tempo, já tem fornecedor, achou caro, etc.). Citar as próprias dores, custos ou problemas (ex: "temos muitas avarias e custos") NÃO é objeção, é sinal de compra! Só marque "objection_detected" como true se ele estiver resistindo a você.
+4. Se "objection_detected" for true, preencha "objection_handling" com uma frase de contorno extremamente assertiva e focada em manter a conversa ativa (máximo 15 palavras).
+5. Em "suggestion", forneça apenas dicas COMPORTAMENTAIS muito curtas (ex: "Fale mais devagar", "Deixe ele terminar de falar"). Dicas de roteiro NÃO devem vir aqui.
+6. **TRANSFERÊNCIA AUTOMÁTICA**: Detecte se a conversa indica que a recepção/PABX transferiu a ligação para o alvo. Se sim, defina "transfer_detected" como true.
+7. **ADAPTAÇÃO DO PLANO DE VOO (updated_steps)**: Você deve retornar todas as etapas do plano de voo sob a chave "updated_steps", com as seguintes regras:
+   - **ETAPAS RELÂMPAGO (Lightning Steps)**: INJETE uma Etapa Relâmpago APENAS se o cliente resistiu ou desviou do assunto exigindo uma parada estratégica (ex: dúvida complexa, objeção real).
+   - **REGRA DE TRANSFERÊNCIA (PABX para ALVO)**: Quando transferido, analise quem atendeu:
+     A) Se NÃO disser o nome, crie Relâmpago "Confirmar Alvo" para perguntar: "Alô, falo com o(a) [Nome]?".
+     B) Se disser NOME DIFERENTE do alvo (Gatekeeper), crie Relâmpago "Qualificar Interlocutor": "Oi (nome), boa tarde. Meu nome é {seller_name} da {company_name}... Gostaria de saber quem seria a pessoa certa...".
+     C) **EXTRAÇÃO DE CONTATO DIRETO**: Se revelarem quem é o decisor, seu ÚNICO objetivo é pedir ramal/e-mail/WhatsApp direto dessa pessoa. Crie Relâmpago para isso. NUNCA tente agendar "através" do gatekeeper.
+     D) Se for o Alvo, crie Relâmpago "Reintrodução e Hook".
+   - **PROIBIÇÃO DE REDUNDÂNCIA (EFEITO PAPAGAIO)**: NUNCA crie uma Etapa Relâmpago se o conteúdo dela for similar ao roteiro que você está gerando para a PRÓXIMA ETAPA lógica do S.P.I.N. Escolha apenas UM bloco para colocar o roteiro! Se a próxima etapa já resolve (ex: Necessidade), preencha apenas a Necessidade. Se você gerar dois blocos dizendo a mesma coisa, o vendedor lerá duplicado e perderá a venda.
+   - REGRA CRÍTICA: NUNCA crie uma Etapa Relâmpago se a última pessoa a falar no histórico foi o "Vendedor". As Etapas Relâmpago são exclusivas para reagir à última fala do CLIENTE.
+   - **PROGRESSÃO DO FUNIL (CRUCIAL)**: Se o cliente respondeu bem (ex: confirmou os custos/problemas na Implicação), PULE IMEDIATAMENTE para a PRÓXIMA etapa (Necessidade) substituindo "Pendente..." pelo roteiro exato. O funil não pode parar.
+   - **ATALHO DE SUCESSO (SHORT-CIRCUIT)**: Se o objetivo foi alcançado (agendou reunião ou pegou contato do decisor), PULE imediatamente para "FECHAMENTO". Preencha as do meio com "Não se aplica".
+   - O texto deve estar pronto para o vendedor ler. Você já sabe que o nome do vendedor é {seller_name} e a empresa é {company_name}. Nunca use colchetes/chaves.
+   - Etapas muito distantes continuam "Pendente...".
+
+Retorne estritamente um JSON com a seguinte estrutura:
+{{
+  "current_step": "Nome exato da etapa do plano de voo",
+  "suggestion": "Dica comportamental rápida ou string vazia",
+  "objection_detected": true ou false,
+  "objection_handling": "Frase de contorno se houver objeção, senão string vazia",
+  "transfer_detected": true ou false,
+  "updated_steps": [
+    {{
+      "label": "Nome da Etapa",
+      "content": "Roteiro adaptado com base no diálogo",
+      "is_lightning": false
+    }}
+  ]
+}}
 """
     try:
         res = await ask_llm(
             prompt=prompt, 
-            system="Retorne apenas JSON estruturado válido.", 
+            system="Você é um assistente de vendas em tempo real. Respostas ultra-curtas em JSON.", 
             json_mode=True, 
-            tier=LLMTier.STANDARD
+            tier=LLMTier.FAST,
+            preferred_model="gemini-2.5-flash",  # Gemini (Rápido e pago)
+            bypass_throttle=True
         )
         data = res.json_data or {}
+        
+        # Se houver passos atualizados, atualizamos o plano em memória no assistant_manager
+        # para que os turnos subsequentes continuem a partir do plano já adaptado
+        if data and "updated_steps" in data and isinstance(data["updated_steps"], list) and len(data["updated_steps"]) > 0:
+            if isinstance(assistant_manager.active_coaching_plan, dict):
+                assistant_manager.active_coaching_plan["steps"] = data["updated_steps"]
+            else:
+                assistant_manager.active_coaching_plan = {"steps": data["updated_steps"]}
         
         # Salva o insight no objeto do websocket para persistência futura
         websocket.latest_insight = data
