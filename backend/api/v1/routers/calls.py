@@ -123,7 +123,7 @@ async def get_call_history():
     try:
         from models.organization import Organization
         async with async_session() as session:
-            stmt = select(CallSession, Organization.logo, Organization.domain).outerjoin(
+            stmt = select(CallSession, Organization.logo_url, Organization.domain).outerjoin(
                 Organization, CallSession.org_id == Organization.id
             ).order_by(CallSession.created_at.desc())
             res = await session.execute(stmt)

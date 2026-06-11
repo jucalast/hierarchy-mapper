@@ -1852,10 +1852,10 @@ ${transcriptText}
 ### SUA MISSÃO AGORA:
 1. **Resuma** os pontos principais discutidos.
 2. **Identifique** compromissos, reuniões agendadas ou dores mencionadas.
-3. **Próximos Passos**: Sugira ações concretas no CRM (marcar tarefa atual como feita, criar nota com resumo, agendar follow-up).
-4. **Inteligência**: NÃO sugira tarefas que já existem no Pipedrive. Verifique o histórico de atividades primeiro.
-5. **Estratégia (Plano e Fit)**: Se a ligação revelou um NOVO decisor principal, instrua a recriar o plano de prospecção ('generate_prospecting_plan'). Se a ligação revelou que a empresa NÃO TEM FIT com nosso produto, sugira desqualificar/dar "Lost" no negócio ('pipedrive_update_deal' com status 'lost').
-6. **Ação**: Se houver algo claro para atualizar, emita a chamada da ferramenta imediatamente.
+3. **Próximos Passos (OBRIGATÓRIO)**: EXECUTE IMEDIATAMENTE as ações concretas no CRM usando as ferramentas disponíveis (ex: 'pipedrive_update_task' para concluir a tarefa atual, 'pipedrive_create_note' para salvar o resumo, 'pipedrive_create_task' para agendar follow-up).
+4. **Inteligência**: NÃO crie tarefas que já existem no Pipedrive. Verifique o histórico de atividades primeiro se necessário.
+5. **Estratégia (Plano e Fit)**: Se a ligação revelou um NOVO decisor principal, instrua a recriar o plano de prospecção ('generate_prospecting_plan'). Se a ligação revelou que a empresa NÃO TEM FIT com nosso produto, chame 'pipedrive_update_deal' com status 'lost'.
+6. **Ação CRÍTICA**: VOCÊ ESTÁ PROIBIDO de apenas responder com texto. VOCÊ DEVE EMITIR AS CHAMADAS DE FERRAMENTA (tool calls) PARA O CRM AGORA MESMO.
 `;
             
             handleSendMessage(text, [], false);

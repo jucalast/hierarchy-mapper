@@ -735,6 +735,13 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
   const clientFallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(contactName || "Cliente")}&background=6366f1&color=fff&bold=true&rounded=true&size=120`;
   
   let resolvedClientUrl = clientAvatarUrl || clientFallbackUrl;
+  
+  // Se o contato não tem foto própria e herdou a logo da empresa, usamos as iniciais 
+  // para que a transferência visual de PABX -> Pessoa fique clara
+  if (clientAvatarRaw && companyLogo && clientAvatarRaw === companyLogo) {
+      resolvedClientUrl = clientFallbackUrl;
+  }
+  
   let displayTitle = contactName || "Contato";
   let displaySubtitle = "Em Chamada";
 

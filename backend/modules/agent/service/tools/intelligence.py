@@ -441,6 +441,30 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
     else:
         rules_to_apply = CallSkill.SPIN_SELLING_RULES
 
+    if is_company_phone:
+        instruction_extra = 'O plano deve ter passos claros: "PABX / RECEPÇÃO", "ABERTURA (COM DECISOR)", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "QUALIFICAÇÃO", "NECESSIDADE" e "FECHAMENTO".\nIMPORTANTE: Gere APENAS a sugestão de fala para "PABX / RECEPÇÃO" (pedindo a transferência de forma cordial). Para as DEMAIS etapas (inclusive Abertura), o "content" DEVE ser "Pendente...".'
+        steps_json = """
+        "steps": [
+            {"label": "PABX / RECEPÇÃO", "content": "..."},
+            {"label": "ABERTURA (COM DECISOR)", "content": "Pendente..."},
+            {"label": "SITUAÇÃO + PROBLEMA", "content": "Pendente..."},
+            {"label": "IMPLICAÇÃO", "content": "Pendente..."},
+            {"label": "QUALIFICAÇÃO", "content": "Pendente..."},
+            {"label": "NECESSIDADE", "content": "Pendente..."},
+            {"label": "FECHAMENTO", "content": "Pendente..."}
+        ]"""
+    else:
+        instruction_extra = 'O plano deve ter passos claros: "ABERTURA", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "QUALIFICAÇÃO", "NECESSIDADE" e "FECHAMENTO".\nIMPORTANTE: Gere APENAS a sugestão de fala direta e matadora para a etapa de "ABERTURA". Para as DEMAIS etapas, o "content" DEVE ser "Pendente...".'
+        steps_json = """
+        "steps": [
+            {"label": "ABERTURA", "content": "..."},
+            {"label": "SITUAÇÃO + PROBLEMA", "content": "Pendente..."},
+            {"label": "IMPLICAÇÃO", "content": "Pendente..."},
+            {"label": "QUALIFICAÇÃO", "content": "Pendente..."},
+            {"label": "NECESSIDADE", "content": "Pendente..."},
+            {"label": "FECHAMENTO", "content": "Pendente..."}
+        ]"""
+
     prompt = f"""
     Você é um treinador de vendas B2B (Copiloto) da {company_name}, especialista em {company_segment}.
     {objective_instruction}
@@ -452,24 +476,16 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
 
     {rules_to_apply}
 
-    O plano deve ter passos claros com as labels: "ABERTURA", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "QUALIFICAÇÃO", "NECESSIDADE" e "FECHAMENTO".
-    IMPORTANTE: Gere APENAS a sugestão de fala direta e matadora para a etapa de "ABERTURA". 
+    {instruction_extra}
     NUNCA utilize placeholders como [Seu Nome], [Sua Empresa] ou [Nome do Contato]. O vendedor é "{seller_name}", sua empresa é "{company_name}" e o contato é "{contact_name}". O script deve vir pronto para leitura!
-    Para as etapas "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "QUALIFICAÇÃO", "NECESSIDADE" e "FECHAMENTO", você DEVE definir o valor do campo "content" estritamente como a string "Pendente...". As próximas etapas serão geradas progressivamente em tempo real de acordo com as respostas do cliente.
+    As próximas etapas serão geradas progressivamente em tempo real de acordo com as respostas do cliente.
 
     Retorne o resultado em formato JSON:
     {{
         "contact_name": "{contact_name}",
         "phone": "{phone}",
         "is_company_phone": {"true" if is_company_phone else "false"},
-        "steps": [
-            {{"label": "ABERTURA", "content": "..."}},
-            {{"label": "SITUAÇÃO + PROBLEMA", "content": "Pendente..."}},
-            {{"label": "IMPLICAÇÃO", "content": "Pendente..."}},
-            {{"label": "QUALIFICAÇÃO", "content": "Pendente..."}},
-            {{"label": "NECESSIDADE", "content": "Pendente..."}},
-            {{"label": "FECHAMENTO", "content": "Pendente..."}}
-        ]
+        {steps_json}
     }}
     """
     
@@ -1388,7 +1404,12 @@ async def exec_generate_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict
         icp_profile = business_ctx.get("icp_profile", "")
         differentials = business_ctx.get("differentials", "")
 
-        # 3. Monta o perfil dos decisores encontrados
+        # 3. Avalia os prospects usando a ferramenta centralizada (mesma do ChatPanel)
+        eval_res = await exec_evaluate_prospects({"org_id": org.id})
+        best_prospects_data = eval_res.get("best_prospects", []) if eval_res.get("ok") else []
+        overall_strategy = eval_res.get("overall_strategy", "") if eval_res.get("ok") else ""
+
+        # Monta o perfil de todos os decisores (para contexto adicional)
         decision_makers = []
         for emp in employees:
             dm = {
@@ -1417,6 +1438,10 @@ async def exec_generate_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict
 
 ## DECISORES MAPEADOS ({len(decision_makers)} pessoas):
 {json.dumps(decision_makers, indent=2, ensure_ascii=False)}
+
+## AVALIAÇÃO PRÉVIA DA IA (USE COMO BASE PARA O PLANO):
+{json.dumps(best_prospects_data, indent=2, ensure_ascii=False) if best_prospects_data else "Nenhuma avaliação prévia disponível."}
+Estratégia Geral Sugerida: {overall_strategy}
 
 ## NOSSO PRODUTO/SERVIÇO:
 {product_info}

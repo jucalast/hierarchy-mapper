@@ -1388,6 +1388,29 @@ async def _agent_loop(
                         })
                         continue
 
+                    # ── Interceptor: Ligação concluída mas ferramentas não chamadas ──────────
+                    if _ligacao_finalizada and stop_reason in ("end_turn", "stop") and not tool_use_blocks:
+                        _called_write_tools = False
+                        _WRITE_TOOLS_CHECK = {"pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_task"}
+                        for _m in messages + [{"role": "assistant", "content": content}]:
+                            _mc = _m.get("content", "")
+                            if isinstance(_mc, list):
+                                for _b in _mc:
+                                    if isinstance(_b, dict) and (_b.get("name") in _WRITE_TOOLS_CHECK or _b.get("tool_name") in _WRITE_TOOLS_CHECK):
+                                        _called_write_tools = True
+                        
+                        if not _called_write_tools:
+                            messages.append({"role": "assistant", "content": content})
+                            messages.append({
+                                "role": "user",
+                                "content": (
+                                    "REGRA DE OURO: Você listou os próximos passos mas NÃO executou as ferramentas do CRM! "
+                                    "OBRIGATÓRIO: Chame as ferramentas `pipedrive_update_task`, `pipedrive_create_note` ou `pipedrive_create_task` "
+                                    "AGORA para executar essas ações no sistema. Não pare até ter atualizado o CRM com o resumo da ligação."
+                                ),
+                            })
+                            continue
+
                     # Investigação completa — verifica se suggest_next_actions já foi chamado.
                     if not _final_emitted and not _suggest_actions_done(_msgs_with_current) and stop_reason in ("end_turn", "stop") and not tool_use_blocks:
                         # Emite o dossiê agora e força turno dedicado para suggest_next_actions
