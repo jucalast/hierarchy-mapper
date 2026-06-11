@@ -19,9 +19,9 @@ from modules.ai.service.context.business_context_service import BusinessContextS
 # Fallbacks legados (J.Ferres)
 negative_keywords_fallback = [
     "customer service", "vendedor", "vendedora", "sales", "crm", "rh", "hr", "recurso humano", 
-    "juridicio", "pessoal", "enfermagem", "fiscal", "comunicação", "communication", "it ", "software", 
-    "desenvolvedor", "developer", "sistemas", "totvs", "datasul", "marketing", "vendas", "comercial", 
-    "assistencia", "técnica", "ti ", "engenheiro de produto", "engenheiro industrial", 
+    "juridicio", "pessoal", "enfermagem", "fiscal", "comunicação", "communication", "software", 
+    "desenvolvedor", "developer", "sistemas", "marketing", "vendas", "comercial", 
+    "assistencia", "técnica", "engenheiro de produto", "engenheiro industrial", 
     "manufatura", "manufacturing", "production", "produção", "qualidade", "quality",
     "manutenção", "mecanico", "mecânico", "usinagem", "operator", "operador",
     "professor", "acadêmico", "estudante", "student", "freelancer", "autônomo",
@@ -135,10 +135,10 @@ async def get_department_tag(role: str) -> str:
     
     return "Operations"
 
-async def apply_strict_filters(name: str, title: str, snippet: str, core_company: str, target_brand: str, target_location: str = None, mechanical_title: str = "Não Identificado") -> bool:
+async def apply_strict_filters(name: str, title: str, snippet: str, core_company: str, target_brand: str, target_location: str = None, mechanical_title: str = "Não Identificado") -> tuple[bool, str]:
     """
     PRE-FILTRO DE SEGURANÇA: Bloqueia marcas invasoras e lixo óbvio para economizar API da IA.
-    Retorna True se o candidato PARECE ser da empresa certa, False se for lixo óbvio.
+    Retorna (True, "Aprovado") se o candidato PARECE ser da empresa certa, (False, "Motivo...") se for lixo óbvio.
     """
     ctx = await BusinessContextService.get_tenant_context()
     hier = ctx.get("hierarchy", {})
@@ -206,18 +206,20 @@ async def apply_strict_filters(name: str, title: str, snippet: str, core_company
     if not has_our_brand and not is_high_value:
         if mechanical_title == "Não Identificado":
             print(f"      [Filtro Mecânico] ⚠️ AVISO: {name} | Sem marca ({brand_variants}) e nenhum cargo identificado. Passando para Análise Humana.")
-            return True
+            return True, "Aprovado"
         else:
-            print(f"      [Filtro Mecânico] 🚫 REJEITADO: {name} | Cargo Encontrado: '{mechanical_title}' | Motivo: Sem marca ({brand_variants}) e sem cargo relevante na whitelist.")
-            return False
+            reason = f"Sem marca e sem cargo relevante na whitelist (Cargo lido: {mechanical_title})"
+            print(f"      [Filtro Mecânico] 🚫 REJEITADO: {name} | {reason}")
+            return False, reason
 
     # 🕵️ 3. BLOQUEIO DE OUTRAS MARCAS
     other_competitors = ["mercedes", "scania", "volkswagen", "bosch", "zf ", "continental", "gm", "volvo"]
     for comp in other_competitors:
         normalized_comp = normalize_str(comp)
         if f"at {normalized_comp}" in title_clean or f"na {normalized_comp}" in title_clean:
-            print(f"      [Filtro Mecânico] 🚫 REJEITADO: {name} | Cargo Encontrado: '{mechanical_title}' | Motivo: Concorrente '{comp}' detectado no cargo.")
-            return False
+            reason = f"Concorrente detectado no cargo: {comp}"
+            print(f"      [Filtro Mecânico] 🚫 REJEITADO: {name} | {reason}")
+            return False, reason
 
     # 🕵️ 4. NEGATIVE KEYWORDS (Vetos do banco)
     focus = hier.get("department_focus", "compras")
@@ -237,9 +239,13 @@ async def apply_strict_filters(name: str, title: str, snippet: str, core_company
     ]
     
     for nk in normalized_negatives:
-        if nk in context_clean:
-            print(f"      [Filtro Mecânico] 🚫 REJEITADO: {name} | Cargo Encontrado: '{mechanical_title}' | Motivo: Contém palavra vetada '{nk}'.")
-            return False
+        nk_stripped = nk.strip()
+        if not nk_stripped: continue
+        pattern = rf"\b{re.escape(nk_stripped)}\b"
+        if re.search(pattern, context_clean):
+            reason = f"Contém palavra vetada: '{nk}'"
+            print(f"      [Filtro Mecânico] 🚫 REJEITADO: {name} | {reason}")
+            return False, reason
 
     print(f"      [Filtro Mecânico] ✅ APROVADO: {name} | Passou nas checagens mecânicas.")
-    return True
+    return True, "Aprovado"

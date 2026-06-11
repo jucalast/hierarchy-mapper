@@ -12,6 +12,7 @@ from modules.agent.service.core.pipelines.meeting import MeetingPipeline
 from modules.agent.service.core.pipelines.quote import QuotePipeline
 from modules.agent.service.core.pipelines.communication import CommunicationPipeline
 from modules.agent.service.core.pipelines.call import CallPipeline
+from modules.agent.service.core.pipelines.prospecting_plan import ProspectingPlanPipeline
 
 log = get_logger(__name__)
 
@@ -20,6 +21,7 @@ class PipelineRegistry:
     
     # Ordem estrita de correspondência: das mais específicas para as mais gerais
     _pipelines: List[Type[BasePipeline]] = [
+        ProspectingPlanPipeline,
         SearchPipeline,
         FollowupPipeline,
         MeetingPipeline,

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { Headset, Phone, PhoneOff, Zap, Mic, MicOff, Volume2, MessageSquare, AlertOctagon, Target, ChevronRight, Loader2, PhoneForwarded, Bug } from "lucide-react";
+import { Headset, Phone, PhoneOff, Zap, Mic, MicOff, Volume2, MessageSquare, AlertOctagon, Target, ChevronRight, Loader2, PhoneForwarded, Bug, X } from "lucide-react";
 import { Avatar } from "../ui";
 import styles from "./LigacaoView.module.css";
 import { apiGet, API_BASE_URL } from "../../services/config";
@@ -11,8 +11,8 @@ import { getAvatarUrl, getProxiedUrl } from "../../utils/avatarUtils";
 
 interface TranscribedMessage {
   id: string;
-  type: "transcription";
-  role: "Vendedor" | "Cliente";
+  type: "transcription" | "insight";
+  role: "Vendedor" | "Cliente" | "Agente";
   text: string;
   latency_ms?: number;
   buffer_secs?: number;
@@ -78,7 +78,7 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
         const content = s.content || s.suggested_talk_track || s.intention || s.text || s.description || s.desc || s.value || "";
         const remainingKeys = Object.keys(s).filter(k => !['label', 'action', 'name', 'title', 'step'].includes(k));
         const finalContent = content || (remainingKeys.length > 0 ? s[remainingKeys[0]] : "");
-        return { label, content: finalContent, is_lightning: s.is_lightning === true };
+        return { label, content: finalContent, is_lightning: s.is_lightning === true, suggestions: [], objections: [] };
       });
       let isCompanyPhoneFlag = false;
       if (raw.is_company_phone !== undefined) isCompanyPhoneFlag = raw.is_company_phone;
@@ -109,12 +109,14 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
   const [micMeter, setMicMeter] = useState<MeterState>({ rms: 0, speaking: false, status: "Aguardando" });
   const [speakerMeter, setSpeakerMeter] = useState<MeterState>({ rms: 0, speaking: false, status: "Aguardando" });
   const [vendorAvatarUrl, setVendorAvatarUrl] = useState<string | null>(null);
+  const [hasHungUp, setHasHungUp] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const recognitionRef = useRef<any>(null);
   const isListeningRef = useRef(false);
   const clientScrollRef = useRef<HTMLDivElement>(null);
   const vendorScrollRef = useRef<HTMLDivElement>(null);
+  const loggedAgentMessagesRef = useRef<Set<string>>(new Set());
 
   const speakerMeterRef = useRef<MeterState>(speakerMeter);
   useEffect(() => {
@@ -185,22 +187,24 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
     loadVendorAvatar();
   }, []);
 
-  // Load saved session (messages and latest coaching insights) from database
+  // Load saved session
+  const hasLoadedSessionRef = useRef(false);
+
   useEffect(() => {
     const loadSession = async () => {
-      const activityId = initialData?.activity_id;
-      const phone = initialData?.phone;
-      if (!activityId && !phone) return;
-
+      if (hasLoadedSessionRef.current) return;
+      hasLoadedSessionRef.current = true;
+      
       try {
         const queryParams = [];
-        if (activityId) queryParams.push(`activity_id=${activityId}`);
-        if (phone) queryParams.push(`phone=${encodeURIComponent(phone)}`);
+        if (initialData?.activity_id) queryParams.push(`activity_id=${initialData.activity_id}`);
+        if (initialData?.phone) queryParams.push(`phone=${encodeURIComponent(initialData.phone)}`);
+        if (initialData?.id) queryParams.push(`session_id=${initialData.id}`);
         const queryString = queryParams.join('&');
 
         const data = await apiGet(`/calls/session?${queryString}`);
         if (data && data.ok) {
-          if (data.messages) {
+          if (data.messages && data.messages.length > 0) {
             setMessages(data.messages);
           }
           if (data.latest_insight) {
@@ -314,6 +318,7 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
           ...prev,
           { id: crypto.randomUUID(), type: "transcription", role: "Vendedor", text },
         ]);
+        setDebugLogs((prev) => [...prev, { timestamp: new Date(), role: "Vendedor", text }]);
         setPartialMic(null);
         wsRef.current?.readyState === WebSocket.OPEN &&
           wsRef.current.send(JSON.stringify({ type: "vendedor_transcription", text }));
@@ -339,6 +344,7 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
         setIsAudioConnected(false);
         wsRef.current?.close();
         setMicMeter((p) => ({ ...p, speaking: false, status: "Sem permissão ao microfone" }));
+        alert("O acesso ao microfone foi bloqueado. Por favor, libere a permissão de uso do microfone no seu navegador (ícone de cadeado na URL) e tente novamente.");
       } else {
         consecutiveErrors++;
         if (consecutiveErrors > 5) {
@@ -463,19 +469,99 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
               setIsTransferred(true);
             }
             if (insightData && Array.isArray(insightData.updated_steps)) {
-              setActiveFlightPlan({ steps: insightData.updated_steps });
-              
-              // Debug Log para Agente
-              const activeIdx = insightData.updated_steps.findIndex((s: any) => s.content && s.content !== "Pendente...");
-              if (activeIdx !== -1) {
-                const step = insightData.updated_steps[activeIdx];
-                const agentText = `[${step.label}]\n${step.content}`;
-                setDebugLogs((prev) => {
-                  const lastAgentLog = [...prev].reverse().find(l => l.role === "Agente");
-                  if (lastAgentLog && lastAgentLog.text === agentText) return prev;
-                  return [...prev, { timestamp: new Date(), role: "Agente", text: agentText }];
+              setActiveFlightPlan((prevPlan: any) => {
+                if (!prevPlan || !prevPlan.steps) return { steps: insightData.updated_steps };
+                
+                const currentClean = (insightData.current_step || "").toLowerCase().trim();
+                const mergedSteps = [...insightData.updated_steps];
+                
+                // Processa os passos que vieram do LLM
+                for (let idx = 0; idx < mergedSteps.length; idx++) {
+                  const newStep = mergedSteps[idx];
+                  const oldStep = prevPlan.steps[idx];
+                  if (!oldStep) continue;
+                  
+                  let finalContent = newStep.content;
+                  const oldLower = (oldStep.content || "").toLowerCase();
+                  const isOldReal = oldStep.content && oldStep.content !== "Pendente...";
+                  
+                  if (isOldReal) {
+                     const newLower = (newStep.content || "").toLowerCase();
+                     if (newLower.includes("concluíd") || newLower.includes("não se aplica") || newLower.includes("pendente")) {
+                         if (isOldReal && !oldLower.includes("concluíd") && !oldLower.includes("não se aplica") && !oldLower.includes("pendente")) {
+                             finalContent = oldStep.content;
+                         }
+                     }
+                  }
+                  
+                  // Mesclar coaching history
+                  let finalSuggestions = oldStep.suggestions || [];
+                  let finalObjections = oldStep.objections || [];
+                  
+                  // Só adiciona se for O passo ativo AGORA
+                  const labelClean = (newStep.label || "").toLowerCase().trim();
+                  const isActiveNow = labelClean && currentClean && (labelClean.includes(currentClean) || currentClean.includes(labelClean));
+                  
+                  if (isActiveNow) {
+                     if (insightData.suggestion && !finalSuggestions.includes(insightData.suggestion)) {
+                         finalSuggestions = [...finalSuggestions, insightData.suggestion];
+                     }
+                     if (insightData.objection_handling && !finalObjections.includes(insightData.objection_handling)) {
+                         finalObjections = [...finalObjections, insightData.objection_handling];
+                     }
+                  }
+                  
+                  mergedSteps[idx] = { ...newStep, content: finalContent, suggestions: finalSuggestions, objections: finalObjections };
+                }
+
+                // Se o LLM retornou menos passos do que tínhamos (truncou o final), preservamos os últimos intactos!
+                if (prevPlan.steps.length > mergedSteps.length) {
+                  for (let i = mergedSteps.length; i < prevPlan.steps.length; i++) {
+                    mergedSteps.push(prevPlan.steps[i]);
+                  }
+                }
+                
+                return { ...prevPlan, steps: mergedSteps };
+              });
+            }
+
+            // Separar os logs do Agente corretamente e persisti-los
+            if (insightData) {
+              const newAgentOutputs: { type: string, text: string }[] = [];
+
+              if (insightData.suggestion && insightData.suggestion.trim() !== "") {
+                newAgentOutputs.push({ type: "suggestion", text: `[SUGESTÃO] ${insightData.suggestion}` });
+              }
+              if (insightData.objection_handling && insightData.objection_handling.trim() !== "") {
+                newAgentOutputs.push({ type: "objection", text: `[CONTORNO DE OBJEÇÃO] ${insightData.objection_handling}` });
+              }
+              if (Array.isArray(insightData.updated_steps)) {
+                insightData.updated_steps.forEach((s: any) => {
+                  if (s.content && s.content !== "Pendente..." && s.content.trim() !== "") {
+                    const contentLower = s.content.toLowerCase();
+                    const isPlaceholder = contentLower.includes("concluíd") || contentLower.includes("não se aplica") || s.content.length < 15;
+                    if (!isPlaceholder) {
+                      newAgentOutputs.push({ type: "step", text: `[${s.label || "ETAPA"}]\n${s.content}` });
+                    }
+                  }
                 });
               }
+
+              newAgentOutputs.forEach(output => {
+                // Checa se já logamos exatamente este texto para evitar spam
+                if (!loggedAgentMessagesRef.current.has(output.text)) {
+                  loggedAgentMessagesRef.current.add(output.text);
+
+                  // Persiste no state de messages para ir para o backend no final
+                  setMessages((prev) => [
+                    ...prev,
+                    { id: crypto.randomUUID(), type: "insight", role: "Agente", text: output.text } as TranscribedMessage,
+                  ]);
+
+                  // Persiste no Debug Logs também
+                  setDebugLogs((prev) => [...prev, { timestamp: new Date(), role: "Agente", text: output.text }]);
+                }
+              });
             }
             break;
 
@@ -561,8 +647,8 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
         } 
     }));
 
-    if (onBack) onBack();
-  }, [contactName, contactPhone, messages.length, onBack, stopAudio]);
+    setHasHungUp(true);
+  }, [contactName, contactPhone, messages.length, stopAudio]);
 
   const toggleTranscription = () => {
     if (isAudioConnected) {
@@ -663,21 +749,21 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
                         {step.content}
                       </span>
                       
-                      {/* Se for a etapa ativa, aninhamos o Copiloto/Agent diretamente dentro dela */}
-                      {isActive && latestInsight && (
+                      {/* Histórico Persistido do Copiloto/Agent */}
+                      {(step.suggestions?.length > 0 || step.objections?.length > 0) && (
                         <div className={styles.coachingInnerContainer} style={{ marginTop: 12 }}>
-                          {latestInsight.suggestion && (
-                            <div className={styles.suggestionTextOnly}>
+                          {step.suggestions?.map((sug: string, i: number) => (
+                            <div key={`sug-${i}`} className={styles.suggestionTextOnly} style={{ opacity: isActive ? 1 : 0.7 }}>
                               <MessageSquare size={14} />
-                              <p><em>{latestInsight.suggestion}</em></p>
+                              <p><em>{sug}</em></p>
                             </div>
-                          )}
-                          {latestInsight.objection_handling && (
-                            <div className={styles.objectionTextOnly}>
+                          ))}
+                          {step.objections?.map((obj: string, i: number) => (
+                            <div key={`obj-${i}`} className={styles.objectionTextOnly} style={{ opacity: isActive ? 1 : 0.7 }}>
                               <AlertOctagon size={14} />
-                              <p><em>{latestInsight.objection_handling}</em></p>
+                              <p><em>{obj}</em></p>
                             </div>
-                          )}
+                          ))}
                         </div>
                       )}
                     </div>
@@ -852,10 +938,17 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
         {/* Call control buttons directly on screen */}
         <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 16, alignItems: 'center', zIndex: 10 }}>
           
-          <button className={`${styles.controlBtn} ${styles.hangup}`} onClick={handleHangup}>
-            <PhoneOff size={20} />
-            <span>Desligar</span>
-          </button>
+          {!hasHungUp ? (
+            <button className={`${styles.controlBtn} ${styles.hangup}`} onClick={handleHangup}>
+              <PhoneOff size={20} />
+              <span>Desligar</span>
+            </button>
+          ) : (
+            <button className={`${styles.controlBtn} ${styles.hangup}`} style={{ background: '#4b5563' }} onClick={() => onBack && onBack()}>
+              <X size={20} />
+              <span>Sair da Ligação</span>
+            </button>
+          )}
 
           <button 
             className={styles.transcriptionToggleBtn} 

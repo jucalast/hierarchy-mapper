@@ -158,12 +158,6 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                 onClick={() => setOpen(v => !v)}
                 data-open={open}
                 className={`modelSelectorTrigger`}
-                style={{
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    background: theme === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
-                    transform: 'translateZ(0)',
-                }}
             >
                 <img
                     src={current.logoSrc}

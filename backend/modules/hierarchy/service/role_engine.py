@@ -197,6 +197,8 @@ TAREFA:
 6. **DIFERENCIE EXPERIÊNCIA:** Se o texto diz "Experiência em {company}" sem citar uma função, o cargo é "Não Identificado".
 7. **VETO DE SLOGAN/DESCRIÇÃO:** NUNCA extraia slogans, descrições da empresa ou frases institucionais (ex: 'Líder de mercado', 'A maior do setor', 'Inovação e qualidade') como cargo. Se só houver isso, o cargo é "Não Identificado".
 8. NOMES DE EMPRESAS NÃO SÃO CARGOS. Se encontrar apenas nome de empresa no lugar do cargo, use "Não Identificado".
+9. **NÃO INVENTE CARGOS:** Se o snippet não cita um cargo explicitamente para a pessoa, use estritamente "Não Identificado". NUNCA deduza ou adivinhe que a pessoa é 'Proprietário' ou 'Fundador' apenas porque o texto descreve a empresa.
+10. **ATENÇÃO A C-LEVELS:** Sócio, Proprietário, Sócio-Diretor e CEO são cargos válidos e devem ser extraídos se estiverem no texto.
 
 Responda APENAS JSON:
 {{
@@ -259,7 +261,7 @@ DADOS BRUTOS E HIGIENIZADOS:
 REGRAS DE VETO (MUITO IMPORTANTE):
 1. **CONFLICT_CHECK:** Se a META_COMPANY_DECLARADA ou o Snippet indicam que o candidato trabalha em OUTRA empresa (ex: Siemens, Vivo, Unimed, PHD do Brasil) que não seja '{company}' nem a sua Razão Social '{razao_social or 'Não Informada'}', você deve marcar 'employer_found': false e citar o conflito no campo snippets.
    * ATENÇÃO: A Razão Social Oficial da empresa é '{razao_social or 'Não Informada'}'. Se o candidato declarar trabalhar na Razão Social '{razao_social or 'Não Informada'}', ou em qualquer variação óbvia ou abreviação comercial dela (como 'Com.', 'Comércio' etc.), isso é considerado um VÍNCULO CONFIRMADO (employer_found: true). NÃO considere como conflito!
-2. **PAST_EMPLOYER:** Se o text diz "ex-funcionário", "trabalhou na", ou cita datas passadas (2020-2023), o vínculo é suspeito. Marque 'employer_found': false se houver outra empresa atual citada.
+2. **PAST_EMPLOYER:** Se the text diz "ex-funcionário", "trabalhou na", ou cita datas passadas (2020-2023), o vínculo é suspeito. Marque 'employer_found': false se houver outra empresa atual citada.
 3. **SURNAME_SKEPTICISM:** O sobrenome do candidato pode ser igual ao nome da empresa '{company}' (ex: João Böttcher). NÃO assuma que ele trabalha na '{company}' apenas pelo sobrenome. Procure por indicadores funcionais ("na {company}", "at {company}").
 4. **INSTITUTIONAL:** Se o perfil parecer ser da PRÓPRIA empresa (Página oficial) e não de uma pessoa, marque is_institutional: true.
 
@@ -307,8 +309,9 @@ INSTRUÇÕES TÉCNICAS:
 6. Se o cargo contiver "{forbidden}", is_relevant DEVE SER 'false'.
 7. NOMES DE EMPRESAS NÃO SÃO CARGOS. Se o 'Cargo Detectado' for um nome de empresa, trate como "Não Identificado".
 8. **DETEÇÃO DE CARONA:** Se o snippet mostrar várias pessoas, certifique-se que o cargo pertence a '{name}'. Se não tiver certeza, use "Não Identificado".
-9. **RIGOR TÉCNICO:** Se o cargo for 'Não Identificado', você SÓ deve marcar `is_relevant: true` se houver termos técnicos EXPLÍCITOS de {area_label} na Bio ou Snippets. NÃO aprove apenas porque a pessoa trabalha na empresa '{company}'.
-10. **VETO DE SLOGAN:** Ignore cargos que pareçam slogans (ex: "Líder de mercado"). Rejeite se for o caso.
+9. **RIGOR TÉCNICO E VETO DE INVENÇÃO:** Se o cargo for 'Não Identificado', você SÓ deve marcar `is_relevant: true` se houver termos técnicos EXPLÍCITOS de {area_label} na Bio. NÃO deduza cargos ou invente funções que não estão escritas.
+10. **DIRETORIA E SÓCIOS (C-LEVEL):** Cargos como Sócio, Proprietário, CEO, Diretor Geral ou Sócio-Diretor DEVEM ser considerados `is_relevant: true` (com departamento Diretoria/Gestão). Em negócios B2B, eles frequentemente são os decisores finais de compras ou aprovações financeiras. NÃO REJEITE donos e sócios!
+11. **VETO DE SLOGAN:** Ignore cargos que pareçam slogans (ex: "Líder de mercado"). Rejeite se for o caso.
 
 Responda APENAS JSON:
 {{ 

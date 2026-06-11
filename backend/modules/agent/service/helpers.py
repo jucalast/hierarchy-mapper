@@ -216,7 +216,7 @@ def _get_label(tool_name: str, args: dict) -> str:
         "pipedrive_update_deal": f"Atualizando deal #{args.get('deal_id', '...')}",
         "pipedrive_create_task": f"Criar tarefa: {args.get('subject', '...')}",
         "pipedrive_update_task": f"Atualizando atividade #{args.get('activity_id', '...')}",
-        "pipedrive_create_note": f"Adicionando nota ao deal #{args.get('deal_id', '...')}",
+        "pipedrive_create_note": f"Adicionando nota ao Pipedrive",
         "email_get_inbox": "Acessando caixa de entrada",
         "email_get_contact_history": f"Buscando e-mails de {args.get('contact_name') or args.get('org_name') or args.get('contact_email') or '...'}",
         "email_send": f"Enviar e-mail para {args.get('to', '...')}",

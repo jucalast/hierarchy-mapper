@@ -22,6 +22,10 @@ class CommunicationPipeline(BasePipeline):
         s = subject.lower()
         t = (act_type or "").lower()
 
+        # Se a instrução for explicitamente para CRIAR uma tarefa no Pipedrive, NÃO ative esta pipeline de execução de e-mail.
+        if "pipedrive_create_task" in s or "criar tarefa" in s:
+            return False
+
         # Ativa se o tipo for email/mensagem ou se contiver palavras-chave correspondentes
         return t in ("email", "mensagem", "whatsapp") or any(k in s for k in cls._email_msg_keys)
 

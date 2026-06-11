@@ -29,9 +29,9 @@ class SearchPipeline(BasePipeline):
         return (
             f"ESTRATÉGIA COMERCIAL: Antes de executar, pare e pense. Qual é o perfil desta empresa? Por que estamos buscando este contato?\n"
             f"ETAPAS PARA ESTA ATIVIDADE (siga com calma e inteligência, EXATAMENTE nesta ordem):\n"
-            f"  1. deep_company_investigation → (OBRIGATÓRIO) Investigação profunda sobre a empresa ANTES de buscar pessoas.\n"
+            f"  1. pipedrive_get_org → (OBRIGATÓRIO) Obtenha os dados e contexto da empresa. Se a empresa já tiver um contexto salvo ou dossiê, NÃO chame deep_company_investigation. Pule direto para o passo 2.\n"
             f"  2. pipedrive_get_persons → mapear os contatos da empresa.\n"
-            f"  3. evaluate_prospects → (OBRIGATÓRIO) Se decisores forem encontrados (no banco local ou CRM), faça o ranking inteligente.\n"
+            f"  3. evaluate_prospects → (OPCIONAL) Faça o ranking inteligente APENAS SE o plano de prospecção salvo não indicar quem é o melhor decisor, ou se você encontrou novos contatos relevantes.\n"
             f"  4. Raciocínio Estratégico → Explique em 2-3 frases por que o contato X é o melhor (senioridade, canal).\n"
             f"  5. Ação de Associação → SE o contato for [Banco Local] / sem ID Pipedrive numérico, use `pipedrive_create_person`. SE ele já tiver ID numérico, proponha vincular ao negócio via `pipedrive_update_deal`.\n"
             f"  6. Concluir a busca → `pipedrive_update_task(activity_id={act_id}, done=true)` para finalizar esta tarefa!\n"

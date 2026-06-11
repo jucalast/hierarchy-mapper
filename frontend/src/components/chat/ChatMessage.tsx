@@ -629,7 +629,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                         ))}
                     </div>
                 )}
-                <div className={styles.userMessage}>{message.content}</div>
+                <div className={styles.userMessage}>{
+                    // Remove prefixos de contexto do sistema antes de exibir
+                    (() => {
+                        let text = message.content || '';
+                        // Remove [ALERTA DE CONTEXTO DO SISTEMA: ...]\n\n prefix
+                        text = text.replace(/^\[ALERTA DE CONTEXTO[^\]]*\][^\n]*\n\n?/s, '');
+                        // Remove [ALERTA DE CONTEXTO: ...]\n\n prefix (variante curta)
+                        text = text.replace(/^\[ALERTA DE CONTEXTO[^\]]*\]\s*/s, '');
+                        return text;
+                    })()
+                }</div>
             </div>
         );
     }

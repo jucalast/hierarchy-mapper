@@ -207,14 +207,18 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                     orgName={focusedOrg.name}
                                     persons={(() => {
                                         const pipedrivePersons = orgDetails[expandedOrgId]?.persons || [];
-                                        const validEmps = graphEmployees.filter(emp =>
-                                            emp.id !== 'root_company' &&
-                                            emp.department !== 'Quadro Societário' &&
-                                            emp.department !== 'Quadro de Sócios (QSA)' &&
-                                            emp.level !== 6 &&
-                                            !String(emp.id).startsWith('partner_') &&
-                                            (!emp.role || !emp.role.toLowerCase().includes('humana'))
-                                        );
+                                        const validEmps = graphEmployees.filter(emp => {
+                                            if (emp.id === 'root_company') return false;
+                                            // Sócio com LinkedIn real → sempre inclui na aba People
+                                            const hasRealLinkedIn = emp.linkedin && emp.linkedin.includes('linkedin.com/in/');
+                                            const isQSA = emp.department === 'Quadro Societário' || emp.department === 'Quadro de Sócios (QSA)';
+                                            const isPartnerNode = String(emp.id).startsWith('partner_') || emp.level === 6;
+                                            if ((isQSA || isPartnerNode) && hasRealLinkedIn) return true;
+                                            if (isQSA || isPartnerNode) return false;
+                                            // Demais funcionários: exclui apenas "Análise Humana"
+                                            if (emp.role && emp.role.toLowerCase().includes('humana')) return false;
+                                            return true;
+                                        });
 
                                         const merged = [];
                                         const seenPipedriveIds = new Set();

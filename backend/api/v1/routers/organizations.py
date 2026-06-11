@@ -72,7 +72,10 @@ async def get_organization(
     Busca uma organização específica pelo ID.
     """
     try:
-        stmt = select(Organization).where(Organization.id == org_id)
+        from sqlalchemy import or_
+        stmt = select(Organization).where(
+            or_(Organization.id == org_id, Organization.pipedrive_id == org_id)
+        )
         result = await db.execute(stmt)
         org = result.scalars().first()
         
@@ -88,7 +91,8 @@ async def get_organization(
             "linkedin_url": org.linkedin_url,
             "address": org.address,
             "icp_score": org.icp_score,
-            "icp_tier": org.icp_tier
+            "icp_tier": org.icp_tier,
+            "prospecting_context": org.prospecting_context
         }
     
     except Exception as e:

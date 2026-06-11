@@ -12,6 +12,10 @@ export function getOrganizationDetails(orgId: number, done?: 0 | 1) {
   return api.get<Record<string, unknown>>(`/pipedrive/organizations/${orgId}/details${qs}`);
 }
 
+export function getLocalOrganization(orgId: number) {
+  return api.get<Record<string, unknown>>(`/organizations/${orgId}`);
+}
+
 export function deleteOrganization(orgId: number) {
   return api.delete<{ success?: boolean }>(`/pipedrive/organizations/${orgId}`);
 }

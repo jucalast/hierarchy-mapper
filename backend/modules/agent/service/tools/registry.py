@@ -255,14 +255,17 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         ),
     },
     "pipedrive_create_note": {
-        "description": "Adiciona uma nota a um deal no Pipedrive. Use para registrar decisões, informações importantes ou resumo de conversas. Requer confirmação.",
+        "description": "Adiciona uma nota no Pipedrive. Use para registrar resumo de conversas. Requer pelo menos um ID (deal_id, person_id ou org_id). Requer confirmação.",
         "args_schema": {
-            "deal_id": "int (ID do deal)",
             "content": "string (texto da nota — seja descritivo e objetivo)",
+            "deal_id": "int opcional (ID do deal)",
+            "person_id": "int opcional (ID da pessoa)",
+            "org_id": "int opcional (ID da organização)",
+            "org_name": "string opcional (nome da empresa, usado para inferir o negócio se o deal_id faltar)",
         },
         "type": "write",
         "executor": None,
-        "confirm_label": lambda args: f"Criar nota no deal #{args.get('deal_id')}: \"{args.get('content', '')[:60]}\"",
+        "confirm_label": lambda args: f"Criar nota: \"{args.get('content', '')[:60]}\"",
     },
     "pipedrive_create_person": {
         "description": "Cria um novo contato (pessoa) no Pipedrive vinculado a uma organização. Requer confirmação.",
@@ -309,6 +312,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "args_schema": {
             "contact_name": "string — nome do contato",
             "phone": "string — telefone",
+            "is_company_phone": "boolean opcional — true se o telefone for da recepção/geral da empresa, false se for o contato direto (padrão false)",
             "activity_id": "string opcional — ID da atividade/tarefa no Pipedrive",
             "profile_pic": "string opcional — URL da foto/avatar do contato (se disponível no Pipedrive ou no mapeamento)",
         },
@@ -441,7 +445,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "args_schema": {
             "org_id": "int (ID numérico obrigatório da empresa)",
         },
-        "type": "write",
+        "type": "read",
         "executor": exec_generate_prospecting_plan,
         "confirm_label": lambda args: f"Gerar Plano de Prospecção (SPIN) para a empresa #{args.get('org_id')}",
     },
@@ -451,7 +455,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
             "org_id": "int (ID numérico da empresa)",
             "new_plan": "string (O texto em formato Markdown contendo o novo plano de prospecção completo atualizado)"
         },
-        "type": "write",
+        "type": "read",
         "executor": exec_update_prospecting_plan,
         "confirm_label": lambda args: f"Atualizar Plano de Prospecção para a empresa #{args.get('org_id')}",
     },
@@ -701,7 +705,10 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
             try:
                 fields["person_id"] = int(fields["person_id"])
             except (ValueError, TypeError):
-                pass
+                return {
+                    "ok": False, 
+                    "error": f"O campo 'person_id' exige um número inteiro, mas você enviou '{fields['person_id']}'. REGRA DE SISTEMA: NÃO repasse este erro ao usuário. Chame a ferramenta 'pipedrive_get_persons' agora mesmo na mesma resposta para encontrar o ID numérico correto e, em seguida, chame 'pipedrive_update_deal' novamente."
+                }
                 
         try:
             from modules.crm.service.pipedrive_service import pipedrive_service
@@ -753,7 +760,13 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
             if due_date:
                 data["due_date"] = due_date
             if args.get("person_id"):
-                data["person_id"] = int(args["person_id"])
+                try:
+                    data["person_id"] = int(args["person_id"])
+                except (ValueError, TypeError):
+                    return {
+                        "ok": False, 
+                        "error": f"O campo 'person_id' exige um número inteiro, mas você enviou '{args['person_id']}'. REGRA DE SISTEMA: NÃO repasse este erro ao usuário. Chame a ferramenta 'pipedrive_get_persons' na mesma resposta para encontrar o ID numérico e, em seguida, repita a criação da tarefa."
+                    }
 
             result = await pipedrive_service.create_activity(data)
             ok = result.get("success", False)
@@ -781,7 +794,13 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
         if args.get("subject"):
             data["subject"] = args["subject"]
         if args.get("person_id"):
-            data["person_id"] = int(args["person_id"])
+            try:
+                data["person_id"] = int(args["person_id"])
+            except (ValueError, TypeError):
+                return {
+                    "ok": False, 
+                    "error": f"O campo 'person_id' exige um número inteiro, mas você enviou '{args['person_id']}'. REGRA DE SISTEMA: NÃO repasse este erro ao usuário. Chame a ferramenta 'pipedrive_get_persons' na mesma resposta para encontrar o ID numérico e, em seguida, repita a atualização da tarefa."
+                }
         try:
             from modules.crm.service.pipedrive_service import pipedrive_service
             ok = await pipedrive_service.update_activity(int(activity_id), data)
@@ -791,15 +810,50 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
 
     # ── Pipedrive: criar nota ──────────────────────────────────────────────────
     elif tool_name == "pipedrive_create_note":
-        deal_id = args.get("deal_id")
         content = args.get("content", "")
-        if not deal_id or not content:
-            return {"ok": False, "error": "deal_id e content são obrigatórios"}
+        deal_id = args.get("deal_id")
+        person_id = args.get("person_id")
+        org_id_arg = args.get("org_id") or org_id
+        org_name = args.get("org_name", "")
+        
+        if not content or (not deal_id and not person_id and not org_id_arg and not org_name):
+            return {"ok": False, "error": "content é obrigatório, e pelo menos um identificador (deal_id, person_id, org_id ou org_name) deve ser fornecido."}
+            
+        payload = {"content": content}
+        
         try:
             from modules.crm.service.pipedrive_service import pipedrive_service
+            
+            # 1. Se não temos deal_id, tentamos inferir o org_id se não o tivermos
+            if not deal_id and not org_id_arg:
+                if org_name:
+                    match, found_org_id = await _pipedrive_find_org(org_name)
+                    if found_org_id: org_id_arg = found_org_id
+                elif person_id:
+                    try:
+                        p_details = await pipedrive_service.get_person_details(int(person_id))
+                        if p_details and p_details.get("org_id"):
+                            org_id_arg = p_details.get("org_id").get("value")
+                    except Exception: pass
+            
+            # 2. Se agora temos org_id, buscamos o deal aberto
+            if not deal_id and org_id_arg:
+                try:
+                    details = await pipedrive_service.get_organization_details(int(org_id_arg))
+                    deals = details.get("deals", []) if isinstance(details, dict) else []
+                    open_deal = next((d for d in deals if d.get("status") == "open"), deals[0] if deals else None)
+                    if open_deal:
+                        deal_id = open_deal.get("id")
+                except Exception:
+                    pass
+                    
+            if deal_id: payload["deal_id"] = int(deal_id)
+            if person_id: payload["person_id"] = int(person_id)
+            if org_id_arg: payload["org_id"] = int(org_id_arg)
+
             r = await pipedrive_service.make_request(
                 "POST", "notes",
-                json={"content": content, "deal_id": int(deal_id)}
+                json=payload
             )
             ok = r is not None and r.status_code in (200, 201)
             return {"ok": ok, "result": "Nota criada" if ok else f"Erro (HTTP {getattr(r, 'status_code', '?')})"}

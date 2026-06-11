@@ -6,34 +6,42 @@ export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
   const processedTargets = new Set<string>();
 
   // 1. Prioridade: Conexões explícitas do Backend (Manager IDs)
+  const nodeIds = new Set(nodes.map(n => String(n.id)));
+
   if (backendEdges && backendEdges.length > 0) {
     backendEdges.forEach((e, index) => {
-      finalEdges.push({
-        id: `e-${e.source}-${e.target}-${index}`,
-        source: e.source,
-        target: e.target,
-        animated: false,
-        style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 },
-      });
-      processedTargets.add(e.target);
+      const sourceStr = String(e.source);
+      const targetStr = String(e.target);
+      
+      // Only connect if both source and target are visible nodes
+      if (nodeIds.has(sourceStr) && nodeIds.has(targetStr)) {
+        finalEdges.push({
+          id: `e-${sourceStr}-${targetStr}-${index}`,
+          source: sourceStr,
+          target: targetStr,
+          animated: false,
+          style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 },
+        });
+        processedTargets.add(targetStr);
+      }
     });
   }
 
   // 2. Fallback: Conexões Implícitas para quem está órfão
-  const rootEntity = nodes.find(n => n.data.level === 0);
+  const rootEntity = nodes.find(n => n.data.isRoot);
 
   nodes.forEach(child => {
     // Se o nó já tem pai ou é a raiz, não precisa de conexão implícita
-    if (processedTargets.has(child.id) || child.data.level === 0) return;
+    if (processedTargets.has(child.id) || child.data.isRoot) return;
 
     const childLevel = child.data.level || 1;
 
-    // Tenta encontrar o melhor pai (nível maior que o dele ou Root 0)
+    // Tenta encontrar o melhor pai (nível maior que o dele ou Root)
     const potentialParents = nodes
-      .filter(p => p.data.level === 0 || (p.data.level || 0) > childLevel)
+      .filter(p => p.data.isRoot || (p.data.level || 0) > childLevel)
       .sort((a, b) => {
-        if (a.data.level === 0) return 1; // Coloca root por último na busca de "mais próximo"
-        if (b.data.level === 0) return -1;
+        if (a.data.isRoot) return 1; // Coloca root por último na busca de "mais próximo"
+        if (b.data.isRoot) return -1;
         return (a.data.level || 0) - (b.data.level || 0);
       });
 
@@ -147,6 +155,46 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'T
     };
 
     return newNode;
+  });
+
+  // 6. Prevenir Sobreposição Horizontal (Anti-Overlap) Absoluta
+  // Como achatamos os nós para o mesmo Y baseado no "level", o Dagre pode tê-los colocado em X similares.
+  // Resolvemos isso agrupando os nós pelo Y final e usando um modelo de relaxamento elástico (force-directed)
+  // para afastar nós que colidem.
+  const nodesByY: Record<number, any[]> = {};
+  layoutedNodes.forEach(node => {
+    const y = node.position.y;
+    if (!nodesByY[y]) nodesByY[y] = [];
+    nodesByY[y].push(node);
+  });
+
+  const MIN_GAP = 80; // 80px de respiro obrigatório entre os cards
+  const SPACING = nodeWidth + MIN_GAP;
+
+  Object.values(nodesByY).forEach(rowNodes => {
+    if (rowNodes.length <= 1) return;
+
+    for (let pass = 0; pass < 200; pass++) {
+      let moved = false;
+      
+      // Garante a ordenação da esquerda pra direita a cada iteração
+      rowNodes.sort((a, b) => a.position.x - b.position.x);
+
+      for (let i = 0; i < rowNodes.length - 1; i++) {
+        const left = rowNodes[i];
+        const right = rowNodes[i + 1];
+        const overlap = SPACING - (right.position.x - left.position.x);
+        
+        if (overlap > 0.5) { // Empurra eles em direções opostas simetricamente
+          left.position.x -= overlap / 2;
+          right.position.x += overlap / 2;
+          moved = true;
+        }
+      }
+      
+      // Se ninguém se moveu, atingimos o equilíbrio perfeito sem sobreposições
+      if (!moved) break;
+    }
   });
 
   return { layoutedNodes, layoutedEdges: edges };

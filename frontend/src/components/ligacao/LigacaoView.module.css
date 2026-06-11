@@ -653,13 +653,14 @@
 /* Audio visualizer no avatar */
 .avatarRing {
   position: absolute;
-  top: -8px;
-  left: -8px;
-  right: -8px;
-  bottom: -8px;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
   border-radius: 50%;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   transition: all 0.1s ease;
+  z-index: 2;
 }
 
 .avatarRing.speaking {

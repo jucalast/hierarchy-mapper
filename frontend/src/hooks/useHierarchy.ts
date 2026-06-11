@@ -980,6 +980,20 @@ export const useHierarchy = () => {
                 
                 setRawEmployees(cleanedNodes);
                 
+                // Extrai candidatos pendentes de Análise Humana para o carrossel do floating toolbar
+                const pendingAnalysis = cleanedNodes.filter((n: any) => 
+                    n.role && (n.role.toLowerCase().includes('análise humana') || n.role.toLowerCase().includes('analise humana'))
+                );
+                if (pendingAnalysis.length > 0) {
+                    setBrandOptions(pendingAnalysis.map((p: any) => ({
+                        ...p,
+                        type: 'person',
+                        url: p.linkedin || p.linkedin_url,
+                        originalEmployee: p,
+                        score: p.matching_score || 0
+                    })));
+                }
+                
                 const newEdges: Edge[] = [];
                 data.nodes.forEach((emp: any) => {
                     if (emp.manager_id && emp.id !== "root_company") {

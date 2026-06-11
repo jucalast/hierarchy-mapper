@@ -306,7 +306,8 @@ async def exec_find_company_contact(args: dict) -> dict:
     can_create = bool(phones or emails)
     if can_create:
         parts.append(
-            "Dados encontrados. Se necessario, use pipedrive_create_person para salvar o contato."
+            "Dados encontrados. Se necessario, use pipedrive_create_person para salvar o contato.\n\n"
+            "[INSTRUÇÃO CRÍTICA DO SISTEMA]: VOCÊ ENCONTROU DADOS COM SUCESSO! É ESTRITAMENTE PROIBIDO ENCERRAR SEU TURNO (end_turn) AGORA. VOCÊ DEVE PROSSEGUIR IMEDIATAMENTE PARA A FASE 2 CHAMANDO `prepare_live_coaching_session`!"
         )
     else:
         parts.append("Nenhum contato encontrado. Informe o usuario e finalize com PARADA ANTECIPADA.")
@@ -409,15 +410,17 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
     seller_name = ctx.get("seller_name", "João Luccas")
 
     # Determina se o telefone é da empresa (geral) ou direto do contato
-    is_company_phone = False
-    if messages:
-        for msg in reversed(messages):
-            if isinstance(msg.get("content"), list):
-                for b in msg["content"]:
-                    if b.get("type") == "tool_result" and b.get("tool_name") == "find_company_contact":
-                        if phone in str(b.get("content")):
-                            is_company_phone = True
-                            break
+    is_company_phone = args.get("is_company_phone")
+    if is_company_phone is None:
+        is_company_phone = False
+        if messages:
+            for msg in reversed(messages):
+                if isinstance(msg.get("content"), list):
+                    for b in msg["content"]:
+                        if b.get("type") == "tool_result" and b.get("tool_name") == "find_company_contact":
+                            if phone in str(b.get("content")):
+                                is_company_phone = True
+                                break
 
     objective_instruction = f"Gere um plano de voo (passo a passo) de alta performance para uma ligação fria (Cold Call) com o contato: {contact_name} (Tel: {phone})."
     if is_company_phone:
@@ -426,6 +429,17 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
     - A ABERTURA deve ser focada em contornar o gatekeeper (ex: 'Bom dia, gostaria de falar com o responsável por X, o Pedro...').
     - SITUAÇÃO + PROBLEMA devem ser usados se o gatekeeper bloquear (ex: 'Qual o assunto? É sobre a embalagem X...').
     - O FECHAMENTO da ligação deve ser a transferência bem-sucedida ou a captura do contato direto."""
+
+    if is_company_phone:
+        rules_to_apply = """
+    DIRETRIZES PARA ABORDAGEM DE RECEPÇÃO/PABX (GATEKEEPER):
+    A regra de ouro é: NÃO TENTE VENDER PARA A RECEPÇÃO.
+    - ABERTURA: Seja extremamente cordial, profissional e vá direto ao ponto. Use tom de quem já tem negócios ou precisa tratar de um assunto corporativo normal. (ex: 'Bom dia, aqui é o João da J.Ferres. Por gentileza, você poderia me transferir para a Luciana?')
+    - SITUAÇÃO + PROBLEMA: Se a recepção barrar ou perguntar o assunto, responda com naturalidade focando no problema de negócio (ex: 'É referente às embalagens de transporte de vocês, para a área de logística/compras').
+    - NUNCA faça o pitch de vendas ou cite clientes como Toyota logo de cara para o recepcionista, guarde isso para o decisor.
+    """
+    else:
+        rules_to_apply = CallSkill.SPIN_SELLING_RULES
 
     prompt = f"""
     Você é um treinador de vendas B2B (Copiloto) da {company_name}, especialista em {company_segment}.
@@ -436,12 +450,12 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
     Diferenciais:
     {differentials}
 
-    {CallSkill.SPIN_SELLING_RULES}
+    {rules_to_apply}
 
-    O plano deve ter passos claros com as labels: "ABERTURA", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "NECESSIDADE" e "FECHAMENTO".
+    O plano deve ter passos claros com as labels: "ABERTURA", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "QUALIFICAÇÃO", "NECESSIDADE" e "FECHAMENTO".
     IMPORTANTE: Gere APENAS a sugestão de fala direta e matadora para a etapa de "ABERTURA". 
     NUNCA utilize placeholders como [Seu Nome], [Sua Empresa] ou [Nome do Contato]. O vendedor é "{seller_name}", sua empresa é "{company_name}" e o contato é "{contact_name}". O script deve vir pronto para leitura!
-    Para as etapas "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "NECESSIDADE" e "FECHAMENTO", você DEVE definir o valor do campo "content" estritamente como a string "Pendente...". As próximas etapas serão geradas progressivamente em tempo real de acordo com as respostas do cliente.
+    Para as etapas "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "QUALIFICAÇÃO", "NECESSIDADE" e "FECHAMENTO", você DEVE definir o valor do campo "content" estritamente como a string "Pendente...". As próximas etapas serão geradas progressivamente em tempo real de acordo com as respostas do cliente.
 
     Retorne o resultado em formato JSON:
     {{
@@ -452,6 +466,7 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
             {{"label": "ABERTURA", "content": "..."}},
             {{"label": "SITUAÇÃO + PROBLEMA", "content": "Pendente..."}},
             {{"label": "IMPLICAÇÃO", "content": "Pendente..."}},
+            {{"label": "QUALIFICAÇÃO", "content": "Pendente..."}},
             {{"label": "NECESSIDADE", "content": "Pendente..."}},
             {{"label": "FECHAMENTO", "content": "Pendente..."}}
         ]
@@ -621,6 +636,21 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
     from modules.ai.service.context.business_context import get_business_context_for_prompt
     biz_data_str = await get_business_context_for_prompt()
 
+    prospecting_context_str = ""
+    if org_id:
+        try:
+            from core.infra.database import async_session
+            from models.organization import Organization
+            from sqlalchemy import select
+            async with async_session() as session:
+                stmt = select(Organization.prospecting_context).where((Organization.id == org_id) | (Organization.pipedrive_id == org_id))
+                res = await session.execute(stmt)
+                pc = res.scalar_one_or_none()
+                if pc:
+                    prospecting_context_str = f"\n\n## PLANO DE PROSPECÇÃO (ESTRUTURA A SEGUIR):\n{pc}\n"
+        except Exception:
+            pass
+
     # ── Inteligência de Seleção de Canal
     requested_channel = args.get("channel")
     auto_channel = None
@@ -680,7 +710,7 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         "Você é um redator comercial B2B sênior. "
         "Sua ÚNICA tarefa é escrever UMA mensagem comercial completa e pronta para envio. "
         "Não faça diagnóstico, não liste opções, não explique sua estratégia. Escreva apenas a mensagem.\n\n"
-        f"## CONTEXTO DA NOSSA EMPRESA (disponível se necessário):\n{biz_data_str}\n\n"
+        f"## CONTEXTO DA NOSSA EMPRESA E PROSPECÇÃO:\n{biz_data_str}\n{prospecting_context_str}\n"
         "## INTELIGÊNCIA DE CONTEXTO — LEIA O HISTÓRICO E DECIDA O MODO:\n\n"
         "**MODO 1 — FOLLOW-UP SIMPLES**\n"
         "Use quando: o objetivo é cobrar retorno/resposta/confirmação E o histórico não mostra objeções ativas nem férias/ausências recentes.\n"
@@ -965,6 +995,10 @@ async def exec_evaluate_prospects(args: dict, org_id: int | None = None) -> dict
         company_segment = ctx.get("company_segment", "")
         icp = ctx.get("icp", {})
 
+        prospecting_context_str = ""
+        if local_org and local_org.prospecting_context:
+            prospecting_context_str = f"\n\nCONTEXTO ESTRATÉGICO / PLANO DE PROSPECÇÃO (ATENÇÃO - ALINHE-SE A ESTA ESTRATÉGIA):\n{local_org.prospecting_context}"
+
         # 4. Formatar Prompt da IA para pontuação e ranking de prospecção
         prompt = f"""
 Você é um especialista em Enterprise B2B Sales e Mapeamento de Contatos Corporativos. Sua tarefa é analisar o grupo de contatos mapeados de uma empresa e identificar a melhor pessoa ou grupo de pessoas para prospectar (fazer cold outreach/cold call) com base nos nossos produtos.
@@ -980,7 +1014,7 @@ Decisores-alvo: {json.dumps(icp.get("decision_makers", []), ensure_ascii=False)}
 Dores de Mercado que resolvemos: {json.dumps(icp.get("pain_points", []), ensure_ascii=False)}
 
 EMPRESA CLIENTE:
-Nome: {org_real_name}
+Nome: {org_real_name}{prospecting_context_str}
 
 CONTATOS MAPEADOS E APROVADOS (Para análise):
 {json.dumps(valid_employees, ensure_ascii=False, indent=2)}
@@ -1016,12 +1050,37 @@ RETORNE EXATAMENTE UM JSON COM ESTA ESTRUTURA:
         )
 
         data = result.json_data or {}
+        best_prospects = data.get("best_prospects", [])
+        overall_strategy = data.get("overall_strategy", "Nenhuma estratégia retornada.")
+
+        # 🚀 NOVO: Se a empresa NÃO tem nenhum contato no Pipedrive (nenhum funcionario tem pipedrive_id),
+        # pedimos a confirmação usando a recomendação da IA.
+        has_pipedrive = any(e.pipedrive_id is not None for e in local_employees)
+        if not has_pipedrive and best_prospects:
+            best = best_prospects[0]
+            best_name = best.get("name", "Contato")
+            best_role = best.get("role", "")
+            return {
+                "ok": True,
+                "status": "confirmation_required",
+                "message": f"Após analisar o organograma local da empresa usando Inteligência Artificial, identifiquei **{best_name}** ({best_role}) como o melhor perfil (Score: {best.get('suitability_score')}). Este contato ainda não está no Pipedrive. Deseja prosseguir com ele ou prefere mapear novos nomes?",
+                "options": [
+                    {"label": f"Usar contato local ({best_name})", "prompt": f"A IA selecionou {best_name} ({best_role}) como a melhor opção. Cadastre este contato no Pipedrive imediatamente e inicie a prospecção usando o gancho gerado na estratégia."},
+                    {"label": "Mapear novos contatos", "prompt": "Não utilize os contatos locais sugeridos. Abra o mapeador de hierarquia (open_hierarchy_drawer) para buscar contatos mais atualizados."}
+                ],
+                "best_prospects": best_prospects,
+                "overall_strategy": overall_strategy,
+                "org_id": org_id,
+                "org_name": org_real_name,
+                "summary": f"IA avaliou os contatos locais e sugere {best_name} (Score {best.get('suitability_score')}). Aguardando confirmação do usuário."
+            }
+
         return {
             "ok": True,
             "org_name": org_real_name,
-            "best_prospects": data.get("best_prospects", []),
-            "overall_strategy": data.get("overall_strategy", "Nenhuma estratégia retornada."),
-            "summary": f"Análise de adequação de prospecção concluída para {org_real_name} com {len(data.get('best_prospects', []))} perfis mapeados."
+            "best_prospects": best_prospects,
+            "overall_strategy": overall_strategy,
+            "summary": f"Análise de adequação de prospecção concluída para {org_real_name} com {len(best_prospects)} perfis mapeados."
         }
 
     except Exception as e:
@@ -1281,3 +1340,176 @@ async def exec_update_prospecting_context(args: dict) -> dict:
     except Exception as e:
         return {"ok": False, "error": f"Erro ao atualizar contexto: {e}"}
 
+
+async def exec_generate_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+    """
+    Gera um Plano de Prospecção B2B detalhado (SPIN Selling) para a empresa.
+    Cruza dados de decisores mapeados com o perfil do tenant para gerar um
+    plano estruturado em Markdown e salvar no prospecting_context da organização.
+    """
+    from core.infra.database import async_session
+    from models.organization import Organization
+    from models.people.employee import Employee
+    from sqlalchemy import select
+    from core.llm.router import ask_llm
+    from core.llm.base import LLMTier
+    from modules.ai.service.context.business_context_service import BusinessContextService
+
+    org_id = args.get("org_id")
+    if not org_id:
+        return {"ok": False, "error": "org_id é obrigatório para gerar o plano de prospecção."}
+
+    try:
+        # 1. Carrega a organização e seus funcionários/decisores do banco local
+        async with async_session() as session:
+            res = await session.execute(select(Organization).where(Organization.id == org_id))
+            org = res.scalars().first()
+            if not org:
+                # Tenta pelo pipedrive_id
+                res = await session.execute(
+                    select(Organization).where(Organization.pipedrive_id == org_id)
+                )
+                org = res.scalars().first()
+            if not org:
+                return {"ok": False, "error": f"Organização {org_id} não encontrada no banco local."}
+
+            res_emps = await session.execute(
+                select(Employee).where(
+                    Employee.company_id == org.id,
+                    Employee.role.notin_(["Reprovado", "Análise Humana", "Erro no Processamento"])
+                )
+            )
+            employees = res_emps.scalars().all()
+
+        # 2. Carrega o contexto do tenant (nosso produto, ICP, etc.)
+        business_ctx = await BusinessContextService.get_tenant_context()
+        product_info = business_ctx.get("product_description", "Empresa B2B de alto valor.")
+        company_name = business_ctx.get("company_name", "J.Ferres")
+        icp_profile = business_ctx.get("icp_profile", "")
+        differentials = business_ctx.get("differentials", "")
+
+        # 3. Monta o perfil dos decisores encontrados
+        decision_makers = []
+        for emp in employees:
+            dm = {
+                "name": emp.name,
+                "role": emp.role or "Cargo não informado",
+                "department": getattr(emp, "department", "") or "",
+                "seniority": getattr(emp, "seniority", 0) or 0,
+                "linkedin": getattr(emp, "linkedin_url", "") or "",
+                "email": getattr(emp, "email", "") or "",
+                "evidence": getattr(emp, "evidence", "") or "",
+                "matching_score": getattr(emp, "matching_score", 0) or 0,
+            }
+            decision_makers.append(dm)
+
+        # Ordena por score desc
+        decision_makers.sort(key=lambda x: x["matching_score"], reverse=True)
+
+        # 4. Gera o plano via LLM
+        prompt = f"""Gere um Plano de Prospecção B2B completo e detalhado para a empresa abaixo.
+
+## EMPRESA ALVO:
+- Nome: {org.name}
+- Domínio: {getattr(org, 'domain', '') or 'não informado'}
+- CNPJ: {getattr(org, 'cnpj', '') or 'não informado'}
+- Contexto salvo: {getattr(org, 'prospecting_context', '') or 'nenhum'}
+
+## DECISORES MAPEADOS ({len(decision_makers)} pessoas):
+{json.dumps(decision_makers, indent=2, ensure_ascii=False)}
+
+## NOSSO PRODUTO/SERVIÇO:
+{product_info}
+
+## ICP (Perfil de Cliente Ideal):
+{icp_profile}
+
+## NOSSOS DIFERENCIAIS:
+{differentials}
+
+## INSTRUÇÃO:
+Gere um plano de prospecção SPIN Selling completo com as seguintes seções:
+
+1. **🎯 Análise da Conta** — Perfil da empresa, porte, segmento, potencial
+2. **👤 Decisor Principal Recomendado** — Nome, cargo, por que ele/ela é a melhor entrada, gancho personalizado
+3. **🔎 Dores Prováveis (Situação → Problema)** — 3-5 dores baseadas no segmento/cargo
+4. **💡 Implicações das Dores** — O impacto de não resolver cada dor
+5. **🚀 Sequência de Abordagem** — Canal 1 (qual canal, script inicial), Canal 2 (follow-up), Canal 3 (escalada)
+6. **📝 Primeira Mensagem Pronta** — Mensagem real, sem placeholders, pronta para enviar
+7. **⚡ Próximas Ações Concretas** — Lista de 3-5 ações com prazo
+
+Formato: Markdown rico. Use o nome real do decisor e detalhes reais da empresa. Seja específico e executável."""
+
+        result = await ask_llm(
+            prompt=prompt,
+            system=(
+                f"Você é um Diretor Comercial B2B Sênior especialista em SPIN Selling. "
+                f"Gere planos de prospecção altamente personalizados e executáveis para a empresa {company_name}."
+            ),
+            tier=LLMTier.DEEP,
+            temperature=0.2,
+        )
+
+        plan_md = result.text or "Erro ao gerar plano."
+
+        # 5. Salva o plano no prospecting_context da organização
+        async with async_session() as session:
+            res = await session.execute(select(Organization).where(Organization.id == org.id))
+            org_to_update = res.scalars().first()
+            if org_to_update:
+                org_to_update.prospecting_context = plan_md
+                await session.commit()
+
+        return {
+            "ok": True,
+            "plan": plan_md,
+            "org_name": org.name,
+            "summary": (
+                f"Plano de prospecção SPIN Selling gerado para {org.name} "
+                f"com {len(decision_makers)} decisores mapeados."
+            ),
+        }
+
+    except Exception as e:
+        log.exception("exec_generate_prospecting_plan.failed")
+        return {"ok": False, "error": str(e)}
+
+
+async def exec_update_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+    """
+    Atualiza e substitui o plano de prospecção existente de uma organização
+    por um novo plano fornecido pelo agente.
+    """
+    from core.infra.database import async_session
+    from models.organization import Organization
+    from sqlalchemy import select
+
+    org_id = args.get("org_id")
+    new_plan = args.get("new_plan", "")
+
+    if not org_id:
+        return {"ok": False, "error": "org_id é obrigatório."}
+    if not new_plan:
+        return {"ok": False, "error": "new_plan não pode estar vazio."}
+
+    try:
+        async with async_session() as session:
+            res = await session.execute(select(Organization).where(Organization.id == org_id))
+            org = res.scalars().first()
+            if not org:
+                res = await session.execute(
+                    select(Organization).where(Organization.pipedrive_id == org_id)
+                )
+                org = res.scalars().first()
+            if not org:
+                return {"ok": False, "error": f"Organização {org_id} não encontrada."}
+
+            org.prospecting_context = new_plan
+            await session.commit()
+
+        return {
+            "ok": True,
+            "summary": f"Plano de prospecção atualizado para {org.name}.",
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}

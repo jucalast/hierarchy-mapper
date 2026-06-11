@@ -16,13 +16,11 @@
   gap: 8px;
   padding: 0 12px;
   height: 38px;
-  background: rgba(255, 255, 255, 0.01);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: none;
+  background: #131313;
+  border: var(--sw-border-width) solid var(--sw-border);
   border-radius: 8px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--sw-text-muted);
   font-size: var(--font-sm);
   font-weight: 500;
   transition: var(--transition-fast);
@@ -55,13 +53,13 @@
 }
 
 .modelSelectorTrigger:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.02);
+  color: var(--sw-text-base);
+  background: var(--sw-hover);
 }
 
 .modelSelectorTrigger:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--sw-hover);
 }
 
 .modelSelectorTrigger .modelIcon {
@@ -500,18 +498,9 @@
 }
 
 /* === LIGHT MODE OVERRIDES === */
+/* Light mode trigger agora usa vars padrão — nenhum override manual necessário */
 [data-theme='light'] .modelSelectorTrigger {
-  color: rgba(0, 0, 0, 0.4);
-  background: rgba(0, 0, 0, 0.01);
-}
-
-[data-theme='light'] .modelSelectorTrigger:hover {
-  color: #000000;
-  background: rgba(0, 0, 0, 0.03);
-}
-
-[data-theme='light'] .modelSelectorTrigger:focus {
-  background: rgba(0, 0, 0, 0.05);
+  background: #ffffff;
 }
 
 [data-theme='light'] .modelSelectorTrigger .modelIcon {

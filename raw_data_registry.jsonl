@@ -1269,3 +1269,3113 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:33:04.767264",
+    "candidate": "marli rodrigues da silva",
+    "linkedin": "https://www.linkedin.com/in/marli-rodrigues-da-silva-24806b76",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "marli rodrigues da silva - Rio de Janeiro, Rio de Janeiro, Brasil | Perfil profissional | LinkedIn",
+            "body": "Veja o perfil de marli rodrigues da silvamarli rodrigues da silva no LinkedIn, a maior comunidade profissional do mundo. marli tem 1 vaga no perfil. Veja o perfil completo no LinkedIn e descubra as conexões de marlimarli e as vagas em empresas similares."
+        },
+        "osint_metadata": {
+            "role": "rio de janeiro, rio de janeiro, brasil",
+            "bio": "Localidade: Rio de Janeiro · 1 conexão no LinkedIn. Veja o perfil de marli rodrigues da silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:33:24.429850",
+    "candidate": "Marli Deróide",
+    "linkedin": "https://www.linkedin.com/in/marli-der%C3%B3ide-457790b1",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Deróide - Coord. Administrativo na Roder Ferramentas ...",
+            "body": "Administrativo na Roder Ferramentas · Experiência: Roder Ferramentas · Localidade: São Paulo · 64 conexões no LinkedIn . Veja o perfil de Marli Deróide no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Roder Ferramentas · Localidade: São Paulo · 65 conexões no LinkedIn. Veja o perfil de Marli Deróide no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Marli Deróide",
+        "role": "Coord. Administrativo",
+        "matching_score": 0,
+        "department": "Administrativo",
+        "evidence": "Veto Mecânico Detectado: True",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Marli Deróide - Coord. Administrativo na Roder Ferramentas",
+                "Experiência: Roder Ferramentas",
+                "CURRENT COMPANY (Declarada): Roder Ferramentas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Marli Deróide - Coord. Administrativo na Roder Ferramentas."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Marli Deróide",
+                    "role": "Coord. Administrativo"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Marli Deróide",
+                "detected_role": "Coord. Administrativo",
+                "clean_bio": "Marli Deróide - Coord. Administrativo na Roder Ferramentas. Experiência: Roder Ferramentas. Localidade: São Paulo. 64 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Coord. Administrativo",
+            "dept": "Administrativo",
+            "is_relevant": false,
+            "reasoning": "O cargo de Coordenador Administrativo não possui interface direta com as áreas de Suprimentos, Compras ou Procurement. A relevância é negativa pois o cargo não se alinha com as áreas técnicas solicitadas e não há menção de atividades relacionadas a fornecedores ou materiais na descrição."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Coord. Administrativo",
+        "department": "Administrativo",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:33:33.242696",
+    "candidate": "Marli Pereira Da Silva",
+    "linkedin": "https://www.linkedin.com/in/marli-pereira-da-silva-30667731b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Pereira Da Silva - Rondonópolis, Mato Grosso, Brasil | LinkedIn",
+            "body": "Veja o perfil de Marli Pereira Da Silva no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Outras pessoas chamadas Marli Pereira Da Silva em Brasil ."
+        },
+        "osint_metadata": {
+            "role": "rondonópolis, mato grosso, brasil",
+            "bio": "Formação acadêmica: Sesi senai Rondonópolis  MT · Localidade: Rondonópolis. Veja o perfil de Marli Pereira Da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:33:41.483072",
+    "candidate": "Marli Pereira da Silva",
+    "linkedin": "https://www.linkedin.com/in/marli-pereira-da-silva-4372a71",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Pereira da Silva - São Paulo ...",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "são paulo, são paulo, brasil",
+            "bio": "Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Marli Pereira da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:33:51.206738",
+    "candidate": "Marli Pereira Da Silva Gualberto",
+    "linkedin": "https://www.linkedin.com/in/marli-pereira-da-silva-gualberto-6828b1158",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Pereira Da Silva Gualberto - Estudante de pós- ...",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "hospital municipal maria braido",
+            "bio": "Cursos:\n\nII Jornada de Enfermagem de Cirurgia, Robótica, Universidade Anhanguera… · Experiência: Hospital Municipal Maria Braido · Formação acadêmica: Universidade Anhanguera São Paulo · Localidade: Barueri · + de 500 conexões no LinkedIn. Veja o perfil de Marli Pereira Da Silva Gualberto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:33:58.168004",
+    "candidate": "Marli Pereira",
+    "linkedin": "https://www.linkedin.com/in/marli-pereira-014ba290",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Pereira - Brasil | Perfil profissional",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "brasil",
+            "bio": "Localidade: Brasil · 30 conexões no LinkedIn. Veja o perfil de Marli Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:34:10.105924",
+    "candidate": "Marli Da silva",
+    "linkedin": "https://www.linkedin.com/in/marli-da-silva-270516119",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Da silva - Santo André, São Paulo, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "sabó",
+            "bio": "Trabalho com depilação há 18 anos, no qual 14 anos foram no salao Studio M,  atualmente… · Experiência: Sabó · Localidade: Santo André · 23 conexões no LinkedIn. Veja o perfil de Marli Da silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:34:17.024123",
+    "candidate": "MARLI PEREIRA",
+    "linkedin": "https://www.linkedin.com/in/marli-pereira-2a9326168",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "MARLI PEREIRA - Uberlândia, Minas Gerais, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "uberlândia, minas gerais, brasil",
+            "bio": "Localidade: Uberlândia · 10 conexões no LinkedIn. Veja o perfil de MARLI PEREIRA no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:34:24.688413",
+    "candidate": "Marli Pereira da silva",
+    "linkedin": "https://www.linkedin.com/in/marli-pereira-da-silva-2b5b89a0",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Pereira da silva - Nutricionista - Clinica Atitude",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "clinica  atitude",
+            "bio": "Experiência: Clinica  Atitude · Localidade: Cascavel · 1 conexão no LinkedIn. Veja o perfil de Marli Pereira da silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:34:34.926383",
+    "candidate": "marli alves da silva",
+    "linkedin": "https://www.linkedin.com/in/marli-alves-da-silva-29a374164",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "marli alves da silva - São José, Santa Catarina, Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "são josé, santa catarina, brasil",
+            "bio": "Localidade: São José · 31 conexões no LinkedIn. Veja o perfil de marli alves da silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:34:54.436314",
+    "candidate": "Cleonice Pereira Da Silva",
+    "linkedin": "https://www.linkedin.com/in/cleonice-pereira-da-silva-192481143",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Cleonice Pereira Da Silva - Assistente administrativo",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "pema maquinas e ferramentas  ltda.",
+            "bio": "Experiência: PEMA MAQUINAS E FERRAMENTAS  LTDA. · Localidade: Santo André. Veja o perfil de Cleonice Pereira Da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Cleonice Pereira Da Silva",
+        "role": "Assistente administrativo",
+        "matching_score": 0,
+        "department": "Administrativo",
+        "evidence": "Veto Mecânico Detectado: True. O detetive indica que o candidato trabalhou na 'PEMA MAQUINAS E FERRAMENTAS LTDA.', que não é a empresa-alvo 'Roder Ferramentas'. Além disso, o especialista marcou a relevância como False.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "Experiência: PEMA MAQUINAS E FERRAMENTAS LTDA."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: PEMA MAQUINAS E FERRAMENTAS LTDA. Localidade: Santo André."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Cleonice Pereira Da Silva",
+                    "role": "Assistente administrativo"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Cleonice Pereira Da Silva",
+                "detected_role": "Assistente administrativo",
+                "clean_bio": "Experiência: PEMA MAQUINAS E FERRAMENTAS LTDA. Localidade: Santo André."
+            }
+        },
+        "specialist": {
+            "role_name": "Assistente administrativo",
+            "dept": "Administrativo",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Assistente administrativo'. Embora a candidata mencione 'PEMA MAQUINAS E FERRAMENTAS LTDA.' em sua experiência, o vínculo com a 'Roder Ferramentas' não foi confirmado pelo Detetive e o cargo administrativo não tem interface direta com Suprimentos/Compras/Procurement. Além disso, o cargo não contém termos explícitos de compras ou logística com interface em fornecedores/materiais."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Assistente administrativo",
+        "department": "Administrativo",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:35:05.397377",
+    "candidate": "Marli Pereira Soares",
+    "linkedin": "https://www.linkedin.com/in/marli-pereira-soares-54b379246",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marli Pereira Soares - Vendedor(Autônomo)",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "belo horizonte, minas gerais, brasil",
+            "bio": "f · Localidade: Belo Horizonte · 7 conexões no LinkedIn. Veja o perfil de Marli Pereira Soares no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:35:15.739389",
+    "candidate": "Itamar Pereira Da Silva",
+    "linkedin": "https://www.linkedin.com/in/itamar-pereira-da-silva-1b46651bb",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Itamar Pereira Da Silva - Assistente de mecânico na ...",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "comercial sarico materiais para construcao",
+            "bio": "Experiência: Comercial Sarico Materiais Para Construcao · Localidade: 75900-001. Veja o perfil de Itamar Pereira Da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:36:01.667294",
+    "candidate": "Rodrigo Michelini",
+    "linkedin": "https://www.linkedin.com/in/rodrigomichelini",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo Michelini - Proprietário | Roder Ferramentas | LinkedIn Roder Ferramentas - LinkedIn Brasil Nivaldo Michelini - Profissional de Software | LinkedIn #tecnologia #industria #usinagem #ferramentas #roder - LinkedIn Rodrigo Michelini on LinkedIn: 7 \"Nivaldo -\" profiles | LinkedIn Corre lá no perfil da Roder Ferramentas, dar uma olhada nesse ...",
+            "body": "Proprietário | Roder Ferramentas · - Sólida experiência e carreira nas áreas de Manufatura, Manutenção, Logística, Qualidade, Segurança, Melhoria Contínua e Planejamento Estratégico, com 10... Roder Ferramentas | 656 seguidores no LinkedIn . Roder Ferramentas é uma empresa de fabricação e recondicionamento de ferramentas de corte, estabelecida desde 2005 e localizada em Sumaré,... Profissional de Software · Experiência: particular · Localidade: Valinhos · 18 conexões no LinkedIn . Veja o perfil de Nivaldo Michelini no LinkedIn , uma comunidade profissional de 1 bilhão... Pessoal, vejam na integra a entrevista do nosso Diretor e Proprietário, Rodrigo Michelini para o ricardo lerner da Bener no programa INFOMETAL. #tecnologia #industria #usinagem # ferramentas ... Recebemos em nosso Showroom o Sr. Rodrigo Michelini da empresa Roder Ferramentas . View the profiles of professionals named \" Nivaldo -\" on LinkedIn . There are 7 professionals named \" Nivaldo -\", who use LinkedIn to exchange information, ideas, and opportunities. Conecte sua Conta do LinkedIn : - Após criar a conta, conecte seu perfil ou página do LinkedIn ao Buffer. Clique em \"Manage Channels\" (Gerenciar Canais) e selecione LinkedIn para autorizar a..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "- Sólida experiência e carreira nas áreas de Manufatura, Manutenção, Logística… · Experiência: Roder Ferramentas · Formação acadêmica: METROCAMP · Localidade: Valinhos · + de 500 conexões no LinkedIn. Veja o perfil de Rodrigo Michelini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rodrigo Michelini",
+        "role": "Proprietário",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato Rodrigo Michelini trabalha na empresa-alvo Roder Ferramentas, conforme confirmado pelo Especialista e pelo Detetive. Seu cargo é Proprietário, o que é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Empresa Alvo: Roder Ferramentas",
+                "Experiência: Roder Ferramentas",
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "Search Snippet: Pessoal, vejam na integra a entrevista do nosso Diretor e Proprietário, Rodrigo Michelini para o ricardo lerner da Bener no programa INFOMETAL. #tecnologia #industria #usinagem # ferramentas",
+                "Cargo Detectado: Proprietário"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sólida experiência e carreira nas áreas de Manufatura, Manutenção, Logística…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rodrigo Michelini",
+                    "role": "Proprietário"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rodrigo Michelini",
+                "detected_role": "Proprietário",
+                "clean_bio": "Sólida experiência e carreira nas áreas de Manufatura, Manutenção, Logística… Experiência: Roder Ferramentas Formação acadêmica: METROCAMP Localidade: Valinhos + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Proprietário",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Proprietário, Diretor, Sócio ou C-Level é considerado relevante em compras B2B, pois frequentemente são os decisores finais. O vínculo com a empresa Roder Ferramentas foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Proprietário",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:36:10.023209",
+    "candidate": "Nivaldo Michelini",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-michelini-bab082aa",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nivaldo Michelini - Profissional de Software | LinkedIn",
+            "body": "Profissional de Software · Experiência: particular · Localidade: Valinhos · 18 conexões no LinkedIn . Veja o perfil de Nivaldo Michelini no LinkedIn , uma comunidade profissional de 1 bilhão..."
+        },
+        "osint_metadata": {
+            "role": "particular",
+            "bio": "Experiência: particular · Localidade: Valinhos · 18 conexões no LinkedIn. Veja o perfil de Nivaldo Michelini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:36:46.118540",
+    "candidate": "Wilson Sergio Martins Dantas",
+    "linkedin": "https://www.linkedin.com/in/wilsonsergio",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Wilson Sergio Martins Dantas - DWTOOLS | LinkedIn",
+            "body": "3 weeks ago - Admira-me muito que várias pessoas tenham que esperar o momento de sair da escola e chegar ao mercado e finalmente começar a praticar por tentativa e erro (um absurdo) o uso de ferramentas de metal duro. Ou ainda esperar por participar das palestras ministradas por profissionais da usinagem como: Ricardo Freitas, Fábio Ricardo, Francisco Marcondes, Salvador Favara, Wilson Sergio, João Carosella, Aldeci Santos, Carlos Ancelmo, Nivaldo Coppini, Anselmo Diniz , entre outros."
+        },
+        "osint_metadata": {
+            "role": "dwtools",
+            "bio": "A indústria brasileira não precisa de mais ferramentas; ela precisa de inteligência… · Experiência: DWTOOLS · Formação acadêmica: Faculdade de Tecnologia de São Paulo · Localidade: Cajamar · + de 500 conexões no LinkedIn. Veja o perfil de Wilson Sergio Martins Dantas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Wilson Sergio Martins Dantas",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "Google Page Title: Wilson Sergio Martins Dantas - DWTOOLS",
+                "Search Snippet: 3 weeks ago - Admira-me muito que várias pessoas tenham que esperar o momento de sair da escola e chegar ao mercado e finalmente começar a praticar por tentativa e erro (um absurdo) o uso de ferramentas de metal duro. Ou ainda esperar por participar das palestras ministradas por profissionais da usinagem como: Ricardo Freitas, Fábio Ricardo, Francisco Marcondes, Salvador Favara, Wilson Sergio, João Carosella, Aldeci Santos, Carlos Ancelmo, Nivaldo Coppini, Anselmo Diniz , entre outros."
+            ],
+            "is_institutional": false,
+            "bio_raw": "A indústria brasileira não precisa de mais ferramentas; ela precisa de inteligência…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Wilson Sergio Martins Dantas",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Wilson Sergio Martins Dantas",
+                "detected_role": "Não Identificado",
+                "clean_bio": "A indústria brasileira não precisa de mais ferramentas; ela precisa de inteligência… · Experiência: DWTOOLS · Formação acadêmica: Faculdade de Tecnologia de São Paulo · Localidade: Cajamar · + de 500 conexões no LinkedIn. Veja o perfil de Wilson Sergio Martins Dantas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Wilson Sergio Martins Dantas não foi identificado explicitamente. Embora a bio mencione 'ferramentas' e a empresa alvo seja 'Roder Ferramentas', não há informações suficientes para determinar uma função direta em Suprimentos/Compras/Procurement. O snippet sugere uma participação em palestras sobre usinagem, o que pode indicar uma área técnica, mas não um cargo de compras. O vínculo com Roder Ferramentas não está confirmado, e ele trabalha na DWTOOLS."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:37:24.001175",
+    "candidate": "Nivaldo Silva Junior",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-silva-junior-b8751239",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nivaldo Silva Junior - GUHRING BRASIL FERRAMENTAS",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "iscar do brasil",
+            "bio": "Experiência: ISCAR do Brasil · Formação acadêmica: Senai São Paulo · Localidade: Joinville · + de 500 conexões no LinkedIn. Veja o perfil de Nivaldo Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Nivaldo Silva Junior",
+        "role": "Não Identificado",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Veto Mecânico Detectado: True. O candidato trabalha na ISCAR do Brasil, que é uma empresa diferente da META_COMPANY_DECLARADA 'Roder Ferramentas'.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn Status: Nivaldo Silva Junior | iscar do brasil",
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "Experiência: ISCAR do Brasil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Nivaldo Silva Junior | iscar do brasil"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nivaldo Silva Junior",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nivaldo Silva Junior",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Nivaldo Silva Junior | iscar do brasil"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo não foi identificado e a bio não contém termos explícitos de Suprimentos/Compras/Procurement. O vínculo com a Roder Ferramentas não é confirmado e a experiência declarada é na ISCAR do Brasil."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Guhring Brasil Ferramentas",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:37:33.059953",
+    "candidate": "Nivaldo Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-ribeiro-b1298993",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nivaldo Ribeiro - Freelancer",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "freelancer",
+            "bio": "Editor de textos, repórter, apresentador, produtor, locutor, coordenador de programação… · Experiência: Freelancer · Formação acadêmica: Fundação Cásper Líbero · Localidade: Fortaleza · 55 conexões no LinkedIn. Veja o perfil de Nivaldo Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:37:39.144365",
+    "candidate": "Nivaldo Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-ribeiro-859466179",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nivaldo Ribeiro - CAAR do Brasil",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "star7 latam",
+            "bio": "Trabalho atualmente com projetos automotivos no grupo STELLANTIS, utilizando software… · Experiência: STAR7 Latam · Formação acadêmica: Fundação Getulio Vargas · Localidade: Recife · 99 conexões no LinkedIn. Veja o perfil de Nivaldo Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:37:47.851373",
+    "candidate": "Nivaldo Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-ribeiro-a9069958",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nivaldo Ribeiro - Eletricista de Manutenção 2 | Eternit S/A",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "eternit s/a",
+            "bio": "Experiência: Eternit S/A · Localidade: Camaçari · 320 conexões no LinkedIn. Veja o perfil de Nivaldo Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:37:54.923505",
+    "candidate": "Nivaldo Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-ribeiro-717a6a12a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nivaldo Ribeiro - Brasil | Perfil profissional",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "brasil",
+            "bio": "Localidade: Brasil · 55 conexões no LinkedIn. Veja o perfil de Nivaldo Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:38:04.042034",
+    "candidate": "Nivaldo Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-ribeiro-b82791b2",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nivaldo Ribeiro - Consultoria comercial na ...",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "profissional independente",
+            "bio": "Experiência: PROFISSIONAL INDEPENDENTE · Localidade: Joinville · 65 conexões no LinkedIn. Veja o perfil de Nivaldo Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:38:17.816850",
+    "candidate": "nivaldo joao alves",
+    "linkedin": "https://www.linkedin.com/in/nivaldo-joao-alves-22677739",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "nivaldo joao alves - empreiteiro - AUTONOMO Freelance.",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "autonomo freelance.",
+            "bio": "Experiência: AUTONOMO Freelance. · Localidade: Fazenda Rio Grande · 1 conexão no LinkedIn. Veja o perfil de nivaldo joao alves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:39:05.789585",
+    "candidate": "Igor Roder",
+    "linkedin": "https://www.linkedin.com/in/iroder/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Igor Roder - My Trusted Source | LinkedIn",
+            "body": "1 month ago - · Experience: My Trusted Source · Education: StartSe University · Location: Brazil · 500+ connections on LinkedIn. View Igor Roder ’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "my trusted source",
+            "bio": "Head of IT with 20 years of experience in the IT, Consulting, Services, Agribusiness… · Experience: My Trusted Source · Education: StartSe University · Location: Brazil · 500+ connections on LinkedIn. View Igor Roder’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Igor Roder",
+        "role": "Head of IT",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "Veto Mecânico Detectado: True",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "Experience: My Trusted Source"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Head of IT with 20 years of experience in the IT, Consulting, Services, Agribusiness…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Igor Roder",
+                    "role": "Head of IT"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Igor Roder",
+                "detected_role": "Head of IT",
+                "clean_bio": "Head of IT with 20 years of experience in the IT, Consulting, Services, Agribusiness…"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Head of IT', que é explicitamente vetado pela instrução 6. Não há informações adicionais na bio ou nos snippets que indiquem uma interface direta com Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Head of IT",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:39:31.942808",
+    "candidate": "Leandro Deróide",
+    "linkedin": "https://www.linkedin.com/in/leandro-der%C3%B3ide-7aa91b54",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leandro Deróide - Roder Ferramentas Sócio -Diretor | LinkedIn",
+            "body": "Roder Ferramentas Sócio -Diretor. Campinas, São Paulo, Brasil . 2 mil seguidores + de 500 conexões.No Brasil temos diversos heróis e heroínas, infelizmente ainda vemos lixos sendo condecorados heróis e heroínas, pura criação da ignorância ou…"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Fabricação  e Afiação de Ferramentas de corte em geral · Experiência: Roder Ferramentas · Formação acadêmica: UNIVERSIDADE SAO JUDAS TADEU · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Leandro Deróide no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Leandro Deróide",
+        "role": "Sócio -Diretor",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato Leandro Deróide trabalha na empresa-alvo Roder Ferramentas, conforme confirmado pelo Detetive e pelo Especialista. O cargo de Sócio -Diretor é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Roder Ferramentas Sócio -Diretor",
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "Experiência: Roder Ferramentas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Fabricação e Afiação de Ferramentas de corte em geral"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leandro Deróide",
+                    "role": "Sócio -Diretor"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leandro Deróide",
+                "detected_role": "Sócio -Diretor",
+                "clean_bio": "Fabricação e Afiação de Ferramentas de corte em geral"
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio -Diretor",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Sócio-Diretor em uma empresa B2B, como a Roder Ferramentas, frequentemente implica em decisões estratégicas e financeiras, incluindo aprovações de compras e gestão de fornecedores. A empresa atua na fabricação e afiação de ferramentas de corte, o que sugere uma necessidade contínua de suprimentos e materiais. Portanto, há uma forte interface com a área de Compras/Suprimentos."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio -Diretor",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:40:29.550094",
+    "candidate": "Dyme Anderson Roder",
+    "linkedin": "https://www.linkedin.com/in/dyme-anderson-roder-37975b86",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Dyme Anderson Roder - Sócio fundador da empresa ... - LinkedIn",
+            "body": "Sócio fundador da empresa Roder Maquinas e Equipamentos. · Com uma trajetória sólida de mais de duas décadas à frente da Roder Maquinas e Equipamentos Ltda, ..."
+        },
+        "osint_metadata": {
+            "role": "roder maquinas e equipamentos ltda",
+            "bio": "Com uma trajetória sólida de mais de duas décadas à frente da Roder Maquinas e… · Experiência: Roder Maquinas e Equipamentos Ltda · Formação acadêmica: PUCRS - Pontifícia Universidade Católica do Rio Grande do Sul · Localidade: Pardinho · + de 500 conexões no LinkedIn. Veja o perfil de Dyme Anderson Roder no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Dyme Anderson Roder",
+        "role": "Sócio fundador",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato é sócio fundador da empresa-alvo 'Roder Ferramentas', conforme confirmado pelo especialista e pelo detetive. Não há indícios de que trabalhe em outra empresa ou de que o cargo seja irrelevante.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Dyme Anderson Roder - Sócio fundador da empresa",
+                "Sócio fundador da empresa Roder Maquinas e Equipamentos.",
+                "Com uma trajetória sólida de mais de duas décadas à frente da Roder Maquinas e Equipamentos Ltda, ...",
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Com uma trajetória sólida de mais de duas décadas à frente da Roder Maquinas e Equipamentos Ltda."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Dyme Anderson Roder",
+                    "role": "Sócio fundador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Dyme Anderson Roder",
+                "detected_role": "Sócio fundador",
+                "clean_bio": "Com uma trajetória sólida de mais de duas décadas à frente da Roder Maquinas e Equipamentos Ltda, ..."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio fundador",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O candidato é Sócio fundador da Roder Ferramentas, o que o coloca em uma posição de decisor estratégico, com alta probabilidade de interface com decisões de compras e suprimentos em um contexto B2B. A relevância é confirmada pela instrução técnica 10."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio fundador",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:40:47.308883",
+    "candidate": "Leonardo Roder Correa",
+    "linkedin": "https://www.linkedin.com/in/leoroder",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leonardo Roder Correa - Sócio Diretor - Saffi Consultoria - LinkedIn",
+            "body": "Leonardo Roder Correa. Sócio Diretor - Saffi Consultoria. Saffi Consultoria Ohio University. Cuiabá, Mato Grosso, Brasil."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Leonardo Roder Correa",
+        "role": "Sócio Diretor",
+        "matching_score": 0,
+        "department": "Diretoria/Gestão",
+        "evidence": "O detetive encontrou que o candidato trabalha na Saffi Consultoria, que é uma empresa diferente da empresa-alvo 'Roder Ferramentas'. A regra 1 (Veto de Empresa) é aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Leonardo Roder Correa. Sócio Diretor - Saffi Consultoria.",
+                "Candidate Name: Leonardo Roder Correa | Google Page Title: Leonardo Roder Correa - Sócio Diretor - Saffi Consultoria | Search Snippet: Leonardo Roder Correa. Sócio Diretor - Saffi Consultoria. Saffi Consultoria Ohio University. Cuiabá, Mato Grosso, Brasil."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Leonardo Roder Correa. Sócio Diretor - Saffi Consultoria. Saffi Consultoria Ohio University. Cuiabá, Mato Grosso, Brasil."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leonardo Roder Correa",
+                    "role": "Sócio Diretor"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leonardo Roder Correa",
+                "detected_role": "Sócio Diretor",
+                "clean_bio": "Leonardo Roder Correa. Sócio Diretor - Saffi Consultoria. Saffi Consultoria Ohio University. Cuiabá, Mato Grosso, Brasil."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio Diretor",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Sócio Diretor' é considerado relevante para a área de Suprimentos/Compras/Procurement, pois em cargos de diretoria e sociedade, há frequentemente envolvimento em decisões estratégicas de compras e aprovações financeiras, especialmente em um contexto B2B. O candidato trabalha na Saffi Consultoria e não há vínculo confirmado com a Roder Ferramentas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sócio Diretor",
+        "department": "Diretoria/Gestão",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:40:58.743243",
+    "candidate": "Roger Barros",
+    "linkedin": "https://www.linkedin.com/in/roger-barros",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Roger Barros - Fundador na Chip | New Business Development, IT ...",
+            "body": "Com uma trajetória de mais de 33 anos na vanguarda do setor de tecnologia da informação, orgulho-me do meu papel como Fundador da CHIP e do ChipLabs, ..."
+        },
+        "osint_metadata": {
+            "role": "instituto de inovação de sergipe",
+            "bio": "Com uma trajetória de mais de 33 anos na vanguarda do setor de tecnologia da informação… · Experiência: Instituto de Inovação de Sergipe · Localidade: Aracaju · + de 500 conexões no LinkedIn. Veja o perfil de Roger Barros no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:41:09.382948",
+    "candidate": "Rogério Bezerra",
+    "linkedin": "https://www.linkedin.com/in/rog%C3%A9rio-bezerra-9a7422b8",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rogério Bezerra - Sócio fundador da Baby Roger - LinkedIn",
+            "body": "Sócio fundador da Baby Roger · Experiência: Autônomo · Formação acadêmica: Colégio Santo Antônio do Pari · Localidade: São Paulo · + de 500 conexões no ..."
+        },
+        "osint_metadata": {
+            "role": "autônomo",
+            "bio": "Experiência: Autônomo · Formação acadêmica: Colégio Santo Antônio do Pari · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Rogério Bezerra no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:41:28.168241",
+    "candidate": "Roger Garcia",
+    "linkedin": "https://www.linkedin.com/in/rvgarcia",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Roger Garcia - Senior Software Engineer | CTO - LinkedIn",
+            "body": "Roger Garcia. Senior Software Engineer | CTO | Previously YC founder. Roboflow Y Combinator. São José dos Campos, São Paulo, Brasil. 3 mil ..."
+        },
+        "osint_metadata": {
+            "role": "roboflow",
+            "bio": "Software engineer (16 years of experience) and YC founder with a strong track record of… · Experiência: Roboflow · Formação acadêmica: Y Combinator · Localidade: São José dos Campos · + de 500 conexões no LinkedIn. Veja o perfil de Roger Garcia no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:41:53.061317",
+    "candidate": "Rodrigo Roder",
+    "linkedin": "https://www.linkedin.com/in/rodrigo-roder/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo Roder - Polpa Brasil Desidratados - LinkedIn",
+            "body": "Certificado Auditor Interno FSSC 22000 V. 6.0 · Especialista World Class Manufacturing - WCM · VCOE Auditor · Técnico Textil · Planejamento e Controle da Manutenção ..."
+        },
+        "osint_metadata": {
+            "role": "polpa brasil desidratados",
+            "bio": "As an Industrial Process Engineer with a solid and diverse background, I have a proven track record of leadership in high-pressure production environments. I'm currently at Bunge, where I apply my expertise to optimize processes and ensure operational excellence. My journey began at COAMO Agroindustrial Cooperativa, where I was responsible for supervising the performance of operators and maint..."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Rodrigo Roder",
+        "role": "Industrial Process Engineer",
+        "matching_score": 0,
+        "department": "Supply Chain",
+        "evidence": "O detetive indica que o candidato trabalha na Bunge, que é uma empresa diferente da meta declarada 'Roder Ferramentas'. A regra 1 (Veto de Empresa) é aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "I'm currently at Bunge, where I apply my expertise to optimize processes and ensure operational excellence. My journey began at COAMO Agroindustrial Cooperativa, where I was responsible for supervising the performance of operators and maint..."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Industrial Process Engineer with a solid and diverse background, proven track record of leadership in high-pressure production environments. Currently at Bunge, optimizing processes and ensuring operational excellence. Previously at COAMO Agroindustrial Cooperativa."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rodrigo Roder",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rodrigo Roder",
+                "detected_role": "Não Identificado",
+                "clean_bio": "As an Industrial Process Engineer with a solid and diverse background, I have a proven track record of leadership in high-pressure production environments. I'm currently at Bunge, where I apply my expertise to optimize processes and ensure operational excellence. My journey began at COAMO Agroindustrial Cooperativa, where I was responsible for supervising the performance of operators and maint..."
+            }
+        },
+        "specialist": {
+            "role_name": "Industrial Process Engineer",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "The candidate's role as an Industrial Process Engineer at Bunge, with previous experience at COAMO, suggests a strong background in industrial operations. While not directly in procurement, this role often involves interaction with suppliers for raw materials and operational efficiency, making it relevant to Supply Chain. The mention of 'Roder Ferramentas' in the LinkedIn title, despite the detective's note, is considered a potential link for technical purposes, but the primary role identified is Industrial Process Engineer."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Industrial Process Engineer",
+        "department": "Supply Chain",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:42:20.048132",
+    "candidate": "Tales Calmon Roder",
+    "linkedin": "https://www.linkedin.com/in/talesroder",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tales Calmon Roder - Supervisor de operação de moderação ... - LinkedIn",
+            "body": "Supervisor de operação de moderação de conteúdos · Experiência: AtivGreen · Formação acadêmica: Universidade Federal de São Carlos · Localidade: São Paulo ..."
+        },
+        "osint_metadata": {
+            "role": "ativgreen",
+            "bio": "Experiência: AtivGreen · Formação acadêmica: Universidade Federal de São Carlos · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Tales Calmon Roder no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Tales Calmon Roder",
+        "role": "Supervisor de operação de moderação de conteúdos",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "Veto Mecânico Detectado: True. O candidato trabalha na AtivGreen, que não é a empresa alvo Roder Ferramentas. Além disso, o Especialista marcou Relevante: False para a função.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Roder Ferramentas",
+                "Experiência: AtivGreen"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Supervisor de operação de moderação de conteúdos com experiência na AtivGreen, formação pela Universidade Federal de São Carlos e localizado em São Paulo."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Tales Calmon Roder",
+                    "role": "Supervisor de operação de moderação de conteúdos"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Tales Calmon Roder",
+                "detected_role": "Supervisor de operação de moderação de conteúdos",
+                "clean_bio": "Supervisor de operação de moderação de conteúdos · Experiência: AtivGreen · Formação acadêmica: Universidade Federal de São Carlos · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Tales Calmon Roder no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Supervisor de operação de moderação de conteúdos",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado 'Supervisor de operação de moderação de conteúdos' não possui interface direta com as áreas de Suprimentos/Compras/Procurement. Além disso, a experiência listada é em 'AtivGreen', e o vínculo com 'Roder Ferramentas' não foi confirmado pelo Detetive, indicando que o candidato trabalha em outra empresa. O cargo não contém termos técnicos relevantes para a área de compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Supervisor de operação de moderação de conteúdos",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-09T20:42:32.080914",
+    "candidate": "Roger Medke",
+    "linkedin": "https://www.linkedin.com/in/rogermedke",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Roger Medke - ♾️ Futurista e Estrategista em IA Traduzo IA em ...",
+            "body": "Fundador e CEO da Startup voltada a transformação digital da indústria de manufatura. Co-Founder e CEO - Exit. Expectrun Tecnologia da Informação."
+        },
+        "osint_metadata": {
+            "role": "justo",
+            "bio": "Estrategista em IA e Organizações Agenticas. \n\nAjudo líderes e empresas a… · Experiência: JUSTO · Formação acadêmica: Escola Conquer · Localidade: Joinville · + de 500 conexões no LinkedIn. Veja o perfil de Roger Medke no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T10:55:49.417833",
+    "candidate": "Adriano Aparecido da Silva dos Santos",
+    "linkedin": "https://www.linkedin.com/in/adriano-aparecido-da-silva-dos-santos-399488299",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Adriano Aparecido da Silva dos Santos - LinkedIn Brasil 40+ \"Adriano Aparecido Da Silva\" profiles | LinkedIn 50+ \"Adriano Aparecido Da Silva\" profiles | LinkedIn 50+ \"Adriano Aparecido Silva\" profiles | LinkedIn Adriano Aparecido da Silva - Analista de Sistemas | LinkedIn",
+            "body": "Experiência: Service Engenharia · Localidade: Paulínia. Veja o perfil de Adriano Aparecido da Silva dos Santos no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. There are 40+ professionals named \" Adriano Aparecido Da Silva \", who use LinkedIn to exchange information, ideas, and opportunities. View the profiles of professionals named \" Adriano Aparecido Da Silva \" on LinkedIn . There are 50+ professionals named \" Adriano Aparecido Da Silva \", who use LinkedIn to exchange information, ideas ... Adriano Aparecido Da Silva Analista de logística pleno na Thomas Greg do Brasil Diadema, SP Thomas Greg do Brasil , +1 more Faculdade Anhanguera · Experience: Avanade · Education: Anhanguera Educacional · Location: Diadema · 500+ connections on LinkedIn . View Adriano Aparecido da Silva ’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "service engenharia",
+            "bio": "Experiência: Service Engenharia · Localidade: Paulínia. Veja o perfil de Adriano Aparecido da Silva dos Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Adriano Aparecido da Silva dos Santos",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Bs Engenharia E Instalações | LinkedIn",
+                "Experiência: Service Engenharia · Localidade: Paulínia."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: Service Engenharia · Localidade: Paulínia."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Adriano Aparecido da Silva dos Santos",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Adriano Aparecido da Silva dos Santos",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência: Service Engenharia · Localidade: Paulínia. Veja o perfil de Adriano Aparecido da Silva dos Santos no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Adriano Aparecido da Silva dos Santos não foi identificado explicitamente nos dados fornecidos. Embora a empresa alvo seja a Bs Engenharia E Instalações, a experiência anterior na Service Engenharia e a falta de um cargo claro impedem a confirmação de relevância para Suprimentos/Compras/Procurement. Não há termos técnicos explícitos na bio que indiquem interface com a área."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T10:58:48.902602",
+    "candidate": "Taís F. Silva",
+    "linkedin": "https://www.linkedin.com/in/taisfs2",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Taís F. Silva - Enecon Engenharia | LinkedIn",
+            "body": "· Experiência: Enecon Engenharia · Formação acadêmica: PUC Minas · Localidade: Belo Horizonte · + de 500 conexões no LinkedIn . Veja o perfil de Taís F. Silva no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "enecon engenharia",
+            "bio": "\nEm minhas experiências tive a oportunidade de realizar medições de empreitadas… · Experiência: Enecon Engenharia · Formação acadêmica: PUC Minas · Localidade: Belo Horizonte · + de 500 conexões no LinkedIn. Veja o perfil de Taís F. Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Taís F. Silva",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "CURRENT COMPANY (Declarada): Bs Engenharia E Instalações",
+                "Experiência: Enecon Engenharia",
+                "Google Page Title: Taís F. Silva - Enecon Engenharia"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Em minhas experiências tive a oportunidade de realizar medições de empreitadas…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Taís F. Silva",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Taís F. Silva",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Em minhas experiências tive a oportunidade de realizar medições de empreitadas… Experiência: Enecon Engenharia Formação acadêmica: PUC Minas Localidade: Belo Horizonte + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Taís F. Silva não foi identificado claramente. A bio menciona 'medições de empreitadas', o que não se alinha diretamente com Suprimentos/Compras/Procurement. O vínculo com a Bs Engenharia E Instalações não foi confirmado, e a experiência principal listada é na Enecon Engenharia. Sem um cargo explícito relacionado a compras ou suprimentos, e com a falta de confirmação do vínculo com a empresa alvo, a relevância é definida como falsa."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T11:02:52.601158",
+    "candidate": "Andréa Soares",
+    "linkedin": "https://www.linkedin.com/in/andreasoaressilva/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Andréa Soares - TUBERFIL | LinkedIn",
+            "body": "I specialize in leveraging data-driven insights to support corporate financial… · Experience: TUBERFIL · Education: Pontifícia Universidade Católica de São Paulo · Location: São Paulo · 500+ connections on LinkedIn . View Andréa Soares ’ profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "I specialize in leveraging data-driven insights to support corporate financial… · Experience: TUBERFIL · Education: Pontifícia Universidade Católica de São Paulo · Location: São Paulo · 500+ connections on LinkedIn. View Andréa Soares’ profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Andréa Soares",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Andréa Soares - TUBERFIL",
+                "Experience: TUBERFIL",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "I specialize in leveraging data-driven insights to support corporate financial…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Andréa Soares",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Andréa Soares",
+                "detected_role": "Não Identificado",
+                "clean_bio": "I specialize in leveraging data-driven insights to support corporate financial…"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Andréa Soares não foi identificado nos dados fornecidos. A bio menciona 'leveraging data-driven insights to support corporate financial', o que sugere uma área financeira ou analítica, não diretamente ligada a Suprimentos/Compras/Procurement. Não há termos explícitos de compras ou suprimentos na bio para justificar relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T14:41:49.662443",
+    "candidate": "Miguel Lojo",
+    "linkedin": "https://www.linkedin.com/in/miguel-lojo",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Miguel Lojo - ClickUp | LinkedIn",
+            "body": "A consultant who has worked with agile and innovative start-ups in Singapore and the… · Experience: ClickUp · Education: Hult International Business School · Location: London · 500+ connections on LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "clickup",
+            "bio": "A consultant who has worked with agile and innovative start-ups in Singapore and the… · Experiência: ClickUp · Formação acadêmica: Hult International Business School · Localidade: Londres · + de 500 conexões no LinkedIn. Veja o perfil de Miguel Lojo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T14:41:58.313641",
+    "candidate": "Miguel Angel Santamaria",
+    "linkedin": "https://www.linkedin.com/in/miguelangelsantamariamoreta",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Miguel Angel Santamaria - Gartner | LinkedIn",
+            "body": "April 24, 2026 - Experienced Sales Leader | AI & Cloud Enthusiast | Driving Innovation in IT and Business … · Experience: Gartner · Education: Universidad Autónoma de Madrid · Location: Madrid · 500+ connections on LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T14:42:15.832466",
+    "candidate": "Miguel Angel Santamaria",
+    "linkedin": "https://www.linkedin.com/in/miguel-angel-santamaria-696b70a3",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Miguel Angel Santamaria - Gerente general de operaciones - Papas delta | LinkedIn",
+            "body": "Ingeniero en energías renovables · El verdadero liderazgo nace de los más dedicados a forjar una oportunidad para los demás. · Experience: Papas delta · Education: Universidad American college · Location: Nicaragua · 3 connections on ..."
+        },
+        "osint_metadata": {
+            "role": "papas delta",
+            "bio": "El verdadero liderazgo nace de los más dedicados a forjar una oportunidad para los demás. · Experiência: Papas delta · Formação acadêmica: Universidad American college · Localidade: Nicarágua · 2 conexões no LinkedIn. Veja o perfil de Miguel Angel Santamaria no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T14:42:25.279524",
+    "candidate": "Miguel Ángel Lojo Rial",
+    "linkedin": "https://www.linkedin.com/in/miguel-%C3%A1ngel-lojo-rial-ab782091/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Miguel Ángel Lojo Rial - London, England, United Kingdom",
+            "body": "We cannot provide a description for this page right now"
+        },
+        "osint_metadata": {
+            "role": "london, england, united kingdom",
+            "bio": "Education: Universidad Complutense de Madrid · Location: London. View Miguel Ángel Lojo Rial’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T14:44:06.049451",
+    "candidate": "Emerson Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/emerson-ribeiro-0733a992",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Emerson Ribeiro - Senior Buyer at Tuberfil | LinkedIn",
+            "body": "Senior Buyer at Tuberfil · Experiência: TUBERFIL · Formação acadêmica: Pós Global · Localidade: Indaiatuba · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: TUBERFIL · Formação acadêmica: Pós Global · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Emerson Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Emerson Ribeiro",
+        "role": "Senior Buyer",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Emerson Ribeiro trabalha como Senior Buyer na Tuberfil, que é a empresa-alvo declarada. Os dados do Detetive e do Sniper confirmam a empresa e o cargo. O Especialista marcou a relevância como True e o departamento como Suprimentos/Compras/Procurement. Nenhuma regra de veto foi acionada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Senior Buyer at Tuberfil",
+                "Experiência: TUBERFIL",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Senior Buyer at Tuberfil. Experiência: TUBERFIL. Formação acadêmica: Pós Global. Localidade: Indaiatuba. + de 500 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Emerson Ribeiro",
+                    "role": "Senior Buyer"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Emerson Ribeiro",
+                "detected_role": "Senior Buyer",
+                "clean_bio": "Senior Buyer at Tuberfil. Experiência: TUBERFIL. Formação acadêmica: Pós Global. Localidade: Indaiatuba. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Senior Buyer",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Senior Buyer' está diretamente alinhado com a área de Suprimentos/Compras/Procurement. O vínculo com a Tuberfil foi confirmado pelo Detetive e o cargo é explícito."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Senior Buyer",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:01:28.504977",
+    "candidate": "Emerson Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/emerson-ribeiro-0733a992",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Emerson Ribeiro - Senior Buyer at Tuberfil | LinkedIn",
+            "body": "Senior Buyer at Tuberfil · Experiência: TUBERFIL · Formação acadêmica: Pós Global · Localidade: Indaiatuba · + de 500 conexões no LinkedIn .Odirlei Esteves. Comprador senior na ies do brasil . Guaranésia, MG. Conectar."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: TUBERFIL · Formação acadêmica: Pós Global · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Emerson Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Emerson Ribeiro",
+        "role": "Senior Buyer",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Emerson Ribeiro trabalha como Senior Buyer na Tuberfil, que é a empresa-alvo declarada. Os dados do Detetive e do Sniper confirmam a relação empregatícia com a Tuberfil. O cargo é relevante para a área de Suprimentos/Compras/Procurement e não há indícios de veto pelas regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Senior Buyer at Tuberfil",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil",
+                "Experiência: TUBERFIL"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Senior Buyer at Tuberfil, with experience at TUBERFIL, academic background in Pós Global, located in Indaiatuba, and over 500 connections on LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Emerson Ribeiro",
+                    "role": "Senior Buyer"
+                },
+                {
+                    "name": "Odirlei Esteves",
+                    "role": "Comprador senior"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Emerson Ribeiro",
+                "detected_role": "Senior Buyer",
+                "clean_bio": "Senior Buyer at Tuberfil · Experiência: TUBERFIL · Formação acadêmica: Pós Global · Localidade: Indaiatuba · + de 500 conexões no LinkedIn"
+            }
+        },
+        "specialist": {
+            "role_name": "Senior Buyer",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Senior Buyer' está diretamente alinhado com a área de Suprimentos/Compras/Procurement. O vínculo com a Tuberfil foi confirmado pelo Detetive e a experiência declarada reforça essa conexão."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Senior Buyer",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:01:48.472037",
+    "candidate": "Odirlei Esteves",
+    "linkedin": "https://www.linkedin.com/in/odirlei-esteves-87b52a178",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Orphan Upgrade",
+            "body": "N/D"
+        },
+        "osint_metadata": {
+            "role": "IES do Brasil",
+            "bio": "Experiência: IES do Brasil · Localidade: Guaxupé · 287 conexões no LinkedIn. Veja o perfil de Odirlei Esteves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Odirlei Esteves",
+        "role": "Analista de Compras",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O detetive encontrou que o candidato trabalha na SIAC DO BRASIL, que não é a empresa-alvo Tuberfil. Regra 1 (Veto de Empresa) aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Odirlei Esteves - analista de compras na siac do brasil.",
+                "Experiência : IES do Brasil · Localidade: Guaxupé · 287 conexões no LinkedIn .",
+                "Experiência : IES DO BRASIL · Formação acadêmica: UNIFEG · Localidade: Guaranésia · 369 conexões no LinkedIn ."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Odirlei Esteves - analista de compras na siac do brasil."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Odirlei Esteves",
+                    "role": "analista de compras"
+                },
+                {
+                    "name": "Odirlei Esteves",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Odirlei Esteves",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Odirlei Esteves",
+                    "role": "analista de compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Odirlei Esteves",
+                "detected_role": "analista de compras",
+                "clean_bio": "Odirlei Esteves - analista de compras na siac do brasil. Experiência : SIAC DO BRASIL · Localidade: Guaranésia · 21 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista de Compras",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Analista de Compras' detectado na bio e nos snippets tem interface direta com a área de Suprimentos/Compras/Procurement. O candidato trabalha na SIAC do Brasil, o que não o vincula diretamente à Tuberfil, mas a função é relevante para a área de interesse."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/odirlei-esteves-87b52a178"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista de Compras",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:06:54.919519",
+    "candidate": "Ricardo Rodrigues",
+    "linkedin": "https://www.linkedin.com/in/ricardoboggi",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ricardo Rodrigues - Portfolio Analisty Sr. - ENGIE Brasil | LinkedIn",
+            "body": "Portfolio Analisty | ENGIE Brasil · Experiência: ENGIE Brasil · Localidade: São Paulo e Região · + de 500 conexões no LinkedIn . Veja Ricardo Rodrigues o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "engie brasil",
+            "bio": "Experiência: ENGIE Brasil · Localidade: São Paulo e Região · + de 500 conexões no LinkedIn. Veja Ricardo Rodrigues  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:07:47.864984",
+    "candidate": "Hugo Tida",
+    "linkedin": "https://www.linkedin.com/in/hugo-tida-46b10722",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Hugo Tida - Comprador técnico - TUBERFIL | LinkedIn",
+            "body": "Veja o perfil de Hugo Tida no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.Pouso Alegre, Minas Gerais, Brasil . 2 mil seguidores + de 500 conexões."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Engenheiro de Produção, Comprador Técnico,  Key-User SAP · Experiência: TUBERFIL · Formação acadêmica: MBA USP/Esalq · Localidade: Pouso Alegre · + de 500 conexões no LinkedIn. Veja o perfil de Hugo Tida no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Hugo Tida",
+        "role": "Comprador Técnico",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Hugo Tida trabalha na Tuberfil como Comprador Técnico, o que é relevante para a área de Suprimentos/Compras/Procurement. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Candidate Name: Hugo Tida | Google Page Title: Hugo Tida - Comprador técnico - TUBERFIL",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil",
+                "Engenheiro de Produção, Comprador Técnico, Key-User SAP · Experiência: TUBERFIL"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Engenheiro de Produção, Comprador Técnico, Key-User SAP com experiência na TUBERFIL. MBA USP/Esalq. Residente em Pouso Alegre."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Hugo Tida",
+                    "role": "Comprador técnico"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Hugo Tida",
+                "detected_role": "Comprador técnico",
+                "clean_bio": "Engenheiro de Produção, Comprador Técnico, Key-User SAP · Experiência: TUBERFIL · Formação acadêmica: MBA USP/Esalq · Localidade: Pouso Alegre · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador Técnico",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador Técnico' está diretamente alinhado com a área de Suprimentos/Compras/Procurement. A bio também menciona 'Engenheiro de Produção' e 'Key-User SAP', que são complementares e não vetam a relevância para compras técnicas."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador Técnico",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:08:09.238233",
+    "candidate": "Emerson Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/emerson-ribeiro-0733a992",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Emerson Ribeiro - Senior Buyer at Tuberfil | LinkedIn",
+            "body": "Senior Buyer at Tuberfil · Experiência: TUBERFIL · Formação acadêmica: Pós Global · Localidade: Indaiatuba · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: TUBERFIL · Formação acadêmica: Pós Global · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Emerson Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Emerson Ribeiro",
+        "role": "Senior Buyer",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Emerson Ribeiro atua como Senior Buyer na Tuberfil, que é a empresa-alvo declarada. Os dados do Detetive e do Sniper confirmam a atuação na Tuberfil. O Especialista validou a relevância da posição para Suprimentos/Compras/Procurement. Nenhuma regra de veto foi acionada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Senior Buyer at Tuberfil",
+                "Experiência: TUBERFIL",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Senior Buyer at Tuberfil. Experiência: TUBERFIL. Formação acadêmica: Pós Global. Localidade: Indaiatuba. + de 500 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Emerson Ribeiro",
+                    "role": "Senior Buyer"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Emerson Ribeiro",
+                "detected_role": "Senior Buyer",
+                "clean_bio": "Senior Buyer at Tuberfil. Experiência: TUBERFIL. Formação acadêmica: Pós Global. Localidade: Indaiatuba. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Senior Buyer",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Senior Buyer' está diretamente alinhado com a área de Suprimentos/Compras/Procurement. O vínculo com a Tuberfil foi confirmado e o cargo é explícito."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Senior Buyer",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:08:53.404448",
+    "candidate": "Patricia Santos",
+    "linkedin": "https://www.linkedin.com/in/patricia-santos-abb68574",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Patricia Santos - Compradora Jr. na Tuberfil Indústria e ...",
+            "body": "Compradora Jr. na Tuberfil Indústria e Comércio de Tubos Ltda · • Emissão de pedidos, cotações e negociações com fornecedores. • Fechamento e administração de contratos de fornecimento conforme..."
+        },
+        "osint_metadata": {
+            "role": "tuberfil indústria e comércio de tubos ltda",
+            "bio": "• Emissão  de pedidos, cotações e negociações com fornecedores. \n• Fechamento e… · Experiência: Tuberfil Indústria e Comércio de Tubos Ltda · Formação acadêmica: •\tAdministração de Empresas – Ano: Dezembro/2010 · Localidade: Brasil · 14 conexões no LinkedIn. Veja o perfil de Patricia Santos no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Patricia Santos",
+        "role": "Compradora Jr.",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na Tuberfil, que é a empresa-alvo declarada. O cargo de Compradora Jr. é relevante para a área de Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Compradora Jr. na Tuberfil Indústria e Comércio de Tubos Ltda",
+                "Tuberfil Indústria e Comércio de Tubos Ltda",
+                "Tuberfil indústria e comércio de tubos ltda"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Compradora Jr. na Tuberfil Indústria e Comércio de Tubos Ltda. Emissão de pedidos, cotações e negociações com fornecedores. Fechamento e administração de contratos de fornecimento."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Patricia Santos",
+                    "role": "Compradora Jr."
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Patricia Santos",
+                "detected_role": "Compradora Jr.",
+                "clean_bio": "Compradora Jr. na Tuberfil Indústria e Comércio de Tubos Ltda · • Emissão de pedidos, cotações e negociações com fornecedores. • Fechamento e administração de contratos de fornecimento conforme..."
+            }
+        },
+        "specialist": {
+            "role_name": "Compradora Jr.",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Compradora Jr.' e as responsabilidades descritas (emissão de pedidos, cotações, negociações com fornecedores, administração de contratos) são diretamente relacionadas à área de Suprimentos/Compras/Procurement. O vínculo com a Tuberfil foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compradora Jr.",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:09:51.954554",
+    "candidate": "Natany Lima",
+    "linkedin": "https://www.linkedin.com/in/natanylima",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Natany Lima - TUBERFIL | LinkedIn",
+            "body": "April 16, 2026 - Isso maximiza ROI, reduz riscos e posiciona o Brasil para inovar com S4HANA CLOUD, IA e analytics até 2030. https://www.signavio.com/ 3 · 2 Comments · Show more posts · Show fewer posts · We’re unlocking community knowledge in a new way. Experts add insights directly into each article, started with the help of AI. Explore More · 5m · 1h 53m · 4h 3m · See all courses · Natany can introduce you to 10+ people at TUBERFIL ·"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Gerente de TI | Especialista em SAP (FI, MM, SD, CO) | Gestão de Projetos & Otimização de… · Experiência: TUBERFIL · Formação acadêmica: Faculdade Max Planck · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Natany Lima no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Coordenadora De Sistemas",
+            "url": "https://theorg.com/org/tuberfil/org-chart/natany-lima"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Natany Lima",
+        "role": "Coordenadora De Sistemas",
+        "matching_score": 0,
+        "department": "TI",
+        "evidence": "Especialista marcou Relevante: False para o cargo Coordenadora De Sistemas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Natany Lima - TUBERFIL",
+                "Natany can introduce you to 10+ people at TUBERFIL",
+                "CURRENT COMPANY (Declarada): Tuberfil",
+                "Experiência: TUBERFIL"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gerente de TI | Especialista em SAP (FI, MM, SD, CO) | Gestão de Projetos & Otimização de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Natany Lima",
+                    "role": "Coordenadora De Sistemas"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Natany Lima",
+                "detected_role": "Coordenadora De Sistemas",
+                "clean_bio": "Gerente de TI | Especialista em SAP (FI, MM, SD, CO) | Gestão de Projetos & Otimização de…"
+            }
+        },
+        "specialist": {
+            "role_name": "Coordenadora De Sistemas",
+            "dept": "TI",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Coordenadora De Sistemas' e a bio 'Gerente de TI | Especialista em SAP (FI, MM, SD, CO) | Gestão de Projetos & Otimização de…' indicam uma função primariamente em Tecnologia da Informação. Embora SAP (MM) possa ter interface com compras, o foco principal e o cargo detectado não são diretamente de Suprimentos/Compras/Procurement. A lista de vetos absolutos inclui 'it' e 'ti'."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Coordenadora De Sistemas",
+        "department": "TI",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:10:16.056384",
+    "candidate": "Juciane Cunha",
+    "linkedin": "https://www.linkedin.com/in/juciane-cunha-843a07100",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juciane Cunha - Tuberfil Indústria e Comércio de Tubos Ltda. | LinkedIn",
+            "body": "· Experience: Tuberfil Indústria e Comércio de Tubos Ltda. · Education: Faculdade Max Planck · Location: Salto · 288 connections on LinkedIn. View Juciane Cunha ’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "tuberfil indústria e comércio de tubos ltda.",
+            "bio": "Possuo experiência na área comercial e compras com bom relacionamento interpessoal… · Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. · Formação acadêmica: Faculdade Max Planck · Localidade: Salto · 288 conexões no LinkedIn. Veja o perfil de Juciane Cunha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Assistente Comercial",
+            "url": "https://theorg.com/org/tuberfil/org-chart/juciane-cunha"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Juciane Cunha",
+        "role": "Assistente Comercial",
+        "matching_score": 95,
+        "department": "Comercial",
+        "evidence": "O candidato Juciane Cunha trabalha na Tuberfil Indústria e Comércio de Tubos Ltda., que corresponde à empresa-alvo. O cargo de Assistente Comercial é relevante para a área de Suprimentos/Compras/Procurement, conforme a bio que menciona experiência em compras. O Veto Mecânico foi detectado, mas as regras de constituição não se aplicam para rejeição.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Juciane Cunha - Tuberfil Indústria e Comércio de Tubos Ltda.",
+                "Experience: Tuberfil Indústria e Comércio de Tubos Ltda.",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil",
+                "Experiência: Tuberfil Indústria e Comércio de Tubos Ltda.",
+                "Juciane Cunha | tuberfil indústria e comércio de tubos ltda."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Possuo experiência na área comercial e compras com bom relacionamento interpessoal…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Juciane Cunha",
+                    "role": "Assistente Comercial"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Juciane Cunha",
+                "detected_role": "Assistente Comercial",
+                "clean_bio": "Possuo experiência na área comercial e compras com bom relacionamento interpessoal…"
+            }
+        },
+        "specialist": {
+            "role_name": "Assistente Comercial",
+            "dept": "Comercial",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Assistente Comercial'. A bio menciona 'experiência na área comercial e compras', mas o cargo principal e o 'Verified Official Role' indicam uma função comercial, que é explicitamente vetada pelas instruções técnicas (item 5 e 6)."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Assistente Comercial",
+        "department": "Comercial",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:10:53.698403",
+    "candidate": "Jackeline Borges Tassi",
+    "linkedin": "https://www.linkedin.com/in/jackeline-borges-tassi",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jackeline Borges Tassi - Compras | Comprador | SAP MM - LinkedIn",
+            "body": "Compras | Comprador | SAP MM | Buyer | Strategic Sourcing · Graduada em Administração de empresa com ênfase em Gestão de Negócios Internacionais e com MBA ..."
+        },
+        "osint_metadata": {
+            "role": "mentor media supply chain solutions, member of elanders group",
+            "bio": "Graduada em Administração de empresa com ênfase em Gestão de Negócios Internacionais e… · Experiência: Mentor Media Supply Chain Solutions, member of Elanders Group · Formação acadêmica: ESAMC- Escola Superior de Administração, Marketing e Comunicação · Localidade: Salto · + de 500 conexões no LinkedIn. Veja o perfil de Jackeline Borges Tassi no LinkedIn, uma comunidade profissional de 1 bilhão de..."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:11:15.713104",
+    "candidate": "Renata Cristina Garanhani de Oliveira",
+    "linkedin": "https://www.linkedin.com/in/renata-cristina-garanhani-de-oliveira-38a74434",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Renata Cristina Garanhani de Oliveira - Gerente de compras ... - LinkedIn",
+            "body": "Gerente de compras na TUBERFIL INDÚSTRIA E COMÉRCIO DE TUBOS LTDA · Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. · Formação acadêmica: MBA FGV ..."
+        },
+        "osint_metadata": {
+            "role": "tuberfil indústria e comércio de tubos ltda.",
+            "bio": "Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. · Formação acadêmica: MBA FGV - Gestão Empresarial · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Renata Cristina Garanhani de Oliveira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Gerente De Compras",
+            "url": "https://theorg.com/org/tuberfil/org-chart/renata-cristina-garanhani-de-oliveira"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Renata Cristina Garanhani de Oliveira",
+        "role": "Gerente de Compras",
+        "matching_score": 100,
+        "department": "Compras",
+        "evidence": "O candidato trabalha na Tuberfil, que é a empresa-alvo declarada. O cargo de Gerente de Compras é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Gerente de compras na TUBERFIL INDÚSTRIA E COMÉRCIO DE TUBOS LTDA",
+                "Experiência: Tuberfil Indústria e Comércio de Tubos Ltda.",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil",
+                "tuberfil indústria e comércio de tubos ltda."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gerente de compras na Tuberfil Indústria e Comércio de Tubos Ltda., com MBA FGV."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Renata Cristina Garanhani de Oliveira",
+                    "role": "Gerente de compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Renata Cristina Garanhani de Oliveira",
+                "detected_role": "Gerente De Compras",
+                "clean_bio": "Gerente de compras na TUBERFIL INDÚSTRIA E COMÉRCIO DE TUBOS LTDA · Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. · Formação acadêmica: MBA FGV ... Veja o perfil de Renata Cristina Garanhani de Oliveira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de Compras",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Gerente de Compras' e a empresa 'Tuberfil' foram confirmados. A função está diretamente ligada à área de Compras/Suprimentos, sendo altamente relevante para a vaga."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Gerente De Compras",
+        "department": "Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:11:33.465301",
+    "candidate": "Clayton Pereira",
+    "linkedin": "https://www.linkedin.com/in/clayton-pereira-72158331",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Clayton Pereira - Technical Buyer | Key user SAP MM/PP - LinkedIn",
+            "body": "Profissional com habilidade para negociar e avaliar mercadorias. • Experiência em relações com os fornecedores, negociação, gestão dos contratos, ..."
+        },
+        "osint_metadata": {
+            "role": "toyota material handling mercosur",
+            "bio": "• Profissional com habilidade para negociar e avaliar mercadorias.\n• Experiência em… · Experiência: TOYOTA Material Handling Mercosur · Formação acadêmica: UNINTER Centro Universitário Internacional · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Clayton Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:11:43.041335",
+    "candidate": "Vanessa Mantovani",
+    "linkedin": "https://www.linkedin.com/in/vanessa-mantovani-",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Vanessa Mantovani - Compradora - LinkedIn",
+            "body": "Administradora de Empresas, com MBA em Supply Chain Management, tenho mais de 15 anos de experiência profissional. Vivência e capacidade nas áreas de ..."
+        },
+        "osint_metadata": {
+            "role": "edc group",
+            "bio": "Administradora de Empresas, com MBA em Supply Chain Management, tenho mais de 15 anos de… · Experiência: EDC Group · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Vanessa Mantovani no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:11:54.556033",
+    "candidate": "Jonathan Lino",
+    "linkedin": "https://www.linkedin.com/in/jonathanlino",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jonathan Lino - Procurement Leader | CAPEX & Industrial Projects",
+            "body": "10 de jul. de 2024 · Ao longo da minha trajetória, construí experiência em negociações complexas, Strategic Sourcing, gestão de fornecedores globais e ..."
+        },
+        "osint_metadata": {
+            "role": "ja saúde animal",
+            "bio": "Profissional de Procurement com 15+ anos de experiência em multinacionais, atuando de… · Experiência: JA Saúde Animal · Formação acadêmica: PUCRS - Pontifícia Universidade Católica do Rio Grande do Sul · Localidade: Ribeirão Preto e Região · + de 500 conexões no LinkedIn. Veja o perfil de Jonathan Lino no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:12:07.501330",
+    "candidate": "Ricardo Alberti",
+    "linkedin": "https://www.linkedin.com/in/ricardo-alberti-7a264928",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ricardo Alberti - Coordenador de Compras | Indiretos & CAPEX",
+            "body": "Experiência consolidada na liderança de processos de Strategic Sourcing, negociação de alto impacto e desenvolvimento de fornecedores, atuando em ambientes ..."
+        },
+        "osint_metadata": {
+            "role": "althaia s.a. indústria farmacêutica",
+            "bio": "Executivo de Compras com mais de 15 anos de experiência na indústria farmacêutica, com… · Experiência: Althaia S.A. Indústria Farmacêutica · Formação acadêmica: Insper · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Ricardo Alberti no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:13:09.587708",
+    "candidate": "Aline Santin",
+    "linkedin": "https://www.linkedin.com/in/aline-santin-b853005a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Aline Santin - Tuberfil Indústria e Comércio de Tubos | LinkedIn",
+            "body": "Experiência: Tuberfil Indústria e Comércio de Tubos · Formação acadêmica: Universidade Metodista de Piracicaba · Localidade: Indaiatuba · 190 conexões no ..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Aline Santin",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Aline Santin - Tuberfil Indústria e Comércio de Tubos",
+                "Experiência: Tuberfil Indústria e Comércio de Tubos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Aline Santin trabalha na Tuberfil Indústria e Comércio de Tubos, estudou na Universidade Metodista de Piracicaba e reside em Indaiatuba."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Aline Santin",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Aline Santin",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Aline Santin - Tuberfil Indústria e Comércio de Tubos. Experiência: Tuberfil Indústria e Comércio de Tubos. Formação acadêmica: Universidade Metodista de Piracicaba. Localidade: Indaiatuba. 190 conexões."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Aline Santin não foi identificado nos dados fornecidos. Sem informações explícitas sobre suas responsabilidades em Suprimentos, Compras ou Procurement, e com a ausência de termos técnicos relevantes na bio, a relevância é definida como falsa."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:14:35.097578",
+    "candidate": "Daniela Cardim Cardoso Pereira",
+    "linkedin": "https://www.linkedin.com/in/daniela-cardim-cardoso-pereira-68096831",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Daniela Cardim Cardoso Pereira - TUBERFIL - LinkedIn",
+            "body": "Experiência: TUBERFIL · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · + de 500 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: TUBERFIL · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Daniela Cardim Cardoso Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Auditor Interno Pl",
+            "url": "https://theorg.com/org/tuberfil/org-chart/daniela-cardim-cardoso-pereira"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Daniela Cardim Cardoso Pereira",
+        "role": "Auditor Interno Pl",
+        "matching_score": 0,
+        "department": "Auditoria",
+        "evidence": "Veto Mecânico Detectado: True. O especialista marcou Relevante: False para o cargo de Auditor Interno Pl, e não há Cargo Oficial Verificado que contradiga essa avaliação.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: TUBERFIL",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil",
+                "Google Page Title: Daniela Cardim Cardoso Pereira - TUBERFIL"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: TUBERFIL · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · + de 500 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Daniela Cardim Cardoso Pereira",
+                    "role": "Auditor Interno Pl"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Daniela Cardim Cardoso Pereira",
+                "detected_role": "Auditor Interno Pl",
+                "clean_bio": "Experiência: TUBERFIL · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Daniela Cardim Cardoso Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Auditor Interno Pl",
+            "dept": "Auditoria",
+            "is_relevant": false,
+            "reasoning": "O cargo de Auditor Interno Pl não possui interface direta com as áreas de Suprimentos/Compras/Procurement, conforme as regras de veto estabelecidas (item 6)."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Auditor Interno Pl",
+        "department": "Auditoria",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:15:38.166360",
+    "candidate": "Eduardo Previatto",
+    "linkedin": "https://www.linkedin.com/in/eduardo-previatto-9044077b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Eduardo Previatto - Tuberfil - LinkedIn",
+            "body": "Experiência: Tuberfil · Formação acadêmica: Faculdade Maxplanck Indaiatuba · Localidade: Indaiatuba · 4 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Tuberfil · Formação acadêmica: Faculdade Maxplanck Indaiatuba · Localidade: Indaiatuba · 4 conexões no LinkedIn. Veja o perfil de Eduardo Previatto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Eduardo Previatto",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Tuberfil",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Eduardo Previatto trabalha na Tuberfil, com formação acadêmica na Faculdade Maxplanck Indaiatuba e reside em Indaiatuba. Possui 4 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Eduardo Previatto",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Eduardo Previatto",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Eduardo Previatto - Tuberfil. Experiência: Tuberfil. Formação acadêmica: Faculdade Maxplanck Indaiatuba. Localidade: Indaiatuba. 4 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Eduardo Previatto não foi identificado nos dados fornecidos. Não há informações suficientes na bio para inferir relevância para as áreas de Suprimentos/Compras/Procurement, e os termos de veto listados não se aplicam diretamente a um cargo específico, mas a ausência de um cargo definido impede a confirmação de relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:15:59.636413",
+    "candidate": "Edilson Exel",
+    "linkedin": "https://www.linkedin.com/in/edilson-exel-9952671b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Edilson Exel - Tuberfil Indústria e Comércio de Tubos Ltda. | LinkedIn",
+            "body": "Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. · Formação acadêmica: Universidade Estadual de Campinas · Localidade: Salto · + de 500 conexões no ..."
+        },
+        "osint_metadata": {
+            "role": "tuberfil indústria e comércio de tubos ltda.",
+            "bio": "Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. · Formação acadêmica: Universidade Estadual de Campinas · Localidade: Salto · + de 500 conexões no LinkedIn. Veja o perfil de Edilson Exel no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Analista De Qualidade Senior",
+            "url": "https://theorg.com/org/tuberfil/org-chart/edilson-exel"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Edilson Exel",
+        "role": "Analista De Qualidade Senior",
+        "matching_score": 100,
+        "department": "Qualidade",
+        "evidence": "O candidato Edilson Exel trabalha na Tuberfil Indústria e Comércio de Tubos Ltda., que corresponde à META_COMPANY_DECLARADA 'Tuberfil'. O cargo de Analista De Qualidade Senior é relevante para a área de Suprimentos/Compras/Procurement. Não há indícios de falsos positivos ou vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Edilson Exel Empresa Alvo: Tuberfil Bio Higienizada: Edilson Exel - Tuberfil Indústria e Comércio de Tubos Ltda.",
+                "Experiência: Tuberfil Indústria e Comércio de Tubos Ltda.",
+                "LinkedIn Status: Edilson Exel | tuberfil indústria e comércio de tubos ltda.",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Analista De Qualidade Senior na Tuberfil Indústria e Comércio de Tubos Ltda., com formação na Universidade Estadual de Campinas e localizado em Salto."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Edilson Exel",
+                    "role": "Analista De Qualidade Senior"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Edilson Exel",
+                "detected_role": "Analista De Qualidade Senior",
+                "clean_bio": "Edilson Exel - Tuberfil Indústria e Comércio de Tubos Ltda. Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. Formação acadêmica: Universidade Estadual de Campinas. Localidade: Salto. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista De Qualidade Senior",
+            "dept": "Qualidade",
+            "is_relevant": false,
+            "reasoning": "O cargo de Analista de Qualidade Senior não possui interface direta com as áreas de Suprimentos, Compras ou Procurement. A política de veto absoluto exclui cargos relacionados a qualidade."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Analista De Qualidade Senior",
+        "department": "Qualidade",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:16:51.176761",
+    "candidate": "Eliéber Maciel Santos",
+    "linkedin": "https://www.linkedin.com/in/eliebermaciel/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Eliéber Maciel Santos - Tuberfil - LinkedIn",
+            "body": "Professional with solid experience in Procurement Management, Supply Chain, and Supplier… · Experience: Tuberfil · Education: Centro Universitário Salesiano ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Professional with solid experience in Procurement Management, Supply Chain, and Supplier… · Experience: Tuberfil · Education: Centro Universitário Salesiano de São Paulo · Location: Indaiatuba · 500+ connections on LinkedIn. View Eliéber Maciel Santos’ profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Eliéber Maciel Santos",
+        "role": "Procurement Management",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato trabalha na Tuberfil, conforme indicado pelo especialista e detetive. A função é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Google Page Title: Eliéber Maciel Santos - Tuberfil",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil",
+                "Experience: Tuberfil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Professional with solid experience in Procurement Management, Supply Chain, and Supplier…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Eliéber Maciel Santos",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Eliéber Maciel Santos",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Professional with solid experience in Procurement Management, Supply Chain, and Supplier…"
+            }
+        },
+        "specialist": {
+            "role_name": "Procurement Management",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Procurement Management' foi extraído diretamente da bio higienizada do candidato, que demonstra experiência sólida na área de Compras e Suprimentos. O vínculo com a Tuberfil foi confirmado pelo Detetive. A função é diretamente relevante para a área de Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Procurement Management",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:17:31.356546",
+    "candidate": "Jeová Diego",
+    "linkedin": "https://www.linkedin.com/in/jeov%C3%A1-diego-036828187",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jeová Diego - Tuberfil Indústria e Comércio de Tubos Ltda. | LinkedIn",
+            "body": "Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. · Formação acadêmica: Senac RS · Localidade: Salto · 142 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "tuberfil indústria e comércio de tubos ltda.",
+            "bio": "Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. · Formação acadêmica: Senac RS · Localidade: Salto · 142 conexões no LinkedIn. Veja o perfil de Jeová Diego no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Jeová Diego",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Empresa Alvo: Tuberfil",
+                "Bio Higienizada: Jeová Diego - Tuberfil Indústria e Comércio de Tubos Ltda.",
+                "Experiência: Tuberfil Indústria e Comércio de Tubos Ltda.",
+                "LinkedIn CURRENT COMPANY (Declarada): Tuberfil",
+                "LinkedIn Personal Bio: Experiência: Tuberfil Indústria e Comércio de Tubos Ltda."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Jeová Diego trabalha na Tuberfil Indústria e Comércio de Tubos Ltda., com formação no Senac RS e localizado em Salto. Possui 142 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jeová Diego",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jeová Diego",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Jeová Diego - Tuberfil Indústria e Comércio de Tubos Ltda. Experiência: Tuberfil Indústria e Comércio de Tubos Ltda. · Formação acadêmica: Senac RS · Localidade: Salto · 142 conexões no LinkedIn. Veja o perfil de Jeová Diego no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Jeová Diego na Tuberfil não foi identificado nos dados fornecidos. Não há menção explícita a termos técnicos de Suprimentos/Compras/Procurement na sua bio ou experiência, e o cargo não se enquadra nas categorias relevantes para a área de Compras/Suprimentos/Procurement com base nas instruções técnicas."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:18:21.780248",
+    "candidate": "Monica Ledesma",
+    "linkedin": "https://www.linkedin.com/in/monica-ledesma-b5a53427",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Monica Ledesma - Comprador - Mentor Media Supply Chain Solutions, member of Elanders Group | LinkedIn",
+            "body": "Estratégia de Operações e Ferramentas Logísticas Logística Integrada e Gestão da Cadeia de Suprimento Lean Operations Planejamento e Tecnologias aplicadas em Logística e Gestão da Cadeia de Suprimentos Análise de Cenários Econômicos ... “Fui gestor da Monica por 2 anos na Tuberfil, onde ela exercia a função de Compradora Senior."
+        },
+        "osint_metadata": {
+            "role": "mentor media supply chain solutions, member of elanders group",
+            "bio": "Profissional com 12 anos de experiência na área de Compras, graduada em Administração de… · Experiência: Mentor Media Supply Chain Solutions, member of Elanders Group · Formação acadêmica: Faculdade  Max Planck - Pós Global · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Monica Ledesma no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Monica Ledesma",
+        "role": "Compradora Senior",
+        "matching_score": 100,
+        "department": "Compras",
+        "evidence": "O candidato trabalha na empresa-alvo Tuberfil, conforme confirmado pelo especialista e pelo detetive. O cargo e departamento são relevantes para a busca.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "“Fui gestor da Monica por 2 anos na Tuberfil, onde ela exercia a função de Compradora Senior."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional com 12 anos de experiência na área de Compras, graduada em Administração de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Monica Ledesma",
+                    "role": "Comprador"
+                },
+                {
+                    "name": "Monica Ledesma",
+                    "role": "Compradora Senior"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Monica Ledesma",
+                "detected_role": "Compradora Senior",
+                "clean_bio": "Profissional com 12 anos de experiência na área de Compras, graduada em Administração de… Experiência: Mentor Media Supply Chain Solutions, member of Elanders Group Formação acadêmica: Faculdade Max Planck - Pós Global Localidade: São Paulo + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Compradora Senior",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Compradora Senior' foi detectado e confirmado pelo snippet do detetive, que menciona explicitamente que Monica exercia essa função na Tuberfil. A área de Compras é diretamente relevante para a vaga."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compradora Senior",
+        "department": "Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:19:02.007811",
+    "candidate": "Narita Fernanda de Oliveira",
+    "linkedin": "https://www.linkedin.com/in/narita-fernanda-de-oliveira-a151785b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Narita Fernanda de Oliveira - Procurement Coordinator - LinkedIn",
+            "body": "Experiência · Dono de categoria · Procurement Coordinator - Indirect · Consultor em Strategic Sourcing · Comprador sênior · Comprador sênior · Especialista/Consultor ..."
+        },
+        "osint_metadata": {
+            "role": "bradesco",
+            "bio": "Experiência sólida na área de Compras com mais de 20 anos. Gestão de pessoas e de… · Experiência: Bradesco · Formação acadêmica: Universidade Paulista / UNIP - Universidade Paulista · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Narita Fernanda de Oliveira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:19:25.066692",
+    "candidate": "Daniela Mendes Cunha",
+    "linkedin": "https://www.linkedin.com/in/danielamoretz",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Daniela Mendes Cunha - Gerente de NPD Procurement - LinkedIn",
+            "body": "16 de mar. de 2021 · Atuei no desenvolvimento de Direct e Indirect Spend Strategies para categorias de commodities, ingredientes e embalagens, abrangendo grãos, ..."
+        },
+        "osint_metadata": {
+            "role": "diageo",
+            "bio": "Profissional de Procurement, Strategic Sourcing e Compras, com mais de 15 anos de… · Experiência: Diageo · Formação acadêmica: Fundação Getúlio Vargas · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Daniela Mendes Cunha no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:19:53.858049",
+    "candidate": "Giovana Liza Suarez",
+    "linkedin": "https://www.linkedin.com/in/giovana-liza-suarez-9528a629",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Giovana Liza Suarez - Procurement Manager | Gerente de Compras",
+            "body": "Profissional da área de procurement com mais de 15 anos de experiência em empresas nacionais e multinacionais atuando em compras de materiais diretos, indiretos ..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:20:06.680951",
+    "candidate": "Rodrigo Paulino",
+    "linkedin": "https://www.linkedin.com/in/rodrigopaulinoc/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo Paulino - Senior Commodity Buyer at Tenneco | LinkedIn",
+            "body": "Procurement professional with 10+ years of experience in strategic sourcing, cost optimization, supplier development, and procurement process structuring for ..."
+        },
+        "osint_metadata": {
+            "role": "gep worldwide",
+            "bio": "Sourcing Lead | Strategic Procurement | Cost Optimization | Supplier… · Experience: GEP Worldwide · Education: Universidade Presbiteriana Mackenzie · Location: São Paulo · 500+ connections on LinkedIn. View Rodrigo Paulino’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:20:18.884020",
+    "candidate": "Carlos Roberto Soares",
+    "linkedin": "https://www.linkedin.com/in/carlos-roberto-soares-a41a6232",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Roberto Soares - Head de Compras I Indirect Spend Manager ...",
+            "body": "Responsável por todas as compras de Insumos, equipamentos e peças (R$ 8 milhões mensais) gerenciando uma equipe de 4 compradores e buscando sempre otimização ..."
+        },
+        "osint_metadata": {
+            "role": "barry callebaut group",
+            "bio": "Carreira desenvolvida na área de Supply-Chain/Logística, S&OP e Comércio Exterior… · Experiência: Barry Callebaut Group · Formação acadêmica: Universidade Salvador · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Roberto Soares no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:20:37.452732",
+    "candidate": "Vanessa Perestrelo",
+    "linkedin": "https://www.linkedin.com/in/vanessaperestrelo1307",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Vanessa Perestrelo - Consultant | Specialist | Buyer - LinkedIn",
+            "body": "Profissional com 13 anos de experiência sólida em Supply Chain e Compras, atuando como Especialista em Compras na Accenture, uma das maiores consultorias ..."
+        },
+        "osint_metadata": {
+            "role": "accenture brasil",
+            "bio": "Profissional com 13 anos de experiência sólida em Supply Chain e Compras, atuando como… · Experiência: Accenture Brasil · Formação acadêmica: Fundação Getulio Vargas · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Vanessa Perestrelo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:20:47.267821",
+    "candidate": "Rui Lincoln",
+    "linkedin": "https://www.linkedin.com/in/rui-lincoln-3950547",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rui Lincoln - Gerente de Compras e Contratos - LinkedIn",
+            "body": "Formação acadêmica ; Fundação Getulio Vargas / FGV. Executive Master of Business Administration ; Centro Universitário Padre Anchieta. Bachelor of Laws - LLB."
+        },
+        "osint_metadata": {
+            "role": "infracommerce",
+            "bio": "Great experience in Procurement and Contract Manager in multinational companies along… · Experiência: Infracommerce · Formação acadêmica: Fundação Getulio Vargas  / FGV · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Rui Lincoln no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-10T15:21:02.668746",
+    "candidate": "Danilo Marchesi",
+    "linkedin": "https://www.linkedin.com/in/danilo-marchesi",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Danilo Marchesi - Gerente de Suprimentos | Compras - LinkedIn",
+            "body": "Gerente de Suprimentos | Compras · 14 anos de experiência em multinacionais do setor automotivo (Nissan, Ford, Magneti Marelli, Freudenberg), e 5 anos de ..."
+        },
+        "osint_metadata": {
+            "role": "isa energia brasil",
+            "bio": "14 anos de experiência em multinacionais do setor automotivo (Nissan, Ford, Magneti… · Experiência: ISA ENERGIA BRASIL · Formação acadêmica: FEI - Faculdade de Engenharia Industrial · Localidade: Santo André · + de 500 conexões no LinkedIn. Veja o perfil de Danilo Marchesi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------

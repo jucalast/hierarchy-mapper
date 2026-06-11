@@ -30,22 +30,32 @@ def _transcribe_groq(wav_bytes: bytes, is_partial: bool = False) -> str:
     groq_key = os.getenv("GROQ_API_KEY", "")
     if not groq_key:
         return ""
-    try:
-        response = httpx.post(
-            "https://api.groq.com/openai/v1/audio/transcriptions",
-            headers={"Authorization": f"Bearer {groq_key}"},
-            files={"file": ("audio.wav", io.BytesIO(wav_bytes), "audio/wav")},
-            data={
-                "model": "whisper-large-v3-turbo",
-                "language": "pt",
-                "response_format": "text",
-            },
-            timeout=8.0,
-        )
-        if response.status_code == 200:
-            return response.text.strip()
-    except Exception as e:
-        log.debug(f"Groq Whisper error: {e}")
+        
+    retries = 2 if not is_partial else 0
+    for attempt in range(retries + 1):
+        try:
+            response = httpx.post(
+                "https://api.groq.com/openai/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {groq_key}"},
+                files={"file": ("audio.wav", io.BytesIO(wav_bytes), "audio/wav")},
+                data={
+                    "model": "whisper-large-v3-turbo",
+                    "language": "pt",
+                    "response_format": "text",
+                },
+                timeout=8.0,
+            )
+            if response.status_code == 200:
+                return response.text.strip()
+            elif response.status_code == 429:
+                log.warning(f"Groq Rate Limit (429) na tentativa {attempt}. Aguardando...")
+                time.sleep(1.0)
+            else:
+                log.debug(f"Groq erro {response.status_code}: {response.text}")
+        except Exception as e:
+            log.debug(f"Groq Whisper error on attempt {attempt}: {e}")
+            if attempt < retries:
+                time.sleep(1.0)
     return ""
 
 
@@ -122,7 +132,7 @@ class CallAssistantManager:
         CHUNK_SIZE = int(sample_rate * 0.1)   # 100ms por chunk
         RMS_THRESHOLD = 150
         SILENCE_LIMIT = 0.75                  # segundos de silêncio para fechar frase
-        PARTIAL_INTERVAL = 0.8               # envia parcial a cada 0.8s de fala
+        PARTIAL_INTERVAL = 2.0                # aumentado de 0.8 para 2.0s para evitar Rate Limit (429) no Groq
         MAX_PHRASE = 12.0
 
         speech_buffer = b''

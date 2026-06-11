@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
     ChevronDown, Building2, Users, 
     Briefcase, ClipboardList, MessageSquare, FileText,
@@ -7,6 +7,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { GlassContainer } from './GlassContainer';
 import styles from './ChatPanel.module.css';
+import { organizations } from '@/services/api';
 
 interface ContextItem {
     id: string;
@@ -30,6 +31,21 @@ export const ConversationContextAccordion: React.FC<ConversationContextAccordion
     dealId 
 }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [dbPlan, setDbPlan] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (orgId) {
+            organizations.getLocalOrganization(orgId)
+                .then(res => {
+                    if (res && typeof res === 'object' && 'prospecting_context' in res && res.prospecting_context) {
+                        setDbPlan(res.prospecting_context as string);
+                    }
+                })
+                .catch(() => {});
+        } else {
+            setDbPlan(null);
+        }
+    }, [orgId]);
 
     const fullMarkdownContext = useMemo(() => {
         const items: ContextItem[] = [];
@@ -122,7 +138,62 @@ export const ConversationContextAccordion: React.FC<ConversationContextAccordion
                         content: event.summary,
                         type: 'evaluation'
                     });
+                } else if (tool === 'generate_prospecting_plan') {
+                    let planContent = detailedContent;
+                    try {
+                        const parsed = typeof event.content === 'string' ? JSON.parse(event.content) : event.content;
+                        if (parsed && parsed.plan) planContent = parsed.plan;
+                        else if (parsed && parsed.data && parsed.data.plan) planContent = parsed.data.plan;
+                    } catch { /* ignore */ }
+                    
+                    items.push({
+                        id: 'prospecting_plan',
+                        title: 'Plano de Prospecção (SPIN)',
+                        icon: <Target size={14} />,
+                        content: planContent,
+                        type: 'dossier'
+                    });
                 }
+            }
+        }
+
+        if (dbPlan) {
+            // Separa Dossiê e Plano se estiverem concatenados por ' | '
+            const parts = dbPlan.split(' | [Dossiê]');
+            
+            let spinPlan = '';
+            let dossier = '';
+
+            if (parts.length > 1) {
+                // Tem os dois
+                spinPlan = parts[0];
+                dossier = '[Dossiê]' + parts[1];
+            } else if (dbPlan.includes('[Dossiê]')) {
+                // Só tem o dossiê
+                dossier = dbPlan;
+            } else {
+                // Só tem o plano
+                spinPlan = dbPlan;
+            }
+
+            if (spinPlan && !items.find(i => i.id === 'prospecting_plan')) {
+                items.push({
+                    id: 'prospecting_plan',
+                    title: 'Plano de Prospecção (SPIN)',
+                    icon: <Target size={14} />,
+                    content: spinPlan.trim(),
+                    type: 'dossier'
+                });
+            }
+
+            if (dossier && !items.find(i => i.id === 'dossier_data')) {
+                items.push({
+                    id: 'dossier_data',
+                    title: 'Dossiê Pré-Abordagem',
+                    icon: <Target size={14} />,
+                    content: dossier.trim(),
+                    type: 'dossier'
+                });
             }
         }
 
@@ -143,7 +214,7 @@ export const ConversationContextAccordion: React.FC<ConversationContextAccordion
         });
         
         return md;
-    }, [messages, orgId, orgName, dealId]);
+    }, [messages, orgId, orgName, dealId, dbPlan]);
 
     if (!fullMarkdownContext) return null;
 

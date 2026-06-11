@@ -403,7 +403,7 @@ const ConfirmationCard: React.FC<{
 
     const tool = event.tool || '';
     const isEmail = tool === 'email_send' || tool === 'email_reply';
-    const isPipedrive = tool.startsWith('pipedrive_');
+    const isPipedrive = tool.startsWith('pipedrive_') || tool === 'evaluate_prospects';
     const isCall = tool === 'open_ligacao_view';
     
     // Configurações visuais por canal
@@ -1369,6 +1369,75 @@ const AIAsterisk = ({ model }: { model: string }) => {
     );
 };
 
+const ProspectingPlanCard = ({
+    isGenerating,
+    planMarkdown,
+    orgName
+}: {
+    isGenerating: boolean;
+    planMarkdown: string | null;
+    orgName: string | null;
+}) => {
+    return (
+        <div style={{
+            margin: '12px 0',
+            background: 'var(--bg-card)',
+            border: 'var(--sw-border-width) solid var(--sw-border)',
+            borderRadius: 12,
+            overflow: 'hidden',
+            boxShadow: 'var(--shadow-sm)'
+        }}>
+            <div style={{
+                padding: '12px 14px',
+                borderBottom: 'var(--sw-border-width) solid var(--sw-border)',
+                background: 'var(--chat-console-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+            }}>
+                {isGenerating ? (
+                    <Loader2 size={14} className={styles.spinner} style={{ color: '#a78bfa' }} />
+                ) : (
+                    <Target size={14} style={{ color: '#a78bfa' }} />
+                )}
+                <span style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--sw-text-base)' }}>
+                    Plano de Prospecção (SPIN)
+                </span>
+                {orgName && (
+                    <span style={{ fontSize: 'var(--font-xs)', color: 'var(--sw-text-muted)', marginLeft: 'auto' }}>
+                        {orgName}
+                    </span>
+                )}
+            </div>
+            
+            <div style={{ padding: '14px', fontSize: 'var(--font-sm)', color: 'var(--sw-text-base)', maxHeight: 400, overflowY: 'auto' }}>
+                {isGenerating ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--sw-text-muted)' }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa', animation: 'pulse 1.5s infinite' }} />
+                            Analisando perfil dos decisores mapeados...
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--sw-text-muted)', opacity: 0.7 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa', animation: 'pulse 1.5s infinite 0.5s' }} />
+                            Avaliando ICP e fit de produto...
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--sw-text-muted)', opacity: 0.4 }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a78bfa', animation: 'pulse 1.5s infinite 1s' }} />
+                            Redigindo sequências de abordagem e hooks...
+                        </div>
+                    </div>
+                ) : planMarkdown ? (
+                    <div className={styles.aiMessage}>
+                        {renderMarkdown(planMarkdown)}
+                    </div>
+                ) : (
+                    <div style={{ color: '#ef4444' }}>Plano não disponível ou erro na geração.</div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // ─── AgentMessage — componente principal ─────────────────────────────────────
 
 export const AgentMessage: React.FC<AgentMessageProps> = ({
@@ -1478,6 +1547,44 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
             const result = resultMap[ev.call_id];
             const isRunning = !result && isStreaming;
             const ok = result?.ok;
+            
+            // Renderização customizada para generate_prospecting_plan
+            if (ev.tool === 'generate_prospecting_plan') {
+                let planData = result?.data?.plan || result?.plan;
+                if (!planData && result?.result?.plan) planData = result.result.plan;
+                if (!planData && typeof result?.result === 'string') {
+                    try { const parsed = JSON.parse(result.result); planData = parsed.plan; } catch {}
+                }
+                if (!planData && typeof result?.content === 'string') {
+                    try { const parsed = JSON.parse(result.content); planData = parsed.plan; } catch {}
+                }
+                if (!planData && typeof result?.content === 'object') {
+                    planData = (result.content as any).plan;
+                }
+
+                let orgNameData = result?.data?.org_name || result?.org_name;
+                if (!orgNameData && result?.result?.org_name) orgNameData = result.result.org_name;
+                if (!orgNameData && typeof result?.result === 'string') {
+                    try { const parsed = JSON.parse(result.result); orgNameData = parsed.org_name; } catch {}
+                }
+                if (!orgNameData && typeof result?.content === 'string') {
+                    try { const parsed = JSON.parse(result.content); orgNameData = parsed.org_name; } catch {}
+                }
+                if (!orgNameData && typeof result?.content === 'object') {
+                    orgNameData = (result.content as any).org_name;
+                }
+
+                orderedItems.push(
+                    <ProspectingPlanCard 
+                        key={`plan-${ev.call_id}`}
+                        isGenerating={isRunning}
+                        planMarkdown={planData || null}
+                        orgName={orgNameData || null}
+                    />
+                );
+                continue;
+            }
+
             const color = TOOL_COLORS[ev.tool || ''] || '#888';
             orderedItems.push(
                 <div key={`tool-${ev.call_id}`} className={styles.logLine}>
@@ -1489,10 +1596,9 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                     }
                     <span>
                         {ev.label}
-                        {result?.summary && <span style={{ opacity: 0.5, marginLeft: 5 }}>· {result.summary}</span>}
                     </span>
-                    {/* Debug integrado — colapsável, estilo consistente com o card */}
-                    {result && (typeof window !== 'undefined' && (window.location.search.includes('debug=true') || !ok)) && (
+                    {/* Sempre exibe o accordion se houver summary, erro ou debug=true */}
+                    {result && (result.summary || !ok || (typeof window !== 'undefined' && window.location.search.includes('debug=true'))) && (
                         <details
                             open={!ok}
                             style={{ marginTop: 4, marginLeft: 18 }}
@@ -1524,8 +1630,10 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                                 fontSize: 10,
                                 lineHeight: 1.5,
                                 color: 'var(--sw-text-subtle)',
+                                maxHeight: 200,
+                                overflowY: 'auto'
                             }}>
-                                {ev.args && Object.keys(ev.args).length > 0 && (
+                                {ev.args && Object.keys(ev.args).length > 0 && (typeof window !== 'undefined' && window.location.search.includes('debug=true')) && (
                                     <div style={{ marginBottom: 4 }}>
                                         {Object.entries(ev.args).map(([k, v]) => (
                                             <div key={k}>
@@ -1542,7 +1650,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                                     </div>
                                 )}
                                 {!result.error && result.summary && (
-                                    <div style={{ opacity: 0.6 }}>{result.summary}</div>
+                                    <div style={{ opacity: 0.8, whiteSpace: 'pre-wrap' }}>{result.summary}</div>
                                 )}
                             </div>
                         </details>

@@ -219,8 +219,9 @@ class CandidateProcessor:
 
         if not is_partner_search and not is_qsa:
             core_comp_arg = self.razao_social if self.razao_social else self.brand
-            if not await apply_strict_filters(name, title, body, core_comp_arg, self.brand, self.location, mechanical_title):
-                log_candidate_rejection(name, href, f"REJEIÇÃO MECÂNICA: {mechanical_title}")
+            is_valid, reject_reason = await apply_strict_filters(name, title, body, core_comp_arg, self.brand, self.location, mechanical_title)
+            if not is_valid:
+                log_candidate_rejection(name, href, f"REJEIÇÃO MECÂNICA: {reject_reason}")
                 return None
 
         # 1. 🔍 THE ORG (Verdade Absoluta)

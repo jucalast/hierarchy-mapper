@@ -104,9 +104,8 @@ async def discover_employees_stream(
                             Employee.department.ilike("%Societário%"),
                             Employee.department.ilike("%Conselho%"),
                             Employee.seniority == 6,
-                            # 🛡️ Preservar decisões: Qualquer coisa que não seja 'Análise Humana' ou genérico
+                            # 🛡️ Preservar decisões: Qualquer coisa que não seja genérico (Análise Humana agora é preservada)
                             and_(
-                                Employee.role != "Análise Humana",
                                 Employee.role != "Não Identificado",
                                 Employee.role != "Erro no Processamento",
                                 Employee.role != "Professional"
@@ -224,6 +223,7 @@ async def discover_employees_stream(
     print(f"[B2B Engine] Iniciando Escaneamento: {brand_name_log}")
     await role_engine.proactive_health_check()
     log_session_start(temp_brand, location, area_focus)
+    found_high_confidence_match = False  # 🚀 Early exit: para quando achar alguém bom
 
     # 🚀 EXTRAÇÃO E AVALIAÇÃO DE TEMPERATURA DOS LEADS DO PIPEDRIVE
     pipedrive_org_id = None
@@ -394,6 +394,7 @@ async def discover_employees_stream(
     base_queries = filtered_queries
 
     for idx, query in enumerate(base_queries[:15]):
+
         if await is_cancelled():
             print(f"[B2B Engine] ⏹️ Parando escaneamento devido a cancelamento do job {job_id}.")
             break
@@ -434,12 +435,13 @@ async def discover_employees_stream(
 
         # Identifica se a query atual é uma busca por sócios/fundadores/proprietários
         query_lower = query.lower()
+        is_specific_person_search = any(p.name.lower() in query_lower for p in qsa_partners)
         is_partner_search = (
             "socio" in query_lower or 
             "sócio" in query_lower or 
             "fundador" in query_lower or 
             "owner" in query_lower or 
-            any(p.name.lower() in query_lower for p in qsa_partners)
+            is_specific_person_search
         )
 
         found_nodes = []
@@ -540,6 +542,12 @@ async def discover_employees_stream(
                 
                 found_nodes.append(node_data)
                 yield [node_data]
+
+                # 🚀 EARLY EXIT: se achou alguém com score alto (>= 80) e a busca for por um nome específico (ex: sócio do CNPJ), encerra
+                score = node_data.get("matching_score", 0) or 0
+                if score >= 80 and is_specific_person_search:
+                    print(f"[B2B Engine] 🎯 Score {score}% para '{node_data['name']}'. Encerrando busca direcionada para esta pessoa.")
+                    break
 
             # 2. Promoção e Persistência de Órfãos (Aproveitamento com Repescagem)
             for orphan in orphans:

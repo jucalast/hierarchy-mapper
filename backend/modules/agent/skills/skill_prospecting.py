@@ -28,27 +28,28 @@ class ProspectingSkill(FunnelStageSkill):
             "pipedrive_create_person",
             "pipedrive_update_task",
             "discover_and_validate_email",
+            "generate_prospecting_plan",
             "suggest_next_actions"
         ]
 
     @property
     def core_tools(self) -> List[str]:
         return [
-            "deep_company_investigation",
             "pipedrive_get_org",
-            "pipedrive_get_persons",
-            "evaluate_prospects"
+            "pipedrive_get_persons"
         ]
     
     def get_instructions(self, context: Dict[str, Any]) -> str:
         base = """You are executing the Prospecting & Enrichment skill for B2B sales.
 Follow these steps strictly:
-1. ALWAYS use Data Enrichment (`deep_company_investigation`) first.
-2. Output a summary of the Dossier to the user.
-3. Fetch the persons (`pipedrive_get_persons`) and evaluate them (`evaluate_prospects`).
-4. Apply Multithreading: Try to identify/save at least 2 key decision makers in the hierarchy to avoid single-point failure.
-5. If someone exists in local DB `[ID:LocalDB]`, create them in Pipedrive. If they have a numeric ID, link them to the Deal (`pipedrive_update_deal`).
-6. Finish the task. VOCÊ É OBRIGADO A CHAMAR A FERRAMENTA `suggest_next_actions` NO FINAL PARA GERAR OS CARDS DE APROVAÇÃO (ex: concluir tarefa, enviar email). NUNCA escreva sugestões de ação diretamente em formato de texto para o usuário. Sempre use a tool `suggest_next_actions`."""
+1. CHECK context first (`pipedrive_get_org`). Only use Data Enrichment (`deep_company_investigation`) if you do NOT have a saved Dossier or Prospecting Plan.
+2. Fetch the persons (`pipedrive_get_persons`). 
+3. Generate a Prospecting Plan (`generate_prospecting_plan`) if one does not exist yet. ESTA ETAPA É OBRIGATÓRIA antes de decidir quem salvar.
+4. Output a summary of the context/Dossier and the Prospecting Plan to the user.
+5. Evaluate the persons (`evaluate_prospects`) based on the Prospecting Plan to identify the most suitable decision maker(s) (o contato mais apto).
+6. Apply Multithreading: Try to identify/save at least 2 key decision makers in the hierarchy to avoid single-point failure.
+7. ONLY AFTER evaluating the most suitable person(s) based on the plan, if they exist in local DB `[ID:LocalDB]`, suggest to create them in Pipedrive. If they have a numeric ID, link them to the Deal (`pipedrive_update_deal`).
+8. Finish the task. VOCÊ É OBRIGADO A CHAMAR A FERRAMENTA `suggest_next_actions` NO FINAL PARA GERAR OS CARDS DE APROVAÇÃO (ex: concluir tarefa, enviar email). NUNCA escreva sugestões de ação diretamente em formato de texto para o usuário. Sempre use a tool `suggest_next_actions`."""
         # Injeta instrução de concluir tarefa se o activity_id foi mencionado no prompt
         activity_id = context.get("activity_id")
         if activity_id:

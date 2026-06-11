@@ -357,6 +357,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             const hierarchyEv = collected.find(e => e.type === 'hierarchy_mapping_required');
             const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
             const ligacaoEv = collected.find(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
+            const hasError = collected.length === 0 || collected.some(e => e.type === 'error' || (e.type === 'tool_result' && e.ok === false));
             
             let finalStatus: TaskStatus = 'done';
             if (hierarchyEv) {
@@ -365,6 +366,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 finalStatus = 'awaiting_confirm';
             } else if (ligacaoEv) {
                 finalStatus = 'streaming'; // Mantém em loading
+            } else if (hasError) {
+                finalStatus = 'pending';
             }
 
             setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
@@ -1165,6 +1168,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             apiMessage = `[ALERTA DE CONTEXTO DO SISTEMA: O usuário está na página da empresa "${selectedOrgName}" (org_id=${selectedOrgId}).\nREGRA CRÍTICA: Se o usuário pedir para atualizar ou concluir uma tarefa e NÃO fornecer o ID explícito na mensagem atual, VOCÊ É ESTRITAMENTE PROIBIDO de adivinhar ou usar IDs de tarefas do histórico. Você DEVE obrigatoriamente chamar a ferramenta \`pipedrive_get_activities\` com org_id=${selectedOrgId} para descobrir o ID correto antes de atualizar. Não atualize atividades cegamente.]\n\n${text}`;
         }
 
+        let activeMsgId = msgId;
+
         try {
             const response = await fetch(AGENT_STREAM_URL, {
                 method: 'POST',
@@ -1245,8 +1250,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         }
 
                         // Atualiza a mensagem em tempo real
+                        if (event.type === 'message_saved' && event.message_id) {
+                            activeMsgId = event.message_id;
+                            setMessages(prev => prev.map(m =>
+                                (m.id === msgId || m.id === activeMsgId) ? { ...m, id: activeMsgId, agentEvents: [...collectedEvents] } : m
+                            ));
+                            continue;
+                        }
+
                         setMessages(prev => prev.map(m =>
-                            m.id === msgId ? { ...m, agentEvents: [...collectedEvents] } : m
+                            (m.id === msgId || m.id === activeMsgId) ? { ...m, agentEvents: [...collectedEvents] } : m
                         ));
                     } catch { /* ignore */ }
                 }
@@ -1292,7 +1305,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             }
             
             setMessages(prev => prev.map(m =>
-                m.id === msgId ? { ...m, agentStreaming: (hasMappingRequired || hasLigacaoView) ? true : false } : m
+                (m.id === msgId || m.id === activeMsgId) ? { ...m, agentStreaming: (hasMappingRequired || hasLigacaoView) ? true : false } : m
             ));
 
             if (!hasMappingRequired && !hasConfirmationRequired && !hasLigacaoView) {
@@ -1412,7 +1425,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             return;
         }
 
-        const targetMsgId = targetMsg.id;
+        let targetMsgId = targetMsg.id;
         const existingEvents = targetMsg.agentEvents || [];
 
         setIsLoading(true);
@@ -1478,6 +1491,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         }
                         if (eventObj.type === 'context_overflow') {
                             setModelActivity(prev => [...prev, { id: ++modelActivityIdRef.current, type: 'context_overflow', model: eventObj.model, estimated_tokens: eventObj.estimated_tokens, limit: eventObj.limit, timestamp: Date.now() }]);
+                        }
+
+                        if (eventObj.type === 'message_saved' && eventObj.message_id) {
+                            const prevId = targetMsgId;
+                            targetMsgId = eventObj.message_id;
+                            setMessages(prev => prev.map(m =>
+                                (m.id === prevId || m.id === targetMsgId) ? { ...m, id: targetMsgId, agentEvents: [...existingEvents, ...collectedEvents] } : m
+                            ));
+                            continue;
                         }
 
                         setMessages(prev => prev.map(m =>
@@ -1560,6 +1582,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
+        let activeMsgId = msgId;
+
         try {
             const response = await fetch(AGENT_CONFIRM_URL, {
                 method: 'POST',
@@ -1615,15 +1639,23 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             }
                         }
 
+                        if (event.type === 'message_saved' && event.message_id) {
+                            activeMsgId = event.message_id;
+                            setMessages(prev => prev.map(m =>
+                                (m.id === msgId || m.id === activeMsgId) ? { ...m, id: activeMsgId, agentEvents: [...collectedEvents] } : m
+                            ));
+                            continue;
+                        }
+
                         setMessages(prev => prev.map(m =>
-                            m.id === msgId ? { ...m, agentEvents: [...collectedEvents] } : m
+                            (m.id === msgId || m.id === activeMsgId) ? { ...m, agentEvents: [...collectedEvents] } : m
                         ));
                     } catch { /* ignore */ }
                 }
             }
 
             setMessages(prev => prev.map(m =>
-                m.id === msgId ? { ...m, agentEvents: [...collectedEvents], agentStreaming: false } : m
+                (m.id === msgId || m.id === activeMsgId) ? { ...m, agentEvents: [...collectedEvents], agentStreaming: false } : m
             ));
         } catch (err) {
             if ((err as any)?.name === 'AbortError') {
@@ -1822,7 +1854,8 @@ ${transcriptText}
 2. **Identifique** compromissos, reuniões agendadas ou dores mencionadas.
 3. **Próximos Passos**: Sugira ações concretas no CRM (marcar tarefa atual como feita, criar nota com resumo, agendar follow-up).
 4. **Inteligência**: NÃO sugira tarefas que já existem no Pipedrive. Verifique o histórico de atividades primeiro.
-5. **Ação**: Se houver algo claro para atualizar, emita a chamada da ferramenta imediatamente.
+5. **Estratégia (Plano e Fit)**: Se a ligação revelou um NOVO decisor principal, instrua a recriar o plano de prospecção ('generate_prospecting_plan'). Se a ligação revelou que a empresa NÃO TEM FIT com nosso produto, sugira desqualificar/dar "Lost" no negócio ('pipedrive_update_deal' com status 'lost').
+6. **Ação**: Se houver algo claro para atualizar, emita a chamada da ferramenta imediatamente.
 `;
             
             handleSendMessage(text, [], false);

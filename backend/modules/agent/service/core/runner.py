@@ -38,9 +38,9 @@ async def _save_run_state(
     process_id: str,
     is_resume: bool = False,
     user_msg_saved: bool = False,
-) -> bool:
+) -> str | None:
     if not thread_id:
-        return False
+        return None
 
     try:
         from core.infra.database import async_session as _async_session
@@ -112,16 +112,18 @@ async def _save_run_state(
                 if not is_resume and not is_regeneration and not user_msg_saved:
                     await _save_message(db, thread_id, "user", message)
                     log.info("agent.user_message.saved_immediately", thread_id=thread_id)
-                
+                saved_msg_id = None
                 # Salva a resposta do assistente se houve resposta final OU se houve eventos (investigação iniciada/parada em confirmação)
                 if final_response or collected_events:
-                    await _save_message(
+                    saved_msg = await _save_message(
                         db, 
                         thread_id, 
                         "assistant", 
                         final_response or "", 
                         logs=collected_events
                     )
+                    saved_msg_id = saved_msg.id
+
                 
                 # Salva quaisquer confirmações de ações pendentes criadas nesta execução no banco de dados para resiliência pós-reinicialização
                 try:
@@ -136,10 +138,10 @@ async def _save_run_state(
                 except Exception as db_err:
                     log.warning("agent.pending_confirmation.save_failed", error=str(db_err))
                 log.info("agent.messages.saved", thread_id=thread_id, is_regeneration=is_regeneration, has_final=bool(final_response))
-        return True
+            return saved_msg_id
     except Exception as e:
         log.warning("agent.messages.save_failed", thread_id=thread_id, error=str(e))
-        return False
+        return None
 
 
 async def run_agent(
@@ -158,7 +160,8 @@ async def run_agent(
     Gerador assíncrono — yields strings NDJSON.
     Usa native tool calling da API Anthropic.
     """
-    # === PIPELINE INJECTION FOR FRONTEND TASKS ===
+    pipeline_instructions = ""
+    # === PIPELINE INJECTION FOR FRONTEND TASKS AND FREE CHAT ===
     if message and message.startswith("Execute a seguinte atividade do CRM:"):
         import re
         from modules.agent.service.core.pipelines.registry import PipelineRegistry
@@ -170,10 +173,20 @@ async def run_agent(
                 subject = title_match.group(1)
                 etapas = PipelineRegistry.dispatch(subject=subject, act_type="", act_id=act_id, org_pd_id=org_id, deal_id=None)
                 if etapas:
-                    message = message + "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
+                    pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
             except Exception as e:
                 import logging
                 logging.warning(f"Failed to inject pipeline: {e}")
+    else:
+        # Detect intent via PipelineRegistry for free-form chat (e.g. "gerar plano de prospecção")
+        try:
+            from modules.agent.service.core.pipelines.registry import PipelineRegistry
+            etapas = PipelineRegistry.dispatch(subject=message, act_type="", act_id=None, org_pd_id=org_id, deal_id=None)
+            if etapas:
+                pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
+        except Exception as e:
+            import logging
+            logging.warning(f"Failed to inject pipeline for free chat: {e}")
 
     tools = get_tools_anthropic_schema()
     if direct_action:
@@ -307,11 +320,11 @@ async def run_agent(
             messages.append({"role": role, "content": str(content)})
 
     # Mensagem atual com contexto de nome correto
-    user_content = message + org_context
+    user_content = message + org_context + pipeline_instructions
 
     # Detecta micro-ação sobre contexto já investigado e injeta diretiva de não-reinvestigação
     _context_followup_active = False
-    if not direct_action and "[INSTRUÇÕES DA PIPELINE]" not in message:
+    if not direct_action and "[INSTRUÇÕES DA PIPELINE]" not in message and not pipeline_instructions:
         _ctx_directive = _detect_context_followup(message, history)
         if _ctx_directive:
             user_content += _ctx_directive
@@ -382,7 +395,7 @@ async def run_agent(
 
         # Loop concluído com sucesso
         if thread_id:
-            await _save_run_state(
+            saved_msg_id = await _save_run_state(
                 thread_id=thread_id,
                 parent_message_id=parent_message_id,
                 action_index=action_index,
@@ -395,6 +408,8 @@ async def run_agent(
                 user_msg_saved=user_msg_saved,
             )
             saved_on_completion = True
+            if saved_msg_id:
+                yield _emit({"type": "message_saved", "message_id": saved_msg_id})
 
     except BaseException as exc:
         log.warning("agent.run_generator.interrupted", thread_id=thread_id, exc_type=type(exc).__name__)
@@ -735,7 +750,7 @@ async def resume_after_confirmation(
 
         # Retomada concluída com sucesso
         if thread_id:
-            await _save_run_state(
+            saved_msg_id = await _save_run_state(
                 thread_id=thread_id,
                 parent_message_id=parent_message_id,
                 action_index=action_index,
@@ -748,6 +763,8 @@ async def resume_after_confirmation(
                 user_msg_saved=True,
             )
             saved_on_completion = True
+            if saved_msg_id:
+                yield _emit({"type": "message_saved", "message_id": saved_msg_id})
 
     except BaseException as exc:
         log.warning("agent.resume_generator.interrupted", thread_id=thread_id, exc_type=type(exc).__name__)
