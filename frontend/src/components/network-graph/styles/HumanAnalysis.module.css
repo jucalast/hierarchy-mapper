@@ -1,0 +1,131 @@
+.bottomToolbarRow {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1200;
+    pointer-events: none;
+    max-width: calc(100% - 32px);
+    overflow: visible;
+}
+
+.bottomToolbarRow>* {
+    pointer-events: auto;
+}
+
+.humanAnalysisTrigger {
+    position: relative;
+    height: auto;
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    align-self: flex-end;
+    margin-bottom: 10px;
+    pointer-events: auto;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    z-index: 1010;
+}
+
+.humanAnalysisTrigger:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+.humanAnalysisAvatarStack {
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 60px;
+    height: 48px;
+    margin-right: 8px;
+}
+
+.humanAnalysisStackedAvatar {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: 2px solid var(--sw-bg);
+    background: #2a2a2b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+}
+
+:global([data-theme='light']) .humanAnalysisStackedAvatar {
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.35);
+}
+
+.stackLayer0 { z-index: 30; transform: translateX(0) rotate(0deg); }
+.stackLayer1 { z-index: 20; transform: translateX(12px) rotate(8deg); opacity: 0.9; filter: brightness(0.8); }
+.stackLayer2 { z-index: 10; transform: translateX(24px) rotate(16deg); opacity: 0.7; filter: brightness(0.6); }
+
+.humanAnalysisNotification {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--sw-status-danger);
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 900;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.humanAnalysisList {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    width: 260px;
+    background: #1a1a1b;
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 2000;
+    backdrop-filter: blur(15px);
+}
+
+.humanAnalysisCard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 12px;
+    transition: var(--transition-fast);
+}
+
+.humanAnalysisCard:hover { background: rgba(255, 255, 255, 0.03); }
+
+.humanAnalysisCardAvatar {
+    width: 44px; height: 44px;
+    border-radius: 8px;
+    background: #2a2a2b;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    border: var(--sw-border-width) solid var(--sw-border);
+}
+
+.humanAnalysisCardInfo { flex: 1; min-width: 0; }
+.humanAnalysisCardName { font-size: var(--font-sm); font-weight: 600; color: #ffffff; }
+.humanAnalysisCardSub { font-size: var(--font-xs); color: rgba(255, 255, 255, 0.4); }

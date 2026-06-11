@@ -2,6 +2,8 @@
 # Use este quando quiser estabilidade em vez de dev automático
 
 $ErrorActionPreference = "SilentlyContinue"
+$OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding = New-Object System.Text.UTF8Encoding
+$env:PYTHONUTF8=1
 
 Write-Host "🚀 Iniciando Ambiente de Desenvolvimento LINKB2B (SEM AUTO-RELOAD)..." -ForegroundColor Green
 Write-Host ""
@@ -9,9 +11,8 @@ Write-Host ""
 # 1. Limpar processos antigos
 Write-Host "🧹 Limpando servicos e terminais antigos..." -ForegroundColor Yellow
 Get-Process | Where-Object { $_.MainWindowTitle -like "*LINKB2B-*" } | Stop-Process -Force
-Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
-Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
-Get-Process chrome, msedge, headless_shell -ErrorAction SilentlyContinue | Stop-Process -Force
+Get-NetTCPConnection -LocalPort 3000, 8000, 8001, 8002 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+Get-Process headless_shell -ErrorAction SilentlyContinue | Stop-Process -Force
 
 Start-Sleep -Seconds 1
 
@@ -27,9 +28,7 @@ if ((Test-Path $redisPath) -and (Test-Path $redisConf)) {
         $redisFullPath = (Get-Item $redisPath).FullName
         $redisConfFullPath = (Get-Item $redisConf).FullName
         
-        Push-Location $redisDir
-        & $redisFullPath $redisConfFullPath 2>$null &
-        Pop-Location
+        Start-Process $redisFullPath -ArgumentList "redis.windows.conf" -WorkingDirectory $redisDir -WindowStyle Minimized
         
         Start-Sleep -Seconds 2
         
@@ -55,7 +54,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     Set-Location '$backendPath'
     Write-Host 'ℹ️ Backend iniciado. Pressione Ctrl+C para parar.' -ForegroundColor Yellow
     Write-Host 'Para mudanças automáticas, use: .\rodar_dev.ps1' -ForegroundColor Cyan
-    & '$pythonPath' -m uvicorn main:app --port 8000
+    & '$pythonPath' -X utf8 -m uvicorn main:app --port 8000 --loop asyncio
 "
 
 # 4. Iniciar Worker (SEM watchfiles)
@@ -78,12 +77,16 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
 
 # 6. Iniciar WhatsApp Service
 Write-Host "💬 Iniciando Servico WhatsApp (Porta 8001)..." -ForegroundColor Cyan
-$whatsappPath = Join-Path $PSScriptRoot "backend\services\whatsapp-service"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "
-    `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-WhatsApp'
-    Set-Location '$whatsappPath'
-    npm start
-"
+$whatsappPath = Join-Path $PSScriptRoot "backend\whatsapp-service"
+if (Test-Path $whatsappPath) {
+    Start-Process powershell -ArgumentList "-NoExit", "-Command", "
+        `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-WhatsApp'
+        Set-Location '$whatsappPath'
+        npm start
+    "
+} else {
+    Write-Host "WhatsApp service nao encontrado em $whatsappPath" -ForegroundColor Yellow
+}
 
 # 7. Iniciar Email Service (Python)
 Write-Host "📧 Iniciando Servico de Email (Porta 8002)..." -ForegroundColor Cyan
@@ -91,7 +94,7 @@ $emailPath = Join-Path $PSScriptRoot "backend\services\email-service"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Email'
     Set-Location '$emailPath'
-    & '$pythonPath' main.py
+    & '$pythonPath' -X utf8 main.py
 "
 
 Write-Host ""
@@ -107,3 +110,12 @@ Write-Host ""
 Write-Host "📝 Versões:" -ForegroundColor Yellow
 Write-Host "   - rodar_dev.ps1: COM watchfiles (auto-reload de código)" -ForegroundColor Cyan
 Write-Host "   - rodar_dev_stable.ps1: SEM watchfiles (estável)" -ForegroundColor Cyan
+
+# 8. Iniciar LinkedIn Scraper Terminal
+Write-Host "Iniciando Terminal Interativo do LinkedIn Scraper..." -ForegroundColor Cyan
+$scraperPath = Join-Path $PSScriptRoot "rodar_linkedin.bat"
+Start-Process cmd -ArgumentList "/k", "`"$scraperPath`"" -WorkingDirectory $PSScriptRoot
+
+# Iniciação automática do navegador
+Start-Sleep -Seconds 3
+Start-Process "http://localhost:3000"

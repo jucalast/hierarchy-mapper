@@ -1,0 +1,387 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 24px;
+}
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding: 12px 4px;
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
+    margin-bottom: 16px;
+}
+
+.tabs button {
+    background: transparent;
+    border: none;
+    padding: 8px 0;
+    border-radius: 0;
+    font-size: var(--font-xs);
+    font-weight: 500;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.tabs button:hover {
+    color: var(--sw-text-base);
+}
+
+.tabs button.activeTab {
+    color: var(--sw-text-base);
+}
+
+.tabs button.activeTab::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--sw-primary);
+}
+
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.empty {
+    padding: 40px 0;
+    text-align: center;
+    color: var(--sw-text-muted);
+    font-size: var(--font-sm);
+    font-style: italic;
+}
+
+.eventRow {
+    display: flex;
+    min-height: 100px;
+}
+
+/* Linha e Ícone */
+.timelineSide {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 32px;
+    flex-shrink: 0;
+}
+
+.iconCircle {
+    width: 26px;
+    height: 26px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sw-text-muted);
+    z-index: 2;
+}
+
+.dashedLine {
+    flex-grow: 1;
+    width: 1px;
+    border-left: 1px dashed var(--sw-border);
+    margin: 4px 0;
+    z-index: 1;
+}
+
+/* Card de Evento */
+.eventCard {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    padding: 0 8px 40px 8px;
+    margin-bottom: 0;
+    transition: all 0.2s ease;
+}
+
+.eventCard:hover {
+    background: transparent;
+}
+
+.cardWithBg {
+    background: transparent;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+}
+
+.cardWithBg:hover {
+    border-color: var(--sw-border-strong);
+}
+
+.eventHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.titleArea {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.doneCheck {
+    color: var(--sw-status-success);
+    background: rgba(52, 209, 124, 0.1);
+    border-radius: 50%;
+    padding: 2px;
+}
+
+.checkboxBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1.5px solid var(--sw-border-strong);
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    color: transparent;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.checkboxBtn:hover {
+    border-color: var(--sw-status-success);
+    background: rgba(52, 209, 124, 0.05);
+    color: var(--sw-status-success);
+}
+
+.checkboxBtn:hover .checkboxCheckIcon {
+    opacity: 0.8;
+}
+
+.checkboxCheckIcon {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.checkboxBtnLoading {
+    border-color: var(--sw-primary);
+    cursor: not-allowed;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.eventTitle {
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: var(--sw-text-base);
+}
+
+.moreOptions {
+    font-size: var(--font-sm);
+    color: var(--sw-text-muted);
+    opacity: 0.3;
+    cursor: pointer;
+}
+
+.eventMeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: var(--font-xs);
+    color: var(--sw-text-muted);
+    margin-bottom: 16px;
+    overflow-wrap: break-word;
+}
+
+.metaSeparator {
+    display: none;
+}
+
+.metaItem {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: normal;
+}
+
+.eventSubtext {
+    font-size: var(--font-xs);
+    color: var(--sw-primary);
+    padding: 6px 0;
+    margin-top: 4px;
+    opacity: 0.8;
+    overflow-wrap: break-word;
+}
+
+.eventContent {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--sw-text-subtle);
+    padding: 12px 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.eventContent a {
+    color: var(--sw-primary);
+    text-decoration: none;
+    word-break: break-all;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.eventContent a:hover {
+    color: var(--sw-text-base);
+    text-decoration: underline;
+}
+
+.eventContent p {
+    margin: 0;
+}
+
+.callNote {
+    margin-top: 12px;
+    background: var(--sw-primary-soft);
+    border-left: 2px solid var(--sw-primary);
+    border-radius: 0 4px 4px 0;
+    padding: 12px 16px;
+    margin-left: -4px;
+    color: var(--sw-primary);
+}
+
+/* Estilos para Tarefas Concluídas */
+.eventCardDone {
+    opacity: 0.5;
+}
+
+.eventCardDone .eventTitle {
+    color: var(--sw-text-muted);
+    text-decoration: line-through;
+}
+
+.eventCardDone .eventMeta {
+    color: var(--sw-text-muted);
+}
+
+.eventCardDone .eventContent {
+    color: var(--sw-text-muted);
+}
+
+.iconCircleDone {
+    color: var(--sw-text-muted) !important;
+}
+
+/* Seção de Avisos (Updates) */
+.alertsSection {
+    margin-top: 32px;
+    padding-top: 0;
+}
+
+.alertsTitle {
+    display: none;
+}
+
+.alertsList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.alertItem {
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+    transition: all 0.2s;
+}
+
+.alertItem:hover {
+    opacity: 1;
+}
+
+.alertHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 2px;
+}
+
+.alertHeader .alertTitle {
+    font-size: var(--font-xs);
+    font-weight: 500;
+    color: var(--sw-primary);
+    flex: 1;
+    opacity: 0.8;
+}
+
+.alertTime {
+    font-size: var(--font-xs);
+    color: var(--sw-primary);
+    opacity: 0.5;
+    white-space: nowrap;
+}
+
+.alertSubtext {
+    font-size: var(--font-xs);
+    color: var(--sw-primary);
+    opacity: 0.6;
+    margin-left: 0;
+}
+
+/* Timeline Custom Group Sections */
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.sectionOverdue {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--sw-status-danger);
+}
+
+.sectionToday {
+    background: rgba(52, 209, 124, 0.1);
+    color: var(--sw-status-success);
+}
+
+.sectionUpcoming {
+    background: var(--sw-primary-soft);
+    color: var(--sw-primary);
+}
+
+.sectionHistory {
+    background: var(--sw-hover);
+    color: var(--sw-text-muted);
+}

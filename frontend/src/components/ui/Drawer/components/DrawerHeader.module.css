@@ -1,0 +1,236 @@
+.drawerHeader {
+    height: 52px;
+    padding: 0 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
+    gap: 8px;
+    background: var(--sw-sidebar);
+}
+
+.focusHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.backToListBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    font-size: var(--font-xs);
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0;
+}
+
+.backToListBtn:hover {
+    color: var(--sw-text-base);
+}
+
+.focusHeaderActions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    position: relative;
+    gap: 12px;
+    flex-wrap: nowrap;
+    min-width: fit-content;
+}
+
+.moreOptionsBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    border: none !important;
+    color: var(--sw-text-muted) !important;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    padding: 6px;
+    border-radius: 4px;
+    line-height: 1;
+    outline: none;
+}
+
+.moreOptionsBtn:hover {
+    color: var(--sw-text-base) !important;
+    background: var(--sw-hover) !important;
+}
+
+.refreshBtn {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.refreshBtn:hover:not(:disabled) {
+    background: var(--sw-hover);
+    color: var(--sw-primary);
+}
+
+.refreshBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.spin {
+    animation: swSpin 1s linear infinite;
+}
+
+@keyframes swSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--sw-surface-raised);
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-radius: 8px;
+    padding: 8px 0;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    color: var(--sw-text-base);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, color 0.2s;
+}
+
+.dropdownItem:hover {
+    background: var(--sw-hover);
+}
+
+.mainHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.drawerInputWrapper {
+    display: flex;
+    align-items: center;
+    background: transparent;
+    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+}
+
+.drawerInputWrapper.expanded {
+    width: 200px;
+    background: var(--sw-bg);
+    border: var(--sw-border-width) solid var(--sw-primary);
+    padding: 0 8px;
+}
+
+.searchToggleBtn {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.searchToggleBtn:hover {
+    color: var(--sw-text-base);
+}
+
+.expanded .searchToggleBtn {
+    min-width: 24px;
+    padding-right: 8px;
+}
+
+.drawerInput {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-base);
+    font-size: var(--font-sm);
+    outline: none;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.expanded .drawerInput {
+    opacity: 1;
+}
+
+.clearSearchBtn {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.clearSearchBtn:hover {
+    color: var(--sw-text-base);
+    background: var(--sw-hover);
+}
+
+.headerRightActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.backBtn {
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.backBtn:hover {
+    color: var(--sw-text-base);
+    background: var(--sw-hover);
+}

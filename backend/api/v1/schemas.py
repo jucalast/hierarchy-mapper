@@ -1,5 +1,16 @@
+"""
+api.v1.schemas
+==============
+Schemas Pydantic compartilhados entre routers e o modulo hierarchy.
+
+Inclui schemas para o scanner B2B (EmployeeNode, HierarchyResponse,
+ConfirmEnrichRequest) e configuracao do Tenant (BusinessProfileSchema,
+ICPConfigSchema, HierarchyConfigSchema).
+
+Utilitario: clean_cnpj(val) -> str  -- extrai apenas digitos do CNPJ
+"""
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 import re
 
 def clean_cnpj(val: str) -> str:
@@ -24,6 +35,11 @@ class EmployeeNode(BaseModel):
     connections: Optional[str] = None
     highlights: Optional[str] = None
     observations: Optional[str] = None
+    evidence: Optional[str] = None
+    matching_score: Optional[int] = None
+    headline: Optional[str] = None
+    profile_pic: Optional[str] = None
+    seniority: Optional[int] = None
 
 class HierarchyResponse(BaseModel):
     company_name: str
@@ -39,3 +55,68 @@ class ConfirmEnrichRequest(BaseModel):
     linkedin_url: Optional[str] = None
     logo_url: Optional[str] = None
     partners: Optional[List[dict]] = None
+
+class CandidateActionRequest(BaseModel):
+    employee_id: str
+    action: str # 'approve' or 'reject'
+
+class EnrichManualRequest(BaseModel):
+    employee_id: str
+    raw_text: str
+
+class EmployeeUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    department: Optional[str] = None
+    level: Optional[int] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    linkedin: Optional[str] = None
+    location: Optional[str] = None
+    observations: Optional[str] = None
+    education: Optional[str] = None
+
+# --- SaaS / Settings Schemas ---
+
+class ProductSchema(BaseModel):
+    id: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    use_cases: Optional[List[str]] = None
+
+class ReferenceClientSchema(BaseModel):
+    id: Optional[str] = None
+    name: str
+    segment: Optional[str] = None
+    pain_solved: Optional[str] = None
+
+class BusinessProfileSchema(BaseModel):
+    segment: Optional[str] = None
+    differentials: Optional[List[str]] = None
+    methodology: Optional[str] = None
+    seller_name: Optional[str] = None
+    seller_role: Optional[str] = None
+    value_propositions: Optional[dict] = None
+    presentation_path: Optional[str] = None
+    signature_path: Optional[str] = None
+
+class ICPRuleSchema(BaseModel):
+    rule_type: str
+    value_pattern: str
+    weight_score: int
+    reason: str
+
+class ICPConfigSchema(BaseModel):
+    industries_target: Optional[List[str]] = None
+    company_size_target: Optional[List[str]] = None
+    decision_makers: Optional[List[str]] = None
+    disqualifiers: Optional[List[str]] = None
+    pain_points: Optional[List[str]] = None
+    score_rules: Optional[List[ICPRuleSchema]] = None
+
+class HierarchyConfigSchema(BaseModel):
+    department_focus: str
+    forbidden_keywords: Optional[dict] = None
+    whitelist_keywords: Optional[Any] = None
+    seniority_rules: Optional[dict] = None
+    department_mapping_rules: Optional[dict] = None

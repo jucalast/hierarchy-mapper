@@ -1,32 +1,78 @@
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import '../styles/chat-tokens.css';
+
+@font-face {
+  font-family: 'Nexa';
+  src: url('/fonts/Nexa-ExtraLight.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nexa';
+  src: url('/fonts/Nexa-Heavy.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
+  /* CENTRAL FONT SYSTEM */
+  --font-primary: SF Pro Rounded, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* CENTRAL TYPOGRAPHY SCALE */
+  --font-xs: 15px;
+  --font-sm: 17px;
+  --font-base: 18px;
+  --font-md: 19px;
+  --font-lg: 22px;
+  --font-xl: 30px;
+  --font-2xl: 38px;
+  --font-3xl: 48px;
+
   /* DARK MODE (Console / Obsidian Style) - DEFAULT */
   --sw-bg: #0c0d0e;
-  --sw-sidebar: #131415;
+  --sw-graph-bg: #1d1d1d;
+  --sw-grid-color: rgba(255, 255, 255, 0.05);
+  --sw-sidebar: #131313;
   --sw-surface-base: #1a1b1e;
   --sw-surface-raised: #25262b;
   --sw-surface-overlay: rgba(13, 13, 13, 0.95);
   --sw-border: rgba(255, 255, 255, 0.08);
   --sw-border-strong: rgba(255, 255, 255, 0.15);
   --sw-primary: #818cf8;
+  --sw-primary-hover: #6d7af5;
   --sw-primary-soft: rgba(129, 140, 248, 0.12);
+  --sw-primary-border: rgba(129, 140, 248, 0.2);
   --sw-text-base: #e4e4e7;
   --sw-text-subtle: #a1a1aa;
   --sw-text-muted: #71717a;
   --sw-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
   --sw-border-width: 1.5px;
+  --sw-map-filter: brightness(1.2) contrast(0.9) grayscale(0.2);
+
+  /* Graph Purple Themes */
+  --sw-graph-purple-bg: #0c0d0e;   /* Neutral Dark */
+  --sw-graph-purple-edge: #818cf8; /* Light Purple */
 
   /* Semantic States */
   --sw-hover: rgba(255, 255, 255, 0.05);
   --sw-alert-bg: rgba(239, 68, 68, 0.1);
   --sw-alert-text: #ef4444;
 
+  /* Status Colors */
+  --sw-status-success: #34d17c;
+  --sw-status-warning: #f59e0b;
+  --sw-status-danger: #ef4444;
+  --sw-status-info: #60a5fa;
+
   /* DESIGN TOKENS */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  
+
   --icon-sidebar: 20px;
   --icon-input: 16px;
   --icon-card-main: 20px;
@@ -38,7 +84,9 @@
 
 [data-theme='light'] {
   /* LIGHT MODE (Software Professional) */
-  --sw-bg: #f9f9fb;
+  --sw-bg: #ffffff;
+  --sw-graph-bg: #e0e0e0;
+  --sw-grid-color: rgba(0, 0, 0, 0.12);
   --sw-sidebar: #ffffff;
   --sw-surface-base: #ffffff;
   --sw-surface-raised: #f1f1f4;
@@ -46,28 +94,42 @@
   --sw-border: rgba(0, 0, 0, 0.06);
   --sw-border-strong: rgba(0, 0, 0, 0.1);
   --sw-primary: #4f46e5;
+  --sw-primary-hover: #3d36c0;
   --sw-primary-soft: rgba(79, 70, 229, 0.08);
+  --sw-primary-border: rgba(79, 70, 229, 0.18);
   --sw-text-base: #09090b;
-  --sw-text-subtle: #4b5563;
-  --sw-text-muted: #9ca3af;
+  --sw-text-subtle: #374151;
+  --sw-text-muted: #6b7280;
   --sw-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.08);
+  --sw-map-filter: brightness(0.92) contrast(0.95) grayscale(0.2);
+
+  /* Graph Purple Themes - Unified with Dark Mode */
+  --sw-graph-purple-bg: #ffffff;   /* Neutral Light */
+  --sw-graph-purple-edge: #818cf8; /* Light Purple */
 
   /* Semantic States */
   --sw-hover: rgba(0, 0, 0, 0.03);
   --sw-alert-bg: rgba(239, 68, 68, 0.05);
   --sw-alert-text: #dc2626;
+
+  /* Status Colors */
+  --sw-status-success: #16a34a;
+  --sw-status-warning: #d97706;
+  --sw-status-danger: #dc2626;
+  --sw-status-info: #2563eb;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Inter', 'Google Sans', sans-serif;
+  font-family: var(--font-primary);
   appearance: none;
   -webkit-font-smoothing: antialiased;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   background-color: var(--sw-bg);
@@ -80,7 +142,8 @@ html, body {
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-input, button {
+input,
+button {
   font-family: inherit;
 }
 
@@ -89,13 +152,78 @@ input, button {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--sw-border-strong);
   border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--sw-text-muted);
+}
+
+/* Animações globais usadas pelos primitivos UI (Spinner, LoadingSkeleton) */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }

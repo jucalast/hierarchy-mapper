@@ -1,30 +1,24 @@
-export interface HierarchyEmployee {
-    id: string;
-    name: string;
-    role: string;
-    department: string;
-    company?: string;
-    manager_id?: string;
-    level: number;
-    email?: string;
-    linkedin?: string;
-    logo?: string;
-    url?: string;
-    location?: string;
-    domain?: string;
-    company_logo?: string;
-    seniority?: number;
-    bio?: string;
-    education?: string;
-    avatar?: string;
-    profile_pic?: string;
-    matching_score?: number;
-    evidence?: string;
-    headline?: string;
-}
+/**
+ * Compatibilidade — re-exporta tipos e a surface por domínio da nova locação canônica.
+ * Componentes legados continuam funcionando com `import { HierarchyEmployee } from '@/services/api'`,
+ * enquanto novo código pode usar diretamente os namespaces de domínio.
+ *
+ * Uso moderno:
+ *   import { HierarchyEmployee, HierarchyResponse } from '@/types';
+ *   import { ai, organizations, hierarchy, jobs, communication, health } from '@/services/api';
+ */
+export type { HierarchyEmployee, HierarchyResponse } from '@/types';
 
-export interface HierarchyResponse {
-    company_name: string;
-    identifier: string;
-    employees: HierarchyEmployee[];
-}
+// Surface domain-namespaced re-exportada a partir de /services/api/index.ts
+export {
+  api,
+  ApiError,
+  ai,
+  organizations,
+  hierarchy,
+  jobs,
+  communication,
+  health,
+  conversations,
+} from './api/index';
+export type { RequestOptions } from './api/index';

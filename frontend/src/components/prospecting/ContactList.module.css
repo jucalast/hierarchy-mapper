@@ -1,0 +1,175 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 24px;
+}
+
+.empty {
+    padding: 60px 0;
+    text-align: center;
+    color: var(--sw-text-muted);
+    font-size: var(--font-sm);
+    font-style: italic;
+}
+
+.contactRow {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
+}
+
+.contactRow:last-child {
+    border-bottom: none;
+}
+
+.iconCircle {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--sw-text-muted);
+    flex-shrink: 0;
+}
+
+.contentCard {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.contactHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.nameContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sourceIcons {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.sourceIcon {
+    width: 14px;
+    height: 14px;
+    object-fit: cover;
+    opacity: 0.8;
+    border-radius: 3px;
+    display: block;
+    transition: all 0.2s ease;
+}
+
+.sourceIcon:hover {
+    opacity: 1;
+}
+
+.pipedriveIcon {
+    width: 14px;
+    height: 14px;
+}
+
+.linkedinIcon {
+    width: 16px;
+    height: 16px;
+    margin-left: 2px;
+}
+
+.name {
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: var(--sw-text-base);
+    margin: 0;
+}
+
+.role {
+    font-size: var(--font-xs);
+    color: var(--sw-primary);
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+.metaList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.metaItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-xs);
+    color: var(--sw-text-muted);
+    transition: color 0.2s;
+}
+
+.metaItem:hover {
+    color: var(--sw-text-subtle);
+}
+
+.metaItem svg {
+    opacity: 0.6;
+}
+
+.emailLink {
+    color: inherit;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
+
+.emailLink:hover {
+    text-decoration: underline;
+}
+
+.emailDiscovering {
+    background: linear-gradient(
+        90deg, 
+        var(--sw-text-muted) 0%, 
+        #818cf8 50%, 
+        var(--sw-text-muted) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmerEmail 1.5s linear infinite;
+}
+
+@keyframes shimmerEmail {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.actionBtn {
+    background: transparent;
+    border: none;
+    color: var(--sw-border-strong);
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.actionBtn:hover {
+    color: var(--sw-text-base);
+}

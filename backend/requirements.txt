@@ -1,18 +1,50 @@
+# === Web Framework & Server ===
 fastapi==0.111.0
-uvicorn==0.30.1
+uvicorn[standard]==0.30.1
+python-multipart==0.0.26
+
+# === Configuration & Validation ===
 pydantic==2.7.4
-slowapi==0.1.9
-httpx==0.27.0
+pydantic-settings==2.3.4        # BaseSettings separado desde Pydantic v2
 python-dotenv==1.0.1
-requests==2.31.0
-apscheduler==3.10.4
-arq==0.28.0
-redis==5.3.1
+email_validator==2.3.0
+
+# === HTTP Client (assíncrono, único) ===
+httpx[http2]==0.27.0            # http2 para multiplexação e pooling melhor
+
+# === AI SDKs & Transcription ===
+# anthropic==0.34.2             # Preparado para Claude no futuro — ative quando tiver a chave
+SpeechRecognition==3.10.3       # Usado para transcrição rápida do loopback (Google Speech API)
+pyaudiowpatch==0.2.12.post4     # Usado para capturar áudio de loopback (WASAPI) no Windows
+
+# === Database ===
 sqlalchemy==2.0.48
 aiosqlite==0.22.1
-pywin32==311
-python-multipart==0.0.26
-email_validator==2.3.0
-orjson==3.11.8
-ujson==5.12.0
+alembic==1.13.2                 # Migrations versionadas
+
+# === Cache & Queue ===
+redis==5.3.1
+arq==0.28.0
+cachetools==5.5.0               # TTLCache + LRUCache em memória
+
+# === Scheduling ===
+apscheduler==3.10.4
+
+# === Rate Limiting ===
+slowapi==0.1.9
+
+# === Resilience (retry, backoff, circuit breaker) ===
+tenacity==9.0.0                 # Retry decorator battle-tested
+
+# === Observability ===
+structlog==24.4.0               # Logging estruturado (JSON)
+prometheus-client==0.20.0       # Métricas
+
+# === Serialization ===
+orjson==3.11.8                  # JSON rápido (nativo do FastAPI)
+
+# === Templates (usado em algumas respostas HTML de tracking) ===
 jinja2==3.1.6
+
+# === Windows-only (condicional; ignorar em Linux/Mac) ===
+pywin32==311; sys_platform == "win32"
