@@ -78,11 +78,12 @@ class CallAssistantManager:
         if len(self.context_history) > 20:
             self.context_history.pop(0)
 
-        # Trigger insight on every new message for real-time response
-        self.transcription_queue.put({
-            "type": "trigger_insight",
-            "history": "\n".join(self.context_history[-6:])
-        })
+        # Trigger insight APENAS quando o Cliente falar, para evitar que o vendedor apague a própria tela
+        if role == "Cliente":
+            self.transcription_queue.put({
+                "type": "trigger_insight",
+                "history": "\n".join(self.context_history[-6:])
+            })
 
     def _speaker_listener(self):
         try:

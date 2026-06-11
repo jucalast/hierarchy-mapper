@@ -564,10 +564,8 @@ class LLMRouter:
                             else:
                                 cooldown = int(m.group(1)) if m else (30 * attempt)
                                 _provider_rate_limited_until[provider.name] = time.monotonic() + cooldown
-                                log.warning("llm.provider.rate_limit_retry", provider=provider.name, attempt=attempt, wait_sec=min(cooldown, 10))
-                                if attempt < max_provider_retries:
-                                    await asyncio.sleep(min(cooldown, 5))
-                                    continue
+                                log.warning("llm.provider.rate_limit_aborting_for_fallback", provider=provider.name, wait_sec=cooldown)
+                                break  # SAI DO LOOP DE RETRY IMEDIATAMENTE PARA ACIONAR O FALLBACK!
 
                         log.warning("llm.provider.failed", provider=provider.name, error=str(e)[:200])
                         break
@@ -605,16 +603,61 @@ class LLMRouter:
                 "No LLM provider is available (missing keys or circuit open)."
             )
 
-        # Se a única falha foi cota diária esgotada, re-levanta para o chat_service tratar
-        if daily_quota_exhausted_error and last_error == "gemini_daily_quota_exhausted":
-            raise daily_quota_exhausted_error
+    async def stream_complete(
+        self,
+        messages: List[LLMMessage],
+        *,
+        temperature: float = 0.1,
+        timeout_sec: Optional[float] = None,
+        tier: LLMTier = LLMTier.STANDARD,
+        preferred_model: Optional[str] = None,
+        bypass_throttle: bool = False,
+        strict_model: bool = False,
+        target_provider: Optional[str] = None,
+    ) -> AsyncGenerator[str, None]:
+        async def _run_providers() -> AsyncGenerator[str, None]:
+            providers = self.chain(preferred_model)
+            if target_provider and target_provider in self._providers:
+                providers = [self._providers[target_provider]]
+            providers = [p for p in providers if p.name not in _provider_rate_limited_until or time.monotonic() > _provider_rate_limited_until[p.name]]
+            if not providers:
+                raise NoProviderAvailableError("Nenhum provider disponível para stream.")
 
-        # Se a falha for por contexto muito grande (413), adiciona uma sugestão amigável
-        error_msg = f"Todos os provedores falharam. Último erro: {last_error}"
-        if "413" in str(last_error):
-            error_msg += " (Contexto muito grande para este modelo. Tente reduzir o histórico ou usar um modelo Pro/70B)."
-        
-        raise NoProviderAvailableError(error_msg)
+            last_error = ""
+            for provider in providers:
+                if not provider.available:
+                    continue
+                try:
+                    async for chunk in provider.stream(
+                        messages=messages,
+                        temperature=temperature,
+                        timeout_sec=timeout_sec,
+                        tier=tier,
+                        preferred_model=preferred_model,
+                    ):
+                        yield chunk
+                    return
+                except Exception as e:
+                    last_error = str(e)
+                    if "429" in str(e).lower() or "rate limit" in str(e).lower():
+                        break
+                    break
+            raise LLMError(f"Stream falhou em todos os providers. Último erro: {last_error}")
+
+        if bypass_throttle:
+            async for chunk in _run_providers():
+                yield chunk
+        else:
+            global _last_llm_call_time
+            async with _llm_semaphore:
+                now = time.monotonic()
+                gap = _MIN_CALL_GAP_SEC - (now - _last_llm_call_time)
+                if gap > 0:
+                    await asyncio.sleep(gap)
+                _last_llm_call_time = time.monotonic()
+                
+                async for chunk in _run_providers():
+                    yield chunk
 
 
 def get_router() -> LLMRouter:

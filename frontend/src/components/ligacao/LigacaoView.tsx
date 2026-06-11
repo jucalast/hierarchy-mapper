@@ -94,7 +94,17 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
     if (initialData?.flight_plan) {
       const parsed = parseFlightPlan(initialData.flight_plan);
       if (parsed) {
+        // Se houver um insight recente persistido no DB, ele contém os passos já preenchidos
+        if (initialData.latest_insight && Array.isArray(initialData.latest_insight.updated_steps)) {
+          parsed.steps = initialData.latest_insight.updated_steps;
+        }
         setActiveFlightPlan(parsed);
+      }
+    }
+    if (initialData?.latest_insight) {
+      setLatestInsight(initialData.latest_insight);
+      if (initialData.latest_insight.transfer_detected) {
+        setIsTransferred(true);
       }
     }
   }, [initialData, parseFlightPlan]);
@@ -110,6 +120,11 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
   const [speakerMeter, setSpeakerMeter] = useState<MeterState>({ rms: 0, speaking: false, status: "Aguardando" });
   const [vendorAvatarUrl, setVendorAvatarUrl] = useState<string | null>(null);
   const [hasHungUp, setHasHungUp] = useState(false);
+  
+  // Streaming state
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
+  const [streamingLabel, setStreamingLabel] = useState("");
 
   const wsRef = useRef<WebSocket | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -196,9 +211,13 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
       hasLoadedSessionRef.current = true;
       
       try {
+        // REGRA NOVA: Só carrega a última ligação se vier da aba /mensagens (tem id) ou se for explicitamente um recarregamento histórico.
+        // Se a pessoa só clicou em "Ligar" no Grafo, vem o phone, mas NÃO queremos carregar o passado.
+        if (!initialData?.id && !initialData?.isHistory) {
+          return;
+        }
+
         const queryParams = [];
-        if (initialData?.activity_id) queryParams.push(`activity_id=${initialData.activity_id}`);
-        if (initialData?.phone) queryParams.push(`phone=${encodeURIComponent(initialData.phone)}`);
         if (initialData?.id) queryParams.push(`session_id=${initialData.id}`);
         const queryString = queryParams.join('&');
 
@@ -459,6 +478,28 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
               setPartialMic(data.text ? { text: data.text, latency_ms: data.latency_ms, buffer_secs: data.buffer_secs } : null);
             else
               setPartialSpeaker(data.text ? { text: data.text, latency_ms: data.latency_ms, buffer_secs: data.buffer_secs } : null);
+            break;
+
+          case "insight_stream_start":
+            setIsStreaming(true);
+            setStreamingText("");
+            setStreamingLabel("⚡ Roteirizando...");
+            break;
+
+          case "insight_metadata":
+            if (data.data) {
+              if (data.data.label) setStreamingLabel(data.data.label);
+              if (data.data.transfer_detected) setIsTransferred(true);
+            }
+            break;
+
+          case "insight_chunk":
+            setStreamingText(prev => prev + data.chunk);
+            if (data.label) setStreamingLabel(data.label);
+            break;
+
+          case "insight_stream_end":
+            setIsStreaming(false);
             break;
 
           case "insight":
@@ -726,8 +767,41 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
                 const isPast = idx < activeIdx;
                 const isLightning = step.is_lightning === true;
                 
+                const isThisStepStreaming = isStreaming && streamingLabel && (
+                  step.label.toLowerCase().includes(streamingLabel.toLowerCase()) || 
+                  streamingLabel.toLowerCase().includes(step.label.toLowerCase())
+                );
+                
+                // Se estivermos streamando exatamente esta etapa, mostramos a stream no lugar do content
+                const displayContent = isThisStepStreaming ? streamingText : step.content;
+                
                 return (
-                  <div key={idx} className={styles.pipelineRow}>
+                  <React.Fragment key={idx}>
+                  
+                  {/* FAKE ROW: Se estiver streamando uma Etapa Relâmpago ANTES desta etapa pendente */}
+                  {isActive && isStreaming && !isThisStepStreaming && (
+                    <div className={styles.pipelineRow}>
+                      <div className={styles.pipelineSide}>
+                        <div className={`${styles.pipelineDotLightning} ${styles.active}`}>
+                          <Zap size={14} className={styles.zapIconLightning} style={{ animation: "pulse 1s infinite" }} />
+                        </div>
+                        <div className={`${styles.pipelineLine} ${styles.active}`} />
+                      </div>
+                      <div className={`${styles.pipelineCard} ${styles.pipelineCardLightning}`}>
+                        <strong className={`${styles.pipelineStepLabel} ${styles.active} ${styles.lightningLabel}`}>
+                          {streamingLabel || "⚡ Processando..."}
+                        </strong>
+                        <span className={`${styles.pipelineStepContent} ${styles.active}`}>
+                          {streamingText}
+                          <span className={styles.typingDots} style={{ marginLeft: 4 }}>
+                            <span /><span /><span />
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                    <div className={styles.pipelineRow}>
                     <div className={styles.pipelineSide}>
                       {isLightning ? (
                         <div className={`${styles.pipelineDotLightning} ${isActive ? styles.active : ''} ${isPast ? styles.past : ''}`}>
@@ -746,7 +820,12 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
                         {step.label}
                       </strong>
                       <span className={`${styles.pipelineStepContent} ${isActive ? styles.active : ''}`}>
-                        {step.content}
+                        {displayContent}
+                        {isThisStepStreaming && (
+                          <span className={styles.typingDots} style={{ marginLeft: 4 }}>
+                            <span /><span /><span />
+                          </span>
+                        )}
                       </span>
                       
                       {/* Histórico Persistido do Copiloto/Agent */}
@@ -768,6 +847,8 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
                       )}
                     </div>
                   </div>
+                  
+                  </React.Fragment>
                 );
               })}
             </div>
@@ -801,8 +882,21 @@ export const LigacaoView: React.FC<LigacaoViewProps> = ({ onBack, initialData })
             </div>
           )}
 
+          {/* Caso não haja plano de voo ou o insight ativo não corresponda a nenhum passo */}
+          {(!activeFlightPlan || !activeFlightPlan.steps || activeIdx === -1) && isStreaming && (
+            <div className={styles.coachingCard}>
+               <div className={styles.insightHeader}>
+                 <Zap size={14} className={styles.zapIcon} style={{ animation: "pulse 1s infinite" }} />
+                 <span>{streamingLabel || "⚡ Pensando..."}</span>
+               </div>
+               <div className={styles.suggestionTextOnly} style={{ opacity: 1 }}>
+                 <p><em>{streamingText}<span className={styles.typingDots}><span /><span /><span /></span></em></p>
+               </div>
+            </div>
+          )}
+
           {/* Estado vazio padrão */}
-          {!activeFlightPlan && !latestInsight && (
+          {!activeFlightPlan && !latestInsight && !isStreaming && (
             <div className={styles.emptySidebar}>
               <Headset size={32} strokeWidth={1.2} />
               <p>O Copiloto analisará o áudio em tempo real para sugerir gatilhos do SPIN Selling.</p>

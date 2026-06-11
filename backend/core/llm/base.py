@@ -69,3 +69,15 @@ class LLMProvider(Protocol):
     ) -> LLMResult:  # pragma: no cover
         """Executa a chamada. Lança LLMError em falhas."""
         ...
+
+    async def stream(
+        self,
+        messages: List[LLMMessage],
+        *,
+        temperature: float = 0.1,
+        timeout_sec: Optional[float] = None,
+        tier: LLMTier = LLMTier.STANDARD,
+        preferred_model: Optional[str] = None,
+    ):  # pragma: no cover
+        """Yields chunks of text as they are generated."""
+        ...

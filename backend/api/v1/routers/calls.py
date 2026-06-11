@@ -183,6 +183,20 @@ async def call_assistant_websocket(websocket: WebSocket):
             )
             res = await session.execute(stmt)
             db_session = res.scalar_one_or_none()
+            org_id = db_session.org_id if db_session else None
+            
+            mapped_contacts_str = "Nenhum contato mapeado."
+            if org_id:
+                try:
+                    from models import Employee
+                    stmt_emps = select(Employee).where(Employee.company_id == org_id)
+                    res_emps = await session.execute(stmt_emps)
+                    emps = res_emps.scalars().all()
+                    if emps:
+                        mapped_contacts_str = ", ".join([f"{e.name}" for e in emps if e.name])
+                except Exception as e:
+                    log.error(f"Erro ao buscar contatos mapeados para o org_id {org_id}: {e}")
+
             if db_session:
                 if db_session.latest_insight and "updated_steps" in db_session.latest_insight:
                     fp = dict(db_session.flight_plan) if db_session.flight_plan else {}
@@ -213,7 +227,7 @@ async def call_assistant_websocket(websocket: WebSocket):
                 while True:
                     msg = assistant_manager.transcription_queue.get_nowait()
                     if msg["type"] == "trigger_insight":
-                        asyncio.create_task(handle_ai_insight(websocket, msg["history"], activity_id, phone))
+                        asyncio.create_task(handle_ai_insight(websocket, msg["history"], activity_id, phone, mapped_contacts_str))
                     else:
                         await websocket.send_json(msg)
                         if msg["type"] == "transcription" and msg.get("role") == "Cliente":
@@ -253,9 +267,12 @@ async def call_assistant_websocket(websocket: WebSocket):
                     elif data == "FINALIZE":
                         should_save = True
                         break
-            except (asyncio.TimeoutError, Exception):
+            except asyncio.TimeoutError:
                 pass
-            
+            except WebSocketDisconnect:
+                raise
+            except Exception as e:
+                pass
     except WebSocketDisconnect:
         log.info("WebSocket disconnected")
     finally:
@@ -337,38 +354,27 @@ DIRETRIZES DE VENDAS E CONTORNO DE OBJEÇÕES:
 {CallSkill.OBJECTION_HANDLING_RULES}
 
 INSTRUÇÕES DE ANÁLISE E ADAPTAÇÃO:
-1. Identifique em qual etapa do plano de voo a conversa está. O valor do campo "current_step" DEVE corresponder EXATAMENTE ao nome (ou label) de uma das etapas presentes no plano de voo (ex: "ABERTURA", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "QUALIFICAÇÃO", "NECESSIDADE", "FECHAMENTO", ou uma "Etapa Relâmpago" previamente criada). Se não houver correspondência clara, use o nome mais próximo possível dentre os definidos no plano de voo.
-2. **USO DE CONTEXTO**: Ao redigir as falas do vendedor (em Etapas Relâmpago ou na Próxima Etapa), use sutilmente os diferenciais, produtos e clientes de referência acima. Ex: se ele tem objeção de confiança, cite um cliente; se ele tem problema de qualidade, conecte com o nosso produto. Construa um "pitch" inteligente e persuasivo.
-3. **DETECÇÃO DE OBJEÇÃO (CRÍTICO)**: Analise a ÚLTIMA fala do cliente. Se ela contiver QUALQUER variação das frases abaixo, você DEVE marcar "objection_detected" como true:
-   - "não é um bom momento" / "agora não posso" / "me liga depois" / "estou ocupado"
-   - "me manda por e-mail" / "me envia um material" / "manda uma proposta"
-   - "já temos fornecedor" / "já estamos atendidos" / "estamos satisfeitos"
-   - "não tenho interesse" / "não tenho necessidade" / "no momento não preciso"
-   - "não conheço vocês" / "está caro" / "não temos orçamento"
-   ATENÇÃO: Citar dores próprias (ex: "temos avarias", "temos custos altos") NÃO é objeção — é sinal de compra. Objeção é RESISTÊNCIA a continuar a conversa.
-4. **CONTORNO DE OBJEÇÃO (OBRIGATÓRIO se objection_detected = true)**:
-   - Preencha "objection_handling" com o script de contorno COMPLETO, pronto para o vendedor ler (2-3 frases, NÃO apenas 15 palavras).
-   - INJETE uma Etapa Relâmpago com label "⚡ Contorno de Objeção" contendo o mesmo script. Essa etapa deve ser posicionada ANTES da próxima etapa SPIN nos updated_steps.
-   - NÃO avance o funil SPIN enquanto a objeção não for contornada. Se o cliente disse "me liga depois", a próxima etapa NÃO é SITUAÇÃO + PROBLEMA — é o contorno.
-   - **REGRA DE OURO**: Consulte as REGRAS DE CONTORNO DE OBJEÇÃO acima para montar o script de contorno adequado ao tipo de objeção detectada.
-5. Em "suggestion", forneça apenas dicas COMPORTAMENTAIS muito curtas (ex: "Fale mais devagar", "Deixe ele terminar de falar"). Dicas de roteiro NÃO devem vir aqui.
-6. **TRANSFERÊNCIA AUTOMÁTICA**: Detecte se a conversa indica que a recepção/PABX transferiu a ligação para o alvo. Se sim, defina "transfer_detected" como true.
-7. **ADAPTAÇÃO DO PLANO DE VOO (updated_steps)**: Você deve retornar todas as etapas do plano de voo sob a chave "updated_steps", com as seguintes regras:
-   - **ETAPAS RELÂMPAGO (Lightning Steps)**: INJETE uma Etapa Relâmpago se o cliente resistiu, levantou objeção, ou desviou do assunto exigindo uma parada estratégica.
-   - **REGRA DE TRANSFERÊNCIA (PABX para ALVO)**: Quando transferido, analise quem atendeu:
-     A) Se NÃO disser o nome, crie Relâmpago "Confirmar Alvo" para perguntar: "Alô, falo com o(a) [Nome]?".
-     B) Se disser NOME DIFERENTE do alvo (Gatekeeper), crie Relâmpago "Qualificar Interlocutor": "Oi (nome), boa tarde. Meu nome é {seller_name} da {company_name}... Gostaria de saber quem seria a pessoa certa...".
-     C) **EXTRAÇÃO DE CONTATO DIRETO**: Se revelarem quem é o decisor, seu ÚNICO objetivo é pedir ramal/e-mail/WhatsApp direto dessa pessoa. Crie Relâmpago para isso. NUNCA tente agendar "através" do gatekeeper.
-     D) Se for o Alvo, crie Relâmpago "Reintrodução e Hook".
-   - **PROIBIÇÃO DE REDUNDÂNCIA (EFEITO PAPAGAIO)**: NUNCA crie uma Etapa Relâmpago se o conteúdo dela for similar ao roteiro que você está gerando para a PRÓXIMA ETAPA lógica do S.P.I.N. Escolha apenas UM bloco para colocar o roteiro! Se a próxima etapa já resolve (ex: Necessidade), preencha apenas a Necessidade. Se você gerar dois blocos dizendo a mesma coisa, o vendedor lerá duplicado e perderá a venda.
-   - REGRA CRÍTICA: NUNCA crie uma Etapa Relâmpago se a última pessoa a falar no histórico foi o "Vendedor". As Etapas Relâmpago são exclusivas para reagir à última fala do CLIENTE.
-   - **PROGRESSÃO DO FUNIL (CRUCIAL)**: Se o cliente respondeu bem (ex: confirmou os custos/problemas na Implicação), PULE IMEDIATAMENTE para a PRÓXIMA etapa (Necessidade) substituindo "Pendente..." pelo roteiro exato. O funil não pode parar.
-   - **ATALHO DE SUCESSO (SHORT-CIRCUIT)**: Se o objetivo foi alcançado (agendou reunião ou pegou contato do decisor), PULE imediatamente para "FECHAMENTO". Preencha as do meio com "Não se aplica".
-   - **BREVIDADE EXTREMA**: Gere roteiros de no máximo 1 a 2 frases curtas. O objetivo é dar a INTENÇÃO da fala para o vendedor, não um monólogo longo.
-   - **UMA PERGUNTA POR VEZ**: NUNCA faça múltiplas perguntas ("metralhadora") na mesma fala. Escolha a pergunta mais importante.
-   - **NATURALIDADE**: Mantenha um tom coloquial, de conversa B2B ágil (bate-bola). Evite "ler panfleto" ou despejar jargões técnicos antes do cliente aprofundar a dor.
-   - O texto deve estar pronto para o vendedor ler. Você já sabe que o nome do vendedor é {seller_name} e a empresa é {company_name}. Nunca use colchetes/chaves.
+1. **MODO SCRIPT COMPLETO (Teleprompter)**: O vendedor precisa do roteiro exato e literal para ler na tela. 
+   - A sua resposta em "content" das Etapas Relâmpago ou do plano DEVE ser o bloco de texto completo, conversacional e humano.
+   - NÃO use dicas curtas em "content". Escreva a frase exata que o vendedor deve falar em primeira pessoa.
+   - Exemplo de Contorno: "[⚡ TÁTICA: 20 SEGS] Entendo perfeitamente que a correria é grande. Prometo não tomar seu tempo. Em 20 segundos: vocês têm sofrido com avarias nas embalagens ultimamente?"
+2. **DETECÇÃO DE BRUSH-OFF / OBJEÇÃO**: Analise a ÚLTIMA fala do cliente. Se ela contiver "me manda por e-mail", "agora não posso", "já temos fornecedor", etc. marque "objection_detected" como true.
+   - ATENÇÃO: Na indústria B2B, pedir e-mail é um *brush-off* (tentativa de desligar). Trate como objeção grave, não como avanço de etapa.
+3. **CONTORNO DE OBJEÇÃO (OBRIGATÓRIO se objection_detected = true)**:
+   - INJETE uma Etapa Relâmpago com label "⚡ Contorno" contendo o texto tático curto.
+   - NÃO avance o funil SPIN (SITUAÇÃO/PROBLEMA) se a objeção/brush-off não foi superada.
+4. Em "suggestion", forneça apenas dicas COMPORTAMENTAIS muito curtas (ex: "Fale devagar", "Ele está fugindo, mude o ângulo").
+5. **FLEXIBILIDADE DE FUNIL (Recuo Estratégico)**: Não seja um robô do SPIN. Se o cliente minimizar a dor (ex: "temos problemas isolados, mas resolvemos"), NÃO empurre perguntas de [IMPLICAÇÃO] complexas sobre "custo e retrabalho". Isso afasta o cliente frio. Em vez disso, recue para curiosidade rápida em [QUALIFICAÇÃO]: "[RECUO] Entendi. E quando acontece, como vocês resolvem?".
+6. **ADAPTAÇÃO DO PLANO DE VOO (updated_steps)**: Retorne no array `updated_steps` APENAS as etapas que sofreram alteração (para economizar tokens e acelerar a resposta). O backend cuidará de mesclar com o plano atual.
+   - **ETAPAS RELÂMPAGO (Lightning Steps)**: Injetadas em caso de brush-off, objeção ou dúvida complexa. Retorne a Etapa Relâmpago no array `updated_steps`. O backend se encarregará de fazer o "append" no histórico da tela.
+   - **REGRA DE TRANSFERÊNCIA / GATEKEEPER**: Após a transferência, mesmo que a pessoa se identifique, sua PRIMEIRA Etapa Relâmpago DEVE ser Qualificar o Alvo (ex: "[⚡ TÁTICA: QUALIFICAR] Oi Luciana, é você que cuida da área de embalagens?").
+   - **INTELIGÊNCIA DE CONTATOS**: Se a telefonista disser "Vou passar pro Fernando" ou "É com o Fernando", cruze esse nome com os "CONTATOS MAPEADOS DA EMPRESA" (fornecidos abaixo no prompt). Se ele existir lá, diga: "[⚡ TÁTICA: PEDIR TRANSFERÊNCIA] Ah, o Fernando é o Gerente! Consegue me transferir pra ele?".
+   - **PROGRESSÃO / SHORT-CIRCUIT**: Se o objetivo foi alcançado (agendou visita), PULE para "FECHAMENTO".
    - Etapas muito distantes continuam "Pendente...".
+
+ATENÇÃO — REGRA CRÍTICA DE MEMÓRIA E DESISTÊNCIA:
+Antes de responder, leia minuciosamente o HISTÓRICO. Se o vendedor já usou uma tática (ex: "Só 20 segundos") e o cliente respondeu negando novamente, É PROIBIDO gerar a mesma tática de novo. Se o cliente rejeitar o avanço 3 vezes seguidas, pare de forçar o funil e injete uma Etapa Relâmpago com [TÁTICA: DESLIGAMENTO EDUCADO]. 
+**EXCEÇÃO DE OURO (DOR GRAVE)**: Se em QUALQUER momento o cliente revelar uma dor grave (ex: "perdemos 2 dias de produção", "temos muita avaria", "tá custando caro"), **IGNORE TOTALMENTE** a regra de desligamento e o brush-off. Ancore imediatamente na dor para fisgar a reunião: "[⚡ TÁTICA: ANCORAR NA DOR] Luciana, 2 dias perdidos é muito dinheiro no ralo. Posso te mostrar em 5 min como a Toyota zerou isso com a gente?". NUNCA desista se houver dor exposta!
 """
     return _cached_static_prompt, seller_name, company_name
 
@@ -386,16 +392,19 @@ def invalidate_coaching_cache():
 _pending_insight_request: dict | None = None
 
 
-async def handle_ai_insight(websocket: WebSocket, history: str, activity_id: str | None, phone: str | None):
+async def handle_ai_insight(websocket: WebSocket, history: str, activity_id: str | None, phone: str | None, mapped_contacts_str: str = "Nenhum contato mapeado."):
     global _pending_insight_request
     
     # Armazena este pedido como o mais recente
-    _pending_insight_request = {
-        "websocket": websocket,
-        "history": history,
-        "activity_id": activity_id,
-        "phone": phone,
-    }
+    request_id = id(history)
+    _pending_insight_request = {"id": request_id, "history": history, "websocket": websocket, "activity_id": activity_id, "phone": phone}
+    
+    # Debounce mínimo: apenas 0.05s (frontend já deve garantir eventos corretos)
+    await asyncio.sleep(0.05)
+    
+    # Se o pedido mais recente não for este, abortamos silenciosamente (debounce)
+    if _pending_insight_request.get("id") != request_id:
+        return
     
     # Se já há um insight em andamento, não duplicamos — o processador atual
     # vai pegar o _pending_insight_request quando terminar
@@ -423,61 +432,164 @@ async def handle_ai_insight(websocket: WebSocket, history: str, activity_id: str
 PLANO DE VOO DA LIGAÇÃO (ATUAL):
 {plan_text}
 
+CONTATOS MAPEADOS DA EMPRESA:
+{mapped_contacts_str}
+
 HISTÓRICO RECENTE DA CONVERSA:
 {hist}
 
-Retorne estritamente um JSON com a seguinte estrutura:
-{{
-  "current_step": "Nome exato da etapa do plano de voo",
-  "suggestion": "Dica comportamental rápida ou string vazia",
-  "objection_detected": true ou false,
-  "objection_handling": "Frase de contorno se houver objeção, senão string vazia",
-  "transfer_detected": true ou false,
-  "updated_steps": [
-    {{
-      "label": "Nome da Etapa",
-      "content": "Roteiro adaptado com base no diálogo",
-      "is_lightning": false
-    }}
-  ]
-}}
+VOCÊ É UM ASSISTENTE DE STREAMING. SÓ GERE O TEXTO DA PRÓXIMA ETAPA E NADA MAIS.
+Retorne a sua resposta no seguinte formato EXATO E OBRIGATÓRIO:
+
+[TRANSFER_DETECTED=true|false]
+[OBJECTION_DETECTED=true|false]
+[LABEL=NOME EXATO DA ETAPA OU ⚡ CONTORNO]
+---
+Aqui entra o texto falado que o vendedor vai ler, e NADA MAIS.
 """
             try:
                 import time as _time
+                from core.llm.router import get_router
+                from core.llm.base import LLMMessage
+                
+                msgs = [
+                    LLMMessage(role="system", content="Você é um copiloto de vendas ao vivo. Você DEVE usar o formato de tags exato solicitado."),
+                    LLMMessage(role="user", content=prompt)
+                ]
+                
+                router = get_router()
                 _t0 = _time.monotonic()
-                res = await ask_llm(
-                    prompt=prompt, 
-                    system="Você é um assistente de vendas em tempo real. Respostas ultra-curtas em JSON.", 
-                    json_mode=True, 
+                
+                # Envia aviso de inicio de stream para o FrontEnd limpar o texto do card
+                await ws.send_json({
+                    "type": "insight_stream_start"
+                })
+                
+                full_text = ""
+                is_body = False
+                metadata = {}
+                
+                async for chunk in router.stream_complete(
+                    messages=msgs,
+                    temperature=0.3,
                     tier=LLMTier.FAST,
                     preferred_model="gemini-2.5-flash",
                     bypass_throttle=True
-                )
-                _elapsed = int((_time.monotonic() - _t0) * 1000)
-                log.info(f"[coaching] LLM insight concluído em {_elapsed}ms")
-                
-                # Se chegou um pedido MAIS RECENTE durante a chamada LLM,
-                # descarta este resultado e processa o novo no próximo loop
-                if _pending_insight_request is not None:
-                    log.info(f"[coaching] Insight obsoleto após LLM (há pedido mais recente), descartando resultado")
-                    continue
-                
-                data = res.json_data or {}
-                
-                # Se houver passos atualizados, atualizamos o plano em memória
-                if data and "updated_steps" in data and isinstance(data["updated_steps"], list) and len(data["updated_steps"]) > 0:
-                    if isinstance(assistant_manager.active_coaching_plan, dict):
-                        assistant_manager.active_coaching_plan["steps"] = data["updated_steps"]
+                ):
+                    full_text += chunk
+                    
+                    if not is_body:
+                        if "\n---\n" in full_text or "\n---" in full_text:
+                            is_body = True
+                            # Extrai os metadados
+                            header = full_text.split("---")[0]
+                            if "[TRANSFER_DETECTED=TRUE]" in header.upper():
+                                metadata["transfer_detected"] = True
+                            if "[OBJECTION_DETECTED=TRUE]" in header.upper():
+                                metadata["objection_detected"] = True
+                            
+                            import re
+                            label_match = re.search(r"\[LABEL=(.*?)\]", header, re.IGNORECASE)
+                            metadata["label"] = label_match.group(1).strip() if label_match else "⚡ Sugestão"
+                            
+                            # Pega o que já foi gerado do corpo e envia
+                            body_chunk = full_text.split("---", 1)[1].lstrip()
+                            if body_chunk:
+                                await ws.send_json({
+                                    "type": "insight_chunk",
+                                    "chunk": body_chunk,
+                                    "label": metadata["label"]
+                                })
                     else:
-                        assistant_manager.active_coaching_plan = {"steps": data["updated_steps"]}
+                        # Stream do corpo
+                        await ws.send_json({
+                            "type": "insight_chunk",
+                            "chunk": chunk,
+                            "label": metadata.get("label", "⚡ Sugestão")
+                        })
                 
-                # Salva o insight no objeto do websocket para persistência futura
-                ws.latest_insight = data
-                
+                # Finaliza stream e atualiza memória do plano
                 await ws.send_json({
-                    "type": "live_coaching", 
-                    "data": data
+                    "type": "insight_stream_end"
                 })
+                
+                _elapsed = int((_time.monotonic() - _t0) * 1000)
+                log.info(f"[coaching] LLM Stream concluído em {_elapsed}ms")
+                
+                # Montamos o objeto como era antes para salvar na memória
+                body_text = full_text.split("---", 1)[1].strip() if "---" in full_text else full_text.strip()
+                label = metadata.get("label", "⚡ Sugestão")
+                is_lightning = "⚡" in label or metadata.get("objection_detected", False)
+                
+                new_step = {
+                    "label": label,
+                    "content": body_text,
+                    "is_lightning": is_lightning
+                }
+                
+                current_steps = []
+                if isinstance(assistant_manager.active_coaching_plan, dict) and "steps" in assistant_manager.active_coaching_plan:
+                    current_steps = list(assistant_manager.active_coaching_plan["steps"])
+                
+                if is_lightning:
+                    # Insere o card relâmpago na posição cronológica (antes da primeira etapa Pendente)
+                    insert_idx = len(current_steps)
+                    for idx, s in enumerate(current_steps):
+                        content_lower = str(s.get("content", "")).lower()
+                        if "pendente" in content_lower or not content_lower.strip():
+                            insert_idx = idx
+                            break
+                    current_steps.insert(insert_idx, new_step)
+                else:
+                    found = False
+                    for idx, old_step in enumerate(current_steps):
+                        if old_step.get("label") == label:
+                            current_steps[idx] = {**old_step, **new_step}
+                            found = True
+                            break
+                    if not found:
+                        current_steps.append(new_step)
+                        
+                if isinstance(assistant_manager.active_coaching_plan, dict):
+                    assistant_manager.active_coaching_plan["steps"] = current_steps
+                else:
+                    assistant_manager.active_coaching_plan = {"steps": current_steps}
+                    
+                insight_data = {
+                    "transfer_detected": metadata.get("transfer_detected", False),
+                    "objection_handling": body_text if is_lightning else "",
+                    "suggestion": "",
+                    "current_step": label if not is_lightning else "",
+                    "updated_steps": current_steps
+                }
+                
+                # Dispara o evento final consolidado para o front-end
+                await ws.send_json({
+                    "type": "live_coaching",
+                    "data": insight_data
+                })
+                    
+                # Se for transfer, dispara evento
+                if metadata.get("transfer_detected"):
+                    await ws.send_json({
+                        "type": "detected_contact",
+                        "data": {
+                            "name": "Contato Identificado",
+                            "isTransferred": True
+                        }
+                    })
+                    
+                # Salva o insight no banco de dados para persistência global
+                asyncio.create_task(save_call_insight(insight_data, activity_id, phone))
+
             except Exception as e:
-                log.error(f"Error AI Insight: {e}")
+                from starlette.websockets import WebSocketDisconnect
+                if isinstance(e, (RuntimeError, WebSocketDisconnect)) or "websocket" in str(e).lower():
+                    log.info("[coaching] WebSocket fechado ou desconectado durante stream. Abortando envio de insight.")
+                    return
+                log.exception("[coaching] Erro ao gerar/streamar insight via LLM")
+                try:
+                    await ws.send_json({"type": "error", "message": f"Erro interno do Coach: {str(e)}"})
+                except Exception:
+                    pass
 

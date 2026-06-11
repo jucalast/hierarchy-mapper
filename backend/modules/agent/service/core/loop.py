@@ -989,7 +989,15 @@ async def _agent_loop(
                     # ── Interceptor: Investigação concluída mas rascunho NÃO gerado ──────────
                     _COMM_KEYWORDS = ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow"]
                     _is_comm_task = any(k in _first_msg_content_clean.lower() for k in _COMM_KEYWORDS)
-                    _is_call_task = any(k in _first_msg_content_clean.lower() for k in ["ligação", "ligar", "telefonar", "telefone"])
+                    
+                    _ligacao_finalizada = any(
+                        "ALERTA DE CONTEXTO: LIGAÇÃO FINALIZADA" in (
+                            _m.get("content", "") if isinstance(_m.get("content"), str) 
+                            else json.dumps(_m.get("content", ""))
+                        )
+                        for _m in messages
+                    )
+                    _is_call_task = any(k in _first_msg_content_clean.lower() for k in ["ligação", "ligar", "telefonar", "telefone"]) and not _ligacao_finalizada
 
 
                     # ── Interceptor: LIGAÇÃO - contato sem telefone → forçar find_company_contact ──
@@ -1458,7 +1466,7 @@ async def _agent_loop(
                                 f"RESUMO DAS FONTES:\n{context_str}\n\n"
                                 f"{_task_action_hint}\n"
                                 "Você é um Consultor de Vendas B2B sênior e altamente estratégico.\n"
-                                "AÇÃO OBRIGATÓRIA 1: Se a instrução do usuário exigia concluir uma tarefa específica, você DEVE chamar `pipedrive_update_task` com `done=true` agora, a menos que já tenha feito isso.\n"
+                                "AÇÃO OBRIGATÓRIA 1: Se a instrução do usuário exigia CONCLUIR/FECHAR uma tarefa específica, você DEVE chamar `pipedrive_update_task` com `done=true` agora. ATENÇÃO: Se o usuário pediu APENAS para atualizar a tarefa (ex: 'atribuir a Renata', 'mudar a data'), NÃO passe `done=true`! Atualize apenas os campos solicitados.\n"
                                 "AÇÃO OBRIGATÓRIA 2: Chame OBRIGATORIAMENTE 'suggest_next_actions' com ações específicas, contextualizadas e comercialmente brilhantes.\n"
                                 "IMPORTANTE: Você não precisa fazer as duas coisas no mesmo turno. Se precisar chamar `pipedrive_update_task`, faça-o agora e no turno seguinte você chamará `suggest_next_actions`.\n"
                                 "ATENÇÃO: Se a busca retornou uma LISTA de entidades (ex: 12 negócios sem tarefas, múltiplos prospects), "

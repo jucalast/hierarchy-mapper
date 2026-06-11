@@ -507,7 +507,13 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             )
 
     # ── Tratamento Específico: Resumo de Ligação (Pós-Chamada) ──────────────
-    _is_call_summary = any("[ALERTA DE CONTEXTO: LIGAÇÃO FINALIZADA]" in str(m.get("content", "")) for m in messages[-2:])
+    _last_user_msg_content = ""
+    for m in reversed(messages):
+        if m.get("role") == "user":
+            _last_user_msg_content = str(m.get("content", ""))
+            break
+            
+    _is_call_summary = "[ALERTA DE CONTEXTO: LIGAÇÃO FINALIZADA]" in _last_user_msg_content
     if _is_call_summary:
         return render_prompt(
             f"Data: {today}. Você é o Agente Comercial LinkB2B — especialista em CRM e fechamento.\n"
@@ -617,7 +623,8 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             "(2) Uma ferramenta por turno — nunca duas.\n"
             "(3) Se a pergunta pode ser respondida com dados do sistema, USE a ferramenta certa.\n"
             "(4) Se o usuário fornecer DADOS DE UM CONTATO (nome, email, telefone), PRIORIZE CADASTRAR/ATUALIZAR IMEDIATAMENTE usando `pipedrive_create_person` em vez de investigar.\n"
-            "(5) Se é uma saudação ou pergunta sobre o sistema, responda diretamente SEM ferramentas.\n\n"
+            "(5) Se é uma saudação ou pergunta sobre o sistema, responda diretamente SEM ferramentas.\n"
+            "(6) CONTINUIDADE DE CONTEXTO: Se o usuário enviar uma mensagem curta/fragmentada (ex: 'e nas tarefas tbm', 'para o deal também'), significa que ele quer aplicar a MESMA AÇÃO ou ENTIDADE da sua última execução para esse novo alvo. NÃO perca o contexto (mantenha a pessoa/ID) e NÃO ative modos de investigação abstrata (como evaluate_prospects). Apenas chame a ferramenta de atualização (ex: pipedrive_update_task) usando a entidade anterior.\n\n"
             "FERRAMENTAS DISPONÍVEIS E QUANDO USAR CADA UMA:\n\n"
             "📋 TAREFAS E AGENDA:\n"
             "• pipedrive_get_all_activities → Para 'o que tenho pra fazer?', 'minhas tarefas', 'agenda de hoje', "

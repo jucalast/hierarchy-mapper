@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import json
 import time
-from typing import List, Optional
+from typing import AsyncGenerator, List, Optional
 
 from core.config import settings
 from core.infra.http_client import get_http_client
@@ -324,3 +324,76 @@ class GeminiProvider(LLMProvider):
         self._breaker.record_failure(reason=last_error or "all_models_failed")
         update_circuit_metric(self._breaker.name, True)
         raise LLMError(f"Gemini: all models failed ({last_error})")
+
+    async def stream(
+        self,
+        messages: List[LLMMessage],
+        *,
+        temperature: float = 0.1,
+        timeout_sec: Optional[float] = None,
+        tier: LLMTier = LLMTier.STANDARD,
+        preferred_model: Optional[str] = None,
+    ) -> AsyncGenerator[str, None]:
+        key = settings.GEMINI_API_KEY
+        if not key:
+            raise LLMError("Gemini API key not configured.")
+
+        try:
+            self._breaker.ensure_available()
+        except CircuitOpenError as e:
+            raise LLMError(str(e)) from e
+
+        contents, system_text = _messages_to_gemini(messages)
+        payload: dict = {
+            "contents": contents,
+            "generationConfig": {
+                "responseMimeType": "text/plain",
+                "temperature": temperature,
+            },
+        }
+        if system_text:
+            payload["system_instruction"] = {"parts": [{"text": system_text}]}
+
+        timeout = timeout_sec or _timeout_for(tier)
+        client = get_http_client()
+        quota = get_quota_tracker()
+        models = quota.models_for_tier(tier, preferred_model=preferred_model)
+        if not models:
+            models = list(DAILY_LIMITS.keys())
+            
+        if preferred_model and preferred_model in models:
+            models.remove(preferred_model)
+            models.insert(0, preferred_model)
+
+        last_error = None
+        for model in models:
+            url = f"{_GEMINI_BASE}/{model}:streamGenerateContent?alt=sse&key={key}"
+            try:
+                # Usa o stream() do httpx client configurado em get_http_client()
+                async with client.stream("POST", url, json=payload, timeout=timeout) as resp:
+                    if resp.status_code == 200:
+                        await quota.record(model)
+                        async for line in resp.aiter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[len("data: "):]
+                                if data_str == "[DONE]":
+                                    break
+                                try:
+                                    chunk_data = json.loads(data_str)
+                                    text_chunk = chunk_data["candidates"][0]["content"]["parts"][0]["text"]
+                                    yield text_chunk
+                                except (KeyError, IndexError, json.JSONDecodeError):
+                                    pass
+                        return  # Sucesso, sai do provider
+                    elif resp.status_code == 429:
+                        last_error = f"429_on_{model}"
+                        continue
+                    else:
+                        resp_text = await resp.aread()
+                        last_error = f"{resp.status_code}_on_{model}: {resp_text.decode('utf-8', 'ignore')[:200]}"
+                        continue
+            except Exception as e:
+                last_error = f"{type(e).__name__}: {e}"
+                continue
+                
+        raise LLMError(f"Gemini stream: all models failed ({last_error})")

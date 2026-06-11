@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import time
-from typing import List, Optional
+from typing import AsyncGenerator, List, Optional
 
 from core.config import settings
 from core.infra.http_client import get_http_client
@@ -267,3 +267,69 @@ class GroqProvider(LLMProvider):
         self._breaker.record_failure(reason=last_error or "all_models_failed")
         update_circuit_metric(self._breaker.name, True)
         raise LLMError(f"Groq: all models failed ({last_error})")
+
+    async def stream(
+        self,
+        messages: List[LLMMessage],
+        *,
+        temperature: float = 0.1,
+        timeout_sec: Optional[float] = None,
+        tier: LLMTier = LLMTier.STANDARD,
+        preferred_model: Optional[str] = None,
+    ) -> AsyncGenerator[str, None]:
+        key = settings.GROQ_API_KEY
+        if not key:
+            raise LLMError("Groq API key not configured.")
+
+        try:
+            self._breaker.ensure_available()
+        except CircuitOpenError as e:
+            raise LLMError(str(e)) from e
+
+        from core.llm.providers.openai_compat import _messages_to_openai
+        payload_msgs = _messages_to_openai(messages)
+        models = self._get_models_for_tier(tier, preferred_model)
+
+        timeout = timeout_sec or _timeout_for(tier)
+        client = get_http_client()
+        headers = {
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        }
+
+        last_error = None
+        for model in models:
+            payload = {
+                "model": model,
+                "messages": payload_msgs,
+                "temperature": temperature,
+                "stream": True,
+            }
+            try:
+                async with client.stream("POST", _GROQ_BASE, headers=headers, json=payload, timeout=timeout) as resp:
+                    if resp.status_code == 200:
+                        async for line in resp.aiter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[len("data: "):]
+                                if data_str == "[DONE]":
+                                    break
+                                try:
+                                    chunk_data = json.loads(data_str)
+                                    delta = chunk_data["choices"][0].get("delta", {})
+                                    if "content" in delta:
+                                        yield delta["content"]
+                                except (KeyError, IndexError, json.JSONDecodeError):
+                                    pass
+                        return
+                    elif resp.status_code == 429:
+                        last_error = f"429_on_{model}"
+                        continue
+                    else:
+                        resp_text = await resp.aread()
+                        last_error = f"{resp.status_code}_on_{model}: {resp_text.decode('utf-8', 'ignore')[:200]}"
+                        continue
+            except Exception as e:
+                last_error = f"{type(e).__name__}: {e}"
+                continue
+                
+        raise LLMError(f"Groq stream: all models failed ({last_error})")

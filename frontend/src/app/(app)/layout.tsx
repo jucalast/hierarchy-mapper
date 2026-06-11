@@ -22,8 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleToggleChat = (e: any) => {
       const shouldOpen = e.detail?.open ?? !showChat;
-      setShowChat(shouldOpen);
-      localStorage.setItem("show-chat", shouldOpen.toString());
+      setAndSaveShowChat(shouldOpen);
     };
     window.addEventListener('toggle_chat', handleToggleChat);
     return () => window.removeEventListener('toggle_chat', handleToggleChat);
@@ -125,18 +124,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, currentOrg]);
 
+  function setAndSaveShowChat(val: boolean) {
+    setShowChat(val);
+    localStorage.setItem("show-chat", val.toString());
+  }
+
   // Esconde o ChatPanel automaticamente na rota /messages (ou ?view=messages) para não conflitar com o MessagesView
+  const [wasInMessages, setWasInMessages] = useState(false);
   useEffect(() => {
     const isMessages = pathname?.startsWith('/messages') || searchParams?.get('view') === 'messages';
-    if (isMessages && showChat) {
-      setShowChat(false);
-      // Não salva no localStorage para restaurar quando sair
-    } else if (!isMessages) {
+    if (isMessages) {
+      if (showChat) setShowChat(false);
+      setWasInMessages(true);
+    } else if (wasInMessages) {
       // Ao sair de /messages, restaura o estado salvo no localStorage
       const savedChat = localStorage.getItem("show-chat") === "true";
       setShowChat(savedChat);
+      setWasInMessages(false);
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, wasInMessages, showChat]);
 
   // Escuta evento externo de alteração de tema (ex: do Sidebar no NetworkGraph)
   useEffect(() => {
@@ -204,8 +210,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <button
             onClick={() => {
               const newVal = !showChat;
-              setShowChat(newVal);
-              localStorage.setItem("show-chat", newVal.toString());
+              setAndSaveShowChat(newVal);
             }}
             style={{
               background: 'transparent',
@@ -275,7 +280,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }}>
           <ChatPanel
             showChat={showChat}
-            setShowChat={setShowChat}
+            setShowChat={setAndSaveShowChat}
             selectedOrgId={currentOrg?.id || null}
             selectedOrgName={currentOrg?.name || "Assistente IA"}
             theme={theme}

@@ -10,60 +10,55 @@ class CallSkill(FunnelStageSkill):
 
     # Regras estruturadas de vendas para centralizar a inteligência das ligações
     SPIN_SELLING_RULES = """
-    DIRETRIZES DA METODOLOGIA SPIN SELLING (ABORDAGEM HUMANA, PERSUASIVA E B2B SÊNIOR):
-    A regra de ouro é: FUJA de perguntas investigativas frias e diretas ("como vocês gerenciam as caixas?"). Você deve "comprar o direito" de perguntar através de ganchos de autoridade e contexto. Use tom empático, validando as respostas antes de avançar.
+    DIRETRIZES DA METODOLOGIA B2B "VIDA REAL" (ABORDAGEM HUMANA, DIRETA E IMERSIVA):
+    A regra de ouro é: FUJA de falas robóticas, jargões genéricos de telemarketing ou textões. Fale exatamente como uma pessoa real conversando na fábrica. Você deve incorporar AS EXATAS PALAVRAS E O MOLEJO que o vendedor usa na vida real.
     
-    ESTRUTURA OBRIGATÓRIA:
-    - ABERTURA: Comece com familiaridade local (ex: "somos daqui da região/Indaiatuba") e um Hook mencionando uma dor de mercado comum, perguntando se o cliente também enfrenta isso (ex: "Muitas empresas da região têm enfrentado desafios com avarias... vocês também?"). PROIBIDO citar clientes de referência (Toyota, SEW, etc.) na abertura — guarde a prova social para a etapa de NECESSIDADE. O objetivo aqui é apenas abrir a conversa e detectar a dor.
-    - SITUAÇÃO + PROBLEMA: Quando o cliente revelar a dor (ex: "temos avarias no transporte"), COMECE COM EMPATIA. Valide o que ele disse de forma humana (ex: "imagino a dor de cabeça", "isso costuma virar uma bola de neve"). Só então faça a pergunta de implicação/problema de forma fluida.
-    - IMPLICAÇÃO: Aprofunde as consequências financeiras ou operacionais (ex: "esse tempo extra tem impactado os prazos de entrega ou gerado custo de retrabalho?"). Mantenha a naturalidade, como uma conversa, não uma entrevista. UMA PERGUNTA POR VEZ — nunca faça "metralhadora" de perguntas.
-    - QUALIFICAÇÃO (entre Implicação e Necessidade): Antes de propor solução, qualifique o tamanho da oportunidade com perguntas naturais:
-      * Volume: "Pra eu ter uma ideia, quantas caixas vocês expedem por mês, mais ou menos?"
-      * Fornecedor atual: "Vocês já trabalham com alguma cartonagem hoje? Estão satisfeitos?"
-      * Decisor: "Além de você, quem mais participaria de uma decisão de trocar ou testar um fornecedor novo?"
-      Não faça as 3 perguntas de uma vez. Escolha a mais natural para o fluxo da conversa e encaixe as outras conforme a abertura do cliente.
-    - NECESSIDADE: AGORA sim, ancore a solução em resultados REAIS e cite provas sociais (ex: "Empresas na mesma situação, como a Toyota, conseguiram reduzir 40% das avarias com essa solução... se desenhássemos algo parecido para vocês, faria sentido?"). A prova social AQUI tem peso máximo porque o cliente já confessou a dor. Não ofereça "embalagens personalizadas" de forma vaga — conecte ao problema específico dele.
-    - FECHAMENTO: Sugira o próximo passo com convicção e ancoragem de tempo (Técnica Ou/Ou). MAS exija um contra-compromisso do cliente para gerar reciprocidade e qualificar a visita:
-      * Proponha a visita: "O ideal é eu fazer uma visita técnica rápida para entender sua linha. Como está sua agenda para terça de manhã ou quinta à tarde?"
-      * Peça informações antecipadas: "Pra eu já vir preparado, você pode me adiantar quais medidas de caixa vocês mais usam?"
-      * Mapeie stakeholders: "Além de você, quem mais seria bom participar da visita?"
-      Isso faz o cliente INVESTIR na reunião (reciprocidade) e te dá informação para preparar algo concreto.
+    ESTRUTURA OBRIGATÓRIA (Gere APENAS o bloco de texto curto para o vendedor ler):
+    - ABERTURA (Gatekeeper): "Olá, bom dia, tudo bem? Aqui quem fala é o(a) [Seu Nome] da empresa [Sua Empresa], por gentileza você poderia me transferir para a(o) [Nome do Contato, apenas primeiro e segundo nome]?"
+    - ABERTURA (Contato Direto): "Legal [Nome do Cliente], prazer, sou vendedor da [Sua Empresa]. Sendo bem direto, nós somos especialistas em [Sua Solução/Produto Principal]. Coisas que os grandes fornecedores do mercado não conseguem ou não querem atender. Então nós entregamos [Exemplo Prático 1 do seu Produto] e [Exemplo Prático 2], que são mais personalizados. Temos ajudado empresas como a [Cliente de Referência 1 do Plano] e a [Cliente de Referência 2 do Plano] a resolver problemas com [Dor Principal que a Empresa resolve, ex: embalagens que não se adaptam], gerando avarias ou retrabalho. Você tem enfrentado algum gargalo com isso ultimamente?"
+    - IMPLICAÇÃO (Sem rodeios): "Legal, obrigado pelo feedback. É o seguinte, quando essas falhas acontecem, vocês já mapearam o quanto mais ou menos de operação e de dinheiro que vocês estão deixando na mesa por conta desse retrabalho ou descarte?"
+    - QUALIFICAÇÃO (Validação empática e investigação): "Entendi, nossa [Nome], isso é realmente bem sério, né, bem ruim. Mas e esse impacto de [Mencionar a dor dita pelo cliente na ligação, ex: 10% e dois dias perdidos] é realmente significativo. Para eu entender melhor o cenário e como podemos ajudar: quem fornece a solução atual aí para vocês, e onde exatamente a solução deles está falhando, você tem essa informação com você?"
+    - NECESSIDADE (Reconhecimento e Solução): "É, realmente eu imagino. Legal que vocês já fizeram esse levantamento, significa que vocês estão atentos e querendo resolver essa questão de gargalos, né? Nós atendemos clientes como a [Cliente de Referência 1 do Plano] e eles tinham exatamente esse problema. Nós aplicamos nossas soluções personalizadas e quase zeramos esses gargalos. Se eu te mostrasse em 15 minutos como fizemos isso, faria sentido para você?"
+    - FECHAMENTO (Primeiro): "Legal, [Nome]. Nossa, isso é muito bom né. E para te mostrar esses exemplos e como aplicamos isso na sua operação, o ideal é que a gente pudesse fazer uma reunião rápida em torno de 15 minutos. Ou terça-feira de manhã ou quinta-feira à tarde, que é o que eu tenho liberado aqui na minha agenda. O que fica melhor para você?"
+    - FECHAMENTO (Confirmação): "Legal, [Nome], acredito que vai ser muito bom e fica combinado então. [Dia/Horário] está anotado, eu vou te enviar o convite agora mesmo com os detalhes e já adianto o estudo do seu cenário para otimizarmos o nosso tempo, combinado?"
+    
+    REGRA CRÍTICA PARA AS VARIÁVEIS (PROIBIDO DEIXAR CHAVES/COLCHETES NA SAÍDA FINAL): 
+    Você NUNCA deve cuspir as tags [Sua Solução], [Dor Principal], [Exemplo Prático 1] ou [Cliente de Referência 1] no texto que o vendedor vai ler. 
+    Você DEVE OBRIGATORIAMENTE ler o "PLANO DE VOO DA LIGAÇÃO" e o "CONTEXTO DA EMPRESA" e SUBSTITUIR essas tags pelos dados reais (ex: trocar [Dor Principal] por "avarias nas embalagens", trocar [Cliente de Referência 1] por "Toyota", etc.). 
+    O vendedor vai ler essa frase ao vivo, então ela tem que estar 100% preenchida, sem nenhum colchete ou variável vazia! Se faltar algum dado exato no plano, adapte de forma inteligente com base no contexto geral da empresa.
     """
 
     OBJECTION_HANDLING_RULES = """
-    REGRAS DE CONTORNO DE OBJEÇÃO B2B (COLD CALLS):
+    REGRAS DE CONTORNO DE OBJEÇÃO B2B (MINDSET TÁTICO):
     
-    REGRA SUPREMA: É terminantemente PROIBIDO concordar passivamente com objeções. NUNCA diga apenas "ok, entendo" e passe para a próxima etapa do SPIN. Toda objeção DEVE ser contornada ANTES de avançar no funil.
+    REGRA SUPREMA: Forneça o roteiro completo e persuasivo para o vendedor ler. O objetivo é que ele não precise pensar no que falar, apenas leia a frase com naturalidade. Toda objeção DEVE ser contornada ANTES de avançar no funil. Adapte aos produtos, diferenciais e clientes de referência da empresa!
+    
+    GATILHOS DE OBJEÇÃO & BRUSH-OFFS (Marcar objection_detected = true se cliente disser):
+    - [BRUSH-OFF - Fuga Educada]: "me manda por e-mail", "agora não posso", "me liga depois", "envia uma proposta que eu avalio". (Atenção: Na indústria B2B, pedir e-mail é a forma educada de desligar na sua cara. Aja com urgência tática).
+    - [OBJEÇÃO DE STATUS QUO]: "já temos fornecedor", "estamos satisfeitos", "já compramos de outro".
+    - [OBJEÇÃO DE NECESSIDADE]: "não temos problema", "acontece pouco e a gente resolve internamente".
 
-    GATILHOS DE OBJEÇÃO (se o cliente disser QUALQUER frase similar a estas, objection_detected = true):
-    - "não é um bom momento" / "agora não posso" / "estou ocupado" / "estou em reunião" / "me liga depois"
-    - "me manda por e-mail" / "me envia um material" / "manda uma proposta"
-    - "já temos fornecedor" / "já estamos atendidos" / "estamos satisfeitos"
-    - "não tenho interesse" / "não tenho necessidade" / "no momento não preciso"
-    - "não conheço vocês" / "nunca ouvi falar"
-    - "está caro" / "não temos orçamento" / "não temos budget"
+    TÁTICAS DE CONTORNO (Gere o bloco de texto completo e natural usando os dados do CONTEXTO):
 
-    CONTORNOS POR TIPO (gere o script PRONTO para o vendedor ler):
+    1. BRUSH-OFF DE E-MAIL / "Me liga depois":
+       → Use a tag [TÁTICA: PEDIR 20 SEGS].
+       Exemplo sugerido: "[TÁTICA: 20 SEGS] Entendo perfeitamente, [Nome do Cliente]. A última coisa que quero é encher sua caixa de e-mails genéricos. Em 20 segundos: vocês têm sofrido com [Dor Principal do Produto] ultimamente?"
 
-    1. PRESSA / "me liga depois":
-       → "Entendo perfeitamente, Luciana. Só 30 segundos: muitas empresas da região estão perdendo dinheiro com avarias sem perceber. Vocês têm tido esse tipo de problema? Se sim, eu te proponho uma data pra conversarmos com calma — terça ou quinta, 5 minutinhos?"
-       OBJETIVO: Plantar a semente da dor em 30s e ancorar uma data específica.
+    2. STATUS QUO / "Já temos fornecedor":
+       → Use a tag [TÁTICA: CURIOSIDADE].
+       Exemplo sugerido: "[TÁTICA: CURIOSIDADE] Que excelente que já estão bem atendidos. Por curiosidade, quando o fornecedor falha, com que frequência isso afeta a operação de vocês?"
 
-    2. E-MAIL / "me manda material":
-       → "Claro, mando sim! Mas pra eu enviar o material certo e não mais um e-mail genérico: vocês têm sofrido com avarias ou atrasos nas embalagens? Se me contar em 20 segundos, eu personalizo pra vocês."
-       OBJETIVO: Qualificar a dor ANTES de perder o controle para o e-mail. Se insistir, ancore data: "Envio agora. Que tal quinta às 10h pra eu te ligar e percorrer o material junto?"
+    3. SEM NECESSIDADE / "Acontece pouco" (O cliente está desengajado):
+       → Use a tag [TÁTICA: RECUO ESTRATÉGICO]. NÃO avance para [IMPLICAÇÃO] pesada!
+       Exemplo sugerido: "[TÁTICA: RECUO] Menos mal. E quando isso chega a acontecer, quanto tempo em média sua equipe perde resolvendo?"
 
-    3. JÁ TEM FORNECEDOR / "estamos atendidos":
-       → "Entendo, é bom ter parceiro. E com que frequência vocês enfrentam avarias ou atrasos com eles? Pergunto porque muitos clientes nossos vieram exatamente dessa situação."
-       OBJETIVO: Gerar dúvida sobre o fornecedor atual sem atacá-lo diretamente.
+    4. NÃO CONHEÇO / "Nunca ouvi falar":
+       → Use a tag [TÁTICA: AUTORIDADE RELÂMPAGO].
+       Exemplo sugerido: "[TÁTICA: AUTORIDADE] Normal. Atendemos a [Cliente de Referência 1] e a [Cliente de Referência 2] resolvendo justamente os problemas que os grandes não conseguem. Por isso liguei."
 
-    4. SEM NECESSIDADE / "não preciso" / "está bom assim":
-       → "Faz sentido. Posso te fazer UMA pergunta rápida? Quando vocês perdem uma caixa por avaria, quanto tempo leva pra refazer o pedido e reembalar? Muitas empresas descobrem que esse custo invisível é maior do que imaginam."
-       OBJETIVO: Revelar a "dor oculta" que o cliente não sabe que tem.
-
-    5. NÃO CONHEÇO / "nunca ouvi falar":
-       → "Normal, somos uma cartonagem de Indaiatuba, focada em soluções técnicas. Atendemos empresas como [cliente referência] justamente porque resolvemos problemas que as grandes fábricas não conseguem."
-       OBJETIVO: Construir credibilidade instantânea.
+    5. REJEIÇÃO REPETIDA / AGRESSIVA (Após 2 ou 3 recusas):
+       → Use a tag [TÁTICA: DESLIGAMENTO EDUCADO].
+       Exemplo sugerido: "[TÁTICA: DESLIGAMENTO] Sem problemas, [Nome do Cliente]. Volto a falar com você mês que vem. Um ótimo dia!"
     """
 
     @property
@@ -132,12 +127,18 @@ FASE 2 - PREPARACAO E ABERTURA (somente APOS a Fase 1 estar 100% concluida):
 7. OBRIGATÓRIO: IMEDIATAMENTE APÓS a tool acima, chame `open_ligacao_view(contact_name, phone)`. 
    ESTRITAMENTE PROIBIDO: NÃO descreva o plano de voo em texto na conversa, NÃO faça perguntas como "Pronto para inciar a ligação?", e NÃO peça a aprovação do usuário. APENAS CHAME AS DUAS FERRAMENTAS sequencialmente!
 
+FASE 3 - PÓS-LIGAÇÃO (Quando você receber a transcrição do ALERTA DE LIGAÇÃO FINALIZADA):
+8. SE você visualizar no histórico recente o texto "[ALERTA DE CONTEXTO: LIGAÇÃO FINALIZADA]" ou uma transcrição de ligação:
+   - VOCÊ DEVE PULAR COMPLETAMENTE AS FASES 1 E 2!
+   - NUNCA CHAME novamente `prepare_live_coaching_session` ou `open_ligacao_view`.
+   - Cumpra a "SUA MISSÃO AGORA" executando as ações no CRM (ex: pipedrive_update_task, pipedrive_create_note, generate_prospecting_plan).
+
 REGRAS ABSOLUTAS:
 - NUNCA chame prepare_live_coaching_session antes de verificar whatsapp e e-mail e executar as buscas obrigatórias.
-- NUNCA chame pipedrive_update_task durante esta atividade (so apos a ligacao terminar).
+- NUNCA chame pipedrive_update_task durante a Fase 1 ou Fase 2 (só após a ligação terminar na Fase 3).
 - NUNCA invente ou assuma um numero de telefone.
 - NUNCA envie e-mails ou mensagens sem solicitacao explicita do usuario.
-- PROIBIDO PARAR PELA METADE: Após chamar `find_company_contact` e receber os dados de sucesso, você é OBRIGADO a seguir diretamente para as demais ferramentas da Fase 1 e Fase 2. Não termine a execução silenciosamente!
+- PROIBIDO PARAR PELA METADE na Fase 1/2.
 """
         return base + super().get_instructions(context)
 
