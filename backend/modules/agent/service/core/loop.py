@@ -353,6 +353,21 @@ async def _agent_loop(
             if active_skill and not _is_direct_directive:
                 _current_tools = [t for t in tools if t.get("name") in active_skill.allowed_tools]
                 log.info("agent.intent.active_skill.tools_filtered", count=len(_current_tools))
+                
+                # INJEÇÃO DEFINITIVA E INTELIGENTE: Safeguard para evitar Loop Infinito.
+                # Se o phase tracker (_build_phase_status) exigir explicitamente uma ferramenta,
+                # nós devemos GARANTIR que ela esteja disponível em _current_tools.
+                import re as _re_tools
+                m_required = _re_tools.search(r'PRÓXIMA FERRAMENTA:\s*([^\s]+)', system)
+                if m_required:
+                    req_tool = m_required.group(1).strip()
+                    if not any(t.get("name") == req_tool for t in _current_tools):
+                        # Encontra na lista completa e injeta
+                        for t_full in tools:
+                            if t_full.get("name") == req_tool:
+                                _current_tools.append(t_full)
+                                log.info("agent.loop.safeguard_tool_injected", tool=req_tool)
+                                break
 
             _raw_log(process_id, "llm_request", {"system": system, "messages": messages, "iteration": iteration})
             _pending_events: list = []
@@ -2349,6 +2364,19 @@ async def _agent_loop(
                 preview = f"Plano de voo incluído ({_steps_count} passos). Prontos para ligar!"
             else:
                 preview = tool_args.get("message") or tool_args.get("body") or json.dumps(tool_args, ensure_ascii=False)[:120]
+
+            if tool_name in ("email_send", "email_reply") and isinstance(preview, str):
+                try:
+                    from modules.ai.service.context.business_context_service import BusinessContextService
+                    ctx = await BusinessContextService.get_tenant_context()
+                    sig_path = ctx.get("signature_path")
+                    if sig_path:
+                        sig_html = f'<br><br><img src="http://localhost:8000/api/v1/settings/v2/profile/signature/image" style="max-width: 400px; height: auto; border-radius: 8px;" />'
+                        if "img src" not in preview:
+                            preview = preview + "\n\n" + sig_html
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Erro no preview email signature: {e}")
 
             yield _emit({
                 "type": "confirmation_required",

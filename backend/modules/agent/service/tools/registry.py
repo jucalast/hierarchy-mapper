@@ -580,8 +580,33 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                 except Exception:
                     pass
 
-        # Append signature se houver imagem configurada
+        # Adiciona conversão básica de Markdown -> HTML para preservar quebras de linha e formatação
+        import re as _re
         final_body = body
+        final_body = _re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', final_body)
+        final_body = _re.sub(r'(^|[^\*])\*([^\*]+)\*(?!\*)', r'\1<i>\2</i>', final_body)
+        
+        # Converte listas e quebras de linha
+        lines = final_body.split('\n')
+        in_list = False
+        parsed_lines = []
+        for line in lines:
+            list_match = _re.match(r'^[\*\-]\s+(.*)', line)
+            if list_match:
+                if not in_list:
+                    parsed_lines.append('<ul style="margin-top: 4px; margin-bottom: 4px; padding-left: 20px;">')
+                    in_list = True
+                parsed_lines.append(f'<li>{list_match.group(1)}</li>')
+            else:
+                if in_list:
+                    parsed_lines.append('</ul>')
+                    in_list = False
+                parsed_lines.append(line)
+        if in_list:
+            parsed_lines.append('</ul>')
+        final_body = '<br>'.join(parsed_lines)
+        
+        # Append signature se houver imagem configurada
         sig_path = ctx.get("signature_path")
         if sig_path and _os.path.exists(sig_path):
             try:
@@ -644,8 +669,33 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
             if path and _os.path.exists(path):
                 attachment_paths.append(path)
 
-        # Append signature se houver imagem configurada
+        # Adiciona conversão básica de Markdown -> HTML para preservar quebras de linha e formatação
+        import re as _re
         final_body = body
+        final_body = _re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', final_body)
+        final_body = _re.sub(r'(^|[^\*])\*([^\*]+)\*(?!\*)', r'\1<i>\2</i>', final_body)
+        
+        # Converte listas e quebras de linha
+        lines = final_body.split('\n')
+        in_list = False
+        parsed_lines = []
+        for line in lines:
+            list_match = _re.match(r'^[\*\-]\s+(.*)', line)
+            if list_match:
+                if not in_list:
+                    parsed_lines.append('<ul style="margin-top: 4px; margin-bottom: 4px; padding-left: 20px;">')
+                    in_list = True
+                parsed_lines.append(f'<li>{list_match.group(1)}</li>')
+            else:
+                if in_list:
+                    parsed_lines.append('</ul>')
+                    in_list = False
+                parsed_lines.append(line)
+        if in_list:
+            parsed_lines.append('</ul>')
+        final_body = '<br>'.join(parsed_lines)
+        
+        # Append signature se houver imagem configurada
         sig_path = ctx.get("signature_path")
         if sig_path and _os.path.exists(sig_path):
             try:
@@ -908,6 +958,14 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                 except Exception as e:
                     log.warning("pipedrive_create_person.link_failed", error=str(e))
             return {"ok": ok, "result": f"Contato '{name}' adicionado com sucesso" if ok else f"Erro ao adicionar contato: {result.get('error', 'desconhecido')}"}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    # Fallback inteligente: se a ferramenta não foi tratada aqui mas possui um executor no TOOLS (ex: read tools invocadas via actions)
+    tool_meta = TOOLS.get(tool_name)
+    if tool_meta and tool_meta.get("executor"):
+        try:
+            return await tool_meta["executor"](args)
         except Exception as e:
             return {"ok": False, "error": str(e)}
 

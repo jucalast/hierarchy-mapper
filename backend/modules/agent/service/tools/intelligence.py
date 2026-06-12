@@ -581,12 +581,33 @@ async def exec_open_ligacao_view(args: dict, org_id: int | None = None, messages
     phone = args.get("phone", "")
     flight_plan = args.get("flight_plan", {})
     activity_id = extract_activity_id(args, messages)
+    profile_pic = None
     
     # Faz fallback para o último plano de voo em memória, se o agente não o passou implicitamente
     if not flight_plan:
         try:
             from services.realtime_call import assistant_manager
             flight_plan = assistant_manager.get_active_coaching_plan() or {}
+        except Exception:
+            pass
+
+    # Tenta resgatar a profile_pic do DB para o contato
+    if contact_name or phone:
+        try:
+            from core.infra.database import async_session
+            from models.people.employee import Employee
+            from sqlalchemy import select, or_
+            async with async_session() as session:
+                stmt = select(Employee.profile_pic).where(
+                    or_(
+                        Employee.name.ilike(f"%{contact_name}%") if contact_name else False,
+                        Employee.whatsapp_number == phone if phone else False
+                    )
+                ).limit(1)
+                res = await session.execute(stmt)
+                db_pic = res.scalar()
+                if db_pic:
+                    profile_pic = db_pic
         except Exception:
             pass
 
@@ -597,6 +618,7 @@ async def exec_open_ligacao_view(args: dict, org_id: int | None = None, messages
         "phone": phone,
         "activity_id": activity_id,
         "flight_plan": flight_plan,
+        "profile_pic": profile_pic,
         "summary": f"Solicitação para abrir a interface de Ligação ao Vivo com {contact_name} ({phone}) enviada ao frontend."
     }
 
@@ -719,7 +741,7 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         f"Comece com '{greeting_hint}, [Nome]'. "
         "Escreva o corpo do e-mail de forma profissional. "
         "Como a apresentação comercial em PDF será anexada automaticamente, você DEVE fazer referência a ela no texto do e-mail (ex: 'Estou enviando em anexo nossa apresentação...', 'Segue anexo nossa apresentação comercial...'). "
-        "NÃO inclua saudações finais como 'Atenciosamente' ou 'Obrigado', pois a assinatura será inserida automaticamente."
+        "TERMINE SEMPRE o e-mail APENAS com 'Atenciosamente,'. É ESTRITAMENTE PROIBIDO colocar o seu nome, cargo (ex: Diretor Comercial Sênior) ou empresa abaixo do 'Atenciosamente', pois a assinatura em imagem será inserida automaticamente na parte inferior pelo sistema."
     )
 
     system_prompt = (
@@ -807,25 +829,15 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
 
         draft = res.text.strip()
 
-        # ── Injeção de Assinatura para Email (se disponível)
+        # A injeção da assinatura real é feita no momento do envio (exec_email_send),
+        # mas injetamos a URL da imagem aqui para que o frontend carregue por padrão.
+        if channel == "email" and "Atenciosamente," not in draft and "J.Ferres" not in draft:
+            pass
+        
         if channel == "email":
-            try:
-                # Prioridade 1: Signature via endpoint local
-                import httpx
-                async with httpx.AsyncClient(timeout=5.0) as client:
-                    resp = await client.get("http://localhost:8002/api/email/signature")
-                    if resp.status_code == 200:
-                        signature = resp.json().get("signature", "")
-                        if signature:
-                            draft = f"{draft}<br><br><!-- SIGNATURE_START -->{signature}<!-- SIGNATURE_END -->"
-                    else:
-                        # Prioridade 2: Signature via path no tenant_ctx (o executor email_send tratará o carregamento da imagem)
-                        if tenant_ctx.get("signature_path"):
-                            draft = f"{draft}<br><br>--<br><i>Enviado via Assistente Comercial J.Ferres</i>"
-            except:
-                # Fallback manual se tudo falhar
-                if tenant_ctx.get("signature_path"):
-                    draft = f"{draft}<br><br>--<br><i>Enviado via Assistente Comercial J.Ferres</i>"
+            # Injeta a URL da assinatura para o frontend exibir a imagem por padrão.
+            # Como é uma string curta, não polui o contexto do LLM.
+            draft = f'{draft}<br><br><!-- SIGNATURE_START --><img src="http://localhost:8000/api/v1/settings/v2/profile/signature/image" style="max-width: 400px; height: auto; border-radius: 8px;" /><!-- SIGNATURE_END -->'
 
         return {
             "ok": True,

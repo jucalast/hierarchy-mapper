@@ -29,7 +29,11 @@ class ProspectingSkill(FunnelStageSkill):
             "pipedrive_update_task",
             "discover_and_validate_email",
             "generate_prospecting_plan",
-            "suggest_next_actions"
+            "suggest_next_actions",
+            "whatsapp_get_messages",
+            "email_get_contact_history",
+            "email_send",
+            "whatsapp_send_message"
         ]
 
     @property

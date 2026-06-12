@@ -4,11 +4,46 @@ import {
     Copy, RotateCcw, Clock, AlertCircle, Network,
     Phone, Mail, Calendar, Building2, User, Paperclip,
     FileText, Package, Lightbulb, Target, ClipboardList,
-    Box, Layers, MessageSquare, TrendingUp, Wand2, Terminal,
+    Box, Layers, MessageSquare, TrendingUp, Wand2, Terminal, ChevronDown
 } from 'lucide-react';
 import styles from './ChatPanel.module.css';
 import timelineStyles from '../prospecting/HistoryTimeline.module.css';
 import { refineMessage } from '../../services/api/ai';
+
+// Função auxiliar para converter marcação markdown básica (negrito, itálico, listas) para HTML
+function parseMarkdownToHTML(text: string): string {
+    if (!text) return '';
+    let html = text;
+    // Bold (support multiline)
+    html = html.replace(/\*\*(.*?)\*\*/gs, '<b>$1</b>');
+    // Italic (support multiline, not matching **)
+    html = html.replace(/(^|[^\*])\*([^\*]+)\*(?!\*)/gs, '$1<i>$2</i>');
+    
+    // Lists
+    const lines = html.split('\n');
+    let inList = false;
+    let parsedLines = [];
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        // Match * item or - item
+        const listMatch = line.match(/^[\*\-]\s+(.*)/);
+        if (listMatch) {
+            if (!inList) {
+                parsedLines.push('<ul style="margin-top: 4px; margin-bottom: 4px; padding-left: 20px;">');
+                inList = true;
+            }
+            parsedLines.push(`<li>${listMatch[1]}</li>`);
+        } else {
+            if (inList) {
+                parsedLines.push('</ul>');
+                inList = false;
+            }
+            parsedLines.push(line);
+        }
+    }
+    if (inList) parsedLines.push('</ul>');
+    return parsedLines.join('\n');
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -463,32 +498,64 @@ const ConfirmationCard: React.FC<{
                 <span style={{ fontSize: 'var(--font-xs)', color: 'var(--sw-text-muted)', letterSpacing: '0.06em', fontWeight: 700, textTransform: 'uppercase' }}>
                     {hasOptions ? 'DECISÃO NECESSÁRIA' : isEmail ? 'CONFIRMAR E-MAIL' : isPipedrive ? 'CONFIRMAR PIPEDRIVE' : isCall ? 'INICIAR LIGAÇÃO' : 'CONFIRMAR WHATSAPP'}
                 </span>
-                {hasAttachment && (
-                    <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#a855f7', background: 'rgba(168,85,247,0.12)', borderRadius: 4, padding: '2px 7px', fontWeight: 600 }}>
-                        <Paperclip size={10} /> {attachmentName}
-                    </span>
-                )}
             </div>
             <div style={{ padding: '12px' }}>
                 <div style={{ fontSize: 'var(--font-sm)', color: 'var(--sw-text-base)', marginBottom: 8, fontWeight: 700, lineHeight: '1.4' }}>
                     {hasOptions ? (event.label || 'O que deseja fazer?') : hasAttachment ? labelStr.replace(/\s*\(.*?anexo.*?\)/i, '') : labelStr}
                 </div>
                 {previewText && (
+                    <div 
+                        style={{
+                            fontSize: 'var(--font-md)',
+                            color: 'var(--sw-text-base)',
+                            opacity: 0.85,
+                            padding: '6px 0',
+                            borderRadius: 6,
+                            fontStyle: 'italic',
+                            marginBottom: 10,
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word',
+                            lineHeight: '1.6'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: parseMarkdownToHTML(previewText) }}
+                    />
+                )}
+
+                {hasAttachment && (
                     <div style={{
-                        fontSize: 'var(--font-md)',
-                        color: 'var(--sw-text-base)',
-                        opacity: 0.85,
-                        padding: '6px 0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'var(--sw-border-width) solid var(--sw-border)',
                         borderRadius: 6,
-                        fontStyle: 'italic',
                         marginBottom: 10,
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        lineHeight: '1.6'
                     }}>
-                        {previewText}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 32,
+                            height: 32,
+                            borderRadius: 4,
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            color: '#ef4444',
+                        }}>
+                            <FileText size={18} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--sw-text-base)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {attachmentName?.endsWith('.pdf') ? attachmentName : `${attachmentName}.pdf`}
+                            </span>
+                            <span style={{ fontSize: 11, color: 'var(--sw-text-muted)', marginTop: 2 }}>
+                                7 MB
+                            </span>
+                        </div>
+                        <ChevronDown size={16} style={{ color: 'var(--sw-text-muted)', cursor: 'pointer' }} />
                     </div>
                 )}
+
                 {event.action_id && !isCall && !hasOptions && (
                     <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                         <input

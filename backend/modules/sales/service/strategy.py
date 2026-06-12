@@ -277,6 +277,9 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 - ID do Negócio: {crm_snapshot['deal_id'] or 'Não encontrado'}
 - Etapa Atual: {crm_snapshot['deal_stage'] or 'N/A'}
 
+## REGRAS DE GERAÇÃO DE TEXTO (CRÍTICO):
+É ESTRITAMENTE PROIBIDO adicionar o seu nome, cargo (ex: Diretor Comercial, etc) ou assinatura ao final das mensagens geradas (WhatsApp, Email ou Scripts). Termine sempre APENAS com 'Atenciosamente,', pois a assinatura oficial do usuário será injetada automaticamente pelo sistema.
+
 ## FERRAMENTAS JÁ EXECUTADAS NESTA SESSÃO (PROIBIDO REPETIR):
 {executed_tools_str}
 
