@@ -48,8 +48,13 @@ class OutreachSkill(FunnelStageSkill):
             "2. Lead with Value: The outreach message MUST reference a specific intent signal "
             "or company characteristic (CNAE, Size, Focus) and offer a specific insight or case study, "
             "NOT just ask for a 30 min meeting.\n"
-            "3. Draft the message using `generate_sales_message` and present it to the user. "
-            "Send only upon approval."
+            "3. TARGET SELECTION: If the task explicitly names the person to contact, DO NOT use `evaluate_prospects` or evaluate other profiles. Proceed directly with that specific person.\n"
+            "4. EMAIL VALIDATION: If the task or channel is email, you MUST use the `discover_and_validate_email` tool on the target contact BEFORE calling `generate_sales_message`. This will validate the contact's email or discover the correct one if the current one is invalid.\n"
+            "5. CHANNEL SELECTION: You MUST strictly use the channel requested in the task description. If the task says 'Enviar e-mail' or 'email', you MUST use the 'email' channel in `generate_sales_message` and then call `email_send`. NEVER use WhatsApp if the task specifies e-mail, and NEVER try to send a WhatsApp if the contact has no phone number registered.\n"
+            "6. STRICT AUTONOMY RULE: NEVER ask for permission in text! Once you generate the draft with `generate_sales_message`, "
+            "you MUST IMMEDIATELY call `email_send` or `whatsapp_send_message` with the resulting text (matching the correct channel). "
+            "The system will automatically intercept the tool and show an interactive approval card to the user. "
+            "Do NOT stop to ask 'Should I send this?'. Calling the send tool IS how you present the draft for approval."
         )
         return base + super().get_instructions(context)
 

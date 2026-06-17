@@ -93,8 +93,10 @@ def is_same_person(name1: str, name2: str) -> bool:
         return matches >= 2
 
 
-async def get_seniority_level(role: str) -> int:
-    role = role.lower()
+async def get_seniority_level(role: str | None) -> int:
+    if not role:
+        return 2
+    role = str(role).lower()
     ctx = await BusinessContextService.get_tenant_context()
     rules = ctx.get("hierarchy", {}).get("seniority_rules", {})
     
@@ -114,8 +116,10 @@ async def get_seniority_level(role: str) -> int:
     
     return 2 
 
-async def get_department_tag(role: str) -> str:
-    role = role.lower()
+async def get_department_tag(role: str | None) -> str:
+    if not role:
+        return "Operations"
+    role = str(role).lower()
     ctx = await BusinessContextService.get_tenant_context()
     mapping = ctx.get("hierarchy", {}).get("department_mapping", {})
 

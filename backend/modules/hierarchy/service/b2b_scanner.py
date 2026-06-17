@@ -314,23 +314,69 @@ async def discover_employees_stream(
                 node_data["source"] = "Pipedrive"
                 
                 async with async_session() as session:
-                    # Tenta encontrar contato existente pelo pipedrive_id, linkedin_url ou nome fuzzy
+                    # Tenta encontrar contato existente pelo pipedrive_id ou URL de placeholder do pipedrive
                     stmt_pd = select(Employee).where(
                         (Employee.company_id == db_org_id) & 
                         ((Employee.pipedrive_id == str(person.get('id'))) | 
                          (Employee.linkedin_url == f"pipedrive_{person.get('id')}"))
                     )
                     res_pd = await session.execute(stmt_pd)
-                    emp = res_pd.scalars().first()
+                    emp_by_pd = res_pd.scalars().first()
                     
-                    if not emp:
-                        stmt_all_pd = select(Employee).where(Employee.company_id == db_org_id)
-                        res_all_pd = await session.execute(stmt_all_pd)
-                        for e in res_all_pd.scalars().all():
-                            if is_same_person(e.name, name):
-                                emp = e
-                                break
+                    # Tenta encontrar contato existente com o mesmo nome e sem pipedrive_id (local/normal)
+                    stmt_all_pd = select(Employee).where(Employee.company_id == db_org_id)
+                    res_all_pd = await session.execute(stmt_all_pd)
+                    all_org_emps = res_all_pd.scalars().all()
+                    
+                    emp_by_name = None
+                    for e in all_org_emps:
+                        if is_same_person(e.name, name) and not e.pipedrive_id:
+                            emp_by_name = e
+                            break
                                 
+                    if emp_by_name:
+                        emp = emp_by_name
+                        emp.pipedrive_id = str(person.get('id'))
+                        
+                        if emp_by_pd and emp_by_pd.id != emp_by_name.id:
+                            # Mescla dados do emp_by_pd para o emp_by_name
+                            if not emp.role and emp_by_pd.role:
+                                emp.role = emp_by_pd.role
+                            if not emp.department and emp_by_pd.department:
+                                emp.department = emp_by_pd.department
+                            if not emp.seniority and emp_by_pd.seniority:
+                                emp.seniority = emp_by_pd.seniority
+                            if not emp.linkedin_url and emp_by_pd.linkedin_url:
+                                emp.linkedin_url = emp_by_pd.linkedin_url
+                            if not emp.description and emp_by_pd.description:
+                                emp.description = emp_by_pd.description
+                            if not emp.profile_pic and emp_by_pd.profile_pic:
+                                emp.profile_pic = emp_by_pd.profile_pic
+                            if not emp.email and emp_by_pd.email:
+                                emp.email = emp_by_pd.email
+                            if not emp.phone and emp_by_pd.phone:
+                                emp.phone = emp_by_pd.phone
+                            if not emp.location and emp_by_pd.location:
+                                emp.location = emp_by_pd.location
+                            if not emp.whatsapp_number and emp_by_pd.whatsapp_number:
+                                emp.whatsapp_number = emp_by_pd.whatsapp_number
+                            
+                            # Limpa campos únicos do emp_by_pd para evitar conflito de UNIQUE antes de deletar
+                            emp_by_pd.pipedrive_id = None
+                            emp_by_pd.linkedin_url = None
+                            emp_by_pd.email = None
+                            emp_by_pd.whatsapp_number = None
+                            
+                            await session.delete(emp_by_pd)
+                            print(f"[B2B Engine] Mesclado e excluído duplicado sincronizado de {name} (mantido ID local: {emp.id})")
+                        else:
+                            print(f"[B2B Engine] Vinculado pipedrive_id ao contato local {name} (ID: {emp.id})")
+                    else:
+                        if emp_by_pd:
+                            emp = emp_by_pd
+                        else:
+                            emp = None
+
                     if emp:
                         emp.pipedrive_id = str(person.get('id'))
                         emp.email = email or emp.email
@@ -486,6 +532,71 @@ async def discover_employees_stream(
                                 existing_emp = e
                                 break
 
+                    # NOVA LÓGICA: Verifica no Pipedrive se já existe antes de criar local
+                    if not existing_emp:
+                        try:
+                            from models import Organization
+                            stmt_org = select(Organization).where(Organization.id == db_org_id)
+                            res_org = await session.execute(stmt_org)
+                            db_org = res_org.scalars().first()
+                            
+                            if db_org and db_org.pipedrive_id:
+                                from modules.crm.service.pipedrive_service import get_persons_by_name, get_persons_by_email
+                                pd_persons = []
+                                emp_email = node_data.get("email")
+                                emp_name = node_data["name"]
+                                
+                                if emp_email:
+                                    pd_res = await get_persons_by_email(emp_email)
+                                    if pd_res.get("success"): pd_persons = pd_res.get("data", [])
+                                
+                                if not pd_persons and emp_name:
+                                    pd_res = await get_persons_by_name(emp_name)
+                                    if pd_res.get("success"): pd_persons = pd_res.get("data", [])
+                                    
+                                if pd_persons:
+                                    for p in pd_persons:
+                                        pd_org_id = p.get("org_id", {}).get("value") if isinstance(p.get("org_id"), dict) else p.get("org_id")
+                                        if str(pd_org_id) == str(db_org.pipedrive_id):
+                                            pd_phone = None
+                                            if p.get("phone"):
+                                                phones = p.get("phone")
+                                                if isinstance(phones, list) and len(phones) > 0:
+                                                    pd_phone = phones[0].get("value")
+                                            
+                                            # check existing by pipedrive_id just in case
+                                            stmt_check = select(Employee).where(Employee.pipedrive_id == str(p.get("id")))
+                                            res_check = await session.execute(stmt_check)
+                                            existing_db = res_check.scalars().first()
+                                            
+                                            if existing_db:
+                                                existing_emp = existing_db
+                                                break
+                                            else:
+                                                new_emp = Employee(
+                                                    name=emp_name,
+                                                    role=node_data.get("role", "Professional"),
+                                                    company_id=db_org.id,
+                                                    department=node_data.get("department", "Operations"),
+                                                    seniority=node_data.get("level", 2),
+                                                    is_discovery=1,
+                                                    source="pipedrive",
+                                                    matching_score=node_data.get("matching_score"),
+                                                    evidence=node_data.get("evidence"),
+                                                    description=node_data.get("observations"),
+                                                    email=emp_email,
+                                                    phone=pd_phone,
+                                                    pipedrive_id=str(p.get("id"))
+                                                )
+                                                session.add(new_emp)
+                                                await session.commit()
+                                                await session.refresh(new_emp)
+                                                existing_emp = new_emp
+                                                print(f"🔗 [Pipedrive/Discovery] {emp_name} encontrado no Pipedrive. Importado e mesclado.")
+                                                break
+                        except Exception as e:
+                            print(f"Erro ao buscar no Pipedrive durante discovery: {e}")
+
                     if existing_emp:
                         # 🛡️ PROTEÇÃO: Não sobrescreve se o contato já foi aprovado ou se o novo status é "pior"
                         current_is_valid = existing_emp.role and "análise humana" not in existing_emp.role.lower() and "reprovado" not in existing_emp.role.lower()
@@ -504,7 +615,7 @@ async def discover_employees_stream(
                             # Preenche o LinkedIn real se não tinha ou se era dummy do Pipedrive
                             if not existing_emp.linkedin_url or "pipedrive_" in existing_emp.linkedin_url:
                                 existing_emp.linkedin_url = node_data["linkedin"]
-                            existing_emp.email = node_data.get("email") or existing_emp.email
+                            existing_emp.email = existing_emp.email or node_data.get("email")
                             existing_emp.profile_pic = node_data.get("avatar") or existing_emp.profile_pic
                             existing_emp.location = node_data.get("location") or existing_emp.location
                             existing_emp.description = node_data.get("observations") or existing_emp.description
@@ -539,6 +650,8 @@ async def discover_employees_stream(
                         node_data["id"] = new_emp.id
                     else:
                         node_data["id"] = existing_emp.id
+                        node_data["pipedrive_id"] = existing_emp.pipedrive_id
+                        node_data["source"] = existing_emp.source
                 
                 found_nodes.append(node_data)
                 yield [node_data]

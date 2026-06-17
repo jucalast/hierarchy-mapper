@@ -262,6 +262,31 @@ async def verify_email_via_vrfymail(email: str, api_key: str) -> str:
         logging.getLogger(__name__).warning(f"[Vrfymail] Falha ao verificar email {email}: {e}")
         return "unknown"
 
+async def verify_email_via_microsoft(email: str) -> str:
+    """
+    Verifica se o e-mail existe usando a API de Login do Microsoft Office 365.
+    Bypass 100% eficiente para o bloqueio de SMTP do Exchange (Greylisting).
+    Retorna 'valid', 'invalid' ou 'unknown'.
+    """
+    import httpx
+    try:
+        url = "https://login.microsoftonline.com/common/GetCredentialType?mkt=en-US"
+        payload = {"username": email}
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            r = await client.post(url, json=payload, headers=headers)
+            if r.status_code == 200:
+                result = r.json().get("IfExistsResult")
+                if result == 0:
+                    return "valid"
+                elif result == 1:
+                    return "invalid"
+            return "unknown"
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"[MicrosoftAPI] Falha ao verificar email {email}: {e}")
+        return "unknown"
+
 def parse_api_keys(key_string: str) -> List[str]:
     """Separa chaves por vírgula, limpa espaços e barras invertidas."""
     if not key_string:
@@ -317,11 +342,100 @@ async def discover_and_validate_email(
     is_generic = domain in _GENERIC_DOMAINS
     invalid_candidates = set()
 
+    is_microsoft = mx_valid and any(m in mx_host.lower() for m in ["protection.outlook.com", "outlook.com"])
+
     # --- EXTERNAL VALIDATION (APIs) ---
     import os
     from core.config import settings
+    import logging as _log
+    _logger = _log.getLogger(__name__)
     
-    if not is_generic and mx_valid:
+    if is_microsoft:
+        # ===== MICROSOFT 365: Validação definitiva via GetCredentialType =====
+        # 1. Detectar Catch-All: testa emails aleatórios impossíveis
+        import random, string
+        catchall_hits = 0
+        for _ in range(3):
+            fake_local = ''.join(random.choices(string.ascii_lowercase + string.digits, k=14))
+            fake_res = await verify_email_via_microsoft(f"{fake_local}@{domain}")
+            if fake_res == 'valid':
+                catchall_hits += 1
+        
+        ms_is_catchall = catchall_hits >= 1
+        if ms_is_catchall:
+            _logger.info(f"[EmailDiscovery] Microsoft catch-all detectado para {domain} ({catchall_hits}/3 fakes aceitos)")
+        
+        # 2. Testa candidatos (até 25 para cobrir todas as combinações de nome)
+        ms_confirmed_emails = []  # Emails que passaram na verificação com prova de autenticidade
+        
+        for email, pattern in candidates[:25]:
+            if email in invalid_candidates:
+                continue
+            result = await verify_email_via_microsoft(email)
+            
+            if result == 'invalid':
+                invalid_candidates.add(email)
+                continue
+            
+            if result != 'valid':
+                continue  # 'unknown' — pula
+            
+            if not ms_is_catchall:
+                # Domínio limpo (sem catch-all): MS API é 100% confiável
+                return {
+                    "email": email, "pattern": pattern,
+                    "confidence": "high", "mx_valid": True, "smtp_result": "valid",
+                    "all_candidates": [e for e, _ in candidates]
+                }
+            
+            # Domínio com catch-all: precisa de prova extra
+            # Testa uma versão "corrompida" do email. Se o servidor rejeitar a versão
+            # corrompida mas aceitar a original, o email é genuíno.
+            local_part = email.split('@')[0]
+            corrupted = f"{local_part}zzq7@{domain}"
+            corrupted_res = await verify_email_via_microsoft(corrupted)
+            
+            if corrupted_res == 'invalid':
+                # Servidor REJEITA a versão corrompida → email original é GENUÍNO
+                _logger.info(f"[EmailDiscovery] MS catch-all bypass: {email} confirmado (corrupted={corrupted} rejected)")
+                return {
+                    "email": email, "pattern": pattern,
+                    "confidence": "high", "mx_valid": True, "smtp_result": "valid",
+                    "all_candidates": [e for e, _ in candidates]
+                }
+            else:
+                # Servidor aceita a versão corrompida também → não podemos confiar
+                _logger.info(f"[EmailDiscovery] MS catch-all: {email} incerto (corrupted também aceito)")
+                ms_confirmed_emails.append((email, pattern))
+        
+        # Microsoft path encerrado — NÃO cai no SMTP fallback
+        # Se encontrou candidatos "possíveis" (catch-all), retorna o melhor com confiança baixa
+        if ms_confirmed_emails:
+            best = ms_confirmed_emails[0]
+            return {
+                "email": best[0], "pattern": best[1],
+                "confidence": "low", "mx_valid": True, "smtp_result": "catchall",
+                "all_candidates": [e for e, _ in candidates]
+            }
+        
+        # Nenhum email confirmado via Microsoft
+        remaining = [(e, p) for e, p in candidates if e not in invalid_candidates]
+        if remaining:
+            best = remaining[0]
+            return {
+                "email": best[0], "pattern": best[1],
+                "confidence": "low", "mx_valid": True, "smtp_result": "invalid",
+                "all_candidates": [e for e, _ in candidates]
+            }
+        
+        best = candidates[0] if candidates else (f"{first}.{last}@{domain}", "first.last")
+        return {
+            "email": best[0], "pattern": best[1],
+            "confidence": "low", "mx_valid": True, "smtp_result": "invalid",
+            "all_candidates": [e for e, _ in candidates]
+        }
+
+    elif not is_generic and mx_valid:
         # 1. Tenta QuickEmailVerification (Altíssimo volume: 100 créditos/dia grátis)
         qev_keys = parse_api_keys(os.environ.get("QUICKEMAIL_API_KEY", ""))
         if qev_keys:
@@ -414,9 +528,31 @@ async def discover_and_validate_email(
 
     # --- INTERNAL VALIDATION (SMTP Probe Fallback) ---
     # Testa apenas os candidatos restantes (máximo 3) para evitar bloqueios de IP
+    # NOTA: Para domínios Microsoft, NUNCA chega aqui (retorna antes)
     if do_smtp and mx_host:
+        import httpx
+        from core.config import settings
+        smtp_microservice_url = getattr(settings, "SMTP_MICROSERVICE_URL", None) or os.environ.get("SMTP_MICROSERVICE_URL", "")
+        
         for email, pattern in remaining_candidates[:3]:
-            result = await smtp_probe(email, mx_host)
+            if smtp_microservice_url:
+                try:
+                    async with httpx.AsyncClient(timeout=15.0) as client:
+                        r = await client.post(
+                            f"{smtp_microservice_url.rstrip('/')}/verify",
+                            json={"email": email, "mx_host": mx_host}
+                        )
+                        if r.status_code == 200:
+                            result = r.json().get("result", "unknown")
+                        else:
+                            result = "unknown"
+                except Exception as e:
+                    _log.getLogger(__name__).warning(f"Microservice SMTP falhou: {e}")
+                    result = "unknown"
+            else:
+                # Fallback local se não houver microserviço
+                result = await smtp_probe(email, mx_host)
+                
             if result == 'valid':
                 return {
                     "email": email, "pattern": pattern,

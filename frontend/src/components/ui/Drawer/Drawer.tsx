@@ -23,6 +23,7 @@ interface DrawerProps {
     addNotification?: (type: NotificationType, message: string) => void;
     onEditEmployee?: (empId: string) => void;
     onSaveToPipedrive?: (person: any, orgId: number) => Promise<void> | void;
+    onEmailDiscovered?: (person: any, email: string) => Promise<void> | void;
     onOrgDomainChanged?: (oldDomain: string, newDomain: string) => void;
 }
 
@@ -159,10 +160,12 @@ export const Drawer: React.FC<DrawerProps> = ({
 
     const fetchedOrgsRef = useRef<Record<number, boolean>>({});
 
-    const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false) => {
+    const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false, background: boolean = false) => {
         if (!force && fetchedOrgsRef.current[orgId]) return; // Já buscado nesta sessão
 
-        setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
+        if (!background) {
+            setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
+        }
         let attempt = 0;
         const maxAttempts = 3;
 
@@ -197,7 +200,9 @@ export const Drawer: React.FC<DrawerProps> = ({
                 break; // Outro erro ou limite de tentativas excedido, sai do loop
             }
         }
-        setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
+        if (!background) {
+            setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
+        }
     }, [addNotification]);
 
     useEffect(() => {
@@ -212,7 +217,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     useEffect(() => {
         const handleTimelineChanged = () => {
             if (expandedOrgId) {
-                void fetchOrgDetails(expandedOrgId, true);
+                void fetchOrgDetails(expandedOrgId, true, true);
             }
         };
         window.addEventListener('crm_timeline_changed', handleTimelineChanged);
@@ -515,6 +520,17 @@ export const Drawer: React.FC<DrawerProps> = ({
                     const updatedPersons = (current.persons || []).filter((p: any) => p.id !== personId);
                     return { ...prev, [orgId]: { ...current, persons: updatedPersons } };
                 });
+                
+                // Se o contato tem emp_id, limpa o email no banco local também para não reaparecer no fallback
+                if (person.emp_id) {
+                    try {
+                        await hierarchyApi.updateEmployeeDetails(person.emp_id, { email: null as any });
+                        // Avisa o frontend para recarregar o grafo
+                        window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                    } catch (e) {
+                        console.error("Erro ao limpar email local:", e);
+                    }
+                }
             } else {
                 addNotification('error', 'Erro ao remover contato.');
             }
@@ -524,41 +540,30 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
-    const handleDiscoverEmail = async (person: any, orgId: number) => {
+    const handleSaveDiscoveredEmail = async (person: any, orgId: number, discoveredEmail: string) => {
         const contactName = person.name;
-        const orgName = focusedOrg?.name || '';
-        const domain = focusedOrg?.domain || orgDetails[orgId]?.domain || orgDetails[orgId]?.org?.website || '';
 
-        addNotification('info', `Buscando e-mail profissional para ${contactName}...`);
-        try {
-            const res = await hierarchyApi.discoverEmail({
-                contact_name: contactName,
-                org_name: orgName,
-                domain: domain || undefined
-            });
+        addNotification('success', `E-mail salvo: ${discoveredEmail}`);
 
-            if (res.ok && res.recommended) {
-                addNotification('success', `E-mail descoberto: ${res.recommended}`);
+        // 1. Se o contato tem emp_id, atualiza no banco local de hierarquia!
+        if (person.emp_id) {
+            try {
+                await hierarchyApi.updateEmployeeDetails(person.emp_id, {
+                    email: discoveredEmail
+                });
+            } catch (err: any) {
+                console.error("Erro ao salvar email no banco local:", err);
+            }
+        }
 
-                // 1. Se o contato tem emp_id, atualiza no banco local de hierarquia!
-                if (person.emp_id) {
-                    try {
-                        await hierarchyApi.updateEmployeeDetails(person.emp_id, {
-                            email: res.recommended
-                        });
-                    } catch (err: any) {
-                        console.error("Erro ao salvar email no banco local:", err);
-                    }
-                }
-
-                // 2. Se está cadastrado no Pipedrive, atualiza o Pipedrive também!
-                if (person.sources?.includes('pipedrive')) {
-                    try {
-                        await handleUpdateInPipedrive({ ...person, email: [{ value: res.recommended, primary: true }] }, orgId);
-                    } catch (err: any) {
-                        console.error("Erro ao atualizar email no Pipedrive:", err);
-                    }
-                }
+        // 2. Se está cadastrado no Pipedrive, atualiza o Pipedrive também!
+        if (person.sources?.includes('pipedrive')) {
+            try {
+                await handleUpdateInPipedrive({ ...person, email: [{ value: discoveredEmail, primary: true, label: "verified" }] }, orgId);
+            } catch (err: any) {
+                console.error("Erro ao atualizar email no Pipedrive:", err);
+            }
+        }
 
                 // 3. Atualiza no estado local do drawer para atualizar a tela instantaneamente
                 setOrgDetails(prev => {
@@ -570,7 +575,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         if (isTarget) {
                             return {
                                 ...p,
-                                email: [{ value: res.recommended, primary: true }]
+                                email: [{ value: discoveredEmail, primary: true, label: "verified" }]
                             };
                         }
                         return p;
@@ -588,13 +593,6 @@ export const Drawer: React.FC<DrawerProps> = ({
                 // 4. Dispara evento para sinalizar ao pai/sistema que a hierarquia mudou
                 const changeEvent = new CustomEvent('crm_timeline_changed');
                 window.dispatchEvent(changeEvent);
-            } else {
-                addNotification('error', res.error || `Não foi possível encontrar um e-mail válido para ${contactName}.`);
-            }
-        } catch (e: any) {
-            console.error('Erro ao descobrir e-mail:', e);
-            addNotification('error', e.message || 'Erro ao processar descoberta de e-mail.');
-        }
     };
 
     // Filtra a organização que está em foco
@@ -643,7 +641,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         onSaveToPipedrive={(person) => handleSaveToPipedrive(person, expandedOrgId!)}
                         onUpdateInPipedrive={(person) => handleUpdateInPipedrive(person, expandedOrgId!)}
                         onDeleteFromPipedrive={(person) => handleDeleteFromPipedrive(person, expandedOrgId!)}
-                        onDiscoverEmail={(person) => handleDiscoverEmail(person, expandedOrgId!)}
+                        onEmailDiscovered={(person, email) => handleSaveDiscoveredEmail(person, expandedOrgId!, email)}
                     />
                 ) : (
                     <OrgList 

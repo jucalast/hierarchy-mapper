@@ -36,7 +36,7 @@ def normalize_linkedin_url(url: str) -> str:
     except:
         return url
 
-async def _get_bing_fallback(query: str, is_company: bool = False) -> List[Dict]:
+async def _get_bing_fallback(query: str, is_company: bool = False, filter_linkedin: bool = True) -> List[Dict]:
     """
     Scraper tático de fallback usando o Bing Search.
     Extremamente leve, resiliente a rate limits e sem dependências externas.
@@ -78,7 +78,7 @@ async def _get_bing_fallback(query: str, is_company: bool = False) -> List[Dict]
                 print("[SearchEngine] ⚠️ Estrutura padrão do Bing não encontrada. Tentando extração genérica de links...")
                 links = re.findall(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html_content)
                 for href, raw_title in links:
-                    if "linkedin.com/" in href:
+                    if not filter_linkedin or "linkedin.com/" in href:
                         title = re.sub(r'<[^>]+>', '', raw_title).strip()
                         results.append({
                             "title": html.unescape(title) or "LinkedIn Profile",
@@ -116,12 +116,13 @@ async def _get_bing_fallback(query: str, is_company: bool = False) -> List[Dict]
                         "body": snippet or "Vínculo profissional identificado."
                     })
                 
-            valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
-            filtered = [r for r in results if any(p in r.get("href", "") for p in valid_patterns)]
+            if filter_linkedin:
+                valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
+                results = [r for r in results if any(p in r.get("href", "") for p in valid_patterns)]
             
-            if filtered:
-                print(f"[SearchEngine] ✅ Sucesso no Fallback (Bing)! {len(filtered)} perfis LinkedIn encontrados.")
-                return filtered
+            if results:
+                print(f"[SearchEngine] ✅ Sucesso no Fallback (Bing)! {len(results)} resultados encontrados.")
+                return results
                 
     except Exception as e:
         print(f"[SearchEngine] ❌ Falha no Fallback (Bing): {e}")
@@ -154,8 +155,8 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
             print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4) com UA: {ua[:30]}...")
 
             with DDGS(timeout=15) as ddgs:
-                # Backend 'html' é confiável e não aciona o loop de auto-fallback
-                raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results, backend="html"))
+                # Na nova versão do ddgs, o nome correto do motor é 'duckduckgo'
+                raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results, backend="duckduckgo"))
 
                 if raw_results:
                     if filter_linkedin:
@@ -203,7 +204,7 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
 
     # --- FALLBACK DE SEGURANÇA: BING SEARCH ---
     # Acionado se o DuckDuckGo falhar, der rate limit ou não retornar resultados orgânicos
-    fallback_res = await _get_bing_fallback(query, is_company)
+    fallback_res = await _get_bing_fallback(query, is_company, filter_linkedin)
     if fallback_res:
         return fallback_res
 

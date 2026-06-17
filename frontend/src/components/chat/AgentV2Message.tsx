@@ -15,9 +15,9 @@ function parseMarkdownToHTML(text: string): string {
     if (!text) return '';
     let html = text;
     // Bold (support multiline)
-    html = html.replace(/\*\*(.*?)\*\*/gs, '<b>$1</b>');
+    html = html.replace(/\*\*([\s\S]*?)\*\*/g, '<b>$1</b>');
     // Italic (support multiline, not matching **)
-    html = html.replace(/(^|[^\*])\*([^\*]+)\*(?!\*)/gs, '$1<i>$2</i>');
+    html = html.replace(/(^|[^\*])\*([^\*]+)\*(?!\*)/g, '$1<i>$2</i>');
     
     // Lists
     const lines = html.split('\n');
@@ -76,6 +76,8 @@ export interface AgentEvent {
     error?: string;
     data?: any;
     options?: any[];
+    plan?: string;
+    result?: any;
 }
 
 import { AIModel } from './ModelSelector';

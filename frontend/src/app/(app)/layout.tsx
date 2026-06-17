@@ -15,7 +15,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const [showChat, setShowChat] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [currentOrg, setCurrentOrg] = useState<{ id: number; name: string; logo: string } | null>(null);
+  const [currentOrg, setCurrentOrg] = useState<{ id: number; name: string; logo: string; prospectingContext?: string | null }>({ id: 0, name: "", logo: "" });
+  const [isOrgLoading, setIsOrgLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string | null } | null>(null);
 
   // Escuta evento para abrir o Chat a partir de componentes filhos
@@ -96,9 +97,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 setCurrentOrg({
                   id: orgId,
                   name: cachedOrg.name || cachedOrg.title || "Empresa",
-                  logo: foundLogo
+                  logo: foundLogo,
+                  prospectingContext: cachedOrg.prospecting_context || null
                 });
-                return;
+                // Do not return here. Continue to fetch from backend to get fresh prospecting_context
               }
             }
           } catch (e) {
@@ -106,23 +108,46 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // 2. Fallback: busca atualizada do backend
+        // 2. Busca atualizada do backend (sempre roda para atualizar dados voláteis como prospecting_context)
+        setIsOrgLoading(true);
         orgsApi.getOrganizationDetails(orgId).then((res: any) => {
           if (res && res.org) {
             setCurrentOrg({
               id: orgId,
               name: res.org.name,
-              logo: res.org.logo || res.org.logo_url || res.org.organization_logo || res.org.company_logo || res.logo || ""
+              logo: res.org.logo || res.org.logo_url || res.org.organization_logo || res.org.company_logo || res.logo || "",
+              prospectingContext: res.prospecting_context || null
             });
           }
         }).catch(() => {
-            setCurrentOrg({ id: orgId, name: "Empresa", logo: "" });
+            setCurrentOrg({ id: orgId, name: "Empresa", logo: "", prospectingContext: null });
+        }).finally(() => {
+            setIsOrgLoading(false);
         });
       }
     } else {
-      setCurrentOrg(null);
+      setCurrentOrg({ id: 0, name: "", logo: "" });
+      setIsOrgLoading(false);
     }
-  }, [pathname, currentOrg]);
+  }, [pathname, currentOrg?.id]);
+
+  // Escuta evento para atualizar o prospectingContext quando um novo plano for gerado
+  useEffect(() => {
+    const handlePlanUpdated = () => {
+      if (currentOrg && currentOrg.id) {
+        orgsApi.getOrganizationDetails(currentOrg.id).then((res: any) => {
+          if (res && res.org) {
+            setCurrentOrg(prev => ({
+              ...prev,
+              prospectingContext: res.prospecting_context || prev.prospectingContext
+            }));
+          }
+        }).catch(console.error);
+      }
+    };
+    window.addEventListener('prospecting_plan_updated', handlePlanUpdated);
+    return () => window.removeEventListener('prospecting_plan_updated', handlePlanUpdated);
+  }, [currentOrg?.id]);
 
   function setAndSaveShowChat(val: boolean) {
     setShowChat(val);
@@ -281,11 +306,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <ChatPanel
             showChat={showChat}
             setShowChat={setAndSaveShowChat}
-            selectedOrgId={currentOrg?.id || null}
-            selectedOrgName={currentOrg?.name || "Assistente IA"}
+            selectedOrgId={currentOrg.id || null}
+            selectedOrgName={currentOrg.name || "Assistente IA"}
             theme={theme}
             onToggleTheme={toggleTheme}
-            selectedOrgLogo={currentOrg?.logo || ""}
+            selectedOrgLogo={currentOrg.logo || ""}
+            prospectingContext={currentOrg.prospectingContext}
+            isOrgLoading={isOrgLoading}
           />
         </div>
       </div>

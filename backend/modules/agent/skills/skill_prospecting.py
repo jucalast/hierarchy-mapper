@@ -33,7 +33,8 @@ class ProspectingSkill(FunnelStageSkill):
             "whatsapp_get_messages",
             "email_get_contact_history",
             "email_send",
-            "whatsapp_send_message"
+            "whatsapp_send_message",
+            "generate_sales_message"
         ]
 
     @property

@@ -48,7 +48,7 @@ class Employee(Base):
     education = Column(Text, nullable=True)
     headline = Column(String, nullable=True)
     is_discovery = Column(Integer, default=0, index=True)
-    source = Column(String, default="pipedrive", index=True)
+    source = Column(String, default="discovery", index=True)
     last_scanned = Column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )

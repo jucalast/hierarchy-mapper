@@ -6,7 +6,7 @@ from __future__ import annotations
 import re
 from typing import List
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import Employee, Organization
@@ -22,7 +22,11 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession) -> dict:
 
     res_emp = await db.execute(
         select(Employee)
-        .where(Employee.company_id == org_id, Employee.role != "Reprovado", Employee.department != "Reprovado")
+        .where(
+            Employee.company_id == org_id,
+            or_(Employee.role.is_(None), Employee.role != "Reprovado"),
+            or_(Employee.department.is_(None), Employee.department != "Reprovado")
+        )
         .order_by(Employee.seniority.desc())
     )
     employees = res_emp.scalars().all()
@@ -85,6 +89,7 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession) -> dict:
             "evidence": emp.evidence, "matching_score": emp.matching_score,
             "location": emp.location, "phone": emp.phone, "headline": emp.headline,
             "whatsapp_number": emp.whatsapp_number, "temperature": emp.temperature,
+            "pipedrive_id": int(emp.pipedrive_id) if emp.pipedrive_id and emp.pipedrive_id.isdigit() else emp.pipedrive_id, "source": emp.source,
         })
 
     return {"company_name": org.name, "nodes": nodes, "status": "cached"}

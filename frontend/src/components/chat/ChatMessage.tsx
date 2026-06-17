@@ -634,9 +634,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     (() => {
                         let text = message.content || '';
                         // Remove [ALERTA DE CONTEXTO DO SISTEMA: ...]\n\n prefix
-                        text = text.replace(/^\[ALERTA DE CONTEXTO[^\]]*\][^\n]*\n\n?/s, '');
+                        text = text.replace(/^\[ALERTA DE CONTEXTO[^\]]*\][^\n]*\n\n?/, '');
                         // Remove [ALERTA DE CONTEXTO: ...]\n\n prefix (variante curta)
-                        text = text.replace(/^\[ALERTA DE CONTEXTO[^\]]*\]\s*/s, '');
+                        text = text.replace(/^\[ALERTA DE CONTEXTO[^\]]*\]\s*/, '');
                         return text;
                     })()
                 }</div>

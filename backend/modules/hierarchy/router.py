@@ -87,11 +87,12 @@ async def get_company_hierarchy(
 
     temp_employees = []
     for idx, socio in enumerate(qsa):
-        cargo = socio.get("qualificacao_socio", "Sócio")
+        cargo = socio.get("qualificacao_socio") or "Sócio"
+        cargo_lower = cargo.lower()
         temp_employees.append(EmployeeNode(
-            id=f"socio_{idx}", name=socio.get("nome_socio", "Sócio Anônimo"), role=cargo,
+            id=f"socio_{idx}", name=socio.get("nome_socio") or "Sócio Anônimo", role=cargo,
             department="Quadro de Sócios (QSA)", company=razao_social, manager_id=None,
-            level=1 if "sócio" in cargo.lower() or "administrador" in cargo.lower() else await get_seniority_level(cargo),
+            level=1 if "sócio" in cargo_lower or "administrador" in cargo_lower else await get_seniority_level(cargo),
         ))
 
     raw_name = data.get("nome_fantasia") or razao_social
@@ -99,9 +100,9 @@ async def get_company_hierarchy(
     domain_guess = domain or f"{search_name.lower().replace(' ', '')}.com.br"
 
     for lead in await discover_employees(search_name, domain_guess, email_api_key=EMAIL_API_KEY, max_results=100):
-        cargo = lead.get("role", "Especialista")
+        cargo = lead.get("role") or "Especialista"
         temp_employees.append(EmployeeNode(
-            id=f"engine_{len(temp_employees)}", name=lead.get("name", "Colaborador"), role=cargo,
+            id=f"engine_{len(temp_employees)}", name=lead.get("name") or "Colaborador", role=cargo,
             department=await get_department_tag(cargo), company=lead.get("company"),
             manager_id=None, level=await get_seniority_level(cargo),
             email=lead.get("email"), linkedin=lead.get("linkedin"),
@@ -249,6 +250,7 @@ async def stream_company_hierarchy(
                     education=lead.get("education"), location=lead.get("location"),
                     connections=lead.get("connections"), highlights=lead.get("highlights"),
                     observations=lead.get("observations"), temperature=lead.get("temperature"),
+                    pipedrive_id=lead.get("pipedrive_id"), source=lead.get("source"),
                 )
                 emp.manager_id = await assign_managers(emp, hierarchy_pool)
                 reparented = reparent_subordinates(emp, hierarchy_pool)
@@ -259,6 +261,10 @@ async def stream_company_hierarchy(
 
             if new_nodes:
                 yield f"data: {json.dumps({'type': 'batch', 'nodes': new_nodes}, ensure_ascii=False)}\n\n"
+
+        if org_id:
+            from modules.agent.service.tools.intelligence import batch_discover_and_validate_org_emails
+            asyncio.create_task(batch_discover_and_validate_org_emails(org_id))
 
         yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
 
@@ -673,6 +679,33 @@ async def stream_linkedin_scrape(
                             yield await send_log(f"🧠 [AI Batch] Processando lote {i//batch_size + 1} ({len(batch)} perfis)...")
                             
                             try:
+                                def normalize_linkedin(url: str) -> str:
+                                    if not url: return ''
+                                    url = url.split('?')[0].rstrip('/')
+                                    url = url.replace('http://', 'https://')
+                                    if 'linkedin.com' in url:
+                                        parts = url.split('linkedin.com')
+                                        return 'linkedin.com' + parts[1]
+                                    return url
+                                    
+                                import unicodedata
+                                def clean_name(s: str) -> str:
+                                    if not s: return ""
+                                    return "".join(
+                                        c for c in unicodedata.normalize('NFD', s.lower())
+                                        if unicodedata.category(c) != 'Mn'
+                                    ).strip()
+
+                                def names_match(n1: str, n2: str) -> bool:
+                                    n1_clean, n2_clean = clean_name(n1), clean_name(n2)
+                                    if n1_clean == n2_clean: return True
+                                    parts1, parts2 = n1_clean.split(), n2_clean.split()
+                                    if not parts1 or not parts2: return False
+                                    if len(parts1) == 1 and parts1[0] == parts2[0]: return True
+                                    if len(parts2) == 1 and parts2[0] == parts1[0]: return True
+                                    if parts1[0] == parts2[0] and parts1[-1] == parts2[-1]: return True
+                                    return False
+
                                 batch_results = await role_engine.distill_roles_batch_v2(
                                     batch,
                                     db_org.name,
@@ -688,6 +721,17 @@ async def stream_linkedin_scrape(
                                     res = batch_results.get(c['idx'])
                                     if not res or not res.get("is_valid"):
                                         yield await send_log(f"❌ [Filtrado] {c['name']} ({c['role']})")
+                                        # Marca como Reprovado no banco se existir para ocultar da UI
+                                        norm_url = normalize_linkedin(c.get('linkedin_url'))
+                                        all_emps_res = await session.execute(
+                                            select(Employee).where(Employee.company_id == db_org.id)
+                                        )
+                                        all_emps = all_emps_res.scalars().all()
+                                        existing_rej = next((e for e in all_emps if (norm_url and normalize_linkedin(e.linkedin_url) == norm_url) or names_match(e.name, c['name'])), None)
+                                        if existing_rej:
+                                            existing_rej.role = "Reprovado"
+                                            existing_rej.department = "Reprovado"
+                                            await session.commit()
                                         continue
 
                                     # Prepara dados para processamento
@@ -753,18 +797,113 @@ async def stream_linkedin_scrape(
                                     if not emp_loc or emp_loc == "Localização não identificada":
                                         emp_loc = fallback_loc
 
-                                    existing_res = await session.execute(
-                                        select(Employee).where(Employee.linkedin_url == emp_url)
+                                    import unicodedata
+                                    def clean_name(s: str) -> str:
+                                        if not s: return ""
+                                        return "".join(
+                                            c for c in unicodedata.normalize('NFD', s.lower())
+                                            if unicodedata.category(c) != 'Mn'
+                                        ).strip()
+
+                                    def names_match(n1: str, n2: str) -> bool:
+                                        n1_clean, n2_clean = clean_name(n1), clean_name(n2)
+                                        if n1_clean == n2_clean: return True
+                                        parts1, parts2 = n1_clean.split(), n2_clean.split()
+                                        if not parts1 or not parts2: return False
+                                        # Match se for só o primeiro nome
+                                        if len(parts1) == 1 and parts1[0] == parts2[0]: return True
+                                        if len(parts2) == 1 and parts2[0] == parts1[0]: return True
+                                        # Match primeiro e último nome
+                                        if parts1[0] == parts2[0] and parts1[-1] == parts2[-1]: return True
+                                        return False
+
+                                    norm_emp_url = normalize_linkedin(emp_url)
+                                    all_emps_res = await session.execute(
+                                        select(Employee).where(Employee.company_id == db_org.id)
                                     )
-                                    existing = existing_res.scalars().first()
+                                    all_emps = all_emps_res.scalars().all()
                                     
+                                    # Busca primeiro por URL do LinkedIn
+                                    existing = next((e for e in all_emps if norm_emp_url and normalize_linkedin(e.linkedin_url) == norm_emp_url), None)
+                                    
+                                    # Se não achou por LinkedIn, tenta achar por match inteligente de nome
                                     if not existing:
+                                        matches = [e for e in all_emps if names_match(e.name, emp_name)]
+                                        # Só mescla se for inequívoco (exatamente 1 correspondência)
+                                        if len(matches) == 1:
+                                            existing = matches[0]
+                                            yield await send_log(f"🔗 [Vinculado] {emp_name} encontrado no banco (como {existing.name}). Mesclando perfil do LinkedIn...")
+                                    
+                                        # ----------------------------------------------------
+                                        # NOVA LÓGICA: Verifica no Pipedrive se já existe antes de criar local
+                                        # ----------------------------------------------------
+                                        from modules.crm.service.pipedrive_service import pipedrive_service
+                                        if db_org and db_org.pipedrive_id:
+                                            try:
+                                                pd_search = await pipedrive_service._request(
+                                                    "GET", 
+                                                    "persons/search", 
+                                                    params={"term": emp_name, "exact_match": 0, "limit": 5}
+                                                )
+                                                if pd_search and pd_search.status_code == 200:
+                                                    d = pd_search.json()
+                                                    items = d.get("data", {}).get("items") or []
+                                                    for i in items:
+                                                        p = i.get("item", {})
+                                                        org = p.get("organization")
+                                                        if org and str(org.get("id")) == str(db_org.pipedrive_id):
+                                                            n1, n2 = clean_name(emp_name), clean_name(p.get("name", ""))
+                                                            if n1 in n2 or n2 in n1 or names_match(emp_name, p.get("name", "")):
+                                                                pd_email = p.get("primary_email")
+                                                                if pd_email:
+                                                                    emp_email = pd_email
+                                                                
+                                                                pd_phones = p.get("phones")
+                                                                pd_phone = pd_phones[0] if pd_phones and len(pd_phones) > 0 else None
+                                                                
+                                                                new_emp = Employee(
+                                                                    name=emp_name,
+                                                                    role=final_role,
+                                                                    department=dept,
+                                                                    linkedin_url=emp_url,
+                                                                    profile_pic=emp_raw.get("avatar"),
+                                                                    location=emp_loc,
+                                                                    company_id=db_org.id,
+                                                                    is_discovery=1,
+                                                                    source="pipedrive",
+                                                                    matching_score=score,
+                                                                    evidence=evidence,
+                                                                    description=c['role'],
+                                                                    email=emp_email,
+                                                                    phone=pd_phone,
+                                                                    pipedrive_id=str(p.get("id"))
+                                                                )
+                                                                session.add(new_emp)
+                                                                await session.commit()
+                                                                await session.refresh(new_emp)
+                                                                existing = new_emp
+                                                                yield await send_log(f"🔗 [Pipedrive] {emp_name} encontrado no Pipedrive. Importado e mesclado.")
+                                                                break
+                                            except Exception:
+                                                pass
+
+                                    if not existing:
+                                        final_pic = emp_raw.get("avatar")
+                                        if not final_pic and emp_url:
+                                            from modules.intelligence.service.preview_service import get_url_preview
+                                            try:
+                                                preview = await get_url_preview(emp_url, fast_mode=True)
+                                                if preview and preview.get("image"):
+                                                    final_pic = preview.get("image")
+                                            except Exception:
+                                                pass
+                                                
                                         new_emp = Employee(
                                             name=emp_name,
                                             role=final_role,
                                             department=dept,
                                             linkedin_url=emp_url,
-                                            profile_pic=emp_raw.get("avatar"),
+                                            profile_pic=final_pic,
                                             location=emp_loc,
                                             company_id=db_org.id,
                                             is_discovery=1,
@@ -777,8 +916,12 @@ async def stream_linkedin_scrape(
                                         session.add(new_emp)
                                         await session.commit()
                                         await session.refresh(new_emp)
-                                        employee_id = f"node_{new_emp.id}"
-                                    else:
+                                        existing = new_emp
+                                        
+                                    employee_id = f"node_{existing.id}"
+                                    avatar_to_yield = existing.profile_pic
+                                    
+                                    if existing.id != locals().get('new_emp', Employee()).id:
                                         # 🛡️ PROTEÇÃO: Não sobrescreve se o contato já foi aprovado ou se o novo status é "pior"
                                         current_is_valid = existing.role and "análise humana" not in existing.role.lower() and "reprovado" not in existing.role.lower()
                                         new_is_vague = "análise humana" in final_role.lower()
@@ -787,19 +930,47 @@ async def stream_linkedin_scrape(
                                             # Mantém o que já estava lá (decisão manual ou automática anterior)
                                             yield await send_log(f"ℹ️ [Preservado] {emp_name} já possui cargo definido.")
                                         else:
+                                            # Atualiza o nome se o novo for mais completo
+                                            if len(emp_name) > len(existing.name):
+                                                existing.name = emp_name
+                                                
                                             existing.role = final_role
                                             existing.department = dept
+                                            existing.linkedin_url = emp_url
                                             existing.matching_score = score
+                                            existing.evidence = evidence
+                                            # Dando preferência ao email já existente no sistema/pipedrive
+                                            existing.email = existing.email or emp_email
+                                            existing.description = c['role']
                                             existing.company_id = db_org.id
-                                            if not existing.description: existing.description = c['role']
-                                            if not existing.profile_pic: existing.profile_pic = emp_raw.get("avatar")
+                                            
+                                            # Trata a foto de perfil com fallback (novo scraper, db existente ou preview)
+                                            final_pic = emp_raw.get("avatar") or existing.profile_pic
+                                            if not final_pic and emp_url:
+                                                from modules.intelligence.service.preview_service import get_url_preview
+                                                try:
+                                                    preview = await get_url_preview(emp_url, fast_mode=True)
+                                                    if preview and preview.get("image"):
+                                                        final_pic = preview.get("image")
+                                                except Exception:
+                                                    pass
+                                            
+                                            if not existing.profile_pic: existing.profile_pic = final_pic
                                             if not existing.location or existing.location == "Localização não identificada":
                                                 existing.location = emp_loc
                                             if not existing.evidence: existing.evidence = evidence
                                             if not existing.email: existing.email = emp_email
+                                            
+                                            # Se for um merge com pipedrive, adiciona o link do linkedin e muda source
+                                            if not existing.linkedin_url:
+                                                existing.linkedin_url = emp_url
+                                                if existing.source == "pipedrive":
+                                                    existing.source = "pipedrive + scan"
+                                            
                                             await session.commit()
                                         
                                         employee_id = f"node_{existing.id}"
+                                        avatar_to_yield = final_pic
                                     
                                     node = {
                                         "id": employee_id,
@@ -808,13 +979,15 @@ async def stream_linkedin_scrape(
                                         "department": dept,
                                         "company": db_org.name,
                                         "linkedin": emp_url,
-                                        "avatar": emp_raw.get("avatar"),
-                                        "profile_pic": emp_raw.get("avatar"),
+                                        "avatar": avatar_to_yield,
+                                        "profile_pic": avatar_to_yield,
                                         "location": emp_loc,
                                         "matching_score": score,
                                         "observations": c['role'],
                                         "evidence": evidence,
-                                        "email": emp_email or (existing.email if existing else None),
+                                        "email": (existing.email if existing else None) or emp_email,
+                                        "pipedrive_id": int(existing.pipedrive_id) if existing and existing.pipedrive_id and str(existing.pipedrive_id).isdigit() else None,
+                                        "source": existing.source if existing else "discovery_scan",
                                     }
                                     nodes_to_yield.append(node)
                                     yield await send_log(f"✅ [Aprovado] {emp_name} -> {final_role} ({dept})")
@@ -832,6 +1005,10 @@ async def stream_linkedin_scrape(
 
 
                     yield await send_log(f"🎉 Processamento concluído!")
+                
+                if db_org:
+                    from modules.agent.service.tools.intelligence import batch_discover_and_validate_org_emails
+                    asyncio.create_task(batch_discover_and_validate_org_emails(db_org.id))
                 
                 yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
                 

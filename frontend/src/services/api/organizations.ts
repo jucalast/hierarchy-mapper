@@ -71,3 +71,6 @@ export function getPipelineBoard() {
   return api.get<{ stages: any[]; deals: any[] }>('/pipedrive/pipeline/board');
 }
 
+export function batchValidateEmails(orgId: number) {
+  return api.post<{ ok?: boolean; message?: string }>(`/organizations/${orgId}/validate-emails`);
+}

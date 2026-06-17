@@ -317,6 +317,7 @@ def _sanitize_result(tool_name: str, result: Any) -> Any:
         if not result: return "Sem resultados."
         if tool_name == "suggest_next_actions": return "Tarefas sugeridas criadas na interface para o usuário aprovar."
         if tool_name == "evaluate_prospects": return _sanitize_evaluate_prospects(result)
+        if tool_name == "discover_and_validate_email": return result
         if "email" in tool_name: return _sanitize_email(result)
         if "pipedrive" in tool_name: return _sanitize_pipedrive(result)
         if "whatsapp" in tool_name: return _sanitize_whatsapp(result)

@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import styles from './EmailDiscoveryView.module.css';
-import { API_BASE_URL } from '@/services/config';
-
+import { apiPost, API_BASE_URL } from '@/services/config';
 interface EmailDiscoveryViewProps {
     personName: string;
     orgName: string;
     anchorRect: DOMRect;
     onClose: () => void;
     onComplete?: (email: string) => void;
+    jobTitle?: string;
 }
 
 type DiscoveryStep = 'loading' | 'success' | 'error';
@@ -19,43 +19,73 @@ export const EmailDiscoveryView: React.FC<EmailDiscoveryViewProps> = ({
     orgName,
     anchorRect,
     onClose,
-    onComplete
+    onComplete,
+    jobTitle
 }) => {
     const [step, setStep] = useState<DiscoveryStep>('loading');
     const [discoveredEmail, setDiscoveredEmail] = useState('');
+    const [isVerified, setIsVerified] = useState(false);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        startDiscovery();
-        return () => setMounted(false);
-    }, []);
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 240000); // 4 minutos
 
-    const startDiscovery = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/intelligence/discover-email`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contact_name: personName,
-                    org_name: orgName
-                })
-            });
+        const doDiscovery = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/api/v1/intelligence/discover-email`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        contact_name: personName,
+                        org_name: orgName,
+                        job_title: jobTitle
+                    }),
+                    signal: abortController.signal
+                });
+                
+                clearTimeout(timeoutId);
 
-            const data = await response.json();
-            
-            if (data.ok && (data.recommended || data.email)) {
-                const email = data.recommended || data.email;
-                setDiscoveredEmail(email);
-                setStep('success');
-                if (onComplete) onComplete(email);
-            } else {
+                if (!response.ok) {
+                    if (!abortController.signal.aborted) setStep('error');
+                    return;
+                }
+
+                const data = await response.json();
+                
+                if (abortController.signal.aborted) return;
+
+                if (data.ok && (data.recommended || data.email)) {
+                    const email = data.recommended || data.email;
+                    setDiscoveredEmail(email);
+                    setIsVerified(data.smtp_result === 'valid');
+                    setStep('success');
+                    if (onComplete) onComplete(email);
+                } else {
+                    setStep('error');
+                }
+            } catch (error: any) {
+                if (error.name === 'AbortError' || abortController.signal.aborted) {
+                    console.log('Busca cancelada (unmount).');
+                    return;
+                }
                 setStep('error');
             }
-        } catch (error) {
-            setStep('error');
-        }
-    };
+        };
+
+        doDiscovery();
+
+        return () => {
+            abortController.abort();
+            clearTimeout(timeoutId);
+            setMounted(false);
+        };
+    }, [personName, orgName]);
 
     if (!mounted) return null;
 
@@ -67,7 +97,7 @@ export const EmailDiscoveryView: React.FC<EmailDiscoveryViewProps> = ({
 
     return createPortal(
         <div 
-            className={`${styles.container} ${step === 'error' ? styles.error : ''}`} 
+            className={`${styles.container} ${step === 'error' ? styles.error : ''} ${step === 'success' && !isVerified ? styles.warning : ''}`} 
             style={popoverStyle} 
             onClick={(e) => {
                 e.stopPropagation();
@@ -90,7 +120,7 @@ export const EmailDiscoveryView: React.FC<EmailDiscoveryViewProps> = ({
                         </div>
                     </div>
                     <div className={styles.instruction}>
-                        Verificado • <span className={styles.closeHint}>clique para fechar</span>
+                        {isVerified ? 'Verificado' : 'Estimado'} • <span className={styles.closeHint}>clique para fechar</span>
                     </div>
                 </>
             )}

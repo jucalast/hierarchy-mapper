@@ -8,7 +8,7 @@ GET /organizations/{org_id}  → detalhes de uma organização
 """
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -98,3 +98,20 @@ async def get_organization(
     except Exception as e:
         log.warning("organizations.get.failed", org_id=org_id, error=str(e))
         raise HTTPException(status_code=500, detail="Erro ao buscar organização.")
+
+@router.post("/{org_id}/validate-emails")
+async def start_batch_email_validation(
+    org_id: int,
+    background_tasks: BackgroundTasks
+):
+    """
+    Inicia o Superteste (validação em lote) de todos os e-mails da empresa em segundo plano.
+    """
+    from modules.agent.service.tools.intelligence import batch_discover_and_validate_org_emails
+    
+    # Executa a função pesada em segundo plano para não dar timeout no frontend
+    background_tasks.add_task(batch_discover_and_validate_org_emails, org_id)
+        
+    return {"ok": True, "message": "Validação em lote iniciada em segundo plano."}
+
+

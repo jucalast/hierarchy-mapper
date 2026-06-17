@@ -35,7 +35,7 @@ def classify_intent(message: str) -> str:
         return "call"
     if any(keyword in message_lower for keyword in ["encontrar", "decisor", "mapear", "prospectar"]):
         return "prospect"
-    if any(keyword in message_lower for keyword in ["apresentação", "apresentar", "cold", "outreach"]):
+    if any(keyword in message_lower for keyword in ["apresentação", "apresentar", "cold", "outreach", "introdução", "introducao", "enviar e-mail", "enviar email", "enviar mensagem"]):
         return "outreach"
     if any(keyword in message_lower for keyword in ["follow", "cobrar", "ligar", "responder"]):
         return "followup"

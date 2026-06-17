@@ -446,15 +446,20 @@ class LLMRouter:
             elif preferred_model in settings.ai_ollama_models_list:
                 target_provider = "ollama"
             
+            # Heurística caso não ache na lista exata do config
+            if not target_provider:
+                pm_lower = preferred_model.lower()
+                if "gemini" in pm_lower: target_provider = "gemini"
+                elif "claude" in pm_lower: target_provider = "claude"
+                elif "qwen-3-235b" in pm_lower: target_provider = "cerebras"
+                elif "llama-3.3" in pm_lower: target_provider = "groq"
+                elif "deepseek" in pm_lower: target_provider = "deepseek"
+                elif "qwen2.5" in pm_lower: target_provider = "ollama"
+            
             if target_provider and target_provider in self._providers:
                 target_p = self._providers[target_provider]
                 providers = [target_p]
-                # Se o target não for gemini, adiciona gemini (mais estável) como safety fallback interno
-                if target_p.name != "gemini" and "gemini" in self._providers:
-                    providers.append(self._providers["gemini"])
-                
-                log.info("llm.strict_mode.with_internal_fallback", 
-                         primary=target_provider, fallback="gemini", model=preferred_model)
+                log.info("llm.strict_mode.enforced", primary=target_provider, model=preferred_model)
             else:
                 providers = self.chain(preferred=preferred_model)
         else:

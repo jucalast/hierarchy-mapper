@@ -312,6 +312,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "args_schema": {
             "contact_name": "string — nome do contato",
             "phone": "string — telefone",
+            "goal": "string opcional — O objetivo específico da ligação (ex: 'retornar proposta', 'apresentar empresa', 'qualificar lead').",
             "is_company_phone": "boolean opcional — true se o telefone for da recepção/geral da empresa, false se for o contato direto (padrão false)",
             "activity_id": "string opcional — ID da atividade/tarefa no Pipedrive",
             "profile_pic": "string opcional — URL da foto/avatar do contato (se disponível no Pipedrive ou no mapeamento)",
@@ -431,19 +432,21 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "executor": exec_evaluate_prospects,
     },
     "discover_and_validate_email": {
-        "description": "Descobre e valida o e-mail profissional de um contato usando o domínio da empresa e pesquisa na web. Gera padrões comuns (joao.moura, j.moura) e verifica se o e-mail é válido via DNS.",
+        "description": "Descobre e valida o e-mail profissional de um contato usando o domínio da empresa e pesquisa na web. Gera padrões comuns e verifica via DNS/SMTP. MUITO IMPORTANTE: Sempre passe o 'person_id' (se você o tiver) para que o sistema possa salvar automaticamente o e-mail no Pipedrive e no Banco de Dados.",
         "args_schema": {
             "contact_name": "string (nome completo do contato)",
             "org_name": "string opcional (nome da empresa)",
-            "domain": "string opcional (domínio da empresa — ex: empresa.com.br)"
+            "domain": "string opcional (domínio da empresa — ex: empresa.com.br)",
+            "person_id": "int opcional (ID da pessoa no Pipedrive para salvar o e-mail validado na base)"
         },
         "type": "read",
         "executor": exec_discover_and_validate_email,
     },
     "generate_prospecting_plan": {
-        "description": "Sub-agente que gera o Plano de Prospecção (SPIN Selling) detalhado para a empresa. Cruze os dados mapeados da empresa (decisores) com o perfil e produtos da base para gerar um super-prompt em formato Markdown e salvar no prospecting_context da empresa.",
+        "description": "Sub-agente que gera o Plano de Prospecção (SPIN Selling) detalhado para a empresa. Cruze os dados mapeados da empresa (decisores) com o perfil e produtos da base para gerar um super-prompt em formato Markdown e salvar no prospecting_context da empresa. Se um plano robusto já existir no banco, ele será reutilizado a menos que force_regenerate seja True.",
         "args_schema": {
             "org_id": "int (ID numérico obrigatório da empresa)",
+            "force_regenerate": "bool opcional (se true, força a regeneração do plano de prospecção do zero, ignorando o plano existente no banco)"
         },
         "type": "read",
         "executor": exec_generate_prospecting_plan,
@@ -541,9 +544,10 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
         import os as _os
         from modules.ai.service.context.business_context_service import BusinessContextService
         
-        to = args.get("to", "")
+        # Fallbacks para alucinações do LLM
+        to = args.get("to") or args.get("contact_email", "")
         subject = args.get("subject", "")
-        body = args.get("body", "")
+        body = args.get("body") or args.get("message", "")
 
         # Busca contexto para pegar anexo padrão e assinatura
         ctx = await BusinessContextService.get_tenant_context()
@@ -650,7 +654,7 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
     elif tool_name == "email_reply":
         from modules.ai.service.context.business_context_service import BusinessContextService
         entry_id = args.get("entry_id", "")
-        body = args.get("body", "")
+        body = args.get("body") or args.get("message", "")
         
         # Busca contexto para pegar assinatura
         ctx = await BusinessContextService.get_tenant_context()

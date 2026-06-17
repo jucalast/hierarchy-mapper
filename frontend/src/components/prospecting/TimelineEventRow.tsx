@@ -148,16 +148,18 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
         const contact = event.contact ? ` com ${event.contact}` : '';
  
         let taskInstruction: string;
- 
+        let isCallTask = false;
+        
+        // Verifica primeiro se a atividade é explicitamente uma ligação pelo tipo ou título principal
+        if (event.activityType === 'call' || ['ligar','ligação','telefonar','realizar ligação'].some(k => t.includes(k))) {
+            isCallTask = true;
+            taskInstruction = `executar a ligação "${event.title}"${contact}${org}. Obtenha o número REAL do CRM antes de qualquer ação. Inicie o pipeline de preparação (Fases 1 e 2)`;
         // Busca/encontrar/conseguir contato
-        if (['procurar contato','encontrar contato','conseguir contato','buscar contato','achar contato','identificar contato','localizar contato','contato na rodada','rodada de negócios'].some(k => t.includes(k))) {
+        } else if (['procurar contato','encontrar contato','conseguir contato','buscar contato','achar contato','identificar contato','localizar contato','contato na rodada','rodada de negócios'].some(k => t.includes(k))) {
             taskInstruction = `encontrar o contato/decisor de compras da empresa${org}. Verifique primeiro se já existe contato com canal válido no CRM. Se não houver, abra o mapeador de hierarquia (open_hierarchy_drawer). NÃO crie nova tarefa no Pipedrive — a atividade já existe no CRM.`;
         // Cobrar retorno / follow-up
         } else if (['cobrar retorno','cobrar resposta','acompanhamento','follow-up','follow up','dar retorno','verificar retorno'].some(k => t.includes(k)) || (t.includes('retorno') && !t.includes('cobrar'))) {
             taskInstruction = `executar o follow-up "${event.title}"${contact}${org}. Analise o histórico de comunicações e execute a ação de cobrança de retorno mais adequada pelo canal disponível`;
-        // Ligar / ligação
-        } else if (['ligar','ligação','telefonar','realizar ligação'].some(k => t.includes(k))) {
-            taskInstruction = `executar a ligação "${event.title}"${contact}${org}. Obtenha o número REAL do CRM antes de qualquer ação`;
         // Agendar reunião / visita
         } else if (['agendar reunião','marcar reunião','agendar visita','marcar visita','agendar apresentação'].some(k => t.includes(k))) {
             taskInstruction = `agendar a reunião/visita "${event.title}"${contact}${org}. Identifique o decisor e proponha o agendamento pelo canal disponível`;
@@ -173,7 +175,7 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
         }
  
         const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction} (ID da tarefa no Pipedrive: ${String(event.id).replace('act-', '')}). Use as ferramentas disponíveis para executar isso agora.`;
-        window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText, direct_action: true } }));
+        window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText, direct_action: false } }));
     };
 
  

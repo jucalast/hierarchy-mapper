@@ -483,17 +483,19 @@
 .mainNav {
     display: flex;
     gap: 20px;
-    margin-bottom: 24px;
-    padding-bottom: 4px;
+
     border-bottom: none;
     overflow-x: auto;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
     width: 100%;
 }
 
 .mainNav::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
+    /* Chrome, Safari, Opera */
 }
 
 .mainNavBtn {
@@ -1189,4 +1191,4 @@
     color: var(--sw-text-muted);
     box-shadow: none;
     transform: none;
-}
+}

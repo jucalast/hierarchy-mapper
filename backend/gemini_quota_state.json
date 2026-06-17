@@ -1,9 +1,10 @@
 {
-  "2026-06-11": {
-    "gemini-2.5-flash-lite": 118,
-    "gemini-2.5-flash": 117
+  "2026-06-16": {
+    "gemini-2.5-flash-lite": 119,
+    "gemini-2.5-flash": 11
   },
-  "2026-06-12": {
-    "gemini-2.5-flash-lite": 29
+  "2026-06-17": {
+    "gemini-2.5-flash-lite": 31,
+    "gemini-2.5-flash": 32
   }
 }

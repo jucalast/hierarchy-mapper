@@ -370,17 +370,18 @@ def extract_activity_id(args: dict, messages: list | None) -> str | None:
 
 
 async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = None, messages: list | None = None) -> dict:
-    """Gera um plano de voo (passo a passo) para a ligação usando SPIN Selling e salva no banco de dados."""
+    """Gera um plano de voo (passo a passo) para a ligação. Delega o tipo de ligação para o CallTypeRouter."""
     from core.llm.router import ask_llm
     from core.llm.base import LLMTier
     from modules.ai.service.context.business_context_service import BusinessContextService
-    from modules.agent.skills.skill_call import CallSkill
+    from modules.agent.skills.call_types import classify_call_type, get_call_type_config
     import json
 
     contact_name = args.get("contact_name", "")
     phone = args.get("phone", "")
     profile_pic = args.get("profile_pic", None)
     activity_id = extract_activity_id(args, messages)
+    goal = args.get("goal")
 
     # Tenta buscar profile_pic no banco local se não foi fornecida
     if not profile_pic and (contact_name or phone):
@@ -409,64 +410,185 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
     differentials = "\n".join([f"- {d}" for d in ctx.get("company_differentials", [])])
     seller_name = ctx.get("seller_name", "João Luccas")
 
-    # Determina se o telefone é da empresa (geral) ou direto do contato
+    # ─── Coleta de sinais de contexto do histórico de mensagens ───────────────
     is_company_phone = args.get("is_company_phone")
+    has_previous_contact = False
+    has_open_proposal = False
+    deal_stage_id = None
+    activity_subject = None
+
     if is_company_phone is None:
         is_company_phone = False
-        if messages:
-            for msg in reversed(messages):
-                if isinstance(msg.get("content"), list):
-                    for b in msg["content"]:
-                        if b.get("type") == "tool_result" and b.get("tool_name") == "find_company_contact":
-                            if phone in str(b.get("content")):
-                                is_company_phone = True
-                                break
 
-    objective_instruction = f"Gere um plano de voo (passo a passo) de alta performance para uma ligação fria (Cold Call) com o contato: {contact_name} (Tel: {phone})."
-    if is_company_phone:
-        objective_instruction = f"""ATENÇÃO: O telefone identificado ({phone}) é o contato geral da empresa (Recepção/PABX), e não o número direto de {contact_name}. 
-    O objetivo desta ligação NÃO é vender o produto na recepção, mas sim conseguir ser transferido para o decisor {contact_name} ou conseguir o e-mail/celular dele.
-    - A ABERTURA deve ser focada em contornar o gatekeeper (ex: 'Bom dia, gostaria de falar com o responsável por X, o Pedro...').
-    - SITUAÇÃO + PROBLEMA devem ser usados se o gatekeeper bloquear (ex: 'Qual o assunto? É sobre a embalagem X...').
-    - O FECHAMENTO da ligação deve ser a transferência bem-sucedida ou a captura do contato direto."""
+    if messages:
+        for msg in reversed(messages):
+            content = msg.get("content") if isinstance(msg, dict) else []
+            if not isinstance(content, list):
+                continue
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                tool_name = block.get("tool_name", "")
+                block_content = str(block.get("content", ""))
 
-    if is_company_phone:
-        rules_to_apply = """
-    DIRETRIZES PARA ABORDAGEM DE RECEPÇÃO/PABX (GATEKEEPER):
-    A regra de ouro é: NÃO TENTE VENDER PARA A RECEPÇÃO.
-    - ABERTURA: Seja extremamente cordial, profissional e vá direto ao ponto. Use tom de quem já tem negócios ou precisa tratar de um assunto corporativo normal. (ex: 'Bom dia, aqui é o João da J.Ferres. Por gentileza, você poderia me transferir para a Luciana?')
-    - SITUAÇÃO + PROBLEMA: Se a recepção barrar ou perguntar o assunto, responda com naturalidade focando no problema de negócio (ex: 'É referente às embalagens de transporte de vocês, para a área de logística/compras').
-    - NUNCA faça o pitch de vendas ou cite clientes como Toyota logo de cara para o recepcionista, guarde isso para o decisor.
-    """
-    else:
-        rules_to_apply = CallSkill.SPIN_SELLING_RULES
+                # Detecta telefone de gatekeeper via find_company_contact
+                if (block.get("type") == "tool_result" and
+                        tool_name == "find_company_contact" and
+                        phone in block_content):
+                    is_company_phone = True
 
-    if is_company_phone:
-        instruction_extra = 'O plano deve ter passos claros: "PABX / RECEPÇÃO", "ABERTURA (COM DECISOR)", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "QUALIFICAÇÃO", "NECESSIDADE" e "FECHAMENTO".\nIMPORTANTE: Gere APENAS a sugestão de fala para "PABX / RECEPÇÃO" (pedindo a transferência de forma cordial). Para as DEMAIS etapas (inclusive Abertura), o "content" DEVE ser "Pendente...".'
-        steps_json = """
-        "steps": [
-            {"label": "PABX / RECEPÇÃO", "content": "..."},
-            {"label": "ABERTURA (COM DECISOR)", "content": "Pendente..."},
-            {"label": "SITUAÇÃO + PROBLEMA", "content": "Pendente..."},
-            {"label": "IMPLICAÇÃO", "content": "Pendente..."},
-            {"label": "QUALIFICAÇÃO", "content": "Pendente..."},
-            {"label": "NECESSIDADE", "content": "Pendente..."},
-            {"label": "FECHAMENTO", "content": "Pendente..."}
-        ]"""
-    else:
-        instruction_extra = 'O plano deve ter passos claros: "ABERTURA", "SITUAÇÃO + PROBLEMA", "IMPLICAÇÃO", "QUALIFICAÇÃO", "NECESSIDADE" e "FECHAMENTO".\nIMPORTANTE: Gere APENAS a sugestão de fala direta e matadora para a etapa de "ABERTURA". Para as DEMAIS etapas, o "content" DEVE ser "Pendente...".'
-        steps_json = """
-        "steps": [
-            {"label": "ABERTURA", "content": "..."},
-            {"label": "SITUAÇÃO + PROBLEMA", "content": "Pendente..."},
-            {"label": "IMPLICAÇÃO", "content": "Pendente..."},
-            {"label": "QUALIFICAÇÃO", "content": "Pendente..."},
-            {"label": "NECESSIDADE", "content": "Pendente..."},
-            {"label": "FECHAMENTO", "content": "Pendente..."}
-        ]"""
+                # Detecta histórico de contato via WA ou email
+                if (block.get("type") == "tool_result" and
+                        tool_name in ("whatsapp_get_messages", "email_get_contact_history") and
+                        len(block_content) > 80):
+                    has_previous_contact = True
+
+                # Detecta deal stage a partir do resultado do get_deals
+                if block.get("type") == "tool_result" and tool_name == "pipedrive_get_deals":
+                    try:
+                        data = json.loads(block.get("content", "{}"))
+                        deals = data.get("deals") or data.get("data", {}).get("deals", [])
+                        open_deals = [d for d in deals if isinstance(d, dict) and d.get("status") == "open"]
+                        if open_deals:
+                            deal_stage_id = open_deals[0].get("stage_id")
+                    except Exception:
+                        pass
+
+                # Detecta proposta enviada via atividade ou deal stage
+                if block.get("type") == "tool_result" and tool_name == "pipedrive_get_activities":
+                    try:
+                        data = json.loads(block.get("content", "{}"))
+                        acts = data.get("activities") or []
+                        for act in acts:
+                            subj = (act.get("subject") or "").lower()
+                            if any(kw in subj for kw in ["proposta", "orçamento", "cotação"]):
+                                has_open_proposal = True
+                            if act.get("id") and str(act.get("id")) == str(activity_id):
+                                activity_subject = act.get("subject")
+                    except Exception:
+                        pass
+
+    # ─── Extrai snippets reais de comunicação para enriquecer o prompt ──────
+    # Varre o histórico de mensagens coletando os CONTEÚDOS reais de WA, email, deals e atividades
+    wa_snippet = ""
+    email_snippet = ""
+    deal_snippet = ""
+    activity_snippet = ""
+
+    if messages:
+        for msg in reversed(messages):
+            content = msg.get("content") if isinstance(msg, dict) else []
+            if not isinstance(content, list):
+                continue
+            for block in content:
+                if not isinstance(block, dict) or block.get("type") != "tool_result":
+                    continue
+                tool_name = block.get("tool_name", "")
+                raw = block.get("content", "")
+                raw_str = raw if isinstance(raw, str) else json.dumps(raw, ensure_ascii=False)
+
+                if tool_name == "whatsapp_get_messages" and not wa_snippet and len(raw_str) > 50:
+                    # Pega até 1500 chars — o suficiente para capturar o tom e histórico real
+                    wa_snippet = raw_str[:1500]
+
+                if tool_name == "email_get_contact_history" and not email_snippet and len(raw_str) > 50:
+                    email_snippet = raw_str[:1200]
+
+                if tool_name == "pipedrive_get_deals" and not deal_snippet and len(raw_str) > 20:
+                    deal_snippet = raw_str[:600]
+
+                if tool_name == "pipedrive_get_activities" and not activity_snippet and len(raw_str) > 20:
+                    activity_snippet = raw_str[:600]
+
+    # Monta bloco de contexto real a injetar no prompt
+    real_context_parts = []
+    if wa_snippet:
+        real_context_parts.append(
+            f"HISTÓRICO DE WHATSAPP COM {contact_name}\n"
+            f"→ USE para: calibrar o tom (formal/informal), referenciar conversas anteriores, mencionar follow-ups já feitos.\n"
+            f"→ ATENÇÃO: Se houver várias mensagens não respondidas, o cliente está evitando. Não seja robótico.\n"
+            f"{wa_snippet}"
+        )
+    if email_snippet:
+        real_context_parts.append(
+            f"HISTÓRICO DE E-MAILS COM {contact_name}\n"
+            f"→ USE para: referenciar datas reais de contato, assuntos enviados, e-mails em aberto.\n"
+            f"→ Se houver um e-mail de apresentação sem resposta, mencione-o com a data exata.\n"
+            f"{email_snippet}"
+        )
+    if activity_snippet:
+        real_context_parts.append(
+            f"ATIVIDADES NO CRM (tarefas e notas):\n"
+            f"→ USE para: saber exatamente qual proposta foi enviada e quando, e qual é o objetivo da ligação.\n"
+            f"{activity_snippet}"
+        )
+    if deal_snippet:
+        real_context_parts.append(
+            f"DADOS DO NEGÓCIO (deal no Pipedrive):\n"
+            f"→ USE para: referenciar o valor real da proposta se disponível.\n"
+            f"{deal_snippet}"
+        )
+    real_context_block = "\n\n".join(real_context_parts) if real_context_parts else ""
+
+    # ─── Classifica o tipo de ligação via CallTypeRouter ─────────────────────
+    call_type = classify_call_type(
+        goal=goal,
+        is_company_phone=is_company_phone,
+        has_previous_contact=has_previous_contact,
+        has_open_proposal=has_open_proposal,
+        deal_stage_id=deal_stage_id,
+        activity_subject=activity_subject or goal,
+    )
+    call_config = get_call_type_config(call_type)
+
+    log.info(f"[CallTypeRouter] Tipo de ligação classificado: {call_type} | goal='{goal}' | has_previous={has_previous_contact} | has_proposal={has_open_proposal} | stage={deal_stage_id} | wa_snippet={bool(wa_snippet)} | email_snippet={bool(email_snippet)}")
+
+    # ─── Monta objective_instruction com base no tipo classificado ────────────
+    if call_type == "gatekeeper":
+        objective_instruction = (
+            f"ATENÇÃO: O telefone identificado ({phone}) é o contato geral da empresa (Recepção/PABX), "
+            f"e não o número direto de {contact_name}. "
+            f"O objetivo desta ligação NÃO é vender na recepção, mas sim ser transferido para o decisor {contact_name}."
+        )
+    elif call_type == "proposal_return":
+        objective_instruction = (
+            f"Gere um plano de voo para uma ligação de COBRANÇA DE RETORNO DE PROPOSTA com {contact_name} (Tel: {phone}). "
+            f"O objetivo é verificar o status da avaliação da proposta/orçamento e avançar para o fechamento."
+            + (f" Contexto adicional: {goal}" if goal else "")
+        )
+    elif call_type == "followup_call":
+        objective_instruction = (
+            f"Gere um plano de voo para uma ligação de FOLLOW-UP DE RELACIONAMENTO com {contact_name} (Tel: {phone}). "
+            f"Já houve contato anterior — mencione o histórico e avance o relacionamento."
+            + (f" Objetivo específico: {goal}" if goal else "")
+        )
+    else:  # cold_call
+        objective_instruction = (
+            f"Gere um plano de voo de alta performance para uma LIGAÇÃO FRIA (Cold Call) com {contact_name} (Tel: {phone}). "
+            f"Esse é o primeiro contato — use SPIN Selling completo."
+        )
+
+    # ─── Monta o JSON de etapas para o prompt ────────────────────────────────
+    steps = call_config["steps"]
+    pre_filled = call_config["pre_filled_step"]
+    step_dicts = []
+    for label in steps:
+        if label == pre_filled:
+            step_dicts.append(f'    {{"label": "{label}", "content": "..."}}')  # LLM preenche
+        else:
+            step_dicts.append(f'    {{"label": "{label}", "content": "Pendente..."}}')
+    steps_json = '"steps": [\n' + ',\n'.join(step_dicts) + '\n        ]'
+
+    instruction_extra = (
+        f'O plano deve ter EXATAMENTE as etapas: {", ".join(f"{chr(34)}{s}{chr(34)}" for s in steps)}.\n'
+        f'IMPORTANTE: Gere a sugestão de fala APENAS para a etapa "{pre_filled}". '
+        f'Para TODAS as demais etapas, o "content" DEVE ser exatamente "Pendente...".'
+    )
 
     prompt = f"""
     Você é um treinador de vendas B2B (Copiloto) da {company_name}, especialista em {company_segment}.
+    
+    TIPO DE LIGAÇÃO: {call_config["type_label"]}
     {objective_instruction}
     
     CONTEXTO DA {company_name.upper()}:
@@ -474,9 +596,23 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
     Diferenciais:
     {differentials}
 
-    {rules_to_apply}
+    {call_config["rules"]}
+
+    {'─' * 60}
+    CONTEXTO REAL DO RELACIONAMENTO COM {contact_name.upper()} (OBRIGATÓRIO: USE ESSES DADOS PARA PERSONALIZAR O SCRIPT):
+    {real_context_block if real_context_block else "Sem histórico de comunicação encontrado — este é um primeiro contato."}
+    {'─' * 60}
 
     {instruction_extra}
+    ━━ REGRA CRÍTICA DE PERSONALIZAÇÃO ━━
+    Use o contexto acima para gerar uma abertura HUMANA e PERSONALIZADA. Siga esta ordem de prioridade:
+    
+    1. ATIVIDADES NO CRM (mais confiável): Se há uma nota de atividade descrevendo quando a proposta/orçamento foi enviada (ex: "proposta de valores enviada em 20/05"), USE ESSA DATA. Esta é a referência mais confiável da proposta real.
+    2. WHATSAPP: Use o tom das mensagens para calibrar a informalidade. Se já houve vários follow-ups sem resposta, reconheça isso com humor/leveza (ex: "sei que já apareci algumas vezes...").
+    3. E-MAIL: O e-mail de apresentação (ex: Janeiro) pode ter sido o PRIMEIRO CONTATO, mas NÃO confunda com a data da proposta. Se o e-mail de Janeiro era uma apresentação e a proposta real foi enviada em Maio, mencione Maio na abertura.
+    
+    NUNCA use frases vagas como "enviei há alguns dias" se você tem a data exata.
+    NUNCA confunda e-mail de apresentação (primeiro contato) com proposta/orçamento (a proposta real pode ter data diferente).
     NUNCA utilize placeholders como [Seu Nome], [Sua Empresa] ou [Nome do Contato]. O vendedor é "{seller_name}", sua empresa é "{company_name}" e o contato é "{contact_name}". O script deve vir pronto para leitura!
     As próximas etapas serão geradas progressivamente em tempo real de acordo com as respostas do cliente.
 
@@ -484,6 +620,7 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
     {{
         "contact_name": "{contact_name}",
         "phone": "{phone}",
+        "call_type": "{call_type}",
         "is_company_phone": {"true" if is_company_phone else "false"},
         {steps_json}
     }}
@@ -691,11 +828,11 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
 
     # ── Inteligência de Seleção de Canal
     requested_channel = args.get("channel")
+    intent_signal = args.get("intent_signal", "")
     auto_channel = None
     
-    # 1. Prioridade: Intent explícito no Goal ou Subject da tarefa
-    # Analisamos o histórico recente para ver se o usuário pediu 'email' ou 'whatsapp'
-    _combined_context = f"{goal} " + " ".join(str(m.get("content", "")) for m in messages[-2:]).lower()
+    # 1. Prioridade: Intent explícito no Goal, Intent Signal ou Channel
+    _combined_context = f"{goal} {intent_signal} {requested_channel}".lower()
     
     if "email" in _combined_context or "e-mail" in _combined_context:
         auto_channel = "email"
@@ -706,29 +843,33 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
     
     # 2. Se não houver intent claro, usa a lógica de histórico
     if not auto_channel:
-        if not requested_channel or requested_channel.lower() == "whatsapp":
-            wa_count = 0
-            email_count = 0
-            for msg in messages:
-                if msg.get("role") == "user":
-                    content = str(msg.get("content", ""))
-                    if "whatsapp_get_messages" in content:
-                        import re
-                        m = re.search(r"(\d+)\s+mensagens\s+com", content)
-                        if m: wa_count += int(m.group(1))
-                    elif "email_get_contact_history" in content:
-                        import re
-                        m = re.search(r"(\d+)\s+e-mails\s+encontrados", content)
-                        if m: email_count += int(m.group(1))
+        wa_count = 0
+        email_count = 0
+        for msg in messages:
+            if msg.get("role") == "user":
+                content = str(msg.get("content", ""))
+                if "whatsapp_get_messages" in content:
+                    import re
+                    m = re.search(r"(\d+)\s+mensagens\s+com", content)
+                    if m: wa_count += int(m.group(1))
+                elif "email_get_contact_history" in content:
+                    import re
+                    m = re.search(r"(\d+)\s+e-mails\s+encontrados", content)
+                    if m: email_count += int(m.group(1))
 
-            if email_count > 0 and wa_count == 0:
-                auto_channel = "email"
-            elif wa_count > 0 and email_count == 0:
-                auto_channel = "whatsapp"
-            else:
-                # Default para o que foi pedido ou whatsapp
-                auto_channel = requested_channel.lower() if requested_channel else "whatsapp"
+        if email_count > 0 and wa_count == 0:
+            auto_channel = "email"
+        elif wa_count > 0 and email_count == 0:
+            auto_channel = "whatsapp"
+        else:
+            # Default para o que foi pedido ou whatsapp
+            auto_channel = requested_channel.lower() if requested_channel else "whatsapp"
             
+    # 3. Trava de Sanidade: Não pode mandar WhatsApp sem telefone
+    if auto_channel == "whatsapp" and (not phone or phone == "None" or str(phone).strip() == ""):
+        log.warning("generate_sales_message.sanity_check", msg="Alterando para email pois o telefone é nulo.")
+        auto_channel = "email"
+
     channel = auto_channel or "whatsapp"
 
     channel_tone = (
@@ -949,7 +1090,7 @@ async def exec_evaluate_prospects(args: dict, org_id: int | None = None) -> dict
         from models.people.employee import Employee
         from modules.ai.service.context.business_context_service import BusinessContextService
         from core.llm import LLMTier, ask_llm
-        from sqlalchemy import select
+        from sqlalchemy import select, or_
         import json
 
         # 1. Resolver organização
@@ -981,8 +1122,8 @@ async def exec_evaluate_prospects(args: dict, org_id: int | None = None) -> dict
 
             stmt_emp = select(Employee).where(
                 Employee.company_id == local_org.id,
-                Employee.role != "Reprovado",
-                Employee.department != "Reprovado"
+                or_(Employee.role.is_(None), Employee.role != "Reprovado"),
+                or_(Employee.department.is_(None), Employee.department != "Reprovado")
             )
             res_emp = await session.execute(stmt_emp)
             local_employees = res_emp.scalars().all()
@@ -1126,12 +1267,12 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
     from email_validator import validate_email, EmailNotValidError
     from modules.hierarchy.service.search_engine import get_duck_results as search_duckduckgo
     
-    contact_name = (args.get("contact_name") or "").strip()
-    company_name = (args.get("org_name") or "").strip()
+    contact_name = (args.get("contact_name") or args.get("name") or "").strip()
+    company_name = (args.get("org_name") or args.get("company_name") or "").strip()
     domain = (args.get("domain") or "").strip().lower()
 
     if not contact_name:
-        return {"ok": False, "error": "Forneça o nome do contato."}
+        return {"ok": False, "error": "Forneça o nome do contato (contact_name ou name)."}
 
     # 1. Tenta descobrir o domínio se não fornecido
     if not domain and company_name:
@@ -1158,16 +1299,21 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
     
     first = name_parts[0]
     last = name_parts[-1] if len(name_parts) > 1 else ""
-    initial = first[0] if first else ""
 
+    from core.external.email_service import generate_all_patterns
+    
     candidates = []
-    if first and last:
-        candidates.append(f"{first}.{last}@{domain}")
-        candidates.append(f"{initial}.{last}@{domain}")
-        candidates.append(f"{first}{last}@{domain}")
-        candidates.append(f"{first}_{last}@{domain}")
-        candidates.append(f"{first}@{domain}")
-    elif first:
+    # Usar todas as partes do nome (exceto preposições) para gerar variações mais amplas
+    valid_parts = [p for p in name_parts if p not in ['de', 'da', 'do', 'dos', 'das']]
+    
+    if len(valid_parts) > 1:
+        # Pega a primeira parte e combina com todas as outras
+        main_first = valid_parts[0]
+        for part in valid_parts[1:]:
+            for e, _ in generate_all_patterns(main_first, part, domain):
+                if e not in candidates:
+                    candidates.append(e)
+    else:
         candidates.append(f"{first}@{domain}")
 
     # 3. Pesquisa na Web por e-mails reais (Dorking)
@@ -1189,6 +1335,27 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
                     found_in_web.append(normalized_e)
     except Exception: pass
 
+    # 3.5 Fallback Genérico baseado no Cargo (Job Title)
+    job_title = (args.get("job_title") or "").strip().lower()
+    generic_emails = []
+    if job_title:
+        if "compra" in job_title or "suprimento" in job_title or "buyer" in job_title:
+            generic_emails.extend([f"compras@{domain}", f"suprimentos@{domain}", f"compras1@{domain}"])
+        elif "venda" in job_title or "comercial" in job_title or "sales" in job_title:
+            generic_emails.extend([f"vendas@{domain}", f"comercial@{domain}", f"contato@{domain}"])
+        elif "diretor" in job_title or "ceo" in job_title or "sócio" in job_title or "socio" in job_title:
+            generic_emails.extend([f"diretoria@{domain}", f"ceo@{domain}", f"contato@{domain}"])
+        elif "rh" in job_title or "recursos humanos" in job_title or "hr" in job_title:
+            generic_emails.extend([f"rh@{domain}", f"recursoshumanos@{domain}", f"curriculos@{domain}"])
+        elif "ti" in job_title or "tecnologia" in job_title or "it" in job_title:
+            generic_emails.extend([f"ti@{domain}", f"suporte@{domain}", f"tecnologia@{domain}"])
+        elif "financeiro" in job_title or "faturamento" in job_title:
+            generic_emails.extend([f"financeiro@{domain}", f"faturamento@{domain}", f"boletos@{domain}"])
+        elif "marketing" in job_title:
+            generic_emails.extend([f"marketing@{domain}", f"mkt@{domain}", f"contato@{domain}"])
+
+    all_additional = list(set(found_in_web + generic_emails + candidates))
+
     # 4. Validação unificada via email_service (suporta SMTP Probe local e Abstract API externa!)
     from core.external.email_service import discover_and_validate_email
     
@@ -1197,19 +1364,23 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
         last=last,
         domain=domain,
         do_smtp=True,
-        additional_candidates=found_in_web
+        additional_candidates=all_additional
     )
     
     valid_emails = []
     # Converte o resultado unificado para o formato esperado pelo drawer
     if discovery_res.get("email"):
         smtp_res = discovery_res.get("smtp_result")
+        confidence = discovery_res.get("confidence", "low")
+        
         if smtp_res == "valid":
-            status_str = "Válido (SMTP OK)"
+            status_str = "Válido (Confirmado)"
+        elif smtp_res == "catchall":
+            status_str = "Incerto (Servidor Catch-All)"
         elif smtp_res == "invalid":
-            status_str = "Inválido"
+            status_str = "Não Confirmado"
         else:
-            status_str = "Estimado (DNS OK - Sem chave API)"
+            status_str = "Estimado (DNS OK - Sem confirmação)"
         
         # O e-mail recomendado fica sempre em primeiro lugar
         valid_emails.append({
@@ -1234,15 +1405,60 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
             "tried_patterns": candidates[:3]
         }
 
-    return {
-        "ok": True,
-        "contact_name": contact_name,
-        "domain": domain,
-        "valid_emails": valid_emails,
-        "recommended": valid_emails[0]["email"] if valid_emails else None,
-        "smtp_result": discovery_res.get("smtp_result"),
-        "summary": discovery_res.get("summary") or f"Encontrado(s) {len(valid_emails)} e-mail(s) provável(is) para {contact_name}. Recomendado: {valid_emails[0]['email']}"
-    }
+    recommended = valid_emails[0]["email"] if valid_emails else None
+    smtp_result = discovery_res.get("smtp_result")
+    is_confirmed = smtp_result == "valid"
+    
+    # Só salva automaticamente no banco/Pipedrive se o email foi CONFIRMADO
+    person_id = args.get("person_id")
+    if is_confirmed and recommended and person_id:
+        try:
+            # Pipedrive update
+            from modules.crm.service.pipedrive_service import pipedrive_service
+            await pipedrive_service.update_person(
+                int(person_id), 
+                {"email": [{"value": recommended, "primary": True, "label": "verified"}]}
+            )
+            
+            # Local database update
+            from core.infra.database import async_session
+            from models.people import Employee
+            from sqlalchemy import select
+            
+            async with async_session() as session:
+                stmt = select(Employee).where(
+                    (Employee.pipedrive_id == str(person_id)) | (Employee.id == int(person_id))
+                )
+                emp = (await session.execute(stmt)).scalar_one_or_none()
+                if emp:
+                    emp.email = recommended
+                    await session.commit()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Erro ao salvar email validado no BD/Pipedrive: {e}")
+
+    # ok=True SOMENTE se o email foi confirmado por uma fonte confiável
+    if is_confirmed:
+        return {
+            "ok": True,
+            "contact_name": contact_name,
+            "domain": domain,
+            "valid_emails": valid_emails,
+            "recommended": recommended,
+            "smtp_result": smtp_result,
+            "summary": f"E-mail confirmado para {contact_name}: {recommended}"
+        }
+    else:
+        # Email não confirmado (catch-all, invalid, ou unknown)
+        return {
+            "ok": False,
+            "contact_name": contact_name,
+            "domain": domain,
+            "error": f"E-mail não pôde ser confirmado para {contact_name} ({valid_emails[0]['status']}). Domínio pode ser catch-all.",
+            "smtp_result": smtp_result,
+            "suggested_email": recommended,
+            "valid_emails": valid_emails
+        }
 
 
 async def exec_generate_dossier(args: dict) -> dict:
@@ -1251,62 +1467,6 @@ async def exec_generate_dossier(args: dict) -> dict:
         "ok": True,
         "summary": "Consolidação iniciada. Gere o dossiê final agora.",
     }
-
-async def exec_generate_prospecting_plan(args: dict) -> dict:
-    """Aciona o Prospecting Service para gerar um Plano de Prospecção SPIN Selling e salvar no prospecting_context."""
-    org_id = args.get("org_id")
-    if not org_id:
-        return {"ok": False, "error": "org_id é obrigatório."}
-
-    try:
-        from core.infra.database import async_session
-        from modules.sales.service.prospecting_service import build_spin_prospecting_plan
-        async with async_session() as session:
-            # Pipedrive ID or Local ID? Assuming pipedrive_id for agent calls
-            from models.organization import Organization
-            from sqlalchemy import select
-            stmt = select(Organization).where((Organization.pipedrive_id == org_id) | (Organization.id == org_id))
-            org = (await session.execute(stmt)).scalar_one_or_none()
-            if not org:
-                return {"ok": False, "error": f"Organização {org_id} não encontrada no banco local."}
-            
-            # Since build_spin_prospecting_plan expects a session, but wait, it's written in sync sqlalchemy?
-            # Let me check if prospecting_service is using async or sync.
-            # I wrote it with `async def` but used `db.query(Organization)`. That's sync SQLAlchemy!
-            # Let's fix that. I need to make it async.
-            pass
-    except Exception as e:
-        log.exception("Erro ao gerar plano de prospecção")
-        return {"ok": False, "error": str(e)}
-
-
-async def exec_update_prospecting_plan(args: dict) -> dict:
-    """Atualiza manualmente o plano de prospecção de uma empresa (requer aprovação)."""
-    org_id = args.get("org_id")
-    new_plan = args.get("new_plan")
-
-    if not org_id or not new_plan:
-        return {"ok": False, "error": "org_id e new_plan são obrigatórios."}
-
-    try:
-        from core.infra.database import async_session
-        from models.organization import Organization
-        from sqlalchemy import select
-
-        async with async_session() as session:
-            stmt = select(Organization).where((Organization.pipedrive_id == org_id) | (Organization.id == org_id))
-            org = (await session.execute(stmt)).scalar_one_or_none()
-            if not org:
-                return {"ok": False, "error": f"Organização {org_id} não encontrada no banco local."}
-            
-            org.prospecting_context = new_plan
-            await session.commit()
-            
-            log.info("prospecting_plan.updated_manually", org_id=org_id)
-            return {"ok": True, "summary": "Plano de prospecção atualizado com sucesso."}
-    except Exception as e:
-        log.exception("Erro ao atualizar plano de prospecção")
-        return {"ok": False, "error": str(e)}
 
 async def exec_update_prospecting_context(args: dict) -> dict:
     """Salva o contexto qualitativo e a temperatura do lead na base local."""
@@ -1374,32 +1534,54 @@ async def exec_generate_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict
     Gera um Plano de Prospecção B2B detalhado (SPIN Selling) para a empresa.
     Cruza dados de decisores mapeados com o perfil do tenant para gerar um
     plano estruturado em Markdown e salvar no prospecting_context da organização.
+    Se a empresa já tiver um plano de prospecção salvo, retorna-o diretamente
+    para evitar chamadas de LLM redundantes e preservar edições.
     """
     from core.infra.database import async_session
     from models.organization import Organization
     from models.people.employee import Employee
-    from sqlalchemy import select
+    from sqlalchemy import select, or_
     from core.llm.router import ask_llm
     from core.llm.base import LLMTier
     from modules.ai.service.context.business_context_service import BusinessContextService
 
     org_id = args.get("org_id")
+    force_regenerate = args.get("force_regenerate", False) in (True, "true", 1, "1")
     if not org_id:
         return {"ok": False, "error": "org_id é obrigatório para gerar o plano de prospecção."}
+
+    # Tenta obter a representação em inteiro de org_id para resiliência no banco local
+    org_id_int = None
+    try:
+        org_id_int = int(org_id)
+    except (ValueError, TypeError):
+        pass
 
     try:
         # 1. Carrega a organização e seus funcionários/decisores do banco local
         async with async_session() as session:
-            res = await session.execute(select(Organization).where(Organization.id == org_id))
+            conditions = [
+                Organization.id == org_id,
+                Organization.pipedrive_id == org_id
+            ]
+            if org_id_int is not None:
+                conditions.append(Organization.id == org_id_int)
+                conditions.append(Organization.pipedrive_id == org_id_int)
+
+            res = await session.execute(select(Organization).where(or_(*conditions)))
             org = res.scalars().first()
             if not org:
-                # Tenta pelo pipedrive_id
-                res = await session.execute(
-                    select(Organization).where(Organization.pipedrive_id == org_id)
-                )
-                org = res.scalars().first()
-            if not org:
                 return {"ok": False, "error": f"Organização {org_id} não encontrada no banco local."}
+
+            # Se já existir um plano no prospecting_context, reutiliza
+            if not force_regenerate and org.prospecting_context and len(org.prospecting_context.strip()) > 100:
+                log.info("exec_generate_prospecting_plan.existing_plan_found", org_id=org.id)
+                return {
+                    "ok": True,
+                    "plan": org.prospecting_context,
+                    "org_name": org.name,
+                    "summary": f"Plano de prospecção existente retornado para {org.name}."
+                }
 
             res_emps = await session.execute(
                 select(Employee).where(
@@ -1416,7 +1598,7 @@ async def exec_generate_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict
         icp_profile = business_ctx.get("icp_profile", "")
         differentials = business_ctx.get("differentials", "")
 
-        # 3. Avalia os prospects usando a ferramenta centralizada (mesma do ChatPanel)
+        # 3. Avalia os prospects usando a ferramenta centralizada
         eval_res = await exec_evaluate_prospects({"org_id": org.id})
         best_prospects_data = eval_res.get("best_prospects", []) if eval_res.get("ok") else []
         overall_strategy = eval_res.get("overall_strategy", "") if eval_res.get("ok") else ""
@@ -1519,7 +1701,7 @@ async def exec_update_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict[s
     """
     from core.infra.database import async_session
     from models.organization import Organization
-    from sqlalchemy import select
+    from sqlalchemy import select, or_
 
     org_id = args.get("org_id")
     new_plan = args.get("new_plan", "")
@@ -1529,15 +1711,25 @@ async def exec_update_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict[s
     if not new_plan:
         return {"ok": False, "error": "new_plan não pode estar vazio."}
 
+    # Tenta obter a representação em inteiro de org_id para resiliência no banco local
+    org_id_int = None
+    try:
+        org_id_int = int(org_id)
+    except (ValueError, TypeError):
+        pass
+
     try:
         async with async_session() as session:
-            res = await session.execute(select(Organization).where(Organization.id == org_id))
+            conditions = [
+                Organization.id == org_id,
+                Organization.pipedrive_id == org_id
+            ]
+            if org_id_int is not None:
+                conditions.append(Organization.id == org_id_int)
+                conditions.append(Organization.pipedrive_id == org_id_int)
+
+            res = await session.execute(select(Organization).where(or_(*conditions)))
             org = res.scalars().first()
-            if not org:
-                res = await session.execute(
-                    select(Organization).where(Organization.pipedrive_id == org_id)
-                )
-                org = res.scalars().first()
             if not org:
                 return {"ok": False, "error": f"Organização {org_id} não encontrada."}
 
@@ -1550,3 +1742,71 @@ async def exec_update_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict[s
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+async def batch_discover_and_validate_org_emails(org_id: int):
+    """
+    Superteste em lote: Varrer todos os funcionários de uma organização,
+    descobrir e validar e-mails, salvar válidos e deletar os inválidos do Pipedrive.
+    """
+    import asyncio
+    import time
+    from core.infra.database import async_session
+    from models.people import Employee
+    from models.organization import Organization
+    from sqlalchemy import select
+    from modules.crm.service.pipedrive_service import pipedrive_service
+    
+    async with async_session() as session:
+        stmt = select(Organization).where(Organization.id == org_id)
+        org = (await session.execute(stmt)).scalars().first()
+        
+        if not org or not org.domain:
+            return {"ok": False, "error": "Organização não encontrada ou sem domínio"}
+            
+        stmt = select(Employee).where(Employee.company_id == org.id)
+        employees = (await session.execute(stmt)).scalars().all()
+        
+    verified_pipedrive_ids = set()
+    if org.pipedrive_id:
+        try:
+            details = await pipedrive_service.get_organization_details(int(org.pipedrive_id))
+            persons = details.get("persons", [])
+            for p in persons:
+                if p.get("email"):
+                    for e in p["email"]:
+                        if e.get("label") == "verified":
+                            verified_pipedrive_ids.add(str(p.get("id")))
+                            break
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Erro ao buscar detalhes do Pipedrive: {e}")
+
+    for emp in employees:
+        if emp.pipedrive_id and str(emp.pipedrive_id) in verified_pipedrive_ids:
+            import logging
+            logging.getLogger(__name__).info(f"Pulando {emp.name}: E-mail já validado no Pipedrive.")
+            continue
+            
+        await asyncio.sleep(2)  # Delay para evitar rate limit
+        res = await exec_discover_and_validate_email({
+            "contact_name": emp.name,
+            "domain": org.domain,
+            "job_title": emp.role or emp.department or "",
+            "person_id": emp.id
+        })
+        
+        # Se for inválido, remover do Pipedrive!
+        if not res.get("ok"):
+            if emp.pipedrive_id:
+                try:
+                    await pipedrive_service.delete_person(int(emp.pipedrive_id))
+                    # Atualiza BD local
+                    async with async_session() as s2:
+                        e = (await s2.execute(select(Employee).where(Employee.id == emp.id))).scalars().first()
+                        if e:
+                            e.pipedrive_id = None
+                            await s2.commit()
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Falha ao deletar fantasma do Pipedrive: {e}")
+

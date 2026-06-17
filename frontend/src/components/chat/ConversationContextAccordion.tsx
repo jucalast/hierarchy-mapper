@@ -140,11 +140,15 @@ export const ConversationContextAccordion: React.FC<ConversationContextAccordion
                     });
                 } else if (tool === 'generate_prospecting_plan') {
                     let planContent = detailedContent;
-                    try {
-                        const parsed = typeof event.content === 'string' ? JSON.parse(event.content) : event.content;
-                        if (parsed && parsed.plan) planContent = parsed.plan;
-                        else if (parsed && parsed.data && parsed.data.plan) planContent = parsed.data.plan;
-                    } catch { /* ignore */ }
+                    if (event.data && event.data.plan) {
+                        planContent = event.data.plan;
+                    } else {
+                        try {
+                            const parsed = typeof event.content === 'string' ? JSON.parse(event.content) : event.content;
+                            if (parsed && parsed.plan) planContent = parsed.plan;
+                            else if (parsed && parsed.data && parsed.data.plan) planContent = parsed.data.plan;
+                        } catch { /* ignore */ }
+                    }
                     
                     items.push({
                         id: 'prospecting_plan',

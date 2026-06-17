@@ -8,7 +8,7 @@ Otimizações:
 import re
 from typing import Dict, List, Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -101,7 +101,7 @@ class ContextService:
         if not org:
             return {}
 
-        employees = [e for e in org.employees if e.role != "Reprovado" and e.department != "Reprovado"]
+        employees = [e for e in org.employees if (e.role is None or e.role != "Reprovado") and (e.department is None or e.department != "Reprovado")]
 
         # Busca estatísticas
         total_mapped = len(employees)
@@ -156,8 +156,8 @@ class ContextService:
                     (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
                 )
             ),
-            Employee.role != "Reprovado",
-            Employee.department != "Reprovado"
+            or_(Employee.role.is_(None), Employee.role != "Reprovado"),
+            or_(Employee.department.is_(None), Employee.department != "Reprovado")
         )
         emp_result = await session.execute(emp_stmt)
         employees = emp_result.scalars().all()
@@ -214,8 +214,8 @@ class ContextService:
                     (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
                 )
             ),
-            Employee.role != "Reprovado",
-            Employee.department != "Reprovado"
+            or_(Employee.role.is_(None), Employee.role != "Reprovado"),
+            or_(Employee.department.is_(None), Employee.department != "Reprovado")
         )
         
         if department:
@@ -316,8 +316,8 @@ class ContextService:
                         (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
                     )
                 ),
-                Employee.role != "Reprovado",
-                Employee.department != "Reprovado"
+                or_(Employee.role.is_(None), Employee.role != "Reprovado"),
+                or_(Employee.department.is_(None), Employee.department != "Reprovado")
             ).limit(limit)
             result = await session.execute(stmt)
             employees = result.scalars().all()

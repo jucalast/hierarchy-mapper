@@ -7,7 +7,8 @@ import {
     ExternalLink, 
     Briefcase,
     Info,
-    Trash2
+    Trash2,
+    BadgeCheck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import styles from './ContactList.module.css';
@@ -21,7 +22,9 @@ interface ContactListProps {
     onSaveToPipedrive?: (person: any) => Promise<void> | void;
     onUpdateInPipedrive?: (person: any) => Promise<void> | void;
     onDeleteFromPipedrive?: (person: any) => Promise<void> | void;
-    onDiscoverEmail?: (person: any) => Promise<void> | void;
+    onEmailDiscovered?: (person: any, email: string) => Promise<void> | void;
+    onBatchValidateEmails?: () => void;
+    isBatchValidating?: boolean;
     orgName?: string;
 }
 
@@ -31,12 +34,17 @@ export const ContactList: React.FC<ContactListProps> = ({
     onSaveToPipedrive, 
     onUpdateInPipedrive, 
     onDeleteFromPipedrive,
-    onDiscoverEmail,
+    onEmailDiscovered,
+    onBatchValidateEmails,
+    isBatchValidating = false,
     orgName = "Empresa"
 }) => {
     const [loadingDiscover, setLoadingDiscover] = React.useState<Record<string, boolean>>({});
     const [discoveryActiveId, setDiscoveryActiveId] = React.useState<string | null>(null);
     const [anchorRect, setAnchorRect] = React.useState<DOMRect | null>(null);
+    const [isBatchValidatingLocal, setIsBatchValidatingLocal] = React.useState(false);
+    const [batchProgress, setBatchProgress] = React.useState<{ current: number, total: number } | null>(null);
+    const [localEmailUpdates, setLocalEmailUpdates] = React.useState<Record<string, { email?: string, verified?: boolean, deleted?: boolean }>>({});
 
     const handleDiscoverEmail = (person: any, e: React.MouseEvent) => {
         // Tenta encontrar o elemento de e-mail na mesma linha do contato
@@ -49,7 +57,7 @@ export const ContactList: React.FC<ContactListProps> = ({
     };
 
     const handleDiscoveryComplete = async (email: string) => {
-        if (!onDiscoverEmail || !discoveryActiveId) return;
+        if (!onEmailDiscovered || !discoveryActiveId) return;
         
         // Localiza a pessoa ativa
         const person = persons.find(p => p.id === discoveryActiveId);
@@ -57,17 +65,100 @@ export const ContactList: React.FC<ContactListProps> = ({
 
         setLoadingDiscover(prev => ({ ...prev, [person.id]: true }));
         try {
-            await onDiscoverEmail(person);
+            setLocalEmailUpdates(prev => ({ ...prev, [person.id]: { email: email, verified: true } }));
+            await onEmailDiscovered(person, email);
         } catch (error) {
-            console.error("Erro na descoberta manual de e-mail:", error);
+            console.error("Erro ao salvar e-mail descoberto:", error);
         } finally {
             setLoadingDiscover(prev => ({ ...prev, [person.id]: false }));
+            setDiscoveryActiveId(null);
         }
+    };
+
+    const handleStartBatch = async () => {
+        const queue = persons.filter(p => {
+            if (p.sources?.includes('pipedrive')) return false;
+            if (p.email && Array.isArray(p.email)) {
+                return !p.email.some((e: any) => e.label === 'verified');
+            }
+            return true;
+        });
+        
+        if (queue.length === 0) {
+            toast.success("Todos os contatos listados já estão validados!");
+            return;
+        }
+
+        setIsBatchValidatingLocal(true);
+        setBatchProgress({ current: 1, total: queue.length });
+
+        for (let i = 0; i < queue.length; i++) {
+            const person = queue[i];
+            setBatchProgress({ current: i + 1, total: queue.length });
+            setDiscoveryActiveId(person.id);
+            setLoadingDiscover(prev => ({ ...prev, [person.id]: true }));
+            
+            const row = document.getElementById(`contact-row-${person.id}`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/intelligence/discover-email`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        contact_name: person.name,
+                        org_name: orgName,
+                        job_title: person.job_title || person.role
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const discoveredEmail = data.recommended || data.email;
+                    
+                    if (data.ok && discoveredEmail && onEmailDiscovered) {
+                        setLocalEmailUpdates(prev => ({ ...prev, [person.id]: { email: discoveredEmail, verified: true } }));
+                        await onEmailDiscovered(person, discoveredEmail);
+                    } else if (!data.ok && onDeleteFromPipedrive && person.sources?.includes('pipedrive')) {
+                        setLocalEmailUpdates(prev => ({ ...prev, [person.id]: { deleted: true } }));
+                        await onDeleteFromPipedrive(person);
+                    } else if (!data.ok || !discoveredEmail) {
+                        setLocalEmailUpdates(prev => ({ ...prev, [person.id]: { deleted: true } }));
+                        if (onDeleteFromPipedrive && person.sources?.includes('pipedrive')) {
+                            await onDeleteFromPipedrive(person);
+                        }
+                    }
+                } else if (onDeleteFromPipedrive && person.sources?.includes('pipedrive')) {
+                    setLocalEmailUpdates(prev => ({ ...prev, [person.id]: { deleted: true } }));
+                    await onDeleteFromPipedrive(person);
+                } else {
+                    setLocalEmailUpdates(prev => ({ ...prev, [person.id]: { deleted: true } }));
+                }
+            } catch (error) {
+                console.error("Erro no lote para", person.name, error);
+            } finally {
+                setLoadingDiscover(prev => ({ ...prev, [person.id]: false }));
+            }
+            await new Promise(r => setTimeout(r, 1500));
+        }
+        
+        setDiscoveryActiveId(null);
+        setIsBatchValidatingLocal(false);
+        setBatchProgress(null);
+        toast.success("Validação em lote concluída!");
+        window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
     };
 
     const getDropdownItems = (person: any) => {
         const items = [];
-        const email = person.email?.[0]?.value || person.email;
+        const override = localEmailUpdates[person.id];
+        const email = override?.deleted ? null : (override?.email || person.email?.[0]?.value || person.email);
         const phone = person.phone?.[0]?.value || person.phone;
 
         if (onEditPerson && person.emp_id) {
@@ -78,10 +169,10 @@ export const ContactList: React.FC<ContactListProps> = ({
             });
         }
 
-        if (onDiscoverEmail) {
+        if (onEmailDiscovered) {
             const isDiscovering = loadingDiscover[person.id];
             items.push({
-                label: isDiscovering ? 'Descobrindo E-mail...' : 'Descobrir E-mail',
+                label: isDiscovering ? 'Salvando E-mail...' : 'Descobrir E-mail',
                 onClick: (e: React.MouseEvent) => handleDiscoverEmail(person, e),
                 icon: isDiscovering ? <Spinner size={14} inline /> : <Mail size={14} />,
                 style: isDiscovering ? { opacity: 0.5, pointerEvents: 'none' as const } : undefined
@@ -163,15 +254,38 @@ export const ContactList: React.FC<ContactListProps> = ({
 
     return (
         <div className={styles.container}>
+            {persons.length > 0 && (
+                <div className={styles.listHeaderVertical}>
+                    <span className={styles.listCount}>Contatos ({persons.length})</span>
+                    {onBatchValidateEmails && (
+                        <button 
+                            className={`${styles.batchActionBtn} ${isBatchValidatingLocal ? styles.batchActionBtnLoading : ''}`}
+                            onClick={handleStartBatch}
+                            disabled={isBatchValidatingLocal}
+                            title="Validar e-mails de todos os contatos listados"
+                        >
+                            {isBatchValidatingLocal ? <Spinner size={14} inline color="currentColor" /> : <Mail size={14} />}
+                            {isBatchValidatingLocal && batchProgress 
+                                ? `Validando em Lote... (${batchProgress.current}/${batchProgress.total})` 
+                                : 'Validar todos os e-mails'
+                            }
+                        </button>
+                    )}
+                </div>
+            )}
+            
             {persons.length === 0 && (
                 <div className={styles.empty}>Nenhum contato encontrado para esta empresa.</div>
             )}
             
             {persons.map((person) => {
                 const dropdownItems = getDropdownItems(person);
+                const override = localEmailUpdates[person.id];
+                const emailToDisplay = override?.deleted ? null : (override?.email || person.email?.[0]?.value);
+                const isVerified = override ? override.verified : (person.sources?.includes('pipedrive') || person.email?.[0]?.label === 'verified');
 
                 return (
-                    <div key={person.id} className={styles.contactRow}>
+                    <div key={person.id} id={`contact-row-${person.id}`} className={styles.contactRow}>
                         <div className={styles.contentCard}>
                             <div className={styles.contactHeader}>
                                 <div>
@@ -217,15 +331,22 @@ export const ContactList: React.FC<ContactListProps> = ({
                             </div>
 
                             <div className={styles.metaList}>
-                                {person.email && person.email[0]?.value && (
+                                {emailToDisplay && (
                                     <div className={styles.metaItem}>
                                         <Mail size={12} />
-                                        <a 
-                                            href={`mailto:${person.email[0].value}`} 
-                                            className={`${styles.emailLink} ${discoveryActiveId === person.id ? styles.emailDiscovering : ''}`}
-                                        >
-                                            {person.email[0].value}
-                                        </a>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <a 
+                                                href={`mailto:${emailToDisplay}`} 
+                                                className={`${styles.emailLink} ${discoveryActiveId === person.id ? styles.emailDiscovering : ''}`}
+                                            >
+                                                {emailToDisplay}
+                                            </a>
+                                            {isVerified && (
+                                                <span title="E-mail verificado pelo sistema" style={{ display: 'flex', alignItems: 'center' }}>
+                                                    <BadgeCheck size={14} fill="var(--sw-status-success)" color="var(--sw-status-success)" className={styles.verifiedBadge} />
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                                 
@@ -236,7 +357,7 @@ export const ContactList: React.FC<ContactListProps> = ({
                                     </div>
                                 )}
 
-                                {!person.email?.[0]?.value && !person.phone?.[0]?.value && (
+                                {!emailToDisplay && !person.phone?.[0]?.value && (
                                     <div className={styles.metaItem}>
                                         <MessageSquare size={12} />
                                         <span>Sem dados de contato direto</span>
@@ -255,6 +376,7 @@ export const ContactList: React.FC<ContactListProps> = ({
                     anchorRect={anchorRect}
                     onClose={() => setDiscoveryActiveId(null)}
                     onComplete={handleDiscoveryComplete}
+                    jobTitle={persons.find(p => p.id === discoveryActiveId)?.job_title || ''}
                 />
             )}
         </div>

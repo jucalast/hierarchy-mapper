@@ -26,7 +26,7 @@ interface FocusedOrgViewProps {
     onSaveToPipedrive?: (person: any) => Promise<void> | void;
     onUpdateInPipedrive?: (person: any) => Promise<void> | void;
     onDeleteFromPipedrive?: (person: any) => Promise<void> | void;
-    onDiscoverEmail?: (person: any) => Promise<void> | void;
+    onEmailDiscovered?: (person: any, email: string) => Promise<void> | void;
 }
 
 
@@ -52,7 +52,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
     onSaveToPipedrive,
     onUpdateInPipedrive,
     onDeleteFromPipedrive,
-    onDiscoverEmail
+    onEmailDiscovered
 }) => {
     const rawLinkedinUrl = focusedOrg?.linkedin || 
                            focusedOrg?.linkedin_url || 
@@ -64,6 +64,37 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
     const linkedinTitle = rawLinkedinUrl ? "Ver no LinkedIn" : `Pesquisar "${focusedOrg?.name || 'Empresa'}" no LinkedIn`;
 
 
+
+    const [isBatchValidating, setIsBatchValidating] = React.useState(false);
+
+    const handleBatchValidateEmails = async () => {
+        setIsBatchValidating(true);
+        try {
+            const orgId = focusedOrg.local_id || focusedOrg.id || expandedOrgId;
+            const { organizations } = await import('@/services/api');
+            const res = await organizations.batchValidateEmails(orgId);
+            if (res.ok) {
+                // Notifica sucesso visual
+                const event = new CustomEvent('crm_notification', {
+                    detail: { type: 'success', message: 'Superteste iniciado em segundo plano! A tela será atualizada em breve.' }
+                });
+                window.dispatchEvent(event);
+                
+                // Dispara o evento para atualizar a timeline e a UI de pessoas
+                const changeEvent = new CustomEvent('crm_timeline_changed');
+                window.dispatchEvent(changeEvent);
+            }
+        } catch (error) {
+            console.error('Erro ao iniciar validação em lote:', error);
+            const errorEvent = new CustomEvent('crm_notification', {
+                detail: { type: 'error', message: 'Erro ao executar o superteste de e-mails em lote.' }
+            });
+            window.dispatchEvent(errorEvent);
+        } finally {
+            // Remove o estado de carregamento imediatamente após o backend responder
+            setIsBatchValidating(false);
+        }
+    };
 
     return (
         <div className={styles.focusedOrgView}>
@@ -223,6 +254,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                         const merged = [];
                                         const seenPipedriveIds = new Set();
                                         const mappedByName = new Map();
+                                        const mappedById = new Map();
 
                                         for (const p of pipedrivePersons) {
                                             if (!p.id || seenPipedriveIds.has(p.id)) continue;
@@ -232,23 +264,31 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                             const personItem = {
                                                 ...p,
                                                 sources: ['pipedrive'],
-                                                emp_id: validEmps.find(e => e.name?.trim().toLowerCase() === nameKey)?.id
+                                                emp_id: validEmps.find(e => (e.pipedrive_id && Number(e.pipedrive_id) === Number(p.id)) || (e.name?.trim().toLowerCase() === nameKey))?.id
                                             };
                                             merged.push(personItem);
                                             if (nameKey) {
                                                 mappedByName.set(nameKey, personItem);
                                             }
+                                            mappedById.set(Number(p.id), personItem);
                                         }
 
                                         for (const emp of validEmps) {
                                             const nameKey = emp.name ? emp.name.trim().toLowerCase() : '';
-                                            if (nameKey && mappedByName.has(nameKey)) {
-                                                const existing = mappedByName.get(nameKey);
+                                            const pidMatch = emp.pipedrive_id ? mappedById.get(Number(emp.pipedrive_id)) : null;
+                                            const existing = pidMatch || (nameKey && mappedByName.has(nameKey) ? mappedByName.get(nameKey) : null);
+                                            
+                                            if (existing) {
                                                 if (!existing.profile_pic && (emp.profile_pic || emp.avatar)) {
                                                     existing.profile_pic = emp.profile_pic || emp.avatar;
                                                 }
                                                 if (!existing.job_title && (emp.role || emp.title)) {
                                                     existing.job_title = emp.role || emp.title;
+                                                }
+                                                if (!existing.name && emp.name) {
+                                                    existing.name = emp.name;
+                                                } else if (existing.name && emp.name && emp.name.length > existing.name.length) {
+                                                    existing.name = emp.name;
                                                 }
                                                 // Merge local email and phone if available
                                                 let hasPipedriveEmail = false;
@@ -300,7 +340,9 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                     onSaveToPipedrive={onSaveToPipedrive}
                                     onUpdateInPipedrive={onUpdateInPipedrive}
                                     onDeleteFromPipedrive={onDeleteFromPipedrive}
-                                    onDiscoverEmail={onDiscoverEmail}
+                                    onEmailDiscovered={onEmailDiscovered}
+                                    onBatchValidateEmails={handleBatchValidateEmails}
+                                    isBatchValidating={isBatchValidating}
                                 />
                             )}
 

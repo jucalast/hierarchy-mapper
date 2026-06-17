@@ -239,7 +239,7 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
             from core.infra.database import async_session
             from models.organization import Organization
             from models.people.employee import Employee
-            from sqlalchemy import select
+            from sqlalchemy import select, or_
 
             async with async_session() as session:
                 stmt = select(Organization).where((Organization.id == org_id) | (Organization.pipedrive_id == org_id))
@@ -249,8 +249,8 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
                 if local_org:
                     stmt_emp = select(Employee).where(
                         Employee.company_id == local_org.id,
-                        Employee.role != "Reprovado",
-                        Employee.department != "Reprovado"
+                        or_(Employee.role.is_(None), Employee.role != "Reprovado"),
+                        or_(Employee.department.is_(None), Employee.department != "Reprovado")
                     )
                     res_emp = await session.execute(stmt_emp)
                     local_employees = res_emp.scalars().all()

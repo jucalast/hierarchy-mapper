@@ -12,8 +12,8 @@
     gap: 2px;
     cursor: pointer;
     transition: all 0.25s ease;
-    background: #00ff96;
-    border: 3px solid #00c870;
+    background: var(--sw-status-success);
+    border: 3px solid var(--sw-status-success);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
@@ -30,9 +30,9 @@
     transform: translateY(-50%) rotate(45deg);
     width: 14px;
     height: 14px;
-    background: #00ff96;
-    border-left: 3px solid #00c870;
-    border-bottom: 3px solid #00c870;
+    background: var(--sw-status-success);
+    border-left: 3px solid var(--sw-status-success);
+    border-bottom: 3px solid var(--sw-status-success);
     z-index: -1;
     transition: all 0.25s ease;
 }
@@ -58,7 +58,7 @@
 .emailSuccess {
     font-size: 14px;
     font-weight: 500;
-    color: #000;
+    color: #fff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -70,14 +70,14 @@
 }
 
 .securityIcon {
-    color: #008a4a;
+    color: #fff;
     flex-shrink: 0;
 }
 
 .instruction {
     font-size: 11px;
     font-weight: 500;
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.8);
     white-space: nowrap;
 }
 
@@ -88,7 +88,7 @@
 .loadingText {
     font-size: 13px;
     font-weight: 600;
-    color: #000;
+    color: #fff;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -97,8 +97,8 @@
 .closeHint {
     font-size: 10px;
     font-weight: 700;
-    color: #000;
-    opacity: 0.6;
+    color: #fff;
+    opacity: 0.9;
 }
 
 .container.error .closeHint {
@@ -108,10 +108,22 @@
 
 .spin { 
     animation: spin 1s linear infinite; 
-    color: #000;
+    color: #fff;
 }
 
 @keyframes spin { 
     from { transform: rotate(0deg); } 
     to { transform: rotate(360deg); } 
 }
+
+.container.warning {
+    background: #f59e0b;
+    border-color: #d97706;
+}
+
+.container.warning::after {
+    background: #f59e0b;
+    border-left-color: #d97706;
+    border-bottom-color: #d97706;
+}
+

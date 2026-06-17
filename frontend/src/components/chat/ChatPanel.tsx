@@ -29,6 +29,8 @@ interface ChatPanelProps {
     onToggleTheme?: () => void;
     onOpenWhatsApp?: (info: { name: string, id?: string }) => void;
     selectedOrgLogo?: string;
+    prospectingContext?: string | null;
+    isOrgLoading?: boolean;
 }
 
 type PanelView = 'list' | 'chat';
@@ -42,6 +44,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     onToggleTheme,
     onOpenWhatsApp,
     selectedOrgLogo,
+    prospectingContext,
+    isOrgLoading,
 }) => {
     const { isListening, isTranscribing, transcript, finalTranscript, error: voiceError, startListening, stopListening, clearTranscript, isSupported: voiceSupported, analyserNode } = useSpeechToText();
 
@@ -100,12 +104,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // Confirmações já decididas { action_id -> approved }
     const [agentConfirmedActions, setAgentConfirmedActions] = useState<Record<string, boolean>>({});
     const abortControllerRef = useRef<AbortController | null>(null);
+    // Guarda o threadId que está atualmente em streaming (para restaurar loading ao voltar)
+    const streamingThreadIdRef = useRef<string | null>(null);
+    const activeThreadIdRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        activeThreadIdRef.current = activeThread?.id || null;
+    }, [activeThread]);
+
 
     const handleStopStreaming = useCallback(() => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
             abortControllerRef.current = null;
         }
+        streamingThreadIdRef.current = null;
         setIsLoading(false);
         setAgentStreaming(false);
         setActiveRunningTask(prev => prev?.status === 'streaming' ? { ...prev, status: 'done' } : prev);
@@ -250,6 +263,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         // Side effects based on tool results
                         if (ev.type === 'tool_result' && ev.ok) {
                             const tool = ev.tool || '';
+                            if (tool === 'generate_prospecting_plan') {
+                                window.dispatchEvent(new CustomEvent('prospecting_plan_updated'));
+                            }
+                            
                             const isWriteTool = tool.includes('create') || tool.includes('update') || tool.includes('send') || tool.includes('reply');
                             
                             if ((tool.startsWith('pipedrive_') || tool.includes('send') || tool.includes('reply')) && isWriteTool) {
@@ -773,6 +790,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
     }, [pipedriveCooldown]);
 
+
+
     // ─── AI Model Preference Persistence ─────────────────────
     useEffect(() => {
         // Sincroniza a escolha do usuário com o backend para que
@@ -804,6 +823,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     content: hasValidOrg ? `Como posso te ajudar com a @${cleanOrgName}?` : "Como posso te ajudar hoje?",
                     timestamp: new Date(),
                 }]);
+                if (selectedOrgId && !prospectingContext) {
+                    setInputValue("Gerar plano de prospecção para esta empresa");
+                }
             } else {
                 let hasActiveJobLoading = false;
                 let hasAwaitingConfirmation = false;
@@ -985,6 +1007,25 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     // ─── Open thread ─────────────────────────────────────────
     const openThread = useCallback(async (thread: ThreadOut) => {
+        const isSameStreamingThread = streamingThreadIdRef.current === thread.id;
+
+        if (!isSameStreamingThread) {
+            // Troca de thread: mantemos o stream em background (não abortamos)
+            // mas limpamos os estados visuais da barra/loading.
+            setIsLoading(false);
+            setAgentStreaming(false);
+            setActiveRunningTask(null);
+            setLiveModel(null);
+            setModelActivity([]);
+        }
+        // Se é o mesmo thread que estava streamando, restauramos/mantemos o loading visual
+        if (isSameStreamingThread) {
+            setIsLoading(true);
+            setAgentStreaming(true);
+        }
+        // Se é o mesmo thread que estava streamando: não reseta o loading
+        // Os estados isLoading/agentStreaming/activeRunningTask ainda estão ativos
+
         setActiveThread(thread);
         if (typeof window !== 'undefined') {
             const targetOrgId = selectedOrgId || 0;
@@ -1028,6 +1069,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     useEffect(() => {
         setActiveThread(null);
         setMessages([]);
+        if (selectedOrgId && !prospectingContext) {
+            setInputValue("Gerar plano de prospecção para esta empresa");
+        } else {
+            setInputValue("");
+        }
 
         if (typeof window !== 'undefined') {
             const targetOrgId = selectedOrgId || 0;
@@ -1042,12 +1088,32 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             setView('chat');
         }
         
-        // Sempre carrega threads, mesmo que orgId seja nulo (orgId=0 no backend pega tudo)
+    // Sempre carrega threads, mesmo que orgId seja nulo (orgId=0 no backend pega tudo)
         void loadThreads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedOrgId]);
 
+    // Limpa o placeholder caso o contexto de prospecção seja carregado assincronamente depois do hook acima
+    useEffect(() => {
+        if (prospectingContext && inputValue === "Gerar plano de prospecção para esta empresa") {
+            setInputValue("");
+        }
+    }, [prospectingContext]);
+
     const handleNewThread = () => {
+        // Cancela qualquer stream em andamento — novo chat sempre começa limpo
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+        streamingThreadIdRef.current = null;
+        setIsLoading(false);
+        setAgentStreaming(false);
+        setActiveRunningTask(null);
+        setLiveModel(null);
+        setModelActivity([]);
+        setAgentEvents([]);
+
         setActiveThread(null);
         setApprovedSuggestedActions({});
         setAgentConfirmedActions({});
@@ -1057,21 +1123,27 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             window.localStorage.setItem('chat-panel-view', 'chat');
         }
         setMessages([]);
+        if (selectedOrgId && !prospectingContext) {
+            setInputValue("Gerar plano de prospecção para esta empresa");
+        } else {
+            setInputValue("");
+        }
         setView('chat');
     };
 
     // ─── Back to list ────────────────────────────────────────
     const handleBackToList = async () => {
+        // NÃO cancela o stream — o agente continua rodando em background.
+        // O streamingThreadIdRef preserva o threadId para restaurar o loading ao voltar.
+        // O stream só é cancelado se o usuário abrir um thread DIFERENTE ou clicar em Novo Chat.
         setView('list');
-        setApprovedSuggestedActions({});
-        setAgentConfirmedActions({});
         if (typeof window !== 'undefined') {
-            const targetOrgId = selectedOrgId || 0;
-            window.localStorage.removeItem(`active-thread-id-${targetOrgId}`);
             window.localStorage.setItem('chat-panel-view', 'list');
+            // Mantém active-thread-id para que loadThreads saiba restaurar o thread ao voltar
         }
         setActiveThread(null);
         setMessages([]);
+        setInputValue("");
         // Refresh thread list to show updated message counts
         void loadThreads();
     };
@@ -1140,6 +1212,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setIsLoading(true);
         setAgentEvents([]);
         setAgentStreaming(true);
+        // Registra qual thread está em streaming para preservar o loading ao navegar e voltar
+        streamingThreadIdRef.current = threadId;
 
         const msgId = (Date.now() + 1).toString();
 
@@ -1250,17 +1324,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         }
 
                         // Atualiza a mensagem em tempo real
-                        if (event.type === 'message_saved' && event.message_id) {
-                            activeMsgId = event.message_id;
-                            setMessages(prev => prev.map(m =>
-                                (m.id === msgId || m.id === activeMsgId) ? { ...m, id: activeMsgId, agentEvents: [...collectedEvents] } : m
-                            ));
-                            continue;
-                        }
+                        if (activeThreadIdRef.current === threadId) {
+                            if (event.type === 'message_saved' && event.message_id) {
+                                activeMsgId = event.message_id;
+                                setMessages(prev => prev.map(m =>
+                                    (m.id === msgId || m.id === activeMsgId) ? { ...m, id: activeMsgId, agentEvents: [...collectedEvents] } : m
+                                ));
+                                continue;
+                            }
 
-                        setMessages(prev => prev.map(m =>
-                            (m.id === msgId || m.id === activeMsgId) ? { ...m, agentEvents: [...collectedEvents] } : m
-                        ));
+                            setMessages(prev => prev.map(m =>
+                                (m.id === msgId || m.id === activeMsgId) ? { ...m, agentEvents: [...collectedEvents] } : m
+                            ));
+                        }
                     } catch { /* ignore */ }
                 }
             }
@@ -1522,6 +1598,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (abortControllerRef.current === controller) {
                 abortControllerRef.current = null;
             }
+            streamingThreadIdRef.current = null;
             setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: false } : m));
             setIsLoading(false);
             setAgentStreaming(false);
@@ -1544,6 +1621,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const threadId = activeThread?.id || '';
         setIsLoading(true);
         setAgentStreaming(true);
+        streamingThreadIdRef.current = threadId;
         
         let attachment_path = undefined;
         if (file && approved) {
@@ -1667,6 +1745,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (abortControllerRef.current === controller) {
                 abortControllerRef.current = null;
             }
+            streamingThreadIdRef.current = null;
             
             // Verifica se precisamos manter o loading ativo por conta da view de ligacao
             setMessages(prev => {
@@ -2016,8 +2095,31 @@ ${transcriptText}
             />
 
             {/* Body: messages + optional sidebar */}
-            <div className={`${styles.chatBody} ${messages.length === 0 ? styles.emptyChatBody : ''}`}>
-                {messages.length === 0 ? (
+            <div className={`${styles.chatBody} ${messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome') ? styles.emptyChatBody : ''}`}>
+                {isOrgLoading && messages.length === 0 ? (
+                    <div className={styles.emptyWelcomeContainer} style={{ opacity: 0.7 }}>
+                        <h2 className={styles.emptyWelcomeText}>
+                            Carregando contexto da{' '}
+                            <span className={styles.highlightPurple}>
+                                @{cleanOrgName}
+                            </span>
+                            ...
+                        </h2>
+                    </div>
+                ) : selectedOrgId && !prospectingContext && (messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome')) ? (
+                    <div className={styles.emptyWelcomeContainer}>
+                        <h2 className={styles.emptyWelcomeText}>
+                            A{' '}
+                            <span className={styles.highlightPurple}>
+                                @{cleanOrgName}
+                            </span>
+                            {' '}ainda não possui um plano de prospecção.
+                        </h2>
+                        <div className={styles.emptyInputWrapper}>
+                            {renderChatInput()}
+                        </div>
+                    </div>
+                ) : messages.length === 0 ? (
                     <div className={styles.emptyWelcomeContainer}>
                         <h2 className={styles.emptyWelcomeText}>
                             {hasValidOrg ? (
@@ -2031,6 +2133,15 @@ ${transcriptText}
                             ) : (
                                 "Como posso te ajudar hoje?"
                             )}
+                        </h2>
+                        <div className={styles.emptyInputWrapper}>
+                            {renderChatInput()}
+                        </div>
+                    </div>
+                ) : messages.length === 1 && messages[0].id === 'welcome' ? (
+                    <div className={styles.emptyWelcomeContainer}>
+                        <h2 className={styles.emptyWelcomeText}>
+                            {messages[0].content}
                         </h2>
                         <div className={styles.emptyInputWrapper}>
                             {renderChatInput()}

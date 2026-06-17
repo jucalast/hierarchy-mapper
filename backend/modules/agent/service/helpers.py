@@ -43,9 +43,10 @@ def _raw_log(process_id: str, event_type: str, data: Any):
             
         # 2. Log Markdown (estruturadinho para leitura humana direta)
         md_file = os.path.join(log_dir, "agent_debug.md")
-        with open(md_file, "a", encoding="utf-8") as f:
+        md_mode = "w" if event_type == "agent_start" else "a"
+        with open(md_file, md_mode, encoding="utf-8") as f:
             if event_type == "agent_start":
-                f.write(f"\n\n# 🕵️ Investigação: {process_id} ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})\n")
+                f.write(f"# 🕵️ Investigação: {process_id} ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})\n")
                 f.write(f"**Mensagem Original**: `{data.get('message')}`\n")
                 f.write(f"**Org ID**: `{data.get('org_id')}` | **Preferência**: `{data.get('preferred')}`\n")
                 f.write("\n---\n")

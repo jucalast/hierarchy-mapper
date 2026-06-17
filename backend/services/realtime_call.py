@@ -141,8 +141,9 @@ class CallAssistantManager:
         is_speaking = False
         last_partial_secs = 0.0
         partial_lock = threading.Lock()
+        state = {"has_triggered_predictive": False}
 
-        def fire_partial(buf_snapshot: bytes):
+        def fire_partial(buf_snapshot: bytes, current_secs: float):
             """Roda em thread separada para não bloquear o loop principal."""
             wav = _pcm_to_wav(buf_snapshot, sample_rate)
             text = _transcribe_groq(wav, is_partial=True)
@@ -153,6 +154,16 @@ class CallAssistantManager:
                         "role": "Cliente",
                         "text": text,
                     })
+                    # Trigger Preditivo: envia o insight parcial APENAS UMA VEZ por frase, após >3s de fala
+                    # Isso evita bater no limite de taxa (Rate Limit 429) da API do LLM
+                    if current_secs >= 3.0 and not state["has_triggered_predictive"]:
+                        state["has_triggered_predictive"] = True
+                        temp_history = self.context_history[-5:] if len(self.context_history) > 0 else []
+                        temp_history.append(f"Cliente: {text} ... (falando)")
+                        self.transcription_queue.put({
+                            "type": "trigger_insight",
+                            "history": "\n".join(temp_history)
+                        })
 
         while not self.stop_event.is_set():
             try:
@@ -174,6 +185,7 @@ class CallAssistantManager:
                 if not is_speaking:
                     is_speaking = True
                     last_partial_secs = 0.0
+                    state["has_triggered_predictive"] = False
                     self.transcription_queue.put({
                         "type": "status", "source": "speaker", "status": "Falando..."
                     })
@@ -187,7 +199,7 @@ class CallAssistantManager:
                     last_partial_secs = secs
                     threading.Thread(
                         target=fire_partial,
-                        args=(bytes(speech_buffer),),
+                        args=(bytes(speech_buffer), secs),
                         daemon=True
                     ).start()
 

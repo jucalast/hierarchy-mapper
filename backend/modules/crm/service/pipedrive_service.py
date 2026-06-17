@@ -569,9 +569,9 @@ class PipedriveService:
 
         payload: Dict[str, Any] = {}
         if data.get("phone"):
-            payload["phone"] = [{"value": data["phone"], "primary": True}]
+            payload["phone"] = data["phone"] if isinstance(data["phone"], list) else [{"value": data["phone"], "primary": True}]
         if data.get("email"):
-            payload["email"] = [{"value": data["email"], "primary": True}]
+            payload["email"] = data["email"] if isinstance(data["email"], list) else [{"value": data["email"], "primary": True}]
         if data.get("name"):
             payload["name"] = data["name"]
 
@@ -1383,21 +1383,84 @@ class PipedriveService:
                         name = p.get("name")
                         if not pid or not name: continue
 
-                        # 2. Busca/Cria funcionário
+                         # 2. Busca/Cria funcionário
+                        # Primeiro, tenta buscar por pipedrive_id
                         stmt_emp = select(Employee).where(Employee.pipedrive_id == pid)
                         res_emp = await session.execute(stmt_emp)
                         db_emp = res_emp.scalars().first()
 
-                        if not db_emp:
-                            db_emp = Employee(
-                                pipedrive_id=pid,
-                                company_id=local_org.id,
-                                name=name,
-                                source="pipedrive",
-                                is_discovery=1
-                            )
-                            session.add(db_emp)
+                        import unicodedata
+                        def normalize_name(s: str) -> str:
+                            return "".join(
+                                c for c in unicodedata.normalize('NFD', s.lower())
+                                if unicodedata.category(c) != 'Mn'
+                            ).replace(" ", "").replace("-", "").strip()
+
+                        # Busca se há um duplicado local com o mesmo nome e sem pipedrive_id
+                        stmt_dup = select(Employee).where(
+                            Employee.company_id == local_org.id,
+                            Employee.pipedrive_id.is_(None)
+                        )
+                        res_dup = await session.execute(stmt_dup)
+                        all_dups = res_dup.scalars().all()
                         
+                        normalized_name = normalize_name(name)
+                        dup_emp = next((e for e in all_dups if normalize_name(e.name) == normalized_name), None)
+
+                        if dup_emp:
+                            # Temos um contato local sem pipedrive_id. Queremos preservar o ID desse contato local!
+                            # Vincula o pipedrive_id
+                            dup_emp.pipedrive_id = pid
+                            if dup_emp.source == "discovery":
+                                dup_emp.source = "pipedrive + local"
+                            
+                            if db_emp and db_emp.id != dup_emp.id:
+                                # Se já existia um registro separado com o pipedrive_id, mescla as informações do db_emp para o dup_emp
+                                if not dup_emp.role and db_emp.role:
+                                    dup_emp.role = db_emp.role
+                                if not dup_emp.department and db_emp.department:
+                                    dup_emp.department = db_emp.department
+                                if not dup_emp.seniority and db_emp.seniority:
+                                    dup_emp.seniority = db_emp.seniority
+                                if not dup_emp.linkedin_url and db_emp.linkedin_url:
+                                    dup_emp.linkedin_url = db_emp.linkedin_url
+                                if not dup_emp.description and db_emp.description:
+                                    dup_emp.description = db_emp.description
+                                if not dup_emp.profile_pic and db_emp.profile_pic:
+                                    dup_emp.profile_pic = db_emp.profile_pic
+                                if not dup_emp.email and db_emp.email:
+                                    dup_emp.email = db_emp.email
+                                if not dup_emp.phone and db_emp.phone:
+                                    dup_emp.phone = db_emp.phone
+                                if not dup_emp.location and db_emp.location:
+                                    dup_emp.location = db_emp.location
+                                if not dup_emp.whatsapp_number and db_emp.whatsapp_number:
+                                    dup_emp.whatsapp_number = db_emp.whatsapp_number
+                                
+                                # Limpa campos únicos do db_emp para evitar conflito de UNIQUE antes do delete/flush
+                                db_emp.pipedrive_id = None
+                                db_emp.linkedin_url = None
+                                db_emp.email = None
+                                db_emp.whatsapp_number = None
+                                
+                                await session.delete(db_emp)
+                                log.info("pipedrive.persons.merged_and_deleted_synced_duplicate", name=name, keep_id=dup_emp.id, deleted_id=db_emp.id)
+                            else:
+                                log.info("pipedrive.persons.linked_pipedrive_id_to_local", name=name, employee_id=dup_emp.id, pipedrive_id=pid)
+                            
+                            db_emp = dup_emp
+                        else:
+                            # Se não há duplicado local com esse nome
+                            if not db_emp:
+                                db_emp = Employee(
+                                    pipedrive_id=pid,
+                                    company_id=local_org.id,
+                                    name=name,
+                                    source="pipedrive",
+                                    is_discovery=1
+                                )
+                                session.add(db_emp)
+                            
                         # 3. Atualiza campos se vazios
                         if not db_emp.email and p.get("email"):
                             emails = p.get("email")
@@ -1520,6 +1583,73 @@ class PipedriveService:
         phone: str | None = None,
         org_id: int | None = None,
     ) -> dict:
+        # Tenta buscar contato existente para evitar duplicidade e mesclar dados
+        existing_person_id = None
+        existing_person = None
+        
+        # 1. Busca por e-mail primeiro
+        if email:
+            search_resp = await self._request(
+                "GET", 
+                "persons/search", 
+                params={"term": email, "search_by_email": 1, "exact_match": 1, "limit": 1}
+            )
+            if search_resp and search_resp.status_code == 200:
+                data = search_resp.json()
+                items = data.get("data", {}).get("items") or []
+                if items and items[0].get("item"):
+                    existing_person = items[0]["item"]
+                    existing_person_id = existing_person["id"]
+
+        # 2. Se não achou por e-mail, mas temos nome e org_id, busca por nome na mesma empresa
+        if not existing_person_id and name and org_id:
+            search_resp = await self._request(
+                "GET", 
+                "persons/search", 
+                params={"term": name, "exact_match": 0, "limit": 5}
+            )
+            if search_resp and search_resp.status_code == 200:
+                data = search_resp.json()
+                items = data.get("data", {}).get("items") or []
+                for i in items:
+                    p = i.get("item", {})
+                    org = p.get("organization")
+                    if org and org.get("id") == org_id:
+                        n1, n2 = name.lower(), p.get("name", "").lower()
+                        if n1 in n2 or n2 in n1:
+                            existing_person = p
+                            existing_person_id = p["id"]
+                            break
+                            
+        # Se encontrou um contato existente, vamos ATUALIZÁ-LO (mesclar) preservando Pipedrive
+        if existing_person_id and existing_person:
+            update_payload = {}
+            
+            # Atualiza o nome apenas se o novo for mais completo
+            if len(name.strip()) > len(existing_person.get("name", "").strip()):
+                update_payload["name"] = name
+                
+            # Se a pessoa não tinha organização, e agora temos, vincula
+            if org_id and not existing_person.get("organization"):
+                update_payload["org_id"] = org_id
+                
+            # Adiciona email apenas se a pessoa já não tivesse nenhum
+            if email and not existing_person.get("primary_email"):
+                 update_payload["email"] = [{"value": email, "primary": True}]
+                 
+            # Adiciona telefone apenas se a pessoa já não tivesse nenhum (array phones)
+            if phone and not existing_person.get("phones"):
+                 update_payload["phone"] = [{"value": phone, "primary": True}]
+
+            if update_payload:
+                await self._request("PUT", f"persons/{existing_person_id}", json=update_payload)
+                log.info("pipedrive.person.merged", person_id=existing_person_id, updates=update_payload)
+            else:
+                log.info("pipedrive.person.merge_skipped", person_id=existing_person_id, reason="no new data")
+
+            # Retorna os dados como se tivesse sido criado com sucesso
+            return {"success": True, "data": {"id": existing_person_id}}
+
         payload = {
             "name": name,
             "owner_id": self.user_id,

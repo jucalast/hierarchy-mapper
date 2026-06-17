@@ -17,6 +17,7 @@ class EmailDiscoveryRequest(BaseModel):
     contact_name: str
     org_name: Optional[str] = None
     domain: Optional[str] = None
+    job_title: Optional[str] = None
 
 @router.post("/discover-email")
 async def discover_email(payload: EmailDiscoveryRequest):
@@ -31,7 +32,8 @@ async def discover_email(payload: EmailDiscoveryRequest):
         args = {
             "contact_name": payload.contact_name,
             "org_name": payload.org_name,
-            "domain": payload.domain
+            "domain": payload.domain,
+            "job_title": payload.job_title
         }
         
         result = await exec_discover_and_validate_email(args)
