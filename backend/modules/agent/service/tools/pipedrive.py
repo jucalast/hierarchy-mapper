@@ -212,7 +212,9 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
             if "-" in name or "(" in name:
                 parts = name.replace("(", "-").replace(")", "").split("-")
                 company_hint = parts[-1].strip().lower()
+                role_keywords = {"compras", "suprimentos", "comercial", "financeiro", "diretoria", "diretor", "diretora", "gerente", "socio", "sócio", "rh", "ti", "logistica", "logística", "qualidade", "vendas", "fiscal", "recepção", "atendimento", "produção", "projetos", "engenharia", "plant", "buying", "buyer", "sourcing", "procurement", "purchasing"}
                 if (company_hint
+                    and company_hint not in role_keywords
                     and company_hint not in org_real_name_lower
                     and org_real_name_lower not in company_hint
                     and len(company_hint) > 3):

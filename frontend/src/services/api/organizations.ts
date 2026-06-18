@@ -74,3 +74,8 @@ export function getPipelineBoard() {
 export function batchValidateEmails(orgId: number) {
   return api.post<{ ok?: boolean; message?: string }>(`/organizations/${orgId}/validate-emails`);
 }
+
+export function deleteProspectingPlan(orgId: number) {
+  return api.delete<{ ok?: boolean; message?: string }>(`/organizations/${orgId}/prospecting-plan`);
+}
+

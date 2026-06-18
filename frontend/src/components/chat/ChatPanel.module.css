@@ -4346,7 +4346,7 @@
 }
 
 .contextHeaderTitle {
-  font-size: 0.8rem;
+  font-size: var(--font-base);
   font-weight: 500;
   color: var(--sw-text-base);
   white-space: nowrap;
@@ -4362,7 +4362,7 @@
 }
 
 .contextHeaderHint {
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
   color: var(--sw-text-muted);
   white-space: nowrap;
 }
@@ -4395,7 +4395,7 @@
   padding: 16px 20px 80px 20px;
   overflow-y: auto;
   flex: 1;
-  font-size: 0.85rem;
+  font-size: var(--font-base);
   line-height: 1.6;
   color: var(--sw-text-base);
   position: relative;
@@ -4417,7 +4417,7 @@
 }
 
 .contextAccordionScrollArea h3 {
-  font-size: 0.9rem;
+  font-size: var(--font-lg);
   font-weight: 700;
   color: var(--sw-primary);
   margin: 16px 0 8px 0;
@@ -4538,3 +4538,22 @@
   transform: translateY(1px);
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
+
+.deletePlanButton {
+  background: transparent;
+  border: none;
+  color: var(--sw-status-danger, #ef4444);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.deletePlanButton:hover {
+  background: rgba(239, 68, 68, 0.1);
+  opacity: 1;
+}

@@ -52,6 +52,8 @@ class PipedriveService:
     _open_org_ids_cache: Optional[set] = None
     _open_org_ids_cache_ts: float = 0.0
     _OPEN_ORG_IDS_TTL: float = 300.0  # 5 minutos
+    # Mapa org_id -> stage_name para o estágio real do deal aberto mais recente
+    _org_stage_cache: Dict[int, str] = {}
 
     def __init__(self) -> None:
         self.api_token = settings.PIPEDRIVE_API_TOKEN
@@ -89,10 +91,18 @@ class PipedriveService:
             return
         try:
             ids: set = set()
+            org_stage_map: Dict[int, str] = {}
             start = 0
             limit = 500
             has_more = True
-            
+
+            # Busca mapa de estágios para resolver stage_id -> nome
+            stages_full = {}
+            try:
+                stages_full = await self.get_all_stages_full()
+            except Exception:
+                pass
+
             while has_more:
                 deals_resp = await self._request("GET", "deals", params={"status": "open", "limit": limit, "start": start})
                 if deals_resp is not None and deals_resp.status_code == 200:
@@ -106,7 +116,20 @@ class PipedriveService:
                         if org_info:
                             oid = org_info.get("value") if isinstance(org_info, dict) else org_info
                             if oid:
-                                ids.add(int(oid))
+                                oid = int(oid)
+                                ids.add(oid)
+                                # Mapeia org -> stage (usa o primeiro deal encontrado por org)
+                                if oid not in org_stage_map:
+                                    sid = d.get("stage_id")
+                                    if sid is not None:
+                                        stage_info = stages_full.get(sid)
+                                        if isinstance(stage_info, dict):
+                                            stage_name = stage_info.get("name", f"Estágio {sid}")
+                                        elif isinstance(stage_info, str):
+                                            stage_name = stage_info
+                                        else:
+                                            stage_name = d.get("stage_order_nr", f"Estágio {sid}")
+                                        org_stage_map[oid] = stage_name
                                 
                     pagination = data.get("additional_data", {}).get("pagination", {})
                     has_more = pagination.get("more_items_in_collection", False)
@@ -120,6 +143,7 @@ class PipedriveService:
                     break
 
             PipedriveService._open_org_ids_cache = ids
+            PipedriveService._org_stage_cache = org_stage_map
             PipedriveService._open_org_ids_cache_ts = time.time()
             log.info("pipedrive.open_org_ids_cache.refreshed", count=len(ids))
         except Exception as e:
@@ -810,8 +834,10 @@ class PipedriveService:
             users_map = await self.get_users_map()
             users_pics_map = await self.get_users_pics_map()
             for o in local_orgs:
+                pid = o.pipedrive_id or o.id
+                stage_name = PipedriveService._org_stage_cache.get(pid) if pid else None
                 result.append({
-                    "id": o.pipedrive_id or o.id,
+                    "id": pid,
                     "name": o.name,
                     "domain": o.domain,
                     "cnpj": o.cnpj,
@@ -829,6 +855,7 @@ class PipedriveService:
                     "owner_id": o.owner_id,
                     "owner_name": users_map.get(o.owner_id) if o.owner_id in users_map else "Sistema",
                     "owner_avatar": users_pics_map.get(o.owner_id) if o.owner_id in users_pics_map else None,
+                    "stage_name": stage_name,
                 })
 
             return result

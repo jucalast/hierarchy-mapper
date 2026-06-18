@@ -527,6 +527,13 @@ async def intercept_post_llm_turn(
     
     # ── MODO EXECUÇÃO DIRETA E TAREFA CRM ──
     if stop_reason in ("end_turn", "stop") or not tool_use_blocks:
+        # Encontra o índice da última mensagem do usuário para escopar as verificações à tarefa atual
+        _last_user_idx = 0
+        for _i, _m in enumerate(messages):
+            if _m.get("role") == "user":
+                _last_user_idx = _i
+        _current_task_history = messages[_last_user_idx:] + [{"role": "assistant", "content": content}]
+
         if direct_action and is_task_action:
             _CTX_TOOLS = {
                 "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
@@ -534,7 +541,7 @@ async def intercept_post_llm_turn(
             }
             # Detecta quais ferramentas de contexto já foram chamadas no histórico
             _called_ctx = set()
-            for _m in messages + [{"role": "assistant", "content": content}]:
+            for _m in _current_task_history:
                 _mc = _m.get("content", "")
                 if isinstance(_mc, list):
                     for _b in _mc:
@@ -602,7 +609,7 @@ async def intercept_post_llm_turn(
 
             # Detecta se já gerou rascunho de mensagem
             _has_draft = False
-            for _m in messages + [{"role": "assistant", "content": content}]:
+            for _m in _current_task_history:
                 _mc = _m.get("content", "")
                 if isinstance(_mc, list):
                     for _b in _mc:
@@ -616,7 +623,7 @@ async def intercept_post_llm_turn(
                 _tpn_first = session_task_person.split()[0].lower()
                 _task_wa_done = False
                 _task_email_done = False
-                for _hm in messages + [{"role": "assistant", "content": content}]:
+                for _hm in _current_task_history:
                     _hc = _hm.get("content", "")
                     if not isinstance(_hc, list): continue
                     for _hb in _hc:
@@ -650,7 +657,7 @@ async def intercept_post_llm_turn(
                 if session_task_person and is_task_action:
                     _tpn_f = session_task_person.lower().split()[0]
                     _target_searched = False
-                    for _m in messages + [{"role": "assistant", "content": content}]:
+                    for _m in _current_task_history:
                         _mc = _m.get("content", "")
                         if not isinstance(_mc, list): continue
                         for _b in _mc:
@@ -691,7 +698,7 @@ async def intercept_post_llm_turn(
 
                 # Busca quais contatos já foram buscados
                 _already_searched = set()
-                for _m in messages + [{"role": "assistant", "content": content}]:
+                for _m in _current_task_history:
                     _mc = _m.get("content", "")
                     if not isinstance(_mc, list): continue
                     for _b in _mc:
@@ -738,7 +745,7 @@ async def intercept_post_llm_turn(
                 _ai_response_text = " ".join(b.get("text", "") for b in content if b.get("type") == "text").lower()
                 _has_sent_check = False
                 _has_flight_plan = False
-                for _m in messages + [{"role": "assistant", "content": content}]:
+                for _m in _current_task_history:
                     _mc = _m.get("content", "")
                     if isinstance(_mc, list):
                         for _b in _mc:
@@ -886,7 +893,7 @@ async def intercept_post_llm_turn(
                 _SEND_TOOLS = {"whatsapp_send_message", "email_send", "email_reply"}
                 
                 _idx = 0
-                for _m in messages + [{"role": "assistant", "content": content}]:
+                for _m in _current_task_history:
                     _mc = _m.get("content", "")
                     if isinstance(_mc, list):
                         for _b in _mc:
@@ -914,7 +921,7 @@ async def intercept_post_llm_turn(
                 if _has_draft_now and not _has_sent_now and not (_last_validation_idx > _last_draft_idx and _validation_failed):
                     _att_name = ""
                     _draft_channel = ""
-                    for _m in messages + [{"role": "assistant", "content": content}]:
+                    for _m in _current_task_history:
                         _mc = _m.get("content", "")
                         if isinstance(_mc, list):
                             for _b in _mc:
@@ -944,7 +951,7 @@ async def intercept_post_llm_turn(
                 # Interceptor: AVISO DE SEGURANÇA pendente
                 _has_security_warning = False
                 _has_validation_called = False
-                for _m in messages + [{"role": "assistant", "content": content}]:
+                for _m in _current_task_history:
                     _mc = _m.get("content", "")
                     if isinstance(_mc, list):
                         for _b in _mc:
@@ -1017,7 +1024,7 @@ async def intercept_post_llm_turn(
 
                     _has_phone = len(persons_with_wa) > 0 or _find_contact_called
                     _extracted_phone = ""
-                    for _m in messages + [{"role": "assistant", "content": content}]:
+                    for _m in _current_task_history:
                         _mc = _m.get("content", "")
                         if isinstance(_mc, list):
                             for _b in _mc:
@@ -1038,7 +1045,7 @@ async def intercept_post_llm_turn(
 
                     if _has_phone and _coaching_called and not _ligacao_view_called:
                         _fp_to_pass = {}
-                        for _m in reversed(messages + [{"role": "assistant", "content": content}]):
+                        for _m in reversed(_current_task_history):
                             _mc = _m.get("content", "")
                             if not isinstance(_mc, list): continue
                             for _b in _mc:
@@ -1115,7 +1122,7 @@ async def intercept_post_llm_turn(
                     _is_followup = any(kw in first_msg_content_clean.lower() for kw in ["follow-up", "cobrar retorno", "acompanhar", "orçamento"])
                     if _is_followup:
                         _found_history = False
-                        for _hm in messages + [{"role": "assistant", "content": content}]:
+                        for _hm in _current_task_history:
                             _mc = _hm.get("content", "")
                             if not isinstance(_mc, list): continue
                             for _b in _mc:
@@ -1158,11 +1165,11 @@ async def intercept_post_llm_turn(
         if "parada antecipada" in response_text.lower() and iteration < max_iters - 2:
             _search_attempted = any(
                 isinstance(_b, dict) and (_b.get("name") == "find_company_contact" or _b.get("tool_name") == "find_company_contact")
-                for _m in messages + [{"role": "assistant", "content": content}]
+                for _m in _current_task_history
                 for _b in (_m.get("content") if isinstance(_m.get("content"), list) else [])
             )
             _phone_found_now = False
-            for _m in messages + [{"role": "assistant", "content": content}]:
+            for _m in _current_task_history:
                 _mc = _m.get("content", "")
                 if isinstance(_mc, list):
                     for _b in _mc:
@@ -1258,7 +1265,7 @@ async def intercept_post_llm_turn(
         # Interceptor: Investigação incompleta (enforça fases)
         if iteration < max_iters - 2:
             try:
-                _msgs_with_current = messages + [{"role": "assistant", "content": content}]
+                _msgs_with_current = _current_task_history
                 _status = _build_phase_status(_msgs_with_current, query_type=query_type, org_id=org_id)
                 context_mode_active = False
                 for msg in messages:
@@ -1347,7 +1354,7 @@ async def intercept_post_llm_turn(
                 if _ligacao_finalizada and stop_reason in ("end_turn", "stop") and not tool_use_blocks:
                     _called_write_tools = False
                     _WRITE_TOOLS_CHECK = {"pipedrive_update_task", "pipedrive_create_note", "pipedrive_create_task"}
-                    for _m in messages + [{"role": "assistant", "content": content}]:
+                    for _m in _current_task_history:
                         _mc = _m.get("content", "")
                         if isinstance(_mc, list):
                             for _b in _mc:

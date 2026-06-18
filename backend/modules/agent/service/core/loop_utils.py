@@ -8,8 +8,10 @@ import json
 import ast
 
 def _suggest_actions_done(messages: list) -> bool:
-    """Retorna True se suggest_next_actions foi efetivamente executada com sucesso."""
-    for msg in messages:
+    """Retorna True se suggest_next_actions foi efetivamente executada com sucesso desde a última mensagem do usuário."""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            break
         content = msg.get("content", "")
         if isinstance(content, list):
             for block in content:

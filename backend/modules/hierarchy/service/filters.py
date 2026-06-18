@@ -57,13 +57,24 @@ def is_same_person(name1: str, name2: str) -> bool:
     if not name1 or not name2:
         return False
         
-    c1 = normalize_str(name1)
-    c2 = normalize_str(name2)
+    def clean_name(n: str) -> str:
+        # Remove parenthesized or bracketed terms, e.g. "Giovanna (Compras)" -> "Giovanna"
+        n = re.sub(r'\s*[\(\[].*?[\)\]]', '', n)
+        # Remove hyphens or pipes followed by department/role terms, e.g. "Giovanna - Compras" -> "Giovanna"
+        n = re.sub(
+            r'\s*[-|]\s*(compras|logistica|suprimentos|vendas|comercial|financeiro|rh|diretora|diretor|gerente|buyer|procurement|supply|operacoes)\b.*',
+            '',
+            n,
+            flags=re.IGNORECASE
+        )
+        return n.strip()
+
+    c1 = normalize_str(clean_name(name1))
+    c2 = normalize_str(clean_name(name2))
     
     if c1 == c2:
         return True
         
-    import re
     from difflib import SequenceMatcher
     
     # Remove special characters and split to tokens

@@ -115,3 +115,31 @@ async def start_batch_email_validation(
     return {"ok": True, "message": "Validação em lote iniciada em segundo plano."}
 
 
+@router.delete("/{org_id}/prospecting-plan")
+async def delete_prospecting_plan(
+    org_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Apaga o plano de prospecção (prospecting_context) de uma organização.
+    """
+    try:
+        from sqlalchemy import or_
+        stmt = select(Organization).where(
+            or_(Organization.id == org_id, Organization.pipedrive_id == org_id)
+        )
+        result = await db.execute(stmt)
+        org = result.scalars().first()
+        
+        if not org:
+            raise HTTPException(status_code=404, detail="Organização não encontrada.")
+            
+        org.prospecting_context = None
+        await db.commit()
+        return {"ok": True, "message": "Plano de prospecção apagado com sucesso."}
+    except Exception as e:
+        log.warning("organizations.delete_prospecting_plan.failed", org_id=org_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Erro ao apagar plano: {e}")
+
+
+

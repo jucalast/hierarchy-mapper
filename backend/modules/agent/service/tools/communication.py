@@ -126,6 +126,8 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
                 pass
 
         if phone_digits_arg and len(phone_digits_arg) <= 13:
+            if len(phone_digits_arg) in (10, 11) and not phone_digits_arg.startswith("55"):
+                phone_digits_arg = f"55{phone_digits_arg}"
             pd_chat_id = f"{phone_digits_arg}@c.us"
             found_name = contact
         else:
@@ -149,7 +151,11 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
         is_lid = "@lid" in chat_id or (phone_val.isdigit() and len(phone_val) > 13)
         pipedrive_phone = _re.sub(r'\D', '', phone_arg) if phone_arg else ""
         canonical_phone = pipedrive_phone if (pipedrive_phone and len(pipedrive_phone) <= 13) else ("" if is_lid else phone_val)
+        # Normaliza DDI: números brasileiros sempre com 55 (evita cache miss por formato diferente)
+        if canonical_phone and canonical_phone.isdigit() and not canonical_phone.startswith("55") and len(canonical_phone) in (10, 11):
+            canonical_phone = f"55{canonical_phone}"
         _cache_id = canonical_phone or chat_id
+
 
         from ._message_cache import get_cached_messages
         from models.communication.contact_cache import CHANNEL_WHATSAPP
@@ -217,6 +223,11 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
         pipedrive_phone = _re.sub(r'\D', '', phone_arg) if phone_arg else ""
         canonical_phone = pipedrive_phone if (pipedrive_phone and len(pipedrive_phone) <= 13) else ("" if is_lid else phone_val)
 
+        # Normaliza DDI brasileiro: garante que o número sempre começa com 55
+        # Evita duplicatas no cache por números "19..." vs "5519..." referentes ao mesmo contato
+        if canonical_phone and canonical_phone.isdigit() and not canonical_phone.startswith("55") and len(canonical_phone) in (10, 11):
+            canonical_phone = f"55{canonical_phone}"
+
         # Persiste no cache para a UI de mensagens (não bloqueia o retorno)
         _cache_id = canonical_phone or chat_id
         _org_name = args.get("org_name") or None
@@ -230,6 +241,7 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
                 raw_messages=list(msgs_raw or []),
             )
         )
+
 
         return {
             "ok": True,

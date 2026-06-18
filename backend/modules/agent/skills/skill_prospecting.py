@@ -49,7 +49,16 @@ class ProspectingSkill(FunnelStageSkill):
 Follow these steps strictly:
 1. CHECK context first (`pipedrive_get_org`). Only use Data Enrichment (`deep_company_investigation`) if you do NOT have a saved Dossier or Prospecting Plan.
 2. Fetch the persons (`pipedrive_get_persons`). 
-3. Generate a Prospecting Plan (`generate_prospecting_plan`) if one does not exist yet. ESTA ETAPA É OBRIGATÓRIA antes de decidir quem salvar.
+
+⚠️ REGRA CRÍTICA — ZERO CONTATOS:
+Se `pipedrive_get_persons` retornar 0 contatos (ou nenhum contato com canal válido de comunicação):
+  → Chame `open_hierarchy_drawer` IMEDIATAMENTE para abrir o mapeador de hierarquia.
+  → O mapeador vai descobrir os decisores da empresa automaticamente.
+  → Após o mapeamento, gere o plano de prospecção (`generate_prospecting_plan`) com os dados obtidos.
+  → Em seguida, siga com a pipeline normal a partir do passo 5 (evaluate_prospects).
+  → NÃO trave, NÃO encerre o turno — o mapeamento é a ação correta quando não há contatos.
+
+3. Generate a Prospecting Plan (`generate_prospecting_plan`) if one does not exist yet. ESTA ETAPA É OBRIGATÓRIA antes de decidir quem salvar. (Pule este passo se já chamou open_hierarchy_drawer acima — o plano será gerado após o mapeamento.)
 4. Output a summary of the context/Dossier and the Prospecting Plan to the user.
 5. Evaluate the persons (`evaluate_prospects`) based on the Prospecting Plan to identify the most suitable decision maker(s) (o contato mais apto).
 6. Apply Multithreading: Try to identify/save at least 2 key decision makers in the hierarchy to avoid single-point failure.

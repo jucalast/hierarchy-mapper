@@ -138,18 +138,16 @@ async def discover_company_brand_stream(
     
     domain_base = domain.split(".")[0] if domain else ""
     
-    search_queries = [
-        f'"{brand_short}" linkedin' if brand_short else None,
-        f'"{brand_short}" company linkedin' if brand_short else None,
-        f'"{brand_short}" Brasil linkedin' if brand_short else None,
-        f'"{domain_base}" linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None,
-        f'"{domain_base}" Brasil linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None,
-        f'"{search_name}" linkedin',
-        f'site:linkedin.com/company "{search_name}"',
-        f'"{search_name}" {city} linkedin' if city else None,
-        f'linkedin "{search_name}" {domain if domain and search_name.lower() in domain.lower() else ""}'.strip(),
-        f'"{search_name.replace("&", " ")}" Brasil linkedin'
-    ]
+    search_queries = []
+    if brand_short:
+        search_queries.append(f'site:linkedin.com/company "{brand_short}"')
+    if domain:
+        search_queries.append(f'site:linkedin.com/company "{domain}"')
+    elif domain_base and domain_base.lower() != brand_short.lower():
+        search_queries.append(f'site:linkedin.com/company "{domain_base}"')
+    search_queries.append(f'site:linkedin.com/company "{search_name}"')
+    if brand_short:
+        search_queries.append(f'"{brand_short}" Brasil linkedin')
     
     # Dicionário para rastrear candidatos únicos
     unique_candidates = {}
@@ -206,20 +204,28 @@ async def discover_company_brand_stream(
         return score
     
     # Cada vez que encontramos um candidato, enriquecemos e fazemos yield
-    print(f"[BrandDiscovery] 🔍 Começando buscas por perfis (Stream) EM PARALELO...")
+    print(f"[BrandDiscovery] 🔍 Começando buscas por perfis (Stream)...")
     
     candidate_count = 0
+    active_queries = list(dict.fromkeys([q for q in search_queries if q]))
+    has_high_confidence = False
     
-    # Prepara todas as tarefas de busca
-    active_queries = [q for q in search_queries if q]
+    print(f"[BrandDiscovery] 🚀 Iniciando buscas sequenciais por perfis (Stream)...")
     
-    async def process_query(query):
-        nonlocal candidate_count
+    for idx, query in enumerate(active_queries):
+        if has_high_confidence:
+            print(f"[BrandDiscovery] 🎯 Parada precoce (Early Exit) no stream. Match de alta confiança encontrado.")
+            break
+            
+        if idx > 0:
+            wait_time = random.uniform(3.0, 4.5)
+            print(f"[BrandDiscovery] Aguardando {wait_time:.1f}s antes da consulta sequencial...")
+            await asyncio.sleep(wait_time)
+            
         try:
             # Timeout por query para não travar o processo todo se um buscador demorar
             res = await asyncio.wait_for(get_duck_results(query, max_results=15, is_company=True), timeout=25.0)
             
-            local_results = []
             for r in res:
                 title = r.get("title", "")
                 snippet = (r.get("body") or r.get("snippet") or "").lower()
@@ -253,7 +259,13 @@ async def discover_company_brand_stream(
                             unique_candidates[name]["logo"] = f"https://ui-avatars.com/api/?name={initials}&background=6366f1&color=fff&bold=true&rounded=true&size=128"
                         
                         candidate_count += 1
-                        local_results.append({
+                        
+                        # Calcula score na hora para early exit
+                        score = get_brand_score(name)
+                        if score >= 900:
+                            has_high_confidence = True
+                            
+                        yield {
                             "type": "candidate",
                             "index": candidate_count,
                             "name": name,
@@ -261,24 +273,10 @@ async def discover_company_brand_stream(
                             "followers": followers,
                             "logo": unique_candidates[name]["logo"],
                             "partners": partners,
-                            "source": "search_parallel"
-                        })
-            return local_results
+                            "source": "search_sequential"
+                        }
         except Exception as e:
             print(f"[BrandDiscovery] Query error ({query[:30]}): {e}")
-            return []
-
-    # Dispara todas as buscas simultaneamente
-    print(f"[BrandDiscovery] 🚀 Disparando {len(active_queries)} queries em paralelo...")
-    pending_tasks = [asyncio.create_task(process_query(q)) for q in active_queries]
-    
-    # Processa conforme as tarefas terminam (streaming real)
-    while pending_tasks:
-        done, pending_tasks = await asyncio.wait(pending_tasks, return_when=asyncio.FIRST_COMPLETED)
-        for task in done:
-            results = task.result()
-            for cand in results:
-                yield cand
 
     # 🏆 ORDENAÇÃO FINAL POR SCORE
     scored_candidates = []

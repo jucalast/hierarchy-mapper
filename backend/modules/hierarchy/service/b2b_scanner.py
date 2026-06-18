@@ -31,6 +31,16 @@ from .filters import get_seniority_level, get_department_tag, PURCHASING_KEYWORD
 from core.external.email_service import apply_pattern
 from .logging_utils import log_session_start, log_query_start
 
+def is_legal_entity(name: str) -> bool:
+    """Retorna True se o nome contiver termos típicos de Pessoa Jurídica (PJ/Holding)."""
+    name_upper = name.upper()
+    pj_terms = [
+        "LTDA", "S.A.", "S/A", "PARTICIPACOES", "PARTICIPACAO", "PARTICIPACÕES", "PARTICIPACÃO", 
+        "HOLDING", "EMPREENDIMENTOS", "ADMINISTRADORA", "INVESTIMENTOS", "GRUPO", "CORP", "INC",
+        "COOPERATIVA", "ASSOCIACAO", "ASSOCIAÇÃO", "FUNDACAO", "FUNDAÇÃO", "SERVICOS", "SERVIÇOS"
+    ]
+    return any(term in name_upper for term in pj_terms)
+
 async def discover_employees(company_name: str, domain: str, email_api_key: str = None, max_results: int = 50) -> List[Dict]:
     """Motor B2B síncrono para descoberta de funcionários (Agora Async)."""
     results = []
@@ -169,8 +179,9 @@ async def discover_employees_stream(
                 "linkedin": p.linkedin_url,
                 "source": "CNPJ/QSA"
             })
-            # Cria query específica para o nome do sócio
-            base_queries.append(f'{p.name} {clean_brand} {search_location} linkedin')
+            # Cria query específica para o nome do sócio se não for pessoa jurídica
+            if not is_legal_entity(p.name):
+                base_queries.append(f'{p.name} {clean_brand} {search_location} linkedin')
         
         yield nodes_qsa
 
@@ -535,7 +546,6 @@ async def discover_employees_stream(
                     # NOVA LÓGICA: Verifica no Pipedrive se já existe antes de criar local
                     if not existing_emp:
                         try:
-                            from models import Organization
                             stmt_org = select(Organization).where(Organization.id == db_org_id)
                             res_org = await session.execute(stmt_org)
                             db_org = res_org.scalars().first()
@@ -737,10 +747,13 @@ async def discover_employees_stream(
         if found_nodes:
             consecutive_empty = 0  # Reset se encontrou alguém nesta query
         else:
-            consecutive_empty += 1
-            if consecutive_empty >= 3:
-                print(f"      [B2B Engine] 3 consultas consecutivas sem resultados. Encerrando escaneamento.")
-                break
+            # Só incrementa se for uma query operacional (não de sócio/específica de pessoa)
+            # Para evitar que holdings/sócios sem LinkedIn matem a busca antes de pesquisar "compras/logística"
+            if not is_partner_search:
+                consecutive_empty += 1
+                if consecutive_empty >= 3:
+                    print(f"      [B2B Engine] 3 consultas operacionais consecutivas sem resultados. Encerrando escaneamento.")
+                    break
                 
     # Sinal de conclusão (MUITO IMPORTANTE para o front-end parar o loading)
     yield [{"type": "done"}]

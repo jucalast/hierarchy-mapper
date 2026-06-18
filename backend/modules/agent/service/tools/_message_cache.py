@@ -41,6 +41,47 @@ async def _upsert_contact_cache(
     from sqlalchemy import select
 
     async with async_session() as session:
+        # Resolve org_id and org_name if they are not provided (None or 0)
+        resolved_org_id = org_id
+        resolved_org_name = org_name
+
+        if not resolved_org_id or resolved_org_id == 0:
+            from models.people.employee import Employee
+            from models.organization.organization import Organization
+            from sqlalchemy import or_
+            
+            conditions = []
+            if channel == CHANNEL_WHATSAPP:
+                clean_id = "".join(c for c in contact_identifier if c.isdigit())
+                conditions.append(Employee.whatsapp_number == contact_identifier)
+                conditions.append(Employee.phone == contact_identifier)
+                if clean_id and len(clean_id) >= 8:
+                    suffix = clean_id[-8:]
+                    conditions.append(Employee.whatsapp_number.like(f"%{suffix}%"))
+                    conditions.append(Employee.phone.like(f"%{suffix}%"))
+            else:  # email
+                conditions.append(Employee.email == contact_identifier)
+            
+            if contact_name:
+                conditions.append(Employee.name == contact_name)
+                conditions.append(Employee.name.like(f"%{contact_name}%"))
+
+            if conditions:
+                emp_result = await session.execute(
+                    select(Employee)
+                    .where(or_(*conditions))
+                    .order_by(Employee.company_id.isnot(None).desc())
+                )
+                emp = emp_result.scalars().first()
+                if emp and emp.company_id:
+                    org_result = await session.execute(
+                        select(Organization).where(Organization.id == emp.company_id)
+                    )
+                    org = org_result.scalar_one_or_none()
+                    if org:
+                        resolved_org_id = org.pipedrive_id or org.id
+                        resolved_org_name = org.name
+
         result = await session.execute(
             select(ContactConversationCache).where(
                 ContactConversationCache.contact_identifier == contact_identifier,
@@ -87,10 +128,10 @@ async def _upsert_contact_cache(
         if entry:
             entry.set_messages(final_messages)
             entry.contact_name = contact_name
-            if org_id:
-                entry.org_id = org_id
-            if org_name:
-                entry.org_name = org_name
+            if resolved_org_id:
+                entry.org_id = resolved_org_id
+            if resolved_org_name:
+                entry.org_name = resolved_org_name
             if chat_id:
                 entry.chat_id = chat_id
         else:
@@ -98,8 +139,8 @@ async def _upsert_contact_cache(
                 contact_identifier=contact_identifier,
                 contact_name=contact_name,
                 channel=channel,
-                org_id=org_id,
-                org_name=org_name,
+                org_id=resolved_org_id,
+                org_name=resolved_org_name,
                 chat_id=chat_id,
             )
             entry.set_messages(final_messages)

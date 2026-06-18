@@ -197,13 +197,20 @@ async def _agent_loop(
         # Poda de memória inteligente
         messages = _prune_messages(messages, _PINNED_TOOLS, max_len=40)
 
-        # Atualiza sinais de detecção a partir do histórico mais recente
+        # Encontra o índice da última mensagem do usuário para escopar a detecção à tarefa atual
+        _last_user_idx_loop = 0
+        for _i, _m in enumerate(messages):
+            if _m.get("role") == "user":
+                _last_user_idx_loop = _i
+        _current_loop_history = messages[_last_user_idx_loop:]
+
+        # Atualiza sinais de detecção a partir do histórico mais recente (da tarefa atual)
         _has_local_decision_maker = False
         _persons_with_wa = []
         _persons_with_email = []
         
         _last_persons_msg = None
-        for _m in messages:
+        for _m in _current_loop_history:
             _mc = _m.get("content", "")
             if not isinstance(_mc, list): continue
             for _b in _mc:

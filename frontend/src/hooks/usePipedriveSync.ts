@@ -6,6 +6,7 @@ export function usePipedriveSync() {
     const [searchTerm, setSearchTerm] = useState("");
     const [loadingOrgs, setLoadingOrgs] = useState(true);
     const [taskSummary, setTaskSummary] = useState<Record<number, { next_due_date: string; overdue_count: number; pending_count: number }>>({});
+    const [activeStageFilter, setActiveStageFilter] = useState<string | null>(null);
 
     const fetchTaskSummary = useCallback(async () => {
         try {
@@ -64,10 +65,12 @@ export function usePipedriveSync() {
                 const id = Number(org.id);
                 if (!id || seen.has(id)) return false;
                 seen.add(id);
-                return (
+                const matchesSearch = (
                     org.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     org.domain?.toLowerCase().includes(searchTerm.toLowerCase())
                 );
+                const matchesStage = !activeStageFilter || org.stage_name === activeStageFilter;
+                return matchesSearch && matchesStage;
             })
             .map(org => ({
                 ...org,
@@ -84,7 +87,25 @@ export function usePipedriveSync() {
                 if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
                 return ta.next_due_date.localeCompare(tb.next_due_date);
             });
-    }, [pipedriveOrgs, searchTerm, taskSummary]);
+    }, [pipedriveOrgs, searchTerm, taskSummary, activeStageFilter]);
+
+    // Coleta estágios únicos das orgs carregadas
+    const uniqueStages = useMemo(() => {
+        const seen = new Set<string>();
+        const stages: { name: string; count: number }[] = [];
+        for (const org of pipedriveOrgs) {
+            const s = org.stage_name;
+            if (s && !seen.has(s)) {
+                seen.add(s);
+                stages.push({ name: s, count: 0 });
+            }
+        }
+        // Conta orgs por estágio
+        for (const stage of stages) {
+            stage.count = pipedriveOrgs.filter(o => o.stage_name === stage.name).length;
+        }
+        return stages;
+    }, [pipedriveOrgs]);
 
     useEffect(() => {
         const cached = localStorage.getItem("pipedrive-orgs-cache");
@@ -106,6 +127,9 @@ export function usePipedriveSync() {
         loadingOrgs,
         filteredOrgs,
         fetchPipedriveOrgs,
-        handleOrgRenamed
+        handleOrgRenamed,
+        uniqueStages,
+        activeStageFilter,
+        setActiveStageFilter,
     };
 }

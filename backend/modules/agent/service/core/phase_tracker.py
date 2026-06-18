@@ -32,6 +32,17 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
 
     today = datetime.now().strftime('%Y-%m-%d')
 
+    # ── ESCAPAMENTO DE HISTÓRICO: Escopa as mensagens à última tarefa iniciada pelo usuário ──
+    _last_user_idx = 0
+    for _i, _m in enumerate(messages):
+        _msg_body = str(_m.get("content", "")).lower()
+        if _m.get("role") == "user" and any(kw in _msg_body for kw in ["execute a seguinte atividade", "atividade #", "execute agora"]):
+            _last_user_idx = _i
+        elif _m.get("role") == "user" and _last_user_idx == 0:
+            _last_user_idx = _i
+    
+    messages_scoped = messages[_last_user_idx:]
+
     # ── Extrai estado da investigação de forma robusta ──────────────────────
     # Inclui TODAS as ferramentas fundamentais para evitar loops
     _CORE_TRACKED = {
@@ -42,7 +53,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
         "generate_dossier", "deep_company_investigation", "evaluate_prospects",
         "generate_sales_message", "email_send", "whatsapp_send_message"
     }
-    tools_called = _get_tools_called(messages, target_tools=_CORE_TRACKED)
+    tools_called = _get_tools_called(messages_scoped, target_tools=_CORE_TRACKED)
     
     # Detecta rascunho pronto
     draft_done = "generate_sales_message" in tools_called

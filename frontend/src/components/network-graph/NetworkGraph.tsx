@@ -42,7 +42,7 @@ import { FloatingToolbar } from './FloatingToolbar';
 import { SmartBackground } from './components/SmartBackground';
 import { FitViewHandler } from './components/FitViewHandler';
 import { ModelSelector } from '../chat/ModelSelector';
-import { useHierarchyScan } from '@/hooks/useHierarchyScan';
+import { useGlobalHierarchyScan } from '@/contexts/HierarchyScanContext';
 import { ScanTerminalPanel } from './components/ScanTerminalPanel';
 import { ScanPreviewBubble } from './components/ScanPreviewBubble';
 import { TriggerNotifications } from '../ui/TriggerNotifications';
@@ -80,7 +80,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     // CRM Sync
     const {
         pipedriveOrgs, setPipedriveOrgs, searchTerm, setSearchTerm,
-        loadingOrgs, filteredOrgs, fetchPipedriveOrgs, handleOrgRenamed
+        loadingOrgs, filteredOrgs, fetchPipedriveOrgs, handleOrgRenamed,
+        uniqueStages, activeStageFilter, setActiveStageFilter
     } = usePipedriveSync();
 
     // Hierarchy Data
@@ -114,8 +115,17 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     } = discovery;
 
     // HierarchyScan Integration
-    const scan = useHierarchyScan();
+    const scan = useGlobalHierarchyScan();
+    // O scanOrgId agora é mantido pelo contexto global para sobreviver à navegação
+    const isScanForCurrentOrg = scan.scanOrgId !== null && scan.scanOrgId === currentOrgId;
     const [previewExpanded, setPreviewExpanded] = useState(false);
+
+    // ✅ Força modo 'scan' se houver um scan ativo nesta empresa ao carregar a página/navegar
+    useEffect(() => {
+        if (isScanForCurrentOrg && scan.isScanning) {
+            setMappingMode('scan');
+        }
+    }, [isScanForCurrentOrg, scan.isScanning, setMappingMode]);
 
     // Network Flow
     // IMPORTANTE: editEmployee DEVE ser memoizado com useCallback para não recriar a cada render
@@ -138,6 +148,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         getStableId,
         deleteEmployee,
         editEmployee: handleEditEmployee,
+        isScanning: isScanForCurrentOrg && scan.isScanning,
+        discovering: discovering,
     });
 
     // UI States
@@ -227,17 +239,21 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 addNotification('error', 'Nenhum link do LinkedIn confirmado para realizar a varredura.');
                 return;
             }
+            if (!currentOrgId) {
+                addNotification('error', 'Nenhuma organização selecionada para iniciar a varredura.');
+                return;
+            }
             let peopleUrl = confirmedLinkedInUrl.trim();
             if (!peopleUrl.endsWith('/people/')) {
                 peopleUrl = peopleUrl.replace(/\/+$/, '') + '/people/';
             }
             const sessionCookie = localStorage.getItem('linkedin_li_at_cookie') || '';
-            scan.startScan(peopleUrl, sessionCookie, areaFocus, productFocus, selectedModel);
+            scan.startScan(currentOrgId, peopleUrl, sessionCookie, areaFocus, productFocus, selectedModel);
             addNotification('info', 'Iniciando varredura do LinkedIn...');
         } else {
             handleSearch(e as any);
         }
-    }, [mappingMode, cnpj, confirmedLinkedInUrl, scan, handleSearch, addNotification, areaFocus, productFocus, selectedModel]);
+    }, [mappingMode, cnpj, confirmedLinkedInUrl, scan, handleSearch, addNotification, areaFocus, productFocus, selectedModel, currentOrgId]);
 
     // Mantém ref estável dos funcionários para evitar loop de dependência no useEffect de scanResults
     const rawEmployeesRef = useRef(rawEmployees);
@@ -252,19 +268,77 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         }
     }, [scan.scanError, addNotification]);
 
+    // O efeito que limpava scanOrgId foi removido intencionalmente
+    // para evitar que o scan desapareça da UI indevidamente.
+
     // ✅ NOVO: Limpa o grafo quando a varredura inicia do zero ou recebe comando de limpeza
     useEffect(() => {
         if (scan.isScanning && scan.scanResults.length === 0) {
             console.log("[NetworkGraph] 🧹 Limpando grafo para nova varredura.");
-            const existingRootAndPartners = rawEmployeesRef.current.filter(e => e.id === 'root_company' || e.id.startsWith('partner_'));
-            setRawEmployees([...existingRootAndPartners]);
+            const existingRootOnly = rawEmployeesRef.current.filter(e => e.id === 'root_company');
+            setRawEmployees([...existingRootOnly]);
             setRawBackendEdges([]);
         }
     }, [scan.isScanning, scan.scanResults.length, setRawEmployees, setRawBackendEdges]);
 
+    // ✅ NOVO: Detecta a conclusão do scan do LinkedIn para atualizar o agente e rodar o Analista de IA automaticamente
+    const wasScanningRef = useRef(false);
+    useEffect(() => {
+        if (isScanForCurrentOrg) {
+            if (scan.isScanning) {
+                wasScanningRef.current = true;
+            } else if (wasScanningRef.current) {
+                wasScanningRef.current = false;
+                console.log("[NetworkGraph] 🏁 Mapeamento pelo método scan finalizado. Sincronizando e ativando Analista de IA...");
+                
+                const handleScanCompletion = async () => {
+                    // 1. Carrega a hierarquia final consolidada do banco
+                    const freshData = await loadStoredHierarchy(currentOrgId!, true);
+                    const employeesToRefine = (freshData && freshData.nodes && freshData.nodes.length > 0)
+                        ? freshData.nodes
+                        : rawEmployees;
+
+                    // 2. Formata e despacha o evento para o agente de chat identificar o fim do scan
+                    const formattedContacts = scan.scanResults.map(p => ({
+                        name: p.name,
+                        role: p.role || '',
+                        email: p.email || undefined,
+                        department: undefined,
+                        temperature: undefined,
+                        level: 0,
+                        decision_maker: [
+                            'compras', 'procurement', 'suprimentos', 'logística', 'logistica',
+                            'supply chain', 'supply', 'materiais', 'aquisição', 'aquisicao',
+                            'estoque', 'sourcing'
+                        ].some(k => (p.role || '').toLowerCase().includes(k)),
+                    }));
+
+                    window.dispatchEvent(new CustomEvent('hierarchy_scan_done', {
+                        detail: {
+                            orgId: currentOrgId,
+                            orgName: confirmedBrand || "",
+                            chatPrompted: true, // Garante que o chat agent processe a finalização
+                            contacts: formattedContacts,
+                        },
+                    }));
+
+                    // 3. Executa o Analista de IA automaticamente após um pequeno delay para corrigir visualmente a hierarquia do grafo
+                    setTimeout(() => {
+                        console.log("[NetworkGraph] 🤖 Executando automaticamente o Analista de IA para o scan concluído...");
+                        refineHierarchy(employeesToRefine);
+                    }, 600);
+                };
+
+                void handleScanCompletion();
+            }
+        }
+    }, [isScanForCurrentOrg, scan.isScanning, currentOrgId, confirmedBrand, loadStoredHierarchy, scan.scanResults, rawEmployees, refineHierarchy]);
+
     // Trata resultados de varredura
     useEffect(() => {
-        if (scan.scanResults && scan.scanResults.length > 0) {
+        // Apenas substitui os nós em tempo real se o scan estiver EM ANDAMENTO.
+        // Quando terminar (isScanning=false), o componente buscará a versão final processada do banco.
+        if (!loading && isScanForCurrentOrg && scan.isScanning && scan.scanResults && scan.scanResults.length > 0) {
             const employees: HierarchyEmployee[] = scan.scanResults.map((p) => ({
                 id: p.id || Math.random().toString(36).substr(2, 9),
                 name: p.name,
@@ -334,15 +408,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 }
             });
             setRawBackendEdges(initialEdges);
-
-            // Somente dispara o refinamento e as notificações finais quando o scan terminar de fato
-            if (!scan.isScanning) {
-                addNotification('success', `Varredura concluída! ${employees.length} perfis extraídos.`);
-                addNotification('info', 'Processando varredura e gerando árvore hierárquica com IA...');
-                refineHierarchy(allEmployees);
-            }
         }
-    }, [scan.scanResults, scan.isScanning, confirmedBrand, confirmedLogo, domainTarget, partners, setRawEmployees, setRawBackendEdges, addNotification, refineHierarchy]);
+    }, [!loading, isScanForCurrentOrg, scan.scanResults, scan.isScanning, confirmedBrand, confirmedLogo, domainTarget, partners, setRawEmployees, setRawBackendEdges]);
 
     // Polling de mensagens não lidas (para o badge no header — filtra por org atual)
     useEffect(() => {
@@ -446,6 +513,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
 
     // Persistence & Theme
     useEffect(() => {
+        // Evita salvar estado transiente/incompleto onde há múltiplos nós mas 0 arestas
+        if (nodes.length > 1 && edges.length === 0) return;
         if (nodes.length > 0) saveGraphState(nodes, edges);
     }, [nodes, edges, saveGraphState]);
 
@@ -587,6 +656,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         localStorage.setItem('last-viewed-org', JSON.stringify(org));
         
         // Reset total de estados antes de carregar a nova empresa
+        // NÃO reseta o scan — ele continua rodando em background
         setStep("input");
         setCnpj("");
         setDomainTarget("");
@@ -753,7 +823,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 isLinkedinScrape={activeView === 'linkedin-scrape'}
                 onOpenLigacao={() => setActiveView(activeView === 'ligacao' ? 'graph' : 'ligacao')}
                 isLigacao={activeView === 'ligacao'}
-                isScanActive={scan.isScanning}
+                isScanActive={isScanForCurrentOrg && scan.isScanning}
             />
 
             <div className={styles.mainWrapper}>
@@ -795,6 +865,10 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                     }
                                 });
                             }}
+                            uniqueStages={uniqueStages}
+                            activeStageFilter={activeStageFilter}
+                            setActiveStageFilter={setActiveStageFilter}
+                            totalOrgsCount={pipedriveOrgs.length}
                         />
                     )}
 
@@ -860,12 +934,12 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                         mappingMode={mappingMode}
                                         onMappingModeChange={setMappingMode}
                                         scanTerminal={
-                                            scan.isScanning ? (
+                                            isScanForCurrentOrg && scan.isScanning ? (
                                                 <ScanTerminalPanel consoleLogs={scan.consoleLogs} isVisible={true} />
                                             ) : undefined
                                         }
                                         scanPreview={
-                                            scan.isScanning ? (
+                                            isScanForCurrentOrg && scan.isScanning ? (
                                                 <ScanPreviewBubble
                                                     hasPreview={scan.hasPreview}
                                                     previewUrl={scan.previewUrl}
@@ -880,7 +954,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                                 />
                                             ) : undefined
                                         }
-                                        isScanning={scan.isScanning}
+                                        isScanning={isScanForCurrentOrg && scan.isScanning}
                                         onStopScan={scan.stopScan}
                                         humanAnalysisContent={(() => {
                                             const pending = rawEmployees.filter(e => e.role && e.role.toLowerCase().includes('humana'));
@@ -1025,16 +1099,19 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                             ? confirmedLinkedInUrl.trim()
                                             : confirmedLinkedInUrl.trim().replace(/\/+$/, '') + '/people/')
                                         : ''}
-                                    isScanning={scan.isScanning}
-                                    scanProgress={scan.scanProgress}
-                                    consoleLogs={scan.consoleLogs}
-                                    hasPreview={scan.hasPreview}
-                                    previewUrl={scan.previewUrl}
-                                    scanResults={scan.scanResults}
-                                    scanError={scan.scanError}
-                                    onStartScan={(url, cookie) =>
-                                        scan.startScan(url, cookie, areaFocus, productFocus, selectedModel)
-                                    }
+                                    // Só expõe o estado do scan se ele pertencer à empresa atual
+                                    isScanning={isScanForCurrentOrg && scan.isScanning}
+                                    scanProgress={isScanForCurrentOrg ? scan.scanProgress : 0}
+                                    consoleLogs={isScanForCurrentOrg ? scan.consoleLogs : []}
+                                    hasPreview={isScanForCurrentOrg && scan.hasPreview}
+                                    previewUrl={isScanForCurrentOrg ? scan.previewUrl : ''}
+                                    scanResults={isScanForCurrentOrg ? scan.scanResults : []}
+                                    scanError={isScanForCurrentOrg ? scan.scanError : null}
+                                    onStartScan={(url, cookie) => {
+                                        if (currentOrgId) {
+                                            scan.startScan(currentOrgId, url, cookie, areaFocus, productFocus, selectedModel);
+                                        }
+                                    }}
                                     onStopScan={scan.stopScan}
                                     onImageClick={scan.handleImageClick}
                                     onSendText={scan.sendText}

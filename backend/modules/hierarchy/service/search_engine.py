@@ -155,8 +155,7 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
             print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4) com UA: {ua[:30]}...")
 
             with DDGS(timeout=15) as ddgs:
-                # Na nova versão do ddgs, o nome correto do motor é 'duckduckgo'
-                raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results, backend="duckduckgo"))
+                raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results))
 
                 if raw_results:
                     if filter_linkedin:

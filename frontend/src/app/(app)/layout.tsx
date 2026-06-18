@@ -9,6 +9,8 @@ import { PanelRight, LogOut } from 'lucide-react';
 import { Avatar } from '@/components/ui';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 
+import { HierarchyScanProvider } from '@/contexts/HierarchyScanContext';
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -196,128 +198,130 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
-      {/* Global Header spans full width */}
-      <header style={{ 
-        height: '48px', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        padding: '0 24px',
-        background: theme === 'dark' 
-          ? 'linear-gradient(135deg, #1e2145 30%, #131313 80%)' 
-          : 'linear-gradient(135deg, #eef2ff 30%, #f9fafb 80%)',
-        borderBottom: '1px solid var(--sw-border)',
-        zIndex: 100,
-        transition: 'background var(--transition-fast)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ 
-            fontFamily: 'Inter, sans-serif', 
-            fontSize: '12px', 
-            fontWeight: 600, 
-            color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)', 
-            letterSpacing: '0.08em', 
-            textTransform: 'uppercase' 
-          }}>
-            LINKB2B Hierarchy Mapper
-          </span>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <TriggerNotifications
-            apiBase={API_BASE_URL}
-            onOpenChat={(orgId, orgName) => {
-              window.dispatchEvent(new CustomEvent('toggle_chat', { detail: { open: true } }));
-            }}
-          />
-          
-          <button
-            onClick={() => {
-              const newVal = !showChat;
-              setAndSaveShowChat(newVal);
-            }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
-              marginRight: '8px'
-            }}
-            title="Abrir Assistente"
-          >
-            <PanelRight size={20} />
-          </button>
-
-          {currentUser && (
-            <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                marginRight: '8px', 
-                borderRight: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'var(--sw-border)'}`, 
-                paddingRight: '16px', 
-                height: '24px' 
+    <HierarchyScanProvider>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
+        {/* Global Header spans full width */}
+        <header style={{ 
+          height: '48px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          padding: '0 24px',
+          background: theme === 'dark' 
+            ? 'linear-gradient(135deg, #1e2145 30%, #131313 80%)' 
+            : 'linear-gradient(135deg, #eef2ff 30%, #f9fafb 80%)',
+          borderBottom: '1px solid var(--sw-border)',
+          zIndex: 100,
+          transition: 'background var(--transition-fast)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ 
+              fontFamily: 'Inter, sans-serif', 
+              fontSize: '12px', 
+              fontWeight: 600, 
+              color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)', 
+              letterSpacing: '0.08em', 
+              textTransform: 'uppercase' 
             }}>
-                <Avatar
-                    kind="person"
-                    name={currentUser.name}
-                    src={currentUser.avatar}
-                    size={24}
-                />
-                <span style={{ fontSize: '12px', fontWeight: 500, color: theme === 'dark' ? 'white' : 'var(--sw-text-base)', opacity: 0.8 }}>
-                    {currentUser.name}
-                </span>
-            </div>
-          )}
-
-          <button
-            onClick={handleLogout}
-            style={{
+              LINKB2B Hierarchy Mapper
+            </span>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <TriggerNotifications
+              apiBase={API_BASE_URL}
+              onOpenChat={(orgId, orgName) => {
+                window.dispatchEvent(new CustomEvent('toggle_chat', { detail: { open: true } }));
+              }}
+            />
+            
+            <button
+              onClick={() => {
+                const newVal = !showChat;
+                setAndSaveShowChat(newVal);
+              }}
+              style={{
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 padding: '8px',
-                color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
+                borderRadius: '8px',
                 display: 'flex',
-                alignItems: 'center'
-            }}
-            title="Sair"
-          >
-            <LogOut size={18} />
-          </button>
-        </div>
-      </header>
+                alignItems: 'center',
+                color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
+                marginRight: '8px'
+              }}
+              title="Abrir Assistente"
+            >
+              <PanelRight size={20} />
+            </button>
 
-      <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          {children}
+            {currentUser && (
+              <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  marginRight: '8px', 
+                  borderRight: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'var(--sw-border)'}`, 
+                  paddingRight: '16px', 
+                  height: '24px' 
+              }}>
+                  <Avatar
+                      kind="person"
+                      name={currentUser.name}
+                      src={currentUser.avatar}
+                      size={24}
+                  />
+                  <span style={{ fontSize: '12px', fontWeight: 500, color: theme === 'dark' ? 'white' : 'var(--sw-text-base)', opacity: 0.8 }}>
+                      {currentUser.name}
+                  </span>
+              </div>
+            )}
+
+            <button
+              onClick={handleLogout}
+              style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
+                  display: 'flex',
+                  alignItems: 'center'
+              }}
+              title="Sair"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        </header>
+
+        <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            {children}
+          </div>
+
+          <div style={{ 
+            height: '100%', 
+            display: showChat ? 'flex' : 'none',
+            borderLeft: '1px solid var(--sw-border)'
+          }}>
+            <ChatPanel
+              showChat={showChat}
+              setShowChat={setAndSaveShowChat}
+              selectedOrgId={currentOrg.id || null}
+              selectedOrgName={currentOrg.name || "Assistente IA"}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              selectedOrgLogo={currentOrg.logo || ""}
+              prospectingContext={currentOrg.prospectingContext}
+              isOrgLoading={isOrgLoading}
+            />
+          </div>
         </div>
 
-        <div style={{ 
-          height: '100%', 
-          display: showChat ? 'flex' : 'none',
-          borderLeft: '1px solid var(--sw-border)'
-        }}>
-          <ChatPanel
-            showChat={showChat}
-            setShowChat={setAndSaveShowChat}
-            selectedOrgId={currentOrg.id || null}
-            selectedOrgName={currentOrg.name || "Assistente IA"}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-            selectedOrgLogo={currentOrg.logo || ""}
-            prospectingContext={currentOrg.prospectingContext}
-            isOrgLoading={isOrgLoading}
-          />
-        </div>
+        {/* Botão flutuante para abrir o Chat removido a pedido do usuário */}
       </div>
-
-      {/* Botão flutuante para abrir o Chat removido a pedido do usuário */}
-    </div>
+    </HierarchyScanProvider>
   );
 }

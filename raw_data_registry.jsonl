@@ -4379,3 +4379,1397 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:17:13.579197",
+    "candidate": "Giovanna De Domenico",
+    "linkedin": "https://www.linkedin.com/in/giovanna-de-domenico-4b1719130",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Giovanna De Domenico - Torcetex Palhas de Fibra Natural | LinkedIn",
+            "body": "Giovanna De Domenico. Indaiatuba, São Paulo, Brasil. 605 seguidores + de 500 conexões.Reconhecer o talento é investir no futuro Esta semana tive o privilégio de participar da entrega de prêmios para profissionais que fazem a diferença…"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Torcetex Palhas de Fibra Natural · Formação acadêmica: Centro Universitário FEI · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Giovanna De Domenico no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Giovanna De Domenico",
+        "role": "Diretora",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Giovanna De Domenico é Diretora na Torcetex Palhas de Fibra Natural, empresa alvo e razão social oficial. O especialista considerou a posição relevante. Não há vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Giovanna De Domenico é Diretora na Torcetex Palhas de Fibra Natural desde setembro de 2021.",
+                "Experiência Diretora Torcetex Palhas de Fibra Natural set. de 2021 - o momento 4 anos 9 meses Indaiatuba, São Paulo, Brasil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Giovanna De Domenico é Diretora na Torcetex Palhas de Fibra Natural desde setembro de 2021."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Giovanna De Domenico",
+                    "role": "Diretora"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Giovanna De Domenico",
+                "detected_role": "Diretora",
+                "clean_bio": "Giovanna De Domenico é Diretora na Torcetex Palhas de Fibra Natural desde setembro de 2021."
+            }
+        },
+        "specialist": {
+            "role_name": "Diretora",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Diretora em uma empresa de suprimentos, como a Torcetex Palhas De Fibra Natural, é considerado relevante pois diretores frequentemente têm poder de decisão em compras estratégicas e negociações com fornecedores, alinhado com as áreas de Suprimentos/Compras/Procurement. A instrução 10 sobre cargos de diretoria e sócios reforça essa relevância."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/giovanna-de-domenico-4b1719130"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Diretora",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:17:55.300043",
+    "candidate": "Carmen Lúcia De Domenico Cardoso da Silva",
+    "linkedin": "https://www.linkedin.com/in/carmen-l%C3%BAcia-de-domenico-cardoso-da-silva-2bb435b4",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carmen Lúcia De Domenico Cardoso da Silva - LinkedIn 3 \"Carmen Lúcia Cardoso Da Silva\" profiles | LinkedIn CARMEN LUCIA DE DOMENICO CARDOSO DA SILVA 6 \"Carmen De Domenico\" profiles | LinkedIn TORCETEX INDUSTRIA E COMERCIO LTDA Company Profile ... TORCETEX INDUSTRIA E COMERCIO LTDA | CNPJá TORCETEX INDUSTRIA E COMERCIO LTDA | CNPJá",
+            "body": "Empresaria · Experiência: Torcetex · Localidade: Indaiatuba · 1 conexão no LinkedIn . Veja o perfil de Carmen Lúcia De Domenico Cardoso da Silva no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. There are 3 professionals named \" Carmen Lúcia Cardoso Da Silva \", who use LinkedIn to exchange information, ideas, and opportunities. Todos os Sócios de Carmen PLINIO JOSE CARDOSO DA SILVA Plinio foi sócio (a) de Carmen na empresa PLENA ENGENHARIA S/C LTDA em 09/07/1998. View the profiles of professionals named \" Carmen De Domenico \" on LinkedIn . There are 6 professionals named \" Carmen De Domenico \", who use LinkedIn to exchange information, ideas ... Key Principal: Carmen Lucia de Domenico Cardoso da Silva See more contacts Industry: Fabric Mills , Textile Mills , Manufacturing , Manmade and synthetic broadwoven fabrics See other industries within the Manufacturing sector: Aerospace Product and Parts Manufacturing , Agriculture, Construction, and Mining Machinery Manufacturing , Alumina and Aluminum Production and Processing , Animal Food ... Consulte os dados da empresa TORCETEX INDUSTRIA E COMERCIO LTDA, CNPJ 49.446.750/0001-80, telefone (19) 3935-7511, e-mail cintia@ torcetex .com. br , situada em Indaiatuba, SP. Consulte os sócios e filiais da empresa TORCETEX INDUSTRIA E COMERCIO LTDA."
+        },
+        "osint_metadata": {
+            "role": "torcetex",
+            "bio": "Experiência: Torcetex · Localidade: Indaiatuba · 1 conexão no LinkedIn. Veja o perfil de Carmen Lúcia De Domenico Cardoso da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Carmen Lúcia De Domenico Cardoso da Silva",
+        "role": "Empresaria",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato trabalha na empresa-alvo 'Torcetex Palhas De Fibra Natural', conforme confirmado pelos dados do Detetive e pela relevância indicada pelo Especialista.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Torcetex",
+                "Empresaria · Experiência: Torcetex"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Empresaria · Experiência: Torcetex · Localidade: Indaiatuba · 1 conexão no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Carmen Lúcia De Domenico Cardoso da Silva",
+                    "role": "Empresaria"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Carmen Lúcia De Domenico Cardoso da Silva",
+                "detected_role": "Empresaria",
+                "clean_bio": "Experiência: Torcetex · Localidade: Indaiatuba · 1 conexão no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Empresaria",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de 'Empresaria' é considerado relevante para Suprimentos/Compras/Procurement, pois proprietários e diretores frequentemente tomam decisões ou aprovam compras estratégicas, conforme instrução 10."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Empresaria",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:18:50.722218",
+    "candidate": "Giovanna De Domenico",
+    "linkedin": "https://www.linkedin.com/in/giovanna-de-domenico-4b1719130",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Giovanna De Domenico - Diretora na Torcetex Palhas de Fibra ... 3 \"Giovanna De Domenico\" profiles | LinkedIn Giovanna De Domenico - Director, Supply C.. - Torcetex | ZoomInfo Giovanna De Domenico posted on LinkedIn Torcetex Palhas de Fibra Natural | LinkedIn Giovanna De Domenico's email & phone | Torcetex's Director ... 10+ \"Giovanna Domenico\" profiles | LinkedIn",
+            "body": "Diretora na Torcetex Palhas de Fibra Natural | Engenharia Química · Experiência: Torcetex Palhas de Fibra Natural · Formação acadêmica: Centro Universitário FEI · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja o perfil de Giovanna De Domenico no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. View the profiles of professionals named \" Giovanna De Domenico \" on LinkedIn . There are 3 professionals named \" Giovanna De Domenico \", who use LinkedIn to exchange information, ideas, and opportunities. View Giovanna De Domenico 's business profile as Director, Supply Chain & Finance at Torcetex . Find contact's direct phone number, email address, work history, and more. Giovanna De Domenico posted images on LinkedIn Diretora na Torcetex Palhas de Fibra Natural | Engenharia Química Torcetex Palhas de Fibra Natural | 376 followers on LinkedIn . Desde 1956, produzindo a beleza, a elegância e a simplicidade de fios e tecidos de palha natural . | Nós somos a Torcetex , uma empresa constituída em 1956, a qual produz fios e tecidos de palha para os variados segmentos de mercado. Nossos produtos são fibras naturais e nativas, sendo confeccionadas a partir de materiais ... Work Biography for Giovanna De Domenico , Torcetex Giovanna De Domenico works as a Director at Torcetex , which is a Manufacturing company with an estimated 22 employees; and founded in 1956., their management level is Director. Giovanna graduated from Fatec Americana Ministro Ralph Biasi and is currently based in Indaiatuba, Brazil. Giovanna De Domenico Supply Chain and Finance Director na Torcetex Palhas de Fibra Natural São Paulo, SP Torcetex Palhas de Fibra Natural , +2 more Centro Universitário FEI, +1 more"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Torcetex Palhas de Fibra Natural · Formação acadêmica: Centro Universitário FEI · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Giovanna De Domenico no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Giovanna De Domenico",
+        "role": "Director, Supply Chain & Finance",
+        "matching_score": 95,
+        "department": "Supply Chain",
+        "evidence": "Candidata atua como Diretora de Supply Chain na empresa-alvo, cargo e departamento relevantes para Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Diretora, Supply Chain & Finance na Torcetex Palhas de Fibra Natural.",
+                "Experiência na Torcetex Palhas de Fibra Natural.",
+                "Diretora na Torcetex Palhas de Fibra Natural",
+                "View Giovanna De Domenico 's business profile as Director, Supply Chain & Finance at Torcetex"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Diretora, Supply Chain & Finance na Torcetex Palhas de Fibra Natural. Experiência na Torcetex Palhas de Fibra Natural. Formação acadêmica no Centro Universitário FEI."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Giovanna De Domenico",
+                    "role": "Director, Supply Chain & Finance"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Giovanna De Domenico",
+                "detected_role": "Director, Supply Chain & Finance",
+                "clean_bio": "Diretora, Supply Chain & Finance na Torcetex Palhas de Fibra Natural. Experiência na Torcetex Palhas de Fibra Natural. Formação acadêmica no Centro Universitário FEI. Localizada em Indaiatuba com mais de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Director, Supply Chain & Finance",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Director, Supply Chain & Finance na Torcetex Palhas de Fibra Natural tem interface direta com a área de Suprimentos/Compras, especialmente na gestão da cadeia de suprimentos e finanças relacionadas a ela. A experiência em Supply Chain é relevante para a área de compras e fornecedores."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Director, Supply Chain & Finance",
+        "department": "Supply Chain",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:20:01.819620",
+    "candidate": "Plínio Silva",
+    "linkedin": "https://www.linkedin.com/in/pl%C3%ADnio-silva-b0813a15",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Plínio Silva - Torcetex Industria e Comercio Ltda | LinkedIn Plinio Eduardo de Domenico Cardoso da Silva | CNPJá 2 \"Plinio Eduardo Da Silva\" profiles | LinkedIn 5 \"Eduardo De Domenico\" profiles | LinkedIn 4 \"Plínio Cardoso Silva\" profiles | LinkedIn PLINIO EDUARDO DE DOMENICO CARDOSO DA SILVA",
+            "body": "Experiência: Torcetex Industria e Comercio Ltda · Localidade: Indaiatuba · 6 conexões no LinkedIn . Veja o perfil de Plínio Silva no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Consulte os dados do sócio Plinio Eduardo de Domenico Cardoso da Silva , CPF ***.250.388-**, 41-50 anos, administrador de 4 empresas. Plinio Eduardo Cardoso Da Silva Production/Project/Plant Engineer Indaiatuba, SP Torcetex Industria e Comercio Ltda. FEI - Faculdade de Engenharia Industrial Plinio Eduardo Cardoso Da Silva Production/Project/Plant Engineer Indaiatuba, SP Torcetex Industria e Comercio Ltda. FEI - Faculdade de Engenharia Industrial Plinio Eduardo Cardoso Da Silva Production/Project/Plant Engineer Indaiatuba, SP Torcetex Industria e Comercio Ltda. FEI - Faculdade de Engenharia Industrial Todos os Sócios de Plinio CARMEN LUCIA DE DOMENICO CARDOSO DA SILVA Carmen é sócio (a) de Plinio na empresa DOMENICO & CARDOSO CAFETERIA LTDA desde 04/03/2016."
+        },
+        "osint_metadata": {
+            "role": "torcetex industria e comercio ltda",
+            "bio": "Experiência: Torcetex Industria e Comercio Ltda · Localidade: Indaiatuba · 6 conexões no LinkedIn. Veja o perfil de Plínio Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Plínio Silva",
+        "role": "Production/Project/Plant Engineer",
+        "matching_score": 0,
+        "department": "Produção/Engenharia",
+        "evidence": "Especialista marcou 'is_relevant: false' e o cargo/departamento não é relevante para Compras/Suprimentos.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Plínio Silva Empresa Alvo: Torcetex Palhas De Fibra Natural Bio Higienizada: Plínio Silva - Torcetex Industria e Comercio Ltda.",
+                "Plinio Eduardo Cardoso Da Silva Production/Project/Plant Engineer Indaiatuba, SP Torcetex Industria e Comercio Ltda.",
+                "Experiência: Torcetex Industria e Comercio Ltda · Localidade: Indaiatuba · 6 conexões no LinkedIn",
+                "Plinio Eduardo Cardoso Da Silva Production/Project/Plant Engineer Indaiatuba, SP Torcetex Industria e Comercio Ltda."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Plínio Silva é Production/Project/Plant Engineer na Torcetex Industria e Comercio Ltda. em Indaiatuba, SP."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Plínio Silva",
+                    "role": "Production/Project/Plant Engineer"
+                },
+                {
+                    "name": "Plinio Eduardo de Domenico Cardoso da Silva",
+                    "role": "administrador"
+                },
+                {
+                    "name": "Plinio Eduardo Cardoso Da Silva",
+                    "role": "Production/Project/Plant Engineer"
+                },
+                {
+                    "name": "Plinio",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Plínio Silva",
+                "detected_role": "Production/Project/Plant Engineer",
+                "clean_bio": "Plínio Silva - Torcetex Industria e Comercio Ltda. Veja o perfil de Plínio Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. Plinio Eduardo Cardoso Da Silva Production/Project/Plant Engineer Indaiatuba, SP Torcetex Industria e Comercio Ltda."
+            }
+        },
+        "specialist": {
+            "role_name": "Production/Project/Plant Engineer",
+            "dept": "Produção/Engenharia",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado 'Production/Project/Plant Engineer' pertence às áreas de Produção e Engenharia, as quais são explicitamente vetadas pelas instruções técnicas para a busca de perfis em SUPRIMENTOS / COMPRAS / PROCUREMENT."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Production/Project/Plant Engineer",
+        "department": "Produção/Engenharia",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:21:10.553254",
+    "candidate": "Alexandre Tonini Alves",
+    "linkedin": "https://www.linkedin.com/in/alexandre-tonini-alves-880b622b2",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alexandre Tonini Alves - Torcetex Palhas de Fibra Natural ... Torcetex Company Profile | Management and Employees List Torcetex - Torcetex Sobre Nós - Torcetex Torcetex - Torcetex Torcetex Palhas de Fibra Natural | Indaiatuba SP - Facebook",
+            "body": "Especialista em Vendas B2B/B2C com 25 Anos de Experiência e Visão Estratégica. Carreira… · Experiência: Torcetex Palhas de Fibra Natural · Localidade: Indaiatuba · 28 conexões no LinkedIn . Veja o perfil de Alexandre Tonini Alves no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Torcetex Profile and History Nós somos a Torcetex, uma empresa constituda em 1956, a qual produz fios e tecidos de palha para os variados segmentos de mercado. Nossos produtos so fibras naturais e nativas, sendo confeccionadas a partir de materiais altamente selecionados, derivados do algodo. A palha natural da Torcetex pode ser utilizada em assentos e encostos de cadeiras, detalhes de sofás, portas de armários e closets. Proporcionando leveza, sofisticação e uma ótima solução para móveis que necessitam de circulação de ar. Home Sobre QUEM SOMOS Toda a beleza e versatilidade da palha natural para você Somos fruto da excelência em cada detalhe. Desde 1956 produzimos fios e tecidos de palha natural , fazendo parte da história da indústria têxtil brasileira. Inspirando gerações, nossos produtos trazem em seu DNA a qualidade desde a origem, tendo como matéria prima […] We develop and create natural straw fabrics, with over 80% cotton in their composition. Investing in technology, human capital, and continuous improvement of our original production processes, along with innovation with new products, colors, and weaves. Extremely versatile and timeless, Torcetex products inspire designers and set trends across the entire market of furniture industry, fashion ... May 22, 2026 · Torcetex Palhas de Fibra Natural , Indaiatuba. 6,649 likes. Nossa missão é transformar fios e desenvolver tecidos especiais que conecte e encante gerações."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Especialista em Vendas B2B/B2C com 25 Anos de Experiência e Visão Estratégica. Carreira… · Experiência: Torcetex Palhas de Fibra Natural · Localidade: Indaiatuba · 28 conexões no LinkedIn. Veja o perfil de Alexandre Tonini Alves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Alexandre Tonini Alves",
+        "role": "Especialista em Vendas B2B/B2C",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "Especialista marcou como não relevante e o departamento é Vendas, não Compras/Suprimentos.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Google Page Title: Alexandre Tonini Alves - Torcetex Palhas de Fibra Natural",
+                "Search Snippet: Experiência: Torcetex Palhas de Fibra Natural"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Especialista em Vendas B2B/B2C com 25 Anos de Experiência e Visão Estratégica."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Alexandre Tonini Alves",
+                    "role": "Especialista em Vendas B2B/B2C"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Alexandre Tonini Alves",
+                "detected_role": "Especialista em Vendas B2B/B2C",
+                "clean_bio": "Especialista em Vendas B2B/B2C com 25 Anos de Experiência e Visão Estratégica."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Especialista em Vendas B2B/B2C', que é explicitamente vetado pela regra 5. Não há informações adicionais que sugiram uma interface com Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Especialista em Vendas B2B/B2C",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:22:38.950320",
+    "candidate": "Lucas Moraes de Andrade",
+    "linkedin": "https://www.linkedin.com/in/lucas-moraes-de-andrade-727944407",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Lucas Moraes de Andrade - Torcetex Palhas de Fibra Natural ...",
+            "body": "Experiência: Torcetex Palhas de Fibra Natural · Localidade: Indaiatuba. Veja o perfil de Lucas Moraes de Andrade no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Torcetex Palhas de Fibra Natural · Localidade: Indaiatuba · 1 conexão no LinkedIn. Veja o perfil de Lucas Moraes de Andrade no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Lucas Moraes de Andrade",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Torcetex Palhas de Fibra Natural · Localidade: Indaiatuba.",
+                "LinkedIn CURRENT COMPANY (Declarada): Torcetex Palhas De Fibra Natural"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: Torcetex Palhas de Fibra Natural · Localidade: Indaiatuba."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Lucas Moraes de Andrade",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Lucas Moraes de Andrade",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência: Torcetex Palhas de Fibra Natural · Localidade: Indaiatuba. Veja o perfil de Lucas Moraes de Andrade no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Lucas Moraes de Andrade não foi identificado nos dados fornecidos. Não há informações explícitas na bio ou nos snippets que permitam inferir uma função relacionada a Suprimentos/Compras/Procurement, nem termos técnicos que justifiquem a relevância com base nas instruções."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:24:15.816157",
+    "candidate": "Lucas Bertoli Freitas",
+    "linkedin": "https://www.linkedin.com/in/lucasbertolifreitas",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Lucas Bertoli Freitas - Vendas | Marketing | Fotografia - LinkedIn",
+            "body": "Nos últimos 4 anos tenho me dedicado ao desenvolvimento comercial na empresa Torcetex. Eu vendo palha com amor. ... Gostaria de mais informações? Conecte-se a ..."
+        },
+        "osint_metadata": {
+            "role": "torcetex",
+            "bio": "Mais de 9 anos de experiência profissional em empresas. Gerei excelentes resultados em… · Experiência: Torcetex · Localidade: Salto · 496 conexões no LinkedIn. Veja o perfil de Lucas Bertoli Freitas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Lucas Bertoli Freitas",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Nos últimos 4 anos tenho me dedicado ao desenvolvimento comercial na empresa Torcetex.",
+                "CURRENT COMPANY (Declarada): Torcetex Palhas De Fibra Natural",
+                "Experiência: Torcetex"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Nos últimos 4 anos tenho me dedicado ao desenvolvimento comercial na empresa Torcetex. Eu vendo palha com amor. Mais de 9 anos de experiência profissional em empresas. Gerei excelentes resultados em…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Lucas Bertoli Freitas",
+                    "role": "Vendas"
+                },
+                {
+                    "name": "Lucas Bertoli Freitas",
+                    "role": "Marketing"
+                },
+                {
+                    "name": "Lucas Bertoli Freitas",
+                    "role": "Fotografia"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Lucas Bertoli Freitas",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Nos últimos 4 anos tenho me dedicado ao desenvolvimento comercial na empresa Torcetex. Eu vendo palha com amor. Mais de 9 anos de experiência profissional em empresas. Gerei excelentes resultados em…"
+            }
+        },
+        "specialist": {
+            "role_name": "Desenvolvimento Comercial",
+            "dept": "Comercial",
+            "is_relevant": false,
+            "reasoning": "O perfil de Lucas Bertoli Freitas indica dedicação ao 'desenvolvimento comercial' e 'vendas' ('Eu vendo palha com amor'), conforme a bio e os snippets. O Google Page Title e as outras pessoas mapeadas também confirmam 'Vendas' e 'Marketing'. Cargos de Vendas/Comercial são explicitamente vetados para a área de Suprimentos/Compras/Procurement, conforme as instruções técnicas."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:24:36.488360",
+    "candidate": "Ana Flávia Alves",
+    "linkedin": "https://www.linkedin.com/in/ana-fl%C3%A1via-alves-29398795",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ana Flávia Alves - Administração - Comercial - LinkedIn",
+            "body": "Torcetex Palhas de Fibra Natural ... Atendimento ao Cliente e Representante; Telemarketing ativo e receptivo; atendimento telefônico, prospecção de clientes; ..."
+        },
+        "osint_metadata": {
+            "role": "alfa trend",
+            "bio": "ana.f.alves.silva@gmail.com\n · Experiência: Alfa Trend · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · 432 conexões no LinkedIn. Veja o perfil de Ana Flávia Alves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Ana Flávia Alves",
+        "role": "Atendimento ao Cliente e Representante",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "Veto Mecânico Detectado: True. O candidato não trabalha na empresa alvo, conforme indicado pelos dados recebidos.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Torcetex Palhas De Fibra Natural",
+                "Experiência: Alfa Trend"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Ana Flávia Alves | alfa trend. Experiência: Alfa Trend. Formação acadêmica: UniMax - Centro Universitário Max Planck. Localidade: Indaiatuba. 432 conexões no LinkedIn. Cargo Detectado: Atendimento ao Cliente e Representante"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ana Flávia Alves",
+                    "role": "Atendimento ao Cliente e Representante"
+                },
+                {
+                    "name": "Ana Flávia Alves",
+                    "role": "Telemarketing ativo e receptivo"
+                },
+                {
+                    "name": "Ana Flávia Alves",
+                    "role": "atendimento telefônico"
+                },
+                {
+                    "name": "Ana Flávia Alves",
+                    "role": "prospecção de clientes"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ana Flávia Alves",
+                "detected_role": "Atendimento ao Cliente e Representante",
+                "clean_bio": "Ana Flávia Alves | alfa trend. Experiência: Alfa Trend. Formação acadêmica: UniMax - Centro Universitário Max Planck. Localidade: Indaiatuba. 432 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Atendimento ao Cliente e Representante', que é explicitamente vetado pela instrução 6. Não há informações adicionais que sugiram uma interface com Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Atendimento ao Cliente e Representante",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:25:40.320211",
+    "candidate": "Erick Hoenen",
+    "linkedin": "https://www.linkedin.com/in/erick-hoenen",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Erick Hoenen - Parque Mirante - LinkedIn",
+            "body": "Atuo há, aproximadamente, 20 anos transformando estratégia em experiência por meio de… · Experiência: Parque Mirante · Formação acadêmica: edX · Localidade: ..."
+        },
+        "osint_metadata": {
+            "role": "day pharma",
+            "bio": "Atuo há, aproximadamente, 20 anos transformando estratégia em experiência por meio de… · Experiência: Day Pharma · Formação acadêmica: edX · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Erick Hoenen no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Erick Hoenen",
+        "role": "Não Identificado",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Veto Mecânico Detectado: True. O detetive indica que o candidato trabalha na 'Day Pharma', que não é a empresa-alvo 'Torcetex Palhas De Fibra Natural'. Além disso, o especialista marcou Relevante: False.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "CURRENT COMPANY (Declarada): Torcetex Palhas De Fibra Natural",
+                "Experiência: Parque Mirante",
+                "LinkedIn Status: Erick Hoenen | day pharma",
+                "Experiência: Day Pharma"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Atuo há, aproximadamente, 20 anos transformando estratégia em experiência por meio de…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Erick Hoenen",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Erick Hoenen",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Atuo há, aproximadamente, 20 anos transformando estratégia em experiência por meio de…"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Erick Hoenen não foi identificado. A bio fornecida ('Atuo há, aproximadamente, 20 anos transformando estratégia em experiência por meio de…') é genérica e não contém termos técnicos explícitos relacionados a SUPRIMENTOS, COMPRAS ou PROCUREMENT, conforme exigido para considerar a relevância de um perfil com cargo não identificado."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Parque Mirante",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:26:21.042765",
+    "candidate": "Beatriz de Oliveira Zaneti",
+    "linkedin": "https://www.linkedin.com/in/beatriz-de-oliveira-zaneti",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Beatriz de Oliveira Zaneti - Analista de Trade Marketing | Sales Analytics",
+            "body": "Analista de Trade Marketing com atuação em Planejamento Comercial, Sales Analytics e Business Intelligence, com experiência em FMCG e gestão de Canais ..."
+        },
+        "osint_metadata": {
+            "role": "coca",
+            "bio": "Analista de Trade Marketing com atuação em Planejamento Comercial, Sales Analytics e… · Experiência: Coca-Cola FEMSA · Formação acadêmica: Universidade de São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Beatriz de Oliveira Zaneti no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Beatriz de Oliveira Zaneti",
+        "role": "Analista de Trade Marketing",
+        "matching_score": 0,
+        "department": "Marketing",
+        "evidence": "Especialista marcou como irrelevante (is_relevant: false) e o cargo/departamento (Analista de Trade Marketing / Marketing) não é pertinente para SUPRIMENTOS/COMPRAS/PROCUREMENT. Não há Cargo Oficial Verificado para contradizer.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Torcetex Palhas De Fibra Natural"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Analista de Trade Marketing com atuação em Planejamento Comercial, Sales Analytics e Business Intelligence, com experiência em FMCG e gestão de Canais."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Beatriz de Oliveira Zaneti",
+                    "role": "Analista de Trade Marketing"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Beatriz de Oliveira Zaneti",
+                "detected_role": "Analista de Trade Marketing",
+                "clean_bio": "Analista de Trade Marketing com atuação em Planejamento Comercial, Sales Analytics e Business Intelligence, com experiência em FMCG e gestão de Canais. Experiência: Coca-Cola FEMSA. Formação acadêmica: Universidade de São Paulo. Localidade: Brasil. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista de Trade Marketing",
+            "dept": "Marketing",
+            "is_relevant": false,
+            "reasoning": "O cargo de 'Analista de Trade Marketing' é uma função de marketing, que é explicitamente vetada pelas instruções técnicas para a área de SUPRIMENTOS / COMPRAS / PROCUREMENT. A descrição da bio ('Planejamento Comercial, Sales Analytics e Business Intelligence, com experiência em FMCG e gestão de Canais') reforça o foco em marketing e vendas, sem interface direta com compras ou suprimentos."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista de Trade Marketing",
+        "department": "Marketing",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T12:26:39.650098",
+    "candidate": "Jéssica Rocha de Paula",
+    "linkedin": "https://www.linkedin.com/in/j%C3%A9ssica-rocha-de-paula-1b9543a6",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jéssica Rocha de Paula - Gerente de contas Food-Nutra-Cosmetique",
+            "body": "Gerente de contas Food-Nutra-Cosmetique | Green-belt | Bens de consumo | Business Intelligence | Customer Care Excellence · Experiência: Molkem · Formação ..."
+        },
+        "osint_metadata": {
+            "role": "molkem",
+            "bio": "Experiência: Molkem · Formação acadêmica: FIA Business School · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Jéssica Rocha de Paula no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Jéssica Rocha de Paula",
+        "role": "Gerente de contas Food-Nutra-Cosmetique",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "Veto Mecânico Detectado: True. O detetive indica que a candidata trabalha na Molkem, que é uma empresa diferente da Torcetex Palhas De Fibra Natural. A regra 1 (VETO DE EMPRESA) é aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Torcetex Palhas De Fibra Natural",
+                "Experiência: Molkem"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gerente de contas Food-Nutra-Cosmetique | Green-belt | Bens de consumo | Business Intelligence | Customer Care Excellence · Experiência: Molkem · Formação ..."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jéssica Rocha de Paula",
+                    "role": "Gerente de contas Food-Nutra-Cosmetique"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jéssica Rocha de Paula",
+                "detected_role": "Gerente de contas Food-Nutra-Cosmetique",
+                "clean_bio": "Gerente de contas Food-Nutra-Cosmetique | Green-belt | Bens de consumo | Business Intelligence | Customer Care Excellence · Experiência: Molkem · Formação ... LinkedIn Status: Jéssica Rocha de Paula | molkem LinkedIn CURRENT COMPANY (Declarada): Torcetex Palhas De Fibra Natural LinkedIn Personal Bio: Experiência: Molkem · Formação acadêmica: FIA Business School · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Jéssica Rocha de Paula no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de contas Food-Nutra-Cosmetique",
+            "dept": "Vendas",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Gerente de contas Food-Nutra-Cosmetique'. Embora a empresa alvo seja 'Torcetex Palhas De Fibra Natural', o cargo em si é focado em vendas ('Gerente de Contas') e não em Suprimentos/Compras/Procurement. A presença de termos como 'sales', 'vendas', 'comercial', 'account manager' (implícito em 'Gerente de Contas') leva ao veto absoluto de acordo com as instruções técnicas (item 6)."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Gerente de contas Food-Nutra-Cosmetique",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T14:02:49.729387",
+    "candidate": "Giovanna De Domenico",
+    "linkedin": "https://www.linkedin.com/in/giovanna-de-domenico-4b1719130",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Giovanna De Domenico - Diretora na Torcetex Palhas de Fibra ... Luciana Cardoso's email & phone | Torcetex's contact info TORCETEX INDUSTRIA E COMERCIO LTDA | CNPJá Luciana de Domenico Cardoso da Silva | CNPJá - cnpja.com TORCETEX INDUSTRIA E COMERCIO LTDA - CNPJ 49446750000423 ... TORCETEX INDUSTRIA E COMERCIO LTDA - CNPJ 49446750000342",
+            "body": "Diretora na Torcetex Palhas de Fibra Natural | Engenharia Química · Experiência: Torcetex Palhas de Fibra Natural · Formação acadêmica: Centro Universitário FEI · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja o perfil de Giovanna De Domenico no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Luciana Cardoso's profile - @ torcetex .com. br email address, phone number, address and contact information | get free emails&phones for business contacts Consulte os sócios e filiais da empresa TORCETEX INDUSTRIA E COMERCIO LTDA. Consulte os dados do sócio Luciana de Domenico Cardoso da Silva , CPF ***.585.698-**, 41-50 anos, administrador de 3 empresas. Nov 9, 2021 · CINTIA@ TORCETEX .COM. BR Telefone: 19 39357511 Whatsapp CNAE Principal: 1323500 - Tecelagem de fios de fibras artificiais e sintéticas CNAEs Secundários: 1321900 - Tecelagem de fios de algodão 1353700 - Fabricação de artefatos de cordoaria 4616800 - Representantes comerciais e agentes do comércio de têxteis, vestuário, calçados e artigos ... CNPJ 49.446.750/0003-42 Razão Social TORCETEX INDUSTRIA E COMERCIO LTDA Tipo FILIAL Data Abertura 15/01/2016 Situação Cadastral ATIVA Data da Situação Cadastral 15/01/2016 Capital Social R$ 456.000 Natureza Jurídica 2062 - SOCIEDADE EMPRESÁRIA LIMITADA Empresa MEI Não Logradouro AVENIDA DOS TRABALHADORES Número 116 Complemento SALA 208 CEP 13338-050 Bairro VILA CASTELO BRANCO ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Torcetex Palhas de Fibra Natural · Formação acadêmica: Centro Universitário FEI · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Giovanna De Domenico no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Giovanna De Domenico",
+        "role": "Diretora",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "Candidata trabalha na empresa-alvo conforme dados do detetive e especialista.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Diretora na Torcetex Palhas de Fibra Natural",
+                "Experiência: Torcetex Palhas de Fibra Natural"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Diretora na Torcetex Palhas de Fibra Natural | Engenharia Química"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Giovanna De Domenico",
+                    "role": "Diretora"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Giovanna De Domenico",
+                "detected_role": "Diretora",
+                "clean_bio": "Diretora na Torcetex Palhas de Fibra Natural | Engenharia Química · Experiência: Torcetex Palhas de Fibra Natural · Formação acadêmica: Centro Universitário FEI · Localidade: Indaiatuba · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Diretora",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Diretora em uma empresa de produção de matérias-primas (palhas de fibra natural) tem interface direta com decisões estratégicas de suprimentos e compras. Conforme instrução 10, cargos de Diretoria devem ser considerados relevantes."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Diretora",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T17:25:18.432164",
+    "candidate": "Luiz Antonio Alves",
+    "linkedin": "https://www.linkedin.com/in/luiz-metasil-52209135",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "LUIZ Metasil - LinkedIn Brasil 200+ \"Luiz Antônio Alves\" profiles | LinkedIn Luiz Antonio Alves (@luizametasil) • Instagram photos and videos 40+ perfis com “Luiz Antônio Alves” | LinkedIn 7 \"Antônio Luiz Alves\" profiles | LinkedIn 300+ \"Antonio Luiz Alves\" profiles | LinkedIn Luiz Antonio Alves - HSE&Q Professional | LinkedIn",
+            "body": "Experiência: metasil · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja LUIZ Metasil o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Antonio Luiz Alves Tecnólogo tecnologia mecânica na SEW Eurodrive Brasil Ltda Indaiatuba, SP SEW Eurodrive Brasil Ltda, +2 more Fatec, +1 more 134 Followers, 192 Following, 0 Posts - Luiz Antonio Alves (@luizametasil) on Instagram: \"\" Veja os perfis de profissionais com o nome de “ Luiz Antônio Alves ” no LinkedIn . Há 60+ profissionais com o nome de “ Luiz Antônio Alves ” que usam o LinkedIn para trocar informações, ideias e oportunidades. There are 7 professionals named \" Antônio Luiz Alves \", who use LinkedIn to exchange information, ideas, and opportunities. View the profiles of professionals named \" Antonio Luiz Alves \" on LinkedIn . There are 300+ professionals named \" Antonio Luiz Alves \", who use LinkedIn to exchange information, ideas, and opportunities. HSE&Q Professional · Experience in elaborating and teaching technical and behavioral trainings for employees of several levels of the company in the following disciplines: Safety, Health and Environment. Training conducted in English and Portuguese languages for Brazilian employees. Audits and inspections to ensure proper execution of the Waste Management Plan. Audits Companies about HSE ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: metasil · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja LUIZ Metasil  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Luiz Antonio Alves",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Experiência: metasil · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja LUIZ Metasil o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.",
+                "Antonio Luiz Alves Tecnólogo tecnologia mecânica na SEW Eurodrive Brasil Ltda Indaiatuba, SP SEW Eurodrive Brasil Ltda, +2 more Fatec, +1 more",
+                "134 Followers, 192 Following, 0 Posts - Luiz Antonio Alves (@luizametasil) on Instagram: \"\"",
+                "Veja os perfis de profissionais com o nome de “ Luiz Antônio Alves ” no LinkedIn . Há 60+ profissionais com o nome de “ Luiz Antônio Alves ” que usam o LinkedIn para trocar informações, ideias e oportunidades.",
+                "There are 7 professionals named \" Antônio Luiz Alves \", who use LinkedIn to exchange information, id"
+            ],
+            "is_institutional": false,
+            "bio_raw": "metasil"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Antonio Luiz Alves",
+                    "role": "Tecnólogo tecnologia mecânica"
+                },
+                {
+                    "name": "Luiz Antonio Alves",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Antônio Luiz Alves",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Antonio Luiz Alves",
+                    "role": "HSE&Q Professional"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "LUIZ Metasil",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência: metasil · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja LUIZ Metasil o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de LUIZ Metasil não foi identificado claramente nos dados fornecidos. A menção 'metasil' na experiência pode indicar um vínculo, mas sem um cargo específico, não é possível determinar a relevância para Suprimentos/Compras/Procurement. A presença de outros profissionais com nomes similares e cargos técnicos (Tecnólogo em tecnologia mecânica) não confirma a função de LUIZ Metasil."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T17:26:11.135126",
+    "candidate": "Tiago Gabas",
+    "linkedin": "https://www.linkedin.com/in/tiago-gabas-12b21b100",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tiago Gabas - Sócio proprietário Mero Serralheria Industrial ...",
+            "body": "Sócio proprietário Mero Serralheria Industrial · Experiência: metasil · Localidade: São Paulo e Região · 6 conexões no LinkedIn . Veja o perfil de Tiago Gabas no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: metasil · Localidade: São Paulo e Região · 6 conexões no LinkedIn. Veja o perfil de Tiago Gabas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Tiago Gabas",
+        "role": "Sócio proprietário",
+        "matching_score": 0,
+        "department": "Diretoria/Gestão",
+        "evidence": "O detetive indicou que o candidato não trabalha na Metasil (employer_found: false). A experiência listada é na 'Mero Serralheria Industrial', e não na empresa-alvo.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Sócio proprietário Mero Serralheria Industrial · Experiência: metasil · Localidade: São Paulo e Região · 6 conexões no LinkedIn . Veja o perfil de Tiago Gabas no LinkedIn , uma comunidade profissional de 1 bilhão de usuários.",
+                "Candidate Name: Tiago Gabas | Google Page Title: Tiago Gabas - Sócio proprietário Mero Serralheria Industrial | Search Snippet: Sócio proprietário Mero Serralheria Industrial · Experiência: metasil · Localidade: São Paulo e Região · 6 conexões no LinkedIn . Veja o perfil de Tiago Gabas no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. | LinkedIn Status: Tiago Gabas | cargo não identificado nos metadados | LinkedIn CURRENT COMPANY (Declarada): Metasil | LinkedIn Personal Bio: Experiência: metasil · Localidade: São Paulo e Região · 6 conexões no LinkedIn. Veja o perfil de Tiago Gabas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. | Verified Official Role: Não Encontrado"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sócio proprietário Mero Serralheria Industrial. Experiência: metasil. Localidade: São Paulo e Região."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Tiago Gabas",
+                    "role": "Sócio proprietário"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Tiago Gabas",
+                "detected_role": "Sócio proprietário",
+                "clean_bio": "Sócio proprietário Mero Serralheria Industrial · Experiência: metasil · Localidade: São Paulo e Região · 6 conexões no LinkedIn . Veja o perfil de Tiago Gabas no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio proprietário",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Sócio proprietário, mesmo sem um departamento específico de Suprimentos, é considerado relevante pois, em negócios B2B, sócios e proprietários frequentemente são os decisores finais de compras ou aprovações financeiras. A experiência declarada com a Metasil, embora não confirmada como vínculo atual, sugere uma possível interface com a empresa alvo."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sócio proprietário",
+        "department": "Diretoria/Gestão",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-17T17:27:34.840358",
+    "candidate": "Jackson Ferreira da Silva",
+    "linkedin": "https://www.linkedin.com/in/jackson-ferreira-da-silva-5346a6277",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jackson Ferreira da Silva - Metasil Metais Recicláveis | LinkedIn Metasil Company Profile | Management and Employees List Metasil Ltda. Company Profile - Brazil | Contacts & Key ... Metasil Metasil Sac Company Profile | Management and Employees List METASIL QUIMICA INDUSTRIA E COMERCIO LTDA",
+            "body": "CEO na Metasil Metais Recicláveis · Experiência: Metasil Metais Recicláveis · Formação acadêmica: Universidade Regional Integrada do Alto Uruguai e das Missões - URI · Localidade: Pinhalzinho · 1 conexão no LinkedIn . Veja o perfil de Jackson Ferreira da Silva no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Find contact information for Metasil . Learn about their Industrial Machinery & Equipment, Manufacturing market share, competitors, and Metasil 's email format. Report with contact information, company activities and ownership details for Metasil Ltda. in Brazil . Report is available for immediate purchase & download from EMIS. Bem-vindo à Metasil ! Com um legado de excelência reconhecido nacionalmente, estamos comprometidos com a qualidade superior de nossos produtos e um atendimento excepcional. Ao longo dos anos, conquistamos a confiança de mais de 1000 clientes em todo o Brasil . Nossa linha de lixadeiras, moto esmeris e politrizes foi projetada para otimizar as operações do seu negócio. Na Metasil , o segredo ... Find contact information for Metasil Sac. Learn about their Architecture, Engineering & Design, Construction market share, competitors, and Metasil Sac's email format. Find company research, competitor information, contact details & financial data for METASIL QUIMICA INDUSTRIA E COMERCIO LTDA of ITAQUAQUECETUBA, SAO PAULO. Get the latest business insights from Dun & Bradstreet."
+        },
+        "osint_metadata": {
+            "role": "metasil metais recicláveis",
+            "bio": "Experiência: Metasil Metais Recicláveis · Formação acadêmica: Universidade Regional Integrada do Alto Uruguai e das Missões - URI · Localidade: Pinhalzinho · 1 conexão no LinkedIn. Veja o perfil de Jackson Ferreira da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Jackson Ferreira da Silva",
+        "role": "CEO",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato trabalha na empresa-alvo 'Metasil' como CEO, conforme confirmado pelo Detetive e Especialista. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "CEO na Metasil Metais Recicláveis.",
+                "Experiência: Metasil Metais Recicláveis.",
+                "Google Page Title: Jackson Ferreira da Silva - Metasil Metais Recicláveis",
+                "Veja o perfil de Jackson Ferreira da Silva no LinkedIn"
+            ],
+            "is_institutional": false,
+            "bio_raw": "CEO na Metasil Metais Recicláveis."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jackson Ferreira da Silva",
+                    "role": "CEO"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jackson Ferreira da Silva",
+                "detected_role": "CEO",
+                "clean_bio": "CEO na Metasil Metais Recicláveis. Experiência: Metasil Metais Recicláveis. Formação acadêmica: Universidade Regional Integrada do Alto Uruguai e das Missões - URI. Localidade: Pinhalzinho."
+            }
+        },
+        "specialist": {
+            "role_name": "CEO",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de CEO (Diretor Geral) é considerado relevante para a área de Suprimentos/Compras/Procurement, pois em empresas B2B, o CEO frequentemente tem poder de decisão final em compras estratégicas e aprovações financeiras. O vínculo com a Metasil foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "CEO",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-18T09:23:04.615406",
+    "candidate": "LUIZ Metasil",
+    "linkedin": "https://www.linkedin.com/in/luiz-metasil-52209135",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "LUIZ Metasil - LinkedIn Brasil Metasil Quem Somos - Gatti Química Metasil Máquinas e Abrasivos Information - RocketReach Metasil Ltda. Company Profile - Brazil | Contacts & Key ... Metasil Ltda. Perfil de Empresa - Brasil | Contatos e ... - EMIS",
+            "body": "Experiência: metasil · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja LUIZ Metasil o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Bem-vindo à Metasil ! Com um legado de excelência reconhecido nacionalmente, estamos comprometidos com a qualidade superior de nossos produtos e um atendimento excepcional. Ao longo dos anos, conquistamos a confiança de mais de 1000 clientes em todo o Brasil . Nossa linha de lixadeiras, moto esmeris e politrizes foi projetada para otimizar as operações do seu negócio. Na Metasil , o segredo ... Quem Somos Com um sonho e espírito empreendedor, o senhor Moacir Garabetti funda em 1964 a Metasil , em Itaquera/SP. A empresa começa com a produção de insumos químicos como o Metassilicato, daí o nome “ Metasil ”. Metasil Máquinas e Abrasivos is a Machinery Manufacturing company located in BR with 4 employees. Find top employees, contact details and business statistics at RocketReach. Report with contact information, company activities and ownership details for Metasil Ltda. in Brazil. Report is available for immediate purchase & download from EMIS. Metasil Ltda. é uma empresa em Brasil , com o escritório principal em Uberaba. Opera no setor Fundições de metal fundido não-ferroso. A empresa foi estabelecida em 15 de Janeiro de 1992."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: metasil · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja LUIZ Metasil  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "LUIZ Metasil",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Bem-vindo à Metasil ! Com um legado de excelência reconhecido nacionalmente, estamos comprometidos com a qualidade superior de nossos produtos e um atendimento excepcional. Ao longo dos anos, conquistamos a confiança de mais de 1000 clientes em todo o Brasil . Nossa linha de lixadeiras, moto esmeris e politrizes foi projetada para otimizar as operações do seu negócio. Na Metasil , o segredo",
+                "LinkedIn CURRENT COMPANY (Declarada): Metasil"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: metasil · Localidade: Indaiatuba · + de 500 conexões no LinkedIn . Veja LUIZ Metasil o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "LUIZ Metasil",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "LUIZ Metasil",
+                "detected_role": "Não Identificado",
+                "clean_bio": "LUIZ Metasil o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. Bem-vindo à Metasil ! Com um legado de excelência reconhecido nacionalmente, estamos comprometidos com a qualidade superior de nossos produtos e um atendimento excepcional. Ao longo dos anos, conquistamos a confiança de mais de 1000 clientes em todo o Brasil . Nossa linha de lixadeiras, moto esmeris e politrizes foi projetada para otimizar as operações do seu negócio. Na Metasil , o segredo"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de LUIZ Metasil não foi identificado nos dados fornecidos. A bio e os snippets focam na empresa Metasil e seus produtos, sem detalhar a função específica do candidato. Não há termos explícitos de Suprimentos/Compras/Procurement na bio para justificar relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-18T10:12:50.762742",
+    "candidate": "Jonathan Prince Q. Amâncio",
+    "linkedin": "https://www.linkedin.com/in/jonathan-prince-q-am%C3%A2ncio-279173172",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jonathan Prince Q. Amâncio - Auxiliar de produção ... - LinkedIn",
+            "body": "tenho experiência na área de produção como operador de produção I como ajudante de motorista ou caminhão. Experiência. Gráfico CHG Automotiva Ltda ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "tenho experiência na área de produção \ncomo operador de produção I como ajudante de… · Experiência: CHG Automotiva Ltda · Formação acadêmica: Egle  · Localidade: Aguaí · 59 conexões no LinkedIn. Veja o perfil de Jonathan Prince Q. Amâncio no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Jonathan Prince Q. Amâncio",
+        "role": "Auxiliar de Produção",
+        "matching_score": 0,
+        "department": "Produção",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico, indicando uma inconsistência ou regra de rejeição automática aplicada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Chg Automotiva",
+                "Experiência: CHG Automotiva Ltda"
+            ],
+            "is_institutional": false,
+            "bio_raw": "tenho experiência na área de produção como operador de produção I como ajudante de motorista ou caminhão."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jonathan Prince Q. Amâncio",
+                    "role": "Auxiliar de produção"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jonathan Prince Q. Amâncio",
+                "detected_role": "Auxiliar de produção",
+                "clean_bio": "tenho experiência na área de produção como operador de produção I como ajudante de motorista ou caminhão."
+            }
+        },
+        "specialist": {
+            "role_name": "Auxiliar de Produção",
+            "dept": "Produção",
+            "is_relevant": false,
+            "reasoning": "O cargo de 'Auxiliar de Produção' e a experiência como 'operador de produção' são explicitamente vetados para as áreas de SUPRIMENTOS / COMPRAS / PROCUREMENT, conforme as instruções técnicas que rejeitam perfis de Produção Direta."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Auxiliar de Produção",
+        "department": "Produção",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-18T10:13:10.739167",
+    "candidate": "Homero Guercia",
+    "linkedin": "https://www.linkedin.com/in/homero-guercia-4389503",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Homero Guercia - SÓCIO DIRETOR DA CHG - LinkedIn",
+            "body": "SÓCIO DIRETOR DA CHG - EXCELÊNCIA OPERACIONAL · • Carreira desenvolvida por mais de 40 anos na indústria de bebidas, em empresas como Antarctica, AmBev, ..."
+        },
+        "osint_metadata": {
+            "role": "chg",
+            "bio": "•\tCarreira desenvolvida por mais de 40 anos na indústria de bebidas, em empresas como… · Experiência: CHG - EXCELÊNCIA OPERACIONAL · Localidade: Taubaté · + de 500 conexões no LinkedIn. Veja o perfil de Homero Guercia no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Homero Guercia",
+        "role": "Sócio Diretor",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato Homero Guercia é Sócio Diretor na Chg Automotiva, conforme confirmado pelo Detetive e Especialista. A empresa-alvo e a empresa onde o candidato trabalha são a mesma.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Homero Guercia - SÓCIO DIRETOR DA CHG",
+                "SÓCIO DIRETOR DA CHG - EXCELÊNCIA OPERACIONAL",
+                "LinkedIn CURRENT COMPANY (Declarada): Chg Automotiva",
+                "Experiência: CHG - EXCELÊNCIA OPERACIONAL"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Carreira desenvolvida por mais de 40 anos na indústria de bebidas, em empresas como Antarctica, AmBev."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Homero Guercia",
+                    "role": "SÓCIO DIRETOR"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Homero Guercia",
+                "detected_role": "SÓCIO DIRETOR",
+                "clean_bio": "Carreira desenvolvida por mais de 40 anos na indústria de bebidas, em empresas como Antarctica, AmBev."
+            }
+        },
+        "specialist": {
+            "role_name": "SÓCIO DIRETOR",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Sócio Diretor é considerado relevante para a área de Suprimentos/Compras/Procurement, pois em empresas B2B, diretores e sócios frequentemente são os decisores finais em processos de compra e aprovação financeira. A experiência de mais de 40 anos na indústria, embora em bebidas, indica um perfil de gestão sênior com potencial para decisões estratégicas de aquisição."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio Diretor",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-18T10:59:26.130349",
+    "candidate": "Jonathan Prince Q. Amâncio",
+    "linkedin": "https://www.linkedin.com/in/jonathan-prince-q-am%C3%A2ncio-279173172",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jonathan Prince Q. Amâncio - Auxiliar de produção ... - LinkedIn",
+            "body": "tenho experiência na área de produção como operador de produção I como ajudante de motorista ou caminhão. Experiência. Gráfico CHG Automotiva Ltda ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "tenho experiência na área de produção \ncomo operador de produção I como ajudante de… · Experiência: CHG Automotiva Ltda · Formação acadêmica: Egle  · Localidade: Aguaí · 59 conexões no LinkedIn. Veja o perfil de Jonathan Prince Q. Amâncio no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Jonathan Prince Q. Amâncio",
+        "role": "Auxiliar de produção",
+        "matching_score": 0,
+        "department": "Produção",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico, indicando uma inconsistência ou regra de rejeição automática aplicada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Chg Automotiva",
+                "Experiência: CHG Automotiva Ltda",
+                "tenho experiência na área de produção"
+            ],
+            "is_institutional": false,
+            "bio_raw": "tenho experiência na área de produção como operador de produção I como ajudante de motorista ou caminhão."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jonathan Prince Q. Amâncio",
+                    "role": "Auxiliar de produção"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jonathan Prince Q. Amâncio",
+                "detected_role": "Auxiliar de produção",
+                "clean_bio": "tenho experiência na área de produção como operador de produção I como ajudante de motorista ou caminhão. Experiência: CHG Automotiva Ltda. Formação acadêmica: Egle. Localidade: Aguaí. 59 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Auxiliar de produção",
+            "dept": "Produção",
+            "is_relevant": false,
+            "reasoning": "O cargo de 'Auxiliar de produção' pertence à área de Produção Direta, que é explicitamente vetada para a busca de perfis em SUPRIMENTOS / COMPRAS / PROCUREMENT, conforme as instruções técnicas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Auxiliar de produção",
+        "department": "Produção",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-18T11:00:08.620690",
+    "candidate": "Celso Andrade",
+    "linkedin": "https://www.linkedin.com/in/celsoandrade",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Celso Andrade - Analista de Sistemas na Prefeitura Municipal de Hortolândia | LinkedIn",
+            "body": "CHG Automotiva. set. de 2006 - fev. de 2008 1 ano 6 meses. Analista Desenvolvedor e Administrador de redes e servidores Linux. Formação acadêmica. Faculdades ..."
+        },
+        "osint_metadata": {
+            "role": "prefeitura municipal de hortolândia",
+            "bio": "Experiência: Prefeitura Municipal de Hortolândia · Formação acadêmica: Faculdades Hoyler · Localidade: Hortolândia · + de 500 conexões no LinkedIn. Veja o perfil de Celso Andrade no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Celso Andrade",
+        "role": "Analista de Sistemas",
+        "matching_score": 0,
+        "department": "Tecnologia da Informação",
+        "evidence": "Candidato trabalha na Prefeitura Municipal de Hortolândia, não na empresa-alvo. Especialista marcou como não relevante.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "CHG Automotiva. set. de 2006 - fev. de 2008 1 ano 6 meses. Analista Desenvolvedor e Administrador de redes e servidores Linux.",
+                "Celso Andrade - Analista de Sistemas na Prefeitura Municipal de Hortolândia",
+                "LinkedIn CURRENT COMPANY (Declarada): Chg Automotiva",
+                "Experiência: Prefeitura Municipal de Hortolândia"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Celso Andrade é Analista de Sistemas na Prefeitura Municipal de Hortolândia. Possui experiência na Prefeitura Municipal de Hortolândia e formação acadêmica nas Faculdades Hoyler. Localizado em Hortolândia."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Celso Andrade",
+                    "role": "Analista de Sistemas"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Celso Andrade",
+                "detected_role": "Analista de Sistemas",
+                "clean_bio": "Celso Andrade é Analista de Sistemas na Prefeitura Municipal de Hortolândia. Possui experiência na Prefeitura Municipal de Hortolândia e formação acadêmica nas Faculdades Hoyler. Localizado em Hortolândia."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista de Sistemas",
+            "dept": "Tecnologia da Informação",
+            "is_relevant": false,
+            "reasoning": "O cargo de 'Analista de Sistemas' e a experiência anterior como 'Analista Desenvolvedor e Administrador de redes e servidores Linux' são funções de Tecnologia da Informação (TI). Conforme as instruções técnicas, cargos de TI/Desenvolvimento são vetados e não são relevantes para posições de SUPRIMENTOS / COMPRAS / PROCUREMENT."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista de Sistemas",
+        "department": "Tecnologia da Informação",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-18T11:00:15.625437",
+    "candidate": "Gabriel Marucci de souza",
+    "linkedin": "https://www.linkedin.com/in/gabriel-marucci-de-souza-69832323a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gabriel Marucci de souza - Analista de planejamento de materiais - LinkedIn",
+            "body": "Analista de planejamento de materiais · Experiência: Valeo · Formação acadêmica: Centro Universitário UniMetrocamp · Localidade: Campinas · 482 conexões no ..."
+        },
+        "osint_metadata": {
+            "role": "valeo",
+            "bio": "Experiência: Valeo · Formação acadêmica: Centro Universitário UniMetrocamp · Localidade: Campinas · 491 conexões no LinkedIn. Veja o perfil de Gabriel Marucci de souza no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-18T11:02:05.271765",
+    "candidate": "Gelson Peixoto",
+    "linkedin": "https://www.linkedin.com/in/gelson-peixoto-0b87a073",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Gelson Peixoto - Promotor de vendas CHG Acessórios automotivos. | LinkedIn",
+            "body": "Experiência. Gráfico CHG Automotiva Ltda. Promotor de vendas. CHG Automotiva Ltda. mar. de 2022 - o momento 4 anos 3 meses. Curitiba, Paraná, Brasil."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: CHG Automotiva Ltda · Localidade: Curitiba · 87 conexões no LinkedIn. Veja o perfil de Gelson Peixoto no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Gelson Peixoto",
+        "role": "Promotor de vendas",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "Veto Mecânico Detectado: True. O Especialista marcou 'is_relevant: false' para o cargo de Promotor de vendas, indicando que não é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Gelson Peixoto é Promotor de vendas na CHG Automotiva Ltda desde março de 2022 em Curitiba, Paraná, Brasil.",
+                "CHG Automotiva Ltda. Promotor de vendas. CHG Automotiva Ltda. mar. de 2022 - o momento 4 anos 3 meses.",
+                "LinkedIn CURRENT COMPANY (Declarada): Chg Automotiva"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gelson Peixoto é Promotor de vendas na CHG Automotiva Ltda desde março de 2022."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Gelson Peixoto",
+                    "role": "Promotor de vendas"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Gelson Peixoto",
+                "detected_role": "Promotor de vendas",
+                "clean_bio": "Gelson Peixoto é Promotor de vendas na CHG Automotiva Ltda desde março de 2022 em Curitiba, Paraná, Brasil."
+            }
+        },
+        "specialist": {
+            "role_name": "Promotor de vendas",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Promotor de vendas' não possui interface direta com as áreas de Suprimentos/Compras/Procurement, sendo explicitamente vetado pelas instruções técnicas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Promotor de vendas",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------

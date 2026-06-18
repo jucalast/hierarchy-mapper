@@ -159,8 +159,11 @@ export interface SavedCallSession {
   created_at?: string;
 }
 
-export function fetchCallHistory() {
-  return api.get<{ ok: boolean; calls: SavedCallSession[] }>('/calls/history');
+export function fetchCallHistory(orgId?: number | null) {
+  const params = new URLSearchParams();
+  if (orgId != null) params.append('org_id', String(orgId));
+  const qs = params.toString() ? `?${params.toString()}` : '';
+  return api.get<{ ok: boolean; calls: SavedCallSession[] }>(`/calls/history${qs}`);
 }
 
 export function fetchCallSession(sessionId: string) {

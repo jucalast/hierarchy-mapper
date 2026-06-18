@@ -3,7 +3,7 @@ import styles from './Drawer.module.css';
 import { Spinner } from '../';
 import { organizations as orgsApi, hierarchy as hierarchyApi } from '@/services/api';
 import type { NotificationType } from '../Notification';
-import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal, OrgDetailsModal } from './components';
+import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal, OrgDetailsModal, DrawerStageTabs } from './components';
 
 interface DrawerProps {
     showDrawer: boolean;
@@ -25,6 +25,10 @@ interface DrawerProps {
     onSaveToPipedrive?: (person: any, orgId: number) => Promise<void> | void;
     onEmailDiscovered?: (person: any, email: string) => Promise<void> | void;
     onOrgDomainChanged?: (oldDomain: string, newDomain: string) => void;
+    uniqueStages?: { name: string; count: number }[];
+    activeStageFilter?: string | null;
+    setActiveStageFilter?: (stage: string | null) => void;
+    totalOrgsCount?: number;
 }
 
 const LOCAL_CACHE_KEYS = (orgId: number) => [
@@ -69,6 +73,10 @@ export const Drawer: React.FC<DrawerProps> = ({
     onEditEmployee,
     onSaveToPipedrive,
     onOrgDomainChanged,
+    uniqueStages = [],
+    activeStageFilter = null,
+    setActiveStageFilter = () => {},
+    totalOrgsCount = 0,
 }) => {
     const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(() => {
         if (typeof window !== 'undefined') {
@@ -207,17 +215,19 @@ export const Drawer: React.FC<DrawerProps> = ({
 
     useEffect(() => {
         if (refreshDetailsTrigger > 0) {
-            // Em nova varredura atualiza os detalhes em vez de fechar
+            // Em nova varredura atualiza os detalhes em vez de fechar — silenciosamente (sem notificação)
             if (expandedOrgId) {
-                void fetchOrgDetails(expandedOrgId, true);
+                void fetchOrgDetails(expandedOrgId, false, true);
             }
         }
     }, [refreshDetailsTrigger]);
 
+
     useEffect(() => {
         const handleTimelineChanged = () => {
             if (expandedOrgId) {
-                void fetchOrgDetails(expandedOrgId, true, true);
+                // background=true, force=false: atualiza silenciosamente sem notificação
+                void fetchOrgDetails(expandedOrgId, false, true);
             }
         };
         window.addEventListener('crm_timeline_changed', handleTimelineChanged);
@@ -229,6 +239,7 @@ export const Drawer: React.FC<DrawerProps> = ({
             window.removeEventListener('crm_task_uncompleted', handleTimelineChanged);
         };
     }, [expandedOrgId, fetchOrgDetails]);
+
 
     useEffect(() => {
         if (activeJobId) {
@@ -613,6 +624,15 @@ export const Drawer: React.FC<DrawerProps> = ({
                 setConfirmKind={setConfirmKind}
                 onOpenDetailsModal={() => setShowDetailsModal(true)}
             />
+
+            {!expandedOrgId && (
+                <DrawerStageTabs
+                    stages={uniqueStages}
+                    activeStage={activeStageFilter}
+                    onSelect={setActiveStageFilter}
+                    totalCount={totalOrgsCount}
+                />
+            )}
 
             <div className={styles.drawerList}>
                 {isLoading ? (

@@ -653,11 +653,13 @@ async def exec_prepare_live_coaching_session(args: dict, org_id: int | None = No
         from sqlalchemy import select
         
         async with async_session() as session:
-            stmt = select(CallSession).where(
-                (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
-            )
-            res = await session.execute(stmt)
-            db_session = res.scalar_one_or_none()
+            db_session = None
+            if activity_id or phone:
+                stmt = select(CallSession).where(
+                    (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
+                )
+                res = await session.execute(stmt)
+                db_session = res.scalar_one_or_none()
             
             if not db_session:
                 db_session = CallSession(
@@ -1583,6 +1585,38 @@ async def exec_generate_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict
                     "summary": f"Plano de prospecção existente retornado para {org.name}."
                 }
 
+            # Resolução resiliente de Pipedrive ID
+            pd_id = org.pipedrive_id
+            if not pd_id:
+                try:
+                    from ._utils import _pipedrive_find_org
+                    _, resolved_id = await _pipedrive_find_org(org.name)
+                    if resolved_id:
+                        pd_id = resolved_id
+                        org.pipedrive_id = resolved_id
+                        await session.commit()
+                except Exception as e:
+                    log.warning("generate_prospecting_plan.resolve_pipedrive_failed", org_id=org.id, error=e)
+
+            # Busca e-mails e WhatsApps do cache local
+            from models.communication.contact_cache import ContactConversationCache
+            stmt_cache = select(ContactConversationCache).where(
+                or_(
+                    ContactConversationCache.org_id == org.id,
+                    ContactConversationCache.org_id == pd_id,
+                    ContactConversationCache.org_name == org.name
+                )
+            )
+            res_cache = await session.execute(stmt_cache)
+            cached_convs = []
+            for conv in res_cache.scalars().all():
+                cached_convs.append({
+                    "channel": conv.channel,
+                    "contact_name": conv.contact_name,
+                    "contact_identifier": conv.contact_identifier,
+                    "messages": conv.get_messages()
+                })
+
             res_emps = await session.execute(
                 select(Employee).where(
                     Employee.company_id == org.id,
@@ -1590,6 +1624,94 @@ async def exec_generate_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict
                 )
             )
             employees = res_emps.scalars().all()
+
+        # 1.5. Busca dados do CRM (Pipedrive) em tempo real
+        deals_list = []
+        activities_list = []
+        notes_list = []
+        if pd_id:
+            try:
+                from modules.crm.service.pipedrive_service import pipedrive_service
+                pd_details = await pipedrive_service.get_organization_details(pd_id)
+                if isinstance(pd_details, dict):
+                    deals_list = pd_details.get("deals") or []
+                    activities_list = pd_details.get("activities") or []
+                    notes_list = pd_details.get("notes") or []
+            except Exception as pd_err:
+                log.warning("generate_prospecting_plan.pipedrive_fetch_failed", org_id=org.id, error=pd_err)
+
+        # Formata Deals do CRM
+        STAGE_NAMES = {
+            2: "Entrada (Novos Negócios)", 18: "Qualificação", 19: "Contatado", 
+            4: "Reunião Agendada", 26: "Reunião Realizada", 27: "Proposta em Andamento", 28: "Em Negociação",
+            14: "Entrada (Carteira)", 16: "Contato", 17: "Proposta", 32: "Programação"
+        }
+        deals_summary_lines = []
+        for d in deals_list:
+            title = d.get("title", "Sem título")
+            status = d.get("status", "N/A")
+            stage_val = d.get("stage_id")
+            stage_name = STAGE_NAMES.get(stage_val, f"Etapa {stage_val}" if stage_val else "N/A")
+            value = d.get("value", 0)
+            currency = d.get("currency", "BRL")
+            updated = (d.get("update_time") or "")[:10]
+            deals_summary_lines.append(
+                f"- Deal: '{title}' | Status: {status} | Etapa: {stage_name} | Valor: {value} {currency} | Atualizado: {updated}"
+            )
+        deals_summary_text = "\n".join(deals_summary_lines) if deals_summary_lines else "Nenhum negócio (deal) registrado no CRM."
+
+        # Formata Atividades do CRM
+        activities_summary_lines = []
+        for a in activities_list:
+            done_status = "Concluída" if a.get("done") else "Pendente"
+            subject = a.get("subject", "Sem assunto")
+            act_type = a.get("type", "Tarefa")
+            due_date = a.get("due_date") or "sem prazo"
+            note = a.get("note") or ""
+            import re
+            clean_note = re.sub(r'<[^>]*>', '', note).strip() if note else ""
+            note_str = f" | Nota: {clean_note[:120]}..." if clean_note else ""
+            activities_summary_lines.append(
+                f"- [{done_status}] {act_type.upper()}: {subject} (Data: {due_date}){note_str}"
+            )
+        activities_summary_text = "\n".join(activities_summary_lines[:15]) if activities_summary_lines else "Nenhuma atividade (tarefa) registrada no CRM."
+
+        # Formata Anotações do CRM
+        notes_summary_lines = []
+        for n in notes_list:
+            content = n.get("content", "")
+            add_time = (n.get("add_time") or "")[:10]
+            import re
+            clean_content = re.sub(r'<[^>]*>', '', content).strip() if content else ""
+            if clean_content:
+                notes_summary_lines.append(f"- [{add_time}]: {clean_content[:300]}")
+        notes_summary_text = "\n".join(notes_summary_lines[:10]) if notes_summary_lines else "Nenhuma anotação registrada no CRM."
+
+        # Formata Comunicações (E-mail e WhatsApp)
+        comm_summary_lines = []
+        for conv in cached_convs:
+            channel_name = "WhatsApp" if conv["channel"] == "whatsapp" else "E-mail"
+            contact_name = conv["contact_name"]
+            identifier = conv["contact_identifier"]
+            
+            msgs = conv["messages"]
+            if conv["channel"] == "email":
+                msgs = list(reversed(msgs))  # Coloca cronológico antigo -> novo
+                
+            formatted_msgs = []
+            for m in msgs[-15:]:  # últimas 15 mensagens
+                sender = m.get("sender") or m.get("from") or ("Você" if m.get("fromMe") or m.get("direction") == "sent" else contact_name)
+                body = m.get("body") or m.get("preview") or m.get("content") or ""
+                import re
+                clean_body = re.sub(r'<[^>]*>', '', body).strip()
+                if clean_body:
+                    formatted_msgs.append(f"  [{sender}]: {clean_body[:200]}")
+            
+            if formatted_msgs:
+                comm_summary_lines.append(
+                    f"### Conversa via {channel_name} com {contact_name} ({identifier}):\n" + "\n".join(formatted_msgs)
+                )
+        comm_summary_text = "\n\n".join(comm_summary_lines) if comm_summary_lines else "Nenhum histórico de e-mails ou WhatsApp encontrado no banco local."
 
         # 2. Carrega o contexto do tenant (nosso produto, ICP, etc.)
         business_ctx = await BusinessContextService.get_tenant_context()
@@ -1622,13 +1744,30 @@ async def exec_generate_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict
         decision_makers.sort(key=lambda x: x["matching_score"], reverse=True)
 
         # 4. Gera o plano via LLM
+        import json
         prompt = f"""Gere um Plano de Prospecção B2B completo e detalhado para a empresa abaixo.
+Use todo o histórico de interações (deals, atividades, notas e mensagens de e-mail/WhatsApp) para contextualizar o plano.
+O plano deve levar em consideração o momento comercial atual e as tentativas ou conversas de prospecção já iniciadas pelo vendedor para evitar repetir abordagens cansativas ou inadequadas, adaptando a primeira mensagem pronta e a sequência de abordagem a esse histórico real.
 
 ## EMPRESA ALVO:
 - Nome: {org.name}
 - Domínio: {getattr(org, 'domain', '') or 'não informado'}
 - CNPJ: {getattr(org, 'cnpj', '') or 'não informado'}
 - Contexto salvo: {getattr(org, 'prospecting_context', '') or 'nenhum'}
+
+## HISTÓRICO DE INTERAÇÕES E MOMENTO COMERCIAL (INVESTIGAÇÃO DO CRM E COMUNICAÇÕES):
+
+### 1. Negócios (Deals) no CRM:
+{deals_summary_text}
+
+### 2. Histórico de Atividades (Tarefas) no CRM:
+{activities_summary_text}
+
+### 3. Anotações Gerais do CRM:
+{notes_summary_text}
+
+### 4. Histórico Recente de Comunicações (E-mails e WhatsApp):
+{comm_summary_text}
 
 ## DECISORES MAPEADOS ({len(decision_makers)} pessoas):
 {json.dumps(decision_makers, indent=2, ensure_ascii=False)}
@@ -1649,12 +1788,12 @@ Estratégia Geral Sugerida: {overall_strategy}
 ## INSTRUÇÃO:
 Gere um plano de prospecção SPIN Selling completo com as seguintes seções:
 
-1. **🎯 Análise da Conta** — Perfil da empresa, porte, segmento, potencial
-2. **👤 Decisor Principal Recomendado** — Nome, cargo, por que ele/ela é a melhor entrada, gancho personalizado
-3. **🔎 Dores Prováveis (Situação → Problema)** — 3-5 dores baseadas no segmento/cargo
+1. **🎯 Análise da Conta** — Perfil da empresa, porte, segmento, potencial com base no histórico comercial/deals existentes e momento da prospecção
+2. **👤 Decisor Principal Recomendado** — Nome, cargo, por que ele/ela é a melhor entrada, gancho personalizado adaptado ao histórico real de conversas/tentativas
+3. **🔎 Dores Prováveis (Situação → Problema)** — 3-5 dores baseadas no segmento/cargo e conversas anteriores
 4. **💡 Implicações das Dores** — O impacto de não resolver cada dor
-5. **🚀 Sequência de Abordagem** — Canal 1 (qual canal, script inicial), Canal 2 (follow-up), Canal 3 (escalada)
-6. **📝 Primeira Mensagem Pronta** — Mensagem real, sem placeholders, pronta para enviar
+5. **🚀 Sequência de Abordagem** — Canal 1 (qual canal, script inicial), Canal 2 (follow-up), Canal 3 (escalada), levando em consideração canais já utilizados
+6. **📝 Primeira Mensagem Pronta** — Mensagem real, sem placeholders, pronta para enviar (adaptada ao momento: se for o primeiro contato, uma mensagem fria; se já há conversa, uma mensagem de acompanhamento ou retomada de contato baseada no último assunto discutido)
 7. **⚡ Próximas Ações Concretas** — Lista de 3-5 ações com prazo
 
 Formato: Markdown rico. Use o nome real do decisor e detalhes reais da empresa. Seja específico e executável."""

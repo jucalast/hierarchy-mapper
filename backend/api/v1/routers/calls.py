@@ -23,6 +23,8 @@ _insight_lock = asyncio.Lock()
 
 
 async def save_call_message(role: str, text: str, activity_id: str | None, phone: str | None, latency_ms: int | None = None, buffer_secs: float | None = None):
+    if not activity_id and not phone:
+        return
     try:
         async with async_session() as session:
             stmt = select(CallSession).where(
@@ -47,6 +49,8 @@ async def save_call_message(role: str, text: str, activity_id: str | None, phone
 
 
 async def save_call_insight(insight_data: dict, activity_id: str | None, phone: str | None):
+    if not activity_id and not phone:
+        return
     try:
         async with async_session() as session:
             stmt = select(CallSession).where(
@@ -58,7 +62,7 @@ async def save_call_insight(insight_data: dict, activity_id: str | None, phone: 
             if db_session:
                 db_session.latest_insight = insight_data
                 await session.commit()
-                log.debug("CallSession latest_insight atualizada no banco")
+                log.debug("CallSession latest_insight updated in DB")
     except Exception as e:
         log.error(f"Erro ao atualizar insight de ligação: {e}")
 
@@ -119,13 +123,31 @@ async def get_call_session(
 
 
 @router.get("/history")
-async def get_call_history():
+async def get_call_history(org_id: Optional[int] = Query(None)):
     try:
         from models.organization import Organization
+        from sqlalchemy import or_
         async with async_session() as session:
             stmt = select(CallSession, Organization.logo_url, Organization.domain).outerjoin(
-                Organization, CallSession.org_id == Organization.id
-            ).order_by(CallSession.created_at.desc())
+                Organization,
+                or_(CallSession.org_id == Organization.id, CallSession.org_id == Organization.pipedrive_id)
+            )
+
+            if org_id is not None:
+                possible_ids = {org_id}
+                org_result = await session.execute(
+                    select(Organization.id, Organization.pipedrive_id).where(
+                        or_(Organization.id == org_id, Organization.pipedrive_id == org_id)
+                    )
+                )
+                for row in org_result.all():
+                    if row.id is not None:
+                        possible_ids.add(row.id)
+                    if row.pipedrive_id is not None:
+                        possible_ids.add(row.pipedrive_id)
+                stmt = stmt.where(CallSession.org_id.in_(possible_ids))
+                
+            stmt = stmt.order_by(CallSession.created_at.desc())
             res = await session.execute(stmt)
             rows = res.all()
             
@@ -178,11 +200,13 @@ async def call_assistant_websocket(websocket: WebSocket):
     # Sincronizar plano de voo e histórico a partir do SQLite
     try:
         async with async_session() as session:
-            stmt = select(CallSession).where(
-                (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
-            )
-            res = await session.execute(stmt)
-            db_session = res.scalar_one_or_none()
+            db_session = None
+            if activity_id or phone:
+                stmt = select(CallSession).where(
+                    (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
+                )
+                res = await session.execute(stmt)
+                db_session = res.scalar_one_or_none()
             org_id = db_session.org_id if db_session else None
             
             mapped_contacts_str = "Nenhum contato mapeado."
@@ -284,11 +308,13 @@ async def call_assistant_websocket(websocket: WebSocket):
             log.info(f"[calls] Salvando sessao de ligacao finalizada com {len(session_messages)} mensagens no banco de dados.")
             try:
                 async with async_session() as session:
-                    stmt = select(CallSession).where(
-                        (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
-                    )
-                    res = await session.execute(stmt)
-                    db_session = res.scalar_one_or_none()
+                    db_session = None
+                    if activity_id or phone:
+                        stmt = select(CallSession).where(
+                            (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
+                        )
+                        res = await session.execute(stmt)
+                        db_session = res.scalar_one_or_none()
                     
                     if db_session:
                         # Salva mensagens

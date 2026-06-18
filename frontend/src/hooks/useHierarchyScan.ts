@@ -15,8 +15,9 @@ export interface ScanEmployeeProfile {
     email?: string;
 }
 
-interface UseHierarchyScanReturn {
+export interface UseHierarchyScanReturn {
     startScan: (
+        orgId: number,
         companyUrl: string, 
         sessionCookie?: string,
         areaFocus?: string,
@@ -25,6 +26,7 @@ interface UseHierarchyScanReturn {
     ) => void;
     stopScan: () => void;
     isScanning: boolean;
+    scanOrgId: number | null;
     scanError: string | null;
     scanProgress: number;
     consoleLogs: string[];
@@ -41,6 +43,7 @@ interface UseHierarchyScanReturn {
 
 export function useHierarchyScan(): UseHierarchyScanReturn {
     const [isScanning, setIsScanning] = useState(false);
+    const [scanOrgId, setScanOrgId] = useState<number | null>(null);
     const [scanError, setScanError] = useState<string | null>(null);
     const [scanProgress, setScanProgress] = useState(0);
     const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
@@ -57,6 +60,7 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
     }, []);
 
     const startScan = useCallback((
+        orgId: number,
         companyUrl: string, 
         sessionCookie?: string,
         areaFocus?: string,
@@ -64,6 +68,7 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
         model?: string
     ) => {
         setIsScanning(true);
+        setScanOrgId(orgId);
         // ✅ Notifica o chat panel que uma varredura iniciou (independente do modo)
         window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
         setScanError(null);
@@ -270,6 +275,7 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
             eventSourceRef.current = null;
         }
         setIsScanning(false);
+        setScanOrgId(null);
         setScanError(null);
         setScanProgress(0);
         setConsoleLogs([]);
@@ -290,6 +296,7 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
         startScan,
         stopScan,
         isScanning,
+        scanOrgId,
         scanError,
         scanProgress,
         consoleLogs,

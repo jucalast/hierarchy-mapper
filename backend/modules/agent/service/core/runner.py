@@ -180,10 +180,15 @@ async def run_agent(
     else:
         # Detect intent via PipelineRegistry for free-form chat (e.g. "gerar plano de prospecção")
         # Do NOT apply this if the message is an automated call summary prompt, to avoid overriding the summary mission.
-        if "### TRANSCRIÇÃO DA CONVERSA" not in message and "[ALERTA DE CONTEXTO" not in message:
+        if "### TRANSCRIÇÃO DA CONVERSA" not in message:
             try:
+                import re
+                clean_subject = message
+                if "[ALERTA DE CONTEXTO" in clean_subject:
+                    clean_subject = re.sub(r'\[ALERTA DE CONTEXTO.*?\]', '', clean_subject, flags=re.DOTALL).strip()
+                
                 from modules.agent.service.core.pipelines.registry import PipelineRegistry
-                etapas = PipelineRegistry.dispatch(subject=message, act_type="", act_id=None, org_pd_id=org_id, deal_id=None)
+                etapas = PipelineRegistry.dispatch(subject=clean_subject, act_type="", act_id=None, org_pd_id=org_id, deal_id=None)
                 if etapas:
                     pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
             except Exception as e:

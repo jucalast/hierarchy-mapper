@@ -35,13 +35,16 @@ class ProspectingPlanPipeline(BasePipeline):
         _act_suffix = f", activity_id={act_id}" if act_id else ""
         _deal_suffix = f", deal_id={deal_id}" if deal_id else ""
         return (
-            f"🎯 MISSÃO: Gerar um Plano de Prospecção SPIN Selling completo para esta empresa.\n"
+            f"🎯 MISSÃO: Investigar o histórico de relacionamento e gerar um Plano de Prospecção SPIN Selling completo.\n"
             f"ETAPAS (siga com calma e inteligência, EXATAMENTE nesta ordem):\n"
-            f"  1. Chame `generate_prospecting_plan(org_id={org_pd_id})` DIRETAMENTE.\n"
-            f"     → Esta ferramenta cruza decisores + produto + ICP e gera o plano SPIN completo automaticamente.\n"
-            f"  2. Apresente o plano ao usuário em formato Markdown rico no chat.\n"
-            f"  3. Ofereça sugestões de próximas ações usando `suggest_next_actions`.\n"
-            + (f"  4. Conclua a atividade: `pipedrive_update_task(activity_id={act_id}, done=true)`.\n" if act_id else "")
+            f"  1. Chame `pipedrive_get_org(org_id={org_pd_id})` para coletar dados da organização e deals do CRM.\n"
+            f"  2. Chame `pipedrive_get_persons(org_id={org_pd_id})` para mapear os contatos/decisores cadastrados.\n"
+            f"  3. Com os contatos mapeados, chame `batch_communication_search` para buscar todo o histórico de WhatsApp e E-mail de uma só vez.\n"
+            f"     ⚠️ OBRIGATÓRIO: Sempre execute a busca de histórico para garantir que o plano use a prospecção real do vendedor.\n"
+            f"  4. Chame `generate_prospecting_plan(org_id={org_pd_id}, force_regenerate=true)` para cruzar a investigação e gerar o plano SPIN.\n"
+            f"  5. Apresente o plano ao usuário em formato Markdown rico no chat.\n"
+            f"  6. Ofereça sugestões de próximas ações usando `suggest_next_actions`.\n"
+            + (f"  7. Conclua a atividade: `pipedrive_update_task(activity_id={act_id}, done=true)`.\n" if act_id else "")
             + f"⛔ PROIBIDO: Não invente dados — use APENAS o que foi coletado nas ferramentas.\n"
             f"⛔ PROIBIDO: Não use placeholders genéricos — o plano deve ter nomes e dados reais.\n\n"
         )

@@ -1410,8 +1410,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             : '';
         const dealClause = event?.deal_id ? ` atrelado ao negócio deal_id=${event.deal_id}` : '';
 
-        // ── SEGURANÇA: Remove qualquer contato rejeitado ou pendente que possa ter escapado
+        const isLegalEntity = (name: string): boolean => {
+            const n = (name || '').toUpperCase();
+            const pjTerms = [
+                'LTDA', 'S.A.', 'S/A', 'PARTICIPACOES', 'PARTICIPACAO', 'PARTICIPACÕES', 'PARTICIPACÃO', 
+                'HOLDING', 'EMPREENDIMENTOS', 'ADMINISTRADORA', 'INVESTIMENTOS', 'GRUPO', 'CORP', 'INC',
+                'COOPERATIVA', 'ASSOCIACAO', 'ASSOCIAÇÃO', 'FUNDACAO', 'FUNDAÇÃO', 'SERVICOS', 'SERVIÇOS'
+            ];
+            return pjTerms.some(term => n.includes(term));
+        };
+
+        // ── SEGURANÇA: Remove qualquer contato rejeitado ou pendente que possa ter escapado, além de PJs
         const approvedContacts = contacts.filter((c: any) => {
+            if (isLegalEntity(c.name)) return false;
             const r = (c.role || '').toLowerCase();
             const d = (c.department || '').toLowerCase();
             if (r.includes('reprovado') || d.includes('reprovado')) return false;
@@ -1440,11 +1451,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         if (approvedContacts.length === 0) {
             // Cenário C: nenhum contato aprovado pelo usuário
             taskInstruction =
-                `Nenhum contato foi aprovado pelo usuário no carrossel de revisão.\n` +
-                `Chame find_company_contact com org_name="${orgName}" para buscar o telefone geral/PABX da empresa. ` +
-                `Se encontrar dados, crie um contato genérico no Pipedrive com pipedrive_create_person (org_id=${orgId}${dealClause}) ` +
-                `e prossiga executando a tarefa original. ` +
-                `Se não encontrar nada, informe ao João e sugira próximas ações.`;
+                `Nenhum contato decisor válido foi encontrado ou aprovado no mapeador de hierarquia.\n` +
+                `Você deve simplesmente informar ao usuário de forma clara que nenhum contato relevante foi encontrado para a empresa "${orgName}".\n` +
+                `NÃO tente criar nenhum contato no Pipedrive. NÃO crie novas tarefas nem chame find_company_contact. Apenas informe o resultado negativo e conclua a tarefa.`;
         } else {
             const decisionMakers = approvedContacts.filter((c: any) => c.decision_maker || isBuyingDecisionMaker(c.role, c.department));
             // Exclui "Análise Humana" de ser o "melhor" candidato automático — prefere cargos reais

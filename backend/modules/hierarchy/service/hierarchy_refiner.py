@@ -61,10 +61,32 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
                     org_id = org.id
 
     # 2. Carrega todos os funcionários existentes da organização para correspondência fuzzy na memória
-    all_db_emps = []
     if org_id:
+        from sqlalchemy import delete, and_, not_, or_
+        # 🔥 LIMPEZA TOTAL ANTES DE PERSISTIR: Remove tudo da empresa para garantir que o refinamento atual seja a única verdade
+        # Preservamos apenas decisões manuais reais.
+        await db.execute(
+            delete(Employee).where(
+                and_(
+                    Employee.company_id == org_id,
+                    not_(
+                        and_(
+                            Employee.role != "Análise Humana",
+                            Employee.role != "Não Identificado",
+                            Employee.role != "Erro no Processamento",
+                            Employee.role != "Professional"
+                        )
+                    )
+                )
+            )
+        )
+        await db.commit()
+        
+        # Agora buscamos o que sobrou (provavelmente nada se for um novo scan limpo)
         res_all = await db.execute(select(Employee).where(Employee.company_id == org_id))
         all_db_emps = res_all.scalars().all()
+    else:
+        all_db_emps = []
 
     def is_real_linkedin(url):
         return url and "linkedin.com/in/" in url and "pd_" not in url and "pipedrive_" not in url
@@ -117,6 +139,16 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
             if emp_db.role in ["Contato no Pipedrive", None, ""] and node.get("role"):
                 emp_db.role = node.get("role")
                 emp_db.department = await get_department_tag(node.get("role"))
+                
+            # Enriquece novos metadados extraídos
+            if not emp_db.description and (node.get("observations") or node.get("description")):
+                emp_db.description = node.get("observations") or node.get("description")
+            if not emp_db.evidence and node.get("evidence"):
+                emp_db.evidence = node.get("evidence")
+            if not emp_db.education and node.get("education"):
+                emp_db.education = node.get("education")
+            if not emp_db.matching_score and node.get("matching_score"):
+                emp_db.matching_score = node.get("matching_score")
         else:
             # Novo funcionário do LinkedIn Scan. Persiste no banco de dados.
             if org_id:
@@ -133,7 +165,12 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
                     location=node.get("location"),
                     company_id=org_id,
                     source="discovery",
-                    is_discovery=1
+                    is_discovery=1,
+                    description=node.get("observations") or node.get("description"),
+                    evidence=node.get("evidence"),
+                    education=node.get("education"),
+                    matching_score=node.get("matching_score"),
+                    headline=node.get("headline")
                 )
                 db.add(new_emp)
                 await db.flush() # Gera o id para mapear o nó efêmero

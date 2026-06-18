@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
     ChevronDown, Building2, Users, 
     Briefcase, ClipboardList, MessageSquare, FileText,
-    Target, LayoutList
+    Target, LayoutList, Trash2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { GlassContainer } from './GlassContainer';
@@ -233,6 +233,28 @@ export const ConversationContextAccordion: React.FC<ConversationContextAccordion
                 </div>
 
                 <div className={styles.contextHeaderRight}>
+                    {dbPlan && (
+                        <button 
+                            className={styles.deletePlanButton}
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if (window.confirm("Deseja realmente apagar o plano de prospecção desta empresa?")) {
+                                    if (orgId) {
+                                        try {
+                                            await organizations.deleteProspectingPlan(orgId);
+                                            setDbPlan(null);
+                                        } catch (err) {
+                                            console.error(err);
+                                            alert("Erro ao apagar o plano de prospecção.");
+                                        }
+                                    }
+                                }
+                            }}
+                            title="Apagar plano de prospecção"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    )}
                     <ChevronDown 
                         size={16} 
                         className={`${styles.arrow} ${isOpen ? styles.rotated : ''}`} 

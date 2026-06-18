@@ -504,24 +504,19 @@ async def stream_linkedin_scrape(
                 await session.commit()
                 await session.refresh(db_org)
 
-            # 🚀 LIMPEZA: Deleta funcionários antigos (MENOS Sócios/QSA e decisões manuais)
-            # Preservamos contatos que já possuem cargo definido (aprovados) ou foram reprovados
+            # 🚀 LIMPEZA: Deleta funcionários antigos
+            # Preservamos apenas contatos com decisões manuais definitivas (que não sejam Análise Humana)
             from sqlalchemy import delete, and_, not_, or_
             await session.execute(
                 delete(Employee).where(
                     and_(
                         Employee.company_id == db_org.id,
                         not_(
-                            or_(
-                                Employee.department == "Quadro de Sócios (QSA)",
-                                Employee.seniority == 6,
-                                # 🛡️ Preservar decisões: Qualquer coisa que não seja 'Análise Humana' ou genérico
-                                and_(
-                                    Employee.role != "Análise Humana",
-                                    Employee.role != "Não Identificado",
-                                    Employee.role != "Erro no Processamento",
-                                    Employee.role != "Professional"
-                                )
+                            and_(
+                                Employee.role != "Análise Humana",
+                                Employee.role != "Não Identificado",
+                                Employee.role != "Erro no Processamento",
+                                Employee.role != "Professional"
                             )
                         )
                     )

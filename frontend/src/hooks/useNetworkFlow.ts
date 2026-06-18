@@ -20,6 +20,8 @@ interface UseNetworkFlowProps {
     getStableId: (n: any) => string;
     deleteEmployee?: (id: string) => void;
     editEmployee?: (id: string) => void;
+    isScanning?: boolean;
+    discovering?: boolean;
 }
 
 export function useNetworkFlow({
@@ -31,6 +33,8 @@ export function useNetworkFlow({
     getStableId,
     deleteEmployee,
     editEmployee,
+    isScanning = false,
+    discovering = false,
 }: UseNetworkFlowProps) {
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
@@ -65,6 +69,7 @@ export function useNetworkFlow({
                     confirmedLogo: confirmedLogo,
                     onDelete: deleteEmployee,
                     onEdit: editEmployee,
+                    isLoading: isRootNode && (isScanning || discovering),
                 },
                 position: { x: 0, y: 0 }, // Dagre vai calcular
             };
@@ -86,7 +91,9 @@ export function useNetworkFlow({
             finalEdges = finalEdges.filter(e => {
                 const childNode = uiNodes.find(n => n.id === e.target);
                 const childStableId = childNode ? getStableId(childNode) : e.target;
-                return !(childStableId in cachedEdges!);
+                const cachedParent = cachedEdges![childStableId];
+                // Só filtra a aresta do backend se houver um pai customizado válido na cache (diferente de "NONE")
+                return !cachedParent || cachedParent === "NONE";
             });
 
             Object.entries(cachedEdges).forEach(([childStableId, parentStableId]) => {
