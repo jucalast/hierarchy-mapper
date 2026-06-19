@@ -10,6 +10,7 @@ class MeetingPipeline(BasePipeline):
     """Pipeline voltada para agendamento de reuniões e visitas."""
     name = "Meeting"
     description = "Pipeline para agendar e marcar reuniões ou visitas comerciais"
+    intent_name = "meeting"
 
     _meeting_keys = [
         "agendar reunião", "agendar meeting", "marcar reunião",

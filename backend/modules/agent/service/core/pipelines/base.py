@@ -9,6 +9,7 @@ class BasePipeline:
     """Classe base para as esteiras/pipelines do agente CRM."""
     name: str = "Base"
     description: str = "Pipeline base"
+    intent_name: str = "base"
 
     @classmethod
     def matches(cls, subject: str, act_type: str) -> bool:

@@ -10,6 +10,7 @@ class CommunicationPipeline(BasePipeline):
     """Pipeline voltada para comunicações escritas (E-mail, WhatsApp, Apresentação)."""
     name = "Communication"
     description = "Pipeline para envios de e-mail, WhatsApp e apresentações comerciais"
+    intent_name = "communication"
 
     _email_msg_keys = [
         "enviar email", "mandar email", "escrever email", "email",

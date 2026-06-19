@@ -10,6 +10,7 @@ class QuotePipeline(BasePipeline):
     """Pipeline voltada para orçamentos, cotações e propostas comerciais."""
     name = "Quote"
     description = "Pipeline para envio e elaboração de orçamentos, cotações e propostas comerciais"
+    intent_name = "quote"
 
     _quote_keys = [
         "realizar orçamento", "enviar orçamento", "fazer orçamento",

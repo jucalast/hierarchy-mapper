@@ -13,6 +13,7 @@ class ProspectingPlanPipeline(BasePipeline):
     """Pipeline voltada para geração de Plano de Prospecção SPIN Selling."""
     name = "ProspectingPlan"
     description = "Pipeline para gerar plano de prospecção B2B com SPIN Selling baseado em dados coletados"
+    intent_name = "prospecting_plan"
 
     _plan_keys = [
         "plano de prospecção", "plano de prospecao", "plano de prospeccao",

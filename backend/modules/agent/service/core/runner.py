@@ -191,6 +191,17 @@ async def run_agent(
     Gerador assíncrono — yields strings NDJSON.
     Usa native tool calling da API Anthropic.
     """
+    # Classifica a intenção para guiar o loop e o roteamento de forma inteligente
+    from modules.ai.service.intent.intent_classifier import classify_user_intent
+    try:
+        intent_info = await classify_user_intent(message, history)
+        query_type = intent_info.get("query_type", "general")
+    except Exception as e:
+        import logging
+        logging.warning(f"agent.intent_classification_failed: {e}")
+        intent_info = {}
+        query_type = "agent_workflow"
+
     pipeline_instructions = ""
     # === PIPELINE INJECTION FOR FRONTEND TASKS AND FREE CHAT ===
     if message and message.startswith("Execute a seguinte atividade do CRM:"):
@@ -202,7 +213,14 @@ async def run_agent(
             try:
                 act_id = int(id_match.group(1))
                 subject = title_match.group(1) if title_match else message
-                etapas = PipelineRegistry.dispatch(subject=subject, act_type="", act_id=act_id, org_pd_id=org_id, deal_id=None)
+                etapas = PipelineRegistry.dispatch(
+                    subject=subject,
+                    act_type="",
+                    act_id=act_id,
+                    org_pd_id=org_id,
+                    deal_id=None,
+                    pipeline_intent=intent_info.get("pipeline_intent")
+                )
                 if etapas:
                     pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
             except Exception as e:
@@ -214,7 +232,14 @@ async def run_agent(
                 clean_subject = message
                 if "[ALERTA DE CONTEXTO" in clean_subject:
                     clean_subject = re.sub(r'\[ALERTA DE CONTEXTO.*?\]', '', clean_subject, flags=re.DOTALL).strip()
-                etapas = PipelineRegistry.dispatch(subject=clean_subject, act_type="", act_id=None, org_pd_id=org_id, deal_id=None)
+                etapas = PipelineRegistry.dispatch(
+                    subject=clean_subject,
+                    act_type="",
+                    act_id=None,
+                    org_pd_id=org_id,
+                    deal_id=None,
+                    pipeline_intent=intent_info.get("pipeline_intent")
+                )
                 if etapas:
                     pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
             except Exception as e:
@@ -231,7 +256,14 @@ async def run_agent(
                     clean_subject = re.sub(r'\[ALERTA DE CONTEXTO.*?\]', '', clean_subject, flags=re.DOTALL).strip()
                 
                 from modules.agent.service.core.pipelines.registry import PipelineRegistry
-                etapas = PipelineRegistry.dispatch(subject=clean_subject, act_type="", act_id=None, org_pd_id=org_id, deal_id=None)
+                etapas = PipelineRegistry.dispatch(
+                    subject=clean_subject,
+                    act_type="",
+                    act_id=None,
+                    org_pd_id=org_id,
+                    deal_id=None,
+                    pipeline_intent=intent_info.get("pipeline_intent")
+                )
                 if etapas:
                     pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
             except Exception as e:
@@ -354,22 +386,13 @@ async def run_agent(
     process_id = f"proc_{uuid.uuid4().hex[:8]}"
     _raw_log(process_id, "agent_start", {"message": message, "org_id": org_id, "preferred": preferred})
 
-    # Classifica a intenção para guiar o loop do agente de forma inteligente
-    from modules.ai.service.intent.intent_classifier import classify_user_intent
-    try:
-        intent_info = await classify_user_intent(message, history)
-        query_type = intent_info.get("query_type", "general")
-    except Exception as e:
-        log.warning("agent.intent_classification_failed", error=str(e))
-        query_type = "agent_workflow"
-
     # Quando MODO CONTEXTO está ativo, força query_type="general" para usar prompt leve
     # e remover o requisito de pipeline de investigação completa antes de write tools.
     if _context_followup_active:
         query_type = "general"
         log.info("agent.context_followup.query_type_override")
 
-    active_skill = await route_task_to_skill(message, org_id)
+    active_skill = await route_task_to_skill(message, org_id, intent_info=intent_info)
 
     final_response = ""
     collected_events = []

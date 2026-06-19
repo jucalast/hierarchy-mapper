@@ -90,6 +90,16 @@ def _extract_intent(data: dict) -> dict:
     if date_filter not in ["today", "tomorrow", "overdue", "future", "all"]:
         date_filter = "today"
     
+    # Normalização de pipeline_intent
+    pipeline_intent = data.get("pipeline_intent") or "none"
+    if pipeline_intent not in ["prospecting_plan", "search", "followup", "meeting", "quote", "communication", "call", "none"]:
+        pipeline_intent = "none"
+
+    # Normalização de skill_intent
+    skill_intent = data.get("skill_intent") or "unknown"
+    if skill_intent not in ["call", "prospect", "outreach", "followup", "meeting", "negotiate", "unknown"]:
+        skill_intent = "unknown"
+
     result = {
         "query_type": data.get("query_type", "general"),
         "data_scope": data_scope,
@@ -107,7 +117,9 @@ def _extract_intent(data: dict) -> dict:
         "email_to": data.get("email_to"),
         "email_subject": data.get("email_subject"),
         "email_body": data.get("email_body"),
-        "email_folder": data.get("email_folder")
+        "email_folder": data.get("email_folder"),
+        "pipeline_intent": pipeline_intent,
+        "skill_intent": skill_intent
     }
 
     # --- FALLBACK MECÂNICO PARA ETAPA (Regex de segurança) ---

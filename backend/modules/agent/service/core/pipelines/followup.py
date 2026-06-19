@@ -10,6 +10,7 @@ class FollowupPipeline(BasePipeline):
     """Pipeline voltada para follow-up e cobrança de retorno."""
     name = "Followup"
     description = "Pipeline para acompanhamento, cobranças e follow-ups comerciais"
+    intent_name = "followup"
 
     _followup_keys = [
         "cobrar retorno", "cobrar resposta", "follow", "acompanhamento",

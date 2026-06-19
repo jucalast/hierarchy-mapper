@@ -55,10 +55,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // ─── View state ──────────────────────────────────────────
     const [view, setView] = useState<PanelView>(() => {
         if (typeof window !== 'undefined') {
-            const targetOrgId = selectedOrgId || 0;
-            const savedThreadId = window.localStorage.getItem(`active-thread-id-${targetOrgId}`);
             const savedView = window.localStorage.getItem('chat-panel-view');
-            if (savedView === 'list' && !savedThreadId) {
+            if (savedView === 'list') {
                 return 'list';
             }
             return (savedView as PanelView) || 'chat';
@@ -1086,10 +1084,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             setThreads(threadList);
             setActivities(actList);
 
-            // Restore active thread from localStorage
+            // Restore active thread from localStorage (only if the view is not 'list')
             if (typeof window !== 'undefined') {
                 const savedThreadId = window.localStorage.getItem(`active-thread-id-${targetOrgId}`);
-                if (savedThreadId) {
+                const savedView = window.localStorage.getItem('chat-panel-view');
+                if (savedThreadId && savedView !== 'list') {
                     const matched = threadList.find(t => t.id === savedThreadId);
                     if (matched) {
                         void openThread(matched);
@@ -1114,10 +1113,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
 
         if (typeof window !== 'undefined') {
-            const targetOrgId = selectedOrgId || 0;
-            const savedThreadId = window.localStorage.getItem(`active-thread-id-${targetOrgId}`);
             const savedView = window.localStorage.getItem('chat-panel-view');
-            if (savedView === 'list' && !savedThreadId) {
+            if (savedView === 'list') {
                 setView('list');
             } else {
                 setView('chat');
@@ -1493,42 +1490,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 `Você deve simplesmente informar ao usuário de forma clara que nenhum contato relevante foi encontrado para a empresa "${orgName}".\n` +
                 `NÃO tente criar nenhum contato no Pipedrive. NÃO crie novas tarefas nem chame find_company_contact. Apenas informe o resultado negativo e conclua a tarefa.`;
         } else {
-            const decisionMakers = approvedContacts.filter((c: any) => c.decision_maker || isBuyingDecisionMaker(c.role, c.department));
-            // Exclui "Análise Humana" de ser o "melhor" candidato automático — prefere cargos reais
-            const definedRoles = approvedContacts.filter((c: any) => c.role !== 'Análise Humana');
-            const best = decisionMakers[0] || definedRoles[0] || approvedContacts[0];
-
             const contactsBlock = `Contatos aprovados pelo usuário (${approvedContacts.length}):\n${contactsSummary}`;
-            const createCmd =
-                `Cadastre ${best.name} no Pipedrive chamando pipedrive_create_person ` +
-                `(org_id=${orgId}${dealClause}${best.email ? `, email="${best.email}"` : ''}). ` +
-                `Após cadastrar, execute a tarefa original com esse contato.`;
-
-            if (decisionMakers.length > 0) {
-                // Cenário A: decisor de compras/logística encontrado
-                taskInstruction =
-                    `${contactsBlock}\n\n` +
-                    `ANÁLISE: ${best.name} (${best.role}) é decisor de compras/logística — contato ideal para a prospecção.\n` +
-                    `Cadastre ${best.name} no Pipedrive chamando pipedrive_create_person (org_id=${orgId}${dealClause}${best.email ? `, email="${best.email}"` : ''}). ` +
-                    `Após cadastrar, você DEVE gerar um plano de prospecção usando a ferramenta generate_sales_message (com os dados do contato) e, em seguida, usar a ferramenta suggest_next_actions.`;
-            } else if (best.role === 'Análise Humana') {
-                // Cenário D: todos os contatos precisam de análise humana — não há cargo definido
-                taskInstruction =
-                    `${contactsBlock}\n\n` +
-                    `ANÁLISE: Nenhum contato tem cargo definido — todos estão como "Análise Humana". ` +
-                    `Não há decisor claro de compras. ` +
-                    `Informe ao João quais contatos estão disponíveis e pergunte com qual ele quer prosseguir antes de cadastrar qualquer pessoa no Pipedrive. ` +
-                    `NÃO cadastre nenhum contato automaticamente neste cenário.`;
-            } else {
-                // Cenário B: contatos encontrados mas sem decisor direto de compras
-                taskInstruction =
-                    `${contactsBlock}\n\n` +
-                    `ANÁLISE: Nenhum aprovado tem cargo de compras/logística. ` +
-                    `${best.name} (${best.role}) é o contato mais relevante disponível. ` +
-                    `Nota para tarefas de prospecção: ${best.name} pode servir como porta de entrada para chegar ao decisor de compras via indicação interna.\n` +
-                    `Cadastre ${best.name} no Pipedrive chamando pipedrive_create_person (org_id=${orgId}${dealClause}${best.email ? `, email="${best.email}"` : ''}). ` +
-                    `Após cadastrar, você DEVE gerar um plano de prospecção usando a ferramenta generate_sales_message e, em seguida, chamar suggest_next_actions.`;
-            }
+            taskInstruction =
+                `${contactsBlock}\n\n` +
+                `Sua missão agora:\n` +
+                `1. Chame a ferramenta \`generate_prospecting_plan\` (com org_id=${orgId}, force_regenerate=true) para analisar os contatos aprovados e gerar o plano de prospecção SPIN Selling.\n` +
+                `2. No próprio plano de prospecção, defina e justifique qual é o melhor contato decisor a ser abordado.\n` +
+                `3. Após gerar e exibir o plano de prospecção, sugira cadastrar esse decisor principal no Pipedrive (gerando a sugestão de chamar pipedrive_create_person com org_id=${orgId}${dealClause} para o contato ideal) e proponha as próximas ações estratégicas usando a ferramenta \`suggest_next_actions\`.\n\n` +
+                `⚠️ REGRA CRÍTICA: Você está ESTRITAMENTE PROIBIDO de chamar \`pipedrive_create_person\` ou \`generate_sales_message\` antes de gerar o plano de prospecção. O plano de prospecção é a prioridade absoluta agora.`;
         }
 
         const continuation = (
@@ -2046,7 +2015,20 @@ ${transcriptText}
                     onDeleteThread={(t) => setThreadsToDelete([t])}
                     onDeleteThreadsBulk={setThreadsToDelete}
                     onCloseChat={() => setShowChat(false)}
-                    onBackToChat={() => setView('chat')}
+                    onBackToChat={() => {
+                        setView('chat');
+                        if (typeof window !== 'undefined') {
+                            window.localStorage.setItem('chat-panel-view', 'chat');
+                            const targetOrgId = selectedOrgId || 0;
+                            const savedThreadId = window.localStorage.getItem(`active-thread-id-${targetOrgId}`);
+                            if (savedThreadId) {
+                                const matched = threads.find(t => t.id === savedThreadId);
+                                if (matched) {
+                                    void openThread(matched);
+                                }
+                            }
+                        }
+                    }}
                 />
 
                 <Modal

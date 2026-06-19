@@ -10,6 +10,7 @@ class SearchPipeline(BasePipeline):
     """Pipeline voltada para encontrar contatos decisores e mapeamento de hierarquia."""
     name = "Search"
     description = "Pipeline para mapeamento de hierarquia e localização de decisores (ICP)"
+    intent_name = "search"
 
     _contact_search_keys = [
         "procurar contato", "encontrar contato", "conseguir contato",
