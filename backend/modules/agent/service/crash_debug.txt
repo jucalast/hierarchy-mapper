@@ -1,0 +1,10 @@
+CRASH IN INTERCEPTOR: name '_is_task_action' is not defined
+Traceback (most recent call last):
+  File "C:\Users\João Luccas\Desktop\LINKB2B\hierarchy-mapper\backend\modules\agent\service\core\loop.py", line 477, in _agent_loop
+    should_continue, final_resp, updated_final_emitted, cached_final_resp = await intercept_post_llm_turn(
+                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\João Luccas\Desktop\LINKB2B\hierarchy-mapper\backend\modules\agent\service\core\loop_interceptors.py", line 783, in intercept_post_llm_turn
+    if (_is_task_action or _is_call_task) and _already_searched and _has_useful_history:
+        ^^^^^^^^^^^^^^^
+NameError: name '_is_task_action' is not defined. Did you mean: 'is_task_action'?
+

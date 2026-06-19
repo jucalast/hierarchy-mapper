@@ -527,12 +527,8 @@ async def intercept_post_llm_turn(
     
     # ── MODO EXECUÇÃO DIRETA E TAREFA CRM ──
     if stop_reason in ("end_turn", "stop") or not tool_use_blocks:
-        # Encontra o índice da última mensagem do usuário para escopar as verificações à tarefa atual
-        _last_user_idx = 0
-        for _i, _m in enumerate(messages):
-            if _m.get("role") == "user":
-                _last_user_idx = _i
-        _current_task_history = messages[_last_user_idx:] + [{"role": "assistant", "content": content}]
+        # Analisa todo o histórico da iteração atual (incluindo as chamadas de tool anteriores)
+        _current_task_history = messages + [{"role": "assistant", "content": content}]
 
         if direct_action and is_task_action:
             _CTX_TOOLS = {
@@ -558,11 +554,15 @@ async def intercept_post_llm_turn(
                     if t not in _CORE_CTX:
                         _CTX_ORDER.append(t)
             else:
-                _CORE_CTX = {"pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities"}
-                _CTX_ORDER = [
-                    "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals",
-                    "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
-                ]
+                if is_find_decisor_task:
+                    _CORE_CTX = {"pipedrive_get_org", "pipedrive_get_persons"}
+                    _CTX_ORDER = ["pipedrive_get_org", "pipedrive_get_persons"]
+                else:
+                    _CORE_CTX = {"pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities"}
+                    _CTX_ORDER = [
+                        "pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals",
+                        "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
+                    ]
 
             # Se o plano de prospecção já existe no banco local para esta organização,
             # as ferramentas de enriquecimento e ranking estratégico são consideradas opcionais
@@ -780,7 +780,7 @@ async def intercept_post_llm_turn(
                 _is_call_task = any(k in first_msg_content_clean.lower() for k in ["ligação", "ligar", "telefonar", "telefone"]) and not _ligacao_finalizada
 
                 if not _found_decision_maker and not _has_draft and not _has_flight_plan:
-                    if (_is_task_action or _is_call_task) and _already_searched and _has_useful_history:
+                    if (is_task_action or _is_call_task) and _already_searched and _has_useful_history:
                         pass
                     elif _next_unsearched_wa:
                         _first_name = _next_unsearched_wa[0].split()[0]

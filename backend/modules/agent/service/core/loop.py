@@ -117,7 +117,8 @@ async def _agent_loop(
 
     _first_msg_content_clean = ""
     if isinstance(_first_msg_content, str):
-        _first_msg_content_clean = _re.sub(r'\[.*?\]', '', _first_msg_content, flags=_re.DOTALL)
+        _clean_text = _first_msg_content.split("[INSTRUÇÕES DA PIPELINE]")[0]
+        _first_msg_content_clean = _re.sub(r'\[.*?\]', '', _clean_text, flags=_re.DOTALL)
 
     # Sinais que identificam um prompt de execução de tarefa CRM
     _TASK_SIGNALS = [
@@ -197,20 +198,13 @@ async def _agent_loop(
         # Poda de memória inteligente
         messages = _prune_messages(messages, _PINNED_TOOLS, max_len=40)
 
-        # Encontra o índice da última mensagem do usuário para escopar a detecção à tarefa atual
-        _last_user_idx_loop = 0
-        for _i, _m in enumerate(messages):
-            if _m.get("role") == "user":
-                _last_user_idx_loop = _i
-        _current_loop_history = messages[_last_user_idx_loop:]
-
-        # Atualiza sinais de detecção a partir do histórico mais recente (da tarefa atual)
+        # Encontra a última vez que pipedrive_get_persons foi chamado na tarefa atual
         _has_local_decision_maker = False
         _persons_with_wa = []
         _persons_with_email = []
         
         _last_persons_msg = None
-        for _m in _current_loop_history:
+        for _m in messages:
             _mc = _m.get("content", "")
             if not isinstance(_mc, list): continue
             for _b in _mc:
@@ -455,6 +449,11 @@ async def _agent_loop(
 
         # Resposta final de texto puro
         if stop_reason in ("end_turn", "stop") or not tool_use_blocks:
+            if not content:
+                fallback_msg = {"type": "text", "text": "*(Turno silencioso - aguardando instruções do sistema)*"}
+                content.append(fallback_msg)
+                text_blocks.append(fallback_msg)
+
             response_text = " ".join(b.get("text", "") for b in text_blocks).strip()
             if "parada antecipada" in response_text.lower():
                 yield _emit({"type": "final", "response": response_text})
@@ -630,6 +629,9 @@ async def _agent_loop(
 
         # Trata ferramenta de escrita pendente (com confirmação) se houver
         if write_tool_pending:
+            # Salva o turno na memória ANTES de retornar, para evitar amnésia de ações paralelas
+            messages.append({"role": "assistant", "content": content, "tool_use_id": [b["id"] for b in tool_use_blocks] if tool_use_blocks else None})
+            messages.append({"role": "user", "content": tool_results})
             async for event in handle_write_tool_pending(
                 write_tool_pending=write_tool_pending,
                 messages=messages,
@@ -653,6 +655,9 @@ async def _agent_loop(
         # Salva o turno atual e continua para a próxima iteração
         messages.append({"role": "assistant", "content": content, "tool_use_id": [b["id"] for b in tool_use_blocks] if tool_use_blocks else None})
         messages.append({"role": "user", "content": tool_results})
+        
+        if loop_state.get("should_break") if "loop_state" in locals() else False:
+            break
 
     # Fim das iterações
     yield _emit({

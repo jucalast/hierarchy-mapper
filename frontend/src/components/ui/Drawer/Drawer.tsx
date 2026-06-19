@@ -29,6 +29,7 @@ interface DrawerProps {
     activeStageFilter?: string | null;
     setActiveStageFilter?: (stage: string | null) => void;
     totalOrgsCount?: number;
+    onNavigateToRoot?: () => void;
 }
 
 const LOCAL_CACHE_KEYS = (orgId: number) => [
@@ -77,6 +78,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     activeStageFilter = null,
     setActiveStageFilter = () => {},
     totalOrgsCount = 0,
+    onNavigateToRoot,
 }) => {
     const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(() => {
         if (typeof window !== 'undefined') {
@@ -623,6 +625,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 loadingDetails={loadingDetails}
                 setConfirmKind={setConfirmKind}
                 onOpenDetailsModal={() => setShowDetailsModal(true)}
+                onNavigateToRoot={onNavigateToRoot}
             />
 
             {!expandedOrgId && (

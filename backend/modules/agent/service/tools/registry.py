@@ -220,7 +220,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         },
         "type": "write",
         "executor": None,
-        "confirm_label": lambda args: f"Atualizar deal #{args.get('deal_id')} → {args.get('fields')}",
+        "confirm_label": lambda args: f"Atualizar deal #{args.get('deal_id') if args.get('deal_id') else '(aberto da empresa)'} → {args.get('fields')}",
     },
     "pipedrive_create_task": {
         "description": "Cria uma nova atividade/tarefa no Pipedrive vinculada a um deal ou empresa. Requer confirmação.",
@@ -766,6 +766,17 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                 
         try:
             from modules.crm.service.pipedrive_service import pipedrive_service
+            
+            if not deal_id and org_id:
+                details = await pipedrive_service.get_organization_details(org_id)
+                deals = details.get("deals", []) if isinstance(details, dict) else []
+                open_deal = next((d for d in deals if d.get("status") == "open"), deals[0] if deals else None)
+                if open_deal:
+                    deal_id = open_deal.get("id")
+            
+            if not deal_id:
+                return {"ok": False, "error": "deal_id é obrigatório e não foi encontrado nenhum negócio aberto associado à empresa."}
+
             result = await pipedrive_service.update_deal(int(deal_id), fields)
             ok = result.get("success", False)
             if ok:

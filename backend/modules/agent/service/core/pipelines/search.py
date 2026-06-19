@@ -33,8 +33,10 @@ class SearchPipeline(BasePipeline):
             f"  2. pipedrive_get_persons → mapear os contatos da empresa.\n"
             f"  3. evaluate_prospects → (OPCIONAL) Faça o ranking inteligente APENAS SE o plano de prospecção salvo não indicar quem é o melhor decisor, ou se você encontrou novos contatos relevantes.\n"
             f"  4. Raciocínio Estratégico → Explique em 2-3 frases por que o contato X é o melhor (senioridade, canal).\n"
-            f"  5. Ação de Associação → SE o contato for [Banco Local] / sem ID Pipedrive numérico, use `pipedrive_create_person`. SE ele já tiver ID numérico, proponha vincular ao negócio via `pipedrive_update_deal`.\n"
+            f"  5. Ação de Associação → SE o contato for [Banco Local] / sem ID Pipedrive numérico, use `pipedrive_create_person`. SE ele já tiver ID numérico (ou logo após criá-lo), verifique no deal atual se ele já está vinculado (person_id). Se NÃO estiver, você DEVE propor vincular ao negócio via `pipedrive_update_deal`.\n"
             f"  6. Concluir a busca → `pipedrive_update_task(activity_id={act_id}, done=true)` para finalizar esta tarefa!\n"
-            f"  7. Outreach ou Mapeamento → Proponha enviar apresentação (`generate_sales_message`) OU se ninguém for bom `open_hierarchy_drawer({_act_args})`.\n"
-            f"⛔ PROIBIDO: NÃO crie nova tarefa de busca — marque esta atividade (id={act_id}) como concluída ao finalizar.\n\n"
+            f"  7. Outreach ou Mapeamento → Se você encontrou e vinculou decisores, proponha criar uma tarefa no CRM para abordá-los via `pipedrive_create_task` (subject=\"Enviar e-mail para [Nome]\", task_type=\"task\") e pule para a etapa 8. PROIBIDO chamar `generate_sales_message` agora. APENAS se ninguém for bom e você não tiver um contato viável, use `open_hierarchy_drawer({_act_args})`.\n"
+            f"  8. Próximos Passos → Chame a ferramenta `suggest_next_actions` para apresentar opções claras do que fazer em seguida e encerrar o seu turno.\n"
+            f"⛔ PROIBIDO: NÃO crie nova tarefa de busca — marque esta atividade (id={act_id}) como concluída.\n"
+            f"⛔ PROIBIDO: NUNCA chame `open_hierarchy_drawer` se você já encontrou um decisor.\n\n"
         )

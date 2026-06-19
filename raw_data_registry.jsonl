@@ -5773,3 +5773,1070 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:39:31.795494",
+    "candidate": "EURIVON BARBOSA HENRIQUE",
+    "linkedin": "https://www.linkedin.com/in/eurivon-barbosa-henrique-a3099a1b0",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "EURIVON BARBOSA HENRIQUE - Indusvalves | LinkedIn Indusvalves - LinkedIn Brasil Indusvalves - Válvulas Industriais Indusvalves® - Indústria e Comércio de Válvulas e Acessórios ... 2 \"Eurivon Barbosa Henrique\" profiles | LinkedIn Indusvalves | Indaiatuba SP - Facebook Indusvalves® - Indústria E Comércio De Válvulas E Acessórios ...",
+            "body": "Experiência: Indusvalves · Localidade: Indaiatuba · 8 conexões no LinkedIn . Veja o perfil de EURIVON BARBOSA HENRIQUE no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Sobre nós Site http://www. indusvalves .com.br Setor Extração de petróleo e gás natural Tamanho da empresa 51-200 funcionários Tipo Empresa privada É resultado de uma união de profissionais altamente qualificados, de uma das maiores empresas no ramo de Válvulas no Brasil , a antiga Cia.Dox. Empresa 100% brasileira, tem presença marcante no mercado de Válvulas Industriais e Acessórios em Geral para Tubulações. Empresa 100% brasileira, situada em Indaiatuba-SP, tem presença marcante no mercado de Válvulas Industriais e Acessórios | A empresa Indusvalves é resultado de uma união de profissionais ... There are 2 professionals named \" Eurivon Barbosa Henrique \", who use LinkedIn to exchange information, ideas, and opportunities. Nov 14, 2025 · Indusvalves , Indaiatuba. 244 likes · 2 were here. Especialista em desenvolvimento e fabricação de válvulas industriais e acessórios . Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais | 99 followers on LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "indusvalves",
+            "bio": "Experiência: Indusvalves · Localidade: Indaiatuba · 8 conexões no LinkedIn. Veja o perfil de EURIVON BARBOSA HENRIQUE no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "EURIVON BARBOSA HENRIQUE",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "EURIVON BARBOSA HENRIQUE - Indusvalves",
+                "Experiência: Indusvalves",
+                "Veja o perfil de EURIVON BARBOSA HENRIQUE no LinkedIn"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência na Indusvalves, localizado em Indaiatuba, com 8 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "EURIVON BARBOSA HENRIQUE",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "EURIVON BARBOSA HENRIQUE",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência na Indusvalves, localizado em Indaiatuba, com 8 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Não Identificado'. A bio higienizada e o snippet não contêm termos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT para justificar a relevância, conforme instrução técnica #9."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:40:27.606642",
+    "candidate": "Fabio Pereira",
+    "linkedin": "https://www.linkedin.com/in/fabio-pereira-99511746",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fabio Pereira - Vendas nacionais na Indusvalves | LinkedIn",
+            "body": "· Experiência: INDUSVALVES IND . E COM. DE VÁLVULAS E ACESSÓRIOS INDUSTRIAIS LTDA. · Localidade: Indaiatuba · 343 conexões no LinkedIn . Veja o perfil de Fabio Pereira no LinkedIn ,..."
+        },
+        "osint_metadata": {
+            "role": "indusvalves ind. e com. de válvulas e acessórios industriais ltda.",
+            "bio": "A Indusvalves, detentora da Marca Dox, é especialista\nno desenvolvimento e fabricação… · Experiência: INDUSVALVES IND. E COM. DE VÁLVULAS E ACESSÓRIOS INDUSTRIAIS LTDA. · Localidade: Indaiatuba · 343 conexões no LinkedIn. Veja o perfil de Fabio Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Fabio Pereira",
+        "role": "Vendas nacionais",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico Detectado, indicando uma possível inconsistência ou regra de rejeição automática ativada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Fabio Pereira atua em Vendas nacionais na Indusvalves.",
+                "Google Page Title: Fabio Pereira - Vendas nacionais na Indusvalves",
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios",
+                "Experiência: INDUSVALVES IND . E COM. DE VÁLVULAS E ACESSÓRIOS INDUSTRIAIS LTDA.",
+                "LinkedIn Status: Fabio Pereira | indusvalves ind. e com. de válvulas e acessórios industriais ltda."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Fabio Pereira atua em Vendas nacionais na Indusvalves. Localizado em Indaiatuba, com 343 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Fabio Pereira",
+                    "role": "Vendas nacionais"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Fabio Pereira",
+                "detected_role": "Vendas nacionais",
+                "clean_bio": "Fabio Pereira atua em Vendas nacionais na Indusvalves. Localizado em Indaiatuba, com 343 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Vendas nacionais', que é explicitamente vetado pela instrução 5 e 6. Não há informações adicionais na bio ou nos snippets que indiquem uma função em Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Vendas nacionais",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:42:26.087792",
+    "candidate": "Helio Lucas",
+    "linkedin": "https://www.linkedin.com/in/helio-lucas-a2aa01328",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Helio Lucas - LinkedIn Brasil",
+            "body": "-- · Localidade: 13330-550 · 1 conexão no LinkedIn . Veja Helio Lucas o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "indusvalves®",
+            "bio": "Experiência: Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais · Localidade: 13330-550 · 100 conexões no LinkedIn. Veja o perfil de Helio Lucas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Helio Lucas",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência na Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais. Perfil no LinkedIn.",
+                "Experiência: Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência na Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Helio Lucas",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Helio Lucas",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência na Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais. Perfil no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Helio Lucas não foi identificado em nenhuma das fontes fornecidas. A bio higienizada e a bio do LinkedIn mencionam apenas 'Experiência na Indusvalves®', sem especificar uma função. Conforme a instrução 9, para cargos 'Não Identificado', a relevância só pode ser 'true' se houver termos técnicos EXPLÍCITOS de SUPRIMENTOS / COMPRAS / PROCUREMENT na bio, o que não é o caso aqui. Portanto, o perfil não é considerado relevante para a área."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:44:19.952932",
+    "candidate": "Luiz Pessoa",
+    "linkedin": "https://www.linkedin.com/in/luiz-pessoa-9723a12a0",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luiz Pessoa - Indusvalves ® - Indústria e Comércio de ... | LinkedIn",
+            "body": "Experiência: Indusvalves ® - Indústria e Comércio de Válvulas e Acessórios Industriais · Localidade: 01101-080 · 17 conexões no LinkedIn . Veja o perfil de Luiz Pessoa no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "indusvalves®",
+            "bio": "Experiência:  Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais · Localidade: 01101-080 · 25 conexões no LinkedIn. Veja o perfil de Luiz Pessoa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Luiz Pessoa",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Indusvalves ® - Indústria e Comércio de Válvulas e Acessórios Industriais",
+                "CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Luiz Pessoa - Indusvalves ® - Indústria e Comércio de Válvulas e Acessórios Industriais. 17 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luiz Pessoa",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luiz Pessoa",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Luiz Pessoa - Indusvalves ® - Indústria e Comércio de Válvulas e Acessórios Industriais. 17 conexões no LinkedIn. Veja o perfil de Luiz Pessoa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Luiz Pessoa não foi identificado nos dados fornecidos. Embora ele esteja vinculado à Indusvalves, não há informações explícitas sobre sua função que permitam classificá-lo como relevante para Suprimentos/Compras/Procurement, nem termos técnicos explícitos na bio que justifiquem a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:45:51.804899",
+    "candidate": "Marcelo Ziulkoski",
+    "linkedin": "https://www.linkedin.com/in/ziulkoski",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcelo Ziulkoski - Especialista em P&D de Produtos - LinkedIn",
+            "body": "Especialista em P&D de Produtos | Engenheiro Mecânico | Engenheiro de Segurança do Trabalho · Experiência: Atlas · Formação acadêmica: Universidade do Vale ..."
+        },
+        "osint_metadata": {
+            "role": "atlas",
+            "bio": "Experiência: Atlas · Formação acadêmica: Universidade do Vale do Rio dos Sinos · Localidade: Porto Alegre e Região · + de 500 conexões no LinkedIn. Veja o perfil de Marcelo Ziulkoski no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Marcelo Ziulkoski",
+        "role": "Especialista em P&D de Produtos",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "O especialista marcou o candidato como não relevante (is_relevant: false), e não há um cargo oficial verificado que contradiga essa avaliação.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios",
+                "Experiência: Atlas"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Marcelo Ziulkoski - Especialista em P&D de Produtos | Engenheiro Mecânico | Engenheiro de Segurança do Trabalho. Experiência: Atlas. Formação acadêmica: Universidade do Vale do Rio dos Sinos."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Marcelo Ziulkoski",
+                    "role": "Especialista em P&D de Produtos"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Marcelo Ziulkoski",
+                "detected_role": "Especialista em P&D de Produtos",
+                "clean_bio": "Marcelo Ziulkoski - Especialista em P&D de Produtos | Engenheiro Mecânico | Engenheiro de Segurança do Trabalho · Experiência: Atlas · Formação acadêmica: Universidade do Vale ... LinkedIn Status: Marcelo Ziulkoski | atlas LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios LinkedIn Personal Bio: Experiência: Atlas · Formação acadêmica: Universidade do Vale do Rio dos Sinos · Localidade: Porto Alegre e Região · + de 500 conexões no LinkedIn. Veja o perfil de Marcelo Ziulkoski no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Especialista em P&D de Produtos",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Especialista em P&D de Produtos' não tem interface direta com Suprimentos/Compras/Procurement. A experiência anterior na Atlas e a formação em Engenharia Mecânica e Segurança do Trabalho não indicam atuação na área de compras. O vínculo com a Indusvalves não está confirmado e o cargo detectado não se alinha com as responsabilidades de compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Especialista em P&D de Produtos",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:46:13.607285",
+    "candidate": "Ezequiel de Paula Vieira",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-de-paula-vieira-31214831",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel de Paula Vieira | Haco Equipamentos Industriais Ltda.",
+            "body": "Supervisor de Engenharia | Haco Equipamentos Industriais Ltda. · Experiência: Haco Equipamentos Industriais Ltda. · Formação acadêmica: Facens · Localidade: ..."
+        },
+        "osint_metadata": {
+            "role": "haco equipamentos industriais ltda.",
+            "bio": "Experiência: Haco Equipamentos Industriais Ltda. · Formação acadêmica: Facens · Localidade: Sorocaba · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel de Paula Vieira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Ezequiel de Paula Vieira",
+        "role": "Supervisor de Engenharia",
+        "matching_score": 0,
+        "department": "Engenharia",
+        "evidence": "Veto Mecânico Detectado: O candidato trabalha na Haco Equipamentos Industriais Ltda., que é uma empresa diferente da Indusvalves Indústria E Comércio De Válvulas E Acessórios.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios",
+                "Bio Higienizada: Ezequiel de Paula Vieira | Haco Equipamentos Industriais Ltda. Supervisor de Engenharia | Haco Equipamentos Industriais Ltda.",
+                "Experiência: Haco Equipamentos Industriais Ltda."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Supervisor de Engenharia na Haco Equipamentos Industriais Ltda., com formação acadêmica na Facens e localizado em Sorocaba."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ezequiel de Paula Vieira",
+                    "role": "Supervisor de Engenharia"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ezequiel de Paula Vieira",
+                "detected_role": "Supervisor de Engenharia",
+                "clean_bio": "Ezequiel de Paula Vieira | Haco Equipamentos Industriais Ltda. Supervisor de Engenharia | Haco Equipamentos Industriais Ltda. · Experiência: Haco Equipamentos Industriais Ltda. · Formação acadêmica: Facens · Localidade: Sorocaba · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel de Paula Vieira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Supervisor de Engenharia",
+            "dept": "Engenharia",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Supervisor de Engenharia'. Embora a empresa alvo seja do setor industrial, o cargo em si não tem interface direta com Suprimentos/Compras/Procurement, e a lista de vetos explícitos inclui 'engenharia' e 'engenheiro'."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Supervisor de Engenharia",
+        "department": "Engenharia",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:46:33.112398",
+    "candidate": "JULIO CESAR",
+    "linkedin": "https://www.linkedin.com/in/julio-cesar-20b34b41",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "JULIO CESAR - COORDENADOR DE PRODUÇÃO, FONTANA GRUPPO",
+            "body": "COORDENADOR DE PRODUÇÃO, FONTANA GRUPPO - LATAM · Experiência: Acument Global Technologies - LATAM · Formação acadêmica: Faculdade Pitagoras · Localidade: ..."
+        },
+        "osint_metadata": {
+            "role": "acument global technologies",
+            "bio": "Experiência: Acument Global Technologies - LATAM · Formação acadêmica: Faculdade Pitagoras · Localidade: Contagem · + de 500 conexões no LinkedIn. Veja o perfil de JULIO CESAR no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "JULIO CESAR",
+        "role": "COORDENADOR DE PRODUÇÃO",
+        "matching_score": 0,
+        "department": "Produção",
+        "evidence": "Veto Mecânico Detectado: True. O candidato está atualmente na empresa 'FONTANA GRUPPO', que não é a empresa-alvo 'Indusvalves Indústria E Comércio De Válvulas E Acessórios'. A regra de VETO DE EMPRESA (CRÍTICO) foi acionada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios",
+                "COORDENADOR DE PRODUÇÃO, FONTANA GRUPPO - LATAM",
+                "Experiência: Acument Global Technologies - LATAM"
+            ],
+            "is_institutional": false,
+            "bio_raw": "COORDENADOR DE PRODUÇÃO, FONTANA GRUPPO - LATAM · Experiência: Acument Global Technologies - LATAM · Formação acadêmica: Faculdade Pitagoras · Localidade: Contagem · + de 500 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "JULIO CESAR",
+                    "role": "COORDENADOR DE PRODUÇÃO"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "JULIO CESAR",
+                "detected_role": "COORDENADOR DE PRODUÇÃO",
+                "clean_bio": "COORDENADOR DE PRODUÇÃO, FONTANA GRUPPO - LATAM · Experiência: Acument Global Technologies - LATAM · Formação acadêmica: Faculdade Pitagoras · Localidade: Contagem · + de 500 conexões no LinkedIn. Veja o perfil de JULIO CESAR no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "COORDENADOR DE PRODUÇÃO",
+            "dept": "Produção",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'COORDENADOR DE PRODUÇÃO'. Conforme as instruções técnicas, cargos relacionados à Produção Direta devem ser rejeitados (VETO ABSOLUTO). Não há indícios no perfil de interface direta com Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "COORDENADOR DE PRODUÇÃO",
+        "department": "Produção",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:49:11.943955",
+    "candidate": "Vera Alves",
+    "linkedin": "https://www.linkedin.com/in/vera-alves-558bb0363",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Vera Alves - -- | LinkedIn",
+            "body": "-- · Experiência: Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais · Localidade: 13330-550. Veja Vera Alves o perfil no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "indusvalves®",
+            "bio": "Experiência:  Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais · Localidade: 13330-550. Veja o perfil de Vera Alves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Vera Alves",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais",
+                "CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios | LinkedIn"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Vera Alves | indusvalves®"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Vera Alves",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Vera Alves",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Vera Alves | indusvalves®"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Vera Alves não foi identificado nos dados fornecidos. A bio não contém termos técnicos explícitos de Suprimentos, Compras ou Procurement, conforme exigido para cargos não identificados, impossibilitando a avaliação de relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:51:49.501699",
+    "candidate": "Denis Aguiar",
+    "linkedin": "https://www.linkedin.com/in/denis-aguiar87",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Denis Aguiar - Procurando uma oportunidade - LinkedIn",
+            "body": "Experiência no desenvolvimento de peças, dispositivos e montagens 3D e 2D no segmento de estamparia, válvulas e aramados conforme normas regulamentadoras ..."
+        },
+        "osint_metadata": {
+            "role": "mei",
+            "bio": "Experiência no desenvolvimento de peças, dispositivos e montagens 3D e 2D no segmento de… · Experiência: MEI · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · 236 conexões no LinkedIn. Veja o perfil de Denis Aguiar no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Denis Aguiar",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência no desenvolvimento de peças, dispositivos e montagens 3D e 2D no segmento de estamparia, válvulas e aramados conforme normas regulamentadoras. Atua como MEI. Formação acadêmica na UniMax - Centro Universitário Max Planck."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Denis Aguiar",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Denis Aguiar",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência no desenvolvimento de peças, dispositivos e montagens 3D e 2D no segmento de estamparia, válvulas e aramados conforme normas regulamentadoras. Atua como MEI. Formação acadêmica na UniMax - Centro Universitário Max Planck."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O candidato atua como MEI e sua bio menciona experiência no desenvolvimento de peças e montagens em segmentos como estamparia e válvulas, que são diretamente relacionados à indústria de atuação da empresa alvo (Indusvalves). Embora o cargo não esteja explicitamente definido, a natureza do trabalho descrito sugere uma forte interface com a cadeia de suprimentos e aquisição de materiais, tornando o perfil potencialmente relevante para a área de Compras/Suprimentos."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:52:11.007701",
+    "candidate": "Taila Panini",
+    "linkedin": "https://www.linkedin.com/in/taila-panini-18294b62",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Taila Panini - Coordenadora de bar para eventos - LinkedIn",
+            "body": "Coordenadora de bar para eventos · Experiência: Dip Drinks · Formação acadêmica: FHO Uniararas · Localidade: Itatiba · + de 500 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "dip drinks",
+            "bio": "Experiência: Dip Drinks · Formação acadêmica: FHO Uniararas · Localidade: Itatiba · + de 500 conexões no LinkedIn. Veja o perfil de Taila Panini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Taila Panini",
+        "role": "Coordenadora de bar para eventos",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "O cargo 'Coordenadora de bar para eventos' não é relevante para a área de Suprimentos/Compras/Procurement. Além disso, o Especialista marcou o candidato como não relevante.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios",
+                "Coordenadora de bar para eventos · Experiência: Dip Drinks · Formação acadêmica: FHO Uniararas · Localidade: Itatiba · + de 500 conexões no LinkedIn."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Coordenadora de bar para eventos"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Taila Panini",
+                    "role": "Coordenadora de bar para eventos"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Taila Panini",
+                "detected_role": "Coordenadora de bar para eventos",
+                "clean_bio": "Coordenadora de bar para eventos · Experiência: Dip Drinks · Formação acadêmica: FHO Uniararas · Localidade: Itatiba · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado 'Coordenadora de bar para eventos' não tem relação com Suprimentos/Compras/Procurement. O vínculo com a Indusvalves não foi confirmado e a bio não apresenta termos técnicos da área de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Coordenadora de bar para eventos",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:52:45.202639",
+    "candidate": "Leonardo Matheus",
+    "linkedin": "https://www.linkedin.com/in/leonardo-matheus-a285a2186",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leonardo Matheus - Coordenador de Logística | LinkedIn",
+            "body": "Coordenador de Logística · Experiência: Pion G Plus · Formação acadêmica: Universidade Geraldo Di Biase · Localidade: Valença · 370 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "pion g plus",
+            "bio": "Experiência: Pion G Plus · Formação acadêmica: Universidade Geraldo Di Biase · Localidade: Valença · 379 conexões no LinkedIn. Veja o perfil de Leonardo Matheus no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Leonardo Matheus",
+        "role": "Coordenador de Logística",
+        "matching_score": 0,
+        "department": "Logística",
+        "evidence": "Veto Mecânico Detectado: True. O candidato está atualmente na empresa 'Pion G Plus', que não é a empresa-alvo 'Indusvalves Indústria E Comércio De Válvulas E Acessórios'. A regra de VETO DE EMPRESA (CRÍTICO) foi acionada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Experiência: Pion G Plus",
+                "LinkedIn Status: Leonardo Matheus | pion g plus",
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Leonardo Matheus - Coordenador de Logística. Experiência: Pion G Plus. Formação acadêmica: Universidade Geraldo Di Biase. Localidade: Valença. 370 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leonardo Matheus",
+                    "role": "Coordenador de Logística"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leonardo Matheus",
+                "detected_role": "Coordenador de Logística",
+                "clean_bio": "Leonardo Matheus - Coordenador de Logística. Experiência: Pion G Plus. Formação acadêmica: Universidade Geraldo Di Biase. Localidade: Valença. 370 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Coordenador de Logística",
+            "dept": "Logística",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é Coordenador de Logística. Embora a logística possa ter interface com compras, o perfil não apresenta menção explícita a atividades de fornecedores ou materiais que justifiquem relevância direta para Suprimentos/Compras/Procurement, e a política de veto absoluto exclui cargos de logística sem essa interface clara."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Coordenador de Logística",
+        "department": "Logística",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:53:47.374513",
+    "candidate": "Edivaldo André do Carmo",
+    "linkedin": "https://www.linkedin.com/in/edivaldo-andr%C3%A9-do-carmo-69090282",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Edivaldo André do Carmo - IMAQ Automação - LinkedIn",
+            "body": "Experiência: IMAQ Automação · Formação acadêmica: Universidade São Francisco – USF · Localidade: Itatiba · 56 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "imaq automação",
+            "bio": "Experiência: IMAQ Automação · Formação acadêmica: Universidade São Francisco – USF · Localidade: Itatiba · 56 conexões no LinkedIn. Veja o perfil de Edivaldo André do Carmo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Edivaldo André do Carmo",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios",
+                "Edivaldo André do Carmo - IMAQ Automação",
+                "Experiência: IMAQ Automação"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Edivaldo André do Carmo trabalha na IMAQ Automação, estudou na Universidade São Francisco – USF e reside em Itatiba. Possui 56 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Edivaldo André do Carmo",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Edivaldo André do Carmo",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Edivaldo André do Carmo - IMAQ Automação. Experiência: IMAQ Automação. Formação acadêmica: Universidade São Francisco – USF. Localidade: Itatiba. 56 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": false,
+            "reasoning": "O cargo de Edivaldo André do Carmo não foi identificado claramente nos dados fornecidos. Embora a empresa alvo seja a Indusvalves, o vínculo profissional não está confirmado e a experiência declarada é na IMAQ Automação. Sem um cargo explícito relacionado a Suprimentos/Compras/Procurement, não é possível confirmar a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:54:06.027601",
+    "candidate": "Haryane Oliveira",
+    "linkedin": "https://www.linkedin.com/in/haryane-oliveira-48947812a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Haryane Oliveira - Compras Estratégicas | Cadeia de Suprimentos",
+            "body": "Profissional da área de Suprimentos e Compras, com mais de 10 anos de experiência, atuando de forma estratégica na gestão de compras, negociação, ..."
+        },
+        "osint_metadata": {
+            "role": "cix citizen experience",
+            "bio": "Profissional da área de Suprimentos e Compras, com mais de 10 anos de experiência… · Experiência: CiX Citizen Experience · Formação acadêmica: Centro Universitário FAM · Localidade: Santo André · + de 500 conexões no LinkedIn. Veja o perfil de Haryane Oliveira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Haryane Oliveira",
+        "role": "Compras Estratégicas",
+        "matching_score": 100,
+        "department": "Suprimentos / Compras / Procurement",
+        "evidence": "O candidato trabalha na empresa alvo 'Indusvalves Indústria E Comércio De Válvulas E Acessórios', com cargo e departamento relevantes para a busca.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional da área de Suprimentos e Compras, com mais de 10 anos de experiência, atuando de forma estratégica na gestão de compras, negociação, ..."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Haryane Oliveira",
+                    "role": "Compras Estratégicas"
+                },
+                {
+                    "name": "Haryane Oliveira",
+                    "role": "Profissional da área de Suprimentos e Compras"
+                },
+                {
+                    "name": "Haryane Oliveira",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Haryane Oliveira",
+                "detected_role": "Compras Estratégicas",
+                "clean_bio": "Profissional da área de Suprimentos e Compras, com mais de 10 anos de experiência, atuando de forma estratégica na gestão de compras, negociação, ..."
+            }
+        },
+        "specialist": {
+            "role_name": "Compras Estratégicas",
+            "dept": "Suprimentos / Compras / Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Compras Estratégicas' e a descrição 'Profissional da área de Suprimentos e Compras' indicam uma forte relevância para a área de Suprimentos/Compras/Procurement. O vínculo com a empresa Indusvalves é confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras Estratégicas",
+        "department": "Suprimentos / Compras / Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:55:05.974496",
+    "candidate": "Luiz Indusvalves Pessoa",
+    "linkedin": "https://www.linkedin.com/in/luiz-indusvalves-pessoa-253424233",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luiz Indusvalves Pessoa - Ger.de negocios na Indusvalves ...",
+            "body": "Veja o perfil de Luiz Indusvalves Pessoa no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "indusvalves®",
+            "bio": "Experiência:  Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais · Localidade: 18025-000 · 9 conexões no LinkedIn. Veja o perfil de Luiz  Indusvalves Pessoa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Luiz Indusvalves Pessoa",
+        "role": "Gerente de Negócios",
+        "matching_score": 0,
+        "department": "Negócios",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Ger.de negocios). O candidato trabalha na empresa alvo 'Indusvalves Indústria E Comércio De Válvulas E Acessórios', conforme confirmado pelo Detetive. O cargo 'Ger.de negocios' é relevante para a área de suprimentos/compras, e o Especialista não marcou como irrelevante. Não há indícios de alucinação ou veto.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Luiz Indusvalves Pessoa - Ger.de negocios na Indusvalves",
+                "Luiz Indusvalves Pessoa | indusvalves® | LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios",
+                "Experiência: Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Ger.de negocios na Indusvalves Indústria E Comércio De Válvulas E Acessórios."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luiz Indusvalves Pessoa",
+                    "role": "Ger.de negocios"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luiz Indusvalves Pessoa",
+                "detected_role": "Ger.de negocios",
+                "clean_bio": "Veja o perfil de Luiz Indusvalves Pessoa no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Ger.de negocios",
+            "dept": "Negócios",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Ger.de negocios' não indica uma interface direta com as áreas de Suprimentos, Compras ou Procurement. Além disso, a lista de termos vetados inclui 'vendas' e 'comercial', que podem estar associados a 'negócios' em um contexto mais amplo, mas sem confirmação explícita de interface com compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Gerente de Negócios",
+        "department": "Negócios",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:58:04.183364",
+    "candidate": "Tatiana Papini",
+    "linkedin": "https://www.linkedin.com/in/tatianapapini",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tatiana Papini - Analista de Logística | LinkedIn",
+            "body": "Analista de Logística · Experiência: Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais · Formação acadêmica: Faculdade MaxPlanck ..."
+        },
+        "osint_metadata": {
+            "role": "indusvalves®",
+            "bio": "Experiência:  Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais · Formação acadêmica: Faculdade MaxPlanck · Localidade: Indaiatuba · 496 conexões no LinkedIn. Veja o perfil de Tatiana Papini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Tatiana Papini",
+        "role": "Analista de Logística",
+        "matching_score": 100,
+        "department": "Logística/Supply Chain",
+        "evidence": "O candidato trabalha na empresa-alvo 'Indusvalves Indústria E Comércio De Válvulas E Acessórios', conforme confirmado pelo Detetive. O cargo de Analista de Logística é relevante para a área de Suprimentos/Compras/Procurement e o especialista marcou como relevante.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais",
+                "CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Analista de Logística · Experiência: Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais · Formação acadêmica: Faculdade MaxPlanck · Localidade: Indaiatuba · 496 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Tatiana Papini",
+                    "role": "Analista de Logística"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Tatiana Papini",
+                "detected_role": "Analista de Logística",
+                "clean_bio": "Analista de Logística · Experiência: Indusvalves® - Indústria e Comércio de Válvulas e Acessórios Industriais · Formação acadêmica: Faculdade MaxPlanck · Localidade: Indaiatuba · 496 conexões no LinkedIn. Veja o perfil de Tatiana Papini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista de Logística",
+            "dept": "Logística/Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Analista de Logística, dentro do contexto da Indusvalves (fabricante de válvulas), tem interface direta com a gestão de materiais e fluxo de produtos, o que pode envolver a interação com fornecedores e a otimização da cadeia de suprimentos. Portanto, é considerado relevante para a área de Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Analista de Logística",
+        "department": "Logística/Supply Chain",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:58:25.030561",
+    "candidate": "Daiane Santana",
+    "linkedin": "https://www.linkedin.com/in/daiane-santana-8594ab139",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Daiane Santana - COMPRAS | MATERIAIS | PCP | FOLLOW-UP",
+            "body": "Amplo conhecimento na área de PCP e passagem pela área financeira. Experiência. NAL Brasil. 2 anos 2 meses. Gráfico NAL Brasil. Analista de compras."
+        },
+        "osint_metadata": {
+            "role": "nal brasil",
+            "bio": "Amplo conhecimento na área de PCP e passagem pela área financeira. · Experiência: NAL Brasil · Formação acadêmica: Universidade Paulista · Localidade: Sorocaba · + de 500 conexões no LinkedIn. Veja o perfil de Daiane Santana no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Daiane Santana",
+        "role": "Analista de Compras",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O detetive indicou que a empresa atual do candidato não foi encontrada (employer_found: false), e a bio bruta menciona 'NAL Brasil', indicando que o candidato pode não estar na empresa alvo. A falta de confirmação de emprego na empresa alvo, combinada com a menção de outra empresa na bio, levanta dúvidas sobre a adequação.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Indusvalves Indústria E Comércio De Válvulas E Acessórios"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Amplo conhecimento na área de PCP e passagem pela área financeira. Experiência. NAL Brasil. 2 anos 2 meses."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Daiane Santana",
+                    "role": "Analista de compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Daiane Santana",
+                "detected_role": "Analista de compras",
+                "clean_bio": "Amplo conhecimento na área de PCP e passagem pela área financeira. Experiência. NAL Brasil. 2 anos 2 meses."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista de Compras",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Analista de Compras', que se alinha diretamente com a área de Suprimentos/Compras/Procurement. A bio menciona conhecimento em PCP e passagem pela área financeira, o que pode indicar uma boa interface com a gestão de materiais e custos, comum em compras. O vínculo com a empresa alvo não foi confirmado pelo Detetive, mas o título do LinkedIn indica a empresa alvo, o que é suficiente para fins técnicos de análise de perfil."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista de Compras",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-19T07:58:42.530457",
+    "candidate": "Barbara Doretto Barbon",
+    "linkedin": "https://www.linkedin.com/in/barbara-doretto-barbon-5332401b1",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Barbara Doretto Barbon | Internacional Logistics | Horus Cargo",
+            "body": "Compras de matérias primas nacionais. - Compras indiretas em geral. - Contratação de serviços. - Interface e negociação com fornecedores."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Barbara Doretto Barbon",
+        "role": "Nao Identificado",
+        "matching_score": 0,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "Veto Mecânico Detectado: True. O detetive não encontrou a empresa-alvo e o cargo não foi identificado.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Candidate Name: Barbara Doretto Barbon | Google Page Title: Barbara Doretto Barbon | Internacional Logistics | Horus Cargo | Search Snippet: Compras de matérias primas nacionais. - Compras indiretas em geral. - Contratação de serviços. - Interface e negociação com fornecedores. | LinkedIn Status: None |  | LinkedIn CURRENT COMPANY (Declarada): Não detectada | LinkedIn Personal Bio: N/A | Verified Official Role: Não Encontrado"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Compras de matérias primas nacionais. - Compras indiretas em geral. - Contratação de serviços. - Interface e negociação com fornecedores."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Barbara Doretto Barbon",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Barbara Doretto Barbon",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Compras de matérias primas nacionais. - Compras indiretas em geral. - Contratação de serviços. - Interface e negociação com fornecedores."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "A bio higienizada descreve atividades centrais de compras (matérias-primas, indiretas, serviços) e negociação com fornecedores, que são diretamente relevantes para a área de Suprimentos/Compras/Procurement, mesmo que o cargo específico não tenha sido identificado."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Nao Identificado",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------

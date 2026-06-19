@@ -160,6 +160,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [taskInlineConfirmed, setTaskInlineConfirmed] = useState<Record<string, boolean>>({});
     const taskConsoleLogsBottomRef = useRef<HTMLDivElement>(null);
 
+    const messagesRef = useRef(messages);
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
+
     useEffect(() => {
         if (activeRunningTask?.isExpanded) {
             taskConsoleLogsBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -314,14 +319,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const handleCancelActiveTask = () => {
         if (activeRunningTask) {
             const { parentMessageId, actionIndex } = activeRunningTask;
-            if (parentMessageId && actionIndex !== undefined) {
-                const taskKey = `${parentMessageId}-${actionIndex}`;
+            let actualParentId = parentMessageId;
+            if (actualParentId && /^\d+$/.test(actualParentId)) {
+                const realMsg = messagesRef.current.find(m => 
+                    m.logs?.some((e: any) => e.type === 'suggested_actions' && e.actions?.[actionIndex])
+                );
+                if (realMsg) actualParentId = realMsg.id;
+            }
+
+            if (actualParentId !== undefined && actionIndex !== undefined) {
+                const taskKey = `${actualParentId}-${actionIndex}`;
                 setApprovedSuggestedActions(prev => {
                     const currentStatus = prev[taskKey];
                     if (currentStatus === 'done' || currentStatus === 'error') return prev;
                     
-                    // Persiste o cancelamento para o backend (resetando para pending)
-                    conversations.updateSuggestedActionStatus(parentMessageId, actionIndex, 'pending').catch(err => {
+                    conversations.updateSuggestedActionStatus(actualParentId, actionIndex, 'pending').catch(err => {
                         console.error('Failed to persist task cancellation', err);
                     });
                     
@@ -336,7 +348,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     };
 
     const handleApproveSuggestedAction = async (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => {
-        const taskKey = `${parentMessageId}-${index}`;
+        let actualParentId = parentMessageId;
+        if (actualParentId && /^\d+$/.test(actualParentId)) {
+            const realMsg = messagesRef.current.find(m => 
+                m.logs?.some((e: any) => e.type === 'suggested_actions' && e.actions?.[index]?.label === action.label)
+            );
+            if (realMsg) actualParentId = realMsg.id;
+        }
+
+        const taskKey = `${actualParentId}-${index}`;
         
         setApprovedSuggestedActions(prev => ({
             ...prev,
@@ -350,11 +370,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             prompt: action.prompt,
             status: 'streaming' as const,
             logs: [] as AgentEvent[],
-            isExpanded: true, // Autoexpand upon approval for immersive execution Console!
+            isExpanded: true,
             orgId: selectedOrgId,
             threadId: activeThread?.id,
             actionIndex: index,
-            parentMessageId,
+            parentMessageId: actualParentId,
         };
         
         setActiveRunningTask(newTask);
@@ -367,7 +387,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 thread_id: activeThread?.id,
                 history: [],
                 direct_action: true,
-                parent_message_id: parentMessageId,
+                parent_message_id: actualParentId,
                 action_index: index,
             }, newTask);
 
@@ -382,7 +402,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             } else if (pendingConfirm) {
                 finalStatus = 'awaiting_confirm';
             } else if (ligacaoEv) {
-                finalStatus = 'streaming'; // Mantém em loading
+                finalStatus = 'streaming';
             } else if (hasError) {
                 finalStatus = 'pending';
             }
@@ -406,17 +426,17 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             })();
 
             // Persiste status + logs no backend
-            if (parentMessageId) {
-                conversations.updateSuggestedActionStatus(parentMessageId, index, finalStatus, finalLogs).catch(err => {
+            if (actualParentId) {
+                conversations.updateSuggestedActionStatus(actualParentId, index, finalStatus, finalLogs).catch(err => {
                     console.error('Failed to persist task status/logs', err);
                 });
             }
 
             // Atualiza messages state localmente para que o console mostre os logs
             // imediatamente ao clicar no card concluído (sem precisar recarregar)
-            if (parentMessageId) {
+            if (actualParentId) {
                 setMessages(prev => prev.map(m => {
-                    if (m.id !== parentMessageId) return m;
+                    if (m.id !== actualParentId) return m;
                     const existingData = m.data || {};
                     const existingRuns = existingData.suggested_actions_runs || {};
                     return {
@@ -472,8 +492,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             }
         }
 
-        if (logs.length === 0 && parentMessageId) {
-            const msg = messages.find(m => m.id === parentMessageId);
+        let actualParentId = parentMessageId;
+        if (actualParentId && /^\d+$/.test(actualParentId)) {
+            const realMsg = messagesRef.current.find(m => 
+                m.logs?.some((e: any) => e.type === 'suggested_actions' && e.actions?.[index])
+            );
+            if (realMsg) actualParentId = realMsg.id;
+        }
+
+        if (logs.length === 0 && actualParentId) {
+            const msg = messages.find(m => m.id === actualParentId);
             const run = msg?.data?.suggested_actions_runs?.[index];
             if (run && run.logs) {
                 if (typeof run.logs === 'string') {
@@ -487,11 +515,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             }
         }
 
-        const taskKey = `${parentMessageId}-${index}`;
+        const taskKey = `${actualParentId}-${index}`;
         const currentStatus = approvedSuggestedActions[taskKey] || action.status || 'done';
 
         // Toggle if clicking the same one that is already active
-        if (activeRunningTask && activeRunningTask.parentMessageId === parentMessageId && activeRunningTask.actionIndex === index) {
+        if (activeRunningTask && activeRunningTask.parentMessageId === actualParentId && activeRunningTask.actionIndex === index) {
             setActiveRunningTask(prev => prev ? { ...prev, isExpanded: !prev.isExpanded } : null);
             return;
         }
@@ -505,7 +533,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             orgId: selectedOrgId,
             threadId: activeThread?.id,
             actionIndex: index,
-            parentMessageId,
+            parentMessageId: actualParentId,
         });
     };
 
@@ -515,8 +543,17 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         setTaskInlineConfirmed(prev => ({ ...prev, [action_id]: approved }));
 
         setActiveRunningTask(prev => prev ? { ...prev, status: 'streaming' } : null);
-        if (activeRunningTask.parentMessageId) {
-            const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
+
+        let actualParentId = activeRunningTask.parentMessageId;
+        if (actualParentId && /^\d+$/.test(actualParentId)) {
+            const realMsg = messagesRef.current.find(m => 
+                m.logs?.some((e: any) => e.type === 'suggested_actions' && e.actions?.[activeRunningTask.actionIndex])
+            );
+            if (realMsg) actualParentId = realMsg.id;
+        }
+
+        if (actualParentId) {
+            const taskKey = `${actualParentId}-${activeRunningTask.actionIndex}`;
             setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'streaming' }));
         }
         setIsLoading(true);
@@ -539,8 +576,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             }
 
             setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
-            if (activeRunningTask.parentMessageId) {
-                const { parentMessageId: pid, actionIndex: aidx } = activeRunningTask;
+            if (actualParentId) {
+                const { actionIndex: aidx } = activeRunningTask;
+                const pid = actualParentId;
                 const taskKey = `${pid}-${aidx}`;
                 setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
 

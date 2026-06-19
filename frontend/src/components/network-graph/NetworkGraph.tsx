@@ -196,6 +196,17 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         }
     }, [router, currentOrgId]);
 
+    const handleNavigateToRoot = useCallback(() => {
+        // Limpa todos os estados relacionados à empresa selecionada
+        setCurrentOrgId(null);
+        setChatOrgId(null);
+        setShowDrawer(false);
+        resetWorkflow();
+        
+        // Navega para a raiz
+        router.push('/');
+    }, [router, resetWorkflow]);
+
     const [unreadCount, setUnreadCount] = useState(0);
     const prospecting = useProspecting();
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
@@ -867,6 +878,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                             }}
                             uniqueStages={uniqueStages}
                             activeStageFilter={activeStageFilter}
+                            onNavigateToRoot={handleNavigateToRoot}
                             setActiveStageFilter={setActiveStageFilter}
                             totalOrgsCount={pipedriveOrgs.length}
                         />

@@ -123,6 +123,8 @@ async def exec_pipedrive_get_org(args: Dict[str, Any], org_id: int | None = None
                     "stage_id": d.get("stage_id"),
                     "value": d.get("value", 0),
                     "currency": d.get("currency", "BRL"),
+                    "person_id": d.get("person_id", {}).get("value") if isinstance(d.get("person_id"), dict) else d.get("person_id"),
+                    "person_name": d.get("person_name"),
                     "updated": (d.get("update_time") or "")[:10],
                 })
             for p in (details.get("persons") or [])[:20]:
@@ -499,6 +501,8 @@ async def exec_pipedrive_get_deals(args: Dict[str, Any], org_id: int | None = No
                 "stage_id": d.get("stage_id"),
                 "value": d.get("value", 0),
                 "currency": d.get("currency", "BRL"),
+                "person_id": d.get("person_id", {}).get("value") if isinstance(d.get("person_id"), dict) else d.get("person_id"),
+                "person_name": d.get("person_name"),
                 "updated": (d.get("update_time") or "")[:10],
                 "notes": [n.get("content", "")[:500] for n in (details.get("notes") or [])[:5]],
             }

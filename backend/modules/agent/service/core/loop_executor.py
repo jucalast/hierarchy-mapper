@@ -161,6 +161,7 @@ async def execute_read_tools_batch(
             actions = tool_result.get("actions", [])
             if actions:
                 yield _emit({"type": "suggested_actions", "actions": actions})
+            loop_state["should_break"] = True
 
         # Hierarchy Mapper
         if ok and tool_name == "open_hierarchy_drawer":

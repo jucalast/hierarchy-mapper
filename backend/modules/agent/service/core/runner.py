@@ -21,8 +21,39 @@ from modules.agent.service.prompts import (
 from modules.agent.service.core.loop import _agent_loop, _PENDING
 from modules.agent.skills.router import route_task_to_skill
 from core.observability.logging_config import get_logger
-
 log = get_logger(__name__)
+
+
+def filter_tools_for_direct_action(all_tools, msg_text):
+    _msg_lower = msg_text.lower()
+    _is_followup_task = any(kw in _msg_lower for kw in [
+        "cobrar retorno", "follow-up", "follow up", "followup",
+        "acompanhar", "cobrar informações", "aguardar retorno",
+    ])
+    
+    _CTX_TOOLS = {
+        "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
+        "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history", "find_company_contact",
+    }
+    
+    _ALWAYS_AVAILABLE_IN_TASK = _CTX_TOOLS | {
+        "open_hierarchy_drawer", "pipedrive_create_task",
+        *( set() if _is_followup_task else {"prepare_live_coaching_session"} ),
+    }
+    from modules.agent.service.tools import TOOLS
+    matched_tools = [name for name in TOOLS.keys() if name in msg_text]
+    if matched_tools:
+        allowed = set(matched_tools) | _ALWAYS_AVAILABLE_IN_TASK
+        if _is_followup_task:
+            allowed.discard("prepare_live_coaching_session")
+        filtered_tools = [t for t in all_tools if t["name"] in allowed]
+        log.info("agent.direct_action.tools_filtered", matched=list(allowed), is_followup=_is_followup_task)
+        return filtered_tools
+    elif _is_followup_task:
+        filtered_tools = [t for t in all_tools if t["name"] != "prepare_live_coaching_session"]
+        log.info("agent.direct_action.followup_call_script_removed")
+        return filtered_tools
+    return all_tools
 
 MAX_ITERATIONS = 20
 
@@ -167,16 +198,28 @@ async def run_agent(
         from modules.agent.service.core.pipelines.registry import PipelineRegistry
         id_match = re.search(r'\(ID da tarefa no Pipedrive:\s*(\d+)\)', message)
         title_match = re.search(r'"([^"]+)"', message)
-        if id_match and title_match:
+        if id_match:
             try:
                 act_id = int(id_match.group(1))
-                subject = title_match.group(1)
+                subject = title_match.group(1) if title_match else message
                 etapas = PipelineRegistry.dispatch(subject=subject, act_type="", act_id=act_id, org_pd_id=org_id, deal_id=None)
                 if etapas:
                     pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
             except Exception as e:
                 import logging
                 logging.warning(f"Failed to inject pipeline: {e}")
+        else:
+            try:
+                import re
+                clean_subject = message
+                if "[ALERTA DE CONTEXTO" in clean_subject:
+                    clean_subject = re.sub(r'\[ALERTA DE CONTEXTO.*?\]', '', clean_subject, flags=re.DOTALL).strip()
+                etapas = PipelineRegistry.dispatch(subject=clean_subject, act_type="", act_id=None, org_pd_id=org_id, deal_id=None)
+                if etapas:
+                    pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
+            except Exception as e:
+                import logging
+                logging.warning(f"Failed to inject pipeline fallback: {e}")
     else:
         # Detect intent via PipelineRegistry for free-form chat (e.g. "gerar plano de prospecção")
         # Do NOT apply this if the message is an automated call summary prompt, to avoid overriding the summary mission.
@@ -197,39 +240,7 @@ async def run_agent(
 
     tools = get_tools_anthropic_schema()
     if direct_action:
-        # Filtra ferramentas para as mencionadas na mensagem + ferramentas de decisão sempre presentes.
-        # "Ferramentas de decisão" são as que o agente pode precisar independente do prompt antigo:
-        # - prepare_live_coaching_session: para quando encontra telefone
-        # - open_hierarchy_drawer: para quando não tem contato
-        # - pipedrive_create_task: para criar tarefa de rastreamento
-        # Para tarefas de follow-up/cobrar retorno, prepare_live_coaching_session é irrelevante
-        _msg_lower = message.lower()
-        _is_followup_task = any(kw in _msg_lower for kw in [
-            "cobrar retorno", "follow-up", "follow up", "followup",
-            "acompanhar", "cobrar informações", "aguardar retorno",
-        ])
-        
-        _CTX_TOOLS = {
-            "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
-            "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history", "find_company_contact",
-        }
-        
-        _ALWAYS_AVAILABLE_IN_TASK = _CTX_TOOLS | {
-            "open_hierarchy_drawer", "pipedrive_create_task",
-            # prepare_live_coaching_session só disponível se NÃO for follow-up
-            *( set() if _is_followup_task else {"prepare_live_coaching_session"} ),
-        }
-        from modules.agent.service.tools import TOOLS
-        matched_tools = [name for name in TOOLS.keys() if name in message]
-        if matched_tools:
-            allowed = set(matched_tools) | _ALWAYS_AVAILABLE_IN_TASK
-            if _is_followup_task:
-                allowed.discard("prepare_live_coaching_session")
-            tools = [t for t in tools if t["name"] in allowed]
-            log.info("agent.direct_action.tools_filtered", matched=list(allowed), is_followup=_is_followup_task)
-        elif _is_followup_task:
-            tools = [t for t in tools if t["name"] != "prepare_live_coaching_session"]
-            log.info("agent.direct_action.followup_call_script_removed")
+        tools = filter_tools_for_direct_action(tools, message)
 
     # Resolve o nome real da org no Pipedrive quando org_id é fornecido
     # Evita que o modelo use nomes errados/variantes (ex: "GmbH" vs "Gmb H")
@@ -717,9 +728,9 @@ async def resume_after_confirmation(
         elif tool_name == "pipedrive_update_task":
             system_nudge = (
                 "\n\n[SISTEMA]: Atividade do Pipedrive atualizada com sucesso.\n\n"
-                "ÚLTIMA ETAPA OBRIGATÓRIA: chame agora 'suggest_next_actions' para "
-                "apresentar ao usuário os próximos passos estratégicos com base em tudo "
-                "que foi encontrado nesta investigação. NÃO encerre sem exibir as sugestões."
+                "ATENÇÃO: Continue o fluxo previsto pelas instruções (ex: Etapa 7 de Outreach se houver, etc). "
+                "Quando terminar TODAS as etapas obrigatórias da sua instrução base, sua ÚLTIMA AÇÃO ANTES DE ENCERRAR O TURNO "
+                "deve ser chamar 'suggest_next_actions' para apresentar os próximos passos estratégicos."
             )
 
     messages.append({
@@ -728,14 +739,22 @@ async def resume_after_confirmation(
     })
 
     tools = get_tools_anthropic_schema()
-    start_iter = pending.get("iteration", 1)
-
+    if pending_direct_action:
+        _msg_lower = ""
+        for m in pending["messages_snapshot"]:
+            if m.get("role") == "user" and isinstance(m.get("content"), str):
+                _msg_lower = m.get("content")
+                break
+            elif m.get("role") == "user" and isinstance(m.get("content"), list):
+                _msg_lower = " ".join([b.get("text", "") for b in m.get("content") if isinstance(b, dict) and b.get("type") == "text"])
+                break
+        tools = filter_tools_for_direct_action(tools, _msg_lower)
     saved_on_completion = False
     try:
         async for chunk in _agent_loop(
             messages,
             tools,
-            start_iteration=start_iter,
+            start_iteration=pending.get("iteration", 0),
             org_id=pending_org_id,
             process_id=pending_process_id,
             parent_message_id=parent_message_id,

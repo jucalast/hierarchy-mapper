@@ -1157,7 +1157,22 @@ const SuggestedActionTask: React.FC<{
         reuniao:    { img: '/pipedrive.png', label: 'PIPEDRIVE',  accentColor: '#f59e0b' },
         estrategia: {                        label: 'ESTRATÉGIA', accentColor: '#ec4899' },
     };
-    const channelCfg = CHANNEL_CFG[action.categoria || ''] ?? { label: 'TAREFA', accentColor: '#6b7280' };
+
+    let categoryKey = action.categoria || '';
+    if (!CHANNEL_CFG[categoryKey]) {
+        const p = (action.prompt || '').toLowerCase();
+        const l = (action.label || '').toLowerCase();
+        if (p.includes('pipedrive_') || l.includes('pipedrive')) {
+            categoryKey = 'tarefa_crm';
+        } else if (p.includes('whatsapp') || l.includes('whatsapp')) {
+            categoryKey = 'whatsapp';
+        } else if (p.includes('email') || l.includes('email') || p.includes('e-mail') || l.includes('e-mail')) {
+            categoryKey = 'email';
+        } else if (p.includes('reuniao') || l.includes('reunião') || p.includes('reunião') || l.includes('reuniao')) {
+            categoryKey = 'reuniao';
+        }
+    }
+    const channelCfg = CHANNEL_CFG[categoryKey] ?? { label: 'TAREFA', accentColor: '#6b7280' };
     const accentColor = channelCfg.accentColor;
 
     // Limpa prefixos de canal do label (legado de prompts anteriores)

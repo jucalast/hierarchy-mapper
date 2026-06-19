@@ -206,6 +206,14 @@ class SalesStrategyService:
                         crm_snapshot["deal_id"] = d.get("id")
                         crm_snapshot["deal_stage"] = d.get("stage_name") or d.get("stage") or d.get("stage_id")
                         crm_snapshot["deal_value"] = d.get("value")
+                        
+                        p_id = d.get("person_id")
+                        if isinstance(p_id, dict):
+                            crm_snapshot["deal_person_id"] = p_id.get("value")
+                            crm_snapshot["deal_person_name"] = p_id.get("name")
+                        else:
+                            crm_snapshot["deal_person_id"] = p_id
+                            crm_snapshot["deal_person_name"] = None
                     # Activities
                     activities = details.get("activities") or []
                     if activities:
@@ -316,54 +324,42 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 ## ESTADO ATUAL DO CRM:
 - Empresa: {crm_snapshot.get('org_name') or 'ver histórico'}
 - Deal ID: {crm_snapshot.get('deal_id') or 'ver histórico'} | Etapa: {crm_snapshot.get('deal_stage') or 'desconhecida'} | Valor: {crm_snapshot.get('deal_value') or 'não informado'}
+- Deal vinculado a qual pessoa? ID: {crm_snapshot.get('deal_person_id') or 'NENHUMA PESSOA VINCULADA AO NEGÓCIO!'} (Nome: {crm_snapshot.get('deal_person_name') or 'N/A'})
 - Atividades pendentes: {pending_str}
 - Contatos já no Pipedrive (id != null significa já cadastrado): {contacts_str}
-- Contato principal: {contact_name or 'ver histórico'} {('| Tel: ' + phone) if phone else ''}
+- Contato principal (alvo): {contact_name or 'ver histórico'} {('| Tel: ' + phone) if phone else ''}
 - Hoje: {today}
 {prospects_section}
-## CICLO B2B END-TO-END BASEADO NO CONTEXTO:
-1. TAREFA EM EXECUÇÃO (FOCO ABSOLUTO): Se você foi chamado para realizar uma atividade específica (ex: ID 8153 - Otimização), sua PRIMEIRA missão é executar o trabalho comercial. 
-   - Se o objetivo é enviar algo (proposta, apresentação, otimização), você DEVE obrigatoriamente gerar o rascunho e propor o envio (`whatsapp_send_message` ou `email_send`). 
-   - NÃO finalize apenas com sugestões genéricas; o card de envio deve ser a ação principal.
-2. PRÓXIMOS PASSOS (ESTRATÉGIA): Após realizar a ação principal, analise a lista de 'Atividades pendentes' do Pipedrive fornecida no contexto.
-   - Suas sugestões de 'Próximos Passos' DEVEM ser baseadas nas tarefas REAIS que já existem no CRM para esta empresa. 
-   - Se existe uma tarefa de 'Ligar em 3 dias', sugira 'Criar tarefa: Follow-up da otimização' apenas se for realmente um novo passo necessário. 
-   - Priorize concluir a tarefa atual (`pipedrive_update_task`) apenas APÓS o envio da mensagem.
-2. COMUNICAÇÃO POR E-MAIL (REGRA CRÍTICA - EXCEÇÃO DA TAREFA ATUAL): Quando você está apenas sugerindo os próximos passos (proativamente), é TERMINANTEMENTE PROIBIDO sugerir enviar um e-mail diretamente. Você DEVE sugerir a CRIAÇÃO DE UMA TAREFA NO CRM (`pipedrive_create_task`). 
-   - EXCEÇÃO ABSOLUTA: Se a tarefa atual em execução (o motivo pelo qual o usuário te chamou agora) for LITERALMENTE "Enviar e-mail de apresentação", "Enviar proposta", etc., AÍ SIM você DEVE sugerir a ação `email_send` ou `email_reply` com o rascunho do e-mail pronto em um card de aprovação (usando o plano de prospecção e contexto para gerar o rascunho). Resumindo: Sugerir proativamente = Criar Tarefa. Executar a tarefa de e-mail = Gerar e Enviar E-mail.
-3. CADASTRO (REGRA DO DEAL ATIVO): Somente se o negócio estiver ativo e NÃO fechado, para novos decisores identificados que possuem 'id': null e nenhuma variação cadastrada, sugira "Cadastrar [Nome] no Pipedrive" (pipedrive_create_person). Se eles já possuem ID ou o negócio está fechado/ganho, ignore.
-4. FOLLOW-UP DE VALOR (SEM RESPOSTA): Se o cliente ignorou o contato inicial, NÃO envie mensagens genéricas de cobrança. Sugira enviar um Insight de Mercado baseado nos diferenciais da empresa e termine sugerindo uma reunião rápida.
-5. DIAGNÓSTICO (REUNIÃO): O objetivo de todo follow-up frio é marcar uma call de diagnóstico para mapear necessidades e dores.
-6. NEGOCIAÇÃO: Se a reunião já ocorreu ou amostras foram enviadas, o foco passa a ser defender o custo-benefício da solução frente à concorrência e fechar a proposta.
 
+## ALGORITMO OBRIGATÓRIO DE VERIFICAÇÃO E PROGRESSÃO (STEP-BY-STEP):
+Você atua como uma máquina de estado. Deve executar mentalmente o seguinte checklist NESTA ORDEM EXATA. Ao encontrar a PRIMEIRA condição falsa, SUA PRINCIPAL SUGESTÃO deve ser a ação corretiva daquele passo.
 
-## A JORNADA ATÉ A REUNIÃO (O CAMINHO LÓGICO):
-Todo o seu raciocínio deve ser voltado para agendar uma reunião. Os passos sequenciais obrigatórios no Pipedrive para chegar lá são:
-1. Contato decisor cadastrado no CRM (pipedrive_create_person).
-2. Contato decisor vinculado ao Negócio/Deal (pipedrive_update_deal com o ID do contato).
-3. Tarefa criada para enviar a primeira comunicação (pipedrive_create_task).
-4. Envio da primeira comunicação (email_send / whatsapp_send_message).
-5. Tarefa de Follow-up criada após o envio inicial (pipedrive_create_task).
-6. Execução de Follow-up (até agendar).
-7. Criação da tarefa/evento de Reunião no calendário do CRM.
+PASSO 1 (Cadastro): O contato alvo (decisor) existe e tem um 'id' numérico válido na lista "Contatos já no Pipedrive"?
+- NÃO: Sua 1ª sugestão DEVE ser "Cadastrar [Contato] no Pipedrive" (`pipedrive_create_person`). Você não pode avançar sem cadastrá-lo.
+- SIM: Passe para o Passo 2.
 
-## GAP ANALYSIS (O que falta?):
-1. TAREFA CUMPRIDA: Se a tarefa original já atingiu seu objetivo, sugira concluí-la (pipedrive_update_task com done=true).
-2. PERSONA SEM REGISTRO: Compare os nomes com a lista de 'Contatos já no Pipedrive'. Se alguém não tem ID, sugira `pipedrive_create_person`.
-3. NEGÓCIO ÓRFÃO: Verifique a seção 'Estado Atual do CRM'. Se o Negócio (Deal) não possui contato vinculado (ou person_id é nulo), e você identificou o decisor, a PRIMEIRA sugestão estratégica deve ser 'Vincular decisor ao Negócio' (pipedrive_update_deal vinculando o ID do decisor ao Deal).
-4. LACUNA NA JORNADA: Se o contato está vinculado, mas não existe tarefa de comunicação pendente, sugira criar a tarefa de 'Enviar Apresentação' ou 'Realizar Ligação'.
-5. REGRA DE OURO DA REDUNDÂNCIA: Se o 'id' do contato não for null, ele JÁ ESTÁ CADASTRADO. NÃO sugira duplicatas.
-6. EXAUSTIVIDADE: Gere de 5 a 20 sugestões abrangendo as lacunas e também contatos secundários.
-7. SEQUÊNCIA LÓGICA MÁXIMA: Nunca sugira enviar um e-mail direto se o contato principal sequer está vinculado ao Deal. A organização do CRM vem primeiro.
+PASSO 2 (Vinculação ao Negócio): O "Deal vinculado a qual pessoa?" mostra o ID do nosso contato alvo ou ele está como "NENHUMA PESSOA"?
+- NÃO: Sua 1ª sugestão DEVE ser "Vincular [Contato] ao Negócio" (`pipedrive_update_deal` com `person_id`={ID do contato}). 
+- SIM (Já está vinculado): Passe para o Passo 3.
 
-## REGRAS PARA AS SUGESTÕES:
-1. Gere de 5 a 20 ações — cubra TODAS as categorias relevantes.
-2. Baseie CADA sugestão no contexto real do histórico.
-3. Para criar tarefas no Pipedrive, o prompt DEVE usar a ferramenta e incluir um aviso estrito: "Use pipedrive_create_task com subject='...', etc. AVISO: Seu único objetivo é CRIAR a tarefa. É PROIBIDO executar a tarefa ou gerar o e-mail agora."
-4. PREVENIR DUPLICIDADE: Se o contato já existe, PROIBIDO sugerir `pipedrive_create_person`.
-8. RECONHECER O ESTÁGIO DO DEAL (PREVENIR REGRESSÃO): Se já houve cotação ou visita, não sugira ações de "prospecção fria". Foque em fechamento e negociação.
-9. PREVENIR DUPLICIDADE: Se o contato já existe no CRM (verifique a lista 'Contatos já no Pipedrive'), PROIBIDO sugerir `pipedrive_create_person`.
-10. Se a tarefa principal já foi realizada (ex: Encontrar contato concluído), a primeira sugestão DEVE ser marcar a atividade original como concluída (usando pipedrive_update_task).
+PASSO 3 (Geração de Tarefa CRM): Já existe alguma tarefa de comunicação (ex: Enviar E-mail, Ligar) em aberto na lista de "Atividades pendentes"?
+- NÃO: Sugira criar a tarefa apropriada (`pipedrive_create_task`). 
+- SIM: Passe para o Passo 4.
+
+PASSO 4 (Ação Comercial / Execução): Qual o nível da prospecção e objetivo desta tarefa pendente?
+- SE FOR PRIMEIRO CONTATO (Frio): Sugira "Gerar e Enviar E-mail de Apresentação" (`email_send` ou `email_reply` com anexo) ou "Gerar WhatsApp Frio" (`whatsapp_send_message`).
+- SE FOR FOLLOW-UP (Morno/Aguardando): Sugira "Enviar E-mail de Follow-up" ou "Cobrar retorno por WhatsApp".
+- SE FOR NEGOCIAÇÃO/PROPOSTA (Quente): Sugira "Agendar Reunião de Diagnóstico" ou "Envio de Proposta".
+- REGRA CRÍTICA DO EMAIL: Nunca mande um email solto se há uma thread (email_reply).
+
+PASSO 5 (Encerramento da Tarefa): A ação de comunicação (Passo 4) já foi feita no histórico recente?
+- SIM: Sugira OBRIGATORIAMENTE "Marcar atividade como concluída" (`pipedrive_update_task` com `done=true`).
+- EM SEGUIDA: Nenhuma interação termina sem agenda. Logo após concluir, sugira "Criar tarefa de próximo Follow-up" para daqui a X dias.
+
+## REGRAS PARA AS SUGESTÕES (SAÍDA JSON):
+1. Gere de 5 a 15 ações — começando SEMPRE pelo passo no qual o algoritmo parou e incluindo opções alternativas.
+2. Ações de criação de pessoa (`pipedrive_create_person`) só devem aparecer se a pessoa NÃO TEM ID.
+3. Ações de vinculação de negócio (`pipedrive_update_deal`) só se o deal não tiver o person_id correto.
 
 ## REGRAS PARA O CAMPO "label":
 - NÃO inclua o nome do canal no label (ex: PROIBIDO "WhatsApp: Cobrar retorno", CORRETO: "Cobrar retorno da cotação de Outubro")
