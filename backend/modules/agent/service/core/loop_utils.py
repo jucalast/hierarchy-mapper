@@ -8,17 +8,27 @@ import json
 import ast
 
 def _suggest_actions_done(messages: list) -> bool:
-    """Retorna True se suggest_next_actions foi efetivamente executada com sucesso desde a última mensagem do usuário."""
+    """Retorna True se suggest_next_actions foi efetivamente executada com sucesso desde a última mensagem (real) do usuário."""
     for msg in reversed(messages):
-        if msg.get("role") == "user":
-            break
         content = msg.get("content", "")
+        # Se for string em uma mensagem do usuário, é a mensagem inicial, podemos parar
+        if msg.get("role") == "user" and isinstance(content, str):
+            break
+            
         if isinstance(content, list):
+            has_text_block = False
             for block in content:
-                if block.get("type") == "tool_result" and block.get("tool_name") == "suggest_next_actions":
-                    res_content = str(block.get("content", ""))
-                    if "SKIPPED" not in res_content and "Erro" not in res_content:
-                        return True
+                if isinstance(block, dict):
+                    if block.get("type") == "text":
+                        has_text_block = True
+                    if block.get("type") == "tool_result" and block.get("tool_name") == "suggest_next_actions":
+                        res_content = str(block.get("content", ""))
+                        if "SKIPPED" not in res_content and "Erro" not in res_content:
+                            return True
+            # Se for uma mensagem do usuário com bloco de texto (ex: texto + imagens), também é mensagem real
+            if msg.get("role") == "user" and has_text_block:
+                break
+                
     return False
 
 
