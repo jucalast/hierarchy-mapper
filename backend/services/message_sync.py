@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timedelta
 from typing import List, Optional
+import httpx
 
 from core.infra.database import async_session
 from core.infra.http_client import get_http_client

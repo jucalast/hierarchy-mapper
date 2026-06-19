@@ -38,6 +38,7 @@ import { PreferencesView } from '../layout/PreferencesView';
 import { HierarchyScanView } from '../hierarchy-scan/HierarchyScanView';
 import { GraphCanvas } from './GraphCanvas';
 import { HierarchyDiscoveryOverlay } from './HierarchyDiscoveryOverlay';
+import { useChatStore } from '@/store/chatStore';
 import { FloatingToolbar } from './FloatingToolbar';
 import { SmartBackground } from './components/SmartBackground';
 import { FitViewHandler } from './components/FitViewHandler';
@@ -69,6 +70,10 @@ const formatCnpj = (val: string) => {
 };
 
 function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
+    const pathname = usePathname() || '/';
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
     const { addNotification, notifications, removeNotification } = useNotifications();
     const { saveGraphState, getStableId } = useGraphPersistence();
     const [theme, setTheme] = useState("dark");
@@ -101,7 +106,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         setChatOrgId,
         rawEmployees,
         fetchPipedriveOrgs,
-        setPipedriveOrgs
+        setPipedriveOrgs,
+        pathname
     });
 
     const {
@@ -162,9 +168,33 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         window.dispatchEvent(new CustomEvent('toggle_chat', { detail: { open: val } }));
     };
     
-    const pathname = usePathname() || '/';
-    const router = useRouter();
-    const searchParams = useSearchParams();
+
+
+    // Reset drawer expansion and organization states when leaving organization routes
+    useEffect(() => {
+        const isOrgRoute = pathname.match(/\/org\/(\d+)/);
+        console.log(`[NetworkGraph Reset Effect] pathname: "${pathname}", isOrgRoute: ${!!isOrgRoute}`);
+        if (!isOrgRoute) {
+            console.log('[NetworkGraph Reset Effect] Resetting all organization states client-side.');
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('drawer-expanded-org-id');
+                localStorage.removeItem('last-viewed-org');
+                localStorage.setItem('show-drawer', 'true');
+                window.dispatchEvent(new CustomEvent('drawer_reset_expansion'));
+            }
+            // Sync global state to null so useHierarchy returns EMPTY_ARRAY
+            useChatStore.getState().setCurrentOrgId(null);
+
+            // Reset local states unconditionally to clear the UI
+            setCurrentOrgId(null);
+            setChatOrgId(null);
+            resetWorkflow();
+            resetHierarchy();
+            setShowDrawer(true);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname]);
+
 
     const activeView = useMemo(() => {
         if (pathname.startsWith('/prospecting')) return 'prospecting';
@@ -200,7 +230,6 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         // Limpa todos os estados relacionados à empresa selecionada
         setCurrentOrgId(null);
         setChatOrgId(null);
-        setShowDrawer(false);
         resetWorkflow();
         
         // Navega para a raiz
@@ -212,31 +241,6 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
     const [editEmployeeModal, setEditEmployeeModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
 
-    const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string | null } | null>(null);
-
-    useEffect(() => {
-        const fetchCurrentUser = async () => {
-            try {
-                if (typeof window !== 'undefined') {
-                    const cached = window.localStorage.getItem('pipedrive-current-user');
-                    if (cached) {
-                        setCurrentUser(JSON.parse(cached));
-                    }
-                }
-                
-                const data = await apiGet('/pipedrive/current-user');
-                if (data) {
-                    setCurrentUser(data);
-                    if (typeof window !== 'undefined') {
-                        window.localStorage.setItem('pipedrive-current-user', JSON.stringify(data));
-                    }
-                }
-            } catch (err) {
-                console.error('Erro ao buscar usuário do Pipedrive:', err);
-            }
-        };
-        void fetchCurrentUser();
-    }, []);
 
     // Wrapper para suportar mapeamento por busca/IA (Discovery) ou varredura (Scan)
     const handleSearchOrScan = useCallback((e?: React.FormEvent) => {
@@ -549,16 +553,49 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         hasAttemptedReconnect.current = true;
 
         const checkLastOrg = async () => {
-            const lastOrgStr = localStorage.getItem('last-viewed-org');
-            if (lastOrgStr) {
-                if (lastOrgStr === "NaN" || lastOrgStr === "undefined") {
-                    localStorage.removeItem('last-viewed-org');
-                    setConfirmedBrand("");
-                    setStep("input");
-                    return;
+            const match = pathname.match(/\/org\/(\d+)/);
+            let orgId: number | null = null;
+            let org: any = null;
+
+            if (match && match[1]) {
+                orgId = parseInt(match[1]);
+                const cachedOrgsStr = localStorage.getItem('pipedrive-orgs-cache');
+                if (cachedOrgsStr) {
+                    try {
+                        const list = JSON.parse(cachedOrgsStr);
+                        if (Array.isArray(list)) {
+                            org = list.find((o: any) => Number(o.id) === orgId || Number(o.pipedrive_id) === orgId || Number(o.local_id) === orgId);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
                 }
+                
+                if (!org) {
+                    try {
+                        const { organizations } = await import('@/services/api');
+                        const res = await organizations.getOrganizationDetails(orgId);
+                        if (res && res.org) org = res.org;
+                    } catch (e) {
+                        console.error("Erro ao buscar detalhes da org da URL no boot:", e);
+                    }
+                }
+            }
+
+            if (!org) {
+                const lastOrgStr = localStorage.getItem('last-viewed-org');
+                if (lastOrgStr && lastOrgStr !== "NaN" && lastOrgStr !== "undefined") {
+                    try {
+                        org = JSON.parse(lastOrgStr);
+                        if (org && org.id) orgId = Number(org.id);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            }
+
+            if (org && orgId) {
                 try {
-                    const org = JSON.parse(lastOrgStr);
                     const cleanOrgName = org.name || "";
                     setConfirmedBrand(cleanOrgName);
                     setConfirmedLogo(org.logo || "");
@@ -569,33 +606,29 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                         setCnpj(formatCnpj(targetCnpj));
                     }
                     setDomainTarget(org.domain || "");
-                    setCurrentOrgId(Number(org.id));
-                    setChatOrgId(Number(org.id));
+                    setCurrentOrgId(orgId);
+                    setChatOrgId(orgId);
+                    useChatStore.getState().setCurrentOrgId(orgId);
+                    localStorage.setItem('last-viewed-org', JSON.stringify(org));
 
                     const lUrl = org.linkedin_url || org.linkedin || "";
                     if (lUrl) setConfirmedLinkedInUrl(lUrl);
 
-                    if (org.id) {
-                        const data = await loadStoredHierarchy(Number(org.id), true);
-                        if (data && data.nodes && data.nodes.length > 0) {
-                            setStep("confirm");
-                            const rootLinkedin = data.nodes[0]?.linkedin || data.nodes[0]?.url;
-                            if (rootLinkedin && rootLinkedin.startsWith('http')) {
-                                setConfirmedLinkedInUrl(rootLinkedin);
-                            }
-                            setTimeout(() => setShouldFitView(true), 100);
-                        } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
-                            // 🚀 OTIMIZAÇÃO: Pula 'Detectar' se já temos metadados básicos ao recarregar
-                            setStep("confirm");
-                        } else {
-                            setStep("input");
+                    const data = await loadStoredHierarchy(orgId, true);
+                    if (data && data.nodes && data.nodes.length > 0) {
+                        setStep("confirm");
+                        const rootLinkedin = data.nodes[0]?.linkedin || data.nodes[0]?.url;
+                        if (rootLinkedin && rootLinkedin.startsWith('http')) {
+                            setConfirmedLinkedInUrl(rootLinkedin);
                         }
-                    }
- else {
+                        setTimeout(() => setShouldFitView(true), 100);
+                    } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
+                        setStep("confirm");
+                    } else {
                         setStep("input");
                     }
                 } catch (e) {
-                    console.error("[Last Org Check] Erro ao verificar last-viewed-org:", e);
+                    console.error("[Last Org Check] Erro", e);
                     setConfirmedBrand("");
                     setStep("input");
                 }
@@ -633,6 +666,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     if (orgId) {
                         setCurrentOrgId(orgId);
                         setChatOrgId(orgId);
+                        useChatStore.getState().setCurrentOrgId(orgId);
                     }
 
                     const reconnected = await reconnectToActiveJob(addNotification);
@@ -642,121 +676,164 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     }
                 } catch (e) {
                     console.error("[Job Check] Erro", e);
-                    checkLastOrg();
+                    if (pathname !== '/') {
+                        checkLastOrg();
+                    } else {
+                        setStep("input");
+                        setConfirmedBrand("");
+                        setConfirmedLogo("");
+                        setCnpj("");
+                        setDomainTarget("");
+                    }
                 }
             } else {
-                checkLastOrg();
+                if (pathname !== '/') {
+                    checkLastOrg();
+                } else {
+                    setStep("input");
+                    setConfirmedBrand("");
+                    setConfirmedLogo("");
+                    setCnpj("");
+                    setDomainTarget("");
+                }
             }
         };
 
         checkActiveJob();
     }, [
         reconnectToActiveJob, addNotification, setStep, setConfirmedBrand, setConfirmedLogo,
-        setCnpj, setDomainTarget, setCurrentOrgId, setChatOrgId, loadStoredHierarchy, setShouldFitView
+        setCnpj, setDomainTarget, setCurrentOrgId, setChatOrgId, loadStoredHierarchy, setShouldFitView, pathname
     ]);
+
+    // Sincroniza a empresa baseando-se no pathname (URL) ao navegar entre rotas
+    useEffect(() => {
+        if (!hasAttemptedReconnect.current) return;
+
+        const match = pathname.match(/\/org\/(\d+)/);
+        console.log(`[Router Sync Effect] pathname: "${pathname}", match: ${match ? match[1] : 'null'}`);
+        if (match && match[1]) {
+            const orgId = parseInt(match[1]);
+            if (currentOrgId !== orgId) {
+                console.log(`[Router Sync] Navigating from org ${currentOrgId} to ${orgId}. Clearing old organization state immediately.`);
+                
+                // Immediately reset states so that no stale organization cache is displayed
+                resetHierarchy();
+                setCurrentOrgId(orgId);
+                setChatOrgId(orgId);
+                useChatStore.getState().setCurrentOrgId(orgId);
+
+                // Reset Discovery workflow states immediately
+                setStep("input");
+                setCnpj("");
+                setDomainTarget("");
+                setConfirmedBrand("");
+                setConfirmedLogo("");
+                setBrandOptions([]);
+
+                const syncOrgFromUrl = async () => {
+                    try {
+                        let org = pipedriveOrgs.find(o => Number(o.id) === orgId);
+                        if (!org) {
+                            const cachedOrgsStr = localStorage.getItem('pipedrive-orgs-cache');
+                            if (cachedOrgsStr) {
+                                try {
+                                    const list = JSON.parse(cachedOrgsStr);
+                                    if (Array.isArray(list)) {
+                                        org = list.find((o: any) => Number(o.id) === orgId || Number(o.pipedrive_id) === orgId || Number(o.local_id) === orgId);
+                                    }
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }
+                        }
+                        if (!org) {
+                            const { organizations } = await import('@/services/api');
+                            const res = await organizations.getOrganizationDetails(orgId);
+                            if (res && res.org) org = res.org;
+                        }
+
+                        if (org) {
+                            console.log(`[Router Sync] Organization details fetched for org ${orgId}. Applying details.`);
+                            localStorage.setItem('last-viewed-org', JSON.stringify(org));
+
+                            const jobDataStr = localStorage.getItem('active-discovery-job');
+                            if (jobDataStr) {
+                                try {
+                                    const jobData = JSON.parse(jobDataStr);
+                                    if (Number(jobData.orgId) === orgId) {
+                                        setStep("loading");
+                                        setConfirmedBrand(jobData.brand || cleanName(org.name || ""));
+                                        setConfirmedLogo(jobData.logo || org.logo || "");
+                                        
+                                        let targetCnpj = jobData.cnpj || org.cnpj || "";
+                                        const onlyNums = targetCnpj.replace(/\D/g, '');
+                                        if (onlyNums.length >= 5) {
+                                            setCnpj(formatCnpj(targetCnpj));
+                                        }
+                                        setDomainTarget(jobData.domain || org.domain || "");
+                                        if (org.product_focus) setProductFocus(org.product_focus);
+                                        if (org.category === "compras" || org.category === "logistica") setAreaFocus(org.category);
+                                        
+                                        const reconnected = await reconnectToActiveJob(addNotification);
+                                        if (reconnected) return;
+                                        setStep("initial");
+                                    }
+                                } catch (e) {
+                                    console.error(e);
+                                }
+                            }
+
+                            const data = await loadStoredHierarchy(orgId, true);
+                            const hasNodes = data && data.nodes && data.nodes.length > 0;
+
+                            if (hasNodes) {
+                                setConfirmedBrand(cleanName(org.name || ""));
+                                setConfirmedLogo(org.logo || "");
+                                setCnpj(formatCnpj(org.cnpj || ""));
+                                setDomainTarget(org.domain || "");
+                                setStep("confirm");
+                                setShouldFitView(true);
+
+                                const rootLinkedin = data.nodes[0]?.linkedin || data.nodes[0]?.url || org.linkedin_url || org.linkedin;
+                                if (rootLinkedin && rootLinkedin.startsWith('http')) {
+                                    setConfirmedLinkedInUrl(rootLinkedin);
+                                }
+                            } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
+                                setConfirmedBrand(cleanName(org.name || ""));
+                                setConfirmedLogo(org.logo || "");
+                                setCnpj(formatCnpj(org.cnpj || ""));
+                                setDomainTarget(org.domain || "");
+                                setStep("confirm");
+
+                                const rootLinkedin = org.linkedin_url || org.linkedin;
+                                if (rootLinkedin && rootLinkedin.startsWith('http')) {
+                                    setConfirmedLinkedInUrl(rootLinkedin);
+                                }
+                            } else {
+                                setConfirmedBrand(cleanName(org.name || ""));
+                                setConfirmedLogo(org.logo || "");
+                                setStep("input");
+                            }
+
+                            if (org.product_focus) setProductFocus(org.product_focus);
+                            if (org.category === "compras" || org.category === "logistica") setAreaFocus(org.category);
+                        } else {
+                            console.warn(`[Router Sync] Organization details NOT found for org ${orgId}. Leaving UI cleared.`);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                };
+                void syncOrgFromUrl();
+            }
+        }
+    }, [pathname, currentOrgId, pipedriveOrgs, resetHierarchy, setNodes, setEdges, loadStoredHierarchy, setConfirmedBrand, setConfirmedLogo, setCnpj, setDomainTarget, setConfirmedLinkedInUrl, setStep, setShouldFitView, setProductFocus, setAreaFocus, reconnectToActiveJob, addNotification]);
 
     // Handlers
     const handleOrgClick = useCallback(async (org: any, openChat = false) => {
         router.push(`/org/${org.id}`);
         if (openChat) handleSetShowChat(true);
-        resetHierarchy();
-        setNodes([]);
-        setEdges([]);
-        setCurrentOrgId(Number(org.id));
-        if (openChat) setChatOrgId(Number(org.id));
-        localStorage.setItem('last-viewed-org', JSON.stringify(org));
-        
-        // Reset total de estados antes de carregar a nova empresa
-        // NÃO reseta o scan — ele continua rodando em background
-        setStep("input");
-        setCnpj("");
-        setDomainTarget("");
-        setConfirmedBrand("");
-        setConfirmedLogo("");
-        setBrandOptions([]);
-
-        try {
-            if (org.id) {
-                // 1. CHECAR SE EXISTE JOB ATIVO NESTA EMPRESA
-                const jobDataStr = localStorage.getItem('active-discovery-job');
-                if (jobDataStr) {
-                    try {
-                        const jobData = JSON.parse(jobDataStr);
-                        if (Number(jobData.orgId) === Number(org.id)) {
-                            setStep("loading");
-                            
-                            // Restaurar os dados da empresa na interface do toolbar
-                            setConfirmedBrand(jobData.brand || cleanName(org.name || ""));
-                            setConfirmedLogo(jobData.logo || org.logo || "");
-                            
-                            let targetCnpj = jobData.cnpj || org.cnpj || "";
-                            const onlyNums = targetCnpj.replace(/\D/g, '');
-                            if (onlyNums.length >= 5) {
-                                setCnpj(formatCnpj(targetCnpj));
-                            }
-                            setDomainTarget(jobData.domain || org.domain || "");
-                            if (org.product_focus) setProductFocus(org.product_focus);
-                            if (org.category === "compras" || org.category === "logistica") setAreaFocus(org.category);
-                            
-                            const reconnected = await reconnectToActiveJob(addNotification);
-                            if (reconnected) {
-                                return;
-                            } else {
-                                setStep("initial");
-                            }
-                        }
-                    } catch (e) {
-                        console.error("[Job Check] Erro de parse no jobData", e);
-                    }
-                }
-
-                // 2. SE NÃO TIVER JOB ATIVO, CARREGA OS DADOS SALVOS NORMALMENTE
-                console.log('Attempting to load hierarchy for pipedrive_id:', org.id);
-                const data = await loadStoredHierarchy(Number(org.id), true);
-                const hasNodes = data && data.nodes && data.nodes.length > 0;
-                const isProspecting = org.source === "prospecting";
-
-                if (hasNodes) {
-                    setConfirmedBrand(cleanName(org.name || ""));
-                    setConfirmedLogo(org.logo || "");
-                    setCnpj(formatCnpj(org.cnpj || ""));
-                    setDomainTarget(org.domain || "");
-                    setStep("confirm");
-                    setShouldFitView(true);
-
-                    const rootLinkedin = data.nodes[0]?.linkedin || data.nodes[0]?.url || org.linkedin_url || org.linkedin;
-                    if (rootLinkedin && rootLinkedin.startsWith('http')) {
-                        setConfirmedLinkedInUrl(rootLinkedin);
-                    }
-                } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
-                    // 🚀 OTIMIZAÇÃO: Se já temos LinkedIn ou (CNPJ + Domínio), pulamos o passo de "Detectar"
-                    setConfirmedBrand(cleanName(org.name || ""));
-                    setConfirmedLogo(org.logo || "");
-                    setCnpj(formatCnpj(org.cnpj || ""));
-                    setDomainTarget(org.domain || "");
-                    setStep("confirm");
-
-                    const rootLinkedin = org.linkedin_url || org.linkedin;
-                    if (rootLinkedin && rootLinkedin.startsWith('http')) {
-                        setConfirmedLinkedInUrl(rootLinkedin);
-                    }
-                } else {
-                    setConfirmedBrand(cleanName(org.name || ""));
-                    setConfirmedLogo(org.logo || "");
-                    setStep("input");
-                }
-
-                if (org.product_focus) setProductFocus(org.product_focus);
-                if (org.category === "compras" || org.category === "logistica") setAreaFocus(org.category);
-            }
-        } catch (e) {
-            console.error("Critical error in handleOrgClick:", e);
-        }
-    }, [
-        resetHierarchy, setNodes, setEdges, setActiveView, setStep, setCnpj, setDomainTarget,
-        setConfirmedBrand, setConfirmedLogo, setBrandOptions, reconnectToActiveJob, addNotification,
-        loadStoredHierarchy, setProductFocus, setAreaFocus, setShouldFitView, setConfirmedLinkedInUrl
-    ]);
+    }, [router, handleSetShowChat]);
 
     const handleOrgReset = useCallback((orgId: number) => {
         console.log(`[Graph] Resetando UI para organização ${orgId}...`);

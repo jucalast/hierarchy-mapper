@@ -6,10 +6,26 @@ export function listOrganizations() {
   return api.get<OrganizationSummary[]>('/pipedrive/organizations');
 }
 
+const detailsCache = new Map<string, Promise<any>>();
+
 /** Detalhes 'Raio-X' de uma organização (deals, persons, activities, notes). */
 export function getOrganizationDetails(orgId: number, done?: 0 | 1) {
+  const cacheKey = `${orgId}_${done}`;
+  const cached = detailsCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const qs = done !== undefined ? `?done=${done}` : '';
-  return api.get<Record<string, unknown>>(`/pipedrive/organizations/${orgId}/details${qs}`);
+  const promise = api.get<Record<string, unknown>>(`/pipedrive/organizations/${orgId}/details${qs}`);
+  
+  detailsCache.set(cacheKey, promise);
+  
+  promise.finally(() => {
+    detailsCache.delete(cacheKey);
+  });
+  
+  return promise;
 }
 
 export function getLocalOrganization(orgId: number) {

@@ -8,8 +8,56 @@ import { API_BASE_URL, apiGet } from '@/services/config';
 import { PanelRight, LogOut } from 'lucide-react';
 import { Avatar } from '@/components/ui';
 import { ChatPanel } from '@/components/chat/ChatPanel';
+import dynamic from 'next/dynamic';
+import { useBackendReady } from '@/hooks/useBackendReady';
 
 import { HierarchyScanProvider } from '@/contexts/HierarchyScanContext';
+
+const NetworkGraph = dynamic(() => import('@/components/network-graph/NetworkGraph'), { ssr: false });
+
+function BackendGate({ children }: { children: React.ReactNode }) {
+  const { state, elapsed } = useBackendReady();
+
+  if (state === 'checking') {
+    return (
+      <div style={{
+        height: '100vh', width: '100vw', background: 'var(--sw-sidebar)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        alignItems: 'center', gap: '8px',
+        color: 'var(--sw-text-muted)', fontFamily: 'var(--font-primary)', fontSize: '12px',
+        letterSpacing: '0.08em',
+      }}>
+        <span>CONECTANDO AO SERVIDOR{elapsed > 2 ? ` (${elapsed}s)` : '...'}</span>
+      </div>
+    );
+  }
+
+  if (state === 'timeout') {
+    return (
+      <div style={{
+        height: '100vh', width: '100vw', background: 'var(--sw-sidebar)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        alignItems: 'center', gap: '12px',
+        color: 'var(--sw-status-danger)', fontFamily: 'var(--font-primary)', fontSize: '12px',
+        letterSpacing: '0.08em',
+      }}>
+        <span>SERVIDOR INDISPONÍVEL</span>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: 'transparent', border: '1px solid var(--sw-status-danger)',
+            color: 'var(--sw-status-danger)', padding: '6px 16px', cursor: 'pointer',
+            fontSize: '11px', letterSpacing: '0.08em', borderRadius: '4px',
+          }}
+        >
+          TENTAR NOVAMENTE
+        </button>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -87,8 +135,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (match && match[1]) {
       const orgId = parseInt(match[1]);
       if (!currentOrg || currentOrg.id !== orgId) {
+        console.log(`[Layout AppLayout] Sincronizando contexto da empresa. Mudando de ${currentOrg?.id} para ${orgId}.`);
+        
+        // Inicializa estado imediatamente para evitar visualização de cache/dados antigos do Chat
+        setCurrentOrg({ id: orgId, name: "Carregando...", logo: "", prospectingContext: null });
+        
         // 1. Tenta buscar primeiro no cache local de organizações (onde o logo e metadados estão sempre completos)
         const cachedOrgsStr = localStorage.getItem('pipedrive-orgs-cache');
+        let cacheFound = false;
         if (cachedOrgsStr) {
           try {
             const list = JSON.parse(cachedOrgsStr);
@@ -102,6 +156,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   logo: foundLogo,
                   prospectingContext: cachedOrg.prospecting_context || null
                 });
+                cacheFound = true;
                 // Do not return here. Continue to fetch from backend to get fresh prospecting_context
               }
             }
@@ -122,7 +177,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             });
           }
         }).catch(() => {
-            setCurrentOrg({ id: orgId, name: "Empresa", logo: "", prospectingContext: null });
+            if (!cacheFound) {
+              setCurrentOrg({ id: orgId, name: "Empresa", logo: "", prospectingContext: null });
+            }
         }).finally(() => {
             setIsOrgLoading(false);
         });
@@ -299,6 +356,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
             {children}
+            <BackendGate>
+              <main style={{ height: '100%', width: '100%' }}>
+                <NetworkGraph onLogout={handleLogout} />
+              </main>
+            </BackendGate>
           </div>
 
           <div style={{ 

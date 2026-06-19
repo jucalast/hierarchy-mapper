@@ -96,6 +96,12 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
     const [isFocused, setIsFocused] = React.useState(false);
     const [localSelected, setLocalSelected] = React.useState<string | null>(null);
 
+    React.useEffect(() => {
+        if (!confirmedBrand) {
+            setLocalSelected(null);
+        }
+    }, [confirmedBrand]);
+
     // Animação de entrada e saída do carrossel de opções
     React.useEffect(() => {
         if (brandOptions.length > 0) {

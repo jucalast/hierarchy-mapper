@@ -15,6 +15,8 @@ import { Avatar, Modal, Button } from '../ui';
 
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { ai, communication, conversations } from '@/services/api';
+import { useChatStore } from '@/store/chatStore';
+import { ChatTabs } from './ChatTabs';
 
 const AGENT_STREAM_URL = ai.getAgentChatStreamUrl();
 const AGENT_CONFIRM_URL = ai.getAgentConfirmStreamUrl();
@@ -49,9 +51,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 }) => {
     const { isListening, isTranscribing, transcript, finalTranscript, error: voiceError, startListening, stopListening, clearTranscript, isSupported: voiceSupported, analyserNode } = useSpeechToText();
 
-    const hasValidOrg = !!(selectedOrgName && selectedOrgName.trim() !== '');
-    const cleanOrgName = hasValidOrg ? selectedOrgName!.trim() : '';
-
     // ─── View state ──────────────────────────────────────────
     const [view, setView] = useState<PanelView>(() => {
         if (typeof window !== 'undefined') {
@@ -70,12 +69,100 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [isLoadingThreads, setIsLoadingThreads] = useState(false);
     const [isCreatingThread, setIsCreatingThread] = useState(false);
 
-    // ─── Chat state ──────────────────────────────────────────
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [inputValue, setInputValue] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [selectedCompanies, setSelectedCompanies] = useState<CompanyResult[]>([]);
-    const [approvalStatuses, setApprovalStatuses] = useState<Record<string, 'pending' | 'approving' | 'approved' | 'rejected'>>({});
+    // ─── Zustand Global Chat Store ───────────────────────────
+    const store = useChatStore();
+    const activeThreadId = activeThread?.id;
+
+    // Sincroniza a organização ativa no store
+    useEffect(() => {
+        store.setCurrentOrgId(selectedOrgId || null);
+    }, [selectedOrgId]);
+
+    const activeOrgId = store.currentOrgId;
+
+    // Sincroniza informações da organização focada (nome e logo)
+    const [currentOrgInfo, setCurrentOrgInfo] = useState({
+        name: selectedOrgName,
+        logo: selectedOrgLogo || ''
+    });
+
+    const hasValidOrg = !!(currentOrgInfo?.name && currentOrgInfo.name.trim() !== '' && currentOrgInfo.name !== 'Assistente IA');
+    const cleanOrgName = hasValidOrg ? currentOrgInfo.name.trim() : '';
+
+    useEffect(() => {
+        if (activeOrgId === selectedOrgId) {
+            setCurrentOrgInfo({
+                name: selectedOrgName,
+                logo: selectedOrgLogo || ''
+            });
+        } else if (activeOrgId) {
+            const cachedOrgsStr = localStorage.getItem('pipedrive-orgs-cache');
+            if (cachedOrgsStr) {
+                try {
+                    const list = JSON.parse(cachedOrgsStr);
+                    if (Array.isArray(list)) {
+                        const cachedOrg = list.find((o: any) => Number(o.id) === activeOrgId || Number(o.pipedrive_id) === activeOrgId || Number(o.local_id) === activeOrgId);
+                        if (cachedOrg) {
+                            const foundLogo = cachedOrg.logo || cachedOrg.organization_logo || cachedOrg.logo_url || cachedOrg.company_logo || "";
+                            setCurrentOrgInfo({
+                                name: cachedOrg.name || cachedOrg.title || "Empresa",
+                                logo: foundLogo
+                            });
+                        } else {
+                            setCurrentOrgInfo({
+                                name: `Empresa #${activeOrgId}`,
+                                logo: ''
+                            });
+                        }
+                    }
+                } catch {
+                    setCurrentOrgInfo({
+                        name: `Empresa #${activeOrgId}`,
+                        logo: ''
+                    });
+                }
+            } else {
+                setCurrentOrgInfo({
+                    name: `Empresa #${activeOrgId}`,
+                    logo: ''
+                });
+            }
+        } else {
+            setCurrentOrgInfo({
+                name: 'Assistente IA',
+                logo: ''
+            });
+        }
+    }, [activeOrgId, selectedOrgId, selectedOrgName, selectedOrgLogo]);
+
+    const session = store.getSession(activeOrgId, activeThreadId);
+
+    const messages = session.messages;
+    const inputValue = session.inputValue;
+    const isLoading = session.isLoading;
+    const selectedCompanies = session.selectedCompanies;
+    const approvalStatuses = session.approvalStatuses;
+    const liveModel = session.liveModel as AIModel | null;
+    const modelActivity = session.modelActivity;
+    const agentEvents = session.agentEvents;
+    const agentStreaming = session.agentStreaming;
+    const agentConfirmedActions = session.agentConfirmedActions;
+
+    const setInputValue = useCallback((val: string | ((prev: string) => string)) => {
+        const currentVal = store.getSession(activeOrgId, activeThreadId).inputValue;
+        const nextVal = typeof val === 'function' ? val(currentVal) : val;
+        store.setInputValue(activeOrgId, activeThreadId, nextVal);
+    }, [store, activeOrgId, activeThreadId]);
+    const setMessages = useCallback((val: Message[] | ((prev: Message[]) => Message[])) => store.setMessages(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setIsLoading = useCallback((val: boolean) => store.setIsLoading(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setAgentStreaming = useCallback((val: boolean) => store.setAgentStreaming(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setSelectedCompanies = useCallback((val: CompanyResult[] | ((prev: CompanyResult[]) => CompanyResult[])) => store.setSelectedCompanies(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setApprovalStatuses = useCallback((val: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => store.setApprovalStatuses(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setLiveModel = useCallback((val: AIModel | null) => store.setLiveModel(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setModelActivity = useCallback((val: any[] | ((prev: any[]) => any[])) => store.setModelActivity(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setAgentEvents = useCallback((val: any[] | ((prev: any[]) => any[])) => store.setAgentEvents(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setAgentConfirmedActions = useCallback((val: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => store.setAgentConfirmedActions(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+
     const [model, setModel] = useState<AIModel>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('ai_preferred_model');
@@ -90,18 +177,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }
         return false;
     });
-    // Modelo ativo em tempo real durante fallback (só visível quando não está em strict mode)
-    const [liveModel, setLiveModel] = useState<AIModel | null>(null);
-    const [modelActivity, setModelActivity] = useState<ModelActivityEvent[]>([]);
     const modelActivityIdRef = useRef(0);
     const [pipedriveCooldown, setPipedriveCooldown] = useState<number>(0);
-
-    // ─── Agente: eventos em streaming para a mensagem sendo construída ──────────
-    const [agentEvents, setAgentEvents] = useState<any[]>([]);
-    const [agentStreaming, setAgentStreaming] = useState(false);
-    // Confirmações já decididas { action_id -> approved }
-    const [agentConfirmedActions, setAgentConfirmedActions] = useState<Record<string, boolean>>({});
-    const abortControllerRef = useRef<AbortController | null>(null);
+    const abortControllersRef = useRef<Record<string, AbortController>>({});
     // Guarda o threadId que está atualmente em streaming (para restaurar loading ao voltar)
     const streamingThreadIdRef = useRef<string | null>(null);
     const activeThreadIdRef = useRef<string | null>(null);
@@ -111,15 +189,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     }, [activeThread]);
 
 
-    const handleStopStreaming = useCallback(() => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            abortControllerRef.current = null;
+    const handleStopStreaming = useCallback((targetThreadId?: string) => {
+        const tId = targetThreadId || activeThreadIdRef.current || 'global';
+        if (abortControllersRef.current[tId]) {
+            abortControllersRef.current[tId].abort();
+            delete abortControllersRef.current[tId];
         }
-        streamingThreadIdRef.current = null;
+        if (tId === streamingThreadIdRef.current) {
+            streamingThreadIdRef.current = null;
+        }
         setIsLoading(false);
         setAgentStreaming(false);
-        setActiveRunningTask(prev => prev?.status === 'streaming' ? { ...prev, status: 'done' } : prev);
+        setActiveRunningTask((prev: any) => prev?.status === 'streaming' ? { ...prev, status: 'done' } : prev);
         setLiveModel(null);
         setModelActivity([]);
     }, []);
@@ -142,20 +223,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const [threadsToDelete, setThreadsToDelete] = useState<ThreadOut[]>([]);
 
     // ─── External Task Runner State & Handlers ───────────────
-    const [activeRunningTask, setActiveRunningTask] = useState<{
-        label: string;
-        prompt: string;
-        status: TaskStatus;
-        logs: AgentEvent[];
-        isExpanded: boolean;
-        orgId?: number | null;
-        threadId?: string;
-        actionIndex: number;
-        parentMessageId?: string;
-    } | null>(null);
+    const activeRunningTask = session.activeRunningTask;
+    const approvedSuggestedActions = session.approvedSuggestedActions;
+    const taskInlineConfirmed = session.taskInlineConfirmed;
 
-    const [approvedSuggestedActions, setApprovedSuggestedActions] = useState<Record<string, TaskStatus>>({});
-    const [taskInlineConfirmed, setTaskInlineConfirmed] = useState<Record<string, boolean>>({});
+    const setActiveRunningTask = useCallback((val: any | ((prev: any | null) => any | null)) => store.setActiveRunningTask(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setApprovedSuggestedActions = useCallback((val: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => store.setApprovedSuggestedActions(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setTaskInlineConfirmed = useCallback((val: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => store.setTaskInlineConfirmed(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
     const taskConsoleLogsBottomRef = useRef<HTMLDivElement>(null);
 
     const messagesRef = useRef(messages);
@@ -181,7 +255,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         try {
             const jobData = JSON.parse(activeJob);
             if (jobData) {
-                if (Number(jobData.orgId) !== Number(selectedOrgId)) {
+                if (Number(jobData.orgId) !== Number(activeOrgId)) {
                     return; // O job ativo pertence a outra empresa!
                 }
                 if (jobData.chatPrompted === false) {
@@ -207,7 +281,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const handleScanDone = (e: Event) => {
             const detail = (e as CustomEvent).detail || {};
             const eventOrgId = detail.orgId;
-            if (eventOrgId && Number(eventOrgId) !== Number(selectedOrgId)) {
+            if (eventOrgId && Number(eventOrgId) !== Number(activeOrgId)) {
                 return;
             }
             if (detail.chatPrompted === false) {
@@ -225,18 +299,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         return () => window.removeEventListener('hierarchy_scan_done', handleScanDone);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedOrgId]);
+    }, [activeOrgId]);
 
 
 
     const streamTaskInto = async (url: string, body: object, initialTaskState: typeof activeRunningTask) => {
         const collected: AgentEvent[] = [];
         
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
+        const tId = 'global_task';
+        if (abortControllersRef.current[tId]) {
+            abortControllersRef.current[tId].abort();
         }
         const controller = new AbortController();
-        abortControllerRef.current = controller;
+        abortControllersRef.current[tId] = controller;
 
         try {
             const response = await fetch(url, {
@@ -290,7 +365,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             }
                         }
 
-                        setActiveRunningTask(prev => {
+                        setActiveRunningTask((prev: any) => {
                             if (!prev) return null;
                             return {
                                 ...prev,
@@ -307,8 +382,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 console.error('[Task Console] Erro:', err);
             }
         } finally {
-            if (abortControllerRef.current === controller) {
-                abortControllerRef.current = null;
+            if (abortControllersRef.current[tId] === controller) {
+                delete abortControllersRef.current[tId];
             }
         }
         return collected;
@@ -327,7 +402,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
             if (actualParentId !== undefined && actionIndex !== undefined) {
                 const taskKey = `${actualParentId}-${actionIndex}`;
-                setApprovedSuggestedActions(prev => {
+                setApprovedSuggestedActions((prev: any) => {
                     const currentStatus = prev[taskKey];
                     if (currentStatus === 'done' || currentStatus === 'error') return prev;
                     
@@ -338,8 +413,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     return { ...prev, [taskKey]: 'pending' };
                 });
             }
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
+            if (abortControllersRef.current['global_task']) {
+                abortControllersRef.current['global_task'].abort();
             }
             setActiveRunningTask(null);
         }
@@ -356,7 +431,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         const taskKey = `${actualParentId}-${index}`;
         
-        setApprovedSuggestedActions(prev => ({
+        setApprovedSuggestedActions((prev: any) => ({
             ...prev,
             [taskKey]: 'streaming'
         }));
@@ -369,7 +444,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             status: 'streaming' as const,
             logs: [] as AgentEvent[],
             isExpanded: true,
-            orgId: selectedOrgId,
+            orgId: activeOrgId,
             threadId: activeThread?.id,
             actionIndex: index,
             parentMessageId: actualParentId,
@@ -381,7 +456,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         try {
             const collected = await streamTaskInto(AGENT_STREAM_URL, {
                 message: action.prompt,
-                org_id: selectedOrgId,
+                org_id: activeOrgId,
                 thread_id: activeThread?.id,
                 history: [],
                 direct_action: true,
@@ -405,8 +480,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 finalStatus = 'pending';
             }
 
-            setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
-            setApprovedSuggestedActions(prev => ({
+            setActiveRunningTask((prev: any) => prev ? { ...prev, status: finalStatus } : null);
+            setApprovedSuggestedActions((prev: any) => ({
                 ...prev,
                 [taskKey]: finalStatus
             }));
@@ -456,19 +531,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             
             if (finalStatus === 'done') {
                 setTimeout(() => {
-                    setActiveRunningTask(prev => {
+                    setActiveRunningTask((prev: any) => {
                         if (prev && prev.actionIndex === index) return null;
                         return prev;
                     });
                 }, 1500);
             }
             
-            if (selectedOrgId) {
-                conversations.listThreads(selectedOrgId).then(setThreads).catch(() => {});
+            if (activeOrgId) {
+                conversations.listThreads(activeOrgId).then(setThreads).catch(() => {});
             }
         } catch {
-            setActiveRunningTask(prev => prev ? { ...prev, status: 'error' } : null);
-            setApprovedSuggestedActions(prev => ({
+            setActiveRunningTask((prev: any) => prev ? { ...prev, status: 'error' } : null);
+            setApprovedSuggestedActions((prev: any) => ({
                 ...prev,
                 [taskKey]: 'error'
             }));
@@ -518,7 +593,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         // Toggle if clicking the same one that is already active
         if (activeRunningTask && activeRunningTask.parentMessageId === actualParentId && activeRunningTask.actionIndex === index) {
-            setActiveRunningTask(prev => prev ? { ...prev, isExpanded: !prev.isExpanded } : null);
+            setActiveRunningTask((prev: any) => prev ? { ...prev, isExpanded: !prev.isExpanded } : null);
             return;
         }
 
@@ -528,7 +603,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             status: currentStatus as TaskStatus,
             logs: logs,
             isExpanded: true,
-            orgId: selectedOrgId,
+            orgId: activeOrgId,
             threadId: activeThread?.id,
             actionIndex: index,
             parentMessageId: actualParentId,
@@ -538,9 +613,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     const handleTaskInlineConfirm = async (action_id: string, approved: boolean) => {
         if (!activeRunningTask) return;
         
-        setTaskInlineConfirmed(prev => ({ ...prev, [action_id]: approved }));
+        setTaskInlineConfirmed((prev: any) => ({ ...prev, [action_id]: approved }));
 
-        setActiveRunningTask(prev => prev ? { ...prev, status: 'streaming' } : null);
+        setActiveRunningTask((prev: any) => prev ? { ...prev, status: 'streaming' } : null);
 
         let actualParentId = activeRunningTask.parentMessageId;
         if (actualParentId && /^\d+$/.test(actualParentId)) {
@@ -552,7 +627,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         if (actualParentId) {
             const taskKey = `${actualParentId}-${activeRunningTask.actionIndex}`;
-            setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'streaming' }));
+            setApprovedSuggestedActions((prev: any) => ({ ...prev, [taskKey]: 'streaming' }));
         }
         setIsLoading(true);
         setAgentStreaming(true);
@@ -573,12 +648,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 finalStatus = 'streaming'; // Mantém em loading
             }
 
-            setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
+            setActiveRunningTask((prev: any) => prev ? { ...prev, status: finalStatus } : null);
             if (actualParentId) {
                 const { actionIndex: aidx } = activeRunningTask;
                 const pid = actualParentId;
                 const taskKey = `${pid}-${aidx}`;
-                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
+                setApprovedSuggestedActions((prev: any) => ({ ...prev, [taskKey]: finalStatus }));
 
                 // Lê os logs acumulados no activeRunningTask para persistir
                 const allLogs = [...(activeRunningTask.logs || []), ...collected];
@@ -618,17 +693,17 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (finalStatus === 'done') {
                 const currentIdx = activeRunningTask.actionIndex;
                 setTimeout(() => {
-                    setActiveRunningTask(prev => {
+                    setActiveRunningTask((prev: any) => {
                         if (prev && prev.actionIndex === currentIdx) return null;
                         return prev;
                     });
                 }, 1500);
             }
         } catch {
-            setActiveRunningTask(prev => prev ? { ...prev, status: 'error' } : null);
+            setActiveRunningTask((prev: any) => prev ? { ...prev, status: 'error' } : null);
             if (activeRunningTask.parentMessageId) {
                 const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
-                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'error' }));
+                setApprovedSuggestedActions((prev: any) => ({ ...prev, [taskKey]: 'error' }));
             }
             setIsLoading(false);
             setAgentStreaming(false);
@@ -641,10 +716,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const hierarchyEv = activeRunningTask.logs.find(e => e.type === 'hierarchy_mapping_required');
         if (!hierarchyEv) return;
 
-        setActiveRunningTask(prev => prev ? { ...prev, status: 'streaming' } : null);
+        setActiveRunningTask((prev: any) => prev ? { ...prev, status: 'streaming' } : null);
         if (activeRunningTask.parentMessageId) {
             const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
-            setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'streaming' }));
+            setApprovedSuggestedActions((prev: any) => ({ ...prev, [taskKey]: 'streaming' }));
         }
 
         const contactsSummary = contacts.length > 0
@@ -674,7 +749,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         try {
             const newEvents = await streamTaskInto(AGENT_STREAM_URL, {
                 message: continuation,
-                org_id: selectedOrgId,
+                org_id: activeOrgId,
                 thread_id: activeThread?.id,
                 history: [],
                 direct_action: true,
@@ -687,11 +762,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (pendingConfirm) {
                 finalStatus = 'awaiting_confirm';
             }
-            setActiveRunningTask(prev => prev ? { ...prev, status: finalStatus } : null);
+            setActiveRunningTask((prev: any) => prev ? { ...prev, status: finalStatus } : null);
             if (activeRunningTask.parentMessageId) {
                 const { parentMessageId: pid, actionIndex: aidx } = activeRunningTask;
                 const taskKey = `${pid}-${aidx}`;
-                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: finalStatus }));
+                setApprovedSuggestedActions((prev: any) => ({ ...prev, [taskKey]: finalStatus }));
 
                 // Logs = os que já existiam + os novos desta fase de mapeamento
                 const allLogs = [...(activeRunningTask.logs || []), ...newEvents];
@@ -725,17 +800,17 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             if (finalStatus === 'done') {
                 const currentIdx = activeRunningTask.actionIndex;
                 setTimeout(() => {
-                    setActiveRunningTask(prev => {
+                    setActiveRunningTask((prev: any) => {
                         if (prev && prev.actionIndex === currentIdx) return null;
                         return prev;
                     });
                 }, 1500);
             }
         } catch {
-            setActiveRunningTask(prev => prev ? { ...prev, status: 'error' } : null);
+            setActiveRunningTask((prev: any) => prev ? { ...prev, status: 'error' } : null);
             if (activeRunningTask.parentMessageId) {
                 const taskKey = `${activeRunningTask.parentMessageId}-${activeRunningTask.actionIndex}`;
-                setApprovedSuggestedActions(prev => ({ ...prev, [taskKey]: 'error' }));
+                setApprovedSuggestedActions((prev: any) => ({ ...prev, [taskKey]: 'error' }));
             }
         }
     };
@@ -859,8 +934,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     content: hasValidOrg ? `Como posso te ajudar com a @${cleanOrgName}?` : "Como posso te ajudar hoje?",
                     timestamp: new Date(),
                 }]);
-                if (selectedOrgId && !prospectingContext) {
-                    setInputValue("Gerar plano de prospecção para esta empresa");
+                if (activeOrgId && !prospectingContext) {
+                    store.setInputValue(activeOrgId, threadId, "Gerar plano de prospecção para esta empresa");
                 }
             } else {
                 let hasActiveJobLoading = false;
@@ -1039,7 +1114,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         } catch (err) {
             console.error('[ChatPanel] Erro ao carregar/atualizar mensagens:', err);
         }
-    }, [selectedOrgId, selectedOrgName, hasValidOrg, cleanOrgName]);
+    }, [activeOrgId, currentOrgInfo.name, hasValidOrg, cleanOrgName]);
 
     // ─── Open thread ─────────────────────────────────────────
     const openThread = useCallback(async (thread: ThreadOut) => {
@@ -1047,9 +1122,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         if (!isSameStreamingThread) {
             // Troca de thread: mantemos o stream em background (não abortamos)
-            // mas limpamos os estados visuais da barra/loading.
-            setIsLoading(false);
-            setAgentStreaming(false);
             setActiveRunningTask(null);
             setLiveModel(null);
             setModelActivity([]);
@@ -1064,19 +1136,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
         setActiveThread(thread);
         if (typeof window !== 'undefined') {
-            const targetOrgId = selectedOrgId || 0;
+            const targetOrgId = activeOrgId || 0;
             window.localStorage.setItem(`active-thread-id-${targetOrgId}`, thread.id);
             window.localStorage.setItem('chat-panel-view', 'chat');
         }
         setView('chat');
         await refreshMessages(thread.id);
-    }, [selectedOrgId, refreshMessages]);
+    }, [activeOrgId, refreshMessages]);
 
     // ─── Load threads and activities ────────────────────────
     const loadThreads = useCallback(async () => {
         setIsLoadingThreads(true);
         try {
-            const targetOrgId = selectedOrgId || 0;
+            const targetOrgId = activeOrgId || 0;
             const [threadList, actList] = await Promise.all([
                 conversations.listThreads(targetOrgId),
                 conversations.listActivities(targetOrgId),
@@ -1100,18 +1172,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         } finally {
             setIsLoadingThreads(false);
         }
-    }, [selectedOrgId, openThread]);
+    }, [activeOrgId, openThread]);
 
     // ─── Load threads when org changes ──────────────────────
     useEffect(() => {
         setActiveThread(null);
-        setMessages([]);
-        if (selectedOrgId && !prospectingContext) {
-            setInputValue("Gerar plano de prospecção para esta empresa");
-        } else {
-            setInputValue("");
-        }
-
+        store.setMessages(activeOrgId, null, []);
+        
         if (typeof window !== 'undefined') {
             const savedView = window.localStorage.getItem('chat-panel-view');
             if (savedView === 'list') {
@@ -1126,24 +1193,26 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // Sempre carrega threads, mesmo que orgId seja nulo (orgId=0 no backend pega tudo)
         void loadThreads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedOrgId]);
+    }, [activeOrgId]);
 
-    // Limpa o placeholder caso o contexto de prospecção seja carregado assincronamente depois do hook acima
     useEffect(() => {
-        if (prospectingContext && inputValue === "Gerar plano de prospecção para esta empresa") {
-            setInputValue("");
+        const currentThreadId = activeThread?.id || null;
+        const currentSession = store.getSession(activeOrgId, currentThreadId);
+        
+        if (activeOrgId && !prospectingContext) {
+            if (!currentSession.inputValue) {
+                store.setInputValue(activeOrgId, currentThreadId, "Gerar plano de prospecção para esta empresa");
+            }
+        } else if (prospectingContext) {
+            if (currentSession.inputValue === "Gerar plano de prospecção para esta empresa") {
+                store.setInputValue(activeOrgId, currentThreadId, "");
+            }
         }
-    }, [prospectingContext]);
+    }, [activeOrgId, prospectingContext, activeThread?.id, store]);
 
     const handleNewThread = () => {
-        // Cancela qualquer stream em andamento — novo chat sempre começa limpo
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-            abortControllerRef.current = null;
-        }
+        // O stream em background não é cancelado quando se inicia uma nova conversa.
         streamingThreadIdRef.current = null;
-        setIsLoading(false);
-        setAgentStreaming(false);
         setActiveRunningTask(null);
         setLiveModel(null);
         setModelActivity([]);
@@ -1157,11 +1226,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             window.localStorage.removeItem(`active-thread-id-${targetOrgId}`);
             window.localStorage.setItem('chat-panel-view', 'chat');
         }
-        setMessages([]);
-        if (selectedOrgId && !prospectingContext) {
-            setInputValue("Gerar plano de prospecção para esta empresa");
+        store.setMessages(activeOrgId, null, []);
+        if (activeOrgId && !prospectingContext) {
+            store.setInputValue(activeOrgId, null, "Gerar plano de prospecção para esta empresa");
         } else {
-            setInputValue("");
+            store.setInputValue(activeOrgId, null, "");
         }
         setView('chat');
     };
@@ -1177,8 +1246,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             // Mantém active-thread-id para que loadThreads saiba restaurar o thread ao voltar
         }
         setActiveThread(null);
-        setMessages([]);
-        setInputValue("");
+        store.setMessages(activeOrgId, null, []);
+        const defaultInput = (activeOrgId && !prospectingContext) ? "Gerar plano de prospecção para esta empresa" : "";
+        store.setInputValue(activeOrgId, null, defaultInput);
         // Refresh thread list to show updated message counts
         void loadThreads();
     };
@@ -1244,29 +1314,30 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     // ─── Agente: executar workflow ────────────────────────────
     const executeAgent = async (text: string, threadId: string, historyForApi: any[], directAction: boolean = false) => {
-        setIsLoading(true);
-        setAgentEvents([]);
-        setAgentStreaming(true);
+        store.setIsLoading(activeOrgId, threadId, true);
+        store.setAgentEvents(activeOrgId, threadId, []);
+        store.setAgentStreaming(activeOrgId, threadId, true);
         // Registra qual thread está em streaming para preservar o loading ao navegar e voltar
         streamingThreadIdRef.current = threadId;
 
         const msgId = (Date.now() + 1).toString();
 
         // Adiciona mensagem "em andamento" do assistente
-        setMessages(prev => [...prev, {
+        store.setMessages(activeOrgId, threadId, prev => [...prev, {
             id: msgId,
             role: 'assistant' as const,
             content: '',
             timestamp: new Date(),
             agentEvents: [] as any[],
             isAgent: true,
+            agentStreaming: true,
         }]);
 
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
+        if (abortControllersRef.current[threadId]) {
+            abortControllersRef.current[threadId].abort();
         }
         const controller = new AbortController();
-        abortControllerRef.current = controller;
+        abortControllersRef.current[threadId] = controller;
 
         let hasMappingRequired = false;
         let hasConfirmationRequired = false;
@@ -1289,7 +1360,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
             if (!response.ok || !response.body) {
                 const errText = response.ok ? 'Sem corpo na resposta' : `Erro ${response.status}`;
-                setMessages(prev => prev.map(m =>
+                store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
                     m.id === msgId ? { ...m, content: `Não consegui processar: ${errText}`, agentStreaming: false } : m
                 ));
                 return;
@@ -1336,8 +1407,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
                         // Modelo ativo — atualiza o selector e a barra de atividade
                         if (event.type === 'model_active') {
-                            if (!strictMode) setLiveModel(event.provider as AIModel);
-                            setModelActivity(prev => {
+                            if (!strictMode) store.setLiveModel(activeOrgId, threadId, event.provider as AIModel);
+                            store.setModelActivity(activeOrgId, threadId, prev => {
                                 const last = prev[prev.length - 1];
                                 // Suprime duplicata consecutiva do mesmo provider
                                 if (last?.type === 'model_active' && last.provider === event.provider) return prev;
@@ -1352,26 +1423,24 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
                         // Rate limit / context overflow — sempre na barra
                         if (event.type === 'rate_wait') {
-                            setModelActivity(prev => [...prev, { id: ++modelActivityIdRef.current, type: 'rate_wait', provider: event.provider as AIModel | undefined, model: event.model, wait_sec: event.wait_sec, reason: event.reason, timestamp: Date.now() }]);
+                            store.setModelActivity(activeOrgId, threadId, prev => [...prev, { id: ++modelActivityIdRef.current, type: 'rate_wait', provider: event.provider as AIModel | undefined, model: event.model, wait_sec: event.wait_sec, reason: event.reason, timestamp: Date.now() }]);
                         }
                         if (event.type === 'context_overflow') {
-                            setModelActivity(prev => [...prev, { id: ++modelActivityIdRef.current, type: 'context_overflow', model: event.model, estimated_tokens: event.estimated_tokens, limit: event.limit, timestamp: Date.now() }]);
+                            store.setModelActivity(activeOrgId, threadId, prev => [...prev, { id: ++modelActivityIdRef.current, type: 'context_overflow', model: event.model, estimated_tokens: event.estimated_tokens, limit: event.limit, timestamp: Date.now() }]);
                         }
 
                         // Atualiza a mensagem em tempo real
-                        if (activeThreadIdRef.current === threadId) {
                             if (event.type === 'message_saved' && event.message_id) {
                                 activeMsgId = event.message_id;
-                                setMessages(prev => prev.map(m =>
+                                store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
                                     (m.id === msgId || m.id === activeMsgId) ? { ...m, id: activeMsgId, agentEvents: [...collectedEvents] } : m
                                 ));
                                 continue;
                             }
 
-                            setMessages(prev => prev.map(m =>
+                            store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
                                 (m.id === msgId || m.id === activeMsgId) ? { ...m, agentEvents: [...collectedEvents] } : m
                             ));
-                        }
                     } catch { /* ignore */ }
                 }
             }
@@ -1394,13 +1463,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             }
 
             // Marca streaming como concluído, limpa modelos live
-            setLiveModel(null);
+            store.setLiveModel(activeOrgId, threadId, null);
             // Mantém a barra visível por 3s se houver eventos de espera, depois limpa
-            const hadWaits = modelActivity.some(e => e.type === 'rate_wait' || e.type === 'context_overflow');
+            const hadWaits = store.getSession(activeOrgId, threadId).modelActivity.some(e => e.type === 'rate_wait' || e.type === 'context_overflow');
             if (hadWaits) {
-                setTimeout(() => setModelActivity([]), 3000);
+                setTimeout(() => store.setModelActivity(activeOrgId, threadId, []), 3000);
             } else {
-                setModelActivity([]);
+                store.setModelActivity(activeOrgId, threadId, []);
             }
             // Não alteramos agentStreaming aqui; faremos no finally com base em hasMappingRequired
 
@@ -1411,17 +1480,17 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 console.error('[Agent] Erro:', err);
             }
         } finally {
-            if (abortControllerRef.current === controller) {
-                abortControllerRef.current = null;
+            if (abortControllersRef.current[threadId] === controller) {
+                delete abortControllersRef.current[threadId];
             }
             
-            setMessages(prev => prev.map(m =>
+            store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
                 (m.id === msgId || m.id === activeMsgId) ? { ...m, agentStreaming: (hasMappingRequired || hasLigacaoView) ? true : false } : m
             ));
 
             if (!hasMappingRequired && !hasConfirmationRequired && !hasLigacaoView) {
-                setIsLoading(false);
-                setAgentStreaming(false);
+                store.setIsLoading(activeOrgId, threadId, false);
+                store.setAgentStreaming(activeOrgId, threadId, false);
             }
 
             if (threadId) {
@@ -1511,8 +1580,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const targetMsg = messages.find(m => m.agentEvents && m.agentEvents.some(e => e.type === 'hierarchy_mapping_required'));
         if (!targetMsg || !targetMsg.id) {
             // Fallback se não encontrar a mensagem anterior
-            setIsLoading(false);
-            setAgentStreaming(false);
+            store.setIsLoading(activeOrgId, activeThread?.id || 'global', false);
+            store.setAgentStreaming(activeOrgId, activeThread?.id || 'global', false);
             setTimeout(() => handleSendMessage(continuation, [], true), 0);
             return;
         }
@@ -1520,17 +1589,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         let targetMsgId = targetMsg.id;
         const existingEvents = targetMsg.agentEvents || [];
 
-        setIsLoading(true);
-        setAgentStreaming(true);
-        setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: true } : m));
+        store.setIsLoading(activeOrgId, activeThread?.id || 'global', true);
+        store.setAgentStreaming(activeOrgId, activeThread?.id || 'global', true);
+        store.setMessages(activeOrgId, activeThread?.id || 'global', prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: true } : m));
 
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
+        const threadId = activeThread?.id || 'global';
+        if (abortControllersRef.current[threadId]) {
+            abortControllersRef.current[threadId].abort();
         }
         const controller = new AbortController();
-        abortControllerRef.current = controller;
-
-        const threadId = activeThread?.id || '';
+        abortControllersRef.current[threadId] = controller;
 
         try {
             const response = await fetch(AGENT_STREAM_URL, {
@@ -1541,9 +1609,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             });
 
             if (!response.ok || !response.body) {
-                setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: false } : m));
-                setIsLoading(false);
-                setAgentStreaming(false);
+                store.setMessages(activeOrgId, threadId, prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: false } : m));
+                store.setIsLoading(activeOrgId, threadId, false);
+                store.setAgentStreaming(activeOrgId, threadId, false);
                 return;
             }
 
@@ -1566,8 +1634,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         collectedEvents.push(eventObj);
 
                         if (eventObj.type === 'model_active') {
-                            if (!strictMode) setLiveModel(eventObj.provider as AIModel);
-                            setModelActivity(prev => {
+                            if (!strictMode) store.setLiveModel(activeOrgId, threadId, eventObj.provider as AIModel);
+                            store.setModelActivity(activeOrgId, threadId, prev => {
                                 const last = prev[prev.length - 1];
                                 if (last?.type === 'model_active' && last.provider === eventObj.provider) return prev;
                                 const extra: ModelActivityEvent[] = [];
@@ -1579,45 +1647,45 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                         }
 
                         if (eventObj.type === 'rate_wait') {
-                            setModelActivity(prev => [...prev, { id: ++modelActivityIdRef.current, type: 'rate_wait', provider: eventObj.provider as AIModel | undefined, model: eventObj.model, wait_sec: eventObj.wait_sec, reason: eventObj.reason, timestamp: Date.now() }]);
+                            store.setModelActivity(activeOrgId, threadId, prev => [...prev, { id: ++modelActivityIdRef.current, type: 'rate_wait', provider: eventObj.provider as AIModel | undefined, model: eventObj.model, wait_sec: eventObj.wait_sec, reason: eventObj.reason, timestamp: Date.now() }]);
                         }
                         if (eventObj.type === 'context_overflow') {
-                            setModelActivity(prev => [...prev, { id: ++modelActivityIdRef.current, type: 'context_overflow', model: eventObj.model, estimated_tokens: eventObj.estimated_tokens, limit: eventObj.limit, timestamp: Date.now() }]);
+                            store.setModelActivity(activeOrgId, threadId, prev => [...prev, { id: ++modelActivityIdRef.current, type: 'context_overflow', model: eventObj.model, estimated_tokens: eventObj.estimated_tokens, limit: eventObj.limit, timestamp: Date.now() }]);
                         }
 
                         if (eventObj.type === 'message_saved' && eventObj.message_id) {
                             const prevId = targetMsgId;
                             targetMsgId = eventObj.message_id;
-                            setMessages(prev => prev.map(m =>
+                            store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
                                 (m.id === prevId || m.id === targetMsgId) ? { ...m, id: targetMsgId, agentEvents: [...existingEvents, ...collectedEvents] } : m
                             ));
                             continue;
                         }
 
-                        setMessages(prev => prev.map(m =>
+                        store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
                             m.id === targetMsgId ? { ...m, agentEvents: [...existingEvents, ...collectedEvents] } : m
                         ));
                     } catch { /* ignore */ }
                 }
             }
 
-            setLiveModel(null);
-            const hadWaits = modelActivity.some(e => e.type === 'rate_wait' || e.type === 'context_overflow');
+            store.setLiveModel(activeOrgId, threadId, null);
+            const hadWaits = store.getSession(activeOrgId, threadId).modelActivity.some(e => e.type === 'rate_wait' || e.type === 'context_overflow');
             if (hadWaits) {
-                setTimeout(() => setModelActivity([]), 3000);
+                setTimeout(() => store.setModelActivity(activeOrgId, threadId, []), 3000);
             } else {
-                setModelActivity([]);
+                store.setModelActivity(activeOrgId, threadId, []);
             }
         } catch (err) {
             console.error('[Agent Continuation] Erro:', err);
         } finally {
-            if (abortControllerRef.current === controller) {
-                abortControllerRef.current = null;
+            if (abortControllersRef.current[threadId] === controller) {
+                delete abortControllersRef.current[threadId];
             }
             streamingThreadIdRef.current = null;
-            setMessages(prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: false } : m));
-            setIsLoading(false);
-            setAgentStreaming(false);
+            store.setMessages(activeOrgId, threadId, prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: false } : m));
+            store.setIsLoading(activeOrgId, threadId, false);
+            store.setAgentStreaming(activeOrgId, threadId, false);
         }
     };
 
@@ -1634,7 +1702,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         }));
 
         // Chama o endpoint de confirmação e faz streaming do resultado
-        const threadId = activeThread?.id || '';
+        const threadId = activeThread?.id || 'global';
         setIsLoading(true);
         setAgentStreaming(true);
         streamingThreadIdRef.current = threadId;
@@ -1668,13 +1736,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             timestamp: new Date(),
             agentEvents: [],
             isAgent: true,
+            agentStreaming: true,
         }]);
-
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
+        if (abortControllersRef.current[threadId]) {
+            abortControllersRef.current[threadId].abort();
         }
         const controller = new AbortController();
-        abortControllerRef.current = controller;
+        abortControllersRef.current[threadId] = controller;
 
         let activeMsgId = msgId;
 
@@ -1741,14 +1809,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             continue;
                         }
 
-                        setMessages(prev => prev.map(m =>
+                        store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
                             (m.id === msgId || m.id === activeMsgId) ? { ...m, agentEvents: [...collectedEvents] } : m
                         ));
                     } catch { /* ignore */ }
                 }
             }
 
-            setMessages(prev => prev.map(m =>
+            store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
                 (m.id === msgId || m.id === activeMsgId) ? { ...m, agentEvents: [...collectedEvents], agentStreaming: false } : m
             ));
         } catch (err) {
@@ -1758,8 +1826,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 console.error('[Agent] Confirm error:', err);
             }
         } finally {
-            if (abortControllerRef.current === controller) {
-                abortControllerRef.current = null;
+            if (abortControllersRef.current[threadId] === controller) {
+                delete abortControllersRef.current[threadId];
             }
             streamingThreadIdRef.current = null;
             
@@ -1768,8 +1836,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 const targetMsg = prev.find(m => m.id === msgId);
                 const isLigacaoOpen = targetMsg?.agentEvents?.some(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
                 if (!isLigacaoOpen) {
-                    setIsLoading(false);
-                    setAgentStreaming(false);
+                    store.setIsLoading(activeOrgId, threadId, false);
+                    store.setAgentStreaming(activeOrgId, threadId, false);
                 }
                 return prev;
             });
@@ -1797,8 +1865,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         const historyForApi = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
 
         setIsAtBottom(true);
-        setMessages(prev => [...prev, userMsg]);
-        setInputValue('');
+        store.setMessages(activeOrgId, threadId, prev => [...prev, userMsg]);
+        store.setInputValue(activeOrgId, threadId, "");
         setSelectedCompanies([]);
 
         await executeAgent(text, threadId, historyForApi, directAction);
@@ -1927,9 +1995,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     useEffect(() => {
         const handleCallEnded = (e: any) => {
             // Remove o estado de loading da mensagem que chamou a ligação
-            setMessages(prev => prev.map(m => ({ ...m, agentStreaming: false })));
-            setIsLoading(false);
-            setAgentStreaming(false);
+            store.setMessages(activeOrgId, activeThreadIdRef.current || 'global', prev => prev.map(m => ({ ...m, agentStreaming: false })));
+            store.setIsLoading(activeOrgId, activeThreadIdRef.current || 'global', false);
+            store.setAgentStreaming(activeOrgId, activeThreadIdRef.current || 'global', false);
 
             const { contactName, transcript } = e.detail || {};
             
@@ -2011,7 +2079,7 @@ ${transcriptText}
                     onSelectThread={openThread}
                     onNewThread={handleNewThread}
                     isCreating={isCreatingThread}
-                    selectedOrgLogo={selectedOrgLogo}
+                    selectedOrgLogo={currentOrgInfo.logo}
                     onDeleteThread={(t) => setThreadsToDelete([t])}
                     onDeleteThreadsBulk={setThreadsToDelete}
                     onCloseChat={() => setShowChat(false)}
@@ -2019,7 +2087,7 @@ ${transcriptText}
                         setView('chat');
                         if (typeof window !== 'undefined') {
                             window.localStorage.setItem('chat-panel-view', 'chat');
-                            const targetOrgId = selectedOrgId || 0;
+                            const targetOrgId = activeOrgId || 0;
                             const savedThreadId = window.localStorage.getItem(`active-thread-id-${targetOrgId}`);
                             if (savedThreadId) {
                                 const matched = threads.find(t => t.id === savedThreadId);
@@ -2068,10 +2136,10 @@ ${transcriptText}
             <div className={styles.chatHeader} style={{ paddingLeft: '16px', gap: '12px' }}>
                 <Avatar 
                     kind="company"
-                    src={selectedOrgLogo}
-                    name={selectedOrgName}
+                    src={currentOrgInfo.logo}
+                    name={currentOrgInfo.name}
                     size={32}
-                    style={{ border: selectedOrgLogo ? '3px solid var(--sw-border-strong)' : 'none' }}
+                    style={{ border: currentOrgInfo.logo ? '3px solid var(--sw-border-strong)' : 'none' }}
                 />
                 <div className={styles.chatHeaderInfo} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0 }}>
                     <span style={{ color: 'var(--sw-text-muted)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
@@ -2115,10 +2183,13 @@ ${transcriptText}
                 </div>
             </div>
 
+            {/* Abas dinâmicas para multi-chat */}
+            <ChatTabs />
+
             {/* Accordion de Contexto da Investigação */}
             <ConversationContextAccordion 
                 messages={messages} 
-                orgId={selectedOrgId}
+                orgId={activeOrgId}
                 orgName={cleanOrgName}
                 dealId={activeThread?.meta?.deal_id}
             />
@@ -2135,7 +2206,7 @@ ${transcriptText}
                             ...
                         </h2>
                     </div>
-                ) : selectedOrgId && !prospectingContext && (messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome')) ? (
+                ) : activeOrgId && !prospectingContext && (messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome')) ? (
                     <div className={styles.emptyWelcomeContainer}>
                         <h2 className={styles.emptyWelcomeText}>
                             A{' '}
@@ -2202,7 +2273,7 @@ ${transcriptText}
                                             onAction={(prompt: string) => handleSendMessage(prompt, [], true)}
                                             streamV2Url={AGENT_STREAM_URL}
                                             confirmV2Url={AGENT_CONFIRM_URL}
-                                            orgId={selectedOrgId}
+                                            orgId={activeOrgId}
                                             selectedOrgName={cleanOrgName}
                                             threadId={activeThread?.id}
                                             approvedSuggestedActions={approvedSuggestedActions}

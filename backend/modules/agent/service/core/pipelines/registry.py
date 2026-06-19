@@ -3,7 +3,7 @@ modules.agent.service.core.pipelines.registry
 ==============================================
 Orquestrador e registro central de pipelines para o agente CRM.
 """
-from typing import Any, List, Type
+from typing import Any, List, Type, Optional
 from core.observability.logging_config import get_logger
 from modules.agent.service.core.pipelines.base import BasePipeline
 from modules.agent.service.core.pipelines.search import SearchPipeline
@@ -36,7 +36,6 @@ class PipelineRegistry:
         Orquestra a correspondência e retorna as etapas da pipeline selecionada.
         Retorna string vazia se nenhuma pipeline for correspondida (raciocínio livre).
         """
-        from typing import Optional
         subj_clean = subject.strip()
         type_clean = act_type.strip() if act_type else ""
 

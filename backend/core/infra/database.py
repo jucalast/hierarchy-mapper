@@ -67,6 +67,10 @@ if DATABASE_URL and "sqlite" in DATABASE_URL.lower():
         DATABASE_URL = f"sqlite+aiosqlite:///{resolved_path}"
     else:
         DATABASE_URL = f"sqlite:///{resolved_path}"
+elif DATABASE_URL and "postgresql" in DATABASE_URL.lower():
+    # Remove query string parameters that asyncpg doesn't support (like sslmode)
+    if "?" in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.split("?", 1)[0]
 
 Base = declarative_base()
 
@@ -74,11 +78,19 @@ Base = declarative_base()
 # NullPool para SQLite: sem pool de conexões — evita pool_timeout de 30s sob carga
 # concurrent e erros "database is locked". Cada request abre e fecha sua conexão.
 _is_sqlite = "sqlite" in DATABASE_URL.lower()
+_is_postgres = "postgresql" in DATABASE_URL.lower()
+
+connect_args = {}
+if _is_sqlite:
+    connect_args = {"check_same_thread": False}
+elif _is_postgres:
+    connect_args = {"ssl": True}
+
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     poolclass=NullPool if _is_sqlite else None,
-    connect_args={"check_same_thread": False} if _is_sqlite else {},
+    connect_args=connect_args,
 )
 
 # WAL mode + busy_timeout para SQLite: permite readers concorrentes e evita SQLITE_BUSY

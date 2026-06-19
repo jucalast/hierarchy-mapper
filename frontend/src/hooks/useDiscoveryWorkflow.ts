@@ -11,6 +11,7 @@ interface DiscoveryWorkflowProps {
     rawEmployees: any[];
     fetchPipedriveOrgs: () => void;
     setPipedriveOrgs: (updater: (prev: any[]) => any[]) => void;
+    pathname: string;
 }
 
 export function useDiscoveryWorkflow({
@@ -21,7 +22,8 @@ export function useDiscoveryWorkflow({
     setChatOrgId,
     rawEmployees,
     fetchPipedriveOrgs,
-    setPipedriveOrgs
+    setPipedriveOrgs,
+    pathname
 }: DiscoveryWorkflowProps) {
     const { addNotification } = useNotifications();
     const [step, setStep] = useState<"input" | "confirm" | "scanning" | "loading" | "initial">("input");
@@ -54,6 +56,11 @@ export function useDiscoveryWorkflow({
     const [confirmedBrand, setConfirmedBrand] = useState("");
     const [confirmedLogo, setConfirmedLogo] = useState("");
     const [confirmedFollowers, setConfirmedFollowers] = useState("");
+
+    useEffect(() => {
+        console.log(`[useDiscoveryWorkflow State Monitor] step: "${step}", confirmedBrand: "${confirmedBrand}", cnpj: "${cnpj}", domainTarget: "${domainTarget}"`);
+    }, [step, confirmedBrand, cnpj, domainTarget]);
+
     const [refreshDrawerTrigger, setRefreshDrawerTrigger] = useState(0);
     const [enrichingIds, setEnrichingIds] = useState<Set<number>>(new Set());
     const [partners, setPartners] = useState<any[]>([]);
@@ -70,6 +77,25 @@ export function useDiscoveryWorkflow({
         confirmIntelligence,
         resetHierarchy
     } = useHierarchy;
+
+    useEffect(() => {
+        const isOrgRoute = pathname.match(/\/org\/(\d+)/);
+        if (!isOrgRoute) {
+            console.log("[useDiscoveryWorkflow] Path changed to non-org route. Resetting states.");
+            setStep("input");
+            setCnpj("");
+            setDomainTarget("");
+            setProductFocus("");
+            setAreaFocus("compras");
+            setConfirmedBrand("");
+            setConfirmedLogo("");
+            setConfirmedFollowers("");
+            setBrandOptions([]);
+            setPartners([]);
+            setMappingMode('discovery');
+            setConfirmedLinkedInUrl('');
+        }
+    }, [pathname, setBrandOptions]);
 
     // Helper para sanitizar valores
     const sanitizeVal = (val: any) => {
@@ -298,6 +324,7 @@ export function useDiscoveryWorkflow({
         setCnpj("");
         setDomainTarget("");
         setProductFocus("");
+        setAreaFocus("compras");
         setConfirmedBrand("");
         setConfirmedLogo("");
         setConfirmedFollowers("");
