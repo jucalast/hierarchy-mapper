@@ -191,8 +191,8 @@ async def _agent_loop(
     
     for iteration in range(start_iteration, _max_iters):
         if _suggest_actions_done(messages):
-            if _cached_final_response:
-                yield _emit({"type": "final", "response": _cached_final_response})
+            _final_text = _cached_final_response or "Ações sugeridas criadas com sucesso."
+            yield _emit({"type": "final", "response": _final_text})
             return
 
         # Poda de memória inteligente
@@ -655,6 +655,11 @@ async def _agent_loop(
         # Salva o turno atual e continua para a próxima iteração
         messages.append({"role": "assistant", "content": content, "tool_use_id": [b["id"] for b in tool_use_blocks] if tool_use_blocks else None})
         messages.append({"role": "user", "content": tool_results})
+        
+        if _suggest_actions_done(messages):
+            _final_text = _cached_final_response or "Ações sugeridas criadas com sucesso."
+            yield _emit({"type": "final", "response": _final_text})
+            return
         
         if loop_state.get("should_break") if "loop_state" in locals() else False:
             break

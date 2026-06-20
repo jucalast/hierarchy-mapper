@@ -497,7 +497,7 @@
   gap: var(--space-8);
   padding: 8px;
   background: var(--sw-surface-overlay) !important;
-  border: 1px solid var(--sw-border-strong);
+  border: var(--sw-border-width) solid var(--sw-border);
   border-radius: var(--chat-radius-lg);
   pointer-events: auto;
   transition: all var(--chat-transition-fast);
@@ -506,13 +506,16 @@
   isolation: isolate;
 }
 
+.inputBox:focus-within {
+  border-color: var(--sw-primary) !important;
+}
+
 [data-theme='light'] .inputBox {
   background: var(--sw-surface-overlay) !important;
-  border-color: var(--sw-border-strong);
 }
 
 .chatPanel[data-theme='dark'] .inputBox {
-  background: rgba(19, 19, 19, 0.75) !important;
+  background: #191919bf !important;
 }
 
 .inputBoxInterior {

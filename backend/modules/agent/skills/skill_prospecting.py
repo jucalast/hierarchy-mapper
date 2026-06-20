@@ -49,12 +49,18 @@ Follow these steps strictly:
 2. Fetch the persons (`pipedrive_get_persons`). 
 
 ⚠️ REGRA CRÍTICA — ZERO CONTATOS:
-Se `pipedrive_get_persons` retornar 0 contatos (ou nenhum contato com canal válido de comunicação):
+Se `pipedrive_get_persons` retornar 0 contatos (ou se não houver NENHUM contato com canal válido de comunicação — e-mail ou telefone — cadastrado no Pipedrive OU listado no Banco Local `[ID:LocalDB]`):
   → Chame `open_hierarchy_drawer` IMEDIATAMENTE para abrir o mapeador de hierarquia.
   → O mapeador vai descobrir os decisores da empresa automaticamente.
   → Após o mapeamento, gere o plano de prospecção (`generate_prospecting_plan`) com os dados obtidos.
   → Em seguida, siga com a pipeline normal a partir do passo 5 (evaluate_prospects).
   → NÃO trave, NÃO encerre o turno — o mapeamento é a ação correta quando não há contatos.
+
+⚠️ REGRA CRÍTICA — CONTATOS NO BANCO LOCAL:
+Se houver contatos com canais válidos de comunicação (e-mail ou telefone) que estão no Banco Local `[ID:LocalDB]` (com ID Pipedrive nulo):
+  → Você NÃO DEVE chamar `open_hierarchy_drawer`.
+  → Em vez disso, prossiga com a pipeline normal (geração do plano, avaliação dos decisores, etc.) e sugira salvar os decisores principais no Pipedrive (`pipedrive_create_person`), vinculá-los ao negócio (`pipedrive_update_deal`) e criar as tarefas de abordagem.
+
 
 3. Generate a Prospecting Plan (`generate_prospecting_plan`) if one does not exist yet. ESTA ETAPA É OBRIGATÓRIA antes de decidir quem salvar. (Pule este passo se já chamou open_hierarchy_drawer acima — o plano será gerado após o mapeamento.)
 4. Output a summary of the context/Dossier and the Prospecting Plan to the user.

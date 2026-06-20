@@ -8,7 +8,7 @@
   align-items: flex-end;
   gap: 2px;
   background: var(--sw-sidebar);
-  border-bottom: 1px solid var(--sw-border);
+  border-bottom: var(--sw-border-width) solid var(--sw-border);
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -83,7 +83,7 @@
   border-radius: 3px;
   object-fit: cover;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: var(--border-width-sm) solid var(--sw-border);
 }
 
 .tabName {

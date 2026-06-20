@@ -161,12 +161,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const notice = getNoticeStyle(modelActivity || [], undefined, theme);
     const hasRunningTask = !!activeRunningTask;
 
-    const consoleBg = theme === 'dark' ? '#1e1e1e' : '#e5e5e5';
+    const consoleBg = 'var(--chat-console-bg)';
 
     const taskStyle = (hasRunningTask && !isExpandedRunningTask) ? {
         border: 'var(--sw-border-width) solid var(--chat-border-weak)',
         background: consoleBg,
-        borderRadius: 16,
+        borderRadius: 'var(--radius-lg)',
         pointerEvents: 'auto' as const,
         overflow: 'hidden',
     } : null;
@@ -186,7 +186,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const expandedTaskStyle = isExpandedRunningTask ? {
         border: 'var(--sw-border-width) solid var(--chat-border-weak)',
         background: consoleBg,
-        borderRadius: 16,
+        borderRadius: 'var(--radius-lg)',
         pointerEvents: 'auto' as const,
         display: 'flex',
         flexDirection: 'column' as const,
@@ -198,7 +198,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const containerStyle = expandedTaskStyle || taskStyle || (notice ? {
         border: `1px solid ${notice.border}`,
         background: notice.bg,
-        borderRadius: 16,
+        borderRadius: 'var(--radius-lg)',
         pointerEvents: 'auto' as const,
     } : {});
 
@@ -211,7 +211,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         const isErr = activeRunningTask.status === 'error';
 
         // Cores correspondentes ao componente de notificação de LLM
-        const statusColor = isStreaming ? '#7a8bff' : isAwaiting ? '#f59e0b' : isDone ? '#22c55e' : '#ef4444';
+        const statusColor = isStreaming ? 'var(--sw-primary)' : isAwaiting ? 'var(--sw-status-warning)' : isDone ? 'var(--sw-status-success)' : 'var(--sw-status-danger)';
         const statusLabel = isStreaming ? 'Executando tarefa' : isAwaiting ? 'Ação requerida' : isDone ? 'Tarefa concluída' : 'Falha na tarefa';
 
         return (
@@ -224,32 +224,32 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     padding: '8px 16px',
                     fontSize: 'var(--font-sm)',
                     fontWeight: 500,
-                    color: theme === 'dark' ? 'rgba(255, 255, 255, 0.75)' : 'rgba(0, 0, 0, 0.75)',
+                    color: 'var(--sw-text-subtle)',
                     letterSpacing: '0.01em',
                     cursor: 'pointer',
                     userSelect: 'none',
                     transition: 'opacity 0.2s',
                     background: consoleBg,
-                    borderTopLeftRadius: 15,
-                    borderTopRightRadius: 15,
+                    borderTopLeftRadius: 'var(--radius-lg)',
+                    borderTopRightRadius: 'var(--radius-lg)',
                 }}
             >
                 <span style={{ color: statusColor, fontWeight: 600 }}>{statusLabel}</span>
-                <span style={{ opacity: 0.25, color: theme === 'dark' ? '#fff' : '#000' }}>·</span>
+                <span style={{ opacity: 0.25, color: 'var(--sw-text-base)' }}>·</span>
                 <span style={{
                     flex: 1,
                     minWidth: 0,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    color: theme === 'dark' ? '#fff' : '#000',
+                    color: 'var(--sw-text-base)',
                 }}>
                     {activeRunningTask.label}
                 </span>
 
                 <span style={{
                     fontSize: 'var(--font-xs)',
-                    color: theme === 'dark' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)',
+                    color: 'var(--sw-text-muted)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                     fontWeight: 600,
@@ -281,16 +281,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         height: 24,
                         borderRadius: '50%',
                         marginLeft: 8,
-                        color: theme === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
+                        color: 'var(--sw-text-muted)',
                         transition: 'all 0.2s',
                     }}
                     onMouseEnter={(e) => {
-                        e.currentTarget.style.background = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-                        e.currentTarget.style.color = theme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)';
+                        e.currentTarget.style.background = 'var(--sw-hover)';
+                        e.currentTarget.style.color = 'var(--sw-text-base)';
                     }}
                     onMouseLeave={(e) => {
                         e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.color = theme === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)';
+                        e.currentTarget.style.color = 'var(--sw-text-muted)';
                     }}
                     title="Fechar console"
                 >

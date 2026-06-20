@@ -981,7 +981,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                         onNodesChange={onNodesChange}
                                         onEdgesChange={onEdgesChange}
                                         onConnect={onConnect}
-                                        fitViewHandler={<FitViewHandler shouldFitView={shouldFitView} nodes={nodes} />}
+                                        fitViewHandler={<FitViewHandler shouldFitView={shouldFitView} nodes={nodes} setShouldFitView={setShouldFitView} />}
                                         smartBackground={<SmartBackground />}
                                     />
                                     

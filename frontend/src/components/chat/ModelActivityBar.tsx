@@ -53,10 +53,9 @@ export function getNoticeStyle(events: ModelActivityEvent[], remainingSeconds?: 
     const modelLabel = ev.model ?? ev.provider ?? '—';
     const providerColor = ev.provider ? (MODEL_COLORS[ev.provider] ?? '#64748b') : '#64748b';
 
-    const isLight = theme === 'light';
-    const GRAY_BG = isLight ? '#d9d9d9' : '#1e1e1e';
-    const GRAY_BORDER = isLight ? 'transparent' : 'rgba(255, 255, 255, 0.1)';
-    const DEFAULT_COLOR = isLight ? '#374151' : 'rgba(255, 255, 255, 0.75)';
+    const GRAY_BG = 'var(--chat-console-bg)';
+    const GRAY_BORDER = 'var(--sw-border)';
+    const DEFAULT_COLOR = 'var(--sw-text-subtle)';
 
     if (ev.type === 'rate_wait') {
         const sec = remainingSeconds !== undefined ? remainingSeconds : (ev.wait_sec || 0);

@@ -1060,9 +1060,9 @@
 .formInput,
 .formSelect,
 .formTextarea {
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 8px;
+    background: var(--sw-bg);
+    border: var(--sw-border-width) solid var(--sw-border);
+    border-radius: var(--radius-sm);
     padding: 10px 12px;
     font-size: var(--font-base);
     color: var(--sw-text-base);
@@ -1071,6 +1071,14 @@
     font-family: inherit;
     width: 100%;
     box-sizing: border-box;
+}
+
+.formInput,
+.formTextarea {
+    cursor: text;
+}
+
+.formSelect {
     cursor: pointer;
 }
 
@@ -1083,23 +1091,17 @@
 .formInput:hover,
 .formSelect:hover,
 .formTextarea:hover {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: var(--sw-hover);
+    border-color: var(--sw-border-strong);
 }
 
 .formInput:focus,
 .formSelect:focus,
 .formSelect.active,
 .formTextarea:focus {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--sw-hover);
     border-color: var(--sw-primary);
-    box-shadow: 0 0 0 3px var(--sw-primary-soft);
-    border-radius: 8px;
-}
-
-.formInput:focus,
-.formTextarea:focus {
-    cursor: text;
+    box-shadow: 0 0 0 2px var(--sw-primary-soft);
 }
 
 .formInputWithIcon {

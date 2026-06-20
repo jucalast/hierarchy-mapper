@@ -6,25 +6,25 @@
 
 :root {
   /* ── Surfaces (Dark default) ─────────────── */
-  --chat-bg-primary:   #131313;   /* sw-sidebar */
+  --chat-bg-primary:   var(--sw-sidebar);
   --chat-bg-secondary: rgba(255, 255, 255, 0.04);
   --chat-bg-tertiary:  rgba(255, 255, 255, 0.02);
   --chat-console-bg:   #1e1e1e;
 
   /* ── Borders ──────────────────────────── */
-  --chat-border-color: rgba(255, 255, 255, 0.15);  /* sw-border-strong */
-  --chat-border-weak:  rgba(255, 255, 255, 0.08);  /* sw-border */
-  --chat-border-width: 1.5px;
+  --chat-border-color: var(--sw-border-strong);
+  --chat-border-weak:  var(--sw-border);
+  --chat-border-width: var(--border-width-md);
 
   /* ── Text ─────────────────────────────── */
-  --chat-text-primary:   #e4e4e7;
-  --chat-text-secondary: rgba(255, 255, 255, 0.6);
-  --chat-text-muted:     rgba(255, 255, 255, 0.35);
+  --chat-text-primary:   var(--sw-text-base);
+  --chat-text-secondary: var(--sw-text-subtle);
+  --chat-text-muted:     var(--sw-text-muted);
 
   /* ── Accent ───────────────────────────── */
-  --chat-accent-color: #818cf8;                    /* sw-primary dark */
-  --chat-accent-soft:  rgba(129, 140, 248, 0.12);  /* sw-primary-soft dark */
-  --chat-accent-hover: #a5b4fc;
+  --chat-accent-color: var(--sw-primary);
+  --chat-accent-soft:  var(--sw-primary-soft);
+  --chat-accent-hover: var(--sw-primary-hover);
 
   /* ── Channel colors ───────────────────── */
   --chat-whatsapp-green: #25D366;
@@ -37,17 +37,17 @@
   --chat-ai-msg-text:   rgba(255, 255, 255, 0.88);
 
   /* ── Radii (matches sw-) ──────────────── */
-  --chat-radius-sm: 8px;
-  --chat-radius-md: 12px;
-  --chat-radius-lg: 16px;
+  --chat-radius-sm: var(--radius-sm);
+  --chat-radius-md: var(--radius-md);
+  --chat-radius-lg: var(--radius-lg);
 
   /* ── Spacing ──────────────────────────── */
-  --space-4:  4px;
-  --space-8:  8px;
-  --space-12: 12px;
-  --space-16: 16px;
-  --space-24: 24px;
-  --space-32: 32px;
+  --space-4:  var(--space-4);
+  --space-8:  var(--space-8);
+  --space-12: var(--space-12);
+  --space-16: var(--space-16);
+  --space-24: var(--space-24);
+  --space-32: var(--space-32);
 
   /* ── Grid ─────────────────────────────── */
   --chat-grid-color: rgba(255, 255, 255, 0.05);
@@ -56,48 +56,48 @@
   --touch-target: 40px;
 
   /* ── Transitions (matches sw-) ───────── */
-  --chat-transition-fast:   0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  --chat-transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --chat-transition-fast:   var(--transition-fast);
+  --chat-transition-smooth: var(--transition-smooth);
 
   /* ── Shadows (Dark) ───────────────────── */
-  --chat-shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-  --chat-shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --chat-shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+  --chat-shadow-sm: var(--shadow-sm);
+  --chat-shadow-md: var(--shadow-md);
+  --chat-shadow-lg: var(--shadow-lg);
 }
 
 /* ── Light mode ─────────────────────────────── */
 [data-theme='light'] {
   /* Surfaces */
-  --chat-bg-primary:   #ffffff;
-  --chat-bg-secondary: #ececef;
-  --chat-bg-tertiary:  #ffffff;
+  --chat-bg-primary:   var(--sw-sidebar);
+  --chat-bg-secondary: var(--sw-surface-raised);
+  --chat-bg-tertiary:  var(--sw-surface-base);
   --chat-console-bg:   #e5e5e5;
 
   /* Borders */
-  --chat-border-color: rgba(0, 0, 0, 0.10);
-  --chat-border-weak:  rgba(0, 0, 0, 0.06);
+  --chat-border-color: var(--sw-border-strong);
+  --chat-border-weak:  var(--sw-border);
 
   /* Text */
-  --chat-text-primary:   #111113;
-  --chat-text-secondary: #555560;
-  --chat-text-muted:     rgba(0, 0, 0, 0.38);
+  --chat-text-primary:   var(--sw-text-base);
+  --chat-text-secondary: var(--sw-text-subtle);
+  --chat-text-muted:     var(--sw-text-muted);
 
   /* Accent */
-  --chat-accent-color: #4f46e5;                 /* sw-primary light */
-  --chat-accent-soft:  rgba(79, 70, 229, 0.08); /* sw-primary-soft light */
-  --chat-accent-hover: #3d36c0;
+  --chat-accent-color: var(--sw-primary);
+  --chat-accent-soft:  var(--sw-primary-soft);
+  --chat-accent-hover: var(--sw-primary-hover);
 
   /* Message bubbles — Light */
-  --chat-user-msg-bg:   #111113;
-  --chat-user-msg-text: #ffffff;
-  --chat-ai-msg-bg:     #ffffff;
-  --chat-ai-msg-text:   #111113;
+  --chat-user-msg-bg:   var(--sw-text-base);
+  --chat-user-msg-text: var(--sw-bg);
+  --chat-ai-msg-bg:     var(--sw-surface-base);
+  --chat-ai-msg-text:   var(--sw-text-base);
 
   /* Grid */
-  --chat-grid-color: rgba(0, 0, 0, 0.04);
+  --chat-grid-color: var(--sw-grid-color);
 
   /* Shadows */
-  --chat-shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
-  --chat-shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --chat-shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+  --chat-shadow-sm: var(--shadow-sm);
+  --chat-shadow-md: var(--shadow-md);
+  --chat-shadow-lg: var(--shadow-lg);
 }

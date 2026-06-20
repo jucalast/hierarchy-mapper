@@ -28,7 +28,7 @@ export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
     onOpenDetailsModal,
     onNavigateToRoot,
 }) => {
-    const [isSearchExpanded, setIsSearchExpanded] = React.useState(!!searchTerm);
+
 
     const dropdownItems = React.useMemo(() => [
         {
@@ -84,36 +84,20 @@ export const DrawerHeader: React.FC<DrawerHeaderProps> = ({
                 </div>
             ) : (
                 <div className={styles.mainHeader}>
-                    <div className={`${styles.drawerInputWrapper} ${isSearchExpanded ? styles.expanded : ''}`}>
-                        <button 
-                            className={styles.searchToggleBtn}
-                            onClick={() => setIsSearchExpanded(true)}
-                            title="Pesquisar"
-                        >
-                            <Search size={16} className={styles.inputIcon} />
-                        </button>
+                    <div className={styles.drawerInputWrapper}>
+                        <Search size={16} className={styles.inputIcon} />
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="Pesquisar no Pipedrive..."
                             className={styles.drawerInput}
-                            onBlur={() => {
-                                if (!searchTerm) setIsSearchExpanded(false);
-                            }}
-                            ref={(el) => {
-                                if (isSearchExpanded && el && !searchTerm) {
-                                    el.focus();
-                                }
-                            }}
                         />
-                        {isSearchExpanded && searchTerm && (
+                        {searchTerm && (
                             <button 
                                 className={styles.clearSearchBtn}
-                                onClick={() => {
-                                    setSearchTerm('');
-                                    setIsSearchExpanded(false);
-                                }}
+                                onClick={() => setSearchTerm('')}
+                                title="Limpar pesquisa"
                             >
                                 <X size={14} />
                             </button>
