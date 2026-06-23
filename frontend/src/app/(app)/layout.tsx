@@ -67,7 +67,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [currentOrg, setCurrentOrg] = useState<{ id: number; name: string; logo: string; prospectingContext?: string | null }>({ id: 0, name: "", logo: "" });
   const [isOrgLoading, setIsOrgLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string | null } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string | null; company_name?: string } | null>(null);
+  const [tasksForToday, setTasksForToday] = useState(0);
+
+  useEffect(() => {
+    const handleUpdateTasks = (e: any) => setTasksForToday(e.detail || 0);
+    window.addEventListener('update_tasks_today', handleUpdateTasks);
+    return () => window.removeEventListener('update_tasks_today', handleUpdateTasks);
+  }, []);
 
   // Escuta evento para abrir o Chat a partir de componentes filhos
   useEffect(() => {
@@ -98,7 +105,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           if (parsed && parsed.name) {
             setCurrentUser({
               name: parsed.name,
-              avatar: parsed.avatar || null
+              avatar: parsed.avatar || null,
+              company_name: parsed.company_name || parsed.company_id?.name || parsed.company || 'Buscando...'
             });
           }
         } catch (e) {
@@ -109,16 +117,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (userName) {
           setCurrentUser({
             name: userName,
-            avatar: null
+            avatar: null,
+            company_name: 'LINKB2B'
           });
         }
       }
 
       // Busca atualizada do backend usando apiGet para garantir headers de auth
       try {
-        const data = await apiGet('/pipedrive/current-user');
+        const data = await apiGet('/pipedrive/current-user', { cache: 'no-store' });
         if (data) {
-          setCurrentUser(data);
+          setCurrentUser({
+            ...data,
+            company_name: data.company_name || data.company_id?.name || data.company || 'Buscando...'
+          });
           localStorage.setItem('pipedrive-current-user', JSON.stringify(data));
         }
       } catch (err) {
@@ -257,116 +269,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <HierarchyScanProvider>
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
-        {/* Global Header spans full width */}
-        <header style={{ 
-          height: '48px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          padding: '0 24px',
-          background: theme === 'dark' 
-            ? 'linear-gradient(135deg, #1e2145 30%, #131313 80%)' 
-            : 'linear-gradient(135deg, #eef2ff 30%, #f9fafb 80%)',
-          borderBottom: '1px solid var(--sw-border)',
-          zIndex: 100,
-          transition: 'background var(--transition-fast)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ 
-              fontFamily: 'Inter, sans-serif', 
-              fontSize: '12px', 
-              fontWeight: 600, 
-              color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)', 
-              letterSpacing: '0.08em', 
-              textTransform: 'uppercase' 
-            }}>
-              LINKB2B Hierarchy Mapper
-            </span>
-          </div>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <TriggerNotifications
-              apiBase={API_BASE_URL}
-              onOpenChat={(orgId, orgName) => {
-                window.dispatchEvent(new CustomEvent('toggle_chat', { detail: { open: true } }));
-              }}
-            />
-            
-            <button
-              onClick={() => {
-                const newVal = !showChat;
-                setAndSaveShowChat(newVal);
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '8px',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
-                marginRight: '8px'
-              }}
-              title="Abrir Assistente"
-            >
-              <PanelRight size={20} />
-            </button>
-
-            {currentUser && (
-              <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '8px', 
-                  marginRight: '8px', 
-                  borderRight: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'var(--sw-border)'}`, 
-                  paddingRight: '16px', 
-                  height: '24px' 
-              }}>
-                  <Avatar
-                      kind="person"
-                      name={currentUser.name}
-                      src={currentUser.avatar}
-                      size={24}
-                  />
-                  <span style={{ fontSize: '12px', fontWeight: 500, color: theme === 'dark' ? 'white' : 'var(--sw-text-base)', opacity: 0.8 }}>
-                      {currentUser.name}
-                  </span>
-              </div>
-            )}
-
-            <button
-              onClick={handleLogout}
-              style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '8px',
-                  color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
-                  display: 'flex',
-                  alignItems: 'center'
-              }}
-              title="Sair"
-            >
-              <LogOut size={18} />
-            </button>
-          </div>
-        </header>
-
         <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
             {children}
             <BackendGate>
               <main style={{ height: '100%', width: '100%' }}>
-                <NetworkGraph onLogout={handleLogout} />
+                <NetworkGraph 
+                  onLogout={handleLogout} 
+                  currentUser={currentUser}
+                  tasksForToday={tasksForToday}
+                  onToggleChat={() => {
+                    const newVal = !showChat;
+                    setAndSaveShowChat(newVal);
+                  }}
+                />
               </main>
             </BackendGate>
           </div>
 
           <div style={{ 
             height: '100%', 
-            display: showChat ? 'flex' : 'none',
-            borderLeft: '1px solid var(--sw-border)'
+            display: 'flex',
+            borderLeft: 'none'
           }}>
             <ChatPanel
               showChat={showChat}

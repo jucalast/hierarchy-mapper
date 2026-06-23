@@ -1552,7 +1552,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
             if (ev.type === 'tool_result' && ev.call_id && !notifiedToolResultsRef.current.has(ev.call_id)) {
                 notifiedToolResultsRef.current.add(ev.call_id);
                 if (ev.ok && ev.tool) {
-                    if (ev.tool.startsWith('pipedrive_update_') || ev.tool.startsWith('pipedrive_create_') || ev.tool.startsWith('pipedrive_delete_')) {
+                    if (ev.tool.startsWith('pipedrive_update_') || ev.tool.startsWith('pipedrive_create_') || ev.tool.startsWith('pipedrive_delete_') || ev.tool === 'generate_prospecting_plan') {
                         hasNewCrmUpdate = true;
                     }
                     if (ev.tool === 'open_ligacao_view') {

@@ -73,6 +73,10 @@ Mensagem atual do usuário: "{message}"
 
 def _extract_intent(data: dict) -> dict:
     """Extrai e normaliza o intent de um dict."""
+    from modules.agent.service.helpers import is_task_creation_message
+    original_message = data.get("_original_message", "")
+    is_task_creation = is_task_creation_message(original_message)
+
     raw_scope = data.get("data_scope", [])
     # Garante que data_scope é sempre uma lista válida
     if not isinstance(raw_scope, list):
@@ -92,12 +96,16 @@ def _extract_intent(data: dict) -> dict:
     
     # Normalização de pipeline_intent
     pipeline_intent = data.get("pipeline_intent") or "none"
-    if pipeline_intent not in ["prospecting_plan", "search", "followup", "meeting", "quote", "communication", "call", "none"]:
+    if is_task_creation:
+        pipeline_intent = "none"
+    elif pipeline_intent not in ["prospecting_plan", "search", "followup", "meeting", "quote", "communication", "call", "none"]:
         pipeline_intent = "none"
 
     # Normalização de skill_intent
     skill_intent = data.get("skill_intent") or "unknown"
-    if skill_intent not in ["call", "prospect", "outreach", "followup", "meeting", "negotiate", "unknown"]:
+    if is_task_creation:
+        skill_intent = "unknown"
+    elif skill_intent not in ["call", "prospect", "outreach", "followup", "meeting", "negotiate", "unknown"]:
         skill_intent = "unknown"
 
     result = {

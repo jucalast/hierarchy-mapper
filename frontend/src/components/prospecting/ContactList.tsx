@@ -8,7 +8,8 @@ import {
     Briefcase,
     Info,
     Trash2,
-    BadgeCheck
+    BadgeCheck,
+    X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import styles from './ContactList.module.css';
@@ -45,6 +46,15 @@ export const ContactList: React.FC<ContactListProps> = ({
     const [isBatchValidatingLocal, setIsBatchValidatingLocal] = React.useState(false);
     const [batchProgress, setBatchProgress] = React.useState<{ current: number, total: number } | null>(null);
     const [localEmailUpdates, setLocalEmailUpdates] = React.useState<Record<string, { email?: string, verified?: boolean, deleted?: boolean }>>({});
+    const isCancelledRef = React.useRef(false);
+
+    const handleCancelBatch = () => {
+        isCancelledRef.current = true;
+        setIsBatchValidatingLocal(false);
+        setBatchProgress(null);
+        setDiscoveryActiveId(null);
+        toast.error("Validação em lote cancelada.");
+    };
 
     const handleDiscoverEmail = (person: any, e: React.MouseEvent) => {
         // Tenta encontrar o elemento de e-mail na mesma linha do contato
@@ -89,10 +99,12 @@ export const ContactList: React.FC<ContactListProps> = ({
             return;
         }
 
+        isCancelledRef.current = false;
         setIsBatchValidatingLocal(true);
         setBatchProgress({ current: 1, total: queue.length });
 
         for (let i = 0; i < queue.length; i++) {
+            if (isCancelledRef.current) break;
             const person = queue[i];
             setBatchProgress({ current: i + 1, total: queue.length });
             setDiscoveryActiveId(person.id);
@@ -118,8 +130,11 @@ export const ContactList: React.FC<ContactListProps> = ({
                     })
                 });
 
+                if (isCancelledRef.current) break;
+
                 if (response.ok) {
                     const data = await response.json();
+                    if (isCancelledRef.current) break;
                     const discoveredEmail = data.recommended || data.email;
                     
                     if (data.ok && discoveredEmail && onEmailDiscovered) {
@@ -145,14 +160,18 @@ export const ContactList: React.FC<ContactListProps> = ({
             } finally {
                 setLoadingDiscover(prev => ({ ...prev, [person.id]: false }));
             }
+            if (isCancelledRef.current) break;
             await new Promise(r => setTimeout(r, 1500));
+            if (isCancelledRef.current) break;
         }
         
-        setDiscoveryActiveId(null);
-        setIsBatchValidatingLocal(false);
-        setBatchProgress(null);
-        toast.success("Validação em lote concluída!");
-        window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+        if (!isCancelledRef.current) {
+            setDiscoveryActiveId(null);
+            setIsBatchValidatingLocal(false);
+            setBatchProgress(null);
+            toast.success("Validação em lote concluída!");
+            window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+        }
     };
 
     const getDropdownItems = (person: any) => {
@@ -258,18 +277,34 @@ export const ContactList: React.FC<ContactListProps> = ({
                 <div className={styles.listHeaderVertical}>
                     <span className={styles.listCount}>Contatos ({persons.length})</span>
                     {onBatchValidateEmails && (
-                        <button 
-                            className={`${styles.batchActionBtn} ${isBatchValidatingLocal ? styles.batchActionBtnLoading : ''}`}
-                            onClick={handleStartBatch}
-                            disabled={isBatchValidatingLocal}
-                            title="Validar e-mails de todos os contatos listados"
-                        >
-                            {isBatchValidatingLocal ? <Spinner size={14} inline color="currentColor" /> : <Mail size={14} />}
-                            {isBatchValidatingLocal && batchProgress 
-                                ? `Validando em Lote... (${batchProgress.current}/${batchProgress.total})` 
-                                : 'Validar todos os e-mails'
-                            }
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button 
+                                className={`${styles.batchActionBtn} ${isBatchValidatingLocal ? styles.batchActionBtnLoading : ''}`}
+                                onClick={handleStartBatch}
+                                disabled={isBatchValidatingLocal}
+                                title="Validar e-mails de todos os contatos listados"
+                            >
+                                {isBatchValidatingLocal ? <Spinner size={14} inline color="currentColor" /> : <Mail size={14} />}
+                                {isBatchValidatingLocal && batchProgress 
+                                    ? `Validando em Lote... (${batchProgress.current}/${batchProgress.total})` 
+                                    : 'Validar todos os e-mails'
+                                }
+                            </button>
+                            {isBatchValidatingLocal && (
+                                <button 
+                                    onClick={handleCancelBatch}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        padding: '4px 10px', background: '#ef4444', color: '#fff',
+                                        border: 'none', borderRadius: '6px', fontSize: '12px',
+                                        fontWeight: 600, cursor: 'pointer'
+                                    }}
+                                    title="Cancelar a validação em lote"
+                                >
+                                    <X size={14} /> Cancelar
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             )}

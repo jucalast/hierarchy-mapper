@@ -1,14 +1,18 @@
 import React from 'react';
-import { PanelRightOpen, Clock, Plus } from 'lucide-react';
+import { Clock, Plus } from 'lucide-react';
 import styles from './ChatPanel.module.css';
 
-import { Avatar, Modal, Button } from '../ui';
+import { Modal, Button } from '../ui';
 import { ChatInput } from './ChatInput';
-import { ChatMessage } from './ChatMessage';
-import { AgentMessage } from './AgentV2Message';
 import { ChatTabs } from './ChatTabs';
 import { ConversationContextAccordion } from './ConversationContextAccordion';
 import { ThreadList } from './ThreadList';
+
+// Micro Components Imports
+import { CollapsedChatHandle } from './components/CollapsedChatHandle';
+import { ChatPanelHeader } from './components/ChatPanelHeader';
+import { EmptyWelcomeState } from './components/EmptyWelcomeState';
+import { MessagesList } from './components/MessagesList';
 
 import { ai } from '@/services/api';
 import { useChatPanel } from './useChatPanel';
@@ -168,48 +172,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // ═══════════════════════════════════════════
     // RENDER: Collapsed handle view
     // ═══════════════════════════════════════════
-    if (!showChat) {
-        return (
-            <div 
-                style={{
-                    width: '56px',
-                    height: '100%',
-                    backgroundColor: '#131313',
-                    borderLeft: '1px solid rgba(255, 255, 255, 0.04)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    paddingTop: '16px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    flexShrink: 0
-                }}
-                onClick={() => setShowChat(true)}
-                title="Abrir Assistente de IA"
-            >
-                <button 
-                    style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--sw-text-muted)',
-                        cursor: 'pointer',
-                        padding: '8px',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'color 0.2s',
-                    }}
-                >
-                    <PanelRightOpen size={20} />
-                </button>
-            </div>
-        );
-    }
+    // Se não for mostrar o chat, mantemos montado para a transição CSS, 
+    // mas também exibimos o handle
+    const handleNode = !showChat ? <CollapsedChatHandle onClick={() => setShowChat(true)} theme={theme} /> : null;
 
     if (view === 'list') {
         return (
-            <div className={styles.chatPanel} data-theme={theme}>
+            <>
+                {handleNode}
+                <div className={`${styles.chatPanelWrapper} ${showChat ? styles.chatPanelWrapperOpen : styles.chatPanelWrapperClosed}`}>
+                <div className={styles.chatPanelInner} data-theme={theme}>
                 <ThreadList
                     orgName={hasValidOrg ? cleanOrgName : 'Geral'}
                     threads={threads}
@@ -260,6 +232,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     </p>
                 </Modal>
             </div>
+            </div>
+            </>
         );
     }
 
@@ -267,58 +241,20 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     // RENDER: Chat view
     // ═══════════════════════════════════════════
     return (
-        <div className={styles.chatPanel} data-theme={theme}>
+        <>
+            {handleNode}
+            <div className={`${styles.chatPanelWrapper} ${showChat ? styles.chatPanelWrapperOpen : styles.chatPanelWrapperClosed}`}>
+            <div className={styles.chatPanelInner} data-theme={theme}>
 
             {/* Chat sub-header: back + thread title + activities toggle */}
-            <div className={styles.chatHeader} style={{ paddingLeft: '16px', gap: '12px' }}>
-                <Avatar 
-                    kind="company"
-                    src={currentOrgInfo.logo}
-                    name={currentOrgInfo.name}
-                    size={32}
-                    style={{ border: currentOrgInfo.logo ? '3px solid var(--sw-border-strong)' : 'none' }}
-                />
-                <div className={styles.chatHeaderInfo} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0 }}>
-                    <span style={{ color: 'var(--sw-text-muted)', fontWeight: 600, fontSize: '0.88rem', flexShrink: 0 }}>
-                        {activeThread?.title || 'Nova conversa'}
-                    </span>
-                    <span style={{ color: 'var(--sw-border)', fontWeight: 300, fontSize: '0.88rem', flexShrink: 0 }}>/</span>
-                    <span 
-                        style={{ 
-                            color: 'var(--sw-text-base)', 
-                            fontWeight: 600, 
-                            fontSize: '0.88rem', 
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            maxWidth: '180px',
-                            flexShrink: 1
-                        }}
-                        title={hasValidOrg ? cleanOrgName : 'Geral'}
-                    >
-                        {hasValidOrg ? cleanOrgName : 'Geral'}
-                    </span>
-                </div>
-                <div style={{ flex: 1 }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '12px' }}>
-                    <button
-                        className={styles.tlNewBtn}
-                        onClick={handleNewThread}
-                        title="Nova conversa"
-                        style={{ height: '32px', padding: '0 12px', fontSize: '12px' }}
-                    >
-                        <Plus size={13} />
-                        <span>Nova</span>
-                    </button>
-                    <button
-                        className={styles.chatHeaderIconBtn}
-                        onClick={handleBackToList}
-                        title="Histórico de conversas"
-                    >
-                        <Clock size={20} />
-                    </button>
-                </div>
-            </div>
+            <ChatPanelHeader 
+                logo={currentOrgInfo.logo}
+                orgName={hasValidOrg ? cleanOrgName : 'Geral'}
+                title={activeThread?.title || 'Nova conversa'}
+                onNewThread={handleNewThread}
+                onBackToList={handleBackToList}
+                onCloseChat={() => setShowChat(false)}
+            />
 
             {/* Abas dinâmicas para multi-chat */}
             <ChatTabs />
@@ -333,115 +269,50 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
             {/* Body: messages + optional sidebar */}
             <div className={`${styles.chatBody} ${messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome') ? styles.emptyChatBody : ''}`}>
-                {isOrgLoading && messages.length === 0 ? (
-                    <div className={styles.emptyWelcomeContainer} style={{ opacity: 0.7 }}>
-                        <h2 className={styles.emptyWelcomeText}>
-                            Carregando contexto da{' '}
-                            <span className={styles.highlightPurple}>
-                                @{cleanOrgName}
-                            </span>
-                            ...
-                        </h2>
-                    </div>
-                ) : activeOrgId && !prospectingContext && (messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome')) ? (
-                    <div className={styles.emptyWelcomeContainer}>
-                        <h2 className={styles.emptyWelcomeText}>
-                            A{' '}
-                            <span className={styles.highlightPurple}>
-                                @{cleanOrgName}
-                            </span>
-                            {' '}ainda não possui um plano de prospecção.
-                        </h2>
-                        <div className={styles.emptyInputWrapper}>
-                            {renderChatInput()}
-                        </div>
-                    </div>
-                ) : messages.length === 0 ? (
-                    <div className={styles.emptyWelcomeContainer}>
-                        <h2 className={styles.emptyWelcomeText}>
-                            {hasValidOrg ? (
-                                <>
-                                    Como posso te ajudar com a{' '}
-                                    <span className={styles.highlightPurple}>
-                                        @{cleanOrgName}
-                                    </span>
-                                    ?
-                                </>
-                            ) : (
-                                "Como posso te ajudar hoje?"
-                            )}
-                        </h2>
-                        <div className={styles.emptyInputWrapper}>
-                            {renderChatInput()}
-                        </div>
-                    </div>
-                ) : messages.length === 1 && messages[0].id === 'welcome' ? (
-                    <div className={styles.emptyWelcomeContainer}>
-                        <h2 className={styles.emptyWelcomeText}>
-                            {messages[0].content}
-                        </h2>
-                        <div className={styles.emptyInputWrapper}>
-                            {renderChatInput()}
-                        </div>
-                    </div>
+                {messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome') ? (
+                    <EmptyWelcomeState 
+                        isOrgLoading={!!isOrgLoading}
+                        activeOrgId={activeOrgId}
+                        prospectingContext={prospectingContext}
+                        cleanOrgName={cleanOrgName}
+                        hasValidOrg={hasValidOrg}
+                        messages={messages}
+                        renderChatInput={renderChatInput}
+                    />
                 ) : (
                     <>
-                        <div 
-                            className={styles.messagesContainer} 
-                            style={{
-                                paddingBottom: activeRunningTask?.isExpanded ? '440px' : undefined,
-                                opacity: activeRunningTask?.isExpanded ? 0.55 : 1,
-                                transition: 'opacity 0.3s ease, padding-bottom 0.3s ease',
-                            }}
-                            ref={scrollContainerRef} 
-                            onScroll={handleScroll}
-                        >
-                            {messages.map(message => {
-                                if (message.isAgent && message.role === 'assistant') {
-                                    return (
-                                        <AgentMessage
-                                            key={message.id}
-                                            messageId={message.id}
-                                            events={message.agentEvents || []}
-                                            isStreaming={message.agentStreaming !== false && agentStreaming}
-                                            onConfirm={handleAgentConfirm}
-                                            confirmedActions={message.agentConfirmedActions || {}}
-                                            onRegenerate={() => handleRegenerate(message.id)}
-                                            onAction={(prompt: string) => handleSendMessage(prompt, [], true)}
-                                            streamV2Url={AGENT_STREAM_URL}
-                                            confirmV2Url={AGENT_CONFIRM_URL}
-                                            orgId={activeOrgId}
-                                            selectedOrgName={cleanOrgName}
-                                            threadId={activeThread?.id}
-                                            approvedSuggestedActions={approvedSuggestedActions}
-                                            onApproveSuggestedAction={handleApproveSuggestedAction}
-                                            onHierarchyMappingDone={handleMainChatMappingDone}
-                                            model={model}
-                                            onOpenTaskConsole={handleOpenTaskConsole}
-                                        />
-                                    );
-                                }
-                                return (
-                                    <ChatMessage
-                                        key={message.id}
-                                        message={message}
-                                        onApprove={handleApproveAction}
-                                        onReject={handleRejectAction}
-                                        onOpenWhatsApp={onOpenWhatsApp}
-                                        approvalStatuses={approvalStatuses}
-                                        onRegenerate={handleRegenerate}
-                                        onSuggestedAction={(prompt) => handleSendMessage(prompt, [], true)}
-                                        model={model}
-                                    />
-                                );
-                            })}
-                            <div ref={messagesEndRef} />
-                        </div>
+                        <MessagesList 
+                            messages={messages}
+                            activeRunningTask={activeRunningTask}
+                            scrollContainerRef={scrollContainerRef}
+                            handleScroll={handleScroll}
+                            agentStreaming={agentStreaming}
+                            handleAgentConfirm={handleAgentConfirm}
+                            handleRegenerate={handleRegenerate}
+                            handleSendMessage={handleSendMessage}
+                            approvedSuggestedActions={approvedSuggestedActions}
+                            handleApproveSuggestedAction={handleApproveSuggestedAction}
+                            handleMainChatMappingDone={handleMainChatMappingDone}
+                            model={model}
+                            handleOpenTaskConsole={handleOpenTaskConsole}
+                            handleApproveAction={handleApproveAction}
+                            handleRejectAction={handleRejectAction}
+                            onOpenWhatsApp={onOpenWhatsApp}
+                            approvalStatuses={approvalStatuses}
+                            messagesEndRef={messagesEndRef}
+                            streamV2Url={AGENT_STREAM_URL}
+                            confirmV2Url={AGENT_CONFIRM_URL}
+                            activeOrgId={activeOrgId}
+                            cleanOrgName={cleanOrgName}
+                            activeThreadId={activeThread?.id}
+                        />
                         {renderChatInput()}
                     </>
                 )}
             </div>
             {renderActiveTaskConsoleOverlay()}
         </div>
+        </div>
+        </>
     );
 };

@@ -42,6 +42,7 @@ export function useNetworkFlow({
 
     // 🔄 Transformação de dados e cálculo de Layout
     useEffect(() => {
+        console.log(`[useNetworkFlow] 🛠️ Calculando layout para ${rawEmployees.length} funcionários. isScanning: ${isScanning}, discovering: ${discovering}`);
         if (rawEmployees.length === 0) {
             setNodes([]);
             setEdges([]);
@@ -107,7 +108,7 @@ export function useNetworkFlow({
                             source: parentNode.id,
                             target: childNode.id,
                             animated: false,
-                            style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 },
+                            style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 3.0 },
                         });
                     }
                 }
@@ -225,7 +226,7 @@ export function useNetworkFlow({
         if (finalNodes.length === 1 && finalNodes[0].id === 'root_company') {
             setShouldFitView(true);
         }
-    }, [rawEmployees, rawBackendEdges, currentOrgId, confirmedBrand, confirmedLogo, getStableId]);
+    }, [rawEmployees, rawBackendEdges, currentOrgId, confirmedBrand, confirmedLogo, getStableId, deleteEmployee, editEmployee, isScanning, discovering]);
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => {
@@ -246,7 +247,7 @@ export function useNetworkFlow({
             setEdges((eds) => {
                 const filteredEdges = eds.filter((e) => e.target !== params.target);
                 return addEdge(
-                    { ...params, animated: false, style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 } },
+                    { ...params, animated: false, style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 3.0 } },
                     filteredEdges
                 );
             });

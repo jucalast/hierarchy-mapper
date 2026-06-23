@@ -1043,19 +1043,30 @@ async def exec_suggest_next_actions(args: dict, messages: list | None = None, or
         try:
             from modules.sales.service.strategy import sales_strategy_service
             strategy_res = await sales_strategy_service.analyze_and_suggest_actions(messages, org_id)
-            if strategy_res and strategy_res.get("ok"):
-                actions = strategy_res.get("actions", [])
-                
-                # Regra: se acabou de atualizar uma tarefa, remove sugestões de "Concluir atividade"
-                if "pipedrive_update_task" in executed_tools:
-                    actions = [a for a in actions if "Concluir atividade" not in a.get("label", "") and "Marcar atividade como concluída" not in a.get("label", "")]
-                
-                return {
-                    "ok": True,
-                    "actions": actions,
-                    "summary": strategy_res.get("summary", "")
-                }
+            if strategy_res:
+                if strategy_res.get("ok"):
+                    actions = strategy_res.get("actions", [])
+                    
+                    # Regra: se acabou de atualizar uma tarefa, remove sugestões de "Concluir atividade"
+                    if "pipedrive_update_task" in executed_tools:
+                        actions = [a for a in actions if "Concluir atividade" not in a.get("label", "") and "Marcar atividade como concluída" not in a.get("label", "")]
+                    
+                    return {
+                        "ok": True,
+                        "actions": actions,
+                        "summary": strategy_res.get("summary", "")
+                    }
+                else:
+                    from core.observability.logging_config import get_logger
+                    logger = get_logger(__name__)
+                    logger.error(f"sales_strategy_service falhou: {strategy_res}")
+                    # If it explicitly returned ok=False, don't fall back silently to an empty list
+                    return strategy_res
         except Exception as e:
+            import traceback
+            from core.observability.logging_config import get_logger
+            logger = get_logger(__name__)
+            logger.error(f"Erro em exec_suggest_next_actions (sales_strategy_service): {e}\n{traceback.format_exc()}")
             # Fallback to default raw actions if service fails
             pass
 
@@ -1191,8 +1202,12 @@ CONTATOS MAPEADOS E APROVADOS (Para análise):
 {json.dumps(valid_employees, ensure_ascii=False, indent=2)}
 
 SUA ANÁLISE DEVE DETERMINAR:
-1. Para cada contato, avalie de forma realista a adequação para prospecção ("suitability_score" de 0 a 100) baseando-se no cargo e departamento em relação aos nossos produtos (ex: compradores de papelão ondulado/embalagens/suprimentos/logística são altamente prioritários).
-2. Classifique em Tier (A: Decisor Principal, B: Influenciador Importante, C: Usuário ou Baixa Prioridade).
+1. Para cada contato, avalie de forma realista a adequação para prospecção ("suitability_score" de 0 a 100) baseando-se no cargo real da pessoa. 
+   - ALERTA CRÍTICO: VOCÊ ESTÁ ESTRITAMENTE PROIBIDO DE INVENTAR DEPARTAMENTOS. Se a pessoa for de Vendas, não a coloque como Compras.
+   - PRIORIDADE ABSOLUTA: Profissionais com palavras como 'Suprimentos', 'Compras', 'Logística', 'Supply', 'Procurement' no cargo real devem ter score altíssimo.
+   - PREFIRA OPERACIONAIS/TÁTICOS: Dê um score MAIOR (ex: 95-100) para cargos como 'Comprador', 'Comprador Pleno', 'Analista de Suprimentos' do que para cargos C-Level/Diretoria (ex: 'Diretor de Suprimentos', 'Head de Supply' - score 80-85), pois os compradores são a melhor porta de entrada para prospecção inicial.
+   - PENALIDADE: Profissionais de Vendas, Marketing, RH ou 'Diretores' de áreas não-relacionadas devem receber score muito baixo (abaixo de 30) se houver alguém da área de Compras/Suprimentos disponível.
+2. Classifique em Tier (A: Decisor Principal - apenas Suprimentos/Compras se houver, B: Influenciador Importante, C: Usuário ou Baixa Prioridade).
 3. Escreva um motivo clínico do porquê esse contato é ou não é bom ("key_reason").
 4. Elabore um ângulo de abordagem personalizado (gancho/mensagem curta de cold approach) baseado na dor do cargo e nos diferenciais do nosso produto ("angle_of_approach").
 
@@ -1787,6 +1802,11 @@ Estratégia Geral Sugerida: {overall_strategy}
 
 ## INSTRUÇÃO:
 Gere um plano de prospecção SPIN Selling completo com as seguintes seções:
+
+REGRAS CRÍTICAS DE AVALIAÇÃO:
+- NUNCA invente ou presuma departamentos. Baseie-se ESTRITAMENTE nos cargos reais fornecidos.
+- O DECISOR PRINCIPAL/PONTO DE ENTRADA IDEAL deve obrigatoriamente ser alguém da área de Suprimentos, Compras, Logística ou Supply Chain.
+- PREFIRA SEMPRE cargos táticos/operacionais (ex: Comprador, Comprador Pleno, Analista de Suprimentos, Assistente de Compras) em vez de cargos C-Level ou Diretoria (ex: Diretor, VP, Head), pois os compradores lidam diretamente com o dia a dia e são a melhor porta de entrada. Portanto, se houver um 'Comprador' e um 'Diretor', escolha o 'Comprador' (ex: Julio).
 
 1. **🎯 Análise da Conta** — Perfil da empresa, porte, segmento, potencial com base no histórico comercial/deals existentes e momento da prospecção
 2. **👤 Decisor Principal Recomendado** — Nome, cargo, por que ele/ela é a melhor entrada, gancho personalizado adaptado ao histórico real de conversas/tentativas

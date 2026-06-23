@@ -213,17 +213,17 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "confirm_label": lambda args: f"Avançar deal #{args.get('deal_id')} para '{args.get('target_stage')}'",
     },
     "pipedrive_update_deal": {
-        "description": "Atualiza campos de um deal no Pipedrive (stage_id, status, value etc.). MUITO IMPORTANTE: Se precisar vincular uma pessoa (person_id), você DEVE passar o ID numérico inteiro. Se tiver apenas o nome da pessoa, PARE e chame 'pipedrive_get_persons' ou 'pipedrive_get_org' primeiro para descobrir o ID correto. Requer confirmação.",
+        "description": "Atualiza campos de um deal no Pipedrive (stage_id, status, value etc.). Requer confirmação.",
         "args_schema": {
             "deal_id": "int (ID do deal)",
-            "fields": "dict (campos a atualizar, ex: {\"stage_id\": 5, \"status\": \"won\", \"person_id\": 1234})",
+            "fields": "dict (campos a atualizar, ex: {\"stage_id\": 5, \"status\": \"won\", \"person_id\": 1234}). Pode passar o NOME completo da pessoa (string) em 'person_id' caso não tenha o ID numérico.",
         },
         "type": "write",
         "executor": None,
         "confirm_label": lambda args: f"Atualizar deal #{args.get('deal_id') if args.get('deal_id') else '(aberto da empresa)'} → {args.get('fields')}",
     },
     "pipedrive_create_task": {
-        "description": "Cria uma nova atividade/tarefa no Pipedrive vinculada a um deal ou empresa. Requer confirmação.",
+        "description": "Cria uma nova atividade/tarefa no Pipedrive vinculada a um deal ou empresa. Requer confirmação. REGRA CRÍTICA DE AGENDAMENTO: O vendedor tem limite de atividades por dia. Quando criar novas tarefas, especialmente se estiver sugerindo os próximos passos de um follow-up, OBRIGATORIAMENTE espace as datas (due_date) ao longo das próximas 2 semanas (ex: daqui a 3, 5 ou 7 dias). É ESTRITAMENTE PROIBIDO agendar todas as tarefas para 'hoje' ou 'amanhã'.",
         "args_schema": {
             "subject": "string (título da tarefa)",
             "task_type": "string (call | meeting | task | deadline — use 'call' para ligações, 'task' para tarefas genéricas)",
@@ -231,11 +231,11 @@ TOOLS: Dict[str, Dict[str, Any]] = {
             "note": "string opcional (descrição ou instruções)",
             "deal_id": "int opcional (ID do deal — preferível se souber)",
             "org_name": "string opcional (nome da empresa — usado para resolver o deal se deal_id não for fornecido)",
-            "person_id": "int opcional (MUITO IMPORTANTE: O ID numérico da pessoa. Se o usuário pedir para atribuir/relacionar uma pessoa e você não tiver o ID exato, PARE e chame 'pipedrive_get_persons' primeiro para encontrá-lo. Nunca passe null se a intenção for atribuir alguém.)",
+            "person_id": "int ou string opcional (ID numérico ou o NOME COMPLETO da pessoa para o sistema resolver o ID automaticamente)",
         },
         "type": "write",
         "executor": None,
-        "confirm_label": lambda args: f"Criar tarefa: '{args.get('subject')}' ({args.get('type', 'task')}) em {args.get('due_date', 'sem data')}",
+        "confirm_label": lambda args: f"Criar tarefa: '{args.get('subject')}' ({args.get('task_type', 'task')}) em {args.get('due_date', 'sem data')}",
     },
     "pipedrive_update_task": {
         "description": "Atualiza ou conclui uma atividade existente no Pipedrive. Requer confirmação.",
@@ -245,7 +245,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
             "due_date": "string opcional (reagendar — formato YYYY-MM-DD)",
             "note": "string opcional (atualizar descrição)",
             "subject": "string opcional (novo título)",
-            "person_id": "int opcional (MUITO IMPORTANTE: O ID numérico da pessoa. Se o usuário pedir para atribuir/relacionar uma pessoa e você não tiver o ID exato, PARE e chame 'pipedrive_get_persons' primeiro para encontrá-lo. Nunca passe null se a intenção for atribuir alguém.)",
+            "person_id": "int ou string opcional (ID numérico ou o NOME COMPLETO da pessoa para o sistema resolver o ID automaticamente)",
         },
         "type": "write",
         "executor": None,
@@ -397,7 +397,8 @@ TOOLS: Dict[str, Dict[str, Any]] = {
             "ou quando o usuário pede próximos passos. "
             "PODE passar 'actions' como array vazio [] — o serviço extrai contexto do histórico automaticamente. "
             "IMPORTANTE: inclua no array 'actions' apenas se você já sabe as ações específicas com IDs; "
-            "caso contrário, passe [] e o serviço gerará as sugestões com base no histórico."
+            "caso contrário, passe [] e o serviço gerará as sugestões com base no histórico. "
+            "REGRA DE AGENDAMENTO PARA TAREFAS: Se você for passar ações de criação de tarefa, ESTRITAMENTE espace as datas (due_date) para daqui a 3, 5, ou 7 dias. NÃO agende todas as tarefas para 'hoje' ou 'amanhã', o vendedor não dará conta."
         ),
         "args_schema": {
             "actions": "array (pode ser vazio []) — o serviço gera sugestões automaticamente a partir do histórico. Se quiser pré-definir alguma ação específica com IDs concretos, inclua objetos com 'label' e 'prompt'."
@@ -513,6 +514,56 @@ def get_tools_anthropic_schema() -> list:
 
         schemas.append(schema)
     return schemas
+
+
+async def _resolve_person_id(person_val: Any, org_id: int | None, org_name: str | None) -> int | None:
+    if not person_val:
+        return None
+    try:
+        return int(person_val)
+    except (ValueError, TypeError):
+        pass
+        
+    if isinstance(person_val, str) and person_val.strip():
+        name = person_val.strip()
+        if name.isdigit():
+            return int(name)
+            
+        try:
+            from modules.crm.service.pipedrive_service import pipedrive_service
+            resolved_org_id = org_id
+            if not resolved_org_id and org_name:
+                match, found_id = await _pipedrive_find_org(org_name)
+                if found_id:
+                    resolved_org_id = found_id
+            
+            search_resp = await pipedrive_service._request(
+                "GET", 
+                "persons/search", 
+                params={"term": name, "exact_match": 0, "limit": 10}
+            )
+            if search_resp and search_resp.status_code == 200:
+                data = search_resp.json()
+                items = data.get("data", {}).get("items") or []
+                
+                for i in items:
+                    p = i.get("item", {})
+                    p_org = p.get("organization") or {}
+                    p_org_id = p_org.get("id")
+                    p_name = p.get("name", "").lower()
+                    
+                    if name.lower() in p_name or p_name in name.lower():
+                        if resolved_org_id and p_org_id and int(p_org_id) == int(resolved_org_id):
+                            return int(p.get("id"))
+                
+                for i in items:
+                    p = i.get("item", {})
+                    p_name = p.get("name", "").lower()
+                    if name.lower() in p_name or p_name in name.lower():
+                        return int(p.get("id"))
+        except Exception as e:
+            log.warning(f"Erro ao resolver person_name '{name}' para ID: {e}")
+    return None
 
 
 # ─── Executor de ferramentas de ESCRITA (após confirmação) ────────────────────
@@ -754,15 +805,19 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
         deal_id = args.get("deal_id")
         fields = args.get("fields", {})
         
-        # Converte person_id para int caso o agente tenha enviado como string
+        # Converte ou resolve person_id caso o agente tenha enviado como string (nome)
         if isinstance(fields, dict) and "person_id" in fields:
-            try:
-                fields["person_id"] = int(fields["person_id"])
-            except (ValueError, TypeError):
-                return {
-                    "ok": False, 
-                    "error": f"O campo 'person_id' exige um número inteiro, mas você enviou '{fields['person_id']}'. REGRA DE SISTEMA: NÃO repasse este erro ao usuário. Chame a ferramenta 'pipedrive_get_persons' agora mesmo na mesma resposta para encontrar o ID numérico correto e, em seguida, chame 'pipedrive_update_deal' novamente."
-                }
+            resolved_pid = await _resolve_person_id(fields["person_id"], org_id, args.get("org_name"))
+            if resolved_pid:
+                fields["person_id"] = resolved_pid
+            else:
+                try:
+                    fields["person_id"] = int(fields["person_id"])
+                except (ValueError, TypeError):
+                    return {
+                        "ok": False, 
+                        "error": f"Não foi possível encontrar ou resolver o contato '{fields['person_id']}' no Pipedrive. Certifique-se de que ele foi criado primeiro."
+                    }
                 
         try:
             from modules.crm.service.pipedrive_service import pipedrive_service
@@ -807,6 +862,7 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
         try:
             from modules.crm.service.pipedrive_service import pipedrive_service
             pd_org_id = org_id
+            open_deal = None
             if not deal_id and (org_name or pd_org_id):
                 if not pd_org_id and org_name:
                     match, pd_org_id = await _pipedrive_find_org(org_name)
@@ -824,14 +880,40 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                 data["org_id"] = int(pd_org_id)
             if due_date:
                 data["due_date"] = due_date
+                
+            person_id = None
             if args.get("person_id"):
-                try:
-                    data["person_id"] = int(args["person_id"])
-                except (ValueError, TypeError):
-                    return {
-                        "ok": False, 
-                        "error": f"O campo 'person_id' exige um número inteiro, mas você enviou '{args['person_id']}'. REGRA DE SISTEMA: NÃO repasse este erro ao usuário. Chame a ferramenta 'pipedrive_get_persons' na mesma resposta para encontrar o ID numérico e, em seguida, repita a criação da tarefa."
-                    }
+                resolved_pid = await _resolve_person_id(args["person_id"], pd_org_id, org_name)
+                if resolved_pid:
+                    person_id = resolved_pid
+                else:
+                    try:
+                        person_id = int(args["person_id"])
+                    except (ValueError, TypeError):
+                        return {
+                            "ok": False, 
+                            "error": f"Não foi possível encontrar ou resolver o contato '{args['person_id']}' no Pipedrive. Certifique-se de que ele foi criado primeiro."
+                        }
+            else:
+                # Fallback: tentar obter o person_id associado ao deal
+                resolved_deal_id = deal_id or args.get("deal_id")
+                if resolved_deal_id:
+                    try:
+                        if open_deal and open_deal.get("person_id"):
+                            dp = open_deal.get("person_id")
+                            person_id = int(dp.get("value") if isinstance(dp, dict) else dp)
+                        else:
+                            resp_deal = await pipedrive_service._request("GET", f"deals/{resolved_deal_id}")
+                            if resp_deal and resp_deal.status_code == 200:
+                                d_data = resp_deal.json().get("data") or {}
+                                dp = d_data.get("person_id")
+                                if dp:
+                                    person_id = int(dp.get("value") if isinstance(dp, dict) else dp)
+                    except Exception:
+                        pass
+            
+            if person_id:
+                data["person_id"] = person_id
 
             result = await pipedrive_service.create_activity(data)
             ok = result.get("success", False)
@@ -964,9 +1046,8 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                             json={"content": f"👤 Novo contato adicionado via Assistente V2: {name} ({email or 'sem email'})", "deal_id": deal_id}
                         )
                         if person_id:
-                            # 1. Tenta vincular como contato principal se estiver vazio
-                            if not open_deal.get("person_id"):
-                                await pipedrive_service.update_deal(deal_id, {"person_id": person_id})
+                            # 1. Sempre vincula como contato principal (pois foi promovida como decisora)
+                            await pipedrive_service.update_deal(deal_id, {"person_id": person_id})
                             
                             # 2. Adiciona OBRIGATORIAMENTE como participante (resolve múltiplos contatos no mesmo deal)
                             await pipedrive_service.add_participant(deal_id, person_id)

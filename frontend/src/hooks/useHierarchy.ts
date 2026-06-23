@@ -29,34 +29,34 @@ export const useHierarchy = () => {
   const brandOptions = mappingSession?.brandOptions || EMPTY_ARRAY;
   const error = mappingSession?.error || null;
   const activeJobId = mappingSession?.activeJobId || null;
-  const isSmartSyncLoading = mappingSession?.isSmartSyncLoading || false;
+  const isSmartSyncLoading = useChatStore(state => state.globalSmartSyncLoading);
 
   // Setters do Zustand mapeados
-  const store = useChatStore.getState();
   const setRawEmployees = useCallback((employees: any[] | ((prev: any[]) => any[])) => {
-    if (currentOrgId) store.setRawEmployees(currentOrgId, employees);
-  }, [currentOrgId, store]);
+    if (currentOrgId) useChatStore.getState().setRawEmployees(currentOrgId, employees);
+  }, [currentOrgId]);
 
   const setRawBackendEdges = useCallback((edges: Edge[] | ((prev: Edge[]) => Edge[])) => {
-    if (currentOrgId) store.setRawBackendEdges(currentOrgId, edges);
-  }, [currentOrgId, store]);
+    if (currentOrgId) useChatStore.getState().setRawBackendEdges(currentOrgId, edges);
+  }, [currentOrgId]);
 
   const setBrandOptions = useCallback((options: any[] | ((prev: any[]) => any[])) => {
-    if (currentOrgId) store.setBrandOptions(currentOrgId, options);
-  }, [currentOrgId, store]);
+    if (currentOrgId) useChatStore.getState().setBrandOptions(currentOrgId, options);
+  }, [currentOrgId]);
 
   const setError = useCallback((err: string | null) => {
-    if (currentOrgId) store.setMappingError(currentOrgId, err);
-  }, [currentOrgId, store]);
+    if (currentOrgId) useChatStore.getState().setMappingError(currentOrgId, err);
+  }, [currentOrgId]);
 
   const setLoading = useCallback((val: boolean) => {
-    if (currentOrgId) store.setMappingLoading(currentOrgId, val);
-  }, [currentOrgId, store]);
+    if (currentOrgId) useChatStore.getState().setMappingLoading(currentOrgId, val);
+  }, [currentOrgId]);
 
   // Contexto para despacho do evento de conclusão ao chat
   const chatContextRef = useRef({ chatPrompted: false, orgId: null as number | null, orgName: '' });
   const scanFinishedRef = useRef(false);
   const chatDoneDispatchedRef = useRef(false);
+  const brandDiscoveryAbortControllerRef = useRef<AbortController | null>(null);
 
   // Recupera contexto de chat pendente
   useEffect(() => {
@@ -188,8 +188,9 @@ export const useHierarchy = () => {
   }, [currentOrgId, checkAndDispatchChatEvent]);
 
   // Função para descobrir marca (CNPJ) via API
-  const discoverBrand = async (searchCnpj: string, explicitDomain: string = "", force: boolean = true) => {
+  const discoverBrand = useCallback(async (searchCnpj: string, explicitDomain: string = "", force: boolean = true) => {
     if (!currentOrgId) return null;
+    const store = useChatStore.getState();
     store.setDiscovering(currentOrgId, true);
     store.setMappingError(currentOrgId, null);
     store.setBrandOptions(currentOrgId, []);
@@ -224,16 +225,17 @@ export const useHierarchy = () => {
     } finally {
       store.setDiscovering(currentOrgId, false);
     }
-  };
+  }, [currentOrgId]);
 
   // Streaming de marcas
-  const discoverBrandStream = async (
+  const discoverBrandStream = useCallback(async (
     searchCnpj: string, 
     explicitDomain: string = "", 
     force: boolean = true, 
     onCandidateFound?: (candidate: any) => void
   ) => {
     if (!currentOrgId) return null;
+    const store = useChatStore.getState();
     store.setDiscovering(currentOrgId, true);
     store.setMappingError(currentOrgId, null);
     store.setBrandOptions(currentOrgId, []);
@@ -246,6 +248,7 @@ export const useHierarchy = () => {
 
     // Cria AbortController
     const controller = new AbortController();
+    brandDiscoveryAbortControllerRef.current = controller;
 
     try {
       const streamUrl = hierarchyApi.getDiscoverBrandStreamUrl({
@@ -360,19 +363,30 @@ export const useHierarchy = () => {
 
       return { alternatives: streamedCandidates };
     } catch (err: any) {
+      if (err.name === "AbortError" || controller.signal.aborted) {
+        console.log("[Stream] Stream cancelado por AbortController.");
+        return null;
+      }
       console.error(err.message || err);
       store.setMappingError(currentOrgId, "Falha na conexão com o servidor (streaming).");
       return null;
     } finally {
+      if (brandDiscoveryAbortControllerRef.current === controller) {
+        brandDiscoveryAbortControllerRef.current = null;
+      }
       store.setDiscovering(currentOrgId, false);
     }
-  };
+  }, [currentOrgId]);
 
   const cancelDiscovery = useCallback(() => {
-    // AbortController agora pode ser cancelado se necessário
+    if (brandDiscoveryAbortControllerRef.current) {
+      brandDiscoveryAbortControllerRef.current.abort();
+      brandDiscoveryAbortControllerRef.current = null;
+    }
   }, []);
 
   const refineHierarchy = useCallback(async (employees: any[]) => {
+    const store = useChatStore.getState();
     const targetOrgId = currentOrgId;
     if (!targetOrgId) return;
 
@@ -423,9 +437,10 @@ export const useHierarchy = () => {
     } finally {
       store.setMappingLoading(targetOrgId, false);
     }
-  }, [currentOrgId, store, checkAndDispatchChatEvent]);
+  }, [currentOrgId, checkAndDispatchChatEvent]);
 
   const stopHierarchyScan = useCallback(async (onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void) => {
+    const store = useChatStore.getState();
     const targetOrgId = currentOrgId;
     if (!targetOrgId) return;
 
@@ -444,7 +459,7 @@ export const useHierarchy = () => {
       store.setActiveJobId(targetOrgId, null);
       localStorage.removeItem('active-discovery-job');
     }
-  }, [currentOrgId, store]);
+  }, [currentOrgId]);
 
   const fetchHierarchy = useCallback(async (
     searchCnpj: string, 
@@ -460,6 +475,7 @@ export const useHierarchy = () => {
     model?: string,
     strictMode?: boolean
   ) => {
+    const store = useChatStore.getState();
     const targetOrgId = orgId || currentOrgId;
     if (!targetOrgId) return;
 
@@ -516,7 +532,7 @@ export const useHierarchy = () => {
           source: emp.manager_id,
           target: emp.id,
           animated: false,
-          style: { stroke: '#6e7681', strokeWidth: 1.5 }
+          style: { stroke: '#6e7681', strokeWidth: 3.0 }
         });
       }
     });
@@ -593,7 +609,7 @@ export const useHierarchy = () => {
       if (onNotification) onNotification('error', "Não foi possível iniciar o scan.");
       store.setMappingLoading(targetOrgId, false);
     }
-  }, [currentOrgId, store]);
+  }, [currentOrgId]);
 
   // Função para conectar no WebSocket (usada para compatibilidade ou reconexão local se necessário)
   const connectToJobWebSocket = useCallback((
@@ -693,6 +709,7 @@ export const useHierarchy = () => {
   }, [currentOrgId]);
 
   const loadStoredHierarchy = useCallback(async (orgId: number, isPipedriveId: boolean = true) => {
+    const store = useChatStore.getState();
     if (!orgId) return null;
     store.setMappingLoading(orgId, true);
     store.setMappingError(orgId, "");
@@ -767,9 +784,10 @@ export const useHierarchy = () => {
     } finally {
       store.setMappingLoading(orgId, false);
     }
-  }, [store]);
+  }, []);
 
   const updateEmployee = useCallback(async (id: string, updates: Partial<HierarchyEmployee>) => {
+    const store = useChatStore.getState();
     if (!currentOrgId) return;
     const safeId = String(id);
     
@@ -788,12 +806,12 @@ export const useHierarchy = () => {
         console.error(`[useHierarchy] Erro ao salvar atualização:`, e);
       }
     }
-  }, [currentOrgId, store]);
+  }, [currentOrgId]);
 
   const smartSyncPipedrive = useCallback(async (onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void) => {
-    if (!currentOrgId) return;
-    store.setIsSmartSyncLoading(currentOrgId, true);
-    store.setMappingError(currentOrgId, "");
+    const store = useChatStore.getState();
+    store.setGlobalSmartSyncLoading(true);
+    store.setMappingError(currentOrgId || 0, "");
     try {
       const data = await orgsApi.triggerSmartSync();
       if (data.status === 'queued' && data.job_id) {
@@ -804,11 +822,11 @@ export const useHierarchy = () => {
           try {
             const msg = JSON.parse(event.data);
             if (msg.type === 'job_done') {
-              store.setIsSmartSyncLoading(currentOrgId, false);
+              store.setGlobalSmartSyncLoading(false);
               ws.close();
               if (onNotification) onNotification('success', msg.message || "Smart Sync concluído!");
             } else if (msg.type === 'error') {
-              store.setIsSmartSyncLoading(currentOrgId, false);
+              store.setGlobalSmartSyncLoading(false);
               ws.close();
               if (onNotification) onNotification('error', msg.message || "Erro durante o Smart Sync.");
             }
@@ -818,24 +836,24 @@ export const useHierarchy = () => {
         };
         
         ws.onclose = () => {
-          store.setIsSmartSyncLoading(currentOrgId, false);
+          store.setGlobalSmartSyncLoading(false);
         };
         return data;
       } else if (data.status === 'success') {
-        store.setIsSmartSyncLoading(currentOrgId, false);
+        store.setGlobalSmartSyncLoading(false);
         if (onNotification) onNotification('success', data.message || "Smart Sync concluído!");
         return data;
       } else {
-        store.setMappingError(currentOrgId, data.message || 'Erro no Smart Sync.');
-        store.setIsSmartSyncLoading(currentOrgId, false);
+        store.setMappingError(currentOrgId || 0, data.message || 'Erro no Smart Sync.');
+        store.setGlobalSmartSyncLoading(false);
         if (onNotification) onNotification('error', data.message || "Erro no Smart Sync.");
       }
     } catch (e) {
-      store.setMappingError(currentOrgId, 'Erro ao conectar com Pipedrive.');
-      store.setIsSmartSyncLoading(currentOrgId, false);
-      if (onNotification) onNotification('error', "Erro ao conectar com Pipedrive.");
+      store.setMappingError(currentOrgId || 0, 'Erro inesperado ao sincronizar.');
+      store.setGlobalSmartSyncLoading(false);
+      if (onNotification) onNotification('error', "Erro inesperado ao sincronizar.");
     }
-  }, [currentOrgId, store]);
+  }, [currentOrgId]);
 
   const confirmIntelligence = useCallback(async (payload: any) => {
     try {
@@ -847,15 +865,17 @@ export const useHierarchy = () => {
   }, []);
 
   const resetHierarchy = useCallback(() => {
+    const store = useChatStore.getState();
     if (currentOrgId) {
       store.setRawEmployees(currentOrgId, []);
       store.setRawBackendEdges(currentOrgId, []);
       store.setBrandOptions(currentOrgId, []);
       store.setMappingError(currentOrgId, null);
     }
-  }, [currentOrgId, store]);
+  }, [currentOrgId]);
 
-  const handleCandidateAction = async (employeeId: string, action: 'approve' | 'reject') => {
+  const handleCandidateAction = useCallback(async (employeeId: string, action: 'approve' | 'reject') => {
+    const store = useChatStore.getState();
     if (!currentOrgId) throw new Error("No active org selected");
     try {
       const data = await hierarchyApi.candidateAction(employeeId, action);
@@ -887,12 +907,13 @@ export const useHierarchy = () => {
       console.error(e);
       throw e;
     }
-  };
+  }, [currentOrgId, checkAndDispatchChatEvent]);
 
-  const approveCandidate = useCallback((id: string) => handleCandidateAction(id, 'approve'), [currentOrgId]);
-  const rejectCandidate = useCallback((id: string) => handleCandidateAction(id, 'reject'), [currentOrgId]);
+  const approveCandidate = useCallback((id: string) => handleCandidateAction(id, 'approve'), [handleCandidateAction]);
+  const rejectCandidate = useCallback((id: string) => handleCandidateAction(id, 'reject'), [handleCandidateAction]);
 
   const deleteEmployee = useCallback(async (id: string) => {
+    const store = useChatStore.getState();
     if (!currentOrgId) return;
     const safeId = String(id);
 
@@ -916,7 +937,7 @@ export const useHierarchy = () => {
     });
 
     checkAndDispatchChatEvent();
-  }, [currentOrgId, store, checkAndDispatchChatEvent]);
+  }, [currentOrgId, checkAndDispatchChatEvent]);
 
   return { 
     rawEmployees, 

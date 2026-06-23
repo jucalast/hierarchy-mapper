@@ -21,6 +21,7 @@ interface OrgListItemProps {
     showExpandToggle?: boolean;
     className?: string;
     style?: React.CSSProperties;
+    onMouseEnter?: () => void;
 }
 
 function formatDueDate(dateStr: string): string {
@@ -44,7 +45,8 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
     scanningOrgId = null,
     showExpandToggle = true,
     className = '',
-    style
+    style,
+    onMouseEnter
 }) => {
     const orgId = org.id || org.pipedrive_id;
     const taskSummary: TaskSummary | null = org._taskSummary || null;
@@ -69,6 +71,7 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
         <div
             className={`${styles.orgItem} ${isSelected ? styles.selectedOrgItem : ''} ${className}`}
             onClick={() => onClick?.(org)}
+            onMouseEnter={onMouseEnter}
             style={{
                 cursor: onClick ? 'pointer' : 'default',
                 ...style

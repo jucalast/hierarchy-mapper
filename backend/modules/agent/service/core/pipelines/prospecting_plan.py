@@ -43,8 +43,8 @@ class ProspectingPlanPipeline(BasePipeline):
             f"  3. Com os contatos mapeados, chame `batch_communication_search` para buscar todo o histórico de WhatsApp e E-mail de uma só vez.\n"
             f"     ⚠️ OBRIGATÓRIO: Sempre execute a busca de histórico para garantir que o plano use a prospecção real do vendedor.\n"
             f"  4. Chame `generate_prospecting_plan(org_id={org_pd_id}, force_regenerate=true)` para cruzar a investigação e gerar o plano SPIN.\n"
-            f"  5. Apresente o plano ao usuário em formato Markdown rico no chat.\n"
-            f"  6. Ofereça sugestões de próximas ações usando `suggest_next_actions`.\n"
+            f"  5. IMPORTANTE: A ferramenta `generate_prospecting_plan` já salva e exibe o plano na interface. Você é EXPRESSAMENTE PROIBIDO de escrever o conteúdo do plano (texto, tópicos) na sua resposta do chat.\n"
+            f"  6. OBRIGATÓRIO: Chame a ferramenta `suggest_next_actions` para apresentar opções do que fazer em seguida (ex: enviar email com a primeira mensagem do plano, tentar ligação, etc).\n"
             + (f"  7. Conclua a atividade: `pipedrive_update_task(activity_id={act_id}, done=true)`.\n" if act_id else "")
             + f"⛔ PROIBIDO: Não invente dados — use APENAS o que foi coletado nas ferramentas.\n"
             f"⛔ PROIBIDO: Não use placeholders genéricos — o plano deve ter nomes e dados reais.\n\n"

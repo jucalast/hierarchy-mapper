@@ -72,7 +72,7 @@ class ConnectionManager {
           source: emp.manager_id,
           target: emp.id,
           animated: false,
-          style: { stroke: '#6e7681', strokeWidth: 1.5 }
+          style: { stroke: '#6e7681', strokeWidth: 3.0 }
         });
       }
     });
@@ -147,7 +147,7 @@ class ConnectionManager {
                 source: emp.manager_id,
                 target: emp.id,
                 animated: false,
-                style: { stroke: '#6e7681', strokeWidth: 1.5 }
+                style: { stroke: '#6e7681', strokeWidth: 3.0 }
               });
             }
           });

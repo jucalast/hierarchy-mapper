@@ -13,6 +13,8 @@ interface OrgListProps {
     scanningOrgId: number | null;
 }
 
+import { useRouter } from 'next/navigation';
+
 export const OrgList: React.FC<OrgListProps> = ({
     filteredOrgs,
     selectedOrgId,
@@ -24,6 +26,7 @@ export const OrgList: React.FC<OrgListProps> = ({
     toggleExpand,
     scanningOrgId,
 }) => {
+    const router = useRouter();
     return (
         <>
             {filteredOrgs.map(org => {
@@ -65,6 +68,9 @@ export const OrgList: React.FC<OrgListProps> = ({
                             const clickedOrgId = Number(clickedOrg.id || clickedOrg.pipedrive_id);
                             setExpandedOrgId(clickedOrgId);
                             void fetchOrgDetails(clickedOrgId);
+                        }}
+                        onMouseEnter={() => {
+                            router.prefetch(`/org/${orgId}`);
                         }}
                         onToggleExpand={toggleExpand}
                         displayCount={displayCount}

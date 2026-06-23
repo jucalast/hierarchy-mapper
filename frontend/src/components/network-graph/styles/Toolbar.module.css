@@ -691,28 +691,29 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
-    font-size: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
     font-weight: 600;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-family: var(--font-mono);
     color: var(--sw-text-muted);
-    opacity: 0.7;
+    opacity: 0.8;
     border-bottom: 1px solid var(--sw-border);
     user-select: none;
 }
 
 .scanTerminalBody {
-    padding: 6px 12px;
-    max-height: 160px;
+    padding: 8px 12px;
+    max-height: 180px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--sw-border) transparent;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-    font-size: 11px;
-    line-height: 1.5;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
 }
 
 .scanTerminalLine {
+    font-family: var(--font-mono) !important;
     white-space: pre-wrap;
     word-break: break-all;
 }

@@ -123,13 +123,15 @@ class PipedriveService:
                                     sid = d.get("stage_id")
                                     if sid is not None:
                                         stage_info = stages_full.get(sid)
+                                        stage_order_nr = 0
                                         if isinstance(stage_info, dict):
                                             stage_name = stage_info.get("name", f"Estágio {sid}")
+                                            stage_order_nr = stage_info.get("order_nr", 0)
                                         elif isinstance(stage_info, str):
                                             stage_name = stage_info
                                         else:
                                             stage_name = d.get("stage_order_nr", f"Estágio {sid}")
-                                        org_stage_map[oid] = stage_name
+                                        org_stage_map[oid] = {"name": stage_name, "order_nr": stage_order_nr}
                                 
                     pagination = data.get("additional_data", {}).get("pagination", {})
                     has_more = pagination.get("more_items_in_collection", False)
@@ -835,7 +837,9 @@ class PipedriveService:
             users_pics_map = await self.get_users_pics_map()
             for o in local_orgs:
                 pid = o.pipedrive_id or o.id
-                stage_name = PipedriveService._org_stage_cache.get(pid) if pid else None
+                stage_data = PipedriveService._org_stage_cache.get(pid) if pid else None
+                stage_name = stage_data.get("name") if isinstance(stage_data, dict) else stage_data
+                stage_order_nr = stage_data.get("order_nr", 0) if isinstance(stage_data, dict) else 0
                 result.append({
                     "id": pid,
                     "name": o.name,
@@ -856,6 +860,7 @@ class PipedriveService:
                     "owner_name": users_map.get(o.owner_id) if o.owner_id in users_map else "Sistema",
                     "owner_avatar": users_pics_map.get(o.owner_id) if o.owner_id in users_pics_map else None,
                     "stage_name": stage_name,
+                    "stage_order_nr": stage_order_nr,
                 })
 
             return result

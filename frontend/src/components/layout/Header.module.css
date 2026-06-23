@@ -1,6 +1,6 @@
 .header {
     height: var(--header-height);
-    border-bottom: var(--sw-border-width) solid var(--sw-border);
+    border-bottom: none;
     display: flex;
     align-items: center;
     padding: 0 var(--space-24);
@@ -285,7 +285,7 @@
     justify-content: space-between;
     padding: 0 var(--space-24);
     background: var(--sw-sidebar);
-    border-bottom: var(--sw-border-width) solid var(--sw-border);
+    border-bottom: none;
     flex-shrink: 0;
     z-index: 10;
     transition: background var(--transition-fast), border-color var(--transition-fast);
@@ -293,7 +293,7 @@
 
 :global([data-theme="light"]) .globalHeader {
     background: var(--sw-sidebar);
-    border-bottom: var(--sw-border-width) solid var(--sw-border);
+    border-bottom: none;
 }
 
 .globalHeaderTitle {

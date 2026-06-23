@@ -327,6 +327,16 @@ async def get_current_user():
                         
         log.info(f"Resultado final get_current_user: {name}, avatar={'sim' if avatar else 'não'}")
         
+        company_name = None
+        try:
+            me_resp = await pipedrive_service.make_request("GET", "users/me")
+            if me_resp and me_resp.status_code == 200:
+                me_data = me_resp.json().get("data", {})
+                company_name = me_data.get("company_name")
+                log.info(f"Encontrado company_name do Pipedrive: {company_name}")
+        except Exception as e:
+            log.error(f"Erro ao buscar company_name do Pipedrive: {e}")
+            
         # Sincroniza com o banco local
         from core.infra.database import async_session
         from models import User, Tenant
@@ -357,8 +367,8 @@ async def get_current_user():
                 db_sess.add(new_user)
                 await db_sess.commit()
 
-        return {"id": user_id, "name": name, "avatar": avatar}
+        return {"id": user_id, "name": name, "avatar": avatar, "company_name": company_name}
     except Exception as e:
         log.error(f"Erro em get_current_user: {e}")
-        return {"id": None, "name": "João Luccas", "avatar": None}
+        return {"id": None, "name": "João Luccas", "avatar": None, "company_name": None}
 

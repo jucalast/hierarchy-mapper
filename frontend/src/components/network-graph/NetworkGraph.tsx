@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useReactFlow, ReactFlowProvider, Edge } from 'reactflow';
 import { HierarchyEmployee } from '@/types';
@@ -69,7 +69,17 @@ const formatCnpj = (val: string) => {
     return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
 };
 
-function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
+function NetworkGraphContent({ 
+    onLogout, 
+    currentUser, 
+    tasksForToday, 
+    onToggleChat 
+}: { 
+    onLogout?: () => void;
+    currentUser?: { name: string; avatar: string | null } | null;
+    tasksForToday?: number;
+    onToggleChat?: () => void;
+}) {
     const pathname = usePathname() || '/';
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -97,6 +107,18 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         reconnectToActiveJob, approveCandidate, refineHierarchy, smartSyncPipedrive,
         loadStoredHierarchy, deleteEmployee, setRawEmployees, setRawBackendEdges
     } = hierarchy;
+
+    useEffect(() => {
+        const brToday = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+        let count = 0;
+        filteredOrgs.forEach((org: any) => {
+            const summary = org._taskSummary;
+            if (summary && !summary.overdue_count && summary.next_due_date === brToday) {
+                count++;
+            }
+        });
+        window.dispatchEvent(new CustomEvent('update_tasks_today', { detail: count }));
+    }, [filteredOrgs]);
 
     // Discovery Workflow
     const discovery = useDiscoveryWorkflow({
@@ -288,6 +310,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
 
     // ✅ NOVO: Limpa o grafo quando a varredura inicia do zero ou recebe comando de limpeza
     useEffect(() => {
+        console.log(`[NetworkGraph] 🧹 "Limpa o grafo" effect checked. isScanning: ${scan.isScanning}, scanResults.length: ${scan.scanResults.length}`);
         if (scan.isScanning && scan.scanResults.length === 0) {
             console.log("[NetworkGraph] 🧹 Limpando grafo para nova varredura.");
             const existingRootOnly = rawEmployeesRef.current.filter(e => e.id === 'root_company');
@@ -354,22 +377,26 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         // Apenas substitui os nós em tempo real se o scan estiver EM ANDAMENTO.
         // Quando terminar (isScanning=false), o componente buscará a versão final processada do banco.
         if (!loading && isScanForCurrentOrg && scan.isScanning && scan.scanResults && scan.scanResults.length > 0) {
-            const employees: HierarchyEmployee[] = scan.scanResults.map((p) => ({
-                id: p.id || Math.random().toString(36).substr(2, 9),
-                name: p.name,
-                role: p.role,
-                department: '',
-                company: confirmedBrand,
-                manager_id: undefined,
-                level: 0,
-                linkedin: p.linkedin_url,
-                avatar: p.avatar,
-                profile_pic: p.avatar,
-                location: p.location || '',
-                observations: p.observations || '',
-                evidence: p.evidence || '',
-                email: p.email || '',
-            }));
+            console.log("[NetworkGraph] 🔄 Tratando resultados de varredura. Resultados recebidos:", scan.scanResults.length);
+            const employees: HierarchyEmployee[] = scan.scanResults.map((p, index) => {
+                const stableId = p.id || (p.linkedin_url ? 'scan_' + p.linkedin_url.replace(/[^a-zA-Z0-9]/g, '_') : '') || `scan_temp_${index}`;
+                return {
+                    id: stableId,
+                    name: p.name,
+                    role: p.role,
+                    department: '',
+                    company: confirmedBrand,
+                    manager_id: undefined,
+                    level: 0,
+                    linkedin: p.linkedin_url,
+                    avatar: p.avatar,
+                    profile_pic: p.avatar,
+                    location: p.location || '',
+                    observations: p.observations || '',
+                    evidence: p.evidence || '',
+                    email: p.email || '',
+                };
+            });
 
             const existingRootAndPartners = rawEmployeesRef.current.filter(e => e.id === 'root_company' || e.id.startsWith('partner_'));
             let baseEmployees = [...existingRootAndPartners];
@@ -424,7 +451,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
             });
             setRawBackendEdges(initialEdges);
         }
-    }, [!loading, isScanForCurrentOrg, scan.scanResults, scan.isScanning, confirmedBrand, confirmedLogo, domainTarget, partners, setRawEmployees, setRawBackendEdges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [!loading, isScanForCurrentOrg, scan.scanResults?.length, scan.isScanning, confirmedBrand, confirmedLogo, domainTarget, partners ? JSON.stringify(partners) : '[]', setRawEmployees, setRawBackendEdges]);
 
     // Polling de mensagens não lidas (para o badge no header — filtra por org atual)
     useEffect(() => {
@@ -831,7 +859,9 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
 
     // Handlers
     const handleOrgClick = useCallback(async (org: any, openChat = false) => {
-        router.push(`/org/${org.id}`);
+        startTransition(() => {
+            router.push(`/org/${org.id}`);
+        });
         if (openChat) handleSetShowChat(true);
     }, [router, handleSetShowChat]);
 
@@ -881,11 +911,7 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                     window.dispatchEvent(new CustomEvent('theme_changed', { detail: newTheme }));
                 }}
                 onReset={handleNewCompany}
-                onCopyData={() => {
-                    const data = { nodes, edges };
-                    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-                    addNotification('info', "Dados do grafo copiados!");
-                }}
+
                 onRefine={() => {
                     if (localStorage.getItem('active-discovery-job')) {
                         addNotification('warning', "Aguarde o mapeamento atual terminar antes de utilizar o Analista de IA.");
@@ -912,6 +938,10 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 onOpenLigacao={() => setActiveView(activeView === 'ligacao' ? 'graph' : 'ligacao')}
                 isLigacao={activeView === 'ligacao'}
                 isScanActive={isScanForCurrentOrg && scan.isScanning}
+                currentUser={currentUser}
+                tasksForToday={tasksForToday}
+                onToggleChat={onToggleChat}
+                onLogout={onLogout}
             />
 
             <div className={styles.mainWrapper}>
@@ -983,6 +1013,11 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                                         onConnect={onConnect}
                                         fitViewHandler={<FitViewHandler shouldFitView={shouldFitView} nodes={nodes} setShouldFitView={setShouldFitView} />}
                                         smartBackground={<SmartBackground />}
+                                        onCopyData={() => {
+                                            const data = { nodes, edges };
+                                            navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+                                            addNotification('info', "Dados do grafo copiados!");
+                                        }}
                                     />
                                     
                                     <HierarchyDiscoveryOverlay

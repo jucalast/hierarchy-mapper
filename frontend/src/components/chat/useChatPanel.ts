@@ -118,20 +118,23 @@ export const useChatPanel = ({
     } = useChatActivities(selectedOrgId);
 
     // ─── Local controls/states ─────────────────────────────────
-    const [model, setModel] = useState<AIModel>(() => {
+    const [model, setModel] = useState<AIModel>('claude');
+    const [strictMode, setStrictMode] = useState<boolean>(false);
+
+    // Carrega preferências do localStorage no client-side para evitar hydration mismatch
+    useEffect(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('ai_preferred_model');
-            return (saved as AIModel) || 'claude';
+            const savedModel = localStorage.getItem('ai_preferred_model');
+            if (savedModel) {
+                setModel(savedModel as AIModel);
+            }
+            const savedStrictMode = localStorage.getItem('ai_strict_mode');
+            if (savedStrictMode) {
+                setStrictMode(savedStrictMode === 'true');
+            }
         }
-        return 'claude';
-    });
-    const [strictMode, setStrictMode] = useState<boolean>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('ai_strict_mode');
-            return saved === 'true';
-        }
-        return false;
-    });
+    }, []);
+
     const modelActivityIdRef = useRef(0);
     const [pipedriveCooldown, setPipedriveCooldown] = useState<number>(0);
     const abortControllersRef = useRef<Record<string, AbortController>>({});
@@ -358,12 +361,11 @@ export const useChatPanel = ({
                 setActiveRunningTask(null);
                 setLiveModel(null);
                 setModelActivity([]);
-            }
-            if (isSameStreamingThread) {
+                await refreshMessages(thread.id);
+            } else {
                 setIsLoading(true);
                 setAgentStreaming(true);
             }
-            await refreshMessages(thread.id);
         },
         onNewThread: () => {
             streamingThreadIdRef.current = null;
@@ -1196,6 +1198,10 @@ export const useChatPanel = ({
                 delete abortControllersRef.current[threadId];
             }
             
+            if (streamingThreadIdRef.current === threadId) {
+                streamingThreadIdRef.current = null;
+            }
+            
             store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
                 (m.id === msgId || m.id === activeMsgId) ? { ...m, agentStreaming: (hasMappingRequired || hasLigacaoView) ? true : false } : m
             ));
@@ -1683,6 +1689,28 @@ ${transcriptText}
         return () => window.removeEventListener('call_ended', handleCallEnded);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeOrgId, messages, activeThread]);
+
+    // Pre-populate input with instruction when company has no prospecting plan and chat is in empty welcome state.
+    // If the company has a prospecting plan, clear the default instruction from the input if it is present.
+    useEffect(() => {
+        if (activeOrgId) {
+            const tId = activeThread?.id;
+            const currentSession = store.getSession(activeOrgId, tId);
+            if (!prospectingContext) {
+                const isEmptyWelcome = messages.length === 0 || (messages.length === 1 && messages[0].id === 'welcome');
+                if (isEmptyWelcome) {
+                    if (!currentSession.inputValue || currentSession.inputValue.trim() === '') {
+                        store.setInputValue(activeOrgId, tId, "Gerar plano de prospecção para esta empresa");
+                    }
+                }
+            } else {
+                if (currentSession.inputValue === "Gerar plano de prospecção para esta empresa") {
+                    store.setInputValue(activeOrgId, tId, "");
+                }
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeOrgId, activeThread?.id, prospectingContext, messages.length]);
 
     return {
         isListening,

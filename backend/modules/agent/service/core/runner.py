@@ -384,7 +384,7 @@ async def run_agent(
     messages.append({"role": "user", "content": user_content})
 
     process_id = f"proc_{uuid.uuid4().hex[:8]}"
-    _raw_log(process_id, "agent_start", {"message": message, "org_id": org_id, "preferred": preferred})
+    _raw_log(process_id, "agent_start", {"message": message, "org_id": org_id, "preferred": preferred, "thread_id": thread_id})
 
     # Quando MODO CONTEXTO está ativo, força query_type="general" para usar prompt leve
     # e remover o requisito de pipeline de investigação completa antes de write tools.
@@ -672,7 +672,7 @@ async def resume_after_confirmation(
         try:
             if attachment_path:
                 tool_args["attachment_path"] = attachment_path
-            _raw_log(pending_process_id, "tool_execute_write_start", {"tool": tool_name, "args": tool_args})
+            _raw_log(pending_process_id, "tool_execute_write_start", {"tool": tool_name, "args": tool_args, "thread_id": thread_id})
             result = await execute_write_tool(
                 tool_name, 
                 tool_args, 

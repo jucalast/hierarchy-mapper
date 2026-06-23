@@ -1,6 +1,5 @@
 "use client";
 import React from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import styles from '../styles/Toolbar.module.css';
 
 interface ScanTerminalPanelProps {
@@ -13,15 +12,23 @@ export const ScanTerminalPanel: React.FC<ScanTerminalPanelProps> = ({ consoleLog
     const [isCollapsed, setIsCollapsed] = React.useState(false);
 
     const getLogColor = (line: string): string => {
-        if (line.includes('[System]')) return 'var(--sw-primary)';
-        if (line.includes('✅') || line.includes('🎉') || line.includes('Login detectado')) return '#4ade80';
-        if (line.includes('👤') || line.includes('[Extraído]') || line.includes('[Operator]')) return '#38bdf8';
-        if (line.includes('⚠️') || line.includes('Warning')) return '#fbbf24';
-        if (line.includes('❌') || line.includes('[Erro') || line.includes('[System Error]')) return '#f87171';
-        if (line.includes('📊') || line.includes('[Progresso]')) return 'rgba(255,255,255,0.55)';
-        if (line.startsWith('=')) return 'var(--sw-primary)';
-        if (line.startsWith('-')) return 'rgba(255,255,255,0.3)';
-        return 'rgba(255,255,255,0.8)';
+        if (line.includes('[System]')) return 'var(--terminal-system)';
+        if (line.includes('✅') || line.includes('🎉') || line.includes('Login detectado')) return 'var(--terminal-success)';
+        if (line.includes('👤') || line.includes('[Extraído]') || line.includes('[Operator]')) return 'var(--terminal-info)';
+        if (line.includes('⚠️') || line.includes('Warning')) return 'var(--terminal-warning)';
+        if (line.includes('❌') || line.includes('[Erro') || line.includes('[System Error]')) return 'var(--terminal-error)';
+        if (line.includes('📊') || line.includes('[Progresso]')) return 'var(--terminal-muted)';
+        if (line.startsWith('=')) return 'var(--terminal-system)';
+        if (line.startsWith('-')) return 'var(--terminal-muted)';
+        return 'var(--terminal-text)';
+    };
+
+    const cleanLogLine = (line: string): string => {
+        if (!line) return '';
+        // Comprehensive emoji regex + specific common emojis used in automation logs
+        const emojiRegex = /[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDC00-\uDFFF]|✅|🎉|👤|⚠️|❌|📊/g;
+        let cleaned = line.replace(emojiRegex, '');
+        return cleaned.trimStart();
     };
 
     const filteredLogs = React.useMemo(() => {
@@ -64,21 +71,20 @@ export const ScanTerminalPanel: React.FC<ScanTerminalPanelProps> = ({ consoleLog
             <div 
                 className={styles.scanTerminalHeader} 
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', userSelect: 'none' }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div className={styles.previewLiveDot} />
+                <div style={{ display: 'flex', alignItems: 'center' }}>
                     <span>LIVE AUTOMATION CONSOLE</span>
                 </div>
-                <div style={{ marginRight: '4px', opacity: 0.7, display: 'flex', alignItems: 'center' }}>
-                    {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                <div style={{ marginRight: '4px', opacity: 0.7, fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 'bold' }}>
+                    {isCollapsed ? '[+]' : '[-]'}
                 </div>
             </div>
             {!isCollapsed && (
                 <div className={styles.scanTerminalBody} ref={scrollRef}>
                     {filteredLogs.map((log, i) => (
                         <div key={i} className={styles.scanTerminalLine} style={{ color: getLogColor(log) }}>
-                            {log}
+                            {cleanLogLine(log)}
                         </div>
                     ))}
                 </div>

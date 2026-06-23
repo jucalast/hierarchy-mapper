@@ -36,6 +36,11 @@ class PipelineRegistry:
         Orquestra a correspondência e retorna as etapas da pipeline selecionada.
         Retorna string vazia se nenhuma pipeline for correspondida (raciocínio livre).
         """
+        from modules.agent.service.helpers import is_task_creation_message
+        if is_task_creation_message(subject):
+            log.info("agent.pipeline.bypass_for_task_creation", subject=subject)
+            return ""
+
         subj_clean = subject.strip()
         type_clean = act_type.strip() if act_type else ""
 

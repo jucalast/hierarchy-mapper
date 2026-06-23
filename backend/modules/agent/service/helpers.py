@@ -43,8 +43,25 @@ def _raw_log(process_id: str, event_type: str, data: Any):
             
         # 2. Log Markdown (estruturadinho para leitura humana direta)
         md_file = os.path.join(log_dir, "agent_debug.md")
-        md_mode = "w" if event_type == "agent_start" else "a"
+        md_mode = "a"
+        current_thread_id = data.get("thread_id")
+        
+        if event_type == "agent_start":
+            if current_thread_id:
+                try:
+                    with open(md_file, "r", encoding="utf-8") as rf:
+                        first_line = rf.readline()
+                        if f"thread_id: {current_thread_id}" not in first_line:
+                            md_mode = "w"
+                except FileNotFoundError:
+                    md_mode = "w"
+            else:
+                md_mode = "w"
+                
         with open(md_file, md_mode, encoding="utf-8") as f:
+            if md_mode == "w" and current_thread_id:
+                f.write(f"<!-- thread_id: {current_thread_id} -->\n")
+                
             if event_type == "agent_start":
                 f.write(f"# 🕵️ Investigação: {process_id} ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})\n")
                 f.write(f"**Mensagem Original**: `{data.get('message')}`\n")
@@ -75,11 +92,11 @@ def _raw_log(process_id: str, event_type: str, data: Any):
                 f.write("### 📥 Resposta Bruta do Modelo\n")
                 f.write("```json\n" + json.dumps(data.get("response"), indent=2, ensure_ascii=False) + "\n```\n")
             
-            elif event_type == "tool_execute_start":
+            elif event_type in ("tool_execute_start", "tool_execute_write_start"):
                 f.write(f"#### 🛠️ Executando: `{data.get('tool')}`\n")
                 f.write(f"**Argumentos**: `{json.dumps(data.get('args'), ensure_ascii=False)}`\n")
             
-            elif event_type == "tool_execute_result":
+            elif event_type in ("tool_execute_result", "tool_execute_write_result"):
                 f.write(f"#### 📦 Resultado da Ferramenta: `{data.get('tool')}`\n")
                 res_raw = data.get("result_raw")
                 res_str = json.dumps(res_raw, indent=2, ensure_ascii=False, default=str)
@@ -225,4 +242,44 @@ def _get_label(tool_name: str, args: dict) -> str:
         "web_search_external": f"Pesquisando: {args.get('query', '...')}",
     }
     return labels.get(tool_name, tool_name)
+
+
+def is_task_creation_message(message: str) -> bool:
+    """Detecta se uma mensagem do usuário se refere à criação ou agendamento de uma tarefa."""
+    if not message:
+        return False
+    msg_lower = message.lower()
+    
+    # 1. Caso seja uma chamada direta do Pipedrive no formato de prompt/code
+    import re
+    if re.match(r'^[a-z0-9_]+\s*\(', msg_lower.strip()):
+        return True
+        
+    # 2. Palavras-chave indicando criação/agendamento de atividades/tarefas
+    keywords = [
+        "pipedrive_create_task",
+        "criar tarefa",
+        "criar atividade",
+        "agendar tarefa",
+        "agendar atividade",
+        "crie tarefa",
+        "crie atividade",
+        "criar uma tarefa",
+        "criar uma atividade",
+        "crie uma tarefa",
+        "crie uma atividade",
+        "agendar uma tarefa",
+        "agendar uma atividade",
+        "agendar ligação",
+        "agendar email",
+        "agendar reunião",
+        "registrar tarefa",
+        "registrar atividade",
+        "cadastrar tarefa",
+        "cadastrar atividade",
+        "marcar tarefa",
+        "marcar atividade"
+    ]
+    return any(kw in msg_lower for kw in keywords)
+
 

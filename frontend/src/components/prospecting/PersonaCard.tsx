@@ -56,7 +56,7 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
   return (
     <div 
         className={`${styles.customNode} ${!isNode ? styles.chatNode : ''} ${styles['level_' + effectiveLevel]} ${data.isRoot ? styles.rootNode : ''}`} 
-        style={!isNode ? { position: 'relative', width: '300px', margin: '20px 0 10px 20px', zoom: 0.85 } : {}}
+        style={!isNode ? { position: 'relative', width: '380px', margin: '20px 0 10px 20px', zoom: 0.85 } : {}}
     >
       {isNode && <div className={styles.handleTopLine}></div>}
       

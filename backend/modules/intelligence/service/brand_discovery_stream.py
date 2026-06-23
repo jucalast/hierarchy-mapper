@@ -210,21 +210,17 @@ async def discover_company_brand_stream(
     active_queries = list(dict.fromkeys([q for q in search_queries if q]))
     has_high_confidence = False
     
-    print(f"[BrandDiscovery] 🚀 Iniciando buscas sequenciais por perfis (Stream)...")
+    print(f"[BrandDiscovery] 🚀 Iniciando buscas concorrentes por perfis (Stream)...")
     
-    for idx, query in enumerate(active_queries):
-        if has_high_confidence:
-            print(f"[BrandDiscovery] 🎯 Parada precoce (Early Exit) no stream. Match de alta confiança encontrado.")
-            break
-            
-        if idx > 0:
-            wait_time = random.uniform(3.0, 4.5)
-            print(f"[BrandDiscovery] Aguardando {wait_time:.1f}s antes da consulta sequencial...")
-            await asyncio.sleep(wait_time)
-            
+    # Executa todas as buscas em paralelo para evitar timeout
+    tasks = [
+        asyncio.wait_for(get_duck_results(query, max_results=15, is_company=True), timeout=25.0)
+        for query in active_queries
+    ]
+    
+    for coro in asyncio.as_completed(tasks):
         try:
-            # Timeout por query para não travar o processo todo se um buscador demorar
-            res = await asyncio.wait_for(get_duck_results(query, max_results=15, is_company=True), timeout=25.0)
+            res = await coro
             
             for r in res:
                 title = r.get("title", "")
@@ -260,7 +256,7 @@ async def discover_company_brand_stream(
                         
                         candidate_count += 1
                         
-                        # Calcula score na hora para early exit
+                        # Calcula score na hora para saber se a confiança é alta (para referência futura, sem early exit)
                         score = get_brand_score(name)
                         if score >= 900:
                             has_high_confidence = True
@@ -273,10 +269,10 @@ async def discover_company_brand_stream(
                             "followers": followers,
                             "logo": unique_candidates[name]["logo"],
                             "partners": partners,
-                            "source": "search_sequential"
+                            "source": "search_concurrent"
                         }
         except Exception as e:
-            print(f"[BrandDiscovery] Query error ({query[:30]}): {e}")
+            print(f"[BrandDiscovery] Concurrency query error: {e}")
 
     # 🏆 ORDENAÇÃO FINAL POR SCORE
     scored_candidates = []

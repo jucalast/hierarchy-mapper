@@ -12,7 +12,7 @@ export const FitViewHandler = ({ shouldFitView, nodes, setShouldFitView }: FitVi
     useEffect(() => {
         if (shouldFitView && nodes.length > 0) {
             const timer = setTimeout(() => {
-                fitView({ padding: 0.2, duration: 800 });
+                fitView({ padding: 0.45, duration: 800 });
                 setShouldFitView(false);
             }, 100);
             return () => clearTimeout(timer);

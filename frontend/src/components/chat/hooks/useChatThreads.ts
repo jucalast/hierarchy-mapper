@@ -71,7 +71,6 @@ export const useChatThreads = ({
 
     useEffect(() => {
         setActiveThread(null);
-        setMessages([]);
         
         if (typeof window !== 'undefined') {
             const savedView = window.localStorage.getItem('chat-panel-view');

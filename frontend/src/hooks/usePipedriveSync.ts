@@ -89,21 +89,23 @@ export function usePipedriveSync() {
             });
     }, [pipedriveOrgs, searchTerm, taskSummary, activeStageFilter]);
 
-    // Coleta estágios únicos das orgs carregadas
+    // Coleta estágios únicos das orgs carregadas e ordena pela ordem do Pipedrive
     const uniqueStages = useMemo(() => {
         const seen = new Set<string>();
-        const stages: { name: string; count: number }[] = [];
+        const stages: { name: string; count: number; order_nr: number }[] = [];
         for (const org of pipedriveOrgs) {
             const s = org.stage_name;
             if (s && !seen.has(s)) {
                 seen.add(s);
-                stages.push({ name: s, count: 0 });
+                stages.push({ name: s, count: 0, order_nr: org.stage_order_nr || 0 });
             }
         }
         // Conta orgs por estágio
         for (const stage of stages) {
             stage.count = pipedriveOrgs.filter(o => o.stage_name === stage.name).length;
         }
+        // Ordena pela ordem oficial do Pipedrive (stage_order_nr)
+        stages.sort((a, b) => a.order_nr - b.order_nr);
         return stages;
     }, [pipedriveOrgs]);
 

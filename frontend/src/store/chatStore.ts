@@ -45,6 +45,7 @@ interface ChatStore {
   mappings: Record<number, MappingSession>; // chave: orgId
   activeTabs: number[]; // Lista de orgIds abertos nas abas
   currentOrgId: number | null;
+  globalSmartSyncLoading: boolean;
 
   // Helpers de inicialização
   getSession: (orgId: number | null | undefined, threadId: string | null | undefined) => ChatSession;
@@ -79,6 +80,7 @@ interface ChatStore {
   addActiveTab: (orgId: number) => void;
   removeActiveTab: (orgId: number) => void;
   setCurrentOrgId: (orgId: number | null) => void;
+  setGlobalSmartSyncLoading: (loading: boolean) => void;
 }
 
 const defaultSession = (): ChatSession => ({
@@ -119,6 +121,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   mappings: {},
   activeTabs: [],
   currentOrgId: null,
+  globalSmartSyncLoading: false,
 
   getSession: (orgId, threadId) => {
     const key = getSessionKey(orgId, threadId);
@@ -444,11 +447,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     }));
   },
 
+  setGlobalSmartSyncLoading: (loading) => {
+    set({ globalSmartSyncLoading: loading });
+  },
+
   // Tabs management
   addActiveTab: (orgId) => {
     set((state) => {
-      if (state.activeTabs.includes(orgId)) return {};
-      return { activeTabs: [...state.activeTabs, orgId] };
+      const nextTabs = state.activeTabs.filter((id) => id !== orgId);
+      nextTabs.unshift(orgId);
+      return { activeTabs: nextTabs };
     });
   },
 
@@ -457,7 +465,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const nextTabs = state.activeTabs.filter((id) => id !== orgId);
       let nextOrgId = state.currentOrgId;
       if (state.currentOrgId === orgId) {
-        nextOrgId = nextTabs.length > 0 ? nextTabs[nextTabs.length - 1] : null;
+        nextOrgId = nextTabs.length > 0 ? nextTabs[0] : null;
       }
       return {
         activeTabs: nextTabs,
@@ -469,9 +477,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   setCurrentOrgId: (orgId) => {
     set((state) => {
       if (!orgId) return { currentOrgId: null };
-      const nextTabs = state.activeTabs.includes(orgId)
-        ? state.activeTabs
-        : [...state.activeTabs, orgId];
+      const nextTabs = state.activeTabs.filter((id) => id !== orgId);
+      nextTabs.unshift(orgId);
       return {
         currentOrgId: orgId,
         activeTabs: nextTabs,

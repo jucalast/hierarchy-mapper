@@ -4,6 +4,7 @@ import { Spinner } from '../';
 import { organizations as orgsApi, hierarchy as hierarchyApi } from '@/services/api';
 import type { NotificationType } from '../Notification';
 import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal, OrgDetailsModal, DrawerStageTabs } from './components';
+import { useGlobalHierarchyScan } from '@/contexts/HierarchyScanContext';
 
 interface DrawerProps {
     showDrawer: boolean;
@@ -25,7 +26,7 @@ interface DrawerProps {
     onSaveToPipedrive?: (person: any, orgId: number) => Promise<void> | void;
     onEmailDiscovered?: (person: any, email: string) => Promise<void> | void;
     onOrgDomainChanged?: (oldDomain: string, newDomain: string) => void;
-    uniqueStages?: { name: string; count: number }[];
+    uniqueStages?: { name: string; count: number; order_nr?: number }[];
     activeStageFilter?: string | null;
     setActiveStageFilter?: (stage: string | null) => void;
     totalOrgsCount?: number;
@@ -80,13 +81,8 @@ export const Drawer: React.FC<DrawerProps> = ({
     totalOrgsCount = 0,
     onNavigateToRoot,
 }) => {
-    const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = window.localStorage.getItem('drawer-expanded-org-id');
-            return saved ? Number(saved) : null;
-        }
-        return null;
-    });
+    const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(null);
+    const scan = useGlobalHierarchyScan();
 
     const setExpandedOrgId = (orgId: number | null) => {
         setExpandedOrgIdState(orgId);
@@ -126,25 +122,10 @@ export const Drawer: React.FC<DrawerProps> = ({
         };
     }, [showDrawer, expandedOrgId]);
 
-    const [orgDetails, setOrgDetails] = useState<Record<number, any>>(() => {
-        if (typeof window !== 'undefined' && expandedOrgId) {
-            const cached = window.localStorage.getItem(`org-${expandedOrgId}-details`);
-            if (cached) {
-                try {
-                    return { [expandedOrgId]: JSON.parse(cached) };
-                } catch {}
-            }
-        }
-        return {};
-    });
+    const [orgDetails, setOrgDetails] = useState<Record<number, any>>({});
     const [loadingDetails, setLoadingDetails] = useState<Record<number, boolean>>({});
     
-    const [activeTab, setActiveTabState] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            return window.localStorage.getItem('drawer-active-tab') || 'activities';
-        }
-        return 'activities';
-    });
+    const [activeTab, setActiveTabState] = useState<string>('activities');
 
     const setActiveTab = (tab: string) => {
         setActiveTabState(tab);
@@ -153,10 +134,25 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
-    // 🚀 Carregamento inicial de detalhes se já houver empresa expandida
+    // 🚀 Carregamento inicial de detalhes e estados no client-side para evitar hydration mismatch
     useEffect(() => {
-        if (expandedOrgId) {
-            void fetchOrgDetails(expandedOrgId);
+        if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem('drawer-expanded-org-id');
+            const currentId = saved ? Number(saved) : null;
+            if (currentId) {
+                setExpandedOrgIdState(currentId);
+                const cached = window.localStorage.getItem(`org-${currentId}-details`);
+                if (cached) {
+                    try {
+                        setOrgDetails({ [currentId]: JSON.parse(cached) });
+                    } catch {}
+                }
+                void fetchOrgDetails(currentId);
+            }
+            const savedTab = window.localStorage.getItem('drawer-active-tab');
+            if (savedTab) {
+                setActiveTabState(savedTab);
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -171,7 +167,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     const fetchedOrgsRef = useRef<Record<number, boolean>>({});
 
     const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false, background: boolean = false) => {
-        if (!force && fetchedOrgsRef.current[orgId]) return; // Já buscado nesta sessão
+        if (!force && !background && fetchedOrgsRef.current[orgId]) return; // Já buscado nesta sessão
 
         if (!background) {
             setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
@@ -254,10 +250,12 @@ export const Drawer: React.FC<DrawerProps> = ({
             } catch {
                 setScanningOrgId(null);
             }
+        } else if (scan.isScanning && scan.scanOrgId) {
+            setScanningOrgId(scan.scanOrgId);
         } else {
             setScanningOrgId(null);
         }
-    }, [activeJobId]);
+    }, [activeJobId, scan.isScanning, scan.scanOrgId]);
 
     const toggleExpand = (e: React.MouseEvent, orgId: number) => {
         e.stopPropagation();
@@ -611,10 +609,9 @@ export const Drawer: React.FC<DrawerProps> = ({
     // Filtra a organização que está em foco
     const focusedOrg = expandedOrgId ? filteredOrgs.find(o => Number(o.id) === expandedOrgId) : null;
 
-    if (!showDrawer) return null;
-
     return (
-        <div className={styles.drawer}>
+        <div className={`${styles.drawerWrapper} ${showDrawer ? styles.drawerWrapperOpen : styles.drawerWrapperClosed}`}>
+        <div className={styles.drawerInner}>
             <DrawerHeader 
                 expandedOrgId={expandedOrgId}
                 setExpandedOrgId={setExpandedOrgId}
@@ -698,6 +695,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 focusedOrg={focusedOrg}
                 handleUpdateOrg={handleUpdateOrg}
             />
+        </div>
         </div>
     );
 };

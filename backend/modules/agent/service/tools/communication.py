@@ -503,7 +503,7 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
             search_query = contact_email or contact_name
             if not search_query:
                 if domain and domain != JFERRES_DOMAIN:
-                    search_query = f"@{domain}"
+                    search_query = domain
                 else:
                     import unicodedata
                     import re
@@ -549,7 +549,7 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                 _sw = {"grupo", "cia", "ltda", "sistemas", "comercio", "industria", "servicos", "energia", "eletrica"}
                 _fallback_query = next((w for w in _words if len(w) > 3 and w not in _sw), _words[0] if _words else None)
 
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 # "conversations" varre TODAS as pastas do Outlook recursivamente
                 all_r = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "conversations", "limit": limit * 2, "q": search_query})
 
@@ -778,6 +778,7 @@ async def exec_batch_communication_search(args: Dict[str, Any], org_id: int | No
     for r in all_res:
         if isinstance(r, Exception):
             log.warning(f"batch_search.task_failed: {r}")
+            print(f"Exception in batch_search: {r}")
             continue
         if r and r.get("ok"):
             # Apenas inclui no relatório final se houver histórico real (count > 0)

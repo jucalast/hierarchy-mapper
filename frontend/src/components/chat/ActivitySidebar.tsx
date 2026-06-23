@@ -1,7 +1,7 @@
 import React from 'react';
 import { Loader2, RefreshCw, Mail, MessageSquare, ArrowRight, CornerDownLeft, CheckCheck, AlertCircle } from 'lucide-react';
 import type { ActivityOut } from '@/services/api/conversations';
-import styles from '../ChatPanel.module.css';
+import styles from './ChatPanel.module.css';
 
 interface ActivitySidebarProps {
     activities: ActivityOut[];

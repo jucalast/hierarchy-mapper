@@ -4,6 +4,7 @@ import styles from './DrawerStageTabs.module.css';
 interface Stage {
     name: string;
     count: number;
+    order_nr?: number;
 }
 
 interface DrawerStageTabsProps {

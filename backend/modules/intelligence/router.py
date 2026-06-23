@@ -115,6 +115,63 @@ async def confirm_enrich_data(payload: ConfirmEnrichRequest):
                 else:
                     org.pipedrive_id = target_pid
 
+            # Verifica se há conflito de CNPJ duplicado com outra organização no banco
+            if payload.cnpj:
+                clean_cnpj = payload.cnpj.replace(".", "").replace("/", "").replace("-", "")
+                stmt = select(Organization).where(Organization.cnpj == clean_cnpj)
+                if org and org.id:
+                    stmt = stmt.where(Organization.id != org.id)
+                res = await session.execute(stmt)
+                duplicate_cnpj_org = res.scalars().first()
+
+                if duplicate_cnpj_org:
+                    # Se houver outra organização com o mesmo CNPJ, mesclamos a atual nela
+                    if org:
+                        if org.id and org.id != duplicate_cnpj_org.id:
+                            from models import Employee, ConversationThread, ActivityLog, CallSession, AutomatedAction
+                            from sqlalchemy import update
+
+                            # Migra relacionamentos
+                            await session.execute(
+                                update(Employee)
+                                .where(Employee.company_id == org.id)
+                                .values(company_id=duplicate_cnpj_org.id)
+                            )
+                            await session.execute(
+                                update(ConversationThread)
+                                .where(ConversationThread.org_id == org.id)
+                                .values(org_id=duplicate_cnpj_org.id)
+                            )
+                            await session.execute(
+                                update(ActivityLog)
+                                .where(ActivityLog.org_id == org.id)
+                                .values(org_id=duplicate_cnpj_org.id)
+                            )
+                            await session.execute(
+                                update(CallSession)
+                                .where(CallSession.org_id == org.id)
+                                .values(org_id=duplicate_cnpj_org.id)
+                            )
+                            await session.execute(
+                                update(AutomatedAction)
+                                .where(AutomatedAction.org_id == org.id)
+                                .values(org_id=duplicate_cnpj_org.id)
+                            )
+
+                            # Deleta a organização antiga (shell ou duplicada)
+                            await session.delete(org)
+                            await session.flush()
+                        elif not org.id:
+                            # Se é um objeto novo que apenas instanciamos nesta chamada, removemos da sessão
+                            try:
+                                session.expunge(org)
+                            except Exception:
+                                pass
+
+                    # A sobrevivente passa a ser a nossa org e herda o pipedrive_id
+                    org = duplicate_cnpj_org
+                    org.pipedrive_id = target_pid
+
             if payload.name: org.name = payload.name
             if payload.cnpj: org.cnpj = payload.cnpj.replace(".", "").replace("/", "").replace("-", "")
             if payload.domain: org.domain = payload.domain

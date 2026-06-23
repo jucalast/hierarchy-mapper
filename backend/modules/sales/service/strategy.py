@@ -301,7 +301,7 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
    - O mesmo se aplica a quaisquer variações e sobrenomes similares. Se há correspondência parcial (ex: mesmo primeiro nome e sobrenome, ou iniciais iguais) de alguém que já tem ID, NÃO sugira cadastrar a outra versão.
 5. **NEGÓCIOS CONCLUÍDOS/FECHADOS (MUITO CRÍTICO)**: Analise o histórico recente de WhatsApp/comunicações para identificar se o pedido/venda já foi fechado ou colocado (ex: aprovação de layouts, mensagens como 'coloquei o pedido para o dia [data]', 'amostras entregues e layouts aprovados', etc.).
    - Se a venda foi fechada/acordada, mas o Deal no CRM ainda está com status 'open' (ou diferente de won):
-     * A PRIMEIRA e principal sugestão deve ser **Marcar negócio como ganho** (usando `pipedrive_update_deal` com `deal_id` e `fields={"status": "won"}`).
+     * A PRIMEIRA e principal sugestão deve ser **Marcar negócio como ganho** (usando `pipedrive_update_deal` com `deal_id` e `fields={{ "status": "won" }}`).
      * É TERMINANTEMENTE PROIBIDO sugerir cadastrar outros contatos secundários da empresa no Pipedrive (ex: outros engenheiros, sócios, analistas que não participaram diretamente) ou sugerir tarefas de prospecção fria/outbound. O foco mudou para a operação/entrega.
      * Sugira apenas tarefas de pós-venda/satisfação (ex: follow-up de satisfação ou entrega), e NUNCA cadastros redundantes.
 
@@ -339,7 +339,7 @@ PASSO 1 (Cadastro): O contato alvo (decisor) existe e tem um 'id' numérico vál
 - SIM: Passe para o Passo 2.
 
 PASSO 2 (Vinculação ao Negócio): O "Deal vinculado a qual pessoa?" mostra o ID do nosso contato alvo ou ele está como "NENHUMA PESSOA"?
-- NÃO: Sua 1ª sugestão DEVE ser "Vincular [Contato] ao Negócio" (`pipedrive_update_deal` com `person_id`={ID do contato}). 
+- NÃO: Sua 1ª sugestão DEVE ser "Vincular [Contato] ao Negócio" (`pipedrive_update_deal` com `person_id`={{ID do contato}}). 
 - SIM (Já está vinculado): Passe para o Passo 3.
 
 PASSO 3 (Geração de Tarefa CRM): Já existe alguma tarefa de comunicação (ex: Enviar E-mail, Ligar) em aberto na lista de "Atividades pendentes"?
@@ -358,8 +358,11 @@ PASSO 5 (Encerramento da Tarefa): A ação de comunicação (Passo 4) já foi fe
 
 ## REGRAS PARA AS SUGESTÕES (SAÍDA JSON):
 1. Gere de 5 a 15 ações — começando SEMPRE pelo passo no qual o algoritmo parou e incluindo opções alternativas.
-2. Ações de criação de pessoa (`pipedrive_create_person`) só devem aparecer se a pessoa NÃO TEM ID.
-3. Ações de vinculação de negócio (`pipedrive_update_deal`) só se o deal não tiver o person_id correto.
+2. Ações de criação de pessoa (`pipedrive_create_person`) só devem aparecer se a pessoa NÃO TEM ID no Pipedrive (ou seja, se é um contato do Banco Local [ID:LocalDB]).
+3. **CONTATOS LOCAIS SEM ID (CRÍTICO)**: Se o contato decisor/alvo for um contato do Banco Local e ainda não possuir um ID numérico no Pipedrive:
+   - Você DEVE sugerir simultaneamente criá-lo (`pipedrive_create_person`), vinculá-lo ao negócio (`pipedrive_update_deal`) e criar as tarefas de abordagem (`pipedrive_create_task`).
+   - Ao sugerir `pipedrive_update_deal` ou `pipedrive_create_task` para esse contato sem ID, você DEVE passar o nome completo dele (string) no campo `person_id` (ex: `person_id="Tatiana Papini"`). O sistema resolverá automaticamente o nome para o ID correto. Nunca use placeholders como 'ID_DA_PESSOA_CRIADA_ACIMA'.
+4. Ações de vinculação de negócio (`pipedrive_update_deal`) só se o deal não tiver o person_id correto.
 
 ## REGRAS PARA O CAMPO "label":
 - NÃO inclua o nome do canal no label (ex: PROIBIDO "WhatsApp: Cobrar retorno", CORRETO: "Cobrar retorno da cotação de Outubro")

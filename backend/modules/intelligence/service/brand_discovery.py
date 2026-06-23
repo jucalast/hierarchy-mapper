@@ -417,87 +417,46 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
     active_queries = list(dict.fromkeys([q for q in search_queries if q]))
     has_high_confidence = False
     
-    for idx, query in enumerate(active_queries):
-        if has_high_confidence:
-            print(f"      [BrandDiscovery] 🎯 Parada precoce (Early Exit) ativada. Candidato de alta confiança encontrado.")
-            break
-            
-        if idx > 0:
-            wait_time = random.uniform(3.0, 4.5)
-            print(f"      [BrandDiscovery] Aguardando {wait_time:.1f}s para próxima consulta...")
-            await asyncio.sleep(wait_time)
-            
-        try:
-            # Aumentado para 25 para capturar subsidiárias que rankeiam abaixo da holding
-            res = await get_duck_results(query, max_results=25, is_company=True)
-            for r in res:
-                title = r.get("title", "")
-                snippet = (r.get("body") or r.get("snippet") or "").lower()
-                name = clean_brand_name(title)
-                
-                # Extração de Seguidores
-                followers = "N/A"
-                f_match = re.search(r"([\d\.,k\+]+)\s+(followers|seguidores)", snippet)
-                if f_match:
-                    followers = f_match.group(1).upper()
+    print(f"      [BrandDiscovery] 🚀 Iniciando buscas concorrentes por perfis...")
     
-                if name: 
-                    url = r.get("href", "") or r.get("url", "") or r.get("link", "")
-                    print(f"      [BrandDiscovery] ✨ Candidato encontrado: {name} -> {url}")
-                    candidates_raw.append({
-                        "name": name, 
-                        "url": url,
-                        "followers": followers
-                    })
-                    
-                    # Calcula score na hora para early exit
-                    score = 0
-                    name_norm = name.lower()
-                    url_norm = url.lower()
-                    
-                    corp_dna = [
-                        "friction", "tmd", "ltda", "ind", "freios", "solutions", 
-                        "sistemas", "tecnologia", "technology", "technologies", 
-                        "brasil", "brazil", "group", "holdings", "quimica", "química", 
-                        "chemicals", "indústria", "comércio"
-                    ]
-                    
-                    if "/company/" in url_norm or "/school/" in url_norm: 
-                        score += 150
-                    if any(dna in name_norm for dna in corp_dna): 
-                        score += 100
-                    if " " in name: 
-                        score += 40
-                    if followers != "N/A": 
-                        score += 80
+    # Executa todas as queries em paralelo
+    tasks = [
+        asyncio.wait_for(get_duck_results(query, max_results=25, is_company=True), timeout=25.0)
+        for query in active_queries
+    ]
+    try:
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+    except Exception as e:
+        print(f"      [BrandDiscovery] Erro ao executar buscas em paralelo: {e}")
+        results = []
+
+    for idx, res in enumerate(results):
+        if isinstance(res, Exception):
+            query = active_queries[idx] if idx < len(active_queries) else "unknown"
+            print(f"      [BrandDiscovery] Erro na query '{query[:30]}': {res}")
+            continue
+        if not res:
+            continue
             
-                    clean_search = search_name.lower()
-                    simple_search = "".join(filter(str.isalnum, clean_search))
-                    simple_name = "".join(filter(str.isalnum, name_norm))
-                    
-                    if simple_search and simple_name:
-                        if simple_search in simple_name or simple_name in simple_search:
-                            score += 300
-                            if simple_search == simple_name:
-                                score += 600
-                    
-                    if 'brand_short' in locals() and brand_short:
-                        brand_short_norm = brand_short.lower()
-                        simple_brand_short = "".join(filter(str.isalnum, brand_short_norm))
-                        if simple_brand_short == simple_name or name_norm.startswith(brand_short_norm):
-                            score += 1000
-                    
-                    surnames = ["santos", "silva", "oliveira", "souza", "pereira", "costa", "ferreira", "lima", "natacci", "rodrigues"]
-                    words = name_norm.split()
-                    if any(s in words for s in surnames) and not any(dna in name_norm for dna in corp_dna):
-                        score -= 400
-                    if len(name) > 45: 
-                        score -= 150
-                        
-                    if score >= 900:
-                        has_high_confidence = True
-        except Exception as e:
-            print(f"      [BrandDiscovery] Erro na query '{query[:30]}': {e}")
+        for r in res:
+            title = r.get("title", "")
+            snippet = (r.get("body") or r.get("snippet") or "").lower()
+            name = clean_brand_name(title)
+            
+            # Extração de Seguidores
+            followers = "N/A"
+            f_match = re.search(r"([\d\.,k\+]+)\s+(followers|seguidores)", snippet)
+            if f_match:
+                followers = f_match.group(1).upper()
+
+            if name: 
+                url = r.get("href", "") or r.get("url", "") or r.get("link", "")
+                print(f"      [BrandDiscovery] ✨ Candidato encontrado: {name} -> {url}")
+                candidates_raw.append({
+                    "name": name, 
+                    "url": url,
+                    "followers": followers
+                })
 
     
     # ... (Decisão e Scoring permanecem os mesmos)

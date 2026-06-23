@@ -28,6 +28,10 @@ STAGE_TO_SKILL = {
 
 def classify_intent(message: str) -> str:
     """Classifies user intent based on the message."""
+    from modules.agent.service.helpers import is_task_creation_message
+    if is_task_creation_message(message):
+        return "direct_command"
+
     message_lower = message.lower()
     
     # Tarefas de ligação têm precedência máxima
