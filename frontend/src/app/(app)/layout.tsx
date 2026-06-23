@@ -68,10 +68,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [currentOrg, setCurrentOrg] = useState<{ id: number; name: string; logo: string; prospectingContext?: string | null }>({ id: 0, name: "", logo: "" });
   const [isOrgLoading, setIsOrgLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string | null; company_name?: string } | null>(null);
-  const [tasksForToday, setTasksForToday] = useState(0);
+  const [tasksForToday, setTasksForToday] = useState<number | null>(null);
 
   useEffect(() => {
-    const handleUpdateTasks = (e: any) => setTasksForToday(e.detail || 0);
+    const handleUpdateTasks = (e: any) => setTasksForToday(e.detail ?? 0);
     window.addEventListener('update_tasks_today', handleUpdateTasks);
     return () => window.removeEventListener('update_tasks_today', handleUpdateTasks);
   }, []);

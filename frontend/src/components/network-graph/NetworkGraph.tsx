@@ -91,6 +91,8 @@ function NetworkGraphContent({
     const [chatOrgId, setChatOrgId] = useState<number | null>(null);
     const [prospectHoveredLeadId, setProspectHoveredLeadId] = useState<string | null>(null);
     const hasAttemptedReconnect = useRef(false);
+    const currentPathRef = useRef(pathname);
+    currentPathRef.current = pathname;
 
     // CRM Sync
     const {
@@ -639,18 +641,19 @@ function NetworkGraphContent({
                     useChatStore.getState().setCurrentOrgId(orgId);
                     localStorage.setItem('last-viewed-org', JSON.stringify(org));
 
-                    const lUrl = org.linkedin_url || org.linkedin || "";
+                    const isValidLinkedin = (url: any) => typeof url === 'string' && url.includes('linkedin.com');
+                    const lUrl = isValidLinkedin(org.linkedin_url) ? org.linkedin_url : isValidLinkedin(org.linkedin) ? org.linkedin : "";
                     if (lUrl) setConfirmedLinkedInUrl(lUrl);
 
                     const data = await loadStoredHierarchy(orgId, true);
-                    if (data && data.nodes && data.nodes.length > 0) {
+                    if (data && data.nodes && data.nodes.length > 1) {
                         setStep("confirm");
                         const rootLinkedin = data.nodes[0]?.linkedin || data.nodes[0]?.url;
                         if (rootLinkedin && rootLinkedin.startsWith('http')) {
                             setConfirmedLinkedInUrl(rootLinkedin);
                         }
                         setTimeout(() => setShouldFitView(true), 100);
-                    } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
+                    } else if (isValidLinkedin(org.linkedin_url) || isValidLinkedin(org.linkedin) || (org.cnpj && org.domain)) {
                         setStep("confirm");
                     } else {
                         setStep("input");
@@ -780,6 +783,8 @@ function NetworkGraphContent({
                             if (res && res.org) org = res.org;
                         }
 
+                        if (currentPathRef.current !== `/org/${orgId}`) return;
+
                         if (org) {
                             console.log(`[Router Sync] Organization details fetched for org ${orgId}. Applying details.`);
                             localStorage.setItem('last-viewed-org', JSON.stringify(org));
@@ -812,7 +817,9 @@ function NetworkGraphContent({
                             }
 
                             const data = await loadStoredHierarchy(orgId, true);
-                            const hasNodes = data && data.nodes && data.nodes.length > 0;
+                            const hasNodes = data && data.nodes && data.nodes.length > 1;
+
+                            if (currentPathRef.current !== `/org/${orgId}`) return;
 
                             if (hasNodes) {
                                 setConfirmedBrand(cleanName(org.name || ""));
@@ -826,7 +833,9 @@ function NetworkGraphContent({
                                 if (rootLinkedin && rootLinkedin.startsWith('http')) {
                                     setConfirmedLinkedInUrl(rootLinkedin);
                                 }
-                            } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
+                            } else if ((typeof org.linkedin_url === 'string' && org.linkedin_url.includes('linkedin.com')) || 
+                                       (typeof org.linkedin === 'string' && org.linkedin.includes('linkedin.com')) || 
+                                       (org.cnpj && org.domain)) {
                                 setConfirmedBrand(cleanName(org.name || ""));
                                 setConfirmedLogo(org.logo || "");
                                 setCnpj(formatCnpj(org.cnpj || ""));
@@ -853,6 +862,22 @@ function NetworkGraphContent({
                     }
                 };
                 void syncOrgFromUrl();
+            }
+        } else {
+            if (currentOrgId !== null) {
+                console.log(`[Router Sync] Navigated to root. Clearing organization state.`);
+                resetHierarchy();
+                setCurrentOrgId(null);
+                setChatOrgId(null);
+                useChatStore.getState().setCurrentOrgId(null);
+                setStep("input");
+                setCnpj("");
+                setDomainTarget("");
+                setConfirmedBrand("");
+                setConfirmedLogo("");
+                setBrandOptions([]);
+                setConfirmedLinkedInUrl("");
+                localStorage.removeItem('last-viewed-org');
             }
         }
     }, [pathname, currentOrgId, pipedriveOrgs, resetHierarchy, setNodes, setEdges, loadStoredHierarchy, setConfirmedBrand, setConfirmedLogo, setCnpj, setDomainTarget, setConfirmedLinkedInUrl, setStep, setShouldFitView, setProductFocus, setAreaFocus, reconnectToActiveJob, addNotification]);
@@ -985,7 +1010,7 @@ function NetworkGraphContent({
                             }}
                             uniqueStages={uniqueStages}
                             activeStageFilter={activeStageFilter}
-                            onNavigateToRoot={handleNavigateToRoot}
+                            onNavigateToRoot={handleNewCompany}
                             setActiveStageFilter={setActiveStageFilter}
                             totalOrgsCount={pipedriveOrgs.length}
                         />

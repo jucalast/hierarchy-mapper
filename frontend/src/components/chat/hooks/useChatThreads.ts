@@ -11,8 +11,7 @@ interface UseChatThreadsProps {
     onNewThread: () => void;
     onBackToList: () => void;
     streamingThreadIdRef: React.MutableRefObject<string | null>;
-    setMessages: (messages: any[] | ((prev: any[]) => any[])) => void;
-    setInputValue: (val: string) => void;
+    clearNewThreadState: () => void;
 }
 
 export const useChatThreads = ({
@@ -24,8 +23,7 @@ export const useChatThreads = ({
     onNewThread,
     onBackToList,
     streamingThreadIdRef,
-    setMessages,
-    setInputValue,
+    clearNewThreadState,
 }: UseChatThreadsProps) => {
     const [threads, setThreads] = useState<ThreadOut[]>([]);
     const [isLoadingThreads, setIsLoadingThreads] = useState(false);
@@ -94,9 +92,9 @@ export const useChatThreads = ({
             window.localStorage.removeItem(`active-thread-id-${targetOrgId}`);
             window.localStorage.setItem('chat-panel-view', 'chat');
         }
-        setMessages([]);
-        const defaultInput = (activeOrgId && !prospectingContext) ? "Gerar plano de prospecção para esta empresa" : "";
-        setInputValue(defaultInput);
+        
+        clearNewThreadState();
+        
         setView('chat');
         onNewThread();
     };
@@ -107,9 +105,7 @@ export const useChatThreads = ({
             window.localStorage.setItem('chat-panel-view', 'list');
         }
         setActiveThread(null);
-        setMessages([]);
-        const defaultInput = (activeOrgId && !prospectingContext) ? "Gerar plano de prospecção para esta empresa" : "";
-        setInputValue(defaultInput);
+        clearNewThreadState();
         onBackToList();
         void loadThreads();
     };

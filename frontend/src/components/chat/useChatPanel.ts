@@ -147,7 +147,7 @@ export const useChatPanel = ({
         try {
             const msgs = await conversations.getMessages(threadId);
             if (msgs.length === 0) {
-                setMessages([{
+                store.setMessages(activeOrgId, threadId, [{
                     id: 'welcome',
                     role: 'assistant',
                     content: hasValidOrg ? `Como posso te ajudar com a @${cleanOrgName}?` : "Como posso te ajudar hoje?",
@@ -314,18 +314,18 @@ export const useChatPanel = ({
                 });
 
                 if (hasActiveJobLoading || hasAwaitingConfirmation) {
-                    setAgentStreaming(true);
+                    store.setAgentStreaming(activeOrgId, threadId, true);
                 }
                 if (hasActiveJobLoading) {
-                    setIsLoading(true);
+                    store.setIsLoading(activeOrgId, threadId, true);
                 }
-                setApprovedSuggestedActions(prev => ({ ...prev, ...initialSuggestedActions }));
+                store.setApprovedSuggestedActions(activeOrgId, threadId, prev => ({ ...prev, ...initialSuggestedActions }));
                 if (restoredTask) {
-                    setActiveRunningTask(restoredTask);
+                    store.setActiveRunningTask(activeOrgId, threadId, restoredTask);
                 } else {
-                    setActiveRunningTask(null);
+                    store.setActiveRunningTask(activeOrgId, threadId, null);
                 }
-                setMessages(mappedMsgs);
+                store.setMessages(activeOrgId, threadId, mappedMsgs);
             }
         } catch (err) {
             console.error('[ChatPanel] Erro ao carregar/atualizar mensagens:', err);
@@ -354,17 +354,21 @@ export const useChatPanel = ({
         prospectingContext,
         setView,
         streamingThreadIdRef,
-        setMessages: (val) => store.setMessages(activeOrgId, activeThreadIdRef.current, val),
-        setInputValue: (val) => store.setInputValue(activeOrgId, activeThreadIdRef.current, val),
+        clearNewThreadState: () => {
+            store.setMessages(activeOrgId, null, []);
+            const defaultInput = (activeOrgId && !prospectingContext) ? "Gerar plano de prospecção para esta empresa" : "";
+            store.setInputValue(activeOrgId, null, defaultInput);
+            store.setActiveRunningTask(activeOrgId, null, null);
+        },
         onOpenThread: async (thread, isSameStreamingThread) => {
             if (!isSameStreamingThread) {
-                setActiveRunningTask(null);
-                setLiveModel(null);
-                setModelActivity([]);
+                store.setActiveRunningTask(activeOrgId, thread.id, null);
+                store.setLiveModel(activeOrgId, thread.id, null);
+                store.setModelActivity(activeOrgId, thread.id, []);
                 await refreshMessages(thread.id);
             } else {
-                setIsLoading(true);
-                setAgentStreaming(true);
+                store.setIsLoading(activeOrgId, thread.id, true);
+                store.setAgentStreaming(activeOrgId, thread.id, true);
             }
         },
         onNewThread: () => {

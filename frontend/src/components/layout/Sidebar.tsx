@@ -41,7 +41,7 @@ interface SidebarProps {
     onOpenLigacao?: () => void;
     isLigacao?: boolean;
     currentUser?: { name: string; avatar: string | null; company_name?: string } | null;
-    tasksForToday?: number;
+    tasksForToday?: number | null;
     onToggleChat?: () => void;
     onLogout?: () => void;
 }
@@ -160,9 +160,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {/* ROW 2: Number + "Tarefas pra hoje" */}
                         <div style={{ display: 'flex', alignItems: 'center', width: '100%', marginTop: '8px' }}>
                             <div style={{ minWidth: '44px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-                                <span style={{ color: '#10b981', fontWeight: 700, fontSize: '14px', lineHeight: 1 }}>
-                                    {tasksForToday || 0}
-                                </span>
+                                {tasksForToday === null || tasksForToday === undefined ? (
+                                    <Loader2 size={14} style={{ color: '#10b981', animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                    <span style={{ color: '#10b981', fontWeight: 700, fontSize: '14px', lineHeight: 1 }}>
+                                        {tasksForToday}
+                                    </span>
+                                )}
                             </div>
                             <div className={styles.label} style={{ display: 'flex', alignItems: 'center', paddingRight: '8px', paddingLeft: '8px', flex: 1, overflow: 'hidden' }}>
                                 <span style={{ color: '#10b981', fontWeight: 500, fontSize: '12px', whiteSpace: 'nowrap' }}>

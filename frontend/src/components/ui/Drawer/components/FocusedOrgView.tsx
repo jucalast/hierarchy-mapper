@@ -54,14 +54,17 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
     onDeleteFromPipedrive,
     onEmailDiscovered
 }) => {
-    const rawLinkedinUrl = focusedOrg?.linkedin || 
-                           focusedOrg?.linkedin_url || 
-                           orgDetails[expandedOrgId]?.linkedin_url || 
-                           orgDetails[expandedOrgId]?.org?.linkedin_url || 
-                           orgDetails[expandedOrgId]?.org?.linkedin;
+    const rawUrls = [
+        focusedOrg?.linkedin,
+        focusedOrg?.linkedin_url,
+        orgDetails[expandedOrgId]?.linkedin_url,
+        orgDetails[expandedOrgId]?.org?.linkedin_url,
+        orgDetails[expandedOrgId]?.org?.linkedin
+    ];
+    const rawLinkedinUrl = rawUrls.find(url => typeof url === 'string' && url.includes('linkedin.com/'));
     
-    const linkedinUrl = rawLinkedinUrl || (focusedOrg?.name ? `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(focusedOrg.name)}` : undefined);
-    const linkedinTitle = rawLinkedinUrl ? "Ver no LinkedIn" : `Pesquisar "${focusedOrg?.name || 'Empresa'}" no LinkedIn`;
+    const linkedinUrl = rawLinkedinUrl || null;
+    const linkedinTitle = "Ver no LinkedIn";
 
 
 
