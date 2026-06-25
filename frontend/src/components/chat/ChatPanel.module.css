@@ -4330,6 +4330,7 @@
   padding: 10px 14px 80px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -4401,6 +4402,8 @@
   line-height: 1.65;
   color: var(--sw-text-base);
   border-top: var(--sw-border-width) solid var(--sw-border);
+  max-height: 340px;
+  overflow-y: auto;
 }
 
 .contextSectionContent p { margin-bottom: 8px; opacity: 0.9; }

@@ -47,11 +47,11 @@ export function fetchHierarchy(payload: FetchHierarchyPayload) {
   );
 }
 
-export function refineHierarchy(employees: HierarchyEmployee[]) {
+export function refineHierarchy(employees: HierarchyEmployee[], options?: { signal?: AbortSignal }) {
   return api.post<{ nodes?: HierarchyEmployee[] }>(
     '/hierarchy/refine',
     employees,
-    { timeout: TIMEOUTS.long },
+    { timeout: TIMEOUTS.long, signal: options?.signal },
   );
 }
 

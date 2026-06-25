@@ -57,6 +57,7 @@ export const useHierarchy = () => {
   const scanFinishedRef = useRef(false);
   const chatDoneDispatchedRef = useRef(false);
   const brandDiscoveryAbortControllerRef = useRef<AbortController | null>(null);
+  const refineAbortControllerRef = useRef<AbortController | null>(null);
 
   // Recupera contexto de chat pendente
   useEffect(() => {
@@ -383,6 +384,10 @@ export const useHierarchy = () => {
       brandDiscoveryAbortControllerRef.current.abort();
       brandDiscoveryAbortControllerRef.current = null;
     }
+    if (refineAbortControllerRef.current) {
+      refineAbortControllerRef.current.abort();
+      refineAbortControllerRef.current = null;
+    }
   }, []);
 
   const refineHierarchy = useCallback(async (employees: any[]) => {
@@ -390,10 +395,13 @@ export const useHierarchy = () => {
     const targetOrgId = currentOrgId;
     if (!targetOrgId) return;
 
+    const controller = new AbortController();
+    refineAbortControllerRef.current = controller;
+
     store.setMappingLoading(targetOrgId, true);
     store.setMappingError(targetOrgId, "");
     try {
-      const data = await hierarchyApi.refineHierarchy(employees);
+      const data = await hierarchyApi.refineHierarchy(employees, { signal: controller.signal });
       if (data && data.nodes) {
         const refreshedNodes = data.nodes.map((emp: any) => {
           if (!emp.manager_id && emp.id !== "root_company") {
@@ -432,9 +440,13 @@ export const useHierarchy = () => {
         }
       }
     } catch (err: any) {
+      if (err?.name === 'AbortError') return; // cancelamento intencional — não exibe erro
       console.error(err.message || err);
       store.setMappingError(targetOrgId, "Erro ao refinar hierarquia com IA.");
     } finally {
+      if (refineAbortControllerRef.current === controller) {
+        refineAbortControllerRef.current = null;
+      }
       store.setMappingLoading(targetOrgId, false);
     }
   }, [currentOrgId, checkAndDispatchChatEvent]);
