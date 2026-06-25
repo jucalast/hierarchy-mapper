@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-    ChevronDown, Building2, Users, 
+import {
+    ChevronDown, Building2, Users,
     Briefcase, ClipboardList, MessageSquare, FileText,
-    Target, LayoutList, Trash2
+    Target, Trash2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { GlassContainer } from './GlassContainer';
 import styles from './ChatPanel.module.css';
 import { organizations } from '@/services/api';
 
@@ -24,13 +23,24 @@ interface ConversationContextAccordionProps {
     dealId?: number | null;
 }
 
-export const ConversationContextAccordion: React.FC<ConversationContextAccordionProps> = ({ 
-    messages, 
-    orgId, 
-    orgName, 
-    dealId 
+const TYPE_COLORS: Record<string, string> = {
+    dossier:    '#a78bfa',
+    org:        '#60a5fa',
+    contacts:   '#2dd4bf',
+    deals:      '#4ade80',
+    activities: '#fbbf24',
+    messages:   '#f87171',
+    evaluation: '#818cf8',
+};
+
+export const ConversationContextAccordion: React.FC<ConversationContextAccordionProps> = ({
+    messages,
+    orgId,
+    orgName,
+    dealId,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [openSections, setOpenSections] = useState<Set<string>>(new Set());
     const [dbPlan, setDbPlan] = useState<string | null>(null);
 
     useEffect(() => {
@@ -47,225 +57,162 @@ export const ConversationContextAccordion: React.FC<ConversationContextAccordion
         }
     }, [orgId]);
 
-    const fullMarkdownContext = useMemo(() => {
-        const items: ContextItem[] = [];
+    const items = useMemo((): ContextItem[] => {
+        const result: ContextItem[] = [];
         const seenTools = new Set<string>();
 
-        // 1. Adiciona contexto de escopo inicial se disponível
         if (orgId || orgName || dealId) {
-            let scopeContent = "";
-            if (orgName) scopeContent += `- **Empresa Focus**: ${orgName}\n`;
-            if (orgId) scopeContent += `- **Pipedrive Org ID**: ${orgId}\n`;
-            if (dealId) scopeContent += `- **Pipedrive Deal ID**: ${dealId}\n`;
-            
-            items.push({
-                id: 'scope',
-                title: 'Escopo da Sessão',
-                icon: <Target size={14} />,
-                content: scopeContent,
-                type: 'evaluation' // Reusing evaluation slot for scope
-            });
+            let scopeContent = '';
+            if (orgName) scopeContent += `- **Empresa**: ${orgName}\n`;
+            if (orgId)   scopeContent += `- **Org ID (Pipedrive)**: ${orgId}\n`;
+            if (dealId)  scopeContent += `- **Deal ID**: ${dealId}\n`;
+            result.push({ id: 'scope', title: 'Escopo da Sessão', icon: <Target size={13} />, content: scopeContent, type: 'evaluation' });
         }
 
-        // Percorre as mensagens de trás para frente para pegar o contexto mais recente
         for (let i = messages.length - 1; i >= 0; i--) {
             const msg = messages[i];
             if (!msg.isAgent || !msg.agentEvents) continue;
-
             for (const event of msg.agentEvents) {
                 if (event.type !== 'tool_result' || !event.tool || !event.summary || !event.ok) continue;
-                
                 const tool = event.tool;
                 if (seenTools.has(tool)) continue;
                 seenTools.add(tool);
-
-                // Prioriza o conteúdo completo (response/content) sobre o resumo (summary)
-                const detailedContent = event.response || event.content || event.summary;
+                const detail = event.response || event.content || event.summary;
 
                 if (tool === 'generate_dossier' || tool === 'deep_company_investigation') {
-                    items.push({
-                        id: 'dossier',
-                        title: 'Dossiê Estratégico',
-                        icon: <FileText size={14} />,
-                        content: detailedContent,
-                        type: 'dossier'
-                    });
+                    result.push({ id: 'dossier', title: 'Dossiê Estratégico', icon: <FileText size={13} />, content: detail, type: 'dossier' });
                 } else if (tool === 'pipedrive_get_org') {
-                    items.push({
-                        id: 'org',
-                        title: 'Dados da Empresa (CRM)',
-                        icon: <Building2 size={14} />,
-                        content: detailedContent,
-                        type: 'org'
-                    });
+                    result.push({ id: 'org', title: 'Dados da Empresa (CRM)', icon: <Building2 size={13} />, content: detail, type: 'org' });
                 } else if (tool === 'pipedrive_get_persons') {
-                    items.push({
-                        id: 'contacts',
-                        title: 'Contatos Identificados',
-                        icon: <Users size={14} />,
-                        content: event.summary,
-                        type: 'contacts'
-                    });
+                    result.push({ id: 'contacts', title: 'Contatos Identificados', icon: <Users size={13} />, content: event.summary, type: 'contacts' });
                 } else if (tool === 'pipedrive_get_deals') {
-                    items.push({
-                        id: 'deals',
-                        title: 'Negócios em Aberto',
-                        icon: <Briefcase size={14} />,
-                        content: event.summary,
-                        type: 'deals'
-                    });
+                    result.push({ id: 'deals', title: 'Negócios em Aberto', icon: <Briefcase size={13} />, content: event.summary, type: 'deals' });
                 } else if (tool === 'pipedrive_get_activities') {
-                    items.push({
-                        id: 'activities',
-                        title: 'Atividades e Histórico',
-                        icon: <ClipboardList size={14} />,
-                        content: event.summary,
-                        type: 'activities'
-                    });
+                    result.push({ id: 'activities', title: 'Atividades e Histórico', icon: <ClipboardList size={13} />, content: event.summary, type: 'activities' });
                 } else if (tool === 'whatsapp_get_messages' || tool === 'email_get_contact_history') {
-                    items.push({
+                    result.push({
                         id: `comm_${tool}`,
                         title: tool === 'whatsapp_get_messages' ? 'Histórico WhatsApp' : 'Histórico E-mail',
-                        icon: <MessageSquare size={14} />,
-                        content: event.summary,
-                        type: 'messages'
+                        icon: <MessageSquare size={13} />, content: event.summary, type: 'messages',
                     });
                 } else if (tool === 'evaluate_prospects') {
-                    items.push({
-                        id: 'evaluation',
-                        title: 'Ranking de Decisores',
-                        icon: <Target size={14} />,
-                        content: event.summary,
-                        type: 'evaluation'
-                    });
+                    result.push({ id: 'evaluation', title: 'Ranking de Decisores', icon: <Target size={13} />, content: event.summary, type: 'evaluation' });
                 } else if (tool === 'generate_prospecting_plan') {
-                    let planContent = detailedContent;
-                    if (event.data && event.data.plan) {
-                        planContent = event.data.plan;
-                    } else {
-                        try {
-                            const parsed = typeof event.content === 'string' ? JSON.parse(event.content) : event.content;
-                            if (parsed && parsed.plan) planContent = parsed.plan;
-                            else if (parsed && parsed.data && parsed.data.plan) planContent = parsed.data.plan;
-                        } catch { /* ignore */ }
-                    }
-                    
-                    items.push({
-                        id: 'prospecting_plan',
-                        title: 'Plano de Prospecção (SPIN)',
-                        icon: <Target size={14} />,
-                        content: planContent,
-                        type: 'dossier'
-                    });
+                    let planContent = detail;
+                    if (event.data?.plan) planContent = event.data.plan;
+                    else { try { const p = typeof event.content === 'string' ? JSON.parse(event.content) : event.content; if (p?.plan) planContent = p.plan; else if (p?.data?.plan) planContent = p.data.plan; } catch { /* ignore */ } }
+                    result.push({ id: 'prospecting_plan', title: 'Plano de Prospecção (SPIN)', icon: <Target size={13} />, content: planContent, type: 'dossier' });
                 }
             }
         }
 
         if (dbPlan) {
-            // Separa Dossiê e Plano se estiverem concatenados por ' | '
             const parts = dbPlan.split(' | [Dossiê]');
-            
-            let spinPlan = '';
-            let dossier = '';
+            const spinPlan = parts.length > 1 ? parts[0] : (!dbPlan.includes('[Dossiê]') ? dbPlan : '');
+            const dossier  = parts.length > 1 ? '[Dossiê]' + parts[1] : (dbPlan.includes('[Dossiê]') ? dbPlan : '');
 
-            if (parts.length > 1) {
-                // Tem os dois
-                spinPlan = parts[0];
-                dossier = '[Dossiê]' + parts[1];
-            } else if (dbPlan.includes('[Dossiê]')) {
-                // Só tem o dossiê
-                dossier = dbPlan;
-            } else {
-                // Só tem o plano
-                spinPlan = dbPlan;
+            if (spinPlan && !result.find(i => i.id === 'prospecting_plan')) {
+                result.push({ id: 'prospecting_plan', title: 'Plano de Prospecção (SPIN)', icon: <Target size={13} />, content: spinPlan.trim(), type: 'dossier' });
             }
-
-            if (spinPlan && !items.find(i => i.id === 'prospecting_plan')) {
-                items.push({
-                    id: 'prospecting_plan',
-                    title: 'Plano de Prospecção (SPIN)',
-                    icon: <Target size={14} />,
-                    content: spinPlan.trim(),
-                    type: 'dossier'
-                });
-            }
-
-            if (dossier && !items.find(i => i.id === 'dossier_data')) {
-                items.push({
-                    id: 'dossier_data',
-                    title: 'Dossiê Pré-Abordagem',
-                    icon: <Target size={14} />,
-                    content: dossier.trim(),
-                    type: 'dossier'
-                });
+            if (dossier && !result.find(i => i.id === 'dossier_data')) {
+                result.push({ id: 'dossier_data', title: 'Dossiê Pré-Abordagem', icon: <Target size={13} />, content: dossier.trim(), type: 'dossier' });
             }
         }
 
-        if (items.length === 0) return null;
-
-        // Ordenação preferida para o Markdown
         const order = ['scope', 'dossier', 'evaluation', 'org', 'contacts', 'deals', 'activities', 'messages'];
-        items.sort((a, b) => {
-            const idxA = order.indexOf(a.id === 'scope' ? 'scope' : a.type);
-            const idxB = order.indexOf(b.id === 'scope' ? 'scope' : b.type);
-            return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+        result.sort((a, b) => {
+            const ia = order.indexOf(a.id === 'scope' ? 'scope' : a.type);
+            const ib = order.indexOf(b.id === 'scope' ? 'scope' : b.type);
+            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
         });
 
-        // Constrói o Markdown consolidado
-        let md = "";
-        items.forEach(item => {
-            md += `### ${item.title}\n${item.content}\n\n---\n\n`;
-        });
-        
-        return md;
+        return result;
     }, [messages, orgId, orgName, dealId, dbPlan]);
 
-    if (!fullMarkdownContext) return null;
+    if (items.length === 0) return null;
+
+    const toggleSection = (id: string) =>
+        setOpenSections(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+
+    // badges dos tipos únicos no header
+    const uniqueTypes = [...new Set(items.map(i => i.type))];
 
     return (
         <div className={styles.contextAccordionContainer}>
-            <div 
-                className={styles.contextAccordionHeader} 
-                onClick={() => setIsOpen(!isOpen)}
-            >
+            {/* ── HEADER ── */}
+            <div className={styles.contextAccordionHeader} onClick={() => setIsOpen(!isOpen)}>
                 <div className={styles.contextHeaderLeft}>
                     <span className={styles.contextHeaderTitle}>Contexto</span>
                 </div>
 
                 <div className={styles.contextHeaderRight}>
+                    <span className={styles.contextItemCount}>{items.length}</span>
+
                     {dbPlan && (
-                        <button 
+                        <button
                             className={styles.deletePlanButton}
                             onClick={async (e) => {
                                 e.stopPropagation();
-                                if (window.confirm("Deseja realmente apagar o plano de prospecção desta empresa?")) {
+                                if (window.confirm('Deseja realmente apagar o plano de prospecção desta empresa?')) {
                                     if (orgId) {
-                                        try {
-                                            await organizations.deleteProspectingPlan(orgId);
-                                            setDbPlan(null);
-                                        } catch (err) {
-                                            console.error(err);
-                                            alert("Erro ao apagar o plano de prospecção.");
-                                        }
+                                        try { await organizations.deleteProspectingPlan(orgId); setDbPlan(null); }
+                                        catch (err) { console.error(err); alert('Erro ao apagar o plano de prospecção.'); }
                                     }
                                 }
                             }}
                             title="Apagar plano de prospecção"
                         >
-                            <Trash2 size={14} />
+                            <Trash2 size={13} />
                         </button>
                     )}
-                    <ChevronDown 
-                        size={16} 
-                        className={`${styles.arrow} ${isOpen ? styles.rotated : ''}`} 
+
+                    <ChevronDown
+                        size={14}
+                        className={`${styles.contextChevron} ${isOpen ? styles.rotated : ''}`}
                     />
                 </div>
             </div>
 
+            {/* ── BODY ── */}
             {isOpen && (
                 <div className={styles.contextAccordionBodyMarkdown}>
                     <div className={styles.contextAccordionScrollArea}>
-                        <ReactMarkdown>{fullMarkdownContext}</ReactMarkdown>
+                        {items.map((item) => {
+                            const accent = TYPE_COLORS[item.type] ?? 'var(--sw-primary)';
+                            const expanded = openSections.has(item.id);
+                            return (
+                                <div
+                                    key={item.id}
+                                    className={styles.contextSection}
+                                    style={{ '--ctxAccent': accent } as React.CSSProperties}
+                                >
+                                    <button
+                                        className={styles.contextSectionHeader}
+                                        onClick={() => toggleSection(item.id)}
+                                    >
+                                        <span className={styles.contextSectionAccent} />
+                                        <span className={styles.contextSectionIcon} style={{ color: accent }}>
+                                            {item.icon}
+                                        </span>
+                                        <span className={styles.contextSectionTitle}>{item.title}</span>
+                                        <ChevronDown
+                                            size={12}
+                                            className={`${styles.contextSectionChevron} ${expanded ? styles.rotated : ''}`}
+                                        />
+                                    </button>
+
+                                    {expanded && (
+                                        <div className={styles.contextSectionContent}>
+                                            <ReactMarkdown>{item.content}</ReactMarkdown>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

@@ -44,6 +44,7 @@ from modules.agent.service.core.loop_executor import (
     execute_read_tools_batch,
     handle_write_tool_pending,
 )
+from modules.agent.service.core.thread_memory import dedup_key_for
 
 log = get_logger(__name__)
 
@@ -66,6 +67,7 @@ async def _agent_loop(
     action_index: int | None = None,
     query_type: str = "agent_workflow",
     active_skill: Any = None,
+    thread_tool_memory: Dict[str, dict] | None = None,
 ) -> AsyncGenerator[str, None]:
     """Loop central do agente. Yields eventos NDJSON."""
     import re as _re
@@ -151,20 +153,20 @@ async def _agent_loop(
         "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history",
     }
 
-    # Guard de deduplicação de tool calls
-    _tool_call_history: set = set()
+    # Guard de deduplicação de tool calls — pré-semeado com (1) tool_use já presentes nas
+    # `messages` desta execução e (2) a memória persistida da thread inteira (chamadas
+    # feitas em mensagens anteriores do usuário, possivelmente em execuções passadas do
+    # loop — ver thread_memory.py). Sem (2), o agente esquece tudo que buscou assim que
+    # a mensagem sai da janela recente enviada pelo frontend.
+    _tool_call_history: set = set(thread_tool_memory.keys()) if thread_tool_memory else set()
     for _m in messages:
         _mc = _m.get("content", "")
         if isinstance(_mc, list):
             for _b in _mc:
                 if isinstance(_b, dict) and _b.get("type") == "tool_use":
-                    _tn = _b.get("name", "")
-                    _ta = _b.get("input") or {}
-                    if _tn in {"pipedrive_get_org", "pipedrive_get_persons", "pipedrive_get_deals", "pipedrive_get_activities", "batch_communication_search"}:
-                        _tool_call_history.add(_tn)
-                    elif _tn in {"whatsapp_get_messages", "email_get_contact_history"}:
-                        _cid = (_ta.get("contact") or _ta.get("contact_name") or _ta.get("org_name") or "").lower().strip()
-                        _tool_call_history.add(f"{_tn}:{_cid}")
+                    _key = dedup_key_for(_b.get("name", ""), _b.get("input") or {})
+                    if _key:
+                        _tool_call_history.add(_key)
                         
     _session_task_person: str | None = None
     for _m in messages:
@@ -540,31 +542,29 @@ async def _agent_loop(
                 })
                 continue
 
-            # Deduplicação de tool calls
-            _DEDUP_PIPEDRIVE = {
-                "pipedrive_get_org", "pipedrive_get_persons",
-                "pipedrive_get_deals", "pipedrive_get_activities",
-            }
-            if tool_name in (_DEDUP_PIPEDRIVE | {"whatsapp_get_messages", "email_get_contact_history"}):
-                if tool_name in _DEDUP_PIPEDRIVE:
-                    _dedup_key = tool_name
-                else:
-                    _contact_id = (
-                        tool_args.get("contact") or
-                        tool_args.get("contact_name") or
-                        tool_args.get("org_name") or ""
-                    ).lower().strip()
-                    _dedup_key = f"{tool_name}:{_contact_id}"
-
+            # Deduplicação de tool calls — agora também olha a memória persistida da
+            # thread inteira (thread_tool_memory), não só o que já rodou nesta execução.
+            _dedup_key = dedup_key_for(tool_name, tool_args)
+            if _dedup_key:
                 if _dedup_key in _tool_call_history:
                     log.warning("agent.tool_call.dedup_blocked", tool=tool_name, tool_args=str(tool_args)[:80])
+                    _cached = (thread_tool_memory or {}).get(_dedup_key)
+                    if _cached and _cached.get("content"):
+                        # Reaproveita o resultado real já coletado (nesta execução ou em
+                        # mensagem anterior da mesma thread) em vez de só bloquear sem dados.
+                        _dedup_content = (
+                            f"[JÁ CONSULTADO NESTA CONVERSA — reaproveitando resultado anterior, "
+                            f"NÃO repita esta chamada]\n{_cached['content']}"
+                        )
+                    else:
+                        _dedup_content = f"[DEDUP] {_dedup_key} já foi executada nesta sessão. Avance para o próximo contato ou ação."
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tool_id,
                         "tool_name": tool_name,
-                        "content": f"[DEDUP] {_dedup_key} já foi executada nesta sessão. Avance para o próximo contato ou ação.",
+                        "content": _dedup_content,
                         "is_error": False,
-                        "summary": f"[já coletado]",
+                        "summary": "[já coletado]",
                     })
                     continue
                 else:

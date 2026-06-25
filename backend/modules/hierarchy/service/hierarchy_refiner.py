@@ -5,12 +5,18 @@ from __future__ import annotations
 
 from typing import List
 
+import asyncio
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import Employee
 from core.external.groq_service import refine_hierarchy_ai
+from core.infra.redis_config import redis_client
+from core.observability.logging_config import get_logger
 from .filters import get_seniority_level, is_same_person
+
+log = get_logger(__name__)
 
 
 async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
@@ -60,6 +66,22 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
                 if org:
                     org_id = org.id
 
+    # 🔒 Lock distribuído: evita que dois refinamentos concorrentes na mesma org
+    # (ex: discovery e scan terminando quase ao mesmo tempo) façam o DELETE total
+    # um por cima do outro. Se não conseguir o lock, segue sem tocar o banco —
+    # apenas retorna a sugestão da IA para exibição (mesmo fallback de org_id=None).
+    lock_key = f"hierarchy_refine_lock_{org_id}" if org_id else None
+    lock_acquired = True
+    if lock_key and redis_client:
+        try:
+            lock_acquired = bool(await asyncio.to_thread(redis_client.set, lock_key, "1", nx=True, ex=120))
+        except Exception as e:
+            log.warning("hierarchy.refine.lock_check_failed", error=str(e))
+            lock_acquired = True
+        if not lock_acquired:
+            log.info("hierarchy.refine.skipped_concurrent", org_id=org_id)
+            org_id = None
+
     # 2. Carrega todos os funcionários existentes da organização para correspondência fuzzy na memória
     if org_id:
         from sqlalchemy import delete, and_, not_, or_
@@ -69,14 +91,7 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
             delete(Employee).where(
                 and_(
                     Employee.company_id == org_id,
-                    not_(
-                        and_(
-                            Employee.role != "Análise Humana",
-                            Employee.role != "Não Identificado",
-                            Employee.role != "Erro no Processamento",
-                            Employee.role != "Professional"
-                        )
-                    )
+                    Employee.role.notin_(["Análise Humana", "Não Identificado", "Erro no Processamento", "Professional"])
                 )
             )
         )
@@ -250,6 +265,12 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
 
     if org_id:
         await db.commit()
+
+    if lock_key and redis_client and lock_acquired:
+        try:
+            await asyncio.to_thread(redis_client.delete, lock_key)
+        except Exception:
+            pass
 
     return {"nodes": updated_nodes}
 

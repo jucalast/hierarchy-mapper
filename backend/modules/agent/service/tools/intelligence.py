@@ -176,9 +176,8 @@ async def exec_find_company_contact(args: dict) -> dict:
     phones, emails, address, web_snippets = [], [], "", []
 
     # 1. Tentativa via Google Maps API (Principal)
-    from dotenv import dotenv_values
-    env_dict = dotenv_values(".env")
-    google_maps_api_key = os.environ.get("GOOGLE_MAPS_API_KEY") or env_dict.get("GOOGLE_MAPS_API_KEY")
+    from core.config import settings
+    google_maps_api_key = settings.GOOGLE_MAPS_API_KEY
     quota = None
     if org_name and google_maps_api_key:
         import json
@@ -186,7 +185,7 @@ async def exec_find_company_contact(args: dict) -> dict:
         quota_file = "google_maps_quota.json"
         today = datetime.now().strftime("%Y-%m-%d")
         used = 0
-        limit = int(os.environ.get("GOOGLE_MAPS_DAILY_LIMIT", "200"))
+        limit = settings.GOOGLE_MAPS_DAILY_LIMIT
         
         try:
             if os.path.exists(quota_file):
@@ -1232,7 +1231,12 @@ RETORNE EXATAMENTE UM JSON COM ESTA ESTRUTURA:
             prompt=prompt,
             system="Você é um Diretor de Vendas B2B experiente que desenha estratégias de prospecção de alta precisão baseadas em organogramas. Responda apenas com o JSON estruturado.",
             json_mode=True,
-            tier=LLMTier.DEEP
+            # Scoring/ranking estruturado em JSON não exige o raciocínio pesado do tier DEEP
+            # (gemini-2.5-pro) — STANDARD (gemini-2.5-flash) entrega isso bem mais rápido.
+            # generate_prospecting_plan chama esta função e DEPOIS ainda faz sua própria
+            # chamada DEEP para a prosa do plano — rebaixar aqui evita duas chamadas pesadas
+            # em sequência sem perder qualidade na parte que realmente precisa do tier maior.
+            tier=LLMTier.STANDARD
         )
 
         data = result.json_data or {}
@@ -1279,6 +1283,11 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
     Descobre e valida o e-mail profissional de um contato.
     Gera padrões comuns (ex: joao.moura, j.moura) e valida via DNS/Sintaxe.
     Pode usar pesquisa na web para encontrar e-mails reais citados publicamente.
+
+    ATALHO: Se o contato já tiver um e-mail validado salvo no banco local ou no
+    Pipedrive (label='verified'), retorna imediatamente esse e-mail sem fazer
+    nenhuma busca externa. A validação só é executada se o e-mail não estiver
+    confirmado previamente.
     """
     import re as _re
     from email_validator import validate_email, EmailNotValidError
@@ -1287,9 +1296,66 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
     contact_name = (args.get("contact_name") or args.get("name") or "").strip()
     company_name = (args.get("org_name") or args.get("company_name") or "").strip()
     domain = (args.get("domain") or "").strip().lower()
+    person_id = args.get("person_id")
 
     if not contact_name:
         return {"ok": False, "error": "Forneça o nome do contato (contact_name ou name)."}
+
+    # ── ATALHO: Email já validado no banco local ou Pipedrive ──────────────────
+    # Verifica primeiro o banco local (mais rápido)
+    if person_id:
+        try:
+            from core.infra.database import async_session
+            from models.people.employee import Employee
+            from sqlalchemy import select
+            async with async_session() as session:
+                stmt = select(Employee).where(
+                    (Employee.pipedrive_id == str(person_id)) | (Employee.id == int(person_id))
+                )
+                emp = (await session.execute(stmt)).scalar_one_or_none()
+                if emp and emp.email and "@" in emp.email:
+                    saved_email = emp.email.strip()
+                    log.info("exec_discover_and_validate_email.shortcut_local_db", email=saved_email, person_id=person_id)
+                    return {
+                        "ok": True,
+                        "contact_name": contact_name,
+                        "domain": saved_email.split("@")[-1],
+                        "valid_emails": [{"email": saved_email, "status": "Válido (Salvo no sistema)", "source": "Banco Local"}],
+                        "recommended": saved_email,
+                        "smtp_result": "valid",
+                        "summary": f"E-mail já validado para {contact_name}: {saved_email} (recuperado do banco local)"
+                    }
+        except Exception as _db_err:
+            log.warning("exec_discover_and_validate_email.local_db_check_failed", error=str(_db_err))
+
+    # Verifica Pipedrive (label='verified' ou email existente com person_id)
+    if person_id:
+        try:
+            from modules.crm.service.pipedrive_service import pipedrive_service
+            pd_person = await pipedrive_service.get_person(int(person_id))
+            if isinstance(pd_person, dict):
+                pd_emails = pd_person.get("email") or []
+                if isinstance(pd_emails, list):
+                    # Prioridade 1: email com label 'verified'
+                    verified = next((e["value"] for e in pd_emails if isinstance(e, dict) and e.get("label") == "verified" and e.get("value")), None)
+                    # Prioridade 2: email primary
+                    primary = next((e["value"] for e in pd_emails if isinstance(e, dict) and e.get("primary") and e.get("value")), None)
+                    saved_email = verified or primary
+                    if saved_email and "@" in saved_email:
+                        label_used = "verified" if verified else "primary"
+                        log.info("exec_discover_and_validate_email.shortcut_pipedrive", email=saved_email, label=label_used, person_id=person_id)
+                        return {
+                            "ok": True,
+                            "contact_name": contact_name,
+                            "domain": saved_email.split("@")[-1],
+                            "valid_emails": [{"email": saved_email, "status": "Válido (Salvo no Pipedrive)", "source": "Pipedrive"}],
+                            "recommended": saved_email,
+                            "smtp_result": "valid",
+                            "summary": f"E-mail já salvo para {contact_name}: {saved_email} (recuperado do Pipedrive)"
+                        }
+        except Exception as _pd_err:
+            log.warning("exec_discover_and_validate_email.pipedrive_check_failed", error=str(_pd_err))
+    # ────────────────────────────────────────────────────────────────────────────
 
     # 1. Tenta descobrir o domínio se não fornecido
     if not domain and company_name:
@@ -1808,8 +1874,14 @@ REGRAS CRÍTICAS DE AVALIAÇÃO:
 - O DECISOR PRINCIPAL/PONTO DE ENTRADA IDEAL deve obrigatoriamente ser alguém da área de Suprimentos, Compras, Logística ou Supply Chain.
 - PREFIRA SEMPRE cargos táticos/operacionais (ex: Comprador, Comprador Pleno, Analista de Suprimentos, Assistente de Compras) em vez de cargos C-Level ou Diretoria (ex: Diretor, VP, Head), pois os compradores lidam diretamente com o dia a dia e são a melhor porta de entrada. Portanto, se houver um 'Comprador' e um 'Diretor', escolha o 'Comprador' (ex: Julio).
 
+REGRA CRÍTICA DE CONTINUIDADE DE NEGOCIAÇÃO (NÃO TROCAR DE DECISOR SEM MOTIVO REAL):
+- Antes de recomendar um "Decisor Principal" diferente de quem já está em conversa, analise com cuidado a seção 4 (Histórico Recente de Comunicações) e as Atividades/Notas do CRM.
+- Se já existe uma negociação com avanço real com algum contato (ele respondeu, trocou mensagens, pediu detalhes/proposta/amostra, fez perguntas, agendou algo, etc.), o plano DEVE manter esse mesmo contato como Decisor Principal — mesmo que a "AVALIAÇÃO PRÉVIA DA IA" indique outro decisor com cargo/score teoricamente melhor. Continuidade de relacionamento e progresso real valem mais que o cargo ideal.
+- Só recomende migrar a abordagem para outro decisor quando o contato atual estiver claramente "esfriado"/sendo ignorado: nenhuma resposta após pelo menos 2 tentativas de follow-up genuínas (e-mail e/ou WhatsApp) em intervalo razoável. Nesse caso, deixe explícito no plano que a troca é motivada pela falta de resposta, não apenas por um cargo mais adequado.
+- Em caso de dúvida sobre se a conversa avançou o suficiente para travar a troca, seja conservador e mantenha o contato atual.
+
 1. **🎯 Análise da Conta** — Perfil da empresa, porte, segmento, potencial com base no histórico comercial/deals existentes e momento da prospecção
-2. **👤 Decisor Principal Recomendado** — Nome, cargo, por que ele/ela é a melhor entrada, gancho personalizado adaptado ao histórico real de conversas/tentativas
+2. **👤 Decisor Principal Recomendado** — Nome, cargo, por que ele/ela é a melhor entrada, gancho personalizado adaptado ao histórico real de conversas/tentativas. RESPEITE A REGRA CRÍTICA DE CONTINUIDADE DE NEGOCIAÇÃO: se já há negociação em andamento com alguém, mantenha-o como decisor principal; só troque se ele estiver sendo ignorado.
 3. **🔎 Dores Prováveis (Situação → Problema)** — 3-5 dores baseadas no segmento/cargo e conversas anteriores
 4. **💡 Implicações das Dores** — O impacto de não resolver cada dor
 5. **🚀 Sequência de Abordagem** — Canal 1 (qual canal, script inicial), Canal 2 (follow-up), Canal 3 (escalada), levando em consideração canais já utilizados

@@ -529,12 +529,12 @@
   border-color: var(--sw-primary) !important;
 }
 
-[data-theme='light'] .inputBox {
-  background: var(--sw-surface-overlay) !important;
-}
-
 .chatPanelInner[data-theme='dark'] .inputBox {
   background: #191919bf !important;
+}
+
+.chatPanelInner[data-theme='light'] .inputBox {
+  background: #eaeaeafa !important;
 }
 
 .inputBoxInterior {
@@ -795,6 +795,8 @@
 }
 
 .chatPanelInner[data-theme='light'] .inputField::placeholder {
+  /* Era branco porque o input era forçado preto no light mode — agora que ele é
+     branco (ver .inputBox), o placeholder precisa ser escuro pra ficar visível. */
   color: rgba(0, 0, 0, 0.4) !important;
   opacity: 1 !important;
   -webkit-text-fill-color: rgba(0, 0, 0, 0.4) !important;
@@ -1043,6 +1045,9 @@
 }
 
 [data-theme='light'] .sendBtn.active {
+  /* Invertido: no light mode o botão fica preto com seta branca (no dark é o contrário). */
+  background: #000000 !important;
+  color: #ffffff !important;
   border-color: rgba(0, 0, 0, 0.45) !important;
 }
 
@@ -1050,6 +1055,10 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
   background: #f8f9fa !important;
+}
+
+[data-theme='light'] .sendBtn.active:hover {
+  background: #1a1a1a !important;
 }
 
 .sendBtn.active:active {
@@ -2850,6 +2859,15 @@
   color: #38bdf8;
 }
 
+.actionCardBody {
+  padding: 10px 12px;
+  background: var(--chat-console-bg);
+}
+
+[data-theme='light'] .actionCardBody {
+  background: transparent;
+}
+
 .approvalHeader {
   display: flex;
   align-items: center;
@@ -4151,122 +4169,13 @@
 
   /* Background color setup */
   position: relative;
-  overflow: hidden;
   background-color: var(--chat-bg-primary);
-}
-
-/* Animated purple grid highlights - Multiple areas */
-.emptyWelcomeContainer::before,
-.emptyWelcomeContainer::after,
-.emptyPlanState::before,
-.emptyPlanState::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-
-  /* Use system standard purple (var(--chat-accent-color)) */
-  background-image:
-    linear-gradient(var(--chat-accent-color) 1px, transparent 1px),
-    linear-gradient(90deg, var(--chat-accent-color) 1px, transparent 1px);
-  background-size: 40px 40px;
-  background-position: center center;
-  opacity: 0.4;
-
-  /* Smaller spotlight mask */
-  -webkit-mask-image: radial-gradient(circle, black 0%, transparent 70%);
-  mask-image: radial-gradient(circle, black 0%, transparent 70%);
-  -webkit-mask-size: 280px 280px;
-  mask-size: 280px 280px;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-}
-
-.emptyWelcomeContainer::before,
-.emptyPlanState::before {
-  animation: movePurpleSpotlight1 25s infinite ease-in-out;
-}
-
-.emptyWelcomeContainer::after,
-.emptyPlanState::after {
-  animation: movePurpleSpotlight2 30s infinite ease-in-out;
-  animation-delay: -5s;
-  opacity: 0.3;
-  /* Slightly different opacity for depth */
-}
-
-@keyframes movePurpleSpotlight1 {
-  0% {
-    -webkit-mask-position: 5% 5%;
-    mask-position: 5% 5%;
-  }
-
-  20% {
-    -webkit-mask-position: 85% 15%;
-    mask-position: 85% 15%;
-  }
-
-  40% {
-    -webkit-mask-position: 15% 75%;
-    mask-position: 15% 75%;
-  }
-
-  60% {
-    -webkit-mask-position: 75% 85%;
-    mask-position: 75% 85%;
-  }
-
-  80% {
-    -webkit-mask-position: 50% 30%;
-    mask-position: 50% 30%;
-  }
-
-  100% {
-    -webkit-mask-position: 5% 5%;
-    mask-position: 5% 5%;
-  }
-}
-
-@keyframes movePurpleSpotlight2 {
-  0% {
-    -webkit-mask-position: 90% 90%;
-    mask-position: 90% 90%;
-  }
-
-  25% {
-    -webkit-mask-position: 10% 80%;
-    mask-position: 10% 80%;
-  }
-
-  50% {
-    -webkit-mask-position: 40% 10%;
-    mask-position: 40% 10%;
-  }
-
-  75% {
-    -webkit-mask-position: 85% 40%;
-    mask-position: 85% 40%;
-  }
-
-  100% {
-    -webkit-mask-position: 90% 90%;
-    mask-position: 90% 90%;
-  }
 }
 
 /* Light mode specific */
 .chatPanelInner[data-theme='light'] .emptyWelcomeContainer,
 .chatPanelInner[data-theme='light'] .emptyPlanState {
   background-color: #ffffff;
-}
-
-.chatPanelInner[data-theme='light'] .emptyWelcomeContainer::before,
-.chatPanelInner[data-theme='light'] .emptyWelcomeContainer::after,
-.chatPanelInner[data-theme='light'] .emptyPlanState::before,
-.chatPanelInner[data-theme='light'] .emptyPlanState::after {
-  opacity: 0.6;
-  /* More visible in light mode */
 }
 
 /* Dark mode specific */
@@ -4286,7 +4195,8 @@
   max-width: 440px;
   animation: fadeIn 0.4s ease;
   position: relative;
-  z-index: 1;
+  /* Acima do glow do input (z-index: 1) — o blur do box-shadow alcança o texto pelo
+     gap do flex container, e sem isso ele pintava por cima do texto. */
 }
 
 .emptyInputWrapper {
@@ -4313,7 +4223,11 @@
   background: var(--chat-bg-primary);
   position: relative;
   z-index: 1000;
-  transition: all 0.2s ease;
+  transition: background 0.18s ease;
+}
+
+.contextAccordionContainer:hover {
+  background: var(--chat-bg-secondary);
 }
 
 .chatPanelInner[data-theme='light'] .contextAccordionContainer {
@@ -4321,33 +4235,19 @@
   border-bottom-color: rgba(0, 0, 0, 0.08);
 }
 
-.contextAccordionContainer:hover {
-  background: var(--chat-bg-secondary);
-}
-
 .chatPanelInner[data-theme='light'] .contextAccordionContainer:hover {
   background: rgba(0, 0, 0, 0.03) !important;
 }
 
+/* ── Header ── */
 .contextAccordionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 7px 14px;
   cursor: pointer;
   user-select: none;
-}
-
-.chatPanelInner[data-theme='light'] .contextHeaderTitle,
-.chatPanelInner[data-theme='light'] .contextHeaderRight {
-  color: #9ca3af;
-  transition: color 0.2s ease;
-}
-
-.chatPanelInner[data-theme='light'] .contextAccordionHeader:hover .contextHeaderTitle,
-.chatPanelInner[data-theme='light'] .contextAccordionHeader:hover .contextHeaderRight {
-  color: #000000;
-  opacity: 1;
+  gap: 8px;
 }
 
 .contextAccordionHeader:hover {
@@ -4357,51 +4257,50 @@
 .contextHeaderLeft {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 7px;
   min-width: 0;
   flex: 1;
 }
 
-.contextBadge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(122, 139, 255, 0.1);
-  color: #7a8bff;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  flex-shrink: 0;
+.contextHeaderTitle {
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--sw-text-muted);
+  white-space: nowrap;
 }
 
-.contextHeaderTitle {
-  font-size: var(--font-base);
-  font-weight: 500;
-  color: var(--sw-text-base);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.contextItemCount {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  background: var(--sw-primary-soft);
+  color: var(--sw-primary);
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
 .contextHeaderRight {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
-.contextHeaderHint {
-  font-size: var(--font-xs);
-  color: var(--sw-text-muted);
-  white-space: nowrap;
+.contextChevron {
+  color: var(--sw-text-subtle);
+  opacity: 0.6;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
-.rotated {
-  transform: rotate(180deg);
+.chatPanelInner[data-theme='light'] .contextAccordionHeader:hover .contextHeaderTitle,
+.chatPanelInner[data-theme='light'] .contextAccordionHeader:hover .contextChevron {
+  color: #000;
+  opacity: 1;
 }
 
+/* ── Body (floating overlay) ── */
 .contextAccordionBodyMarkdown {
   position: absolute;
   top: 100%;
@@ -4411,10 +4310,15 @@
   display: flex;
   flex-direction: column;
   z-index: 10000;
-  border-bottom: 1px solid var(--sw-border);
-  animation: fadeInOnly 0.3s ease-out;
+  border-bottom: var(--sw-border-width) solid var(--sw-border);
   background: var(--chat-bg-primary) !important;
   overflow: hidden;
+  animation: ctxBodyIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ctxBodyIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 [data-theme='light'] .contextAccordionBodyMarkdown {
@@ -4423,69 +4327,98 @@
 }
 
 .contextAccordionScrollArea {
-  padding: 16px 20px 80px 20px;
+  padding: 10px 14px 80px;
   overflow-y: auto;
   flex: 1;
-  font-size: var(--font-base);
-  line-height: 1.6;
-  color: var(--sw-text-base);
-  position: relative;
-  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.chatPanelInner[data-theme='light'] .contextAccordionScrollArea {
-  color: var(--sw-text-base);
+/* ── Sections ── */
+.contextSection {
+  border: var(--sw-border-width) solid var(--sw-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-color 0.15s ease;
 }
 
-@keyframes fadeInOnly {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+.contextSection:hover {
+  border-color: color-mix(in srgb, var(--ctxAccent, var(--sw-primary)) 40%, var(--sw-border));
 }
 
-.contextAccordionScrollArea h3 {
-  font-size: var(--font-lg);
-  font-weight: 700;
-  color: var(--sw-primary);
-  margin: 16px 0 8px 0;
+.contextSectionHeader {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.contextAccordionBodyMarkdown h3:first-child {
-  margin-top: 0;
-}
-
-.contextAccordionScrollArea p {
-  margin-bottom: 12px;
-  opacity: 0.95;
-}
-
-.contextAccordionScrollArea ul,
-.contextAccordionScrollArea ol {
-  padding-left: 20px;
-  margin-bottom: 12px;
-}
-
-.contextAccordionScrollArea li {
-  margin-bottom: 4px;
-}
-
-.contextAccordionScrollArea hr {
+  padding: 8px 12px;
+  background: var(--chat-bg-secondary);
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  margin: 16px 0;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
 }
 
-.chatPanelInner[data-theme='light'] .contextAccordionScrollArea hr {
-  border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  margin: 16px 0;
+.contextSectionHeader:hover {
+  background: var(--chat-bg-tertiary);
+}
+
+.contextSectionAccent {
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--ctxAccent, var(--sw-primary));
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.contextSectionIcon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.contextSectionTitle {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sw-text-subtle);
+  flex: 1;
+}
+
+.contextSectionChevron {
+  color: var(--sw-text-subtle);
+  opacity: 0.5;
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+}
+
+.contextSectionContent {
+  padding: 10px 14px 12px;
+  font-size: var(--font-sm);
+  line-height: 1.65;
+  color: var(--sw-text-base);
+  border-top: var(--sw-border-width) solid var(--sw-border);
+}
+
+.contextSectionContent p { margin-bottom: 8px; opacity: 0.9; }
+.contextSectionContent p:last-child { margin-bottom: 0; }
+.contextSectionContent ul, .contextSectionContent ol { padding-left: 18px; margin-bottom: 8px; }
+.contextSectionContent li { margin-bottom: 3px; }
+.contextSectionContent strong { color: var(--sw-text-base); font-weight: 600; }
+.contextSectionContent h3 { font-size: var(--font-sm); font-weight: 700; color: var(--sw-primary); margin: 10px 0 6px; }
+.contextSectionContent hr { border: none; border-top: var(--sw-border-width) solid var(--sw-border); margin: 10px 0; }
+
+@keyframes fadeInOnly {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── rotated (shared) ── */
+.rotated {
+  transform: rotate(180deg);
 }
 
 /* === EMPTY PLAN STATE === */

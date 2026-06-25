@@ -207,6 +207,10 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                                             </span>
                                             <span
                                                 className="modelOptionBadge"
+                                                style={{
+                                                    background: opt.badgeColor,
+                                                    color: opt.accentColor
+                                                }}
                                             >
                                                 {opt.badge}
                                             </span>

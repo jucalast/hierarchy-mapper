@@ -14,8 +14,9 @@ interface MessagesListProps {
     handleAgentConfirm: (actionId: string, approved: boolean) => Promise<void> | void;
     handleRegenerate: (messageId?: string) => Promise<void> | void;
     handleSendMessage: (text: string, selectedCompanies?: any[], isAgentAction?: boolean) => Promise<void> | void;
-    approvedSuggestedActions: Record<string, 'pending' | 'streaming' | 'awaiting_confirm' | 'awaiting_mapping' | 'done' | 'rejected' | 'error'>;
+    approvedSuggestedActions: Record<string, 'pending' | 'streaming' | 'awaiting_confirm' | 'awaiting_mapping' | 'done' | 'rejected' | 'error' | 'cancelled'>;
     handleApproveSuggestedAction: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => Promise<void> | void;
+    handleRetrySuggestedAction: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => Promise<void> | void;
     handleMainChatMappingDone: (contacts: any[]) => Promise<void> | void;
     model: AIModel;
     handleOpenTaskConsole: (action: any, index: number, parentMessageId?: string) => void;
@@ -42,6 +43,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
     handleSendMessage,
     approvedSuggestedActions,
     handleApproveSuggestedAction,
+    handleRetrySuggestedAction,
     handleMainChatMappingDone,
     model,
     handleOpenTaskConsole,
@@ -86,6 +88,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
                             threadId={activeThreadId}
                             approvedSuggestedActions={approvedSuggestedActions}
                             onApproveSuggestedAction={handleApproveSuggestedAction}
+                            onRetrySuggestedAction={handleRetrySuggestedAction}
                             onHierarchyMappingDone={handleMainChatMappingDone}
                             model={model}
                             onOpenTaskConsole={handleOpenTaskConsole}

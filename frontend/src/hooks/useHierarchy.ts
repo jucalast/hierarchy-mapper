@@ -16,7 +16,7 @@ export const useHierarchy = () => {
   const currentOrgId = useChatStore((state) => state.currentOrgId);
   const mappingSession = useChatStore(
     useCallback(
-      (state) => (currentOrgId ? state.mappings[currentOrgId] : null),
+      (state) => state.mappings[currentOrgId || 0],
       [currentOrgId]
     )
   );
@@ -33,23 +33,23 @@ export const useHierarchy = () => {
 
   // Setters do Zustand mapeados
   const setRawEmployees = useCallback((employees: any[] | ((prev: any[]) => any[])) => {
-    if (currentOrgId) useChatStore.getState().setRawEmployees(currentOrgId, employees);
+    useChatStore.getState().setRawEmployees(currentOrgId || 0, employees);
   }, [currentOrgId]);
 
   const setRawBackendEdges = useCallback((edges: Edge[] | ((prev: Edge[]) => Edge[])) => {
-    if (currentOrgId) useChatStore.getState().setRawBackendEdges(currentOrgId, edges);
+    useChatStore.getState().setRawBackendEdges(currentOrgId || 0, edges);
   }, [currentOrgId]);
 
   const setBrandOptions = useCallback((options: any[] | ((prev: any[]) => any[])) => {
-    if (currentOrgId) useChatStore.getState().setBrandOptions(currentOrgId, options);
+    useChatStore.getState().setBrandOptions(currentOrgId || 0, options);
   }, [currentOrgId]);
 
   const setError = useCallback((err: string | null) => {
-    if (currentOrgId) useChatStore.getState().setMappingError(currentOrgId, err);
+    useChatStore.getState().setMappingError(currentOrgId || 0, err);
   }, [currentOrgId]);
 
   const setLoading = useCallback((val: boolean) => {
-    if (currentOrgId) useChatStore.getState().setMappingLoading(currentOrgId, val);
+    useChatStore.getState().setMappingLoading(currentOrgId || 0, val);
   }, [currentOrgId]);
 
   // Contexto para despacho do evento de conclusão ao chat
@@ -189,14 +189,14 @@ export const useHierarchy = () => {
 
   // Função para descobrir marca (CNPJ) via API
   const discoverBrand = useCallback(async (searchCnpj: string, explicitDomain: string = "", force: boolean = true) => {
-    if (!currentOrgId) return null;
+    const targetOrgId = currentOrgId || 0;
     const store = useChatStore.getState();
-    store.setDiscovering(currentOrgId, true);
-    store.setMappingError(currentOrgId, null);
-    store.setBrandOptions(currentOrgId, []);
+    store.setDiscovering(targetOrgId, true);
+    store.setMappingError(targetOrgId, null);
+    store.setBrandOptions(targetOrgId, []);
     const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
     if (!rawCnpj && !explicitDomain) {
-      store.setDiscovering(currentOrgId, false);
+      store.setDiscovering(targetOrgId, false);
       return null;
     }
 
@@ -211,7 +211,7 @@ export const useHierarchy = () => {
         ...opt,
         name: cleanName(opt.name)
       }));
-      store.setBrandOptions(currentOrgId, cleaned);
+      store.setBrandOptions(targetOrgId, cleaned);
       return data;
     } catch (err: any) {
       const msg = err?.message || String(err);
@@ -220,10 +220,10 @@ export const useHierarchy = () => {
         return null;
       }
       console.error(msg);
-      store.setMappingError(currentOrgId, err?.detail || 'Erro ao buscar marcas da empresa.');
+      store.setMappingError(targetOrgId, err?.detail || 'Erro ao buscar marcas da empresa.');
       return null;
     } finally {
-      store.setDiscovering(currentOrgId, false);
+      store.setDiscovering(targetOrgId, false);
     }
   }, [currentOrgId]);
 
@@ -234,15 +234,15 @@ export const useHierarchy = () => {
     force: boolean = true, 
     onCandidateFound?: (candidate: any) => void
   ) => {
-    if (!currentOrgId) return null;
+    const targetOrgId = currentOrgId || 0;
     const store = useChatStore.getState();
-    store.setDiscovering(currentOrgId, true);
-    store.setMappingError(currentOrgId, null);
-    store.setBrandOptions(currentOrgId, []);
+    store.setDiscovering(targetOrgId, true);
+    store.setMappingError(targetOrgId, null);
+    store.setBrandOptions(targetOrgId, []);
     const rawCnpj = (searchCnpj || "").replace(/\D/g, "");
     
     if (!rawCnpj && !explicitDomain) {
-      store.setDiscovering(currentOrgId, false);
+      store.setDiscovering(targetOrgId, false);
       return null;
     }
 
@@ -262,8 +262,8 @@ export const useHierarchy = () => {
       });
       
       if (!response.ok) {
-        store.setMappingError(currentOrgId, "Erro ao iniciar streaming de marcas.");
-        store.setDiscovering(currentOrgId, false);
+        store.setMappingError(targetOrgId, "Erro ao iniciar streaming de marcas.");
+        store.setDiscovering(targetOrgId, false);
         return null;
       }
 
@@ -273,8 +273,8 @@ export const useHierarchy = () => {
       const streamedCandidates: any[] = [];
 
       if (!reader) {
-        store.setMappingError(currentOrgId, "Não foi possível ler o stream.");
-        store.setDiscovering(currentOrgId, false);
+        store.setMappingError(targetOrgId, "Não foi possível ler o stream.");
+        store.setDiscovering(targetOrgId, false);
         return null;
       }
 
@@ -318,7 +318,7 @@ export const useHierarchy = () => {
                   const cleaned = Array.from(uniqueCandidates.values())
                     .sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
                   
-                  store.setBrandOptions(currentOrgId, cleaned);
+                  store.setBrandOptions(targetOrgId, cleaned);
 
                   if (onCandidateFound) {
                     onCandidateFound({
@@ -342,10 +342,10 @@ export const useHierarchy = () => {
                       }
                     });
                     const finalCandidates = Array.from(uniqueFinal.values());
-                    store.setBrandOptions(currentOrgId, finalCandidates);
+                    store.setBrandOptions(targetOrgId, finalCandidates);
                   }
                 } else if (event.error) {
-                  store.setMappingError(currentOrgId, event.error);
+                  store.setMappingError(targetOrgId, event.error);
                 }
               } catch (e) {
                 console.warn("Erro ao parsear evento SSE:", e);
@@ -368,13 +368,13 @@ export const useHierarchy = () => {
         return null;
       }
       console.error(err.message || err);
-      store.setMappingError(currentOrgId, "Falha na conexão com o servidor (streaming).");
+      store.setMappingError(targetOrgId, "Falha na conexão com o servidor (streaming).");
       return null;
     } finally {
       if (brandDiscoveryAbortControllerRef.current === controller) {
         brandDiscoveryAbortControllerRef.current = null;
       }
-      store.setDiscovering(currentOrgId, false);
+      store.setDiscovering(targetOrgId, false);
     }
   }, [currentOrgId]);
 
@@ -453,11 +453,33 @@ export const useHierarchy = () => {
       if (onNotification) onNotification('error', 'Mapeamento cancelado pelo usuário.');
     } catch (e) {
       console.warn('[Job API] Erro ao abortar job:', e);
+      // O backend pode não ter recebido o pedido de cancelamento (falha de rede) —
+      // avisa o usuário em vez de silenciosamente fingir que parou.
+      if (onNotification) onNotification('error', 'Não foi possível confirmar o cancelamento no servidor; o mapeamento pode continuar em segundo plano.');
     } finally {
       connectionManager.disconnectFromJob(jobId);
       store.setMappingLoading(targetOrgId, false);
       store.setActiveJobId(targetOrgId, null);
-      localStorage.removeItem('active-discovery-job');
+      localStorage.removeItem(`active-discovery-job-${targetOrgId}`);
+
+      // 🧹 Mantém apenas root_company + sócios — descarta nós incompletos do scan cancelado
+      const currentNodes = store.mappings[targetOrgId]?.rawEmployees || [];
+      const keepers = currentNodes.filter(emp => {
+        const isRoot = emp.id === 'root_company' || emp.level === 0;
+        const isPartner = String(emp.id).startsWith('partner_') || emp.level === 6;
+        const isPartnerDept = emp.department && (
+          emp.department.includes('QSA') ||
+          emp.department.includes('Sócio') ||
+          emp.department.includes('Societário') ||
+          emp.department.includes('Conselho')
+        );
+        return isRoot || isPartner || isPartnerDept;
+      });
+      store.setRawEmployees(targetOrgId, keepers);
+      store.setRawBackendEdges(targetOrgId, []);
+
+      // 🔔 Notifica o Drawer para remover o badge imediatamente
+      window.dispatchEvent(new CustomEvent('hierarchy_scan_cancelled', { detail: { orgId: targetOrgId } }));
     }
   }, [currentOrgId]);
 
@@ -586,7 +608,7 @@ export const useHierarchy = () => {
         orgId: targetOrgId,
         chatPrompted
       };
-      localStorage.setItem('active-discovery-job', JSON.stringify(jobData));
+      localStorage.setItem(`active-discovery-job-${targetOrgId}`, JSON.stringify(jobData));
       
       chatContextRef.current = { chatPrompted, orgId: targetOrgId, orgName: confirmedBrand };
       
@@ -638,13 +660,13 @@ export const useHierarchy = () => {
   }, [currentOrgId]);
 
   const reconnectToActiveJob = useCallback(async (onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void) => {
-    const jobDataStr = localStorage.getItem('active-discovery-job');
+    const jobDataStr = localStorage.getItem(`active-discovery-job-${currentOrgId}`);
     if (!jobDataStr) return false;
     if (jobDataStr === "NaN" || jobDataStr === "undefined") {
-      localStorage.removeItem('active-discovery-job');
+      localStorage.removeItem(`active-discovery-job-${currentOrgId}`);
       return false;
     }
-    
+
     try {
       const jobData = JSON.parse(jobDataStr);
       const { job_id, brand, logo, domain, orgId } = jobData;
@@ -653,7 +675,7 @@ export const useHierarchy = () => {
         await jobsApi.getJobStatus(job_id);
       } catch {
         console.warn(`[useHierarchy] Job ${job_id} expirou no backend.`);
-        localStorage.removeItem('active-discovery-job');
+        localStorage.removeItem(`active-discovery-job-${orgId || currentOrgId}`);
         return false;
       }
 
@@ -703,7 +725,7 @@ export const useHierarchy = () => {
       return true;
     } catch (e) {
       console.error("[useHierarchy] Erro ao reconectar:", e);
-      localStorage.removeItem('active-discovery-job');
+      localStorage.removeItem(`active-discovery-job-${currentOrgId}`);
       return false;
     }
   }, [currentOrgId]);
@@ -711,10 +733,13 @@ export const useHierarchy = () => {
   const loadStoredHierarchy = useCallback(async (orgId: number, isPipedriveId: boolean = true) => {
     const store = useChatStore.getState();
     if (!orgId) return null;
+    const existingActiveJobId = store.mappings[orgId]?.activeJobId;
     store.setMappingLoading(orgId, true);
     store.setMappingError(orgId, "");
-    store.setRawEmployees(orgId, []);
-    store.setRawBackendEdges(orgId, []);
+    if (!existingActiveJobId) {
+      store.setRawEmployees(orgId, []);
+      store.setRawBackendEdges(orgId, []);
+    }
 
     try {
       let data: any = isPipedriveId
@@ -782,7 +807,9 @@ export const useHierarchy = () => {
       store.setMappingError(orgId, "Erro ao carregar dados do banco.");
       return null;
     } finally {
-      store.setMappingLoading(orgId, false);
+      if (!useChatStore.getState().mappings[orgId]?.activeJobId) {
+        store.setMappingLoading(orgId, false);
+      }
     }
   }, []);
 

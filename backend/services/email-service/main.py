@@ -96,7 +96,10 @@ async def send_email(
     """Envia um email utilizando o Outlook Desktop ou SMTP."""
     c = await get_client()
     try:
-        success = c.send_outbound_email(to, subject, body, tracking_id, request_read_receipt=request_receipt, attachment_paths=attachment_paths)
+        success = await asyncio.to_thread(
+            c.send_outbound_email, to, subject, body, tracking_id,
+            request_read_receipt=request_receipt, attachment_paths=attachment_paths
+        )
         if success:
             return {"success": True, "to": to, "subject": subject}
         raise HTTPException(status_code=500, detail="Erro ao enviar email.")
@@ -115,7 +118,9 @@ async def reply_email(
     """Responde a um email existente (Thread) usando o EntryID do Outlook."""
     c = await get_client()
     try:
-        success = c.reply_to_email(entry_id, body, reply_all, attachment_paths=attachment_paths)
+        success = await asyncio.to_thread(
+            c.reply_to_email, entry_id, body, reply_all, attachment_paths=attachment_paths
+        )
         if success:
             return {"success": True, "entry_id": entry_id}
         raise HTTPException(status_code=500, detail="Erro ao responder email.")
@@ -127,7 +132,8 @@ async def reply_email(
 @app.get("/api/email/folders")
 async def get_folders():
     """Lista todas as pastas da conta conectada."""
-    return {"folders": (await get_client()).list_folders()}
+    c = await get_client()
+    return {"folders": await asyncio.to_thread(c.list_folders)}
 
 @app.get("/api/email/messages")
 async def get_messages(
@@ -136,7 +142,11 @@ async def get_messages(
     q: Optional[str] = None
 ):
     """Busca mensagens de uma pasta específica."""
-    messages = (await get_client()).get_messages_from(folder, limit, query=q)
+    c = await get_client()
+    # COM/pywin32 é bloqueante — sem to_thread, isso trava o único event loop do
+    # serviço e serializa todas as buscas concorrentes (ex: batch_communication_search
+    # do agente, que dispara várias em paralelo via asyncio.gather no lado do chamador).
+    messages = await asyncio.to_thread(c.get_messages_from, folder, limit, query=q)
     return {"folder": folder, "count": len(messages), "messages": messages}
 
 @app.get("/api/email/unread")
@@ -145,13 +155,15 @@ async def get_unread(
     limit: int = 10
 ):
     """Busca apenas mensagens não lidas."""
-    replies = (await get_client()).scan_inbound_replies(folder, limit)
+    c = await get_client()
+    replies = await asyncio.to_thread(c.scan_inbound_replies, folder, limit)
     return {"folder": folder, "count": len(replies), "messages": replies}
 
 @app.post("/api/email/read-status")
 async def mark_read(entry_id: str = Body(..., embed=True)):
     """Marca um email como lido."""
-    success = (await get_client()).mark_as_read(entry_id)
+    c = await get_client()
+    success = await asyncio.to_thread(c.mark_as_read, entry_id)
     return {"success": success}
 
 @app.get("/api/email/search")
@@ -160,7 +172,8 @@ async def search_contacts(
     limit: int = 10
 ):
     """Busca contatos no catálogo do Outlook."""
-    results = (await get_client()).search_contacts(q, limit)
+    c = await get_client()
+    results = await asyncio.to_thread(c.search_contacts, q, limit)
     return {"results": results}
 
 @app.get("/api/email/contacts/all")
@@ -171,7 +184,8 @@ async def get_all_contacts():
 @app.get("/api/email/signature")
 async def get_signature():
     """Retorna a assinatura padrão do Outlook."""
-    sig = (await get_client()).get_default_signature()
+    c = await get_client()
+    sig = await asyncio.to_thread(c.get_default_signature)
     return {"signature": sig}
 
 @app.get("/api/email/cache-status")

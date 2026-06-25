@@ -22,14 +22,23 @@ export const EmptyWelcomeState: React.FC<EmptyWelcomeStateProps> = ({
 }) => {
     if (isOrgLoading && messages.length === 0) {
         return (
-            <div className={styles.emptyWelcomeContainer} style={{ opacity: 0.7 }}>
+            <div className={styles.emptyWelcomeContainer}>
                 <h2 className={styles.emptyWelcomeText}>
-                    Carregando contexto da{' '}
-                    <span className={styles.highlightPurple}>
-                        @{cleanOrgName}
-                    </span>
-                    ...
+                    {hasValidOrg ? (
+                        <>
+                            Como posso te ajudar com a{' '}
+                            <span className={styles.highlightPurple}>
+                                @{cleanOrgName}
+                            </span>
+                            ?
+                        </>
+                    ) : (
+                        "Como posso te ajudar hoje?"
+                    )}
                 </h2>
+                <div className={styles.emptyInputWrapper}>
+                    {renderChatInput()}
+                </div>
             </div>
         );
     }

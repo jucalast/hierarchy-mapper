@@ -159,6 +159,9 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         scan_interval_min: int = 10
         scan_folder: str = "Leads"
         imap_timeout_sec: float = 30.0
+        # Office 365 removeu autenticação básica IMAP em out/2022.
+        # Mantenha False (padrão) a não ser que o tenant ainda tenha legacy auth habilitado.
+        imap_legacy_auth: bool = False
 
     class ObservabilityConfig(BaseSettings):
         model_config = SettingsConfigDict(
@@ -226,6 +229,10 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         # --- LinkedIn Enrichment ---
         PROXYCURL_API_KEY: str = Field(default="")
         RAPIDAPI_KEY: str = Field(default="")
+
+        # --- Google Maps / Places ---
+        GOOGLE_MAPS_API_KEY: str = Field(default="")
+        GOOGLE_MAPS_DAILY_LIMIT: int = Field(default=200)
 
         # --- LinkedIn Scraper ---
         LINKEDIN_LI_AT: Optional[str] = Field(default=None)
@@ -386,6 +393,9 @@ else:
         PROXYCURL_API_KEY: str = os.getenv("PROXYCURL_API_KEY", "")
         RAPIDAPI_KEY: str = os.getenv("RAPIDAPI_KEY", "")
 
+        GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY", "")
+        GOOGLE_MAPS_DAILY_LIMIT: int = int(os.getenv("GOOGLE_MAPS_DAILY_LIMIT", 200))
+
         LINKEDIN_LI_AT: Optional[str] = os.getenv("LINKEDIN_LI_AT") or None
         LINKEDIN_HEADLESS: bool = os.getenv("LINKEDIN_HEADLESS", "true").lower() in {"1", "true", "yes"}
 
@@ -444,7 +454,7 @@ else:
             retry_max_attempts=3, cache_stages_ttl_sec=3600,
         )
         email = _Namespace(
-            scan_interval_min=10, scan_folder="Leads", imap_timeout_sec=30.0,
+            scan_interval_min=10, scan_folder="Leads", imap_timeout_sec=30.0, imap_legacy_auth=False,
         )
         observability = _Namespace(
             log_level="INFO", log_json=False, metrics_enabled=True,

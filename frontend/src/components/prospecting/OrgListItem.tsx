@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, AlertTriangle, TrendingUp } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { Avatar, Spinner, Badge } from '../ui';
 import { getProxiedUrl } from '../../utils/avatarUtils';
 import styles from './OrgListItem.module.css';
@@ -67,9 +67,11 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
 
     const hasMapping = displayCount > 0 || displayPics.length > 0;
 
+    const isMapping = scanningOrgId === orgId;
+
     return (
         <div
-            className={`${styles.orgItem} ${isSelected ? styles.selectedOrgItem : ''} ${className}`}
+            className={`${styles.orgItem} ${isSelected ? styles.selectedOrgItem : ''} ${isMapping ? styles.mappingOrgItem : ''} ${className}`}
             onClick={() => onClick?.(org)}
             onMouseEnter={onMouseEnter}
             style={{
@@ -79,10 +81,11 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
         >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                 <div className={styles.orgMainInfo} style={{ flex: 1, marginBottom: 0 }}>
-                    <div className={styles.orgLogoWrapper}>
+                    <div className={styles.orgLogoWrapper} style={{ position: 'relative' }}>
                         {(() => {
                             const hasLogo = !!(org.logo || org.organization_logo || org.logo_url || org.company_logo);
                             return (
+                                <>
                                 <Avatar
                                     kind="company"
                                     src={org.logo || org.organization_logo || org.logo_url || org.company_logo}
@@ -92,6 +95,10 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                     noInitialFallback={displayCount === 0}
                                     style={{ border: hasLogo ? '3px solid var(--sw-border-strong)' : 'none' }}
                                 />
+                                {isMapping && (
+                                    <span className={styles.mappingDot} title="Mapeamento em andamento" />
+                                )}
+                                </>
                             );
                         })()}
                     </div>
@@ -131,9 +138,7 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                 </span>
                             )}
 
-                            {scanningOrgId === orgId && (
-                                <Spinner size={14} inline color="rgb(122, 139, 255)" />
-                            )}
+
                             {(org.linkedin || org.linkedin_url) && (
                                 <a
                                     href={org.linkedin || org.linkedin_url}
@@ -182,7 +187,12 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
 
             <div className={styles.orgFooter}>
                 <div className={styles.employeeStack}>
-                    {(hasMapping || isSelected) ? (
+                    {isMapping ? (
+                        <div className={styles.mappingBadge}>
+                            <Spinner size={11} inline color="rgb(122, 139, 255)" />
+                            <span>Mapeando...</span>
+                        </div>
+                    ) : (hasMapping || isSelected) ? (
                         <>
                             <div style={{ display: 'flex', alignItems: 'center', marginRight: '8px' }}>
                                 {displayPics.length > 0 ? (

@@ -85,13 +85,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {currentUser && (
                 <div className={styles.navIcon} style={{ height: 'auto', padding: '12px 0', flexDirection: 'column', alignItems: 'flex-start', cursor: 'default' }}>
                     
-                    <div style={{ display: 'flex', flexDirection: 'column', width: 'calc(100% - 12px)', margin: '0 6px', background: 'var(--sw-sidebar)', borderRadius: '12px', padding: '4px 0 8px 0', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', width: 'calc(100% - 12px)', margin: '0 6px', background: '#131313', borderRadius: '12px', padding: '4px 0 8px 0', overflow: 'hidden' }}>
                         
                         {/* ROW 1: Avatar + Name/Company */}
                         <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                             <div style={{ minWidth: '44px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
                                 <div style={{ position: 'relative' }}>
-                                    <div style={{ width: 36, height: 36, borderRadius: '10px', overflow: 'hidden', position: 'relative', border: `1px solid ${theme === 'light' ? '#e2e8f0' : '#2a2d4b'}`, display: 'flex' }}>
+                                    <div style={{ width: 36, height: 36, borderRadius: '10px', overflow: 'hidden', position: 'relative', border: `1px solid #2a2d4b`, display: 'flex' }}>
                                         <Avatar
                                             kind="person"
                                             name={currentUser.name}
@@ -107,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                         width: 14,
                                         height: 14,
                                         borderRadius: '50%',
-                                        border: `2px solid ${theme === 'light' ? '#e0e7ff' : '#1e2145'}`,
+                                        border: `2px solid #1e2145`,
                                         backgroundColor: '#00aa55',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -127,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             
                             <div className={styles.label} style={{ display: 'flex', flexDirection: 'column', paddingRight: '8px', paddingLeft: '8px', flex: 1, overflow: 'hidden' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                                    <span style={{ fontWeight: 600, color: 'var(--sw-text-base)', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <span style={{ fontWeight: 600, color: '#e4e4e7', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {currentUser.name}
                                     </span>
                                     {onLogout && (
@@ -143,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                 {currentUser.company_name && (
                                     <span style={{ 
                                         fontSize: '11px', 
-                                        color: 'var(--sw-text-muted)', 
+                                        color: '#a1a1aa', 
                                         fontWeight: 500,
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
@@ -219,16 +219,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
 
-            <div 
-                className={styles.navIcon} 
-                title="Analista de IA"
-                onClick={onRefine}
-            >
-                <div className={styles.iconContainer}>
-                    <Workflow className={styles.iconSide} />
-                </div>
-                <span className={styles.label}>Analista de IA</span>
-            </div>
+
 
             <div className={styles.navIcon} title="Smart Sync" onClick={isSmartSyncLoading ? undefined : onSmartSync}>
                 <div className={styles.iconContainer}>

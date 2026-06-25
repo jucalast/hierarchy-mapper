@@ -102,6 +102,11 @@
     color: var(--sw-text-muted);
     fill: currentColor;
     transition: var(--transition-fast);
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .graphWrapper :global(.react-flow__controls-button:last-child) {
@@ -115,6 +120,12 @@
 
 .graphWrapper :global(.react-flow__controls-button svg) {
     fill: currentColor;
+    width: 20px;
+    height: 20px;
+}
+
+.graphWrapper :global(.react-flow__controls-button svg[stroke]) {
+    fill: none;
 }
 
 .graphWrapper :global(.react-flow__attribution) {
@@ -132,8 +143,13 @@
 }
 
 @keyframes swSpin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .spinnerSmall {

@@ -158,6 +158,16 @@ export function useDiscoveryWorkflow({
                 return isRoot || isPartner || isPartnerDept;
             }) : [];
 
+            // 🧹 Limpa o estado persistido ANTES de iniciar novo scan para garantir começo do zero
+            if (currentOrgId) {
+                const { useChatStore } = await import('../store/chatStore');
+                useChatStore.getState().setRawEmployees(currentOrgId, []);
+                useChatStore.getState().setRawBackendEdges(currentOrgId, []);
+                // Limpa cache de layout para o novo mapeamento
+                localStorage.removeItem(`layout-cache-${currentOrgId}`);
+                localStorage.removeItem(`edges-cache-${currentOrgId}`);
+            }
+
             fetchHierarchy(
                 cnpj,
                 domainTarget,
@@ -319,6 +329,8 @@ export function useDiscoveryWorkflow({
         }
     }, [cnpj, enrichingIds, confirmedBrand, currentOrgId, fetchPipedriveOrgs, addNotification, setCurrentOrgId, setConfirmedBrand, setConfirmedLogo]);
 
+    const lastSearchedCnpj = useRef("");
+
     const resetWorkflow = useCallback(() => {
         setStep("input");
         setCnpj("");
@@ -336,7 +348,25 @@ export function useDiscoveryWorkflow({
         setConfirmedLinkedInUrl('');
         resetHierarchy();
         localStorage.removeItem('last-viewed-org');
+        lastSearchedCnpj.current = "";
     }, [setBrandOptions, setCurrentOrgId, setChatOrgId, resetHierarchy]);
+
+    useEffect(() => {
+        const digits = cnpj.replace(/\D/g, '');
+        if (digits.length === 14) {
+            const formatted = formatCnpj(digits);
+            if (cnpj !== formatted) {
+                setCnpj(formatted);
+            }
+            // Only auto-enrich when actively typing in the input step (no org loaded yet)
+            if (lastSearchedCnpj.current !== digits && step === "input" && !currentOrgId) {
+                lastSearchedCnpj.current = digits;
+                handleAutoEnrich();
+            }
+        } else if (digits.length === 0) {
+            lastSearchedCnpj.current = "";
+        }
+    }, [cnpj, step, currentOrgId, handleAutoEnrich]);
 
     return {
         step, setStep,

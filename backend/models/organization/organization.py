@@ -32,6 +32,7 @@ class Organization(Base):
     product_focus = Column(String, nullable=True, index=True)       # Ex: "Embalagens", "TI"
     linkedin_url = Column(String, nullable=True)
     logo_url = Column(String, nullable=True)
+    photo_url = Column(Text, nullable=True)  # Foto da empresa (Google Places), cacheada em base64
     icp_score = Column(Integer, nullable=True)                      # Score de 0 a 100
     icp_tier = Column(String, nullable=True)                       # A | B | C
     is_excluded = Column(Integer, server_default="0", index=True)   # 1 = Excluída/Oculta

@@ -95,3 +95,7 @@ export function deleteProspectingPlan(orgId: number) {
   return api.delete<{ ok?: boolean; message?: string }>(`/organizations/${orgId}/prospecting-plan`);
 }
 
+export function getOrganizationPhoto(orgId: number) {
+  return api.get<{ ok: boolean; photo_url: string | null }>(`/organizations/${orgId}/photo`);
+}
+

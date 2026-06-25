@@ -99,6 +99,26 @@ async def get_organization(
         log.warning("organizations.get.failed", org_id=org_id, error=str(e))
         raise HTTPException(status_code=500, detail="Erro ao buscar organização.")
 
+@router.get("/{org_id}/photo")
+async def get_organization_photo(
+    org_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Retorna a foto da empresa (Google Maps/Places) para usar de background no header
+    do Drawer. Busca e persiste no banco (cache permanente) na primeira chamada;
+    chamadas seguintes para a mesma empresa retornam o valor já salvo sem nova
+    consulta à API.
+    """
+    from modules.intelligence.service.company_photo_service import fetch_and_cache_company_photo
+    try:
+        photo_url = await fetch_and_cache_company_photo(org_id, db)
+        return {"ok": bool(photo_url), "photo_url": photo_url}
+    except Exception as e:
+        log.warning("organizations.get_photo.failed", org_id=org_id, error=str(e))
+        return {"ok": False, "photo_url": None}
+
+
 @router.post("/{org_id}/validate-emails")
 async def start_batch_email_validation(
     org_id: int,

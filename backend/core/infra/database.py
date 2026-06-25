@@ -479,17 +479,19 @@ async def init_db():
             "ALTER TABLE business_profiles ADD COLUMN signature_path VARCHAR",
             "ALTER TABLE contact_conversation_cache ADD COLUMN has_unread INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE contact_conversation_cache ADD COLUMN is_key_contact INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE organizations ADD COLUMN photo_url TEXT",
         ]:
             try:
                 await conn.execute(text(query))
                 await conn.commit()
             except Exception:
-                pass
-            
+                await conn.rollback()
+
         try:
             await conn.execute(text("DROP INDEX IF EXISTS ix_organizations_cnpj"))
             await conn.commit()
-        except: pass
+        except Exception:
+            await conn.rollback()
 
     # Seed System Settings and Tenant Data
     async with async_session() as session:

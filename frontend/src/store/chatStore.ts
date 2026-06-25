@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { Message, CompanyResult } from '../components/chat/ChatInterfaces';
 import { AgentEvent } from '../components/chat/AgentV2Message';
 import { Edge } from 'reactflow';
@@ -116,17 +117,19 @@ export const getSessionKey = (orgId: number | null | undefined, threadId: string
   return 'global';
 };
 
-export const useChatStore = create<ChatStore>((set, get) => ({
-  sessions: {},
-  mappings: {},
-  activeTabs: [],
-  currentOrgId: null,
-  globalSmartSyncLoading: false,
+export const useChatStore = create<ChatStore>()(
+  persist(
+    (set, get) => ({
+      sessions: {},
+      mappings: {},
+      activeTabs: [],
+      currentOrgId: null,
+      globalSmartSyncLoading: false,
 
-  getSession: (orgId, threadId) => {
-    const key = getSessionKey(orgId, threadId);
-    return get().sessions[key] || defaultSession();
-  },
+      getSession: (orgId, threadId) => {
+        const key = getSessionKey(orgId, threadId);
+        return get().sessions[key] || defaultSession();
+      },
 
   getMapping: (orgId) => {
     if (!orgId) return defaultMapping();
@@ -485,4 +488,37 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       };
     });
   },
-}));
+}),
+{
+  name: 'linkb2b-chat-store',
+  storage: {
+    getItem: (name) => { try { return localStorage.getItem(name); } catch { return null; } },
+    setItem: (name, value) => { try { localStorage.setItem(name, value); } catch (e) { console.warn('[chatStore] localStorage quota exceeded, persist skipped:', e); } },
+    removeItem: (name) => { try { localStorage.removeItem(name); } catch {} },
+  },
+  partialize: (state) => ({
+    sessions: Object.fromEntries(
+      Object.entries(state.sessions).map(([k, s]) => [k, {
+        ...s,
+        modelActivity: [],
+        agentEvents: [],
+        activeRunningTask: null,
+        isLoading: false,
+        agentStreaming: false,
+      }])
+    ),
+    mappings: Object.fromEntries(
+      Object.entries(state.mappings).map(([k, m]) => [k, {
+        loading: false,
+        discovering: m.discovering,
+        error: m.error,
+        activeJobId: m.activeJobId,
+        isSmartSyncLoading: false,
+        rawEmployees: [],
+        rawBackendEdges: [],
+        brandOptions: [],
+      }])
+    ),
+  }),
+}
+));

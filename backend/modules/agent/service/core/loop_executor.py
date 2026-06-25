@@ -11,6 +11,7 @@ import asyncio
 from typing import Any, AsyncGenerator, Dict, List
 from modules.agent.service.helpers import _emit, _raw_log, _get_label
 from modules.agent.service.sanitizers import _sanitize_result
+from modules.agent.service.core.thread_memory import DEDUP_TOOLS
 from core.observability.logging_config import get_logger
 
 log = get_logger(__name__)
@@ -105,6 +106,13 @@ async def execute_read_tools_batch(
                     break
 
         summary = tool_result.get("summary") or tool_result.get("error") or ("OK" if ok else "Erro")
+
+        sanitized = _sanitize_result(tool_name, tool_result)
+        raw_content = json.dumps(sanitized, ensure_ascii=False) if isinstance(sanitized, (dict, list)) else str(sanitized)
+        _max_content = 4000 if tool_name in ("pipedrive_get_all_activities", "email_get_inbox", "email_get_contact_history", "evaluate_prospects") else 2000
+        if len(raw_content) > _max_content:
+            raw_content = raw_content[:_max_content] + "... [TRUNCADO]"
+
         emitted_result = {"type": "tool_result", "call_id": first_call_id, "tool": tool_name, "summary": summary, "ok": ok, "args": tool_args}
         emitted_data = {}
         if "quota" in tool_result:
@@ -113,10 +121,15 @@ async def execute_read_tools_batch(
             emitted_data["plan"] = tool_result.get("plan")
         if "org_name" in tool_result:
             emitted_data["org_name"] = tool_result.get("org_name")
-        
+        if ok and tool_name in DEDUP_TOOLS:
+            # Persiste o conteúdo sanitizado (não só o summary curto) para que uma nova
+            # mensagem do usuário nesta mesma thread, mais tarde, possa reaproveitar o
+            # resultado real desta busca em vez de chamar a tool de novo — ver thread_memory.py.
+            emitted_data["cached_content"] = raw_content
+
         if emitted_data:
             emitted_result["data"] = emitted_data
-        
+
         yield _emit(emitted_result)
         yield _emit({"type": "context_saved"})
 
@@ -215,12 +228,6 @@ async def execute_read_tools_batch(
                 })
             if _pd_actions:
                 yield _emit({"type": "suggested_actions", "actions": _pd_actions})
-
-        sanitized = _sanitize_result(tool_name, tool_result)
-        raw_content = json.dumps(sanitized, ensure_ascii=False) if isinstance(sanitized, (dict, list)) else str(sanitized)
-        _max_content = 4000 if tool_name in ("pipedrive_get_all_activities", "email_get_inbox", "email_get_contact_history", "evaluate_prospects") else 2000
-        if len(raw_content) > _max_content:
-            raw_content = raw_content[:_max_content] + "... [TRUNCADO]"
 
         tool_results.append({
             "type": "tool_result",

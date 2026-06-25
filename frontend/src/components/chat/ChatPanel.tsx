@@ -92,6 +92,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         handleStopStreaming,
         handleCancelActiveTask,
         handleApproveSuggestedAction,
+        handleRetrySuggestedAction,
         handleOpenTaskConsole,
         handleTaskInlineConfirm,
         handleTaskMappingComplete,
@@ -292,6 +293,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             handleSendMessage={handleSendMessage}
                             approvedSuggestedActions={approvedSuggestedActions}
                             handleApproveSuggestedAction={handleApproveSuggestedAction}
+                            handleRetrySuggestedAction={handleRetrySuggestedAction}
                             handleMainChatMappingDone={handleMainChatMappingDone}
                             model={model}
                             handleOpenTaskConsole={handleOpenTaskConsole}

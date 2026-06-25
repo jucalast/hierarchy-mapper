@@ -78,6 +78,35 @@ export interface AgentEvent {
     options?: any[];
     plan?: string;
     result?: any;
+    /** tool_result: true quando o "erro" é uma confirmação recusada pelo usuário, não uma falha real da tool. */
+    cancelled?: boolean;
+}
+
+/**
+ * Classifica o desfecho de uma execução a partir dos eventos coletados:
+ * 'error' (falha real e não recuperada de alguma tool, ou evento de erro fatal),
+ * 'cancelled' (toda falha presente foi uma confirmação recusada pelo usuário) ou
+ * null (sem falhas, ou falhas que o próprio agente conseguiu contornar).
+ */
+export function classifyFailure(events: AgentEvent[]): 'error' | 'cancelled' | null {
+    if (events.length === 0) return 'error';
+
+    // Erro genérico (loop do agente quebrou) é sempre fatal, não importa o que veio depois.
+    const hasGenericError = events.some(e => e.type === 'error');
+    if (hasGenericError) return 'error';
+
+    // Se o agente chegou a uma conclusão real (resposta final ou suggested_actions),
+    // ele teve a chance de se recuperar de falhas intermediárias de tools (ex: tool falhou
+    // por faltar um dado, o agente buscou o dado e tentou de novo com sucesso) — nesse caso
+    // a falha anterior não deve ser reportada como erro fatal da tarefa como um todo.
+    const reachedConclusion = events.some(e => e.type === 'suggested_actions' || e.type === 'final');
+
+    const failedResults = events.filter(e => e.type === 'tool_result' && e.ok === false);
+    const hasRealFailure = failedResults.some(e => !e.cancelled);
+
+    if (hasRealFailure && !reachedConclusion) return 'error';
+    if (failedResults.some(e => e.cancelled) && !reachedConclusion) return 'cancelled';
+    return null;
 }
 
 import { AIModel } from './ModelSelector';
@@ -96,8 +125,9 @@ export interface AgentMessageProps {
     orgId?: number | null;
     selectedOrgName?: string | null;
     threadId?: string;
-    approvedSuggestedActions?: Record<string, 'pending' | 'streaming' | 'awaiting_confirm' | 'awaiting_mapping' | 'done' | 'rejected' | 'error'>;
+    approvedSuggestedActions?: Record<string, TaskStatus>;
     onApproveSuggestedAction?: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => void;
+    onRetrySuggestedAction?: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => void;
     onHierarchyMappingDone?: (contacts: any[], event?: AgentEvent) => void;
     model: AIModel;
     onOpenTaskConsole?: (action: any, index: number, parentMessageId?: string) => void;
@@ -218,13 +248,11 @@ const HierarchyMappingCard: React.FC<{
 }> = ({ event, onMappingDone, isStreaming }) => {
     const [status, setStatus] = useState<MappingStatus>(() => {
         if (typeof window !== 'undefined') {
-            const saved = window.localStorage.getItem('active-discovery-job');
+            const saved = window.localStorage.getItem(`active-discovery-job-${event.org_id}`);
             if (saved) {
                 try {
-                    const jobData = JSON.parse(saved);
-                    if (jobData && (jobData.orgId === event.org_id || Number(jobData.orgId) === Number(event.org_id))) {
-                        return 'scanning';
-                    }
+                    JSON.parse(saved);
+                    return 'scanning';
                 } catch { /* ignore */ }
             }
             // Se o chat está esperando por este mapeamento, começamos como 'waiting' (útil para scan manual)
@@ -250,13 +278,11 @@ const HierarchyMappingCard: React.FC<{
         let isActiveJobRunning = false;
         let isWaitingForChat = false;
         if (typeof window !== 'undefined') {
-            const saved = window.localStorage.getItem('active-discovery-job');
+            const saved = window.localStorage.getItem(`active-discovery-job-${event.org_id}`);
             if (saved) {
                 try {
-                    const jobData = JSON.parse(saved);
-                    if (jobData && (jobData.orgId === event.org_id || Number(jobData.orgId) === Number(event.org_id))) {
-                        isActiveJobRunning = true;
-                    }
+                    JSON.parse(saved);
+                    isActiveJobRunning = true;
                 } catch { /* ignore */ }
             }
             const pending = window.localStorage.getItem('pending-hierarchy-continuation');
@@ -820,6 +846,7 @@ export const InlineEventStream: React.FC<{
                     const result = resultMap[ev.call_id];
                     const running = !result && isStreaming;
                     const ok = result?.ok;
+                    const cancelled = !ok && (result?.cancelled || result?.data?.cancelled);
                     const color = TOOL_COLORS[ev.tool || ''] || '#888';
                     const isFindContact = ev.tool === 'find_company_contact';
                     const quota = result?.data?.quota;
@@ -830,10 +857,15 @@ export const InlineEventStream: React.FC<{
                                 ? <Loader2 size={12} className={styles.spinner} style={{ color, flexShrink: 0 }} />
                                 : ok
                                     ? <CheckCircle2 size={12} style={{ color: '#10b981', flexShrink: 0 }} />
-                                    : <XCircle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />
+                                    : cancelled
+                                        ? <X size={12} style={{ color: 'var(--sw-text-muted)', flexShrink: 0 }} />
+                                        : <XCircle size={12} style={{ color: '#ef4444', flexShrink: 0 }} />
                             }
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                                 <span>{ev.label}</span>
+                                {cancelled && (
+                                    <span style={{ fontSize: 10, color: 'var(--sw-text-muted)', fontStyle: 'italic' }}>(cancelado pelo usuário)</span>
+                                )}
                                 {isFindContact && quota && (
                                     <span style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--sw-hover)', padding: '2px 6px', borderRadius: 12, fontSize: 10, border: 'var(--sw-border-width) solid var(--sw-border)', opacity: 0.9 }}>
                                         <img src="/Google_Maps.svg.png" alt="Google Maps" style={{ width: 10, height: 10, marginRight: 4 }} />
@@ -920,7 +952,7 @@ export const InlineEventStream: React.FC<{
 
 import { conversations } from '../../services/api';
 
-export type TaskStatus = 'pending' | 'streaming' | 'awaiting_confirm' | 'awaiting_mapping' | 'done' | 'rejected' | 'error';
+export type TaskStatus = 'pending' | 'streaming' | 'awaiting_confirm' | 'awaiting_mapping' | 'done' | 'rejected' | 'error' | 'cancelled';
 
 const getCompanyFromLabel = (label: string): string => {
     const clean = label.replace('->', '→').replace('·', '→').replace('•', '→');
@@ -951,12 +983,13 @@ const SuggestedActionTask: React.FC<{
     actionIndex?: number;
     approvedSuggestedActions?: Record<string, TaskStatus>;
     onApproveSuggestedAction?: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => void;
+    onRetrySuggestedAction?: (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => void;
     onAction?: (prompt: string) => void;
     isLast?: boolean;
     sameCompanyAsNext?: boolean;
     model: AIModel;
     onOpenTaskConsole?: (action: any, index: number, parentMessageId?: string) => void;
-}> = ({ action, streamV2Url, confirmV2Url, orgId, selectedOrgName, threadId, parentMessageId, actionIndex, approvedSuggestedActions = {}, onApproveSuggestedAction, onAction, isLast = false, sameCompanyAsNext = false, model, onOpenTaskConsole }) => {
+}> = ({ action, streamV2Url, confirmV2Url, orgId, selectedOrgName, threadId, parentMessageId, actionIndex, approvedSuggestedActions = {}, onApproveSuggestedAction, onRetrySuggestedAction, onAction, isLast = false, sameCompanyAsNext = false, model, onOpenTaskConsole }) => {
     const taskKey = `${parentMessageId}-${actionIndex}`;
     const externalStatus = approvedSuggestedActions[taskKey];
     const [localStatus, setLocalStatus] = useState<TaskStatus>(action.status || 'pending');
@@ -1063,14 +1096,14 @@ const SuggestedActionTask: React.FC<{
 
         const hierarchyEv = collected.find(e => e.type === 'hierarchy_mapping_required');
         const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
-        const hasError = collected.length === 0 || collected.some(e => e.type === 'error' || (e.type === 'tool_result' && e.ok === false));
+        const failure = classifyFailure(collected);
 
         if (hierarchyEv) {
             setLocalStatus('awaiting_mapping');
         } else if (pendingConfirm) {
             setLocalStatus('awaiting_confirm');
-        } else if (hasError) {
-            setLocalStatus('error');
+        } else if (failure) {
+            setLocalStatus(failure);
         } else {
             setLocalStatus('done');
         }
@@ -1119,12 +1152,12 @@ const SuggestedActionTask: React.FC<{
         });
 
         const pendingConfirm = newEvents.find(e => e.type === 'confirmation_required' && e.action_id);
-        const hasError = newEvents.length === 0 || newEvents.some(e => e.type === 'error' || (e.type === 'tool_result' && e.ok === false));
+        const failure = classifyFailure(newEvents);
 
         if (pendingConfirm) {
             setLocalStatus('awaiting_confirm');
-        } else if (hasError) {
-            setLocalStatus('error');
+        } else if (failure) {
+            setLocalStatus(failure);
         } else {
             setLocalStatus('done');
         }
@@ -1138,9 +1171,9 @@ const SuggestedActionTask: React.FC<{
             approved,
             thread_id: threadId,
         });
-        const hasError = newEvents.length === 0 || newEvents.some(e => e.type === 'error' || (e.type === 'tool_result' && e.ok === false));
-        if (hasError) {
-            setLocalStatus('error');
+        const failure = classifyFailure(newEvents);
+        if (failure) {
+            setLocalStatus(failure);
         } else {
             setLocalStatus('done');
         }
@@ -1260,6 +1293,34 @@ const SuggestedActionTask: React.FC<{
                     {statusLabel}
                 </span>
 
+                {/* Refazer — só em falha real, deixa o agente investigar e tentar resolver */}
+                {status === 'error' && onRetrySuggestedAction && actionIndex !== undefined && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onRetrySuggestedAction(action, actionIndex, parentMessageId);
+                        }}
+                        title="Refazer — o agente vai investigar o erro e tentar resolver"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 'calc(var(--font-xs) - 1px)',
+                            fontWeight: 600,
+                            color: 'var(--sw-text-base)',
+                            background: 'var(--sw-hover)',
+                            border: 'var(--sw-border-width) solid var(--sw-border)',
+                            borderRadius: 5,
+                            padding: '2px 7px',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                        }}
+                    >
+                        <RotateCcw size={10} />
+                        Refazer
+                    </button>
+                )}
+
                 {/* Hint de clique */}
                 {isClickable && (
                     <Terminal size={12} style={{ color: 'var(--sw-text-muted)', opacity: 0.4, flexShrink: 0 }} />
@@ -1299,20 +1360,22 @@ const SuggestedActionTask: React.FC<{
                     </span>
                 )}
                 {/* Status badge (execução ativa) */}
-                {(status === 'streaming' || status === 'awaiting_confirm' || status === 'awaiting_mapping') && (
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--font-xs)', color: status === 'awaiting_confirm' ? '#f59e0b' : status === 'awaiting_mapping' ? '#818cf8' : 'var(--sw-text-muted)' }}>
+                {(status === 'streaming' || status === 'awaiting_confirm' || status === 'awaiting_mapping' || status === 'cancelled') && (
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--font-xs)', color: status === 'awaiting_confirm' ? '#f59e0b' : status === 'awaiting_mapping' ? '#818cf8' : status === 'cancelled' ? 'var(--sw-text-muted)' : 'var(--sw-text-muted)' }}>
                         {status === 'streaming'
                             ? <><Loader2 size={10} className={styles.spinner} /><span>Executando...</span></>
                             : status === 'awaiting_confirm'
                                 ? <><AlertTriangle size={10} /><span>Aguardando confirmação</span></>
-                                : <><Network size={10} /><span>Mapeando...</span></>
+                                : status === 'awaiting_mapping'
+                                    ? <><Network size={10} /><span>Mapeando...</span></>
+                                    : <><XCircle size={10} /><span>Cancelado — pode tentar novamente</span></>
                         }
                     </div>
                 )}
             </div>
 
             {/* Body */}
-            <div style={{ padding: '10px 12px' }}>
+            <div className={styles.actionCardBody}>
                 {/* Título da ação — sem prefixo de canal */}
                 <div style={{ fontSize: 'var(--font-base)', fontWeight: 600, color: 'var(--sw-text-base)', marginBottom: action.razao ? 6 : 0, lineHeight: 1.4 }}>
                     {cleanLabel}
@@ -1355,7 +1418,7 @@ const SuggestedActionTask: React.FC<{
                 )}
 
                 {/* Botões — apenas no estado pending */}
-                {status === 'pending' && (
+                {(status === 'pending' || status === 'cancelled') && (
                     <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                         <button
                             onClick={handleApprove}
@@ -1539,6 +1602,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
     threadId,
     approvedSuggestedActions = {},
     onApproveSuggestedAction,
+    onRetrySuggestedAction,
     onHierarchyMappingDone,
     model,
     onOpenTaskConsole,
@@ -1842,6 +1906,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                                 actionIndex={idx}
                                 approvedSuggestedActions={approvedSuggestedActions}
                                 onApproveSuggestedAction={onApproveSuggestedAction}
+                                onRetrySuggestedAction={onRetrySuggestedAction}
                                 onAction={onAction}
                                 isLast={idx === suggestedActions.length - 1}
                                 sameCompanyAsNext={sameCompanyAsNext}

@@ -70,7 +70,14 @@ class IntelligenceService:
         except Exception as e:
             print(f"[Database] Error saving org: {e}")
 
-    async def enrich_company(self, company_name: str, hint_address: Optional[str] = None, force_refresh: bool = False, cnpj: Optional[str] = None) -> Dict[str, Any]:
+    async def enrich_company(
+        self,
+        company_name: str,
+        hint_address: Optional[str] = None,
+        force_refresh: bool = False,
+        cnpj: Optional[str] = None,
+        run_brand_discover: bool = False
+    ) -> Dict[str, Any]:
         """
         Versão Aprimorada: Foca em Domínio e Endereço. 
         Extrai domínio do e-mail oficial (BrasilAPI) e refina buscas OSINT.
@@ -159,13 +166,14 @@ class IntelligenceService:
             
             print(f"[Intelligence] 🔍 Buscando site oficial OSINT para: {search_target_clean}")
             queries = [
-                f'site oficial "{search_target_clean}"',
-                f'"{search_target_clean}" homepage -site:cnpj.biz -site:econodata.com.br -site:casadosdados.com.br'
+                f'site oficial "{search_target_clean}"'
             ]
             results = []
             for q in queries:
                 batch = await search_duckduckgo(q, max_results=3)
-                if batch: results.extend(batch)
+                if batch: 
+                    results.extend(batch)
+                    break # Se já rodou uma query, não precisa rodar mais para economizar tempo
 
             for r in results:
                 href = r.get("href", "").lower()
@@ -180,7 +188,7 @@ class IntelligenceService:
 
         # 5. CAMADA 4: Brand Discovery Engine (Apenas se ainda faltar o domínio ou para alternativas)
         # Se chegamos aqui sem domínio, usamos o motor de marcas que inclui LinkedIn como plano C.
-        if not found_domain:
+        if not found_domain and run_brand_discover:
             from .brand_discovery import discover_company_brand
             search_target = result_data["main_option"]["official_name"] if result_data["main_option"] and result_data["main_option"].get("official_name") else company_name
             print(f"[Intelligence] 🧠 Acionando BrandEngine como último recurso para '{search_target}'...")
@@ -208,36 +216,8 @@ class IntelligenceService:
             result_data["success"] = True
 
         # 5. PERSISTÊNCIA CONDICIONAL (Auto-save apenas para empresas NOVAS)
-        if result_data["main_option"] and result_data["main_option"].get("cnpj") and result_data["main_option"].get("domain"):
-            try:
-                async with async_session() as session:
-                    # Verifica se já temos essa empresa ligada ao Pipedrive
-                    clean_cnpj = re.sub(r'\D', '', str(result_data["main_option"]["cnpj"]))
-                    stmt = select(Organization).where(Organization.cnpj == clean_cnpj)
-                    res = await session.execute(stmt)
-                    existing = res.scalars().first()
-                    
-                    if not existing or not existing.pipedrive_id:
-                        print(f"[Intelligence] 🚀 Empresa Nova Detectada. Iniciando Auto-Save para {company_name}...")
-                        
-                        # 1. Cria no Pipedrive se não existir ID
-                        from modules.crm.service.pipedrive_service import pipedrive_service
-                        new_pid = await pipedrive_service.create_organization({
-                            "name": result_data["main_option"]["official_name"] or company_name,
-                            "address": result_data["main_option"]["address"],
-                            "domain": result_data["main_option"]["domain"]
-                        })
-                        
-                        # 2. Salva no Banco Local com o novo ID
-                        save_data = result_data["main_option"].copy()
-                        if new_pid: save_data["pipedrive_id"] = new_pid
-                        
-                        await self._save_org_to_db(company_name, save_data)
-                        print(f"[Intelligence] ✅ Empresa nova '{company_name}' salva e sincronizada.")
-                    else:
-                        print(f"[Intelligence] 🛡️ Empresa já vinculada ao Pipedrive ({existing.pipedrive_id}). Auto-save ignorado para confirmação manual.")
-            except Exception as e:
-                print(f"[Intelligence] Erro no fluxo de auto-save condicional: {e}")
+        # Auto-save removido para que o fluxo de Brand Discovery possa aguardar a confirmação manual do usuário
+        # e a escolha da marca/LinkedIn antes de salvar no Pipedrive (que ocorre na rota /confirm).
 
         # 🏁 Finalizado: Retorna os dados
         print(f"[Intelligence] 🏁 Enriquecimento concluído para {company_name}")

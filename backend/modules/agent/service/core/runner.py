@@ -19,6 +19,7 @@ from modules.agent.service.prompts import (
     SYSTEM_PROMPT_TASK_AGENT, SYSTEM_PROMPT_TASK_AGENT_BASIC,
 )
 from modules.agent.service.core.loop import _agent_loop, _PENDING
+from modules.agent.service.core.thread_memory import load_thread_tool_memory
 from modules.agent.skills.router import route_task_to_skill
 from core.observability.logging_config import get_logger
 log = get_logger(__name__)
@@ -38,6 +39,11 @@ def filter_tools_for_direct_action(all_tools, msg_text):
     
     _ALWAYS_AVAILABLE_IN_TASK = _CTX_TOOLS | {
         "open_hierarchy_drawer", "pipedrive_create_task",
+        # pipedrive_create_task e pipedrive_update_deal podem falhar pedindo para resolver
+        # um person_id passado por nome — o agente precisa de pipedrive_create_person
+        # disponível para cadastrar o contato e refazer a ação na mesma execução, mesmo que
+        # a mensagem original (usada para filtrar as tools deste turno) não a mencione.
+        "pipedrive_create_person",
         *( set() if _is_followup_task else {"prepare_live_coaching_session"} ),
     }
     from modules.agent.service.tools import TOOLS
@@ -410,6 +416,11 @@ async def run_agent(
         except Exception as e:
             log.warning("agent.user_message.save_immediate_failed", thread_id=thread_id, error=str(e))
 
+    # Carrega o que já foi consultado nesta thread em mensagens anteriores (possivelmente
+    # em execuções passadas do loop) para não repetir buscas que o frontend já não envia
+    # mais no `history` truncado — ver thread_memory.py.
+    thread_tool_memory = await load_thread_tool_memory(thread_id)
+
     saved_on_completion = False
     try:
         async for chunk in _agent_loop(
@@ -424,6 +435,7 @@ async def run_agent(
             action_index=action_index,
             query_type=query_type,
             active_skill=active_skill,
+            thread_tool_memory=thread_tool_memory,
         ):
             try:
                 data = json.loads(chunk)
@@ -683,13 +695,15 @@ async def resume_after_confirmation(
         except Exception as e:
             result = {"ok": False, "error": str(e)}
     else:
-        result = {"ok": False, "error": "Ação cancelada pelo usuário"}
+        result = {"ok": False, "error": "Ação cancelada pelo usuário", "cancelled": True}
 
     ok = result.get("ok", False)
     summary = result.get("result") or result.get("error") or ("OK" if ok else "Erro")
 
     # Emite o tool result e adiciona no logs
-    tr_event = {"type": "tool_result", "call_id": call_id, "tool": tool_name, "summary": summary, "ok": ok, "args": tool_args, "data": result}
+    # cancelled=True distingue "usuário recusou a confirmação" de uma falha real da tool,
+    # para o frontend não tratar os dois casos da mesma forma (ex: habilitar "Refazer").
+    tr_event = {"type": "tool_result", "call_id": call_id, "tool": tool_name, "summary": summary, "ok": ok, "cancelled": result.get("cancelled", False), "args": tool_args, "data": result}
     collected_events.append(tr_event)
     yield _emit(tr_event)
 
@@ -717,7 +731,24 @@ async def resume_after_confirmation(
     
     # Se aprovado, adicionamos um nudge para o agente continuar o fluxo
     system_nudge = ""
-    if approved:
+    if approved and not ok and "resolver o contato" in str(result.get("error", "")):
+        # pipedrive_create_task/pipedrive_update_deal falham com este erro quando person_id
+        # é um nome (não um ID numérico) e o contato ainda não existe no Pipedrive. Sem este
+        # nudge, o agente costuma desistir e só SUGERIR cadastrar o contato como uma próxima
+        # ação manual, em vez de resolver e tentar de novo na mesma execução.
+        person_name = tool_args.get("person_id") or (tool_args.get("fields") or {}).get("person_id")
+        system_nudge = (
+            f"\n\n[SISTEMA]: A ação '{tool_name}' falhou porque o contato '{person_name}' ainda não "
+            f"está cadastrado no Pipedrive.\n\n"
+            f"OBRIGATÓRIO — resolva isso AGORA, nesta mesma execução, sem esperar nova aprovação do usuário:\n"
+            f"1. pipedrive_create_person com name=\"{person_name}\" (reaproveite email/telefone já conhecidos "
+            f"deste contato no histórico acima, se houver).\n"
+            f"2. Repita a ação que falhou ('{tool_name}') usando o ID numérico retornado pela criação do contato.\n"
+            f"3. suggest_next_actions — somente depois da ação ser refeita com sucesso.\n\n"
+            f"PROIBIDO encerrar o turno apenas sugerindo 'cadastrar o contato' como próxima ação — você tem as "
+            f"ferramentas para resolver isso agora."
+        )
+    elif approved:
         if tool_name in ("whatsapp_send_message", "email_send", "email_reply"):
             sent_msg_preview = pending.get("args", {}).get(
                 "message" if tool_name == "whatsapp_send_message" else "body", ""
@@ -772,6 +803,7 @@ async def resume_after_confirmation(
                 _msg_lower = " ".join([b.get("text", "") for b in m.get("content") if isinstance(b, dict) and b.get("type") == "text"])
                 break
         tools = filter_tools_for_direct_action(tools, _msg_lower)
+    thread_tool_memory = await load_thread_tool_memory(thread_id)
     saved_on_completion = False
     try:
         async for chunk in _agent_loop(
@@ -784,6 +816,7 @@ async def resume_after_confirmation(
             action_index=action_index,
             direct_action=pending_direct_action,
             preferred=pending_preferred,
+            thread_tool_memory=thread_tool_memory,
             strict_mode=pending_strict_mode,
             query_type=pending_query_type,
             active_skill=None,

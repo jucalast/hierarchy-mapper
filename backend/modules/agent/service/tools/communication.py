@@ -86,16 +86,16 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
                                 continue
                             sender = "Você" if m.get("fromMe") else contact
                             fmt.append(f"[{sender}]: {body[:300]}")
-                        # Persiste o histórico LID no cache (usa chat_id como identifier)
-                        asyncio.create_task(
-                            cache_wa_messages(
-                                contact_identifier=lid_chat_id,
-                                contact_name=contact,
-                                org_id=org_id,
-                                org_name=args.get("org_name") or None,
-                                chat_id=lid_chat_id,
-                                raw_messages=list(msgs_lid),
-                            )
+                        # Persiste o histórico LID no cache (usa chat_id como identifier).
+                        # Aguarda o commit (em vez de create_task fire-and-forget) para garantir
+                        # que generate_prospecting_plan, ao ler o cache logo depois, já o encontre.
+                        await cache_wa_messages(
+                            contact_identifier=lid_chat_id,
+                            contact_name=contact,
+                            org_id=org_id,
+                            org_name=args.get("org_name") or None,
+                            chat_id=lid_chat_id,
+                            raw_messages=list(msgs_lid),
                         )
                         return {
                             "ok": True,
@@ -228,18 +228,18 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
         if canonical_phone and canonical_phone.isdigit() and not canonical_phone.startswith("55") and len(canonical_phone) in (10, 11):
             canonical_phone = f"55{canonical_phone}"
 
-        # Persiste no cache para a UI de mensagens (não bloqueia o retorno)
+        # Persiste no cache para a UI de mensagens e para generate_prospecting_plan.
+        # Aguarda o commit (em vez de create_task fire-and-forget) para evitar que o plano
+        # de prospecção seja gerado antes do histórico recém-buscado estar salvo no banco.
         _cache_id = canonical_phone or chat_id
         _org_name = args.get("org_name") or None
-        asyncio.create_task(
-            cache_wa_messages(
-                contact_identifier=_cache_id,
-                contact_name=found_name or contact,
-                org_id=org_id,
-                org_name=_org_name,
-                chat_id=chat_id,
-                raw_messages=list(msgs_raw or []),
-            )
+        await cache_wa_messages(
+            contact_identifier=_cache_id,
+            contact_name=found_name or contact,
+            org_id=org_id,
+            org_name=_org_name,
+            chat_id=chat_id,
+            raw_messages=list(msgs_raw or []),
         )
 
 
@@ -679,17 +679,17 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
 
 
             label = contact_name or contact_email or org_name
-            # Persiste no cache para a UI de mensagens (não bloqueia o retorno)
+            # Persiste no cache para a UI de mensagens e para generate_prospecting_plan.
+            # Aguarda o commit (em vez de create_task fire-and-forget) para evitar que o plano
+            # de prospecção seja gerado antes do histórico recém-buscado estar salvo no banco.
             _email_id = contact_email or search_query
             if _email_id and results:
-                asyncio.create_task(
-                    cache_email_messages(
-                        contact_identifier=_email_id,
-                        contact_name=label,
-                        org_id=org_id,
-                        org_name=org_name,
-                        emails=results,
-                    )
+                await cache_email_messages(
+                    contact_identifier=_email_id,
+                    contact_name=label,
+                    org_id=org_id,
+                    org_name=org_name,
+                    emails=results,
                 )
             return {
                 "ok": True,

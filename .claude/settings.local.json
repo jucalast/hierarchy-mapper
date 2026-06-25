@@ -122,7 +122,11 @@
       "Bash(Select-Object Name)",
       "Bash(rtk tsc *)",
       "Bash(Remove-Item -Recurse -Force \"C:/Users/João Luccas/Desktop/LINKB2B/hierarchy-mapper/frontend/.next\" -ErrorAction SilentlyContinue)",
-      "Bash(Out-String)"
+      "Bash(Out-String)",
+      "Bash(echo \"EXIT:$?\")",
+      "Skill(run)",
+      "Bash(chromium-cli --help)",
+      "Bash(rtk lint *)"
     ]
   }
 }

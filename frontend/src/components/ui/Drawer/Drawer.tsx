@@ -238,24 +238,74 @@ export const Drawer: React.FC<DrawerProps> = ({
         };
     }, [expandedOrgId, fetchOrgDetails]);
 
-
-    useEffect(() => {
-        if (activeJobId) {
-            try {
-                const jobStr = typeof window !== 'undefined' ? window.localStorage.getItem('active-discovery-job') : null;
-                if (jobStr) {
-                    const parsed = JSON.parse(jobStr);
-                    setScanningOrgId(parsed.orgId);
+    // Helpers para checar jobs ativos no localStorage
+    const getDiscoveryJobOrgId = (): number | null => {
+        if (typeof window === 'undefined') return null;
+        try {
+            for (let _i = 0; _i < window.localStorage.length; _i++) {
+                const key = window.localStorage.key(_i);
+                if (key && key.startsWith('active-discovery-job-')) {
+                    const jobStr = window.localStorage.getItem(key);
+                    if (jobStr) {
+                        const parsed = JSON.parse(jobStr);
+                        if (parsed && parsed.orgId) return Number(parsed.orgId);
+                    }
                 }
-            } catch {
-                setScanningOrgId(null);
             }
-        } else if (scan.isScanning && scan.scanOrgId) {
-            setScanningOrgId(scan.scanOrgId);
-        } else {
-            setScanningOrgId(null);
-        }
-    }, [activeJobId, scan.isScanning, scan.scanOrgId]);
+        } catch {}
+        return null;
+    };
+
+    const getLinkedinScanOrgId = (): number | null => {
+        try {
+            const scanStr = typeof window !== 'undefined' ? window.localStorage.getItem('active-linkedin-scan') : null;
+            if (scanStr) {
+                const parsed = JSON.parse(scanStr);
+                if (parsed && parsed.orgId) return Number(parsed.orgId);
+            }
+        } catch {}
+        return null;
+    };
+
+    // Mantém scanningOrgId baseado no localStorage (não no currentOrgId reativo do Zustand)
+    // para que o indicador persista mesmo após sair da empresa
+    useEffect(() => {
+        const computeScanningId = (): number | null => {
+            // Scan LinkedIn em andamento (in-memory hook)
+            if (scan.isScanning && scan.scanOrgId) return scan.scanOrgId;
+            // LinkedIn scan persistido (detecta reload)
+            const linkedinOrgId = getLinkedinScanOrgId();
+            if (linkedinOrgId) return linkedinOrgId;
+            // Discovery job (IA) ativo no localStorage
+            return getDiscoveryJobOrgId();
+        };
+
+        const updateScanningId = () => setScanningOrgId(computeScanningId());
+
+        const handleFinished = () => {
+            // Aguarda um tick para garantir que o localStorage já foi atualizado antes de re-checar
+            setTimeout(updateScanningId, 300);
+        };
+
+        updateScanningId();
+
+        // Eventos diretos (mais rápidos que polling)
+        window.addEventListener('hierarchy_scan_started', updateScanningId);
+        window.addEventListener('hierarchy_scan_done', handleFinished);
+        window.addEventListener('hierarchy_job_finished', handleFinished);   // Discovery WS terminou
+        window.addEventListener('hierarchy_scan_cancelled', handleFinished); // Cancelado pelo usuário
+
+        // Polling de segurança a cada 5s — captura casos onde eventos não foram disparados (ex: reload)
+        const pollingInterval = setInterval(updateScanningId, 5000);
+
+        return () => {
+            window.removeEventListener('hierarchy_scan_started', updateScanningId);
+            window.removeEventListener('hierarchy_scan_done', handleFinished);
+            window.removeEventListener('hierarchy_job_finished', handleFinished);
+            window.removeEventListener('hierarchy_scan_cancelled', handleFinished);
+            clearInterval(pollingInterval);
+        };
+    }, [scan.isScanning, scan.scanOrgId]);
 
     const toggleExpand = (e: React.MouseEvent, orgId: number) => {
         e.stopPropagation();

@@ -47,11 +47,15 @@ class EmailClient:
     Cliente de email que utiliza integração direta com o Outlook (via pywin32) no Windows,
     ou SMTP/IMAP tradicional como fallback ou em outros sistemas.
     """
-    
+
     SMTP_SERVER = "smtp.office365.com"
     SMTP_PORT = 587
     IMAP_SERVER = "outlook.office365.com"
     IMAP_PORT = 993
+
+    # Servidores Office 365 que não aceitam mais autenticação básica (removida out/2022)
+    _MODERN_AUTH_SERVERS = {"outlook.office365.com", "outlook.office.com"}
+    _imap_legacy_warned: bool = False  # emite aviso apenas uma vez por processo
     
     def __init__(self, email_address=None, password=None, use_outlook_app=True):
         from core.config import settings
@@ -349,6 +353,21 @@ class EmailClient:
         else:
             # Fallback IMAP (exige senha)
             if not self.password:
+                return []
+            # Office 365 removeu autenticação básica do IMAP em out/2022.
+            # Tentativas retornam "AUTHENTICATE failed" — aborta antes de conectar.
+            from core.config import settings
+            is_modern_auth_server = self.IMAP_SERVER in self._MODERN_AUTH_SERVERS
+            if is_modern_auth_server and not getattr(settings.email, "imap_legacy_auth", False):
+                if not EmailClient._imap_legacy_warned:
+                    log.warning(
+                        "email.imap.skipped.modern_auth_required",
+                        server=self.IMAP_SERVER,
+                        hint="Office 365 não aceita mais Basic Auth para IMAP. "
+                             "Configure EMAIL_SCAN_IMAP_LEGACY_AUTH=true se o tenant ainda tiver legacy auth, "
+                             "ou implemente OAuth2/Graph API.",
+                    )
+                    EmailClient._imap_legacy_warned = True
                 return []
             try:
                 mail = imaplib.IMAP4_SSL(self.IMAP_SERVER)

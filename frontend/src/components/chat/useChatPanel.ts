@@ -4,7 +4,7 @@ import { ai, conversations } from '@/services/api';
 import { useChatStore } from '@/store/chatStore';
 import { Message, CompanyResult } from './ChatInterfaces';
 import { AIModel } from './ModelSelector';
-import { AgentEvent, TaskStatus, MappedContact } from './AgentV2Message';
+import { AgentEvent, TaskStatus, MappedContact, classifyFailure } from './AgentV2Message';
 import { ModelActivityEvent } from './ModelActivityBar';
 import type { ThreadOut } from '@/services/api/conversations';
 
@@ -28,6 +28,7 @@ export const useChatPanel = ({
     selectedOrgName = 'Organização',
     selectedOrgLogo,
     prospectingContext,
+    isOrgLoading,
 }: UseChatPanelProps) => {
     const {
         isListening,
@@ -138,6 +139,10 @@ export const useChatPanel = ({
     const modelActivityIdRef = useRef(0);
     const [pipedriveCooldown, setPipedriveCooldown] = useState<number>(0);
     const abortControllersRef = useRef<Record<string, AbortController>>({});
+    // True quando o último abort do stream de tarefa ('global_task') foi um cancelamento
+    // explícito do usuário (botão de stop), e não uma falha de rede/tool — consultado pelos
+    // handlers de streamTaskInto para reportar status 'cancelled' em vez de 'error'.
+    const userCancelledTaskRef = useRef(false);
     // Guarda o threadId que está atualmente em streaming (para restaurar loading ao voltar)
     const streamingThreadIdRef = useRef<string | null>(null);
     const activeThreadIdRef = useRef<string | null>(null);
@@ -153,9 +158,6 @@ export const useChatPanel = ({
                     content: hasValidOrg ? `Como posso te ajudar com a @${cleanOrgName}?` : "Como posso te ajudar hoje?",
                     timestamp: new Date(),
                 }]);
-                if (activeOrgId && !prospectingContext) {
-                    store.setInputValue(activeOrgId, threadId, "Gerar plano de prospecção para esta empresa");
-                }
             } else {
                 let hasActiveJobLoading = false;
                 let hasAwaitingConfirmation = false;
@@ -180,7 +182,7 @@ export const useChatPanel = ({
                             if (run.status) {
                                 initialSuggestedActions[`${m.id}-${idx}`] = run.status as TaskStatus;
                                 
-                                if (run.status !== 'done' && run.status !== 'error') {
+                                if (run.status === 'streaming' || run.status === 'awaiting_confirm' || run.status === 'awaiting_mapping') {
                                     let label = 'Tarefa em andamento';
                                     let prompt = '';
                                     if (m.logs && Array.isArray(m.logs)) {
@@ -249,18 +251,10 @@ export const useChatPanel = ({
                     if (isAgent && m.logs && Array.isArray(m.logs)) {
                         const hasMapping = m.logs.some((l: any) => l.type === 'hierarchy_mapping_required');
                         if (hasMapping && typeof window !== 'undefined') {
-                            const activeJob = window.localStorage.getItem('active-discovery-job');
+                            const activeJob = window.localStorage.getItem(`active-discovery-job-${selectedOrgId}`);
                             if (activeJob) {
-                                try {
-                                    const jobData = JSON.parse(activeJob);
-                                    if (jobData && Number(jobData.orgId) === Number(selectedOrgId)) {
-                                        forceAgentStreaming = true;
-                                        hasActiveJobLoading = true;
-                                    }
-                                } catch {
-                                    forceAgentStreaming = true;
-                                    hasActiveJobLoading = true;
-                                }
+                                forceAgentStreaming = true;
+                                hasActiveJobLoading = true;
                             }
                         }
 
@@ -387,6 +381,19 @@ export const useChatPanel = ({
 
     const activeThreadId = activeThread?.id;
 
+    // Auto-preenche o input após o carregamento se a empresa não tiver plano
+    useEffect(() => {
+        if (!isOrgLoading && activeOrgId && !prospectingContext && activeThreadId) {
+            const currentSession = store.getSession(activeOrgId, activeThreadId);
+            const msgs = currentSession.messages;
+            if (msgs.length === 0 || (msgs.length === 1 && msgs[0].id === 'welcome')) {
+                if (currentSession.inputValue === '') {
+                    store.setInputValue(activeOrgId, activeThreadId, "Gerar plano de prospecção para esta empresa");
+                }
+            }
+        }
+    }, [isOrgLoading, activeOrgId, prospectingContext, activeThreadId, store]);
+
     useEffect(() => {
         activeThreadIdRef.current = activeThread?.id || null;
     }, [activeThread]);
@@ -468,9 +475,20 @@ export const useChatPanel = ({
         if (tId === streamingThreadIdRef.current) {
             streamingThreadIdRef.current = null;
         }
+        // O console de tarefa roda em um stream próprio ('global_task'), separado do
+        // stream principal do chat. Sem isto, o botão de stop só zerava o isLoading
+        // compartilhado — a tarefa continuava rodando em segundo plano e, ao terminar,
+        // sobrescrevia este status com o que o classifyFailure concluísse (ex: 'error'
+        // se uma tool tivesse falhado antes de se recuperar), em vez de 'cancelled'.
+        if (abortControllersRef.current['global_task']) {
+            userCancelledTaskRef.current = true;
+            abortControllersRef.current['global_task'].abort();
+            setActiveRunningTask((prev: any) => prev ? { ...prev, status: 'cancelled' } : prev);
+        } else {
+            setActiveRunningTask((prev: any) => prev?.status === 'streaming' ? { ...prev, status: 'done' } : prev);
+        }
         setIsLoading(false);
         setAgentStreaming(false);
-        setActiveRunningTask((prev: any) => prev?.status === 'streaming' ? { ...prev, status: 'done' } : prev);
         setLiveModel(null);
         setModelActivity([]);
     }, [setIsLoading, setAgentStreaming, setActiveRunningTask, setLiveModel, setModelActivity]);
@@ -480,7 +498,7 @@ export const useChatPanel = ({
             const { parentMessageId, actionIndex } = activeRunningTask;
             let actualParentId = parentMessageId;
             if (actualParentId && /^\d+$/.test(actualParentId)) {
-                const realMsg = messagesRef.current.find(m => 
+                const realMsg = messagesRef.current.find(m =>
                     m.logs?.some((e: any) => e.type === 'suggested_actions' && e.actions?.[actionIndex])
                 );
                 if (realMsg) actualParentId = realMsg.id;
@@ -491,30 +509,46 @@ export const useChatPanel = ({
                 setApprovedSuggestedActions((prev: any) => {
                     const currentStatus = prev[taskKey];
                     if (currentStatus === 'done' || currentStatus === 'error') return prev;
-                    
-                    conversations.updateSuggestedActionStatus(actualParentId, actionIndex, 'pending').catch(err => {
+
+                    conversations.updateSuggestedActionStatus(actualParentId, actionIndex, 'cancelled').catch(err => {
                         console.error('Failed to persist task cancellation', err);
                     });
-                    
-                    return { ...prev, [taskKey]: 'pending' };
+
+                    return { ...prev, [taskKey]: 'cancelled' };
                 });
             }
+            // Marca o abort ANTES de chamar .abort() — o handler do streamTaskInto em
+            // andamento consulta essa flag para saber que foi um cancelamento intencional
+            // do usuário e não sobrescrever este status com o que vier de classifyFailure.
+            userCancelledTaskRef.current = true;
             if (abortControllersRef.current['global_task']) {
                 abortControllersRef.current['global_task'].abort();
             }
-            setActiveRunningTask(null);
+            // Mostra "cancelada" por um instante em vez de simplesmente desaparecer,
+            // dando ao usuário a confirmação de que a tarefa parou (e não terminou em erro).
+            setActiveRunningTask((prev: any) => prev ? { ...prev, status: 'cancelled' } : null);
+            setIsLoading(false);
+            setAgentStreaming(false);
+            const cancelledIdx = actionIndex;
+            setTimeout(() => {
+                setActiveRunningTask((prev: any) => {
+                    if (prev && prev.actionIndex === cancelledIdx && prev.status === 'cancelled') return null;
+                    return prev;
+                });
+            }, 1500);
         }
     };
 
     const streamTaskInto = async (url: string, body: object, initialTaskState: typeof activeRunningTask) => {
         const collected: AgentEvent[] = [];
-        
+
         const tId = 'global_task';
         if (abortControllersRef.current[tId]) {
             abortControllersRef.current[tId].abort();
         }
         const controller = new AbortController();
         abortControllersRef.current[tId] = controller;
+        userCancelledTaskRef.current = false;
 
         try {
             const response = await fetch(url, {
@@ -662,17 +696,23 @@ export const useChatPanel = ({
             const hierarchyEv = collected.find(e => e.type === 'hierarchy_mapping_required');
             const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
             const ligacaoEv = collected.find(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
-            const hasError = collected.length === 0 || collected.some(e => e.type === 'error' || (e.type === 'tool_result' && e.ok === false));
-            
+            const wasCancelled = userCancelledTaskRef.current;
+            const failure = classifyFailure(collected);
+
             let finalStatus: TaskStatus = 'done';
-            if (hierarchyEv) {
+            if (wasCancelled) {
+                // Stream foi interrompido pelo usuário (botão de stop) — não pelo
+                // classifyFailure, que analisaria um stream truncado e provavelmente
+                // reportaria 'error' por falta de uma conclusão real.
+                finalStatus = 'cancelled';
+            } else if (hierarchyEv) {
                 finalStatus = 'awaiting_mapping';
             } else if (pendingConfirm) {
                 finalStatus = 'awaiting_confirm';
             } else if (ligacaoEv) {
                 finalStatus = 'streaming';
-            } else if (hasError) {
-                finalStatus = 'pending';
+            } else if (failure) {
+                finalStatus = failure;
             }
 
             setActiveRunningTask((prev: any) => prev ? { ...prev, status: finalStatus } : null);
@@ -737,6 +777,54 @@ export const useChatPanel = ({
             setIsLoading(false);
             setAgentStreaming(false);
         }
+    };
+
+    /** Recupera os logs persistidos de uma execução anterior de uma suggested action. */
+    const getPersistedTaskLogs = (actualParentId: string | undefined, index: number): AgentEvent[] => {
+        if (!actualParentId) return [];
+        const msg = messagesRef.current.find(m => m.id === actualParentId);
+        const run = msg?.data?.suggested_actions_runs?.[index];
+        if (!run?.logs) return [];
+        if (typeof run.logs === 'string') {
+            try {
+                const parsed = JSON.parse(run.logs);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+        return Array.isArray(run.logs) ? run.logs : [];
+    };
+
+    /**
+     * Refaz uma tarefa que falhou, informando ao agente o erro da tentativa anterior
+     * para que ele use a própria inteligência e as ferramentas disponíveis para tentar
+     * resolver a causa (em vez de simplesmente repetir a mesma chamada que já falhou).
+     */
+    const handleRetrySuggestedAction = async (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => {
+        let actualParentId = parentMessageId;
+        if (actualParentId && /^\d+$/.test(actualParentId)) {
+            const realMsg = messagesRef.current.find(m =>
+                m.logs?.some((e: any) => e.type === 'suggested_actions' && e.actions?.[index]?.label === action.label)
+            );
+            if (realMsg) actualParentId = realMsg.id;
+        }
+
+        const lastLogs = getPersistedTaskLogs(actualParentId, index);
+        const errorEvent: any = [...lastLogs].reverse().find(
+            (e: any) => e.type === 'error' || (e.type === 'tool_result' && e.ok === false && !e.cancelled)
+        );
+        const lastErrorMsg = errorEvent?.content || errorEvent?.summary || errorEvent?.data?.error || 'motivo não registrado nos logs';
+
+        const retryPrompt = (
+            `${action.prompt}\n\n` +
+            `CONTEXTO DE FALHA ANTERIOR: a última tentativa desta ação falhou com o erro: "${lastErrorMsg}". ` +
+            `Investigue a causa provável (parâmetros incorretos, dados faltantes, IDs desatualizados, registro já existente, etc.) ` +
+            `e tente resolver usando as ferramentas disponíveis antes de repetir a mesma chamada que falhou. ` +
+            `Se não for possível corrigir, explique objetivamente o motivo em vez de tentar de novo às cegas.`
+        );
+
+        await handleApproveSuggestedAction({ label: action.label, prompt: retryPrompt }, index, parentMessageId);
     };
 
     const handleOpenTaskConsole = (action: any, index: number, parentMessageId?: string) => {
@@ -827,11 +915,17 @@ export const useChatPanel = ({
             
             const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
             const ligacaoEv = collected.find(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
+            const wasCancelled = userCancelledTaskRef.current;
+            const failure = classifyFailure(collected);
             let finalStatus: TaskStatus = 'done';
-            if (pendingConfirm) {
+            if (wasCancelled) {
+                finalStatus = 'cancelled';
+            } else if (pendingConfirm) {
                 finalStatus = 'awaiting_confirm';
             } else if (ligacaoEv) {
                 finalStatus = 'streaming';
+            } else if (failure) {
+                finalStatus = failure;
             }
 
             setActiveRunningTask((prev: any) => prev ? { ...prev, status: finalStatus } : null);
@@ -941,9 +1035,15 @@ export const useChatPanel = ({
             }, activeRunningTask);
 
             const pendingConfirm = newEvents.find(e => e.type === 'confirmation_required' && e.action_id);
+            const wasCancelled = userCancelledTaskRef.current;
+            const failure = classifyFailure(newEvents);
             let finalStatus: TaskStatus = 'done';
-            if (pendingConfirm) {
+            if (wasCancelled) {
+                finalStatus = 'cancelled';
+            } else if (pendingConfirm) {
                 finalStatus = 'awaiting_confirm';
+            } else if (failure) {
+                finalStatus = failure;
             }
             setActiveRunningTask((prev: any) => prev ? { ...prev, status: finalStatus } : null);
             if (activeRunningTask.parentMessageId) {
@@ -1614,18 +1714,13 @@ export const useChatPanel = ({
 
     useEffect(() => {
         const pending = localStorage.getItem('pending-hierarchy-continuation');
-        const activeJob = localStorage.getItem('active-discovery-job');
+        const activeJob = localStorage.getItem(`active-discovery-job-${activeOrgId}`);
         if (!pending || !activeJob) return;
 
         try {
             const jobData = JSON.parse(activeJob);
-            if (jobData) {
-                if (Number(jobData.orgId) !== Number(activeOrgId)) {
-                    return;
-                }
-                if (jobData.chatPrompted === false) {
-                    return;
-                }
+            if (jobData && jobData.chatPrompted === false) {
+                return;
             }
         } catch {}
 
@@ -1793,6 +1888,7 @@ ${transcriptText}
         handleStopStreaming,
         handleCancelActiveTask,
         handleApproveSuggestedAction,
+        handleRetrySuggestedAction,
         handleOpenTaskConsole,
         handleTaskInlineConfirm,
         handleTaskMappingComplete,

@@ -28,9 +28,9 @@
       "remaining": 999,
       "pct": 99.9,
       "tokens_limit": 30000,
-      "tokens_remaining": 29983,
-      "tokens_pct": 99.9,
-      "updated_at": 1782228277.2328982,
+      "tokens_remaining": 29792,
+      "tokens_pct": 99.3,
+      "updated_at": 1782412304.49047,
       "status": "healthy"
     },
     "qwen/qwen3-32b": {
@@ -41,7 +41,7 @@
       "tokens_limit": 6000,
       "tokens_remaining": 5990,
       "tokens_pct": 99.8,
-      "updated_at": 1781878093.7437305,
+      "updated_at": 1782392537.3553774,
       "status": "healthy"
     }
   },
@@ -76,7 +76,7 @@
       "tokens_limit": 0,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
-      "updated_at": 1782228283.6789148,
+      "updated_at": 1782412311.462758,
       "status": "no_credits"
     },
     "Llama-4-Scout-17B-16E-Instruct": {
@@ -84,7 +84,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1782228283.167756,
+      "updated_at": 1782412311.0628085,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -96,7 +96,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1782228279.8169267,
+      "updated_at": 1782412306.8400824,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -106,7 +106,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1782228280.0657551,
+      "updated_at": 1782412307.0668073,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -118,7 +118,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1782228287.2439857,
+      "updated_at": 1782412314.3390126,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"

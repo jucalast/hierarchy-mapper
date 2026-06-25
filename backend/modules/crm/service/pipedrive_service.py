@@ -1569,6 +1569,8 @@ class PipedriveService:
                     icp_info["product_focus"] = org.product_focus
                     icp_info["temperature"] = org.temperature
                     icp_info["prospecting_context"] = org.prospecting_context
+                    if org.photo_url:
+                        icp_info["photo_url"] = org.photo_url
                     if org.logo_url:
                         icp_info["logo_url"] = org.logo_url
                         icp_info["logo"] = org.logo_url

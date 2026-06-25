@@ -461,9 +461,9 @@
 }
 
 .detailsPane {
-    margin-top: 12px;
+
     border-top: var(--sw-border-width) solid var(--sw-border);
-    padding: 24px 24px 0 24px;
+    padding: 2px 24px 0 24px;
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
@@ -859,7 +859,65 @@
     gap: 20px;
     padding: 24px 20px;
     background: transparent;
+    position: relative;
+}
 
+.focusedOrgHeroWithPhoto {
+    background-size: cover;
+    background-position: center;
+    min-height: 200px;
+    animation: heroPhotoFadeIn 0.35s ease;
+    align-items: flex-end;
+    padding-top: 0;
+    padding-bottom: 16px;
+}
+
+@keyframes heroPhotoFadeIn {
+    from {
+        opacity: 0.4;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.focusedOrgHeroWithPhoto .focusedOrgName {
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.focusedOrgHeroWithPhoto .focusedOrgAddress,
+.focusedOrgHeroWithPhoto .focusedOrgOwner {
+    color: rgba(255, 255, 255, 0.82);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme='light'] .focusedOrgHeroWithPhoto .focusedOrgName {
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+[data-theme='light'] .focusedOrgHeroWithPhoto .focusedOrgAddress,
+[data-theme='light'] .focusedOrgHeroWithPhoto .focusedOrgOwner {
+    color: rgba(255, 255, 255, 0.82);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.focusedOrgHeroOverlay {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(to top, var(--sw-sidebar) 0%, color-mix(in srgb, var(--sw-sidebar) 70%, transparent) 55%, color-mix(in srgb, var(--sw-sidebar) 20%, transparent) 80%, transparent 100%),
+        linear-gradient(to right, color-mix(in srgb, var(--sw-sidebar) 80%, transparent) 0%, color-mix(in srgb, var(--sw-sidebar) 30%, transparent) 50%, transparent 75%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+[data-theme='light'] .focusedOrgHeroOverlay {
+    background:
+        linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.1) 45%, transparent 100%),
+        linear-gradient(to right, rgba(0, 0, 0, 0.3) 0%, transparent 55%);
 }
 
 .focusedOrgLogoWrapper {
@@ -922,7 +980,7 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
+
 }
 
 .focusedOrgAddress {

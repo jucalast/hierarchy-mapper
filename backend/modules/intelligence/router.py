@@ -128,7 +128,7 @@ async def confirm_enrich_data(payload: ConfirmEnrichRequest):
                     # Se houver outra organização com o mesmo CNPJ, mesclamos a atual nela
                     if org:
                         if org.id and org.id != duplicate_cnpj_org.id:
-                            from models import Employee, ConversationThread, ActivityLog, CallSession, AutomatedAction
+                            from models import ConversationThread, ActivityLog, CallSession, AutomatedAction
                             from sqlalchemy import update
 
                             # Migra relacionamentos

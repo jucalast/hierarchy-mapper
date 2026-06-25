@@ -11,8 +11,10 @@ from typing import List, Optional
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from core.observability.logging_config import get_logger
 
 router = APIRouter()
+log = get_logger(__name__)
 
 
 class AgentChatRequest(BaseModel):
@@ -147,9 +149,11 @@ async def agent_chat(payload: AgentChatRequest):
                 try:
                     from arq.jobs import Job
                     job = Job(job_id, redis)
-                    await job.abort()
-                except Exception:
-                    pass
+                    aborted = await job.abort()
+                    if not aborted:
+                        log.warning("agent.stream.abort_uncertain", job_id=job_id)
+                except Exception as abort_err:
+                    log.warning("agent.stream.abort_failed", job_id=job_id, error=str(abort_err))
 
     return StreamingResponse(streamer(), media_type="application/x-ndjson")
 
@@ -207,9 +211,11 @@ async def agent_confirm(payload: AgentConfirmRequest):
                 try:
                     from arq.jobs import Job
                     job = Job(job_id, redis)
-                    await job.abort()
-                except Exception:
-                    pass
+                    aborted = await job.abort()
+                    if not aborted:
+                        log.warning("agent.stream.abort_uncertain", job_id=job_id)
+                except Exception as abort_err:
+                    log.warning("agent.stream.abort_failed", job_id=job_id, error=str(abort_err))
 
     return StreamingResponse(streamer(), media_type="application/x-ndjson")
 

@@ -3,6 +3,10 @@ import { getJobWebSocketUrl } from './api/jobs';
 import { Edge } from 'reactflow';
 import { hierarchy as hierarchyApi } from './api';
 
+const DIACRITICS_RE = new RegExp('[\\u0300-\\u036f]', 'g');
+const normalizeName = (name?: string) =>
+  name ? name.normalize('NFD').replace(DIACRITICS_RE, '').toLowerCase().trim() : '';
+
 export interface JobConnectionConfig {
   jobId: string;
   orgId: number;
@@ -13,12 +17,24 @@ export interface JobConnectionConfig {
   chatPrompted?: boolean;
 }
 
+// Lotes de candidatos passam por LLM (role_engine) + validação de e-mail/SMTP + Pipedrive,
+// e podem ficar minutos sem publicar nada caso o provider de LLM esteja em throttling/fallback
+// (ver core/llm/quota_manager.py). Um timeout curto aqui derrubaria a conexão enquanto o job
+// AINDA está rodando no backend e continuando a persistir gente aprovada no banco.
+const JOB_IDLE_TIMEOUT_MS = 20 * 60 * 1000;
+const MAX_RECONNECT_ATTEMPTS = 6;
+
 class ConnectionManager {
   private connections: Record<string, WebSocket> = {};
   private timeouts: Record<string, NodeJS.Timeout> = {};
+  // true quando o fechamento foi decidido por nós (done/error/timeout/cancelamento) —
+  // usado pelo onclose para distinguir de uma queda inesperada (rede, hot-reload do
+  // backend em dev) que deve tentar reconectar em vez de abandonar o job.
+  private intentionalClose: Record<string, boolean> = {};
+  private reconnectAttempts: Record<string, number> = {};
 
   public connectToJob(config: JobConnectionConfig, initialEmployees?: any[]) {
-    const { jobId, orgId, brand, logo, domain, partners, chatPrompted } = config;
+    const { jobId, orgId, brand, logo, domain, partners } = config;
 
     // Se já estiver conectado a este job, ignora
     if (this.connections[jobId]) {
@@ -27,7 +43,7 @@ class ConnectionManager {
     }
 
     console.log(`[ConnectionManager] Estabelecendo conexão para job=${jobId}, orgId=${orgId}`);
-    
+
     // Inicializa o estado na store se vazio
     const store = useChatStore.getState();
     let currentEmployees = initialEmployees && initialEmployees.length > 0
@@ -78,23 +94,38 @@ class ConnectionManager {
     });
     store.setRawBackendEdges(orgId, initialEdges);
 
-    // Cria o WebSocket
+    this.reconnectAttempts[jobId] = 0;
+    this.openSocket(config);
+  }
+
+  // Abre (ou reabre, numa reconexão) o WebSocket de um job já inicializado na store.
+  // Não toca no baseline de funcionários — isso só acontece uma vez, em connectToJob.
+  private openSocket(config: JobConnectionConfig) {
+    const { jobId, orgId, brand, chatPrompted } = config;
+
     const wsUrl = getJobWebSocketUrl(jobId);
     const ws = new WebSocket(wsUrl);
     this.connections[jobId] = ws;
+    this.intentionalClose[jobId] = false;
 
     const resetTimeout = () => {
       if (this.timeouts[jobId]) clearTimeout(this.timeouts[jobId]);
       this.timeouts[jobId] = setTimeout(() => {
         console.log(`[ConnectionManager] ⏱️ Timeout: Nenhuma mensagem para o job ${jobId}`);
         this.closeAndCleanup(jobId, orgId, chatPrompted, brand);
-      }, 5 * 60 * 1000);
+      }, JOB_IDLE_TIMEOUT_MS);
     };
 
     resetTimeout();
 
     ws.onmessage = (event) => {
       resetTimeout();
+      this.reconnectAttempts[jobId] = 0; // qualquer mensagem confirma que a conexão está saudável
+      // Tem que buscar o estado FRESCO a cada mensagem — uma referência capturada uma única vez
+      // na abertura do socket fica congelada, e a próxima mensagem mescla a partir de um
+      // baseline desatualizado, sobrescrevendo (e perdendo) o que a mensagem anterior já tinha
+      // adicionado. Era exatamente isso que fazia funcionários "somerem" no meio do scan.
+      const store = useChatStore.getState();
       try {
         const data = JSON.parse(event.data);
         
@@ -113,7 +144,7 @@ class ConnectionManager {
               orgId,
               brand,
               chatPrompted,
-              contacts: store.mappings[orgId]?.rawEmployees || currentEmployees
+              contacts: store.mappings[orgId]?.rawEmployees || []
             }
           }));
 
@@ -123,8 +154,14 @@ class ConnectionManager {
 
         if (data.type === 'clear_nodes') {
           console.log(`[ConnectionManager] Comando de limpeza para orgId=${orgId}`);
-          
-          const currentNodes = store.mappings[orgId]?.rawEmployees || currentEmployees;
+
+          // Tem que ser tão (ou mais) conservador quanto o que QUALQUER um dos dois fluxos
+          // de scan preserva no banco ao limpar (b2b_scanner.py e linkedin_scraper.py têm
+          // regras levemente diferentes, e o front não sabe qual dos dois disparou esta
+          // mensagem). Descartar demais aqui faz funcionários reais — ainda intactos no
+          // banco — desaparecerem da tela até a próxima descoberta/reload.
+          const PENDING_ROLES = new Set(['Não Identificado', 'Erro no Processamento', 'Professional']);
+          const currentNodes = store.mappings[orgId]?.rawEmployees || [];
           const keepers = currentNodes.filter(emp => {
             const isRoot = emp.id === 'root_company' || emp.level === 0;
             const isPartner = emp.level === 6 || String(emp.id).startsWith('partner_');
@@ -134,9 +171,9 @@ class ConnectionManager {
               emp.department.includes('Societário') ||
               emp.department.includes('Conselho')
             );
-            return isRoot || isPartner || isPartnerDept;
+            return isRoot || isPartner || isPartnerDept || !PENDING_ROLES.has(emp.role);
           });
-          
+
           store.setRawEmployees(orgId, keepers);
           
           const newEdges: Edge[] = [];
@@ -157,14 +194,14 @@ class ConnectionManager {
 
         if (data.type === 'batch' || data.type === 'initial') {
           const incomingNodes = (data.nodes || []) as any[];
-          const currentNodes = [...(store.mappings[orgId]?.rawEmployees || currentEmployees)];
-          const currentEdges = [...(store.mappings[orgId]?.rawBackendEdges || initialEdges)];
+          const currentNodes = [...(store.mappings[orgId]?.rawEmployees || [])];
+          const currentEdges = [...(store.mappings[orgId]?.rawBackendEdges || [])];
 
           incomingNodes.forEach(emp => {
-            const idx = currentNodes.findIndex(n => 
-              String(n.id) === String(emp.id) || 
+            const idx = currentNodes.findIndex(n =>
+              String(n.id) === String(emp.id) ||
               (n.linkedin && emp.linkedin && n.linkedin === emp.linkedin) ||
-              (n.name === emp.name && n.role === emp.role)
+              (normalizeName(n.name) === normalizeName(emp.name) && n.role === emp.role)
             );
             
             if (idx > -1) {
@@ -229,10 +266,10 @@ class ConnectionManager {
 
           // Atualiza as arestas
           incomingNodes.forEach(emp => {
-            const myNode = currentNodes.find(n => 
-              String(n.id) === String(emp.id) || 
+            const myNode = currentNodes.find(n =>
+              String(n.id) === String(emp.id) ||
               (n.linkedin && emp.linkedin && n.linkedin === emp.linkedin) ||
-              (n.name === emp.name && n.role === emp.role)
+              (normalizeName(n.name) === normalizeName(emp.name) && n.role === emp.role)
             ) || emp;
 
             if (myNode.manager_id && myNode.id !== "root_company") {
@@ -257,17 +294,90 @@ class ConnectionManager {
     };
 
     ws.onerror = () => {
-      store.setMappingError(orgId, "Erro na conexão WebSocket com o Worker.");
-      this.closeAndCleanup(jobId, orgId, chatPrompted, brand);
+      // O onclose dispara imediatamente depois e decide se reconecta — aqui só logamos.
+      console.warn(`[ConnectionManager] Erro de conexão WS para job ${jobId}.`);
     };
 
     ws.onclose = () => {
       console.log(`[ConnectionManager] Conexão encerrada para job=${jobId}`);
-      this.closeAndCleanup(jobId, orgId, chatPrompted, brand);
+      delete this.connections[jobId];
+
+      if (this.intentionalClose[jobId]) {
+        // closeAndCleanup já tratou tudo (done/error/timeout/cancelamento manual)
+        delete this.intentionalClose[jobId];
+        return;
+      }
+
+      // Queda inesperada (rede, hot-reload do backend em dev/uvicorn --reload, etc).
+      // O job ARQ é um processo separado do servidor web e pode continuar rodando e
+      // persistindo gente aprovada no banco — abandonar o tracking aqui faria essas
+      // pessoas só aparecerem num refresh manual da página. Tenta reconectar antes de desistir.
+      const attempts = (this.reconnectAttempts[jobId] || 0) + 1;
+      this.reconnectAttempts[jobId] = attempts;
+
+      if (attempts > MAX_RECONNECT_ATTEMPTS) {
+        console.warn(`[ConnectionManager] Job ${jobId}: limite de tentativas de reconexão atingido.`);
+        useChatStore.getState().setMappingError(orgId, "Conexão com o mapeamento foi perdida. Recarregue a página para ver o progresso mais recente.");
+        this.closeAndCleanup(jobId, orgId, chatPrompted, brand);
+        return;
+      }
+
+      const delay = Math.min(2000 * attempts, 10000);
+      console.log(`[ConnectionManager] Tentando reconectar ao job ${jobId} em ${delay}ms (tentativa ${attempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+      setTimeout(() => {
+        if (this.connections[jobId]) return; // já reconectado por outro caminho
+        // Enquanto ficamos desconectados, o worker pode ter publicado e persistido
+        // candidatos aprovados que ninguém ouviu (Redis pub/sub não tem replay).
+        // Busca o estado atual no banco antes de reabrir o socket, pra não perder essa gente.
+        this.reconcileFromDatabase(orgId).finally(() => this.openSocket(config));
+      }, delay);
     };
   }
 
+  // Recupera nós que foram persistidos no banco enquanto o WebSocket estava caído
+  // (ex: hot-reload do backend em dev) e que por isso nunca chegaram via streaming.
+  private async reconcileFromDatabase(orgId: number) {
+    try {
+      const data = await hierarchyApi.loadHierarchyByPipedrive(orgId);
+      if (!data?.nodes?.length) return;
+
+      const store = useChatStore.getState();
+      const currentNodes = [...(store.mappings[orgId]?.rawEmployees || [])];
+      const currentEdges = [...(store.mappings[orgId]?.rawBackendEdges || [])];
+      let added = false;
+
+      data.nodes.forEach((dbNode: any) => {
+        const exists = currentNodes.some(n =>
+          String(n.id) === String(dbNode.id) ||
+          (n.linkedin && dbNode.linkedin && n.linkedin === dbNode.linkedin) ||
+          (normalizeName(n.name) === normalizeName(dbNode.name) && n.role === dbNode.role)
+        );
+        if (!exists) {
+          currentNodes.push(dbNode);
+          added = true;
+          if (dbNode.manager_id && dbNode.id !== "root_company") {
+            currentEdges.push({
+              id: `e-${dbNode.manager_id}-${dbNode.id}`,
+              source: dbNode.manager_id,
+              target: dbNode.id,
+              animated: false
+            });
+          }
+        }
+      });
+
+      if (added) {
+        console.log(`[ConnectionManager] Recuperados nós do banco que não chegaram via WS (orgId=${orgId}).`);
+        store.setRawEmployees(orgId, currentNodes);
+        store.setRawBackendEdges(orgId, currentEdges);
+      }
+    } catch (e) {
+      console.warn('[ConnectionManager] Falha ao reconciliar com o banco após reconexão:', e);
+    }
+  }
+
   public disconnectFromJob(jobId: string) {
+    this.intentionalClose[jobId] = true;
     const ws = this.connections[jobId];
     if (ws) {
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
@@ -283,21 +393,16 @@ class ConnectionManager {
 
   private closeAndCleanup(jobId: string, orgId: number, chatPrompted?: boolean, brand?: string) {
     this.disconnectFromJob(jobId);
-    
+    delete this.reconnectAttempts[jobId];
+
     const store = useChatStore.getState();
     store.setMappingLoading(orgId, false);
     store.setActiveJobId(orgId, null);
     
-    // Remove job do local storage se for o ativo
-    const saved = localStorage.getItem('active-discovery-job');
-    if (saved) {
-      try {
-        const jobData = JSON.parse(saved);
-        if (jobData.job_id === jobId) {
-          localStorage.removeItem('active-discovery-job');
-        }
-      } catch {}
-    }
+    localStorage.removeItem(`active-discovery-job-${orgId}`);
+
+    // 🔔 Notifica o Drawer para remover o badge imediatamente
+    window.dispatchEvent(new CustomEvent('hierarchy_job_finished', { detail: { orgId, brand } }));
 
     // Aciona refinamento final de IA
     const currentNodes = store.mappings[orgId]?.rawEmployees || [];

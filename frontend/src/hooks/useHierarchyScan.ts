@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { API_V1_URL, apiPost } from '@/services/config';
+import { API_V1_URL } from '@/services/config';
+import { hierarchy as hierarchyApi, jobs as jobsApi } from '@/services/api';
+import { connectionManager } from '@/services/connectionManager';
 
 export interface ScanEmployeeProfile {
     id?: string;
@@ -18,13 +20,14 @@ export interface ScanEmployeeProfile {
 export interface UseHierarchyScanReturn {
     startScan: (
         orgId: number,
-        companyUrl: string, 
+        companyUrl: string,
         sessionCookie?: string,
         areaFocus?: string,
         productFocus?: string,
         model?: string
     ) => void;
     stopScan: () => void;
+    reconnectScan: () => Promise<boolean>;
     isScanning: boolean;
     scanOrgId: number | null;
     scanError: string | null;
@@ -51,7 +54,8 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
     const [previewTimestamp, setPreviewTimestamp] = useState(Date.now());
     const [scanResults, setScanResults] = useState<ScanEmployeeProfile[]>([]);
 
-    const eventSourceRef = useRef<EventSource | null>(null);
+    const wsRef = useRef<WebSocket | null>(null);
+    const jobIdRef = useRef<string | null>(null);
 
     const previewUrl = `${API_V1_URL}/hierarchy/linkedin-scrape/preview?t=${previewTimestamp}`;
 
@@ -59,43 +63,45 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
         setConsoleLogs((prev) => [...prev, message]);
     }, []);
 
-    const startScan = useCallback((
-        orgId: number,
-        companyUrl: string, 
-        sessionCookie?: string,
-        areaFocus?: string,
-        productFocus?: string,
-        model?: string
-    ) => {
-        setIsScanning(true);
-        setScanOrgId(orgId);
-        // ✅ Notifica o chat panel que uma varredura iniciou (independente do modo)
-        window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
-        setScanError(null);
-        setScanResults([]);
-        setScanProgress(0);
-        setConsoleLogs([
-            '[System] Inicializando HierarchyScan...',
-            '[System] Conectando ao agente SSE...',
-        ]);
+    // Mesma heurística usada pelo discovery (useHierarchy.ts) para saber se o chat
+    // agent está esperando o resultado deste mapeamento (continuação de conversa).
+    const resolveChatPrompted = (orgId: number): boolean => {
+        const pending = localStorage.getItem('pending-hierarchy-continuation');
+        if (!pending) return false;
+        try {
+            const parsed = JSON.parse(pending);
+            return !!(parsed && Number(parsed.org_id) === Number(orgId));
+        } catch {
+            return false;
+        }
+    };
 
-        let sseUrl = `${API_V1_URL}/hierarchy/linkedin-scrape/stream?company_url=${encodeURIComponent(companyUrl)}&headless=true`;
-        if (sessionCookie) {
-            sseUrl += `&session_cookie=${encodeURIComponent(sessionCookie)}`;
-        }
-        if (areaFocus) {
-            sseUrl += `&area_focus=${encodeURIComponent(areaFocus)}`;
-        }
-        if (productFocus) {
-            sseUrl += `&product_focus=${encodeURIComponent(productFocus)}`;
-        }
-        if (model) {
-            sseUrl += `&model=${encodeURIComponent(model)}`;
-        }
+    // 🌐 Conecta o grafo (Zustand rawEmployees/rawBackendEdges) ao mesmo pipeline
+    // robusto do discovery: merge/dedup, reconciliação de IDs provisórios e
+    // refinamento único pós-conclusão (evita a duplicação de refino que existia
+    // quando scan e discovery tinham lógicas de merge separadas).
+    const attachGraphConnection = useCallback(async (jobId: string, orgId: number, chatPrompted: boolean) => {
+        const { useChatStore } = await import('@/store/chatStore');
+        const existingEmployees = useChatStore.getState().mappings[orgId]?.rawEmployees || [];
+        connectionManager.connectToJob({
+            jobId,
+            orgId,
+            brand: '',
+            logo: '',
+            domain: '',
+            partners: [],
+            chatPrompted,
+        }, existingEmployees);
+    }, []);
 
-        const eventSource = new EventSource(sseUrl);
+    // O scraping roda como background job no worker ARQ — independente da conexão
+    // WS. Um reload de página só reabre o WS (via reconnectScan); não mata o scan.
+    const attachWebSocket = useCallback((jobId: string) => {
+        jobIdRef.current = jobId;
 
-        eventSource.onmessage = (event) => {
+        const ws = new WebSocket(jobsApi.getJobWebSocketUrl(jobId));
+
+        ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
 
@@ -140,11 +146,11 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
                                     evidence: n.evidence,
                                     email: n.email
                                 }));
-                                
-                                const filtered = newProfiles.filter((newP: any) => 
+
+                                const filtered = newProfiles.filter((newP: any) =>
                                     !prev.some(oldP => oldP.linkedin_url === newP.linkedin_url)
                                 );
-                                
+
                                 return [...prev, ...filtered];
                             });
                         }
@@ -161,15 +167,17 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
                     case 'done': {
                         appendLog('[System] Varredura e processamento concluídos com sucesso!');
                         setScanProgress(100);
-                        eventSource.close();
+                        ws.close();
                         setIsScanning(false);
+                        localStorage.removeItem('active-linkedin-scan');
                         break;
                     }
                     case 'error': {
                         setScanError(data.message);
                         appendLog(`[Error] ${data.message}`);
-                        eventSource.close();
+                        ws.close();
                         setIsScanning(false);
+                        localStorage.removeItem('active-linkedin-scan');
                         break;
                     }
                 }
@@ -178,33 +186,155 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
             }
         };
 
-        eventSource.onerror = () => {
-            setScanError('Erro na conexão SSE...');
-            appendLog('[Error] Erro na conexão SSE...');
-            eventSource.close();
+        ws.onerror = () => {
+            // Falha de conexão (não confundir com o job em si): o scan continua
+            // rodando no worker — não removemos o job_id, só paramos de escutar
+            // localmente. Uma reconexão futura (reconnectScan) pode retomar.
+            appendLog('[Error] Conexão com o agente perdida. O scan continua em segundo plano no servidor.');
             setIsScanning(false);
         };
 
-        eventSourceRef.current = eventSource;
+        wsRef.current = ws;
     }, [appendLog]);
+
+    const startScan = useCallback(async (
+        orgId: number,
+        companyUrl: string,
+        sessionCookie?: string,
+        areaFocus?: string,
+        productFocus?: string,
+        model?: string
+    ) => {
+        setIsScanning(true);
+        setScanOrgId(orgId);
+        // ✅ Notifica o chat panel que uma varredura iniciou (independente do modo)
+        window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
+        setScanError(null);
+        setScanResults([]);
+        setScanProgress(0);
+        setConsoleLogs([
+            '[System] Inicializando HierarchyScan...',
+            '[System] Enfileirando job de varredura...',
+        ]);
+
+        try {
+            const { job_id } = await hierarchyApi.startLinkedinScrape({
+                companyUrl,
+                sessionCookie,
+                headless: true,
+                areaFocus,
+                productFocus,
+                model,
+            });
+
+            const chatPrompted = resolveChatPrompted(orgId);
+
+            // 💾 Persiste o job_id no localStorage para sobreviver a reload de página
+            localStorage.setItem('active-linkedin-scan', JSON.stringify({
+                job_id,
+                orgId,
+                companyUrl,
+                startTime: Date.now(),
+                chatPrompted,
+            }));
+
+            appendLog('[System] Conectando ao agente...');
+            attachWebSocket(job_id);
+            void attachGraphConnection(job_id, orgId, chatPrompted);
+        } catch {
+            appendLog('[System Error] Falha ao iniciar a varredura.');
+            setScanError('Não foi possível iniciar a varredura.');
+            setIsScanning(false);
+        }
+    }, [appendLog, attachWebSocket, attachGraphConnection]);
+
+    const reconnectScan = useCallback(async (): Promise<boolean> => {
+        const raw = localStorage.getItem('active-linkedin-scan');
+        if (!raw || raw === 'NaN' || raw === 'undefined') return false;
+
+        let scanData: { job_id?: string; orgId?: number; chatPrompted?: boolean } | null = null;
+        try {
+            scanData = JSON.parse(raw);
+        } catch {
+            localStorage.removeItem('active-linkedin-scan');
+            return false;
+        }
+
+        const jobId = scanData?.job_id;
+        if (!jobId) {
+            localStorage.removeItem('active-linkedin-scan');
+            return false;
+        }
+
+        try {
+            const status = await jobsApi.getJobStatus(jobId);
+            if (status.status !== 'queued' && status.status !== 'in_progress') {
+                localStorage.removeItem('active-linkedin-scan');
+                return false;
+            }
+        } catch {
+            localStorage.removeItem('active-linkedin-scan');
+            return false;
+        }
+
+        setIsScanning(true);
+        setScanOrgId(scanData?.orgId ?? null);
+        setScanError(null);
+        setConsoleLogs((prev) => [...prev, '[System] Reconectando à varredura em andamento...']);
+        window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
+        attachWebSocket(jobId);
+        if (scanData?.orgId) {
+            void attachGraphConnection(jobId, scanData.orgId, !!scanData.chatPrompted);
+        }
+        return true;
+    }, [attachWebSocket, attachGraphConnection]);
 
     const stopScan = useCallback(async () => {
         appendLog('[System] Solicitando parada graciosa e extração dos dados coletados até o momento...');
+        const jobId = jobIdRef.current;
         try {
-            await apiPost(`${API_V1_URL}/hierarchy/linkedin-scrape/stop`, {});
+            if (!jobId) throw new Error('Nenhum job ativo');
+            await hierarchyApi.stopLinkedinScrape(jobId);
         } catch {
             appendLog('[System Error] Falha ao enviar comando de parada. Fechando conexão de forma forçada.');
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
             }
             setIsScanning(false);
         }
-    }, [appendLog]);
+
+        // 🧹 Limpa nós incompletos do Zustand — mantém apenas root + sócios
+        const orgId = scanOrgId;
+        if (orgId) {
+            const { useChatStore } = await import('@/store/chatStore');
+            const store = useChatStore.getState();
+            const currentNodes = store.mappings[orgId]?.rawEmployees || [];
+            const keepers = currentNodes.filter((emp: any) => {
+                const isRoot = emp.id === 'root_company' || emp.level === 0;
+                const isPartner = String(emp.id).startsWith('partner_') || emp.level === 6;
+                const isPartnerDept = emp.department && (
+                    emp.department.includes('QSA') ||
+                    emp.department.includes('Sócio') ||
+                    emp.department.includes('Societário') ||
+                    emp.department.includes('Conselho')
+                );
+                return isRoot || isPartner || isPartnerDept;
+            });
+            store.setRawEmployees(orgId, keepers);
+            store.setRawBackendEdges(orgId, []);
+
+            // Remove metadados do scan do localStorage
+            localStorage.removeItem('active-linkedin-scan');
+
+            // 🔔 Notifica o Drawer para remover o badge
+            window.dispatchEvent(new CustomEvent('hierarchy_scan_cancelled', { detail: { orgId } }));
+        }
+    }, [appendLog, scanOrgId]);
 
     const handleImageClick = useCallback(
         async (e: React.MouseEvent<HTMLImageElement>) => {
-            if (!isScanning) return;
+            if (!isScanning || !jobIdRef.current) return;
 
             const rect = e.currentTarget.getBoundingClientRect();
             // Calcula frações decimais (0 a 1) para total independência de resolução e proporção visual!
@@ -214,10 +344,7 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
             appendLog(`[Operator] Clique em (${Math.round(x * 100)}%, ${Math.round(y * 100)}%)`);
 
             try {
-                await apiPost(
-                    `${API_V1_URL}/hierarchy/linkedin-scrape/interact?action=click&x=${x}&y=${y}`,
-                    {}
-                );
+                await hierarchyApi.interactLinkedinScrape(jobIdRef.current, 'click', { x, y });
             } catch {
                 appendLog('[System Error] Falha ao enviar clique');
             }
@@ -227,15 +354,12 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
 
     const sendText = useCallback(
         async (text: string) => {
-            if (!text) return;
+            if (!text || !jobIdRef.current) return;
 
             appendLog(`[Operator] Digitando: ${text}`);
 
             try {
-                await apiPost(
-                    `${API_V1_URL}/hierarchy/linkedin-scrape/interact?action=type&text=${encodeURIComponent(text)}`,
-                    {}
-                );
+                await hierarchyApi.interactLinkedinScrape(jobIdRef.current, 'type', { text });
             } catch {
                 appendLog('[System Error] Falha ao enviar texto');
             }
@@ -244,36 +368,33 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
     );
 
     const pressEnter = useCallback(async () => {
+        if (!jobIdRef.current) return;
         appendLog('[Operator] Pressionando Enter');
 
         try {
-            await apiPost(
-                `${API_V1_URL}/hierarchy/linkedin-scrape/interact?action=press&key=Enter`,
-                {}
-            );
+            await hierarchyApi.interactLinkedinScrape(jobIdRef.current, 'press', { key: 'Enter' });
         } catch {
             appendLog('[System Error] Falha ao enviar tecla Enter');
         }
     }, [appendLog]);
 
     const pressBackspace = useCallback(async () => {
+        if (!jobIdRef.current) return;
         appendLog('[Operator] Pressionando Backspace');
 
         try {
-            await apiPost(
-                `${API_V1_URL}/hierarchy/linkedin-scrape/interact?action=press&key=Backspace`,
-                {}
-            );
+            await hierarchyApi.interactLinkedinScrape(jobIdRef.current, 'press', { key: 'Backspace' });
         } catch {
             appendLog('[System Error] Falha ao enviar tecla Backspace');
         }
     }, [appendLog]);
 
     const resetScan = useCallback(() => {
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-            eventSourceRef.current = null;
+        if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
         }
+        jobIdRef.current = null;
         setIsScanning(false);
         setScanOrgId(null);
         setScanError(null);
@@ -286,15 +407,22 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
 
     useEffect(() => {
         return () => {
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
+            // Fecha apenas a escuta local — o job no worker continua rodando.
+            if (wsRef.current) {
+                wsRef.current.close();
             }
         };
     }, []);
 
+    // 🌐 O refinamento pós-scan e o aviso ao chat agent agora são responsabilidade
+    // única do connectionManager (mesmo pipeline do discovery) + do listener
+    // centralizado em useHierarchy.ts — evita o refino duplicado/concorrente que
+    // existia quando scan e discovery tinham cada um seu próprio gatilho de IA.
+
     return {
         startScan,
         stopScan,
+        reconnectScan,
         isScanning,
         scanOrgId,
         scanError,

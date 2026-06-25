@@ -79,11 +79,15 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession) -> dict:
         if clean_email and clean_email.endswith("@") and org.domain:
             clean_email = f"{clean_email}{org.domain}"
 
+        is_qsa = emp.department == "Quadro de Sócios (QSA)"
         nodes.append({
-            "id": new_id, "name": emp.name, "role": emp.role, 
-            "level": 6 if emp.department == "Quadro de Sócios (QSA)" else level, 
-            "seniority": 6 if emp.department == "Quadro de Sócios (QSA)" else level,
-            "department": await get_department_tag(emp.role), "manager_id": manager_id,
+            "id": new_id, "name": emp.name, "role": emp.role,
+            "level": 6 if is_qsa else level,
+            "seniority": 6 if is_qsa else level,
+            # get_department_tag não conhece "sócio"/"administrador" — recalcular para QSA
+            # sempre cai no fallback genérico (ex: "Operations") e perde a marcação que o
+            # front usa pra proteger/identificar esses nós (ex: filtro de clear_nodes).
+            "department": "Quadro de Sócios (QSA)" if is_qsa else await get_department_tag(emp.role), "manager_id": manager_id,
             "linkedin": emp.linkedin_url, "url": emp.linkedin_url, "profile_pic": emp.profile_pic,
             "email": clean_email, "education": emp.education, "observations": emp.description,
             "evidence": emp.evidence, "matching_score": emp.matching_score,

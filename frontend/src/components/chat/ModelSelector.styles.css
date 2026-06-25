@@ -101,8 +101,15 @@
   border-radius: var(--radius-lg);
   box-shadow: none !important;
   overflow: visible;
-  z-index: 1000;
+  z-index: 9999;
   animation: modelSelectorFadeIn var(--transition-fast) ease;
+}
+
+[data-theme='light'] .modelSelectorDropdown {
+  --sw-text-base: #09090b !important;
+  --sw-text-muted: #71717a !important;
+  --sw-text-subtle: #a1a1aa !important;
+  --sw-hover: rgba(0, 0, 0, 0.05) !important;
 }
 
 @keyframes modelSelectorFadeIn {
@@ -172,6 +179,17 @@
   background: var(--sw-text-base);
   border: var(--sw-border-width) solid var(--sw-text-base);
   box-shadow: var(--sw-shadow);
+}
+
+[data-theme='light'] .modelOption.selected {
+  background: #09090b !important;
+  border-color: #09090b !important;
+}
+
+[data-theme='light'] .modelOption.selected .modelOptionName,
+[data-theme='light'] .modelOption.selected .modelOptionDesc,
+[data-theme='light'] .modelOption.selected .modelOptionSpeedLabel {
+  color: #ffffff !important;
 }
 
 /* === OLLAMA PREMIUM GRAINY GRADIENT (Versão Azul Cyberpunk com Fade) === */

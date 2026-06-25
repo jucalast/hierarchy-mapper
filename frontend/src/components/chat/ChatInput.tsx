@@ -196,10 +196,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     } : null;
 
     const containerStyle = expandedTaskStyle || taskStyle || (notice ? {
-        border: `1px solid ${notice.border}`,
+        border: 'var(--sw-border-width) solid var(--chat-border-weak)',
         background: notice.bg,
         borderRadius: 'var(--radius-lg)',
         pointerEvents: 'auto' as const,
+        overflow: 'hidden' as const,
     } : {});
 
     const renderTaskMinimizedBar = () => {
@@ -208,11 +209,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         const isStreaming = activeRunningTask.status === 'streaming';
         const isAwaiting = activeRunningTask.status === 'awaiting_mapping' || activeRunningTask.status === 'awaiting_confirm';
         const isDone = activeRunningTask.status === 'done';
+        const isCancelled = activeRunningTask.status === 'cancelled';
         const isErr = activeRunningTask.status === 'error';
 
         // Cores correspondentes ao componente de notificação de LLM
-        const statusColor = isStreaming ? 'var(--sw-primary)' : isAwaiting ? 'var(--sw-status-warning)' : isDone ? 'var(--sw-status-success)' : 'var(--sw-status-danger)';
-        const statusLabel = isStreaming ? 'Executando tarefa' : isAwaiting ? 'Ação requerida' : isDone ? 'Tarefa concluída' : 'Falha na tarefa';
+        const statusColor = isStreaming ? 'var(--sw-primary)' : isAwaiting ? 'var(--sw-status-warning)' : isDone ? 'var(--sw-status-success)' : isCancelled ? 'var(--sw-text-muted)' : 'var(--sw-status-danger)';
+        const statusLabel = isStreaming ? 'Executando tarefa' : isAwaiting ? 'Ação requerida' : isDone ? 'Tarefa concluída' : isCancelled ? 'Tarefa cancelada' : 'Falha na tarefa';
 
         return (
             <div

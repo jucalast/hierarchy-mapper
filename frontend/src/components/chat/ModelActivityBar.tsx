@@ -137,11 +137,14 @@ export const ModelActivityBar: React.FC<ModelActivityBarProps> = ({ events, them
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            padding: '5px 12px',
-            fontSize: 11,
+            padding: '8px 16px',
+            fontSize: 'var(--font-sm)',
             fontWeight: 500,
             color: notice.color,
             letterSpacing: '0.01em',
+            background: notice.bg,
+            borderTopLeftRadius: 'var(--radius-lg)',
+            borderTopRightRadius: 'var(--radius-lg)',
         }}>
             <span>{notice.text}</span>
             {notice.isLive && (

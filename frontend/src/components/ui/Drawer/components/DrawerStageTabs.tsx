@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import styles from './DrawerStageTabs.module.css';
 
 interface Stage {
@@ -20,11 +20,30 @@ function DrawerStageTabsBase({
     onSelect,
     totalCount,
 }: DrawerStageTabsProps) {
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    // A ordem das abas nunca muda — apenas o scroll do carrossel se move para deixar
+    // a aba selecionada em evidência (primeira visível), tanto avançando quanto voltando.
+    useEffect(() => {
+        const container = scrollRef.current;
+        if (!container) return;
+
+        const targetId = activeStage === null
+            ? 'drawer-stage-tab-all'
+            : `drawer-stage-tab-${activeStage.toLowerCase().replace(/\s+/g, '-')}`;
+        const el = document.getElementById(targetId);
+        if (!el || !container.contains(el)) return;
+
+        // scrollIntoView com inline:'center' centraliza o elemento no contêiner em
+        // qualquer direção — não há necessidade de calcular o delta manualmente.
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }, [activeStage, stages]);
+
     if (stages.length === 0) return null;
 
     return (
         <div className={styles.tabsWrapper}>
-            <div className={styles.tabsScroll}>
+            <div className={styles.tabsScroll} ref={scrollRef}>
                 {/* Aba "Todos" */}
                 <button
                     id="drawer-stage-tab-all"

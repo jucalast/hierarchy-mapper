@@ -309,15 +309,12 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 {biz_data_str}
 
 ## FERRAMENTAS DISPONÍVEIS PARA O AGENTE (use nos prompts das ações):
-- whatsapp_send_message: envia WhatsApp (contact, phone, message, org_name)
-- email_send: envia email NOVO sem thread existente (to, subject, body, attachment_name) - SÓ USE SE A TAREFA FOR ENVIAR EMAIL.
-- email_reply: responde na thread existente (entry_id, body) - SÓ USE SE A TAREFA FOR RESPONDER EMAIL.
 - pipedrive_create_task: cria tarefa no CRM (subject, task_type=[call|meeting|task|deadline], due_date, deal_id, org_name, note)
-- pipedrive_update_task: atualiza ou concluui tarefa existente (activity_id, done=true/false, subject, due_date)
+- pipedrive_update_task: atualiza ou conclui tarefa existente (activity_id, done=true/false, subject, due_date)
 - pipedrive_update_deal: atualiza deal (deal_id, fields)
 - pipedrive_create_note: cria nota no Pipedrive (content, deal_id, person_id, org_id)
-- whatsapp_get_messages: busca histórico WhatsApp (contact, phone, org_name)
-- email_get_contact_history: busca histórico email (contact_name, org_name)
+
+⛔ PROIBIDO nas sugestões: whatsapp_send_message, email_send, email_reply — essas ações NUNCA devem aparecer como sugestão de próximo passo. Em vez disso, crie uma tarefa no Pipedrive descrevendo o que precisa ser feito (ex: "Criar tarefa: Enviar e-mail de follow-up com contexto da última conversa").
 
 ## {email_thread_rule}
 
@@ -346,11 +343,14 @@ PASSO 3 (Geração de Tarefa CRM): Já existe alguma tarefa de comunicação (ex
 - NÃO: Sugira criar a tarefa apropriada (`pipedrive_create_task`). 
 - SIM: Passe para o Passo 4.
 
-PASSO 4 (Ação Comercial / Execução): Qual o nível da prospecção e objetivo desta tarefa pendente?
-- SE FOR PRIMEIRO CONTATO (Frio): Sugira "Gerar e Enviar E-mail de Apresentação" (`email_send` ou `email_reply` com anexo) ou "Gerar WhatsApp Frio" (`whatsapp_send_message`).
-- SE FOR FOLLOW-UP (Morno/Aguardando): Sugira "Enviar E-mail de Follow-up" ou "Cobrar retorno por WhatsApp".
-- SE FOR NEGOCIAÇÃO/PROPOSTA (Quente): Sugira "Agendar Reunião de Diagnóstico" ou "Envio de Proposta".
-- REGRA CRÍTICA DO EMAIL: Nunca mande um email solto se há uma thread (email_reply).
+PASSO 4 (Ação Comercial — SEMPRE via tarefa do Pipedrive):
+JAMAIS sugira executar email_send, whatsapp_send_message ou ligação diretamente como próximo passo.
+Em vez disso, crie uma tarefa no Pipedrive (`pipedrive_create_task`) descrevendo a ação com contexto completo:
+- SE FOR PRIMEIRO CONTATO (Frio): Sugira "Criar tarefa: Enviar e-mail de apresentação para [contato] — abordar [gancho específico do histórico]" (task_type=task).
+- SE FOR FOLLOW-UP (Morno/Aguardando): Sugira "Criar tarefa: Cobrar retorno por e-mail/WhatsApp com [contato]" com note resumindo o contexto da última interação.
+- SE FOR NEGOCIAÇÃO/PROPOSTA (Quente): Sugira "Criar tarefa: Agendar reunião de diagnóstico" (task_type=meeting) ou "Criar tarefa: Enviar proposta revisada".
+- SE FOR LIGAÇÃO: Sugira "Criar tarefa: Ligar para [contato] — [motivo específico]" (task_type=call).
+SEMPRE inclua no campo `note` da tarefa o contexto da conversa: o que foi discutido, o que está pendente e o que precisa ser feito.
 
 PASSO 5 (Encerramento da Tarefa): A ação de comunicação (Passo 4) já foi feita no histórico recente?
 - SIM: Sugira OBRIGATORIAMENTE "Marcar atividade como concluída" (`pipedrive_update_task` com `done=true`).
@@ -385,9 +385,9 @@ PASSO 5 (Encerramento da Tarefa): A ação de comunicação (Passo 4) já foi fe
   "acoes": [
     {{
       "label": "Texto curto e específico da AÇÃO (máx 55 chars, sem nome de canal, sem nome de empresa)",
-      "categoria": "whatsapp|email|tarefa_crm|reuniao|estrategia",
+      "categoria": "tarefa_crm|reuniao|estrategia",
       "razao": "por que fazer ISSO agora (1 frase com dado real do histórico)",
-      "prompt": "Instrução completa e autossuficiente para o agente executar. Ex: 'Use whatsapp_send_message com contact=\\"Mariana Ruiz\\", phone=\\"5511950374342\\", org_name=\\"Master Sense\\", message=\\"[mensagem completa e pronta]\\"'"
+      "prompt": "Instrução completa e autossuficiente para o agente executar. SEMPRE use pipedrive_create_task ou pipedrive_update_task. NUNCA email_send, email_reply ou whatsapp_send_message. Ex: 'Use pipedrive_create_task com subject=\\"Enviar e-mail de follow-up para [contato]\\", task_type=\\"task\\", due_date=\\"YYYY-MM-DD\\", deal_id=XXX, org_name=\\"[empresa]\\", note=\\"[contexto da última conversa e o que foi discutido]\\"'"
     }}
   ]
 }}"""
@@ -441,8 +441,9 @@ Se nenhuma atividade pendente existe, é OBRIGATÓRIO sugerir a criação de pel
             )
 
             categoria_icon = {
-                "whatsapp": "💬", "email": "📧", "tarefa_crm": "📋",
-                "reuniao": "📅", "estrategia": "🎯",
+                "tarefa_crm": "📋",
+                "reuniao": "📅",
+                "estrategia": "🎯",
             }
 
             normalized_actions = []

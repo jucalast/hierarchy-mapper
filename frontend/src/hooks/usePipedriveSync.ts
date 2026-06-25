@@ -1,12 +1,15 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { organizations, api } from '@/services/api';
 
+const TASK_SUMMARY_CACHE_KEY = 'pipedrive-task-summary-cache';
+const ACTIVE_STAGE_FILTER_KEY = 'drawer-active-stage-filter';
+
 export function usePipedriveSync() {
     const [pipedriveOrgs, setPipedriveOrgs] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loadingOrgs, setLoadingOrgs] = useState(true);
     const [taskSummary, setTaskSummary] = useState<Record<number, { next_due_date: string; overdue_count: number; pending_count: number }>>({});
-    const [activeStageFilter, setActiveStageFilter] = useState<string | null>(null);
+    const [activeStageFilter, setActiveStageFilterState] = useState<string | null>(null);
 
     const fetchTaskSummary = useCallback(async () => {
         try {
@@ -20,8 +23,21 @@ export function usePipedriveSync() {
                 const map: Record<number, typeof items[0]> = {};
                 items.forEach(i => { map[i.org_id] = i; });
                 setTaskSummary(map);
+                try { localStorage.setItem(TASK_SUMMARY_CACHE_KEY, JSON.stringify(map)); } catch {}
             }
         } catch { /* silent */ }
+    }, []);
+
+    // Persiste a aba de stage ativa (não reordena a lista — apenas mantém a seleção entre reload/navegação)
+    const setActiveStageFilter = useCallback((stage: string | null) => {
+        setActiveStageFilterState(stage);
+        try {
+            if (stage === null) {
+                localStorage.removeItem(ACTIVE_STAGE_FILTER_KEY);
+            } else {
+                localStorage.setItem(ACTIVE_STAGE_FILTER_KEY, stage);
+            }
+        } catch {}
     }, []);
 
     const SYNC_TTL_MS = 5 * 60 * 1000;
@@ -89,7 +105,7 @@ export function usePipedriveSync() {
             });
     }, [pipedriveOrgs, searchTerm, taskSummary, activeStageFilter]);
 
-    // Coleta estágios únicos das orgs carregadas e ordena pela ordem do Pipedrive
+    // Coleta estágios únicos das orgs carregadas e ordena pela ordem do Pipedrive (ordem fixa, nunca reordenada)
     const uniqueStages = useMemo(() => {
         const seen = new Set<string>();
         const stages: { name: string; count: number; order_nr: number }[] = [];
@@ -120,6 +136,20 @@ export function usePipedriveSync() {
                 }
             } catch (e) {}
         }
+
+        try {
+            const cachedSummary = localStorage.getItem(TASK_SUMMARY_CACHE_KEY);
+            if (cachedSummary) {
+                const parsed = JSON.parse(cachedSummary);
+                if (parsed && typeof parsed === 'object') setTaskSummary(parsed);
+            }
+        } catch (e) {}
+
+        try {
+            const savedFilter = localStorage.getItem(ACTIVE_STAGE_FILTER_KEY);
+            if (savedFilter) setActiveStageFilterState(savedFilter);
+        } catch (e) {}
+
         fetchPipedriveOrgs();
     }, []);
 
@@ -127,6 +157,7 @@ export function usePipedriveSync() {
         pipedriveOrgs, setPipedriveOrgs,
         searchTerm, setSearchTerm,
         loadingOrgs,
+        taskSummary,
         filteredOrgs,
         fetchPipedriveOrgs,
         handleOrgRenamed,

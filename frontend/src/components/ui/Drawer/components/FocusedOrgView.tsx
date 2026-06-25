@@ -70,6 +70,29 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
 
     const [isBatchValidating, setIsBatchValidating] = React.useState(false);
 
+    const cachedPhoto = orgDetails[expandedOrgId]?.photo_url ?? null;
+    const [photoUrl, setPhotoUrl] = React.useState<string | null>(cachedPhoto);
+
+    React.useEffect(() => {
+        const fromCache = orgDetails[expandedOrgId]?.photo_url ?? null;
+        if (fromCache) {
+            setPhotoUrl(fromCache);
+            return;
+        }
+        setPhotoUrl(null);
+        const orgId = focusedOrg?.local_id || focusedOrg?.id || expandedOrgId;
+        if (!orgId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const { organizations } = await import('@/services/api');
+                const res = await organizations.getOrganizationPhoto(orgId);
+                if (!cancelled && res?.photo_url) setPhotoUrl(res.photo_url);
+            } catch { /* foto é opcional */ }
+        })();
+        return () => { cancelled = true; };
+    }, [expandedOrgId, orgDetails]);
+
     const handleBatchValidateEmails = async () => {
         setIsBatchValidating(true);
         try {
@@ -101,8 +124,12 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
 
     return (
         <div className={styles.focusedOrgView}>
-            <div className={styles.focusedOrgHero}>
-                <div className={styles.focusedOrgLogoWrapper}>
+            <div
+                className={`${styles.focusedOrgHero}${photoUrl ? ' ' + styles.focusedOrgHeroWithPhoto : ''}`}
+                style={photoUrl ? { backgroundImage: `url("${photoUrl}")` } : undefined}
+            >
+                {photoUrl && <div className={styles.focusedOrgHeroOverlay} aria-hidden="true" />}
+                <div className={styles.focusedOrgLogoWrapper} style={photoUrl ? { position: 'relative', zIndex: 1 } : undefined}>
                     <Avatar
                         kind="company"
                         src={focusedOrg.logo || (Number(focusedOrg.id) === selectedOrgId || Number(focusedOrg.local_id) === selectedOrgId ? selectedOrgLogo : undefined)}
@@ -111,7 +138,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                         size={48}
                     />
                 </div>
-                <div className={styles.focusedOrgIdentity}>
+                <div className={styles.focusedOrgIdentity} style={photoUrl ? { position: 'relative', zIndex: 1 } : undefined}>
                     {editingNameOrgId === expandedOrgId ? (
                         <input
                             type="text"
@@ -137,7 +164,14 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                 setEditingNameValue(focusedOrg.name);
                             }}
                             title="Clique duas vezes para renomear"
-                            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', width: '100%', overflow: 'hidden' }}
+                            style={{
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                overflow: 'hidden',
+                            }}
                         >
                             <span style={{ 
                                 whiteSpace: 'nowrap', 

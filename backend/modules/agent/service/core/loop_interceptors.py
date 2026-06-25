@@ -155,6 +155,49 @@ async def intercept_pre_execution(
                         except Exception:
                             pass
 
+        # Verificação adicional: checar se pipedrive_get_persons retornou email_validated=true
+        # para este email na sessão atual — dispensa chamar discover_and_validate_email.
+        # O conteúdo pode ser string sanitizada ou JSON dependendo do ponto do pipeline.
+        if not _already_validated and _target_email:
+            for _m in messages:
+                _mc = _m.get("content", "")
+                if isinstance(_mc, list):
+                    for _b in _mc:
+                        if isinstance(_b, dict) and _b.get("tool_name") == "pipedrive_get_persons":
+                            _content_raw = _b.get("content", "")
+                            # Tentativa 1: JSON bruto (quando não sanitizado)
+                            try:
+                                _pd_res = json.loads(_content_raw)
+                                _persons_list = _pd_res.get("persons") or []
+                                for _p in _persons_list:
+                                    if (
+                                        isinstance(_p, dict)
+                                        and _p.get("email_validated") is True
+                                        and (_p.get("email") or "").lower() == _target_email.lower()
+                                    ):
+                                        log.info(
+                                            "agent.interceptor.email_validated_via_pipedrive_persons_json",
+                                            email=_target_email,
+                                            contact=_p.get("name"),
+                                        )
+                                        _already_validated = True
+                                        break
+                            except Exception:
+                                pass
+                            # Tentativa 2: string sanitizada — email presente com indício de validação
+                            if not _already_validated and isinstance(_content_raw, str):
+                                _email_lower = _target_email.lower()
+                                if _email_lower in _content_raw.lower() and "email_validated" not in _content_raw:
+                                    # Na string sanitizada, se o email aparece é porque estava validado
+                                    # (apenas emails com email_validated=true entram na lista de channels "Email")
+                                    log.info(
+                                        "agent.interceptor.email_validated_via_pipedrive_persons_str",
+                                        email=_target_email,
+                                    )
+                                    _already_validated = True
+                if _already_validated:
+                    break
+
         if not _already_validated and _target_email:
             try:
                 from core.infra.database import async_session
@@ -1436,7 +1479,10 @@ async def intercept_post_llm_turn(
                                 pc = res.scalar_one_or_none()
                                 if pc:
                                     real_data_summary.append(f"\n  [CONTEXTO ESTRATÉGICO / PLANO DE PROSPECÇÃO]:\n{pc}\n")
-                        except: pass
+                        except Exception:
+                            # except Exception (não bare except): asyncio.CancelledError é BaseException —
+                            # precisa propagar para que o cancelamento do job (parar chat) funcione de verdade.
+                            pass
 
                     real_data_str = "\n".join(real_data_summary) if real_data_summary else "  (Nenhum ID específico encontrado)"
                     messages.append({"role": "assistant", "content": content})

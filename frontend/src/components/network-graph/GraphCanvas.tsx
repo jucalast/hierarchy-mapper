@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import ReactFlow, { Controls, ControlButton } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { SupplyChainNode } from './nodes/SupplyChainNode';
-import { Bug } from 'lucide-react';
+import { Bug, Workflow } from 'lucide-react';
 
 const nodeTypes = {
     supplyChain: SupplyChainNode
@@ -19,6 +19,7 @@ interface GraphCanvasProps {
     fitViewHandler: React.ReactNode;
     smartBackground: React.ReactNode;
     onCopyData?: () => void;
+    onRefine?: () => void;
 }
 
 export const GraphCanvas = memo(({
@@ -29,7 +30,8 @@ export const GraphCanvas = memo(({
     onConnect,
     fitViewHandler,
     smartBackground,
-    onCopyData
+    onCopyData,
+    onRefine
 }: GraphCanvasProps) => {
     return (
         <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -53,6 +55,11 @@ export const GraphCanvas = memo(({
                     showInteractive={false} 
                     className="custom-flow-controls"
                 >
+                    {onRefine && (
+                        <ControlButton onClick={onRefine} title="Analista de IA">
+                            <Workflow size={14} />
+                        </ControlButton>
+                    )}
                     {onCopyData && (
                         <ControlButton onClick={onCopyData} title="Copiar Dados (Debug)">
                             <Bug size={14} />
