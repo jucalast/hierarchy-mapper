@@ -7,7 +7,7 @@ Resolve o caminho do SQLite dinamicamente (relativo → absoluto) para funcionar
 tanto ao rodar de backend/ quanto da raiz do projeto.
 
 Exportações públicas:
-    Base, engine, async_session, get_db(), init_db()
+    Base, SafeJSON, engine, async_session, get_db(), init_db()
 
 Seeds executados uma única vez na primeira inicialização:
     seed_system_settings() -- SystemSetting defaults
@@ -17,6 +17,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import text, event
 from sqlalchemy.pool import NullPool
+from sqlalchemy.types import TypeDecorator, Text as _SAText
+import json as _json
 from pathlib import Path
 
 from core.config import settings
@@ -73,6 +75,43 @@ elif DATABASE_URL and "postgresql" in DATABASE_URL.lower():
         DATABASE_URL = DATABASE_URL.split("?", 1)[0]
 
 Base = declarative_base()
+
+
+class SafeJSON(TypeDecorator):
+    """Coluna JSON compatível com SQLite que desfaz dupla serialização da migração.
+
+    O script de migração Postgres→SQLite pré-serializou dicts/lists para strings
+    antes de inserir via SQLAlchemy, que aplicou json.dumps novamente. Na leitura,
+    SQLAlchemy devolve string em vez de dict. Este TypeDecorator detecta ambos os
+    casos e garante que o Python sempre receba o tipo nativo (dict, list, etc).
+    """
+    impl = _SAText
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return value  # Já serializado — evita dupla serialização
+        return _json.dumps(value, ensure_ascii=False)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            return value
+        try:
+            parsed = _json.loads(value)
+            # Se ainda é string, foi duplamente serializado — tenta de novo
+            if isinstance(parsed, str):
+                try:
+                    return _json.loads(parsed)
+                except (ValueError, TypeError):
+                    return parsed
+            return parsed
+        except (ValueError, TypeError):
+            return value
+
 
 # Motor Assíncrono
 # NullPool para SQLite: sem pool de conexões — evita pool_timeout de 30s sob carga
@@ -480,6 +519,9 @@ async def init_db():
             "ALTER TABLE contact_conversation_cache ADD COLUMN has_unread INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE contact_conversation_cache ADD COLUMN is_key_contact INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE organizations ADD COLUMN photo_url TEXT",
+            "ALTER TABLE organizations ADD COLUMN email_pattern VARCHAR",
+            "ALTER TABLE employees ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE organizations ADD COLUMN maps_phone VARCHAR",
         ]:
             try:
                 await conn.execute(text(query))

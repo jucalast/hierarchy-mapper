@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -812,23 +812,40 @@ class PipedriveService:
             counts_map = {row[0]: row[1] for row in count_res.all()}
 
             # 4. OTIMIZAÇÃO: Busca fotos de funcionários em lote (Heurística: pega alguns de cada)
-            # Para manter performance, fazemos uma query que pega fotos de funcionários das orgs listadas
+            # Inclui profile_pic salvo OU linkedin_url para gerar avatar via unavatar.io
             pics_stmt = (
-                select(Employee.company_id, Employee.profile_pic)
+                select(Employee.company_id, Employee.profile_pic, Employee.linkedin_url)
                 .where(
                     and_(
                         Employee.company_id.in_(org_ids),
-                        Employee.profile_pic.is_not(None),
-                        Employee.profile_pic != ""
+                        or_(
+                            and_(Employee.profile_pic.is_not(None), Employee.profile_pic != ""),
+                            Employee.linkedin_url.is_not(None),
+                        )
                     )
                 )
             )
             pics_res = await session.execute(pics_stmt)
             pics_raw = pics_res.all()
-            
-            pics_map = defaultdict(list)
-            for cid, pic in pics_raw:
-                if len(pics_map[cid]) < 3:
+
+            def _linkedin_to_unavatar(url: str) -> str | None:
+                """Extrai username do LinkedIn e retorna URL do unavatar.io."""
+                import re
+                if not url:
+                    return None
+                m = re.search(r'linkedin\.com/in/([^/\?#]+)', url)
+                if m:
+                    username = m.group(1).strip('/')
+                    if username:
+                        return f"https://unavatar.io/linkedin/{username}"
+                return None
+
+            pics_map: dict = defaultdict(list)
+            for cid, profile_pic, linkedin_url in pics_raw:
+                if len(pics_map[cid]) >= 3:
+                    continue
+                pic = profile_pic or _linkedin_to_unavatar(linkedin_url)
+                if pic:
                     pics_map[cid].append(pic)
 
             # 5. Monta o resultado final
@@ -920,52 +937,90 @@ class PipedriveService:
         log.info("pipedrive.smart_reschedule.start", base_date=today_date.isoformat())
 
         try:
-            resp_act = await self._request(
-                "GET",
-                "activities",
-                params={"user_id": self.user_id, "limit": 500, "done": 0},
-            )
-            if resp_act is None or resp_act.status_code != 200:
-                return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
-            act_data = resp_act.json()
-            if not act_data.get("success"):
-                return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
+            # Busca paginada de atividades PENDENTES — apenas do usuário João Luccas, apenas deals abertos
+            activities: list = []
+            _start = 0
+            while True:
+                resp_act = await self._request(
+                    "GET",
+                    "activities",
+                    params={"user_id": self.user_id, "limit": 500, "done": 0, "start": _start},
+                )
+                if resp_act is None or resp_act.status_code != 200:
+                    return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
+                act_data = resp_act.json()
+                if not act_data.get("success"):
+                    return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
+                activities.extend(act_data.get("data") or [])
+                pag = (act_data.get("additional_data") or {}).get("pagination") or {}
+                if not pag.get("more_items_in_collection"):
+                    break
+                _start = pag.get("next_start", _start + 500)
+                if _start > 10000:
+                    break
 
-            # 🚀 Busca atividades CONCLUÍDAS (done=1) para mapear o histórico de tarefas de cada empresa
+            # Busca paginada de atividades CONCLUÍDAS — histórico de último contato por deal
             deal_last_done: Dict[int, str] = {}
-            resp_done_act = await self._request(
-                "GET",
-                "activities",
-                params={"user_id": self.user_id, "limit": 500, "done": 1},
-            )
-            if resp_done_act and resp_done_act.status_code == 200:
+            _start = 0
+            while True:
+                resp_done_act = await self._request(
+                    "GET",
+                    "activities",
+                    params={"user_id": self.user_id, "limit": 500, "done": 1, "start": _start},
+                )
+                if not resp_done_act or resp_done_act.status_code != 200:
+                    break
                 done_data = resp_done_act.json()
-                if done_data.get("success"):
-                    for act in done_data.get("data") or []:
-                        deal_id = act.get("deal_id")
-                        if not deal_id:
-                            continue
-                        due_date = act.get("due_date")
-                        if due_date:
-                            current_last = deal_last_done.get(deal_id, "1900-01-01")
-                            if due_date > current_last:
-                                deal_last_done[deal_id] = due_date
+                if not done_data.get("success"):
+                    break
+                for act in done_data.get("data") or []:
+                    deal_id = act.get("deal_id")
+                    if not deal_id:
+                        continue
+                    due_date = act.get("due_date")
+                    if due_date:
+                        current_last = deal_last_done.get(deal_id, "1900-01-01")
+                        if due_date > current_last:
+                            deal_last_done[deal_id] = due_date
+                pag = (done_data.get("additional_data") or {}).get("pagination") or {}
+                if not pag.get("more_items_in_collection"):
+                    break
+                _start = pag.get("next_start", _start + 500)
+                if _start > 10000:
+                    break
 
-            resp_deals = await self._request(
-                "GET",
-                "deals",
-                params={"user_id": self.user_id, "limit": 500, "status": "open"},
-            )
-            deals_data = resp_deals.json() if resp_deals is not None else {"success": False}
-
+            # Busca paginada de deals ABERTOS — apenas do usuário João Luccas
             deal_stages: Dict[int, int] = {}
             deal_expected_close: Dict[int, str] = {}
-            if deals_data.get("success"):
+            _start = 0
+            while True:
+                resp_deals = await self._request(
+                    "GET",
+                    "deals",
+                    params={"user_id": self.user_id, "status": "open", "limit": 500, "start": _start},
+                )
+                if resp_deals is None or resp_deals.status_code != 200:
+                    break
+                deals_data = resp_deals.json()
+                if not deals_data.get("success"):
+                    break
                 for d in deals_data.get("data") or []:
                     deal_stages[d["id"]] = d.get("stage_id")
                     deal_expected_close[d["id"]] = d.get("expected_close_date")
+                pag = (deals_data.get("additional_data") or {}).get("pagination") or {}
+                if not pag.get("more_items_in_collection"):
+                    break
+                _start = pag.get("next_start", _start + 500)
+                if _start > 10000:
+                    break
 
-            activities = act_data.get("data") or []
+            log.info(
+                "pipedrive.smart_reschedule.scope",
+                user_id=self.user_id,
+                open_deals=len(deal_stages),
+                pending_activities=len(activities),
+            )
+
             deal_open_tasks: Dict[int, list] = defaultdict(list)
             all_stages: set[int] = set()
 
@@ -998,69 +1053,99 @@ class PipedriveService:
                 key=lambda did: deal_last_done.get(did, "1900-01-01"),
             )
 
-            # Criando uma única fila global ordenada por prioridade de tempo (descartando funil)
-            global_queue = []
+            # --- Distribuição proporcional por stage ---
+            # Agrupa tasks por stage mantendo ordem de prioridade (mais antigos primeiro)
+            DAILY_LIMIT = 10
+            stage_task_list: Dict[int, list] = defaultdict(list)
             for did in sorted_deals:
-                global_queue.extend(deal_open_tasks[did])
+                for task in deal_open_tasks[did]:
+                    stage_task_list[task.get("stage_id")].append(task)
+
+            # Calcula a quota diária de cada stage proporcional ao seu total de tasks
+            total_tasks_count = sum(len(v) for v in stage_task_list.values())
+            stage_daily_quota: Dict[int, int] = {}
+            if total_tasks_count > 0:
+                stages_sorted_by_size = sorted(
+                    stage_task_list.keys(), key=lambda s: -len(stage_task_list[s])
+                )
+                allocated = 0
+                for i, sid in enumerate(stages_sorted_by_size):
+                    if i == len(stages_sorted_by_size) - 1:
+                        stage_daily_quota[sid] = max(1, DAILY_LIMIT - allocated)
+                    else:
+                        weight = len(stage_task_list[sid]) / total_tasks_count
+                        q = max(1, round(weight * DAILY_LIMIT))
+                        stage_daily_quota[sid] = q
+                        allocated += q
+
+            # Intercala as filas em round-robin ponderado (pela quota) para manter
+            # proporção por stage dentro de cada bloco de DAILY_LIMIT tarefas
+            stage_deques: Dict[int, deque] = {
+                sid: deque(tasks) for sid, tasks in stage_task_list.items()
+            }
+            global_queue: list = []
+            stages_order = sorted(stage_deques.keys(), key=lambda s: -len(stage_task_list[s]))
+            while any(stage_deques.values()):
+                for sid in stages_order:
+                    q = stage_deques[sid]
+                    for _ in range(stage_daily_quota.get(sid, 1)):
+                        if q:
+                            global_queue.append(q.popleft())
 
             scheduled_updates: List[tuple[int, str]] = []
             scheduled_deal_updates: Dict[int, str] = {}
-            current_day = today_date
             daily_load: Dict[str, int] = defaultdict(int)
+            daily_stage_load: Dict[str, Dict[int, int]] = defaultdict(lambda: defaultdict(int))
             deal_day_map: Dict[tuple, bool] = {}
 
             for task in global_queue:
                 deal_id = task.get("deal_id")
-                
-                # 🚀 ENVELHECIMENTO / INTERVALO:
+                stage_id = task.get("stage_id")
+
                 # Calcula a data mínima permitida baseada na última tarefa realizada
                 last_done = deal_last_done.get(deal_id)
                 if last_done:
                     try:
                         last_dt = datetime.strptime(last_done, "%Y-%m-%d").date()
-                        # Se a tarefa foi feita hoje ou no futuro (agendada), pula 7 dias para a próxima
                         if last_dt >= today_date:
                             min_allowed = last_dt + timedelta(days=7)
                         else:
-                            # Se a tarefa é antiga, permite agendar para hoje se houver vaga
                             min_allowed = today_date
                     except Exception:
                         min_allowed = today_date
                 else:
                     min_allowed = today_date
-                    
+
                 target_day = min_allowed
-                
                 found_day = False
                 attempt = 0
                 while not found_day and attempt < 365:
                     d_str = target_day.isoformat()
-                    # Pula finais de semana
                     if target_day.weekday() >= 5:
                         target_day += timedelta(days=1)
                         continue
-                    
-                    # Verifica se o dia atual tem menos de 10 tarefas E se este negócio já não tem tarefa neste dia
+
+                    stage_quota = stage_daily_quota.get(stage_id, 1)
+                    # Aceita se: total do dia < limite, stage ainda tem cota e deal não tem outra task no mesmo dia
                     if (
-                        daily_load[d_str] < 10
+                        daily_load[d_str] < DAILY_LIMIT
+                        and daily_stage_load[d_str][stage_id] < stage_quota
                         and (d_str, deal_id) not in deal_day_map
                     ):
-                        # ONLY add to scheduled_updates if the date actually changes!
                         if task.get("due_date") != d_str:
                             scheduled_updates.append((task.get("id"), d_str))
-                        
+
                         daily_load[d_str] += 1
+                        daily_stage_load[d_str][stage_id] += 1
                         deal_day_map[(d_str, deal_id)] = True
-                        
-                        # Atualiza o rastro de "última tarefa" para as próximas tasks do mesmo deal
                         deal_last_done[deal_id] = d_str
-                        
+
                         current_close = deal_expected_close.get(deal_id)
                         if not current_close or current_close < d_str:
                             if current_close != d_str:
                                 scheduled_deal_updates[deal_id] = d_str
                             deal_expected_close[deal_id] = d_str
-                            
+
                         found_day = True
                     else:
                         target_day += timedelta(days=1)
@@ -1410,6 +1495,18 @@ class PipedriveService:
                 local_org = res_org.scalars().first()
 
                 if local_org:
+                    # Enriquece org_data com campos do banco local não presentes no Pipedrive
+                    if isinstance(results["org"], dict):
+                        # Telefone: busca do banco ou da API do Google Maps (cache permanente)
+                        phone = local_org.maps_phone
+                        if not phone:
+                            from modules.intelligence.service.company_phone_service import fetch_and_cache_company_phone
+                            phone = await fetch_and_cache_company_phone(local_org.id, session)
+                        if phone:
+                            results["org"]["maps_phone"] = phone
+                        if local_org.domain and not results["org"].get("domain"):
+                            results["org"]["domain"] = local_org.domain
+
                     for p in results["persons"]:
                         pid = str(p.get("id"))
                         name = p.get("name")
@@ -1706,6 +1803,41 @@ class PipedriveService:
             return resp.json()
         except Exception:
             return {"success": False}
+
+    async def create_procurement_contact(self, org_id: int, domain: str) -> dict:
+        """
+        Garante que existe um contato 'Departamento de Compras' vinculado à organização.
+        Idempotente: não cria duplicata se já existir contato com compras@domínio.
+        """
+        procurement_email = f"compras@{domain}"
+
+        search_resp = await self._request(
+            "GET",
+            "persons/search",
+            params={"term": procurement_email, "search_by_email": 1, "exact_match": 1, "limit": 1},
+        )
+        if search_resp and search_resp.status_code == 200:
+            items = search_resp.json().get("data", {}).get("items") or []
+            if items:
+                existing_id = items[0]["item"]["id"]
+                log.info(
+                    "pipedrive.procurement_contact.exists",
+                    person_id=existing_id,
+                    email=procurement_email,
+                )
+                return {"success": True, "data": {"id": existing_id}, "existing": True}
+
+        result = await self.create_person(
+            name="Departamento de Compras",
+            email=procurement_email,
+            org_id=org_id,
+        )
+        log.info(
+            "pipedrive.procurement_contact.created",
+            email=procurement_email,
+            org_id=org_id,
+        )
+        return result
 
     async def update_deal(self, deal_id: int, data: dict) -> dict:
         resp = await self._request("PUT", f"deals/{deal_id}", json=data)

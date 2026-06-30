@@ -121,6 +121,7 @@ async def persist_socios(
                 db.add(Employee(
                     name=name_socio,
                     role=role_socio,
+                    department="Quadro de Sócios (QSA)",
                     seniority=6,
                     company_id=org_id,
                     manager_id="root_company",

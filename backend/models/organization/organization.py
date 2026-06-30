@@ -33,6 +33,8 @@ class Organization(Base):
     linkedin_url = Column(String, nullable=True)
     logo_url = Column(String, nullable=True)
     photo_url = Column(Text, nullable=True)  # Foto da empresa (Google Places), cacheada em base64
+    email_pattern = Column(String, nullable=True)  # Padrão validado de email (ex: "first.last", "f_last")
+    maps_phone = Column(String, nullable=True)       # Telefone obtido via Google Maps / Places API
     icp_score = Column(Integer, nullable=True)                      # Score de 0 a 100
     icp_tier = Column(String, nullable=True)                       # A | B | C
     is_excluded = Column(Integer, server_default="0", index=True)   # 1 = Excluída/Oculta

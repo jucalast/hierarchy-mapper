@@ -151,16 +151,34 @@ function NetworkGraphContent({
 
     // HierarchyScan Integration
     const scan = useGlobalHierarchyScan();
-    // O scanOrgId agora é mantido pelo contexto global para sobreviver à navegação
-    const isScanForCurrentOrg = scan.scanOrgId !== null && scan.scanOrgId === currentOrgId;
+    // Estado de scan isolado para a empresa atual — persiste independente de outras empresas sendo escaneadas
+    const currentScanState = scan.getScanState(currentOrgId ?? 0);
+    const isScanForCurrentOrg = currentScanState.isScanning;
     const [previewExpanded, setPreviewExpanded] = useState(false);
 
-    // ✅ Força modo 'scan' se houver um scan ativo nesta empresa ao carregar a página/navegar
+    // scopedScan: adapter com API flat para os componentes filhos (NetworkGraphLayout).
+    // Encapsula as chamadas multi-org, expondo apenas o escopo da empresa atual.
+    const scopedScan = useMemo(() => ({
+        ...currentScanState,
+        startScan: scan.startScan,
+        stopScan: () => { if (currentOrgId) scan.stopScan(currentOrgId); },
+        handleImageClick: (e: React.MouseEvent<HTMLImageElement>) => { if (currentOrgId) scan.handleImageClick(currentOrgId, e); },
+        sendText: (text: string) => { if (currentOrgId) scan.sendText(currentOrgId, text); },
+        pressEnter: () => { if (currentOrgId) scan.pressEnter(currentOrgId); },
+        pressBackspace: () => { if (currentOrgId) scan.pressBackspace(currentOrgId); },
+        resetScan: () => { if (currentOrgId) scan.resetScan(currentOrgId); },
+        scanOrgId: currentOrgId ?? null,
+    }), [currentScanState, scan, currentOrgId]);
+
+    // Sincroniza mappingMode com o estado de scan:
+    // 'scan' quando há scan ativo nesta empresa, 'discovery' em qualquer outro caso.
     useEffect(() => {
-        if (isScanForCurrentOrg && scan.isScanning) {
+        if (isScanForCurrentOrg) {
             setMappingMode('scan');
+        } else {
+            setMappingMode('discovery');
         }
-    }, [isScanForCurrentOrg, scan.isScanning, setMappingMode]);
+    }, [isScanForCurrentOrg, setMappingMode]);
 
     // Network Flow
     // IMPORTANTE: editEmployee DEVE ser memoizado com useCallback para não recriar a cada render
@@ -183,7 +201,7 @@ function NetworkGraphContent({
         getStableId,
         deleteEmployee,
         editEmployee: handleEditEmployee,
-        isScanning: isScanForCurrentOrg && scan.isScanning,
+        isScanning: isScanForCurrentOrg,
         discovering: discovering,
     });
 
@@ -303,14 +321,14 @@ function NetworkGraphContent({
         } else {
             handleSearch(e as any);
         }
-    }, [mappingMode, cnpj, confirmedLinkedInUrl, scan, handleSearch, addNotification, areaFocus, productFocus, selectedModel, currentOrgId]);
+    }, [mappingMode, cnpj, confirmedLinkedInUrl, scan.startScan, handleSearch, addNotification, areaFocus, productFocus, selectedModel, currentOrgId]);
 
     // Trata erros de varredura
     useEffect(() => {
-        if (scan.scanError) {
-            addNotification('error', `Erro na varredura: ${scan.scanError}`);
+        if (currentScanState.scanError) {
+            addNotification('error', `Erro na varredura: ${currentScanState.scanError}`);
         }
-    }, [scan.scanError, addNotification]);
+    }, [currentScanState.scanError, addNotification]);
 
     // O efeito que limpava scanOrgId foi removido intencionalmente
     // para evitar que o scan desapareça da UI indevidamente.
@@ -513,7 +531,7 @@ function NetworkGraphContent({
             smartSyncPipedrive={smartSyncPipedrive}
             hierarchy={hierarchy}
             discovery={discovery}
-            scan={scan}
+            scan={scopedScan}
             isScanForCurrentOrg={isScanForCurrentOrg}
             filteredOrgs={filteredOrgs}
             loadingOrgs={loadingOrgs}

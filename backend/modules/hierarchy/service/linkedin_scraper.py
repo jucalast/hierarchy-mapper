@@ -22,7 +22,7 @@ import uuid
 import queue as thread_queue
 from typing import Optional
 
-from sqlalchemy import select, delete, and_, not_, func
+from sqlalchemy import select, delete, and_, not_, or_, func
 
 from core.infra.database import async_session
 from core.observability.logging_config import get_logger
@@ -143,18 +143,22 @@ async def run_linkedin_scrape(
             await session.commit()
             await session.refresh(db_org)
 
-        # 🚀 LIMPEZA: Deleta funcionários antigos
-        # Preservamos apenas contatos com decisões manuais definitivas (que não sejam Análise Humana)
+        # Limpa funcionários do mapeamento anterior para começar do zero.
+        # Mesma regra do b2b_scanner.py: preserva sócios/QSA e decisões humanas explícitas.
         await session.execute(
             delete(Employee).where(
                 and_(
                     Employee.company_id == db_org.id,
                     not_(
-                        and_(
-                            Employee.role != "Análise Humana",
-                            Employee.role != "Não Identificado",
-                            Employee.role != "Erro no Processamento",
-                            Employee.role != "Professional"
+                        or_(
+                            Employee.department == "Quadro de Sócios (QSA)",
+                            Employee.department.ilike("%Sócio%"),
+                            Employee.department.ilike("%Societário%"),
+                            Employee.department.ilike("%Conselho%"),
+                            Employee.seniority == 6,
+                            Employee.role.ilike("Aprovado%"),
+                            Employee.role == "Reprovado",
+                            Employee.department == "Reprovado",
                         )
                     )
                 )
@@ -255,11 +259,16 @@ async def run_linkedin_scrape(
                     continue
 
                 proc = process_ref.get("proc") or await _wait_for_proc()
+                action = cmd_payload.get("action")
+
                 if not proc or proc.poll() is not None:
-                    log.warning("hierarchy.linkedin_scrape.command_dropped", job_id=job_id, action=cmd_payload.get("action"))
+                    # Subprocesso já terminou — stop ainda pode abortar o AI filter
+                    if action == "stop":
+                        process_ref["stop_requested"] = True
+                    else:
+                        log.warning("hierarchy.linkedin_scrape.command_dropped", job_id=job_id, action=action)
                     continue
 
-                action = cmd_payload.get("action")
                 line_to_send = None
                 if action == "click" and cmd_payload.get("x") is not None and cmd_payload.get("y") is not None:
                     line_to_send = f"cmd_click {cmd_payload['x']} {cmd_payload['y']}\n"
@@ -270,10 +279,11 @@ async def run_linkedin_scrape(
                     line_to_send = f"cmd_press {cmd_payload['key']}\n"
                 elif action == "stop":
                     line_to_send = "cmd_stop\n"
+                    process_ref["stop_requested"] = True
 
                 if line_to_send:
                     try:
-                        proc.stdin.write(line_to_send.encode("utf-8"))
+                        proc.stdin.write(line_to_send)
                         proc.stdin.flush()
                     except Exception:
                         pass
@@ -337,6 +347,12 @@ async def run_linkedin_scrape(
         with open(output_filepath, "r", encoding="utf-8") as f:
             results_data = json.load(f)
 
+        # Aborta antes de iniciar o AI filter se stop foi solicitado
+        if process_ref.get("stop_requested") or await redis.exists(f"scraper_stop_requested_{job_id}"):
+            await send_log("[Agent] Varredura interrompida pelo usuário. Encerrando sem processar IA.")
+            await publish({"type": "done"})
+            return
+
         if results_data:
             await send_log(f"[AI Filter] Iniciando processamento inteligente de {len(results_data)} perfis...")
 
@@ -387,40 +403,44 @@ async def run_linkedin_scrape(
                     })
 
                 from .role_engine import role_engine
-                batch_size = 10
-                for i in range(0, len(valid_candidates), batch_size):
-                    batch = valid_candidates[i:i + batch_size]
-                    await send_log(f"🧠 [AI Batch] Processando lote {i // batch_size + 1} ({len(batch)} perfis)...")
 
-                    try:
-                        batch_results = await role_engine.distill_roles_batch_v2(
-                            batch,
-                            db_org.name,
-                            area_focus=area_focus or "compras",
-                            product_focus=product_focus or "Geral B2B"
-                        )
+                CHUNK_SIZE = 20
+                chunks = [valid_candidates[i:i + CHUNK_SIZE] for i in range(0, len(valid_candidates), CHUNK_SIZE)]
+                await send_log(f"🧠 [AI] Processando {len(valid_candidates)} perfis em {len(chunks)} lote(s) de até {CHUNK_SIZE}...")
 
-                        # 🚀 PROCESSAMENTO PARALELO DE E-MAILS PARA O LOTE
-                        approved_tasks = []
-                        approved_candidates_data = []
+                async def _process_chunk_and_return(chunk):
+                    result = await role_engine.distill_roles_batch_v2(
+                        chunk,
+                        db_org.name,
+                        area_focus=area_focus or "compras",
+                        product_focus=product_focus or "Geral B2B"
+                    )
+                    return chunk, result
 
-                        for c in batch:
-                            res = batch_results.get(c['idx'])
+                chunk_tasks = [asyncio.create_task(_process_chunk_and_return(ch)) for ch in chunks]
+
+                approved_tasks = []
+                approved_candidates_data = []
+                rejected_candidates = []
+
+                try:
+                    # Exibe ✅/❌ conforme cada lote termina (sem esperar todos)
+                    for coro in asyncio.as_completed(chunk_tasks):
+                        try:
+                            chunk, chunk_results = await coro
+                        except Exception as e:
+                            await send_log(f"⚠️ [Erro no Lote] {str(e)}", "error")
+                            continue
+
+                        for c in chunk:
+                            res = chunk_results.get(c['idx'])
                             if not res or not res.get("is_valid"):
                                 await send_log(f"❌ [Filtrado] {c['name']} ({c['role']})")
-                                norm_url = _normalize_linkedin(c.get('linkedin_url'))
-                                all_emps_res = await session.execute(
-                                    select(Employee).where(Employee.company_id == db_org.id)
-                                )
-                                all_emps = all_emps_res.scalars().all()
-                                existing_rej = next((e for e in all_emps if (norm_url and _normalize_linkedin(e.linkedin_url) == norm_url) or _names_match(e.name, c['name'])), None)
-                                if existing_rej:
-                                    existing_rej.role = "Reprovado"
-                                    existing_rej.department = "Reprovado"
-                                    await session.commit()
+                                rejected_candidates.append(c)
                                 continue
 
                             emp_name = res.get("proper_name", c['name'])
+                            await send_log(f"✅ [Aprovado] {emp_name} -> {res.get('role', c['role'])} ({res.get('department', 'A validar')})")
                             approved_candidates_data.append({
                                 "res": res,
                                 "candidate": c,
@@ -447,9 +467,31 @@ async def run_linkedin_scrape(
                             else:
                                 approved_tasks.append(asyncio.sleep(0, result=None))
 
-                        email_results = await asyncio.gather(*approved_tasks)
+                    # Marca todas as rejeições no banco em uma única query
+                    if rejected_candidates:
+                        all_emps_rej_res = await session.execute(
+                            select(Employee).where(Employee.company_id == db_org.id)
+                        )
+                        all_emps_rej = all_emps_rej_res.scalars().all()
+                        changed = False
+                        for c in rejected_candidates:
+                            norm_url = _normalize_linkedin(c.get('linkedin_url'))
+                            existing_rej = next(
+                                (e for e in all_emps_rej if
+                                 (norm_url and _normalize_linkedin(e.linkedin_url) == norm_url) or
+                                 _names_match(e.name, c['name'])),
+                                None
+                            )
+                            if existing_rej:
+                                existing_rej.role = "Reprovado"
+                                existing_rej.department = "Reprovado"
+                                changed = True
+                        if changed:
+                            await session.commit()
 
-                        for idx, data in enumerate(approved_candidates_data):
+                    email_results = await asyncio.gather(*approved_tasks)
+
+                    for idx, data in enumerate(approved_candidates_data):
                             res = data['res']
                             c = data['candidate']
                             emp_name = data['emp_name']
@@ -492,30 +534,44 @@ async def run_linkedin_scrape(
                                     existing = matches[0]
                                     await send_log(f"🔗 [Vinculado] {emp_name} encontrado no banco (como {existing.name}). Mesclando perfil do LinkedIn...")
 
-                                from modules.crm.service.pipedrive_service import pipedrive_service
-                                if db_org and db_org.pipedrive_id:
-                                    try:
-                                        pd_search = await pipedrive_service._request(
-                                            "GET",
-                                            "persons/search",
-                                            params={"term": emp_name, "exact_match": 0, "limit": 5}
-                                        )
-                                        if pd_search and pd_search.status_code == 200:
-                                            d = pd_search.json()
-                                            items = d.get("data", {}).get("items") or []
-                                            for i_item in items:
-                                                p = i_item.get("item", {})
-                                                p_org = p.get("organization")
-                                                if p_org and str(p_org.get("id")) == str(db_org.pipedrive_id):
-                                                    n1, n2 = _clean_name(emp_name), _clean_name(p.get("name", ""))
-                                                    if n1 in n2 or n2 in n1 or _names_match(emp_name, p.get("name", "")):
-                                                        pd_email = p.get("primary_email")
-                                                        if pd_email:
-                                                            emp_email = pd_email
+                            # Busca no Pipedrive para obter pipedrive_id, email e telefone.
+                            # Se existing já foi encontrado, enriquece o registro — não cria novo.
+                            from modules.crm.service.pipedrive_service import pipedrive_service
+                            if db_org and db_org.pipedrive_id:
+                                try:
+                                    pd_search = await pipedrive_service._request(
+                                        "GET",
+                                        "persons/search",
+                                        params={"term": emp_name, "exact_match": 0, "limit": 5}
+                                    )
+                                    if pd_search and pd_search.status_code == 200:
+                                        d = pd_search.json()
+                                        items = d.get("data", {}).get("items") or []
+                                        for i_item in items:
+                                            p = i_item.get("item", {})
+                                            p_org = p.get("organization")
+                                            if p_org and str(p_org.get("id")) == str(db_org.pipedrive_id):
+                                                n1, n2 = _clean_name(emp_name), _clean_name(p.get("name", ""))
+                                                if n1 in n2 or n2 in n1 or _names_match(emp_name, p.get("name", "")):
+                                                    pd_email = p.get("primary_email")
+                                                    if pd_email:
+                                                        emp_email = pd_email
 
-                                                        pd_phones = p.get("phones")
-                                                        pd_phone = pd_phones[0] if pd_phones and len(pd_phones) > 0 else None
+                                                    pd_phones = p.get("phones")
+                                                    pd_phone = pd_phones[0] if pd_phones and len(pd_phones) > 0 else None
+                                                    pd_id = str(p.get("id"))
 
+                                                    if existing:
+                                                        # Enriquece o registro já encontrado (nunca insere duplicado)
+                                                        if not existing.pipedrive_id:
+                                                            existing.pipedrive_id = pd_id
+                                                        if not existing.email and pd_email:
+                                                            existing.email = pd_email
+                                                        if not existing.phone and pd_phone:
+                                                            existing.phone = pd_phone
+                                                        await session.commit()
+                                                        await send_log(f"🔗 [Pipedrive] {emp_name} enriquecido com dados do Pipedrive.")
+                                                    else:
                                                         new_emp = Employee(
                                                             name=emp_name,
                                                             role=final_role,
@@ -531,16 +587,16 @@ async def run_linkedin_scrape(
                                                             description=c['role'],
                                                             email=emp_email,
                                                             phone=pd_phone,
-                                                            pipedrive_id=str(p.get("id"))
+                                                            pipedrive_id=pd_id,
                                                         )
                                                         session.add(new_emp)
                                                         await session.commit()
                                                         await session.refresh(new_emp)
                                                         existing = new_emp
                                                         await send_log(f"🔗 [Pipedrive] {emp_name} encontrado no Pipedrive. Importado e mesclado.")
-                                                        break
-                                    except Exception:
-                                        pass
+                                                    break
+                                except Exception:
+                                    pass
 
                             is_new = existing is None
                             if is_new:
@@ -679,14 +735,9 @@ async def run_linkedin_scrape(
                             nodes_to_yield.append(node)
                             if reparented_dicts:
                                 nodes_to_yield.extend(reparented_dicts)
-                            await send_log(f"✅ [Aprovado] {emp_name} -> {final_role} ({dept})")
 
-                            if len(nodes_to_yield) >= 3:
-                                await publish({"type": "batch", "nodes": nodes_to_yield})
-                                nodes_to_yield = []
-
-                    except Exception as e:
-                        await send_log(f"⚠️ [Erro no Lote] {str(e)}", "error")
+                except Exception as e:
+                    await send_log(f"⚠️ [Erro no Processamento] {str(e)}", "error")
 
                 if nodes_to_yield:
                     await publish({"type": "batch", "nodes": nodes_to_yield})

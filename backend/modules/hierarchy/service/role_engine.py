@@ -15,7 +15,7 @@ import random
 import os
 import json
 import asyncio
-from typing import List, Dict, Optional
+from typing import Any, List, Dict, Optional
 from core.external.groq_service import GroqService
 from core.llm.base import LLMTier
 from core.config import settings
@@ -304,7 +304,7 @@ INSTRUÇÕES TÉCNICAS:
 1. EXTRAIA O CARGO: Use o 'Cargo Detectado' do Sniper como base, mas refine se a 'Bio Higienizada' trouxer mais detalhes ou se houver um "Verified Official Role".
 2. **RELEVÂNCIA DO VÍNCULO:** Se o Detetive disse que o vínculo é "NÃO CONFIRMADO", use seu bom senso: se o Título do LinkedIn ou a Bio dizem claramente "{company}", considere confirmando para fins técnicos. 
 3. AVALIE RELEVÂNCIA: Determine se este cargo pertence ou tem interface direta com {area_label}.
-4. **LOGÍSTICA vs COMPRAS:** No foco COMPRAS, aceite perfis de Logística/Supply Chain se eles tiverem interface com fornecedores ou materiais.
+4. **LOGÍSTICA vs COMPRAS / ADMINISTRATIVO:** No foco COMPRAS, aceite perfis de Logística/Supply Chain. SE NÃO HOUVER compras/logística evidentes, aceite perfis ADMINISTRATIVOS (Auxiliar Administrativo, Assistente Administrativo, etc) de brasileiros como fallback.
 5. **VETO ABSOLUTO:** Rejeite Vendas (Vendedor/Sales/Comercial), Marketing, Financeiro, RH, Jurídico e Produção Direta.
 6. Se o cargo contiver "{forbidden}", is_relevant DEVE SER 'false'.
 7. NOMES DE EMPRESAS NÃO SÃO CARGOS. Se o 'Cargo Detectado' for um nome de empresa, trate como "Não Identificado".
@@ -397,9 +397,9 @@ Foco: {area_focus.upper()} ({product_focus or 'Geral'})
 Localização Alvo: {target_location}
 
 REGRAS ESTREITAS: 
-- Queremos apenas pessoas de {area_focus.upper()}.
-- Vendas (Sales/Key Account), RH, Marketing e Atendimento NÃO são {area_focus.upper()}. Marque is_valid=false para estes casos.
-- LOCALIZAÇÃO: Se o perfil indicar claramente que a pessoa está fora de {target_location}, marque is_valid=false.
+- Queremos pessoas de {area_focus.upper()}. Se não houver, aceite perfis ADMINISTRATIVOS (Auxiliar Administrativo, Assistente Adm) como fallback.
+- Vendas (Sales/Key Account), RH, Marketing e Atendimento NÃO são válidos. Marque is_valid=false.
+- LOCALIZAÇÃO: Se o perfil indicar que a pessoa NÃO É BRASILEIRA ou está fora de {target_location}, marque is_valid=false. Prioridade é brasileiros.
 
 LOTE:
 {batch_str}
@@ -416,19 +416,38 @@ Responda APENAS um JSON com os IDs como chaves:
             return {c['idx']: {"is_valid": True, "role": "Professional"} for c in candidates}
 
     async def distill_roles_batch_v2(self, candidates: List[Dict], company: str, product_focus: str = None, area_focus: str = "compras", target_location: str = "Brasil", razao_social: Optional[str] = None) -> Dict[int, Dict]:
-        """Versão otimizada e de alta fidelidade do processamento em lote."""
-        if not candidates: return {}
-        
-        # Agrupa os candidatos em uma string de contexto estruturada
-        batch_context = ""
-        for c in candidates:
-            batch_context += f"--- CANDIDATO ID {c['idx']} ---\n"
-            batch_context += f"NOME INICIAL: {c['name']}\n"
-            batch_context += f"DADOS BRUTOS: {' | '.join(c['context'])[:1000]}\n\n"
+        """Processa candidatos em chunks de 20 em paralelo (máx 3 simultâneos).
+
+        Chunks evitam timeout e limite de tokens do LLM ao enviar lotes grandes de uma vez.
+        """
+        if not candidates:
+            return {}
+
+        CHUNK_SIZE = 20
+        MAX_CONCURRENT = 3
+
+        chunks = [candidates[i:i + CHUNK_SIZE] for i in range(0, len(candidates), CHUNK_SIZE)]
+        semaphore = asyncio.Semaphore(MAX_CONCURRENT)
 
         area_label = "SUPRIMENTOS / COMPRAS / PROCUREMENT" if area_focus == "compras" else "LOGÍSTICA / SUPPLY CHAIN"
-        
-        prompt = f"""
+
+        def _parse_results(raw: Any) -> Optional[Dict[int, Dict]]:
+            if isinstance(raw, dict):
+                parsed = {int(k): v for k, v in raw.items() if str(k).lstrip('-').isdigit()}
+                if parsed:
+                    return parsed
+            return None
+
+        async def _process_chunk(chunk: List[Dict]) -> Dict[int, Dict]:
+            from core.llm.router import ask_llm
+
+            batch_context = ""
+            for c in chunk:
+                batch_context += f"--- CANDIDATO ID {c['idx']} ---\n"
+                batch_context += f"NOME INICIAL: {c['name']}\n"
+                batch_context += f"DADOS BRUTOS: {' | '.join(c['context'])[:800]}\n\n"
+
+            prompt = f"""
 Você é um Juiz de Qualificação B2B especializado em {area_label}.
 Analise este LOTE de candidatos para a empresa '{company}' (Razão Social: '{razao_social or 'Não Informada'}').
 
@@ -436,35 +455,70 @@ OBJETIVO: Identificar se cada pessoa trabalha ATUALMENTE na empresa-alvo e se o 
 
 DIRETRIZES RÍGIDAS:
 1. VETO DE CONFLITO: Se os dados indicam que a pessoa trabalha em OUTRA empresa (Siemens, Vivo, etc), is_valid=false.
-2. VETO TÉCNICO: Rejeite Vendas (Sales/Comercial), RH, Marketing, Financeiro e Produção.
+2. VETO TÉCNICO E FALLBACK ADMINISTRATIVO: Rejeite Vendas (Sales/Comercial), RH, Marketing, Financeiro e Produção Direta. Aceite pessoas de Compras/Logística. Se não achar, aceite perfis ADMINISTRATIVOS (ex: Auxiliar/Assistente Administrativo) como fallback.
 3. VETO DE ALUCINAÇÃO: Nomes de empresas não são cargos.
 4. RAZÃO SOCIAL: Considere '{company}' e '{razao_social}' como a mesma empresa.
-5. LOCALIZAÇÃO: Foco em {target_location}.
+5. LOCALIZAÇÃO E BRASIL: Foco EXCLUSIVO em {target_location}. Rejeite perfis estrangeiros, a prioridade é brasileiros.
 
 LOTE PARA ANÁLISE:
 {batch_context}
 
-Responda APENAS um JSON onde as chaves são os IDs dos candidatos:
+Responda APENAS um JSON onde as chaves são os IDs numéricos dos candidatos (inteiros como string, ex: "0", "1", "2", ...):
 {{
-  "ID": {{
-    "is_valid": bool,
+  "0": {{
+    "is_valid": true,
     "proper_name": "Nome Real Extraído",
     "role": "Cargo Funcional",
     "department": "Departamento",
-    "matching_score": 0-100,
+    "matching_score": 75,
     "evidence": "Explicação curta"
+  }},
+  "1": {{
+    "is_valid": false,
+    "proper_name": "Nome",
+    "role": "Cargo",
+    "department": "Departamento",
+    "matching_score": 0,
+    "evidence": "Motivo da rejeição"
   }}
 }}
 """
-        try:
-            # Usamos o modelo standard para velocidade no lote
-            results = await self.groq.ask(prompt, json_mode=True, tier=LLMTier.STANDARD)
-            # Normaliza as chaves para int
-            return {int(k): v for k, v in results.items()}
-        except Exception as e:
-            print(f"      [RoleEngine] Batch V2 Error: {e}")
-            # Fallback seguro: marca todos como inválidos para não poluir
-            return {c['idx']: {"is_valid": False, "role": "Erro no Processamento"} for c in candidates}
+            async with semaphore:
+                try:
+                    result = await ask_llm(prompt, json_mode=True, tier=LLMTier.DEEP, cacheable=False)
+                    parsed = _parse_results(result.json_data)
+                    if parsed is None:
+                        text = (result.text or "").strip()
+                        m = re.search(r'\{.*\}', text, re.DOTALL)
+                        if m:
+                            parsed = _parse_results(json.loads(m.group(0)))
+                    if parsed is not None:
+                        print(f"      [RoleEngine] Chunk {chunk[0]['idx']}-{chunk[-1]['idx']}: {len(parsed)} avaliados.")
+                        return parsed
+                    raise ValueError(f"JSON inválido na resposta do chunk {chunk[0]['idx']}-{chunk[-1]['idx']}")
+                except Exception as e:
+                    print(f"      [RoleEngine] Chunk error ({chunk[0]['idx']}-{chunk[-1]['idx']}): {e}")
+                    # Fallback permissivo para o chunk que falhou
+                    return {
+                        c['idx']: {
+                            "is_valid": True,
+                            "proper_name": c['name'],
+                            "role": c['role'],
+                            "department": "A Validar",
+                            "matching_score": 30,
+                            "evidence": f"Erro no chunk — revisão manual: {str(e)[:80]}"
+                        }
+                        for c in chunk
+                    }
+
+        chunk_results = await asyncio.gather(*[_process_chunk(ch) for ch in chunks])
+
+        merged: Dict[int, Dict] = {}
+        for partial in chunk_results:
+            merged.update(partial)
+
+        print(f"      [RoleEngine] Batch V2 concluído: {len(merged)}/{len(candidates)} candidatos em {len(chunks)} chunks.")
+        return merged
 
     async def distill_manual_profile(self, raw_text: str, area_focus: str = "compras", target_brand: str = "") -> Dict:
         """

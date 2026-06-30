@@ -434,7 +434,6 @@ async def exec_email_get_inbox(args: Dict[str, Any]) -> Dict[str, Any]:
                         "subject": m.get("subject", ""),
                         "date": (m.get("date") or "")[:10],
                         "preview": (m.get("body") or "")[:300].strip(),
-                        "entryId": m.get("entryId", ""),
                     }
                     for m in messages[:limit]
                 ]
@@ -663,33 +662,36 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                     unique_messages.append(m)
 
             unique_messages.sort(key=lambda m: m.get("date") or "", reverse=True)
-            results = [
-                {
+
+            label = contact_name or contact_email or org_name
+
+            # Monta lista normalizada COM entryId para o cache (dedup exige o campo)
+            def _fmt_email(m: dict) -> dict:
+                return {
+                    "entryId": m.get("entryId", ""),
                     "from": m.get("sender", ""),
                     "to": m.get("to", ""),
                     "subject": m.get("subject", ""),
                     "date": (m.get("date") or "")[:10],
                     "preview": (m.get("body") or "")[:200].strip(),
-                    "body": (m.get("body") or "").strip(),
-                    "entryId": m.get("entryId", ""),
                     "direction": "sent" if seller_domain in (m.get("sender") or "").lower() else "received",
-                    }
-                    for m in unique_messages[:10]
-                    ]
+                }
 
+            cache_emails = [_fmt_email(m) for m in unique_messages if m.get("entryId")]
+            results = cache_emails[:10]  # LLM recebe no máximo 10
 
-            label = contact_name or contact_email or org_name
-            # Persiste no cache para a UI de mensagens e para generate_prospecting_plan.
-            # Aguarda o commit (em vez de create_task fire-and-forget) para evitar que o plano
-            # de prospecção seja gerado antes do histórico recém-buscado estar salvo no banco.
+            # Persiste TODOS no banco (não só os 10 do LLM) para a UI de mensagens
             _email_id = contact_email or search_query
-            if _email_id and results:
+            # Normaliza domínio: garante formato @domain.com (ex: "dva.com" → "@dva.com")
+            if _email_id and "@" not in _email_id and "." in _email_id and " " not in _email_id:
+                _email_id = "@" + _email_id
+            if _email_id and cache_emails:
                 await cache_email_messages(
                     contact_identifier=_email_id,
                     contact_name=label,
                     org_id=org_id,
                     org_name=org_name,
-                    emails=results,
+                    emails=cache_emails,
                 )
             return {
                 "ok": True,
@@ -720,49 +722,41 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
 async def exec_batch_communication_search(args: Dict[str, Any], org_id: int | None = None) -> Dict[str, Any]:
     """
     Realiza buscas em lote (WhatsApp + Email) para uma lista de contatos e para a própria empresa.
-    Otimiza a investigação reduzindo múltiplos turnos em um só.
+    WhatsApp: busca por contato individual (precisa de número).
+    Email: busca única por domínio da empresa (cobre todos os contatos de uma vez).
     """
     contacts = args.get("contacts", [])
     org_name = args.get("org_name", "")
     limit_wa = int(args.get("limit_wa", 40))
-    limit_email = int(args.get("limit_email", 15))
-    
+    limit_email = int(args.get("limit_email", 25))
+
     if not org_name and not contacts:
         return {"ok": False, "error": "Forneça org_name ou uma lista de contacts."}
 
     tasks = []
 
-    # 1. Busca para cada contato (limitado a 5 contatos para não sobrecarregar o bridge)
-    for p in contacts[:5]:
+    # 1. WhatsApp: busca por contato individual (requer número de telefone)
+    for p in contacts[:7]:
         p_name = p.get("name")
         p_phone = p.get("phone")
-        p_email = p.get("email")
-        
-        if p_name:
-            # WhatsApp task (apenas se tiver telefone ou se for busca por nome)
+        if p_name and p_phone:
             tasks.append(exec_whatsapp_get_messages({
                 "contact": p_name,
                 "phone": p_phone,
                 "org_name": org_name,
                 "limit": limit_wa
             }, org_id=org_id))
-            
-            # Email task
-            tasks.append(exec_email_get_contact_history({
-                "contact_name": p_name,
-                "contact_email": p_email,
-                "org_name": org_name,
-                "limit": limit_email
-            }, org_id=org_id))
 
-    # 2. Busca para a organização (nome puro)
+    # WhatsApp para o nome da empresa (cobre grupos e chats da empresa)
     if org_name:
         tasks.append(exec_whatsapp_get_messages({
             "contact": org_name,
             "org_name": org_name,
             "limit": limit_wa
         }, org_id=org_id))
-        
+
+    # 2. Email: uma única busca por domínio da empresa — cobre todos os contatos
+    if org_name:
         tasks.append(exec_email_get_contact_history({
             "org_name": org_name,
             "limit": limit_email

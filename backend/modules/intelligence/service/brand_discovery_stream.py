@@ -214,7 +214,7 @@ async def discover_company_brand_stream(
     
     # Executa todas as buscas em paralelo para evitar timeout
     tasks = [
-        asyncio.wait_for(get_duck_results(query, max_results=15, is_company=True), timeout=25.0)
+        asyncio.wait_for(get_duck_results(query, max_results=15, is_company=True), timeout=12.0)
         for query in active_queries
     ]
     

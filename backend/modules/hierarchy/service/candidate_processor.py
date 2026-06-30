@@ -17,7 +17,7 @@ from typing import Dict, List, Optional
 from .role_engine import role_engine
 from .org_search import org_search
 from modules.intelligence.service.preview_service import get_url_preview
-from .filters import apply_strict_filters, get_department_tag, get_seniority_level, is_same_person
+from .filters import apply_strict_filters, get_department_tag, get_seniority_level, is_same_person, check_location_is_brazilian
 from core.external.email_service import apply_pattern
 from .logging_utils import log_candidate_rejection, log_candidate_analysis, register_raw_data
 
@@ -231,6 +231,14 @@ class CandidateProcessor:
         # 2. 📄 METADADOS (Preview LinkedIn)
         enriched = await get_url_preview(href, company_hint=self.brand, fast_mode=True)
         meta_company = (enriched.get('company', '') or '').strip()
+        
+        # 🇧🇷 FILTRO DE LOCALIZAÇÃO (Rejeita não-brasileiros)
+        candidate_loc = enriched.get('location', '')
+        if candidate_loc:
+            is_br, loc_reason = check_location_is_brazilian(candidate_loc)
+            if is_br is False:
+                log_candidate_rejection(name, href, f"REJEIÇÃO DE LOCALIZAÇÃO: {loc_reason}")
+                return None
         
         # 🧪 INTELIGÊNCIA DE NOME: Se o nome extraído do título parece um cargo ou é genérico,
         # tentamos extrair o nome real dos metadados ou da URL.

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useChatStore } from '../../store/chatStore';
 import { Sparkles, X, Building2 } from 'lucide-react';
 import styles from './ChatTabs.module.css';
@@ -14,6 +15,7 @@ interface CachedOrg {
 }
 
 export const ChatTabs: React.FC = () => {
+  const router = useRouter();
   const activeTabs = useChatStore((state) => state.activeTabs);
   const currentOrgId = useChatStore((state) => state.currentOrgId);
   const setCurrentOrgId = useChatStore((state) => state.setCurrentOrgId);
@@ -73,12 +75,9 @@ export const ChatTabs: React.FC = () => {
 
   const handleTabClick = (orgId: number | null) => {
     setCurrentOrgId(orgId);
-    
-    // Dispara evento para redirecionar visualização do CRM principal, se aplicável
+    // Navega para a empresa clicada para manter URL, layout e chat em sincronia
     if (orgId) {
-      window.dispatchEvent(new CustomEvent('chat_tab_selected', { detail: { orgId } }));
-    } else {
-      window.dispatchEvent(new CustomEvent('chat_tab_selected', { detail: { orgId: null } }));
+      router.push(`/org/${orgId}`);
     }
   };
 

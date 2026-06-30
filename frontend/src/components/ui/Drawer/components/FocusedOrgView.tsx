@@ -18,7 +18,7 @@ interface FocusedOrgViewProps {
     setEditingNameOrgId: (id: number | null) => void;
     handleRenameOrg: (orgId: number) => Promise<void>;
     handleUpdateOrg: (orgId: number, data: Record<string, any>) => Promise<void>;
-    scanningOrgId: number | null;
+    scanningOrgIds: number[];
     selectedOrgId?: number | null;
     selectedOrgLogo?: string;
     graphEmployees?: any[];
@@ -44,7 +44,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
     setEditingNameOrgId,
     handleRenameOrg,
     handleUpdateOrg,
-    scanningOrgId,
+    scanningOrgIds,
     selectedOrgId,
     selectedOrgLogo,
     graphEmployees = [],
@@ -100,24 +100,22 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
             const { organizations } = await import('@/services/api');
             const res = await organizations.batchValidateEmails(orgId);
             if (res.ok) {
-                // Notifica sucesso visual
-                const event = new CustomEvent('crm_notification', {
-                    detail: { type: 'success', message: 'Superteste iniciado em segundo plano! A tela será atualizada em breve.' }
-                });
-                window.dispatchEvent(event);
-                
-                // Dispara o evento para atualizar a timeline e a UI de pessoas
-                const changeEvent = new CustomEvent('crm_timeline_changed');
-                window.dispatchEvent(changeEvent);
+                window.dispatchEvent(new CustomEvent('crm_notification', {
+                    detail: { type: 'success', message: 'Validação iniciada! Os e-mails serão atualizados em instantes.' }
+                }));
+                // Backend processa em background (~30s). Mantém animação e dispara refresh ao final.
+                setTimeout(() => {
+                    setIsBatchValidating(false);
+                    window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                }, 35000);
+            } else {
+                setIsBatchValidating(false);
             }
         } catch (error) {
             console.error('Erro ao iniciar validação em lote:', error);
-            const errorEvent = new CustomEvent('crm_notification', {
-                detail: { type: 'error', message: 'Erro ao executar o superteste de e-mails em lote.' }
-            });
-            window.dispatchEvent(errorEvent);
-        } finally {
-            // Remove o estado de carregamento imediatamente após o backend responder
+            window.dispatchEvent(new CustomEvent('crm_notification', {
+                detail: { type: 'error', message: 'Erro ao iniciar validação de e-mails.' }
+            }));
             setIsBatchValidating(false);
         }
     };
@@ -132,7 +130,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                 <div className={styles.focusedOrgLogoWrapper} style={photoUrl ? { position: 'relative', zIndex: 1 } : undefined}>
                     <Avatar
                         kind="company"
-                        src={focusedOrg.logo || (Number(focusedOrg.id) === selectedOrgId || Number(focusedOrg.local_id) === selectedOrgId ? selectedOrgLogo : undefined)}
+                        src={focusedOrg.logo || (Number(focusedOrg.id) === selectedOrgId ? selectedOrgLogo : undefined)}
                         name={focusedOrg.name}
                         data={focusedOrg}
                         size={48}
@@ -212,7 +210,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                     Tier {orgDetails[expandedOrgId].icp_tier} • {orgDetails[expandedOrgId].icp_score}%
                                 </Badge>
                             )}
-                            {scanningOrgId === expandedOrgId && (
+                            {expandedOrgId !== null && scanningOrgIds.includes(expandedOrgId) && (
                                 <Spinner size={16} inline color="var(--sw-primary)" />
                             )}
                         </h2>
@@ -273,6 +271,22 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                             {activeTab === 'persons' && (
                                 <ContactList
                                     orgName={focusedOrg.name}
+                                    genericContacts={(() => {
+                                        const domain: string | undefined =
+                                            orgDetails[expandedOrgId]?.org?.domain ||
+                                            focusedOrg?.domain;
+                                        const mapsPhone: string | undefined =
+                                            orgDetails[expandedOrgId]?.org?.maps_phone || undefined;
+                                        const gc: { id: string; email?: string; phone?: string; label: string }[] = [];
+                                        if (domain) {
+                                            gc.push({ id: 'gc_compras', email: `compras@${domain}`, label: 'compras' });
+                                            gc.push({ id: 'gc_suprimentos', email: `suprimentos@${domain}`, label: 'suprimentos' });
+                                        }
+                                        if (mapsPhone) {
+                                            gc.push({ id: 'gc_maps', phone: mapsPhone, label: 'google_maps' });
+                                        }
+                                        return gc;
+                                    })()}
                                     persons={(() => {
                                         const pipedrivePersons = orgDetails[expandedOrgId]?.persons || [];
                                         const validEmps = graphEmployees.filter(emp => {
@@ -362,7 +376,8 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                                     id: `mapped_${emp.id}`,
                                                     name: emp.name,
                                                     job_title: emp.role || emp.title || 'Cargo não informado',
-                                                    email: emp.email ? [{ value: emp.email, primary: true }] : undefined,
+                                                    email: emp.email ? [{ value: emp.email, primary: true, label: emp.email_verified ? 'verified' : undefined }] : undefined,
+                                                    email_verified: !!emp.email_verified,
                                                     phone: emp.phone ? [{ value: emp.phone, primary: true }] : undefined,
                                                     sources: ['mapped'],
                                                     linkedin: emp.linkedin,
@@ -380,6 +395,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                     onEmailDiscovered={onEmailDiscovered}
                                     onBatchValidateEmails={handleBatchValidateEmails}
                                     isBatchValidating={isBatchValidating}
+                                    orgId={expandedOrgId}
                                 />
                             )}
 

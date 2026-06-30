@@ -72,13 +72,16 @@ async def get_organization(
     Busca uma organização específica pelo ID.
     """
     try:
-        from sqlalchemy import or_
-        stmt = select(Organization).where(
-            or_(Organization.id == org_id, Organization.pipedrive_id == org_id)
-        )
+        # Prioriza pipedrive_id (que a URL usa) antes de id local,
+        # evitando colisão quando pipedrive_id de uma empresa = id local de outra.
+        stmt = select(Organization).where(Organization.pipedrive_id == org_id)
         result = await db.execute(stmt)
         org = result.scalars().first()
-        
+        if not org:
+            stmt = select(Organization).where(Organization.id == org_id)
+            result = await db.execute(stmt)
+            org = result.scalars().first()
+
         if not org:
             return {"error": "Organization not found"}
         
@@ -92,7 +95,8 @@ async def get_organization(
             "address": org.address,
             "icp_score": org.icp_score,
             "icp_tier": org.icp_tier,
-            "prospecting_context": org.prospecting_context
+            "prospecting_context": org.prospecting_context,
+            "maps_phone": org.maps_phone or None,
         }
     
     except Exception as e:
@@ -144,13 +148,14 @@ async def delete_prospecting_plan(
     Apaga o plano de prospecção (prospecting_context) de uma organização.
     """
     try:
-        from sqlalchemy import or_
-        stmt = select(Organization).where(
-            or_(Organization.id == org_id, Organization.pipedrive_id == org_id)
-        )
+        stmt = select(Organization).where(Organization.pipedrive_id == org_id)
         result = await db.execute(stmt)
         org = result.scalars().first()
-        
+        if not org:
+            stmt = select(Organization).where(Organization.id == org_id)
+            result = await db.execute(stmt)
+            org = result.scalars().first()
+
         if not org:
             raise HTTPException(status_code=404, detail="Organização não encontrada.")
             

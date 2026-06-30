@@ -372,6 +372,12 @@ async def run_b2b_discovery_task(
 async def startup(ctx):
     """Hook executado quando o worker ARQ inicia."""
     configure_logging()
+    # Limpa o sorted-set de cron do ARQ para não processar backlog acumulado
+    # em hot-reloads rápidos (watchfiles), que causaria burst de centenas de runs.
+    try:
+        await ctx['redis'].delete('arq:cron')
+    except Exception as e:
+        log.warning("worker.startup.cron_flush_failed", error=str(e))
     log.info("worker.started")
 
 
@@ -487,8 +493,8 @@ async def run_smart_reschedule_task(ctx):
 class WorkerSettings:
     functions = [run_b2b_discovery_task, run_agent_task, resume_agent_task, run_smart_reschedule_task, run_linkedin_scrape_task]
     cron_jobs = [
-        cron(scan_email_triggers, minute=set(range(0, 60, 2))),
-        cron(scan_whatsapp_triggers, minute=set(range(0, 60, 1))),
+        cron(scan_email_triggers, minute=set(range(0, 60, 2))),  # a cada 2 minutos
+        cron(scan_whatsapp_triggers),  # a cada minuto (minute=None → ARQ calcula next_run corretamente)
     ]
     redis_settings = redis_settings
     job_timeout = 1800 # 30 min (Aumentando de 300s pra dar tempo aos fallback engines e delays)

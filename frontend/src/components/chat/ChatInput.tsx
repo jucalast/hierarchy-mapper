@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
-    X, Loader2, Building2, Mic, ArrowUp, Zap, AlertTriangle, CheckCircle2, XCircle, Maximize2, Minimize2, Terminal
+    X, Loader2, Building2, Mic, ArrowUp, Zap, AlertTriangle, CheckCircle2, XCircle, Maximize2, Minimize2, Terminal, Play, Check, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { CompanyResult } from './ChatInterfaces';
 import { getAvatarUrl, getProxiedUrl, getCompanyLogoUrl } from '../../utils/avatarUtils';
@@ -12,6 +12,7 @@ import { InlineEventStream, MappedContact } from './AgentV2Message';
 // AgentEvent re-exported for consumers
 export type { AgentEvent } from './AgentV2Message';
 import { ActiveTaskConsole } from './ActiveTaskConsole';
+import type { BatchQueueItem } from '../../store/chatStore';
 
 interface ChatInputProps {
     inputValue: string;
@@ -55,6 +56,14 @@ interface ChatInputProps {
     onTaskInlineConfirm?: (action_id: string, approved: boolean) => Promise<void>;
     onTaskMappingComplete?: (contacts: MappedContact[]) => Promise<void>;
     onCancelActiveTask?: () => void;
+    // Batch queue props
+    batchQueue?: BatchQueueItem[];
+    isBatchRunning?: boolean;
+    batchRunningSnapshot?: BatchQueueItem[];
+    batchCurrentIndex?: number;
+    onExecuteBatch?: () => void;
+    onClearBatch?: () => void;
+    onRemoveBatchItem?: (messageId: string, actionIndex: number, action: BatchQueueItem['action']) => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -70,15 +79,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     isStreamingActivity = false,
     pipedriveCooldown = 0,
     theme, onStop, activeRunningTask, setActiveRunningTask,
-    taskInlineConfirmed, onTaskInlineConfirm, onTaskMappingComplete, onCancelActiveTask
+    taskInlineConfirmed, onTaskInlineConfirm, onTaskMappingComplete, onCancelActiveTask,
+    batchQueue = [], isBatchRunning = false, batchRunningSnapshot = [], batchCurrentIndex = -1,
+    onExecuteBatch, onClearBatch, onRemoveBatchItem,
 }) => {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const highlighterRef = useRef<HTMLDivElement>(null);
     const autocompleteRef = useRef<HTMLDivElement>(null);
     const taskConsoleLogsBottomRef = useRef<HTMLDivElement>(null);
     const [isStopHovered, setIsStopHovered] = useState(false);
+    const [batchConsoleOpen, setBatchConsoleOpen] = useState(false);
 
     const isExpandedRunningTask = activeRunningTask && activeRunningTask.isExpanded;
+
+    useEffect(() => {
+        if (isBatchRunning) setBatchConsoleOpen(true);
+    }, [isBatchRunning]);
 
     useEffect(() => {
         if (isExpandedRunningTask) {
@@ -160,10 +176,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
     const notice = getNoticeStyle(modelActivity || [], undefined, theme);
     const hasRunningTask = !!activeRunningTask;
+    const hasBatchBar = batchQueue.length > 0 || isBatchRunning;
+    const isExpandedBatchConsole = isBatchRunning && batchConsoleOpen && !!activeRunningTask;
 
     const consoleBg = 'var(--chat-console-bg)';
 
-    const taskStyle = (hasRunningTask && !isExpandedRunningTask) ? {
+    const taskStyle = ((hasRunningTask || hasBatchBar) && !isExpandedRunningTask && !isExpandedBatchConsole) ? {
         border: 'var(--sw-border-width) solid var(--chat-border-weak)',
         background: consoleBg,
         borderRadius: 'var(--radius-lg)',
@@ -171,9 +189,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         overflow: 'hidden',
     } : null;
 
-    const inputContainerStyle = isExpandedRunningTask ? {
+    const inputContainerStyle = (isExpandedRunningTask || isExpandedBatchConsole) ? {
         position: 'absolute' as const,
-        top: '50%',
+        top: isExpandedBatchConsole ? '18%' : '30%',
         bottom: 0,
         left: 0,
         width: '100%',
@@ -183,7 +201,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         flexDirection: 'column' as const,
     } : {};
 
-    const expandedTaskStyle = isExpandedRunningTask ? {
+    const expandedTaskStyle = (isExpandedRunningTask || isExpandedBatchConsole) ? {
         border: 'var(--sw-border-width) solid var(--chat-border-weak)',
         background: consoleBg,
         borderRadius: 'var(--radius-lg)',
@@ -302,14 +320,200 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         );
     };
 
+    const renderBatchQueueBar = () => {
+        if (!hasBatchBar) return null;
+
+        const accentColor = '#6366f1';
+        const count = batchQueue.length;
+        const statusLabel = isBatchRunning
+            ? 'Executando em lote'
+            : `${count} ${count === 1 ? 'ação na fila' : 'ações na fila'}`;
+
+        const iconBtn = (onClick: React.MouseEventHandler, title: string, children: React.ReactNode) => (
+            <div
+                onClick={onClick}
+                title={title}
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    color: 'var(--sw-text-muted)',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => {
+                    e.currentTarget.style.background = 'var(--sw-hover)';
+                    e.currentTarget.style.color = 'var(--sw-text-base)';
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--sw-text-muted)';
+                }}
+            >
+                {children}
+            </div>
+        );
+
+        return (
+            <div style={{
+                background: consoleBg,
+                borderTopLeftRadius: 'var(--radius-lg)',
+                borderTopRightRadius: 'var(--radius-lg)',
+                userSelect: 'none',
+                ...(isExpandedBatchConsole ? {
+                    display: 'flex',
+                    flexDirection: 'column' as const,
+                    flex: 1,
+                    minHeight: 0,
+                    overflow: 'hidden',
+                } : {}),
+            }}>
+                {/* Header row — clicável para abrir/fechar console quando executando em lote */}
+                <div
+                    onClick={isBatchRunning ? () => setBatchConsoleOpen(prev => !prev) : undefined}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '8px 16px',
+                        fontSize: 'var(--font-sm)',
+                        fontWeight: 500,
+                        letterSpacing: '0.01em',
+                        cursor: isBatchRunning ? 'pointer' : 'default',
+                    }}
+                >
+                    <span style={{ color: accentColor, fontWeight: 600, flex: 1 }}>{statusLabel}</span>
+
+                    {isBatchRunning && (
+                        <span style={{ color: 'var(--sw-text-muted)', display: 'flex', alignItems: 'center' }}>
+                            {batchConsoleOpen
+                                ? <ChevronDown size={14} />
+                                : <ChevronUp size={14} />}
+                        </span>
+                    )}
+
+                    {!isBatchRunning && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onExecuteBatch?.(); }}
+                            title={`Executar ${count} ${count === 1 ? 'ação' : 'ações'}`}
+                            style={{
+                                width: 26,
+                                height: 26,
+                                borderRadius: 7,
+                                background: theme === 'light' ? '#000000' : '#ffffff',
+                                color: theme === 'light' ? '#ffffff' : '#000000',
+                                border: theme === 'light' ? '1px solid rgba(0,0,0,0.45)' : '1px solid var(--sw-border-strong)',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                transition: 'all 0.2s ease',
+                                transform: 'translateY(-1px)',
+                            }}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.2)';
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+                            }}
+                            onMouseDown={e => (e.currentTarget.style.transform = 'translateY(0)')}
+                            onMouseUp={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
+                        >
+                            <Play size={11} strokeWidth={2.5} />
+                        </button>
+                    )}
+
+                </div>
+
+                {/* Item list — idle: batchQueue com botão remover; running: snapshot com status */}
+                {(() => {
+                    const listItems = isBatchRunning ? batchRunningSnapshot : batchQueue;
+                    if (listItems.length === 0) return null;
+                    return (
+                        <>
+                            {listItems.map((item, idx) => {
+                                const isDone = isBatchRunning && idx < batchCurrentIndex;
+                                const isActive = isBatchRunning && idx === batchCurrentIndex;
+                                return (
+                                    <div
+                                        key={`${item.messageId}-${item.actionIndex}`}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 8,
+                                            padding: '5px 16px 5px 20px',
+                                            fontSize: 'var(--font-sm)',
+                                            borderTop: idx === 0 ? 'var(--sw-border-width) solid var(--sw-border)' : 'none',
+                                            opacity: isBatchRunning && !isDone && !isActive ? 0.45 : 1,
+                                            transition: 'opacity 0.2s',
+                                        }}
+                                    >
+                                        {/* Status icon */}
+                                        <span style={{ flexShrink: 0, width: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {isDone && <Check size={13} strokeWidth={2.5} color="#22c55e" />}
+                                            {isActive && <Loader2 size={13} strokeWidth={2.5} color={accentColor} style={{ animation: 'spin 1s linear infinite' }} />}
+                                            {!isDone && !isActive && (
+                                                <span style={{ fontSize: 'var(--font-xs)', color: accentColor, fontWeight: 700 }}>
+                                                    {idx + 1}.
+                                                </span>
+                                            )}
+                                        </span>
+                                        <span style={{
+                                            flex: 1,
+                                            minWidth: 0,
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            color: isActive ? 'var(--sw-text-base)' : 'var(--sw-text-subtle)',
+                                            fontWeight: isActive ? 500 : 400,
+                                        }}>
+                                            {item.action.label}
+                                        </span>
+                                        {!isBatchRunning && iconBtn(
+                                            (e) => { e.stopPropagation(); onRemoveBatchItem?.(item.messageId, item.actionIndex, item.action); },
+                                            'Remover da fila',
+                                            <X size={12} />
+                                        )}
+                                    </div>
+                                );
+                            })}
+                            <div style={{ height: 6 }} />
+                        </>
+                    );
+                })()}
+
+                {/* Console de execução em lote — só aparece quando executando e header está aberto */}
+                {isExpandedBatchConsole && activeRunningTask && (
+                    <ActiveTaskConsole
+                        activeRunningTask={activeRunningTask}
+                        isExpanded={true}
+                        inlineConfirmed={taskInlineConfirmed || {}}
+                        onInlineConfirm={onTaskInlineConfirm || (async () => { })}
+                        onMappingComplete={onTaskMappingComplete}
+                        model={model}
+                        theme={theme}
+                    />
+                )}
+            </div>
+        );
+    };
 
 
     return (
         <div className={styles.inputContainer} style={inputContainerStyle}>
             <div style={containerStyle}>
                 {notice && <ModelActivityBar events={modelActivity || []} theme={theme} />}
-                {hasRunningTask && renderTaskMinimizedBar()}
-                {isExpandedRunningTask && (
+                {renderBatchQueueBar()}
+                {hasRunningTask && !isBatchRunning && renderTaskMinimizedBar()}
+                {isExpandedRunningTask && !isExpandedBatchConsole && (
                     <ActiveTaskConsole
                         activeRunningTask={activeRunningTask}
                         isExpanded={isExpandedRunningTask}
@@ -322,7 +526,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 )}
                 <div
                     className={styles.inputBox}
-                    style={isExpandedRunningTask ? {
+                    style={(isExpandedRunningTask || isExpandedBatchConsole) ? {
                         padding: '8px',
                     } : {}}
                 >

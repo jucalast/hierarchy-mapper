@@ -118,9 +118,12 @@ class EmailClient:
         log.error("email.outlook.error", context=context_msg, error=e)
         return False
 
-    def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False, attachment_paths: Optional[List[str]] = None):
+    def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False, attachment_paths: Optional[List[str]] = None, cc_list: Optional[List[str]] = None):
         """
-        Envia e-mail via Outlook App ou SMTP com suporte a Recibo de Leitura.
+        Envia e-mail via Outlook App ou SMTP com suporte a Recibo de Leitura e cópia (CC).
+
+        cc_list: lista de endereços a colocar em cópia (CC). Usada automaticamente em
+                 e-mails de prospecção para incluir compras@ e suprimentos@.
         """
         # Delay humano
         time.sleep(random.uniform(1.0, 2.5))
@@ -128,6 +131,9 @@ class EmailClient:
         # Limpeza básica do e-mail (remove menções ou espaços acidentais)
         if to_email:
             to_email = to_email.strip().lstrip("@")
+
+        # Filtra entradas inválidas do cc_list
+        clean_cc = [e.strip() for e in (cc_list or []) if e and "@" in e and e.strip() != to_email]
 
         # Injetar Pixel de Rastreio
         final_body = html_body
@@ -142,9 +148,11 @@ class EmailClient:
                     pythoncom.CoInitialize()
                     outlook = self._get_outlook_instance(force_new=(attempt > 0))
                     if not outlook: raise Exception("Não foi possível conectar ao Outlook")
-                    
+
                     mail = outlook.CreateItem(0) # 0 = olMailItem
                     mail.To = to_email
+                    if clean_cc:
+                        mail.CC = "; ".join(clean_cc)
                     mail.Subject = subject
                     
                     # Mágica para pegar a ASSINATURA OFICIAL do Outlook:
@@ -201,6 +209,8 @@ class EmailClient:
             msg = MIMEMultipart()
             msg['From'] = self.email_address
             msg['To'] = to_email
+            if clean_cc:
+                msg['CC'] = ", ".join(clean_cc)
             msg['Subject'] = subject
             msg.attach(MIMEText(final_body, 'html'))
 
@@ -233,9 +243,13 @@ class EmailClient:
                 log.error("email.sent.error", provider="smtp", error=e)
                 return False
 
-    def reply_to_email(self, entry_id: str, html_body: str, reply_all: bool = True, attachment_paths: Optional[List[str]] = None):
+    def reply_to_email(self, entry_id: str, html_body: str, reply_all: bool = True,
+                       attachment_paths: Optional[List[str]] = None,
+                       subject_hint: Optional[str] = None, contact_name: Optional[str] = None):
         """
         Responde a um e-mail específico mantendo a Thread (In-Reply-To).
+        Quando GetItemFromID falha (entryId stale/corrompido), usa subject_hint para
+        localizar o e-mail nas pastas Inbox e Enviados.
         """
         if not self.use_outlook_app:
             log.warning("email.reply.outlook_only")
@@ -247,12 +261,66 @@ class EmailClient:
                 outlook = self._get_outlook_instance(force_new=(attempt > 0))
                 if not outlook: return False
 
-                # Localiza a mensagem original
+                # Localiza a mensagem original.
+                # GetItemFromID sem StoreID pode falhar em Exchange Online — tenta com StoreID de cada store.
+                namespace = outlook.GetNamespace("MAPI")
+                original_msg = None
                 try:
-                    namespace = outlook.GetNamespace("MAPI")
                     original_msg = namespace.GetItemFromID(entry_id)
-                except Exception as e:
-                    log.error("email.outlook.item_not_found", entry_id=entry_id[:10], error=e)
+                except Exception:
+                    for store in namespace.Stores:
+                        try:
+                            original_msg = namespace.GetItemFromID(entry_id, store.StoreID)
+                            if original_msg:
+                                break
+                        except Exception:
+                            continue
+
+                # Fallback por assunto: busca nas pastas Inbox + Enviados quando o entryId falhou.
+                if not original_msg and subject_hint:
+                    log.warning("email.outlook.entry_id_fallback", entry_id=entry_id[:10], subject_hint=subject_hint[:40])
+                    try:
+                        import re as _re
+                        _clean_subj = subject_hint.lower().strip()
+                        _folders_to_try = []
+                        try:
+                            for _store in namespace.Stores:
+                                if "joao.moura" in (_store.DisplayName or "").lower():
+                                    _root = _store.GetRootFolder()
+                                    for _f in _root.Folders:
+                                        _fname = (_f.Name or "").lower()
+                                        if _fname in ("caixa de entrada", "inbox", "itens enviados", "sent items", "sent"):
+                                            _folders_to_try.append(_f)
+                                    break
+                        except Exception:
+                            pass
+                        if not _folders_to_try:
+                            _folders_to_try = [namespace.GetDefaultFolder(6), namespace.GetDefaultFolder(5)]
+
+                        for _folder in _folders_to_try:
+                            try:
+                                _items = _folder.Items
+                                _items.Sort("[ReceivedTime]", True)
+                                for _item in _items:
+                                    try:
+                                        _subj = (getattr(_item, "Subject", "") or "").lower().strip()
+                                        # Remove prefixo "re:", "re: " antes de comparar
+                                        _subj_clean = _re.sub(r'^(re:\s*)+', '', _subj)
+                                        _hint_clean = _re.sub(r'^(re:\s*)+', '', _clean_subj)
+                                        if _subj_clean == _hint_clean or _hint_clean in _subj_clean or _subj_clean in _hint_clean:
+                                            original_msg = _item
+                                            break
+                                    except Exception:
+                                        continue
+                            except Exception:
+                                continue
+                            if original_msg:
+                                break
+                    except Exception as _fe:
+                        log.warning("email.outlook.subject_fallback_failed", error=_fe)
+
+                if not original_msg:
+                    log.error("email.outlook.item_not_found", entry_id=entry_id[:10], subject_hint=subject_hint)
                     return False
 
                 # Cria a resposta (Reply ou ReplyAll)

@@ -6,9 +6,9 @@ Registro de acoes automatizadas pelo agente para auditoria.
 Armazena tipo de acao, payload, resposta, timestamps e status.
 Permite revisao humana do que o agente executou em cada sessao.
 """
-from sqlalchemy import Column, Integer, String, DateTime, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from core.infra.database import Base
+from core.infra.database import Base, SafeJSON
 from datetime import datetime
 
 class AutomatedAction(Base):
@@ -19,7 +19,7 @@ class AutomatedAction(Base):
     task_type = Column(String)  # 'whatsapp_followup', 'email_reminder', 'pipedrive_sync'
     status = Column(String, default="pending")  # 'pending', 'completed', 'failed', 'cancelled'
     
-    payload = Column(JSON)  # Dados da tarefa (mensagem, destinatário, etc)
+    payload = Column(SafeJSON)  # Dados da tarefa (mensagem, destinatário, etc)
     
     execute_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)

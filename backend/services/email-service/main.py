@@ -91,17 +91,19 @@ async def send_email(
     body: str = Body(..., embed=True),
     attachment_paths: Optional[List[str]] = Body(None, embed=True),
     tracking_id: Optional[str] = Body(None, embed=True),
-    request_receipt: bool = Body(False, embed=True)
+    request_receipt: bool = Body(False, embed=True),
+    cc: Optional[List[str]] = Body(None, embed=True),
 ):
-    """Envia um email utilizando o Outlook Desktop ou SMTP."""
+    """Envia um email utilizando o Outlook Desktop ou SMTP. cc aceita lista de endereços em cópia."""
     c = await get_client()
     try:
         success = await asyncio.to_thread(
             c.send_outbound_email, to, subject, body, tracking_id,
-            request_read_receipt=request_receipt, attachment_paths=attachment_paths
+            request_read_receipt=request_receipt, attachment_paths=attachment_paths,
+            cc_list=cc,
         )
         if success:
-            return {"success": True, "to": to, "subject": subject}
+            return {"success": True, "to": to, "subject": subject, "cc": cc or []}
         raise HTTPException(status_code=500, detail="Erro ao enviar email.")
     except HTTPException:
         raise
@@ -113,13 +115,18 @@ async def reply_email(
     entry_id: str = Body(..., embed=True),
     body: str = Body(..., embed=True),
     attachment_paths: Optional[List[str]] = Body(None, embed=True),
-    reply_all: bool = Body(True, embed=True)
+    reply_all: bool = Body(True, embed=True),
+    subject_hint: Optional[str] = Body(None, embed=True),
+    contact_name: Optional[str] = Body(None, embed=True),
 ):
     """Responde a um email existente (Thread) usando o EntryID do Outlook."""
     c = await get_client()
     try:
         success = await asyncio.to_thread(
-            c.reply_to_email, entry_id, body, reply_all, attachment_paths=attachment_paths
+            c.reply_to_email, entry_id, body, reply_all,
+            attachment_paths=attachment_paths,
+            subject_hint=subject_hint,
+            contact_name=contact_name,
         )
         if success:
             return {"success": True, "entry_id": entry_id}

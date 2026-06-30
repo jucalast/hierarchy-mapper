@@ -148,34 +148,35 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
     ddg_success = False
     ddg_results = []
     
-    # 🚀 Otimização: Reduzi tentativas DDG de 4 para 2 se o erro for 403 (IP Bloqueado)
-    for attempt in range(4):
+    def _sync_ddg_search(q: str, n: int) -> list:
+        with DDGS(timeout=5) as ddgs:
+            return list(ddgs.text(q, region="br-pt", max_results=n))
+
+    for attempt in range(2):
         try:
             ua = random.choice(user_agents)
             print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4) com UA: {ua[:30]}...")
 
-            with DDGS(timeout=15) as ddgs:
-                raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results))
+            # Executa em thread para não bloquear o event loop (permite scans concorrentes)
+            raw_results = await asyncio.to_thread(_sync_ddg_search, query, max_results)
 
-                if raw_results:
-                    if filter_linkedin:
-                        valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
-                        filtered = []
-                        for r in raw_results:
-                            href = r.get("href", "")
-                            if any(p in href for p in valid_patterns):
-                                r["href"] = normalize_linkedin_url(href)
-                                filtered.append(r)
-                    else:
-                        filtered = raw_results
-                            
-                    if filtered:
-                        print(f"[SearchEngine] ✅ Sucesso (DDG)! {len(filtered)} resultados encontrados.")
-                        ddg_results = filtered
-                        ddg_success = True
-                        break
+            if raw_results:
+                if filter_linkedin:
+                    valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
+                    filtered = []
+                    for r in raw_results:
+                        href = r.get("href", "")
+                        if any(p in href for p in valid_patterns):
+                            r["href"] = normalize_linkedin_url(href)
+                            filtered.append(r)
+                else:
+                    filtered = raw_results
 
-                await asyncio.sleep(1.0)
+                if filtered:
+                    print(f"[SearchEngine] ✅ Sucesso (DDG)! {len(filtered)} resultados encontrados.")
+                    ddg_results = filtered
+                    ddg_success = True
+                    break
 
         except Exception as e:
             msg = str(e)

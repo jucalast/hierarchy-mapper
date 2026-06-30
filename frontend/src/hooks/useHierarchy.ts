@@ -56,27 +56,29 @@ export const useHierarchy = () => {
   const chatContextRef = useRef({ chatPrompted: false, orgId: null as number | null, orgName: '' });
   const scanFinishedRef = useRef(false);
   const chatDoneDispatchedRef = useRef(false);
-  const brandDiscoveryAbortControllerRef = useRef<AbortController | null>(null);
+  const brandDiscoveryAbortControllerRef = useRef<Map<number, AbortController>>(new Map());
   const refineAbortControllerRef = useRef<AbortController | null>(null);
 
-  // Recupera contexto de chat pendente
+  // Recupera contexto de chat pendente — só ativa se o org_id bater com o atual
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const pending = localStorage.getItem('pending-hierarchy-continuation');
-    if (pending) {
-      try {
-        const parsed = JSON.parse(pending);
-        if (parsed && parsed.org_id) {
-          console.log('[useHierarchy] Chat aguardando mapeamento para org:', parsed.org_id);
-          chatContextRef.current = {
-            chatPrompted: true,
-            orgId: Number(parsed.org_id),
-            orgName: parsed.org_name || ''
-          };
-        }
-      } catch (e) { /* ignore */ }
-    }
-  }, []);
+    if (!pending) return;
+    try {
+      const parsed = JSON.parse(pending);
+      if (parsed && parsed.org_id && currentOrgId && Number(parsed.org_id) === currentOrgId) {
+        console.log('[useHierarchy] Chat aguardando mapeamento para org:', parsed.org_id);
+        chatContextRef.current = {
+          chatPrompted: true,
+          orgId: Number(parsed.org_id),
+          orgName: parsed.org_name || ''
+        };
+      } else if (parsed && parsed.org_id && currentOrgId && Number(parsed.org_id) !== currentOrgId) {
+        // Chave pertence a outra org — descarta para não disparar plano indevidamente
+        localStorage.removeItem('pending-hierarchy-continuation');
+      }
+    } catch (e) { /* ignore */ }
+  }, [currentOrgId]);
 
   const cleanName = (name: string) => {
     if (!name) return "";
@@ -111,6 +113,7 @@ export const useHierarchy = () => {
     }
 
     chatDoneDispatchedRef.current = true;
+    localStorage.removeItem('pending-hierarchy-continuation');
 
     // Filtra e formata os contatos finais para o agente
     const contacts = currentNodes
@@ -247,9 +250,9 @@ export const useHierarchy = () => {
       return null;
     }
 
-    // Cria AbortController
+    // Cria AbortController — keyed por orgId para suportar múltiplos simultâneos
     const controller = new AbortController();
-    brandDiscoveryAbortControllerRef.current = controller;
+    brandDiscoveryAbortControllerRef.current.set(targetOrgId, controller);
 
     try {
       const streamUrl = hierarchyApi.getDiscoverBrandStreamUrl({
@@ -372,17 +375,30 @@ export const useHierarchy = () => {
       store.setMappingError(targetOrgId, "Falha na conexão com o servidor (streaming).");
       return null;
     } finally {
-      if (brandDiscoveryAbortControllerRef.current === controller) {
-        brandDiscoveryAbortControllerRef.current = null;
+      if (brandDiscoveryAbortControllerRef.current.get(targetOrgId) === controller) {
+        brandDiscoveryAbortControllerRef.current.delete(targetOrgId);
       }
       store.setDiscovering(targetOrgId, false);
     }
   }, [currentOrgId]);
 
-  const cancelDiscovery = useCallback(() => {
-    if (brandDiscoveryAbortControllerRef.current) {
-      brandDiscoveryAbortControllerRef.current.abort();
-      brandDiscoveryAbortControllerRef.current = null;
+  const cancelDiscovery = useCallback((orgId?: number) => {
+    const store = useChatStore.getState();
+    if (orgId !== undefined) {
+      // Cancela apenas a org especificada
+      const ctrl = brandDiscoveryAbortControllerRef.current.get(orgId);
+      if (ctrl) {
+        ctrl.abort();
+        brandDiscoveryAbortControllerRef.current.delete(orgId);
+        store.setDiscovering(orgId, false);
+      }
+    } else {
+      // Cancela todos os discoveries em andamento
+      brandDiscoveryAbortControllerRef.current.forEach((ctrl, id) => {
+        ctrl.abort();
+        store.setDiscovering(id, false);
+      });
+      brandDiscoveryAbortControllerRef.current.clear();
     }
     if (refineAbortControllerRef.current) {
       refineAbortControllerRef.current.abort();
@@ -473,6 +489,7 @@ export const useHierarchy = () => {
       store.setMappingLoading(targetOrgId, false);
       store.setActiveJobId(targetOrgId, null);
       localStorage.removeItem(`active-discovery-job-${targetOrgId}`);
+      localStorage.removeItem('pending-hierarchy-continuation');
 
       // 🧹 Mantém apenas root_company + sócios — descarta nós incompletos do scan cancelado
       const currentNodes = store.mappings[targetOrgId]?.rawEmployees || [];
@@ -671,11 +688,20 @@ export const useHierarchy = () => {
     }, initialEmployees);
   }, [currentOrgId]);
 
-  const reconnectToActiveJob = useCallback(async (onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void) => {
-    const jobDataStr = localStorage.getItem(`active-discovery-job-${currentOrgId}`);
+  const reconnectToActiveJob = useCallback(async (
+    onNotification?: (type: 'success' | 'error' | 'info', msg: string) => void,
+    overrideOrgId?: number | null
+  ) => {
+    // Evita closure stale: usa overrideOrgId quando chamado logo após setCurrentOrgId()
+    // (React ainda não re-renderizou, mas o Zustand já foi atualizado sincronamente).
+    const resolvedOrgId = overrideOrgId !== undefined
+      ? overrideOrgId
+      : (useChatStore.getState().currentOrgId ?? currentOrgId);
+
+    const jobDataStr = localStorage.getItem(`active-discovery-job-${resolvedOrgId}`);
     if (!jobDataStr) return false;
     if (jobDataStr === "NaN" || jobDataStr === "undefined") {
-      localStorage.removeItem(`active-discovery-job-${currentOrgId}`);
+      localStorage.removeItem(`active-discovery-job-${resolvedOrgId}`);
       return false;
     }
 
@@ -687,7 +713,7 @@ export const useHierarchy = () => {
         await jobsApi.getJobStatus(job_id);
       } catch {
         console.warn(`[useHierarchy] Job ${job_id} expirou no backend.`);
-        localStorage.removeItem(`active-discovery-job-${orgId || currentOrgId}`);
+        localStorage.removeItem(`active-discovery-job-${orgId || resolvedOrgId}`);
         return false;
       }
 
@@ -696,33 +722,42 @@ export const useHierarchy = () => {
         onNotification('info', `Reconectado ao mapeamento em andamento (${brand})...`);
       }
 
-      let existingEmployees: any[] = [];
-      if (orgId) {
+      const targetOrgId = orgId || resolvedOrgId;
+
+      // Prioriza dados já no store (carregados por loadStoredHierarchy) para não sobrescrever
+      // com resultado vazio caso loadHierarchyByPipedrive falhe por pipedrive_id não salvo.
+      const cleanUrl = (url: string) => {
+        if (!url) return url;
+        if (url.includes('proxy/image?url=')) {
+          return decodeURIComponent(url.split('proxy/image?url=')[1]);
+        }
+        return url;
+      };
+
+      let existingEmployees: any[] = (useChatStore.getState().mappings[targetOrgId]?.rawEmployees || [])
+        .map((n: any) => ({
+          ...n,
+          logo: cleanUrl(n.logo),
+          company_logo: cleanUrl(n.company_logo),
+          profile_pic: cleanUrl(n.profile_pic)
+        }));
+
+      if (existingEmployees.length === 0 && orgId) {
         try {
           const data = await hierarchyApi.loadHierarchyByPipedrive(orgId);
           if (data && data.nodes && data.nodes.length > 0) {
-            existingEmployees = data.nodes.map((n: any) => {
-              const cleanUrl = (url: string) => {
-                if (!url) return url;
-                if (url.includes('proxy/image?url=')) {
-                  return decodeURIComponent(url.split('proxy/image?url=')[1]);
-                }
-                return url;
-              };
-              return {
-                ...n,
-                logo: cleanUrl(n.logo),
-                company_logo: cleanUrl(n.company_logo),
-                profile_pic: cleanUrl(n.profile_pic)
-              };
-            });
+            existingEmployees = data.nodes.map((n: any) => ({
+              ...n,
+              logo: cleanUrl(n.logo),
+              company_logo: cleanUrl(n.company_logo),
+              profile_pic: cleanUrl(n.profile_pic)
+            }));
           }
         } catch (e) {
           console.warn('[useHierarchy] Erro ao buscar hierarquia prévia:', e);
         }
       }
 
-      const targetOrgId = orgId || currentOrgId;
       if (targetOrgId) {
         connectionManager.connectToJob({
           jobId: job_id,
@@ -737,7 +772,7 @@ export const useHierarchy = () => {
       return true;
     } catch (e) {
       console.error("[useHierarchy] Erro ao reconectar:", e);
-      localStorage.removeItem(`active-discovery-job-${currentOrgId}`);
+      localStorage.removeItem(`active-discovery-job-${resolvedOrgId}`);
       return false;
     }
   }, [currentOrgId]);
@@ -746,10 +781,12 @@ export const useHierarchy = () => {
     const store = useChatStore.getState();
     if (!orgId) return null;
     const existingActiveJobId = store.mappings[orgId]?.activeJobId;
+    const existingNodes = store.mappings[orgId]?.rawEmployees || [];
     store.setMappingLoading(orgId, true);
     store.setMappingError(orgId, "");
-    if (!existingActiveJobId) {
-      store.setRawEmployees(orgId, []);
+    // Só limpa o store se estiver vazio — preserva nós em memória para evitar
+    // flash de tela vazia durante renavegação na mesma sessão.
+    if (!existingActiveJobId && existingNodes.length === 0) {
       store.setRawBackendEdges(orgId, []);
     }
 

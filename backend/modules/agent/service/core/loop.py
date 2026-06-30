@@ -341,6 +341,13 @@ async def _agent_loop(
                 if not _comm_done:
                     _force = True
                     _allowed_core = ["batch_communication_search"]
+                else:
+                    # Draft gerado mas ferramenta de envio ainda não chamada: força o envio
+                    _draft_done = _get_tools_called(messages, target_tools={"generate_sales_message"})
+                    _send_done = _get_tools_called(messages, target_tools={"email_send", "email_reply", "whatsapp_send_message"})
+                    if _draft_done and not _send_done:
+                        _force = True
+                        _allowed_core = ["email_send", "email_reply", "whatsapp_send_message"]
 
         # Detector de loop de histórico de buscas
         if _is_task_action and not _force:

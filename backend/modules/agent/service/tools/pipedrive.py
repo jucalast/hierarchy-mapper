@@ -21,58 +21,58 @@ async def exec_pipedrive_advance_deal(args: Dict[str, Any], org_id: int | None =
     deal_id = args.get("deal_id")
     target_stage = args.get("target_stage")
     reason = args.get("reason", "")
-    
+
     if not deal_id or not target_stage:
         return {"ok": False, "error": "deal_id e target_stage são obrigatórios"}
-        
-    STAGE_FLOW = {
-        # Novos Negócios
-        2: 18,   # Entrada -> Qualificação
-        18: 19,  # Qualificação -> Contatado
-        19: 4,   # Contatado -> Reunião Agendada
-        4: 26,   # Reunião Agendada -> Reunião Realizada
-        26: 27,  # Reunião Realizada -> Proposta em Andamento
-        27: 28,  # Proposta em Andamento -> Em Negociação
-        # Clientes Carteira
-        14: 16,  # Entrada -> Contato
-        16: 17,  # Contato -> Proposta
-        17: 32   # Proposta -> Programação
-    }
-    
-    STAGE_NAMES = {
-        2: "Entrada (Novos Negócios)", 18: "Qualificação", 19: "Contatado", 
-        4: "Reunião Agendada", 26: "Reunião Realizada", 27: "Proposta em Andamento", 28: "Em Negociação",
-        14: "Entrada (Carteira)", 16: "Contato", 17: "Proposta", 32: "Programação"
-    }
 
     try:
         from modules.crm.service.pipedrive_service import pipedrive_service
-        # Fetch current deal state
+
+        # Busca estado atual do deal
         deal_res = await pipedrive_service.make_request("GET", f"deals/{deal_id}")
         if not deal_res or deal_res.status_code != 200:
             return {"ok": False, "error": f"Deal {deal_id} não encontrado."}
-            
+
         deal_data = deal_res.json().get("data", {})
         current_stage_id = deal_data.get("stage_id")
-        
+
+        # Carrega todos os estágios reais do Pipedrive (com cache TTL)
+        all_stages = await pipedrive_service.get_all_stages_full()
+
         next_stage_id = None
-        if target_stage.lower() == "next":
-            next_stage_id = STAGE_FLOW.get(current_stage_id)
-            if not next_stage_id:
-                return {"ok": False, "error": f"Não há estágio mapeado após o estágio atual ({current_stage_id})."}
+        if str(target_stage).lower() == "next":
+            current = all_stages.get(current_stage_id)
+            if not current:
+                return {"ok": False, "error": f"Estágio atual (ID {current_stage_id}) não encontrado no Pipedrive."}
+
+            current_order = current.get("order_nr", 0)
+            current_pipeline = current.get("pipeline_id")
+
+            # Próximo stage = mesmo pipeline, menor order_nr maior que o atual
+            best_order = None
+            for sid, sdata in all_stages.items():
+                if sdata.get("pipeline_id") != current_pipeline:
+                    continue
+                o = sdata.get("order_nr", 0)
+                if o > current_order and (best_order is None or o < best_order):
+                    best_order = o
+                    next_stage_id = sid
+
+            if next_stage_id is None:
+                return {"ok": False, "error": f"Não há estágio seguinte no pipeline após '{current.get('name', current_stage_id)}'."}
         else:
-            # We assume target_stage is provided as the stage ID (int) if it's not "next"
             try:
                 next_stage_id = int(target_stage)
-            except ValueError:
+            except (ValueError, TypeError):
                 return {"ok": False, "error": "target_stage deve ser 'next' ou um ID numérico de estágio."}
-                
-        # Advance the deal
+
+        stage_name = all_stages.get(next_stage_id, {}).get("name", str(next_stage_id))
+
+        # Avança o deal
         update_res = await pipedrive_service.update_deal(int(deal_id), {"stage_id": next_stage_id})
         ok = update_res.get("success", False)
-        
+
         if ok:
-            stage_name = STAGE_NAMES.get(next_stage_id, str(next_stage_id))
             note_content = f"⏩ Deal avançado para '{stage_name}' via Assistente V2."
             if reason:
                 note_content += f"\nMotivo: {reason}"
@@ -86,7 +86,7 @@ async def exec_pipedrive_advance_deal(args: Dict[str, Any], org_id: int | None =
             return {"ok": True, "result": f"Deal movido para a etapa {stage_name}.", "new_stage_id": next_stage_id, "new_stage_name": stage_name}
         else:
             return {"ok": False, "error": f"Erro ao avançar deal: {update_res.get('error', 'desconhecido')}"}
-            
+
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -411,19 +411,18 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
         # has_pipedrive = any(p.get("id") is not None for p in result)
         # if not has_pipedrive and result: ... (removido para que o evaluate_prospects decida)
 
-        return {
+        # Remove campos None para reduzir payload ao LLM
+        compact_result = [{k: v for k, v in p.items() if v is not None} for p in result]
+
+        response: Dict[str, Any] = {
             "ok": True,
             "org": match.get("name"),
-            "persons": result,
-            "count": len(result),
-            "summary": (
-                f"{len(result)} contatos em {match.get('name')}: "
-                + ", ".join(
-                    f"{p['name']} (ID Pipedrive: {p['id'] if p['id'] else 'NULO/NÃO CADASTRADO'}, tel: {p['phone'] or 'nenhum'}, email: {p['email'] or 'nenhum'})"
-                    for p in result[:6]
-                ) + icp_str
-            ),
+            "persons": compact_result,
+            "count": len(compact_result),
         }
+        if icp_str:
+            response["icp_alert"] = icp_str
+        return response
     except Exception as e:
         return {"ok": False, "error": str(e)}
 

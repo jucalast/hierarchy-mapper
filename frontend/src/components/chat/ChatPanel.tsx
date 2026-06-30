@@ -96,6 +96,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         handleOpenTaskConsole,
         handleTaskInlineConfirm,
         handleTaskMappingComplete,
+        handleToggleBatchItem,
+        handleClearBatch,
+        handleExecuteBatch,
+        batchQueue,
+        isBatchRunning,
+        batchRunningSnapshot,
+        batchCurrentIndex,
         handleScroll,
         handleInputChange,
         handleSendMessage,
@@ -115,6 +122,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         selectedOrgLogo,
         prospectingContext,
         isOrgLoading,
+        showChat,
     });
 
     const activeOrgId = selectedOrgId || null;
@@ -167,6 +175,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             onTaskInlineConfirm={handleTaskInlineConfirm}
             onTaskMappingComplete={handleTaskMappingComplete}
             onCancelActiveTask={handleCancelActiveTask}
+            batchQueue={batchQueue}
+            isBatchRunning={isBatchRunning}
+            batchRunningSnapshot={batchRunningSnapshot}
+            batchCurrentIndex={batchCurrentIndex}
+            onExecuteBatch={handleExecuteBatch}
+            onClearBatch={handleClearBatch}
+            onRemoveBatchItem={handleToggleBatchItem}
         />
     );
 
@@ -248,7 +263,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             <div className={styles.chatPanelInner} data-theme={theme}>
 
             {/* Chat sub-header: back + thread title + activities toggle */}
-            <ChatPanelHeader 
+            <ChatPanelHeader
                 logo={currentOrgInfo.logo}
                 orgName={hasValidOrg ? cleanOrgName : 'Geral'}
                 title={activeThread?.title || 'Nova conversa'}
@@ -282,7 +297,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     />
                 ) : (
                     <>
-                        <MessagesList 
+                        <MessagesList
                             messages={messages}
                             activeRunningTask={activeRunningTask}
                             scrollContainerRef={scrollContainerRef}
@@ -307,6 +322,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                             activeOrgId={activeOrgId}
                             cleanOrgName={cleanOrgName}
                             activeThreadId={activeThread?.id}
+                            handleToggleBatch={handleToggleBatchItem}
+                            batchQueue={batchQueue}
                         />
                         {renderChatInput()}
                     </>

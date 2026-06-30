@@ -116,6 +116,10 @@ async def update_employee_details(employee_id: str, updates: dict, db: AsyncSess
         if schema_field in updates and updates[schema_field] is not None:
             setattr(emp, model_field, updates[schema_field])
 
+    # Email descoberto via ferramenta = verificado
+    if "email" in updates and updates["email"]:
+        emp.email_verified = True
+
     await db.commit()
     await db.refresh(emp)
 

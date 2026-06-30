@@ -1,7 +1,7 @@
 import { useChatStore } from '../store/chatStore';
 import { getJobWebSocketUrl } from './api/jobs';
 import { Edge } from 'reactflow';
-import { hierarchy as hierarchyApi } from './api';
+import { hierarchy as hierarchyApi, organizations as organizationsApi } from './api';
 
 const DIACRITICS_RE = new RegExp('[\\u0300-\\u036f]', 'g');
 const normalizeName = (name?: string) =>
@@ -155,12 +155,10 @@ class ConnectionManager {
         if (data.type === 'clear_nodes') {
           console.log(`[ConnectionManager] Comando de limpeza para orgId=${orgId}`);
 
-          // Tem que ser tão (ou mais) conservador quanto o que QUALQUER um dos dois fluxos
-          // de scan preserva no banco ao limpar (b2b_scanner.py e linkedin_scraper.py têm
-          // regras levemente diferentes, e o front não sabe qual dos dois disparou esta
-          // mensagem). Descartar demais aqui faz funcionários reais — ainda intactos no
-          // banco — desaparecerem da tela até a próxima descoberta/reload.
-          const PENDING_ROLES = new Set(['Não Identificado', 'Erro no Processamento', 'Professional']);
+          // Alinhado com a lógica de delete do b2b_scanner.py: preserva apenas
+          // root, sócios/QSA e decisões humanas explícitas (Aprovado/Reprovado).
+          // Funcionários com cargos identificados do mapeamento ANTERIOR são descartados
+          // para que o re-scan comece do zero — evita que nós antigos persistam na tela.
           const currentNodes = store.mappings[orgId]?.rawEmployees || [];
           const keepers = currentNodes.filter(emp => {
             const isRoot = emp.id === 'root_company' || emp.level === 0;
@@ -171,7 +169,8 @@ class ConnectionManager {
               emp.department.includes('Societário') ||
               emp.department.includes('Conselho')
             );
-            return isRoot || isPartner || isPartnerDept || !PENDING_ROLES.has(emp.role);
+            const isHumanDecision = emp.role?.startsWith('Aprovado') || emp.role === 'Reprovado';
+            return isRoot || isPartner || isPartnerDept || isHumanDecision;
           });
 
           store.setRawEmployees(orgId, keepers);
@@ -193,7 +192,15 @@ class ConnectionManager {
         }
 
         if (data.type === 'batch' || data.type === 'initial') {
-          const incomingNodes = (data.nodes || []) as any[];
+          const incomingNodes = (data.nodes || []).map((emp: any) => {
+            // Garante que todo nó sem manager_id explícito conecte-se ao root.
+            // Sem isso, o fallback de calculateEdges pode escolher um sócio (level 6)
+            // como pai em vez de root_company, causando nós "soltos" no grafo.
+            if (!emp.manager_id && emp.id !== 'root_company' && emp.level !== 0) {
+              return { ...emp, manager_id: 'root_company' };
+            }
+            return emp;
+          }) as any[];
           const currentNodes = [...(store.mappings[orgId]?.rawEmployees || [])];
           const currentEdges = [...(store.mappings[orgId]?.rawBackendEdges || [])];
 
@@ -448,9 +455,9 @@ class ConnectionManager {
           }
         }
         keysToDelete.forEach(key => localStorage.removeItem(key));
-        
+
         console.log(`[ConnectionManager] Refinamento concluído para orgId=${orgId}. Notificando listeners.`);
-        
+
         window.dispatchEvent(new CustomEvent(`hierarchy_refinement_done_${orgId}`, {
           detail: {
             orgId,
@@ -462,6 +469,20 @@ class ConnectionManager {
       }
     } catch (e) {
       console.error("[ConnectionManager] Erro no refinamento automático:", e);
+    } finally {
+      // Dispara validação em lote de e-mails (canais de comunicação) para todos os
+      // funcionários mapeados — roda como BackgroundTask no backend, não bloqueia.
+      // Executado no finally para garantir que ocorra mesmo se o refinamento falhar.
+      void this.triggerBatchEmailValidation(orgId);
+    }
+  }
+
+  private async triggerBatchEmailValidation(orgId: number) {
+    try {
+      await organizationsApi.batchValidateEmails(orgId);
+      console.log(`[ConnectionManager] ✅ Validação em lote de canais iniciada para org ${orgId}`);
+    } catch (e) {
+      console.warn(`[ConnectionManager] ⚠️ Falha ao iniciar validação em lote para org ${orgId}:`, e);
     }
   }
 }

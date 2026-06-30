@@ -40,7 +40,8 @@ export const SupplyChainNode = memo(
       a.role === b.role &&
       a.matching_score === b.matching_score &&
       a.profile_pic === b.profile_pic &&
-      a.evidence === b.evidence
+      a.evidence === b.evidence &&
+      a.isLoading === b.isLoading
     );
   },
 );

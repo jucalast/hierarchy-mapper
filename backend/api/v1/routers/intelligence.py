@@ -18,6 +18,9 @@ class EmailDiscoveryRequest(BaseModel):
     org_name: Optional[str] = None
     domain: Optional[str] = None
     job_title: Optional[str] = None
+    person_id: Optional[Any] = None
+    org_id: Optional[int] = None
+    force: bool = False
 
 @router.post("/discover-email")
 async def discover_email(payload: EmailDiscoveryRequest):
@@ -25,17 +28,20 @@ async def discover_email(payload: EmailDiscoveryRequest):
     Endpoint manual para a ferramenta discover_and_validate_email.
     """
     from modules.agent.service.tools.intelligence import exec_discover_and_validate_email
-    
+
     try:
-        log.info("intelligence.discover_email.started", contact=payload.contact_name, org=payload.org_name)
-        
+        log.info("intelligence.discover_email.started", contact=payload.contact_name, org=payload.org_name, force=payload.force)
+
         args = {
             "contact_name": payload.contact_name,
             "org_name": payload.org_name,
             "domain": payload.domain,
-            "job_title": payload.job_title
+            "job_title": payload.job_title,
+            "person_id": payload.person_id,
+            "org_id": payload.org_id,
+            "force": payload.force,
         }
-        
+
         result = await exec_discover_and_validate_email(args)
         
         if not result.get("ok"):

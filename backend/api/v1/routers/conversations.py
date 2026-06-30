@@ -87,9 +87,13 @@ async def _resolve_internal_org_id(org_id: int, session: AsyncSession) -> Option
     """Resolve o pipedrive_id ou id local para o id interno da organização."""
     if org_id <= 0:
         return None
-    stmt = select(Organization.id).where(
-        or_(Organization.id == org_id, Organization.pipedrive_id == org_id)
-    )
+    # Prioriza match por pipedrive_id (que o frontend envia); fallback para id interno
+    stmt = select(Organization.id).where(Organization.pipedrive_id == org_id).limit(1)
+    result = await session.execute(stmt)
+    internal_id = result.scalar_one_or_none()
+    if internal_id is not None:
+        return internal_id
+    stmt = select(Organization.id).where(Organization.id == org_id).limit(1)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 

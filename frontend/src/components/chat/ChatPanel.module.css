@@ -2012,6 +2012,8 @@
 }
 
 .chatPanelInner[data-theme='dark'] .waPreviewCard {
+  background-color: var(--chat-bg-secondary);
+  background-image: none;
   border-color: rgba(255, 255, 255, 0.05);
 }
 
@@ -2329,7 +2331,7 @@
 }
 
 .chatPanelInner[data-theme='dark'] .emailPreviewCard {
-  background: var(--chat-bg-primary);
+  background: var(--chat-bg-secondary);
 }
 
 .emailPreviewHeader {

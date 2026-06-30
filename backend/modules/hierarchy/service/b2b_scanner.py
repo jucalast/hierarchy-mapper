@@ -27,7 +27,7 @@ from .role_engine import role_engine
 from .org_search import org_search
 from .candidate_processor import CandidateProcessor
 from modules.intelligence.service.preview_service import get_url_preview
-from .filters import get_seniority_level, get_department_tag, PURCHASING_KEYWORDS, LOGISTICS_KEYWORDS, apply_strict_filters, is_same_person
+from .filters import get_seniority_level, get_department_tag, PURCHASING_KEYWORDS, LOGISTICS_KEYWORDS, apply_strict_filters, is_same_person, ADMINISTRATIVE_KEYWORDS
 from core.external.email_service import apply_pattern
 from .logging_utils import log_session_start, log_query_start
 
@@ -100,8 +100,10 @@ async def discover_employees_stream(
         
         db_org_id = org.id
         
-        # 🚀 LIMPEZA IMEDIATA: Deleta funcionários antigos (MENOS os sócios e decisões manuais)
-        # Preservamos contatos que já possuem cargo definido ou foram explicitamente reprovados
+        # Limpa funcionários do mapeamento anterior para que o re-scan comece do zero.
+        # Preserva apenas sócios (QSA) e decisões humanas explícitas (aprovado/reprovado) —
+        # tudo mais é re-descoberto pelo scan atual, evitando que nós antigos reapareçam
+        # no frontend ao recarregar a página durante um mapeamento em andamento.
         from sqlalchemy import delete, and_, not_, or_
         await session.execute(
             delete(Employee).where(
@@ -109,17 +111,16 @@ async def discover_employees_stream(
                     Employee.company_id == db_org_id,
                     not_(
                         or_(
+                            # Preserva sócios/QSA
                             Employee.department == "Quadro de Sócios (QSA)",
                             Employee.department.ilike("%Sócio%"),
                             Employee.department.ilike("%Societário%"),
                             Employee.department.ilike("%Conselho%"),
                             Employee.seniority == 6,
-                            # 🛡️ Preservar decisões: Qualquer coisa que não seja genérico (Análise Humana agora é preservada)
-                            and_(
-                                Employee.role != "Não Identificado",
-                                Employee.role != "Erro no Processamento",
-                                Employee.role != "Professional"
-                            )
+                            # Preserva apenas decisões humanas explícitas
+                            Employee.role.ilike("Aprovado%"),
+                            Employee.role == "Reprovado",
+                            Employee.department == "Reprovado",
                         )
                     )
                 )
@@ -200,6 +201,10 @@ async def discover_employees_stream(
         
     # 4. Gera as queries operacionais depois dos sócios
     for term in selected_terms:
+        base_queries.append(f'{clean_brand} {term} {search_location} linkedin')
+        
+    # 4.5. Adiciona termos administrativos como fallback de prioridade menor
+    for term in ADMINISTRATIVE_KEYWORDS[:5]:
         base_queries.append(f'{clean_brand} {term} {search_location} linkedin')
     
     # 5. Adiciona query focada na empresa para pegar perfis variados (Deep Discovery)
@@ -388,6 +393,11 @@ async def discover_employees_stream(
                         else:
                             emp = None
 
+                    # Funcionários explicitamente reprovados não devem reaparecer no novo mapeamento
+                    if emp and (emp.role == "Reprovado" or emp.department == "Reprovado"):
+                        print(f"[B2B Engine/Pipedrive] Pulando '{name}' — reprovado no mapeamento anterior.")
+                        continue
+
                     if emp:
                         emp.pipedrive_id = str(person.get('id'))
                         emp.email = email or emp.email
@@ -420,19 +430,24 @@ async def discover_employees_stream(
         except Exception as e:
             print(f"[B2B Engine/Pipedrive] Erro ao processar pessoas via CRM: {str(e)}")
 
-    # Helper to check if job is cancelled
+    # Helper to check if job is cancelled (usa o cliente síncrono em thread para não criar pool a cada tick)
     async def is_cancelled() -> bool:
         if not job_id:
             return False
         try:
-            from arq import create_pool
-            from core.infra.redis_config import redis_settings
-            redis = await create_pool(redis_settings)
-            if await redis.exists(f"job_cancelled_{job_id}") or await redis.exists(f"arq:abort:{job_id}"):
+            from core.infra.redis_config import redis_client
+            if redis_client is None:
+                return False
+            cancelled = await asyncio.to_thread(
+                lambda: bool(
+                    redis_client.exists(f"job_cancelled_{job_id}") or
+                    redis_client.exists(f"arq:abort:{job_id}")
+                )
+            )
+            if cancelled:
                 print(f"[B2B Engine] ⏹️ Cancelamento detectado para o job {job_id}!")
-                return True
-        except Exception as e:
-            # print(f"[B2B Engine] Erro ao verificar cancelamento: {e}")
+            return cancelled
+        except Exception:
             pass
         return False
 
@@ -608,6 +623,10 @@ async def discover_employees_stream(
                             print(f"Erro ao buscar no Pipedrive durante discovery: {e}")
 
                     if existing_emp:
+                        # Nunca ressuscita funcionários explicitamente reprovados
+                        if (existing_emp.role == "Reprovado" or existing_emp.department == "Reprovado"):
+                            continue
+
                         # 🛡️ PROTEÇÃO: Não sobrescreve se o contato já foi aprovado ou se o novo status é "pior"
                         current_is_valid = existing_emp.role and "análise humana" not in existing_emp.role.lower() and "reprovado" not in existing_emp.role.lower()
                         new_is_vague = "análise humana" in node_data["role"].lower()

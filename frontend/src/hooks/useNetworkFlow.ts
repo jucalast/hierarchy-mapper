@@ -60,7 +60,10 @@ export function useNetworkFlow({
 
         // 1. Criar nós base
         const uiNodes: Node[] = visibleEmployees.map((emp) => {
-            const isRootNode = emp.id === 'root_company' || emp.level === 0;
+            // Apenas o nó com id literal 'root_company' é raiz — usar level===0 como
+            // critério adicional causava que funcionários sem level (defaulting to 0)
+            // fossem posicionados na mesma fileira do nó raiz e tratados como isRoot.
+            const isRootNode = emp.id === 'root_company';
             return {
                 id: emp.id.toString(),
                 type: 'supplyChain',

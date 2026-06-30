@@ -755,29 +755,40 @@ async def resume_after_confirmation(
             )
             channel_label = "WhatsApp" if tool_name == "whatsapp_send_message" else "Email"
 
-            # Extrai o ID real da atividade do snapshot para não deixar o agente adivinhar
-            activity_id_val = _extract_first_activity_id(pending.get("messages_snapshot", []))
-            activity_id_str = (
-                str(activity_id_val)
-                if activity_id_val
-                else "use o ID encontrado em pipedrive_get_activities no histórico acima"
-            )
+            if ok:
+                # Extrai o ID real da atividade do snapshot para não deixar o agente adivinhar
+                activity_id_val = _extract_first_activity_id(pending.get("messages_snapshot", []))
+                activity_id_str = (
+                    str(activity_id_val)
+                    if activity_id_val
+                    else "use o ID encontrado em pipedrive_get_activities no histórico acima"
+                )
 
-            msg_short = sent_msg_preview[:120].replace('"', "'")
+                msg_short = sent_msg_preview[:120].replace('"', "'")
 
-            system_nudge = (
-                f"\n\n[SISTEMA]: {channel_label} enviado com sucesso.\n"
-                f"MENSAGEM ENVIADA: \"{msg_short}...\"\n\n"
-                f"OBRIGATÓRIO — execute estas 2 ferramentas AGORA, nesta ordem:\n\n"
-                f"1. pipedrive_update_task\n"
-                f"   activity_id: {activity_id_str}\n"
-                f"   done: true\n"
-                f"   note: redija uma nota curta (1-2 linhas) resumindo o contexto da conversa "
-                f"encontrado no histórico acima (último contato, pendências discutidas, o que foi enviado). "
-                f"Use o histórico de WhatsApp/Email já visível nesta conversa — NÃO chame ferramentas.\n\n"
-                f"2. suggest_next_actions — somente após o update acima.\n\n"
-                f"É PROIBIDO encerrar a tarefa sem executar ambas as ferramentas."
-            )
+                system_nudge = (
+                    f"\n\n[SISTEMA]: {channel_label} enviado com sucesso.\n"
+                    f"MENSAGEM ENVIADA: \"{msg_short}...\"\n\n"
+                    f"OBRIGATÓRIO — execute estas 2 ferramentas AGORA, nesta ordem:\n\n"
+                    f"1. pipedrive_update_task\n"
+                    f"   activity_id: {activity_id_str}\n"
+                    f"   done: true\n"
+                    f"   note: redija uma nota curta (1-2 linhas) resumindo o contexto da conversa "
+                    f"encontrado no histórico acima (último contato, pendências discutidas, o que foi enviado). "
+                    f"Use o histórico de WhatsApp/Email já visível nesta conversa — NÃO chame ferramentas.\n\n"
+                    f"2. suggest_next_actions — somente após o update acima.\n\n"
+                    f"É PROIBIDO encerrar a tarefa sem executar ambas as ferramentas."
+                )
+            else:
+                error_detail = result.get("error") or result.get("result") or "Erro desconhecido"
+                system_nudge = (
+                    f"\n\n[SISTEMA]: ⚠️ FALHA NO ENVIO — O {channel_label} NÃO foi enviado. Erro: \"{error_detail}\"\n\n"
+                    f"REGRAS OBRIGATÓRIAS:\n"
+                    f"1. É ESTRITAMENTE PROIBIDO chamar pipedrive_update_task com done=true — a tarefa NÃO foi concluída.\n"
+                    f"2. Encerre sua execução AGORA chamando suggest_next_actions.\n"
+                    f"3. Em suggest_next_actions inclua uma ação de retry para que o usuário possa tentar o envio novamente.\n"
+                    f"NÃO tente corrigir o erro sozinho. Apenas encerre com suggest_next_actions."
+                )
 
         elif tool_name == "pipedrive_update_task":
             system_nudge = (

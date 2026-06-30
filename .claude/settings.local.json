@@ -126,7 +126,15 @@
       "Bash(echo \"EXIT:$?\")",
       "Skill(run)",
       "Bash(chromium-cli --help)",
-      "Bash(rtk lint *)"
+      "Bash(rtk lint *)",
+      "Bash(rtk curl *)",
+      "Bash(\"./venv/Scripts/python.exe\" scratch/migrate_to_sqlite.py)",
+      "PowerShell(python -m py_compile \"C:/Users/João Luccas/Desktop/LINKB2B/hierarchy-mapper/backend/modules/agent/service/core/runner.py\" 2>&1)",
+      "Bash(PYTHONUTF8=1 python -c ' *)",
+      "Bash(PYTHONUTF8=1 timeout 60 python -c ' *)",
+      "Bash(PYTHONUTF8=1 timeout 30 python -c ' *)",
+      "Bash(node --check index.js)",
+      "Bash(node -e ' *)"
     ]
   }
 }

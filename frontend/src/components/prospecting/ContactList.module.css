@@ -14,7 +14,9 @@
 
 .listHeaderVertical {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 8px;
 }
 
@@ -46,6 +48,53 @@
 .batchActionBtnLoading {
     opacity: 0.7;
     cursor: not-allowed;
+}
+
+/* Barra de progresso da validação em lote — linha própria, largura total */
+.batchProgressBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--sw-surface-2, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--sw-border, rgba(255, 255, 255, 0.08));
+    border-radius: 8px;
+}
+
+.batchProgressLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--sw-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.batchCancelBtn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 5px 10px;
+    background: var(--sw-status-danger, #ef4444);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
+}
+
+.batchCancelBtn:hover {
+    opacity: 0.88;
 }
 
 

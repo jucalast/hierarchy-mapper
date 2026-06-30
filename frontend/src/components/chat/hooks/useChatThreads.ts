@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { conversations } from '@/services/api';
 import type { ThreadOut } from '@/services/api/conversations';
 
@@ -6,11 +6,12 @@ interface UseChatThreadsProps {
     activeOrgId: number | null;
     selectedOrgId: number | null | undefined;
     prospectingContext: string | null | undefined;
+    showChat?: boolean;
     setView: (view: 'list' | 'chat') => void;
     onOpenThread: (thread: ThreadOut, isSameStreamingThread: boolean) => Promise<void>;
     onNewThread: () => void;
     onBackToList: () => void;
-    streamingThreadIdRef: React.MutableRefObject<string | null>;
+    streamingThreadIdRef: React.MutableRefObject<Record<string, string | null>>;
     clearNewThreadState: () => void;
 }
 
@@ -18,6 +19,7 @@ export const useChatThreads = ({
     activeOrgId,
     selectedOrgId,
     prospectingContext,
+    showChat = false,
     setView,
     onOpenThread,
     onNewThread,
@@ -32,7 +34,8 @@ export const useChatThreads = ({
     const [activeThread, setActiveThread] = useState<ThreadOut | null>(null);
 
     const openThread = useCallback(async (thread: ThreadOut) => {
-        const isSameStreamingThread = streamingThreadIdRef.current === thread.id;
+        const orgKey = String(activeOrgId || 0);
+        const isSameStreamingThread = streamingThreadIdRef.current[orgKey] === thread.id;
         setActiveThread(thread);
         if (typeof window !== 'undefined') {
             const targetOrgId = activeOrgId || 0;
@@ -43,7 +46,13 @@ export const useChatThreads = ({
         await onOpenThread(thread, isSameStreamingThread);
     }, [activeOrgId, onOpenThread, setView, streamingThreadIdRef]);
 
+    const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const loadThreads = useCallback(async () => {
+        if (retryTimerRef.current) {
+            clearTimeout(retryTimerRef.current);
+            retryTimerRef.current = null;
+        }
         setIsLoadingThreads(true);
         try {
             const targetOrgId = activeOrgId || 0;
@@ -60,16 +69,24 @@ export const useChatThreads = ({
                     }
                 }
             }
-        } catch (err) {
-            console.error('[useChatThreads] Erro ao carregar dados:', err);
+        } catch (err: any) {
+            const isNetworkError = err instanceof TypeError || err?.message?.includes('fetch');
+            if (isNetworkError) {
+                // Backend ainda inicializando — tenta novamente em 2s silenciosamente
+                retryTimerRef.current = setTimeout(() => { void loadThreads(); }, 2000);
+            } else {
+                console.error('[useChatThreads] Erro ao carregar threads:', err);
+            }
         } finally {
             setIsLoadingThreads(false);
         }
     }, [activeOrgId, openThread]);
 
     useEffect(() => {
+        if (!showChat) return;
+
         setActiveThread(null);
-        
+
         if (typeof window !== 'undefined') {
             const savedView = window.localStorage.getItem('chat-panel-view');
             if (savedView === 'list') {
@@ -80,10 +97,17 @@ export const useChatThreads = ({
         } else {
             setView('chat');
         }
-        
+
         void loadThreads();
+
+        return () => {
+            if (retryTimerRef.current) {
+                clearTimeout(retryTimerRef.current);
+                retryTimerRef.current = null;
+            }
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeOrgId]);
+    }, [activeOrgId, showChat]);
 
     const handleNewThread = () => {
         setActiveThread(null);

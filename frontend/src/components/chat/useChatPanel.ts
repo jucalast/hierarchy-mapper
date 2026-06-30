@@ -21,6 +21,7 @@ interface UseChatPanelProps {
     selectedOrgLogo?: string;
     prospectingContext?: string | null;
     isOrgLoading?: boolean;
+    showChat?: boolean;
 }
 
 export const useChatPanel = ({
@@ -29,6 +30,7 @@ export const useChatPanel = ({
     selectedOrgLogo,
     prospectingContext,
     isOrgLoading,
+    showChat = false,
 }: UseChatPanelProps) => {
     const {
         isListening,
@@ -65,7 +67,9 @@ export const useChatPanel = ({
     const cleanOrgName = hasValidOrg ? currentOrgInfo.name.trim() : '';
 
     useEffect(() => {
-        if (activeOrgId === selectedOrgId) {
+        if (selectedOrgId) {
+            // URL tem uma empresa: cleanOrgName sempre reflete a empresa da URL,
+            // independente do store.currentOrgId (que pode estar desatualizado por clique em aba).
             setCurrentOrgInfo({
                 name: selectedOrgName,
                 logo: selectedOrgLogo || ''
@@ -76,7 +80,7 @@ export const useChatPanel = ({
                 try {
                     const list = JSON.parse(cachedOrgsStr);
                     if (Array.isArray(list)) {
-                        const cachedOrg = list.find((o: any) => Number(o.id) === activeOrgId || Number(o.pipedrive_id) === activeOrgId || Number(o.local_id) === activeOrgId);
+                        const cachedOrg = list.find((o: any) => Number(o.id) === activeOrgId);
                         if (cachedOrg) {
                             const foundLogo = cachedOrg.logo || cachedOrg.organization_logo || cachedOrg.logo_url || cachedOrg.company_logo || "";
                             setCurrentOrgInfo({
@@ -119,22 +123,12 @@ export const useChatPanel = ({
     } = useChatActivities(selectedOrgId);
 
     // ─── Local controls/states ─────────────────────────────────
-    const [model, setModel] = useState<AIModel>('claude');
-    const [strictMode, setStrictMode] = useState<boolean>(false);
+    const [model, setModel] = useState<AIModel>('gemini');
+    const [strictMode, setStrictMode] = useState<boolean>(true);
 
     // Carrega preferências do localStorage no client-side para evitar hydration mismatch
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const savedModel = localStorage.getItem('ai_preferred_model');
-            if (savedModel) {
-                setModel(savedModel as AIModel);
-            }
-            const savedStrictMode = localStorage.getItem('ai_strict_mode');
-            if (savedStrictMode) {
-                setStrictMode(savedStrictMode === 'true');
-            }
-        }
-    }, []);
+    // strict mode e modelo sempre iniciam com os defaults (gemini + strict) independente do que estava salvo
+    useEffect(() => {}, []);
 
     const modelActivityIdRef = useRef(0);
     const [pipedriveCooldown, setPipedriveCooldown] = useState<number>(0);
@@ -143,8 +137,10 @@ export const useChatPanel = ({
     // explícito do usuário (botão de stop), e não uma falha de rede/tool — consultado pelos
     // handlers de streamTaskInto para reportar status 'cancelled' em vez de 'error'.
     const userCancelledTaskRef = useRef(false);
-    // Guarda o threadId que está atualmente em streaming (para restaurar loading ao voltar)
-    const streamingThreadIdRef = useRef<string | null>(null);
+    // Guarda o threadId em streaming POR org (chave = String(orgId)).
+    // Mapa em vez de valor único permite que múltiplas orgs façam streaming
+    // simultaneamente sem que trocar de org limpe o tracking da outra.
+    const streamingThreadIdRef = useRef<Record<string, string | null>>({});
     const activeThreadIdRef = useRef<string | null>(null);
 
     // ─── Refresh messages ────────────────────────────────────
@@ -346,16 +342,21 @@ export const useChatPanel = ({
         activeOrgId,
         selectedOrgId,
         prospectingContext,
+        showChat,
         setView,
         streamingThreadIdRef,
         clearNewThreadState: () => {
             store.setMessages(activeOrgId, null, []);
-            const defaultInput = (activeOrgId && !prospectingContext) ? "Gerar plano de prospecção para esta empresa" : "";
-            store.setInputValue(activeOrgId, null, defaultInput);
+            store.setInputValue(activeOrgId, null, "");
             store.setActiveRunningTask(activeOrgId, null, null);
         },
         onOpenThread: async (thread, isSameStreamingThread) => {
             if (!isSameStreamingThread) {
+                // Reseta estados de loading/streaming antes de refreshMessages para
+                // não herdar valores presos de uma sessão de streaming anterior que
+                // terminou enquanto o usuário estava em outra empresa.
+                store.setIsLoading(activeOrgId, thread.id, false);
+                store.setAgentStreaming(activeOrgId, thread.id, false);
                 store.setActiveRunningTask(activeOrgId, thread.id, null);
                 store.setLiveModel(activeOrgId, thread.id, null);
                 store.setModelActivity(activeOrgId, thread.id, []);
@@ -366,7 +367,7 @@ export const useChatPanel = ({
             }
         },
         onNewThread: () => {
-            streamingThreadIdRef.current = null;
+            streamingThreadIdRef.current[String(activeOrgId || 0)] = null;
             setActiveRunningTask(null);
             setLiveModel(null);
             setModelActivity([]);
@@ -381,15 +382,19 @@ export const useChatPanel = ({
 
     const activeThreadId = activeThread?.id;
 
-    // Auto-preenche o input após o carregamento se a empresa não tiver plano
+    // Auto-preenche ou limpa o input com base na existência de plano de prospecção
     useEffect(() => {
-        if (!isOrgLoading && activeOrgId && !prospectingContext && activeThreadId) {
+        if (!isOrgLoading && activeOrgId && activeThreadId) {
             const currentSession = store.getSession(activeOrgId, activeThreadId);
             const msgs = currentSession.messages;
-            if (msgs.length === 0 || (msgs.length === 1 && msgs[0].id === 'welcome')) {
-                if (currentSession.inputValue === '') {
-                    store.setInputValue(activeOrgId, activeThreadId, "Gerar plano de prospecção para esta empresa");
-                }
+            const isEmptyConversation = msgs.length === 0 || (msgs.length === 1 && msgs[0].id === 'welcome');
+            if (!isEmptyConversation) return;
+
+            const PRE_FILL = "Gerar plano de prospecção para esta empresa";
+            if (!prospectingContext && currentSession.inputValue === '') {
+                store.setInputValue(activeOrgId, activeThreadId, PRE_FILL);
+            } else if (prospectingContext && currentSession.inputValue === PRE_FILL) {
+                store.setInputValue(activeOrgId, activeThreadId, '');
             }
         }
     }, [isOrgLoading, activeOrgId, prospectingContext, activeThreadId, store]);
@@ -430,10 +435,18 @@ export const useChatPanel = ({
     const activeRunningTask = session.activeRunningTask;
     const approvedSuggestedActions = session.approvedSuggestedActions;
     const taskInlineConfirmed = session.taskInlineConfirmed;
+    const batchQueue = session.batchQueue || [];
+    const isBatchRunning = session.isBatchRunning || false;
+    const batchRunningSnapshot = session.batchRunningSnapshot || [];
+    const batchCurrentIndex = session.batchCurrentIndex ?? -1;
 
     const setActiveRunningTask = useCallback((val: any | ((prev: any | null) => any | null)) => store.setActiveRunningTask(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
     const setApprovedSuggestedActions = useCallback((val: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => store.setApprovedSuggestedActions(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
     const setTaskInlineConfirmed = useCallback((val: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => store.setTaskInlineConfirmed(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setBatchQueue = useCallback((val: any[] | ((prev: any[]) => any[])) => store.setBatchQueue(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setIsBatchRunning = useCallback((val: boolean) => store.setIsBatchRunning(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setBatchRunningSnapshot = useCallback((val: any[]) => store.setBatchRunningSnapshot(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
+    const setBatchCurrentIndex = useCallback((val: number) => store.setBatchCurrentIndex(activeOrgId, activeThreadId, val), [store, activeOrgId, activeThreadId]);
 
     // ─── Autocomplete / universal search Sub-hook ─────────────
     const {
@@ -472,17 +485,16 @@ export const useChatPanel = ({
             abortControllersRef.current[tId].abort();
             delete abortControllersRef.current[tId];
         }
-        if (tId === streamingThreadIdRef.current) {
-            streamingThreadIdRef.current = null;
+        const orgKey = String(activeOrgId || 0);
+        if (streamingThreadIdRef.current[orgKey] === tId) {
+            streamingThreadIdRef.current[orgKey] = null;
         }
-        // O console de tarefa roda em um stream próprio ('global_task'), separado do
-        // stream principal do chat. Sem isto, o botão de stop só zerava o isLoading
-        // compartilhado — a tarefa continuava rodando em segundo plano e, ao terminar,
-        // sobrescrevia este status com o que o classifyFailure concluísse (ex: 'error'
-        // se uma tool tivesse falhado antes de se recuperar), em vez de 'cancelled'.
-        if (abortControllersRef.current['global_task']) {
+        // O console de tarefa roda em stream próprio por org+thread — sem chave global
+        // para não matar o stream de outra org quando duas rodam ao mesmo tempo.
+        const taskKey = `task_${activeOrgId || 0}_${activeThreadIdRef.current || 'none'}`;
+        if (abortControllersRef.current[taskKey]) {
             userCancelledTaskRef.current = true;
-            abortControllersRef.current['global_task'].abort();
+            abortControllersRef.current[taskKey].abort();
             setActiveRunningTask((prev: any) => prev ? { ...prev, status: 'cancelled' } : prev);
         } else {
             setActiveRunningTask((prev: any) => prev?.status === 'streaming' ? { ...prev, status: 'done' } : prev);
@@ -491,7 +503,7 @@ export const useChatPanel = ({
         setAgentStreaming(false);
         setLiveModel(null);
         setModelActivity([]);
-    }, [setIsLoading, setAgentStreaming, setActiveRunningTask, setLiveModel, setModelActivity]);
+    }, [setIsLoading, setAgentStreaming, setActiveRunningTask, setLiveModel, setModelActivity, activeOrgId]);
 
     const handleCancelActiveTask = () => {
         if (activeRunningTask) {
@@ -521,8 +533,9 @@ export const useChatPanel = ({
             // andamento consulta essa flag para saber que foi um cancelamento intencional
             // do usuário e não sobrescrever este status com o que vier de classifyFailure.
             userCancelledTaskRef.current = true;
-            if (abortControllersRef.current['global_task']) {
-                abortControllersRef.current['global_task'].abort();
+            const taskKey = `task_${activeOrgId || 0}_${activeThreadIdRef.current || 'none'}`;
+            if (abortControllersRef.current[taskKey]) {
+                abortControllersRef.current[taskKey].abort();
             }
             // Mostra "cancelada" por um instante em vez de simplesmente desaparecer,
             // dando ao usuário a confirmação de que a tarefa parou (e não terminou em erro).
@@ -542,7 +555,11 @@ export const useChatPanel = ({
     const streamTaskInto = async (url: string, body: object, initialTaskState: typeof activeRunningTask) => {
         const collected: AgentEvent[] = [];
 
-        const tId = 'global_task';
+        // Chave por org+thread: permite múltiplas orgs com tarefas simultâneas
+        // sem que uma aborte a outra ao usar a mesma chave 'global_task'.
+        const capturedOrgId = activeOrgId;
+        const capturedThreadId = activeThread?.id;
+        const tId = `task_${capturedOrgId || 0}_${capturedThreadId || 'none'}`;
         if (abortControllersRef.current[tId]) {
             abortControllersRef.current[tId].abort();
         }
@@ -649,7 +666,7 @@ export const useChatPanel = ({
         await executeAgent(text, threadId, historyForApi, directAction);
     };
 
-    const handleApproveSuggestedAction = async (action: { label: string; prompt: string }, index: number, parentMessageId?: string) => {
+    const handleApproveSuggestedAction = async (action: { label: string; prompt: string }, index: number, parentMessageId?: string, autoConfirm = false) => {
         let actualParentId = parentMessageId;
         if (actualParentId && /^\d+$/.test(actualParentId)) {
             const realMsg = messagesRef.current.find(m => 
@@ -672,7 +689,7 @@ export const useChatPanel = ({
             prompt: action.prompt,
             status: 'streaming' as const,
             logs: [] as AgentEvent[],
-            isExpanded: true,
+            isExpanded: !autoConfirm,
             orgId: activeOrgId,
             threadId: activeThread?.id,
             actionIndex: index,
@@ -693,17 +710,32 @@ export const useChatPanel = ({
                 action_index: index,
             }, newTask);
 
-            const hierarchyEv = collected.find(e => e.type === 'hierarchy_mapping_required');
-            const pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
-            const ligacaoEv = collected.find(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
-            const wasCancelled = userCancelledTaskRef.current;
-            const failure = classifyFailure(collected);
+            let hierarchyEv = collected.find(e => e.type === 'hierarchy_mapping_required');
+            let pendingConfirm = collected.find(e => e.type === 'confirmation_required' && e.action_id);
+            let ligacaoEv = collected.find(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
+            let wasCancelled = userCancelledTaskRef.current;
+            let allCollected = [...collected];
+
+            // Modo batch: auto-confirma sem parar para pedir aprovação
+            while (autoConfirm && pendingConfirm && !wasCancelled) {
+                setActiveRunningTask((prev: any) => prev ? { ...prev, status: 'streaming' } : null);
+                setApprovedSuggestedActions((prev: any) => ({ ...prev, [taskKey]: 'streaming' }));
+                const confirmCollected = await streamTaskInto(AGENT_CONFIRM_URL, {
+                    action_id: pendingConfirm.action_id,
+                    approved: true,
+                    thread_id: activeThread?.id,
+                }, null);
+                allCollected = [...allCollected, ...confirmCollected];
+                hierarchyEv = allCollected.find(e => e.type === 'hierarchy_mapping_required');
+                pendingConfirm = confirmCollected.find(e => e.type === 'confirmation_required' && e.action_id);
+                ligacaoEv = allCollected.find(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
+                wasCancelled = userCancelledTaskRef.current;
+            }
+
+            const failure = classifyFailure(allCollected);
 
             let finalStatus: TaskStatus = 'done';
             if (wasCancelled) {
-                // Stream foi interrompido pelo usuário (botão de stop) — não pelo
-                // classifyFailure, que analisaria um stream truncado e provavelmente
-                // reportaria 'error' por falta de uma conclusão real.
                 finalStatus = 'cancelled';
             } else if (hierarchyEv) {
                 finalStatus = 'awaiting_mapping';
@@ -726,7 +758,7 @@ export const useChatPanel = ({
                 setAgentStreaming(false);
             }
 
-            const finalLogs = collected;
+            const finalLogs = allCollected;
 
             if (actualParentId) {
                 conversations.updateSuggestedActionStatus(actualParentId, index, finalStatus, finalLogs).catch(err => {
@@ -1148,7 +1180,7 @@ export const useChatPanel = ({
         store.setIsLoading(activeOrgId, threadId, true);
         store.setAgentEvents(activeOrgId, threadId, []);
         store.setAgentStreaming(activeOrgId, threadId, true);
-        streamingThreadIdRef.current = threadId;
+        streamingThreadIdRef.current[String(activeOrgId || 0)] = threadId;
 
         const msgId = (Date.now() + 1).toString();
 
@@ -1302,8 +1334,9 @@ export const useChatPanel = ({
                 delete abortControllersRef.current[threadId];
             }
             
-            if (streamingThreadIdRef.current === threadId) {
-                streamingThreadIdRef.current = null;
+            const _orgKey = String(activeOrgId || 0);
+            if (streamingThreadIdRef.current[_orgKey] === threadId) {
+                streamingThreadIdRef.current[_orgKey] = null;
             }
             
             store.setMessages(activeOrgId, threadId, prev => prev.map(m =>
@@ -1489,7 +1522,10 @@ export const useChatPanel = ({
             if (abortControllersRef.current[threadId] === controller) {
                 delete abortControllersRef.current[threadId];
             }
-            streamingThreadIdRef.current = null;
+            const _contOrgKey = String(activeOrgId || 0);
+            if (streamingThreadIdRef.current[_contOrgKey] === threadId) {
+                streamingThreadIdRef.current[_contOrgKey] = null;
+            }
             store.setMessages(activeOrgId, threadId, prev => prev.map(m => m.id === targetMsgId ? { ...m, agentStreaming: false } : m));
             store.setIsLoading(activeOrgId, threadId, false);
             store.setAgentStreaming(activeOrgId, threadId, false);
@@ -1509,7 +1545,7 @@ export const useChatPanel = ({
         const threadId = activeThread?.id || 'global';
         setIsLoading(true);
         setAgentStreaming(true);
-        streamingThreadIdRef.current = threadId;
+        streamingThreadIdRef.current[String(activeOrgId || 0)] = threadId;
         
         let attachment_path = undefined;
         if (file && approved) {
@@ -1632,8 +1668,11 @@ export const useChatPanel = ({
             if (abortControllersRef.current[threadId] === controller) {
                 delete abortControllersRef.current[threadId];
             }
-            streamingThreadIdRef.current = null;
-            
+            const _confirmOrgKey = String(activeOrgId || 0);
+            if (streamingThreadIdRef.current[_confirmOrgKey] === threadId) {
+                streamingThreadIdRef.current[_confirmOrgKey] = null;
+            }
+
             setMessages(prev => {
                 const targetMsg = prev.find(m => m.id === msgId);
                 const isLigacaoOpen = targetMsg?.agentEvents?.some(e => e.type === 'tool_call' && e.tool === 'open_ligacao_view');
@@ -1811,6 +1850,41 @@ ${transcriptText}
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeOrgId, activeThread?.id, prospectingContext, messages.length]);
 
+    // ─── Batch execution ─────────────────────────────────────────────────────────
+
+    const handleToggleBatchItem = useCallback((messageId: string, actionIndex: number, action: { label: string; prompt: string; categoria?: string }) => {
+        const currentQueue = store.getSession(activeOrgId, activeThreadId).batchQueue || [];
+        const exists = currentQueue.some(i => i.messageId === messageId && i.actionIndex === actionIndex);
+        if (exists) {
+            setBatchQueue(currentQueue.filter(i => !(i.messageId === messageId && i.actionIndex === actionIndex)));
+        } else {
+            setBatchQueue([...currentQueue, { messageId, actionIndex, action }]);
+        }
+    }, [store, activeOrgId, activeThreadId, setBatchQueue]);
+
+    const handleClearBatch = useCallback(() => {
+        setBatchQueue([]);
+    }, [setBatchQueue]);
+
+    const handleExecuteBatch = useCallback(async () => {
+        const currentQueue = store.getSession(activeOrgId, activeThreadId).batchQueue || [];
+        if (isBatchRunning || currentQueue.length === 0) return;
+        setIsBatchRunning(true);
+        setBatchRunningSnapshot(currentQueue);
+        setBatchCurrentIndex(0);
+        setBatchQueue([]);
+        for (let i = 0; i < currentQueue.length; i++) {
+            setBatchCurrentIndex(i);
+            const item = currentQueue[i];
+            await handleApproveSuggestedAction(item.action, item.actionIndex, item.messageId, true);
+            await new Promise(resolve => setTimeout(resolve, 800));
+        }
+        setIsBatchRunning(false);
+        setBatchRunningSnapshot([]);
+        setBatchCurrentIndex(-1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [store, activeOrgId, activeThreadId, isBatchRunning, setIsBatchRunning, setBatchQueue, setBatchRunningSnapshot, setBatchCurrentIndex]);
+
     return {
         isListening,
         isTranscribing,
@@ -1892,6 +1966,13 @@ ${transcriptText}
         handleOpenTaskConsole,
         handleTaskInlineConfirm,
         handleTaskMappingComplete,
+        handleToggleBatchItem,
+        handleClearBatch,
+        handleExecuteBatch,
+        batchQueue,
+        isBatchRunning,
+        batchRunningSnapshot,
+        batchCurrentIndex,
         handleScroll,
         handleInputChange,
         handleSendMessage,

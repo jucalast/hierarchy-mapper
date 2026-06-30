@@ -89,7 +89,7 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession) -> dict:
             # front usa pra proteger/identificar esses nós (ex: filtro de clear_nodes).
             "department": "Quadro de Sócios (QSA)" if is_qsa else await get_department_tag(emp.role), "manager_id": manager_id,
             "linkedin": emp.linkedin_url, "url": emp.linkedin_url, "profile_pic": emp.profile_pic,
-            "email": clean_email, "education": emp.education, "observations": emp.description,
+            "email": clean_email, "email_verified": bool(emp.email_verified), "education": emp.education, "observations": emp.description,
             "evidence": emp.evidence, "matching_score": emp.matching_score,
             "location": emp.location, "phone": emp.phone, "headline": emp.headline,
             "whatsapp_number": emp.whatsapp_number, "temperature": emp.temperature,

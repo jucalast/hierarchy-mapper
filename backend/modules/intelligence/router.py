@@ -7,7 +7,7 @@ Rotas:
     POST /intelligence/enrich-org/{org_id} -> enriquece logo, dominio, LinkedIn
     POST /intelligence/sync                -> dispara sync manual do Pipedrive
 """
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Request
 from typing import Optional, Any, Dict
 from pydantic import BaseModel
 from sqlalchemy import select, delete, func
@@ -22,27 +22,37 @@ class EmailDiscoveryRequest(BaseModel):
     contact_name: str
     org_name: Optional[str] = None
     domain: Optional[str] = None
+    job_title: Optional[str] = None
+    person_id: Optional[Any] = None
+    org_id: Optional[int] = None
+    force: bool = False
 
 @router.post("/discover-email")
-async def discover_email(payload: EmailDiscoveryRequest):
+async def discover_email(payload: EmailDiscoveryRequest, request: Request):
     """
     Endpoint manual para a ferramenta discover_and_validate_email.
     Utilizado para descobrir e validar e-mails profissionais via Drawer.
     """
     from modules.agent.service.tools.intelligence import exec_discover_and_validate_email
-    
+
     try:
         args = {
             "contact_name": payload.contact_name,
             "org_name": payload.org_name,
-            "domain": payload.domain
+            "domain": payload.domain,
+            "job_title": payload.job_title,
+            "person_id": payload.person_id,
+            "org_id": payload.org_id,
+            "force": payload.force,
+            # Se o usuário cancelar (frontend aborta o fetch), o backend detecta
+            # a desconexão e não persiste o email — o "Cancelar" para de verdade.
+            "cancel_check": request.is_disconnected,
         }
-        
+
         result = await exec_discover_and_validate_email(args)
-        
-        if not result.get("ok"):
-            return {"ok": False, "error": result.get("error")}
-            
+
+        # Retorna o resultado completo (inclui identity_score/verdict/evidence
+        # mesmo quando ok=False, para a UI exibir a prova auditável).
         return result
         
     except Exception as e:

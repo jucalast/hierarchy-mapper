@@ -109,7 +109,7 @@ async def execute_read_tools_batch(
 
         sanitized = _sanitize_result(tool_name, tool_result)
         raw_content = json.dumps(sanitized, ensure_ascii=False) if isinstance(sanitized, (dict, list)) else str(sanitized)
-        _max_content = 4000 if tool_name in ("pipedrive_get_all_activities", "email_get_inbox", "email_get_contact_history", "evaluate_prospects") else 2000
+        _max_content = 6000 if tool_name == "email_get_contact_history" else (4000 if tool_name in ("pipedrive_get_all_activities", "email_get_inbox", "evaluate_prospects") else 2000)
         if len(raw_content) > _max_content:
             raw_content = raw_content[:_max_content] + "... [TRUNCADO]"
 

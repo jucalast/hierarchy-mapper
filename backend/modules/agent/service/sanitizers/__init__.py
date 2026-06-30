@@ -27,11 +27,12 @@ def _sanitize_email(data: dict) -> str:
 
     try:
         narrative = extract_thread_summary(emails, contact_name)
-        header = f"📧 E-mails com {contact_name or 'o contato'} ({len(emails)} e-mails):\n"
-        narrative = header + narrative
+        # EntryIDs ANTES do restante da narrativa: o conteúdo é truncado em 4000 chars
+        # no loop_executor — se ficar no final, o LLM vê ID incompleto e hallucina o resto.
         entry_ids = [e.get("entryId", "") for e in emails[:5] if e.get("entryId")]
-        if entry_ids:
-            narrative += f"\n[EntryIDs para email_reply: {', '.join(entry_ids[:3])}]"
+        entry_id_line = f"[EntryIDs para email_reply: {', '.join(entry_ids[:3])}]\n" if entry_ids else ""
+        header = f"📧 E-mails com {contact_name or 'o contato'} ({len(emails)} e-mails):\n"
+        narrative = entry_id_line + header + narrative
         return narrative
     except Exception as e:
         # Fallback para formato original apenas em caso de erro real

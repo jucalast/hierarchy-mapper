@@ -594,11 +594,63 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
     elif tool_name == "email_send":
         import os as _os
         from modules.ai.service.context.business_context_service import BusinessContextService
-        
+
         # Fallbacks para alucinações do LLM
         to = args.get("to") or args.get("contact_email", "")
         subject = args.get("subject", "")
         body = args.get("body") or args.get("message", "")
+
+        # ── Resolução de e-mail + CC via Email Priority Chain ─────────────────
+        # Sempre resolve o CC (compras@/suprimentos@) independente de já ter o destinatário.
+        # Se não houver e-mail do decisor, usa compras@domínio como destinatário principal.
+        _resolution_type = None
+        _resolution_domain = None
+        _cc_emails: list[str] = []
+
+        try:
+            from modules.communication.service.email_resolver import resolve_procurement_email
+            # Se `to` já tem o e-mail do decisor, passa como contact_email → resolve CC como compras@
+            _res = await resolve_procurement_email(org_id=org_id, contact_email=to if to else "")
+            if _res:
+                _resolution_type = _res.type
+                _resolution_domain = _res.domain
+                _cc_emails = _res.cc_emails or []
+                if not to:
+                    # Sem decisor → usa compras@ como destinatário principal
+                    to = _res.email
+                    log.info(
+                        "email_send.procurement_fallback",
+                        to=to,
+                        type=_resolution_type,
+                        cc=_cc_emails,
+                        org_id=org_id,
+                    )
+                else:
+                    log.info(
+                        "email_send.decisor_with_cc",
+                        to=to,
+                        cc=_cc_emails,
+                        org_id=org_id,
+                    )
+        except Exception as _e:
+            log.warning("email_send.resolver_error", error=str(_e))
+
+        # ── Garante contato de compras no Pipedrive (fire-and-forget) ─────────
+        # Cria 'Departamento de Compras' como contato vinculado à org para rastreio futuro
+        if to and org_id:
+            try:
+                import asyncio as _asyncio
+                from modules.agent.service.tools._utils import _extract_org_domain
+                _domain = _resolution_domain or (to.split("@")[1] if "@" in to else None)
+                if not _domain:
+                    _domain = await _extract_org_domain("", org_id=org_id)
+                if _domain:
+                    from modules.crm.service.pipedrive_service import pipedrive_service
+                    _asyncio.create_task(
+                        pipedrive_service.create_procurement_contact(org_id, _domain)
+                    )
+            except Exception as _e:
+                log.warning("email_send.procurement_contact_task_error", error=str(_e))
 
         # Busca contexto para pegar anexo padrão e assinatura
         ctx = await BusinessContextService.get_tenant_context()
@@ -685,28 +737,36 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
 
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
-                r = await client.post(
-                    f"{EMAIL_SERVICE_BASE}/send",
-                    json={"to": to, "subject": subject, "body": final_body, "attachment_paths": attachment_paths or None},
-                )
+                payload: dict = {
+                    "to": to,
+                    "subject": subject,
+                    "body": final_body,
+                    "attachment_paths": attachment_paths or None,
+                }
+                if _cc_emails:
+                    payload["cc"] = _cc_emails
+                r = await client.post(f"{EMAIL_SERVICE_BASE}/send", json=payload)
                 ok = r.status_code in (200, 201, 202)
+                cc_log = f" (CC: {', '.join(_cc_emails)})" if _cc_emails else ""
                 if ok:
                     await _log_activity_bg(
                         "email_sent",
-                        {"to_name": args.get("contact_name", to), "to_email": to, "subject": subject, "message_preview": body[:200]},
+                        {"to_name": args.get("contact_name", to), "to_email": to, "subject": subject, "message_preview": body[:200], "cc": _cc_emails},
                         org_id=org_id,
                         status="awaiting_reply",
                     )
-                return {"ok": ok, "result": f"E-mail enviado para {to}" if ok else f"Falha (HTTP {r.status_code})"}
+                    log.info("email_send.sent", to=to, cc=_cc_emails, subject=subject)
+                return {"ok": ok, "result": f"E-mail enviado para {to}{cc_log}" if ok else f"Falha (HTTP {r.status_code})"}
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
     # ── Email: resposta ────────────────────────────────────────────────────────
     elif tool_name == "email_reply":
+        import os as _os
         from modules.ai.service.context.business_context_service import BusinessContextService
         entry_id = args.get("entry_id", "")
         body = args.get("body") or args.get("message", "")
-        
+
         # Busca contexto para pegar assinatura
         ctx = await BusinessContextService.get_tenant_context()
 
@@ -775,7 +835,14 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
             async with httpx.AsyncClient(timeout=60.0) as client:
                 r = await client.post(
                     f"{EMAIL_SERVICE_BASE}/reply",
-                    json={"entry_id": entry_id, "body": final_body, "reply_all": True, "attachment_paths": attachment_paths or None},
+                    json={
+                        "entry_id": entry_id,
+                        "body": final_body,
+                        "reply_all": True,
+                        "attachment_paths": attachment_paths or None,
+                        "subject_hint": args.get("subject", ""),
+                        "contact_name": args.get("contact_name", ""),
+                    },
                 )
                 ok = r.status_code in (200, 201, 202)
                 if ok:

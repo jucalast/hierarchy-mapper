@@ -150,6 +150,28 @@ async def exec_web_search(args: Dict[str, Any]) -> Dict[str, Any]:
         return {"ok": False, "error": f"Erro na busca: {e}"}
 
 
+async def _save_maps_phone(org_name: str, phone: str) -> None:
+    """Persiste o telefone do Google Maps na organização (atualiza apenas se ainda não tiver)."""
+    try:
+        from core.infra.database import async_session
+        from models.organization import Organization
+        from sqlalchemy import select, update
+        async with async_session() as session:
+            result = await session.execute(
+                select(Organization.id, Organization.maps_phone)
+                .where(Organization.name.ilike(f"%{org_name}%"))
+                .limit(1)
+            )
+            row = result.first()
+            if row and not row.maps_phone:
+                await session.execute(
+                    update(Organization).where(Organization.id == row.id).values(maps_phone=phone)
+                )
+                await session.commit()
+    except Exception:
+        pass
+
+
 async def exec_find_company_contact(args: dict) -> dict:
     """Busca contato da empresa via Google Maps API (Principal), Receita Federal (BrasilAPI) e web search."""
     import re as _re
@@ -231,11 +253,14 @@ async def exec_find_company_contact(args: dict) -> dict:
                             phone = place.get("nationalPhoneNumber") or place.get("internationalPhoneNumber")
                             if phone:
                                 phones.append({"source": "Google Maps", "value": phone})
-                            
+                                # Persiste o telefone do Google Maps na organização (fire-and-forget)
+                                import asyncio as _asyncio
+                                _asyncio.create_task(_save_maps_phone(org_name, phone))
+
                             website = place.get("websiteUri")
                             if website:
                                 web_snippets.append(f"Site Oficial: {website}")
-                            
+
                             g_address = place.get("formattedAddress")
                             if g_address and not address:
                                 address = g_address
@@ -1297,13 +1322,26 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
     company_name = (args.get("org_name") or args.get("company_name") or "").strip()
     domain = (args.get("domain") or "").strip().lower()
     person_id = args.get("person_id")
+    # Callback opcional (ex: request.is_disconnected) — se o cliente cancelar/desconectar,
+    # interrompemos antes de persistir para não alterar emails após o "Cancelar".
+    _cancel_check = args.get("cancel_check")
+
+    async def _is_cancelled() -> bool:
+        if not _cancel_check:
+            return False
+        try:
+            return bool(await _cancel_check())
+        except Exception:
+            return False
 
     if not contact_name:
         return {"ok": False, "error": "Forneça o nome do contato (contact_name ou name)."}
 
+    force = bool(args.get("force", False))
+
     # ── ATALHO: Email já validado no banco local ou Pipedrive ──────────────────
-    # Verifica primeiro o banco local (mais rápido)
-    if person_id:
+    # Verifica primeiro o banco local (mais rápido). Ignorado quando force=True.
+    if person_id and not force:
         try:
             from core.infra.database import async_session
             from models.people.employee import Employee
@@ -1313,7 +1351,7 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
                     (Employee.pipedrive_id == str(person_id)) | (Employee.id == int(person_id))
                 )
                 emp = (await session.execute(stmt)).scalar_one_or_none()
-                if emp and emp.email and "@" in emp.email:
+                if emp and emp.email and "@" in emp.email and emp.email_verified:
                     saved_email = emp.email.strip()
                     log.info("exec_discover_and_validate_email.shortcut_local_db", email=saved_email, person_id=person_id)
                     return {
@@ -1328,11 +1366,11 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
         except Exception as _db_err:
             log.warning("exec_discover_and_validate_email.local_db_check_failed", error=str(_db_err))
 
-    # Verifica Pipedrive (label='verified' ou email existente com person_id)
-    if person_id:
+    # Verifica Pipedrive (label='verified' ou email existente com person_id). Ignorado quando force=True.
+    if person_id and not force:
         try:
             from modules.crm.service.pipedrive_service import pipedrive_service
-            pd_person = await pipedrive_service.get_person(int(person_id))
+            pd_person = await pipedrive_service.get_person_details(int(person_id))
             if isinstance(pd_person, dict):
                 pd_emails = pd_person.get("email") or []
                 if isinstance(pd_emails, list):
@@ -1379,18 +1417,45 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
     name_parts = _re.sub(r"[^\w\s]", "", normalized_name).split()
     if not name_parts:
         return {"ok": False, "error": "Nome do contato inválido."}
-    
+
     first = name_parts[0]
     last = name_parts[-1] if len(name_parts) > 1 else ""
 
     from core.external.email_service import generate_all_patterns
-    
+
+    # 2.5 Verifica se a empresa já tem um padrão de email confirmado
+    org_id = args.get("org_id")
+    domain_pattern: str | None = None
+    _org_local_id: int | None = None
+
+    try:
+        from core.infra.database import async_session as _async_session
+        from models.organization import Organization as _Org
+        from sqlalchemy import select as _select, or_ as _or
+        async with _async_session() as _s:
+            _cond = []
+            if domain:
+                _cond.append(_Org.domain == domain)
+            if org_id:
+                try:
+                    _cond.append(_Org.pipedrive_id == int(org_id))
+                    _cond.append(_Org.id == int(org_id))
+                except (ValueError, TypeError):
+                    pass
+            if _cond:
+                _org_rec = (await _s.execute(_select(_Org).where(_or(*_cond)).limit(1))).scalars().first()
+                if _org_rec:
+                    _org_local_id = _org_rec.id
+                    if _org_rec.email_pattern and not force:
+                        domain_pattern = _org_rec.email_pattern
+                        log.info("exec_discover_and_validate_email.pattern_reuse", domain=domain, pattern=domain_pattern)
+    except Exception as _pe:
+        log.warning("exec_discover_and_validate_email.pattern_lookup_failed", error=str(_pe))
+
     candidates = []
-    # Usar todas as partes do nome (exceto preposições) para gerar variações mais amplas
     valid_parts = [p for p in name_parts if p not in ['de', 'da', 'do', 'dos', 'das']]
-    
+
     if len(valid_parts) > 1:
-        # Pega a primeira parte e combina com todas as outras
         main_first = valid_parts[0]
         for part in valid_parts[1:]:
             for e, _ in generate_all_patterns(main_first, part, domain):
@@ -1399,55 +1464,107 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
     else:
         candidates.append(f"{first}@{domain}")
 
-    # 3. Pesquisa na Web por e-mails reais (Dorking)
+    # Cliente cancelou antes da busca web → aborta (a busca web é o trecho mais lento).
+    if await _is_cancelled():
+        log.info("exec_discover_and_validate_email.cancelled_pre_web", contact=contact_name)
+        return {"ok": False, "cancelled": True, "contact_name": contact_name}
+
+    # 3. Pesquisa na Web por padrão do domínio — executa UMA VEZ por empresa (não por pessoa)
+    # Busca qualquer email do domínio para inferir o padrão corporativo antes de testar variações individuais.
     found_in_web = []
-    search_query = f'"{contact_name}" "{domain}" email'
-    try:
-        results = await search_duckduckgo(search_query, max_results=5, filter_linkedin=False)
-        for r in results:
-            snippet = r.get("snippet", "") + " " + r.get("title", "")
-            # Regex para pescar emails no snippet
-            emails_found = _re.findall(r'[\w\.-]+@' + _re.escape(domain), snippet.lower())
-            for e in emails_found:
-                # Remove acentos do e-mail colhido da web
-                normalized_e = "".join(
-                    c for c in unicodedata.normalize("NFKD", e)
-                    if not unicodedata.combining(c)
-                )
-                if normalized_e not in found_in_web:
-                    found_in_web.append(normalized_e)
-    except Exception: pass
-
-    # 3.5 Fallback Genérico baseado no Cargo (Job Title)
-    job_title = (args.get("job_title") or "").strip().lower()
     generic_emails = []
-    if job_title:
-        if "compra" in job_title or "suprimento" in job_title or "buyer" in job_title:
-            generic_emails.extend([f"compras@{domain}", f"suprimentos@{domain}", f"compras1@{domain}"])
-        elif "venda" in job_title or "comercial" in job_title or "sales" in job_title:
-            generic_emails.extend([f"vendas@{domain}", f"comercial@{domain}", f"contato@{domain}"])
-        elif "diretor" in job_title or "ceo" in job_title or "sócio" in job_title or "socio" in job_title:
-            generic_emails.extend([f"diretoria@{domain}", f"ceo@{domain}", f"contato@{domain}"])
-        elif "rh" in job_title or "recursos humanos" in job_title or "hr" in job_title:
-            generic_emails.extend([f"rh@{domain}", f"recursoshumanos@{domain}", f"curriculos@{domain}"])
-        elif "ti" in job_title or "tecnologia" in job_title or "it" in job_title:
-            generic_emails.extend([f"ti@{domain}", f"suporte@{domain}", f"tecnologia@{domain}"])
-        elif "financeiro" in job_title or "faturamento" in job_title:
-            generic_emails.extend([f"financeiro@{domain}", f"faturamento@{domain}", f"boletos@{domain}"])
-        elif "marketing" in job_title:
-            generic_emails.extend([f"marketing@{domain}", f"mkt@{domain}", f"contato@{domain}"])
 
-    all_additional = list(set(found_in_web + generic_emails + candidates))
+    if not domain_pattern:
+        _domain_queries = [
+            f'"@{domain}"',
+            f'"{company_name}" "@{domain}"' if company_name else None,
+        ]
+        _detected_domain_emails = []
+        for _dq in _domain_queries:
+            if not _dq:
+                continue
+            try:
+                _dresults = await search_duckduckgo(_dq, max_results=5, filter_linkedin=False)
+                for _dr in _dresults:
+                    _dsnippet = _dr.get("snippet", "") + " " + _dr.get("title", "")
+                    _demails = _re.findall(r'[\w\.-]+@' + _re.escape(domain), _dsnippet.lower())
+                    _detected_domain_emails.extend(_demails)
+            except Exception:
+                pass
+            if _detected_domain_emails:
+                break
 
-    # 4. Validação unificada via email_service (suporta SMTP Probe local e Abstract API externa!)
-    from core.external.email_service import discover_and_validate_email
-    
-    discovery_res = await discover_and_validate_email(
+        if _detected_domain_emails:
+            from core.external.email_service import detect_domain_pattern as _detect_dp
+            _inferred_pattern = _detect_dp(_detected_domain_emails, domain)
+            if _inferred_pattern:
+                domain_pattern = _inferred_pattern
+                # Salva imediatamente para que as próximas pessoas usem sem nova busca
+                try:
+                    from core.infra.database import async_session as _asw
+                    from models.organization import Organization as _OrgW
+                    from sqlalchemy import select as _selw, or_ as _orw
+                    async with _asw() as _sw:
+                        _wc = [_OrgW.id == _org_local_id] if _org_local_id else ([_OrgW.domain == domain] if domain else [])
+                        if _wc:
+                            _ow = (await _sw.execute(_selw(_OrgW).where(_orw(*_wc)).limit(1))).scalars().first()
+                            if _ow and not _ow.email_pattern:
+                                _ow.email_pattern = domain_pattern
+                                await _sw.commit()
+                                log.info("exec_discover_and_validate_email.pattern_web_discovered", domain=domain, pattern=domain_pattern)
+                except Exception:
+                    pass
+            else:
+                # Encontrou emails mas não identificou padrão → usa como candidatos adicionais
+                for _de in set(_detected_domain_emails):
+                    _de_norm = "".join(c for c in unicodedata.normalize("NFKD", _de) if not unicodedata.combining(c))
+                    if _de_norm not in found_in_web:
+                        found_in_web.append(_de_norm)
+
+        job_title = (args.get("job_title") or "").strip().lower()
+        if job_title:
+            if "compra" in job_title or "suprimento" in job_title or "buyer" in job_title:
+                generic_emails.extend([f"compras@{domain}", f"suprimentos@{domain}", f"compras1@{domain}"])
+            elif "venda" in job_title or "comercial" in job_title or "sales" in job_title:
+                generic_emails.extend([f"vendas@{domain}", f"comercial@{domain}", f"contato@{domain}"])
+            elif "diretor" in job_title or "ceo" in job_title or "sócio" in job_title or "socio" in job_title:
+                generic_emails.extend([f"diretoria@{domain}", f"ceo@{domain}", f"contato@{domain}"])
+            elif "rh" in job_title or "recursos humanos" in job_title or "hr" in job_title:
+                generic_emails.extend([f"rh@{domain}", f"recursoshumanos@{domain}", f"curriculos@{domain}"])
+            elif "ti" in job_title or "tecnologia" in job_title or "it" in job_title:
+                generic_emails.extend([f"ti@{domain}", f"suporte@{domain}", f"tecnologia@{domain}"])
+            elif "financeiro" in job_title or "faturamento" in job_title:
+                generic_emails.extend([f"financeiro@{domain}", f"faturamento@{domain}", f"boletos@{domain}"])
+            elif "marketing" in job_title:
+                generic_emails.extend([f"marketing@{domain}", f"mkt@{domain}", f"contato@{domain}"])
+
+    if not domain_pattern or domain_pattern == "web_harvested":
+        # Sem padrão confirmado: testa todos os padrões para todas as combinações de partes do nome.
+        # web_harvested = ainda não sabemos o padrão real → mesma lógica de descoberta completa.
+        all_additional = list(set(found_in_web + generic_emails + candidates))
+    else:
+        all_additional = None
+
+    # 4. Validação multi-sinal via email_service (resiliente a catch-all)
+    from core.external.email_service import validate_email_smart
+
+    # Modo estrito (1 email, 2 chamadas MS) apenas para padrões canônicos confirmados.
+    # Sem padrão ou web_harvested: testa todos os candidatos gerados acima.
+    _strict_pattern = bool(domain_pattern) and domain_pattern != "web_harvested"
+
+    # Cliente já cancelou antes da validação pesada → aborta cedo (economiza ~10s).
+    if await _is_cancelled():
+        log.info("exec_discover_and_validate_email.cancelled_early", contact=contact_name)
+        return {"ok": False, "cancelled": True, "contact_name": contact_name}
+
+    discovery_res = await validate_email_smart(
         first=first,
         last=last,
         domain=domain,
-        do_smtp=True,
-        additional_candidates=all_additional
+        known_pattern=domain_pattern if domain_pattern != "web_harvested" else None,
+        only_known_pattern=_strict_pattern,
+        additional_candidates=all_additional,
+        pattern_match=_strict_pattern,
     )
     
     valid_emails = []
@@ -1481,67 +1598,136 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
                     "source": "Web" if email in found_in_web else "Padrão Sugerido"
                 })
 
-    if not valid_emails:
-        return {
-            "ok": False, 
-            "error": f"Não foi possível encontrar um e-mail válido para {contact_name} no domínio {domain}.",
-            "tried_patterns": candidates[:3]
-        }
-
-    recommended = valid_emails[0]["email"] if valid_emails else None
     smtp_result = discovery_res.get("smtp_result")
+    _verdict = discovery_res.get("verdict")
+    _identity_score = discovery_res.get("identity_score")
+    _evidence = discovery_res.get("evidence", [])
     is_confirmed = smtp_result == "valid"
-    
-    # Só salva automaticamente no banco/Pipedrive se o email foi CONFIRMADO
-    person_id = args.get("person_id")
-    if is_confirmed and recommended and person_id:
-        try:
-            # Pipedrive update
-            from modules.crm.service.pipedrive_service import pipedrive_service
-            await pipedrive_service.update_person(
-                int(person_id), 
-                {"email": [{"value": recommended, "primary": True, "label": "verified"}]}
-            )
-            
-            # Local database update
-            from core.infra.database import async_session
-            from models.people import Employee
-            from sqlalchemy import select
-            
-            async with async_session() as session:
-                stmt = select(Employee).where(
-                    (Employee.pipedrive_id == str(person_id)) | (Employee.id == int(person_id))
-                )
-                emp = (await session.execute(stmt)).scalar_one_or_none()
-                if emp:
-                    emp.email = recommended
-                    await session.commit()
-        except Exception as e:
-            import logging
-            logging.getLogger(__name__).warning(f"Erro ao salvar email validado no BD/Pipedrive: {e}")
 
-    # ok=True SOMENTE se o email foi confirmado por uma fonte confiável
-    if is_confirmed:
+    # Padrão canônico confirmado + MS não rejeitou explicitamente = confiança suficiente.
+    # Domínios catch-all aceitam qualquer email no ping, mas se o padrão foi derivado
+    # de um email confirmado anteriormente, a geração pelo padrão é confiável.
+    _canonical_pattern = domain_pattern and domain_pattern not in (None, "web_harvested")
+    _canonical_forced = False  # True quando confirmado só por padrão + catchall (sem bypass real)
+
+    # Veredito negativo da fusão multi-sinal (ex: servidor rejeitou o endereço real) bloqueia.
+    if _verdict == "invalid":
+        is_confirmed = False
+    elif not is_confirmed and smtp_result == "catchall":
+        # Catch-all: aceita o melhor candidato independentemente de ter padrão canônico.
+        # Com padrão canônico é mais confiável; sem padrão (force=True) ainda é melhor
+        # que nada, pois o domínio aceita qualquer endereço de qualquer forma.
+        is_confirmed = True
+        _canonical_forced = True
+
+    log.info(
+        "exec_discover_and_validate_email.identity",
+        email=discovery_res.get("email"), score=_identity_score,
+        verdict=_verdict, evidence=len(_evidence),
+    )
+
+    # Cliente cancelou/desconectou durante a validação → não persiste nada.
+    # Garante que o "Cancelar" no frontend realmente pare de alterar emails.
+    if await _is_cancelled():
+        log.info("exec_discover_and_validate_email.cancelled", contact=contact_name, email=discovery_res.get("email"))
+        return {"ok": False, "cancelled": True, "contact_name": contact_name}
+
+    # Só salva automaticamente no banco/Pipedrive se o email foi CONFIRMADO
+    recommended = discovery_res.get("email") if is_confirmed else None
+    person_id = args.get("person_id")
+
+    if is_confirmed and recommended:
+        # Salva o padrão validado na organização para reutilização futura
+        found_pattern = discovery_res.get("pattern")
+
+        # Se o padrão retornado é genérico (web_harvested), tenta inferir o padrão real
+        # a partir do email confirmado cruzado com todas as partes do nome completo.
+        if found_pattern == "web_harvested" and valid_parts:
+            from core.external.email_service import infer_pattern_from_email as _infer_patt
+            _inferred = _infer_patt(recommended, valid_parts)
+            if _inferred:
+                found_pattern = _inferred
+                log.info("exec_discover_and_validate_email.pattern_inferred_from_email",
+                         email=recommended, pattern=found_pattern)
+
+        # Salva se ainda não há padrão, ou se o existente é web_harvested (impreciso).
+        # Com force=True, o usuário pediu redescoberta total → sobrescreve o padrão antigo
+        # (corrige padrões obsoletos/errados salvos por validações anteriores).
+        _no_real_pattern = not domain_pattern or domain_pattern == "web_harvested"
+        if found_pattern and (_no_real_pattern or force):
+            try:
+                from core.infra.database import async_session as _as2
+                from models.organization import Organization as _Org2
+                from sqlalchemy import select as _sel2, or_ as _or2
+                async with _as2() as _s2:
+                    _cond2 = []
+                    if _org_local_id:
+                        _cond2.append(_Org2.id == _org_local_id)
+                    elif domain:
+                        _cond2.append(_Org2.domain == domain)
+                    if _cond2:
+                        _o = (await _s2.execute(_sel2(_Org2).where(_or2(*_cond2)).limit(1))).scalars().first()
+                        _can_save = _o and (not _o.email_pattern or _o.email_pattern == "web_harvested" or force)
+                        if _can_save and _o.email_pattern != found_pattern:
+                            _old = _o.email_pattern
+                            _o.email_pattern = found_pattern
+                            await _s2.commit()
+                            log.info("exec_discover_and_validate_email.pattern_saved", domain=domain, pattern=found_pattern, old=_old)
+            except Exception as _se:
+                log.warning("exec_discover_and_validate_email.pattern_save_failed", error=str(_se))
+
+        if person_id:
+            try:
+                from modules.crm.service.pipedrive_service import pipedrive_service
+                await pipedrive_service.update_person(
+                    int(person_id),
+                    {"email": [{"value": recommended, "primary": True, "label": "verified"}]}
+                )
+
+                from core.infra.database import async_session
+                from models.people import Employee
+                from sqlalchemy import select
+
+                async with async_session() as session:
+                    stmt = select(Employee).where(
+                        (Employee.pipedrive_id == str(person_id)) | (Employee.id == int(person_id))
+                    )
+                    emp = (await session.execute(stmt)).scalar_one_or_none()
+                    if emp:
+                        # Não sobrescreve email já bypass-confirmado com resultado apenas catchall+canonical
+                        _already_bypass = emp.email_verified and emp.email
+                        if not _canonical_forced or not _already_bypass:
+                            emp.email = recommended
+                            emp.email_verified = not _canonical_forced
+                            await session.commit()
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Erro ao salvar email validado no BD/Pipedrive: {e}")
+
         return {
             "ok": True,
             "contact_name": contact_name,
             "domain": domain,
-            "valid_emails": valid_emails,
             "recommended": recommended,
             "smtp_result": smtp_result,
+            "pattern": discovery_res.get("pattern"),
+            "identity_score": _identity_score,
+            "verdict": _verdict,
+            "evidence": _evidence,
             "summary": f"E-mail confirmado para {contact_name}: {recommended}"
         }
-    else:
-        # Email não confirmado (catch-all, invalid, ou unknown)
-        return {
-            "ok": False,
-            "contact_name": contact_name,
-            "domain": domain,
-            "error": f"E-mail não pôde ser confirmado para {contact_name} ({valid_emails[0]['status']}). Domínio pode ser catch-all.",
-            "smtp_result": smtp_result,
-            "suggested_email": recommended,
-            "valid_emails": valid_emails
-        }
+
+    # Não confirmado — retorna sem sugestão (zero incerteza exposta ao usuário)
+    return {
+        "ok": False,
+        "contact_name": contact_name,
+        "domain": domain,
+        "error": f"E-mail não encontrado para {contact_name} no domínio {domain}.",
+        "smtp_result": smtp_result,
+        "identity_score": _identity_score,
+        "verdict": _verdict,
+        "evidence": _evidence,
+    }
 
 
 async def exec_generate_dossier(args: dict) -> dict:
@@ -1915,8 +2101,8 @@ Formato: Markdown rico. Use o nome real do decisor e detalhes reais da empresa. 
             "plan": plan_md,
             "org_name": org.name,
             "summary": (
-                f"Plano de prospecção SPIN Selling gerado para {org.name} "
-                f"com {len(decision_makers)} decisores mapeados."
+                f"Plano SPIN Selling gerado e salvo para {org.name} com {len(decision_makers)} decisores. "
+                f"O plano está visível na interface. Prossiga com suggest_next_actions."
             ),
         }
 
@@ -2023,7 +2209,8 @@ async def batch_discover_and_validate_org_emails(org_id: int):
             "contact_name": emp.name,
             "domain": org.domain,
             "job_title": emp.role or emp.department or "",
-            "person_id": emp.id
+            "person_id": emp.id,
+            "org_id": org.id,
         })
         
         # Se for inválido, remover do Pipedrive!

@@ -15,6 +15,67 @@ from modules.ai.service.context.business_context_service import BusinessContextS
 
 log = get_logger(__name__)
 
+# Critérios de conclusão de estágio indexados por nome normalizado (lowercase, sem espaço extra).
+# IDs NÃO estão aqui — o pipeline real é consultado via Pipedrive API em runtime.
+# Novos estágios criados no Pipedrive que não batem nenhuma chave simplesmente não geram sugestão de avanço.
+_STAGE_RULES: Dict[str, Dict[str, str]] = {
+    "entrada (novos negócios)": {
+        "goal": "Identificar e cadastrar o decisor de compras no CRM com contato (telefone/email)",
+        "completion_signs": "decisor encontrado e cadastrado no Pipedrive com telefone ou email válido",
+        "next_task_type": "call",
+        "next_task_hint": "Ligar para qualificar necessidade, budget e urgência",
+    },
+    "qualificação": {
+        "goal": "Confirmar interesse, budget e mapear a dor/necessidade real",
+        "completion_signs": "ligação ou contato de qualificação realizado, interesse confirmado ou dor mapeada no histórico",
+        "next_task_type": "meeting",
+        "next_task_hint": "Agendar reunião de apresentação ou demonstração do produto/solução",
+    },
+    "contatado": {
+        "goal": "Reunião de apresentação agendada e confirmada",
+        "completion_signs": "reunião marcada com data e horário definidos, criada no Pipedrive ou confirmada no histórico",
+        "next_task_type": "meeting",
+        "next_task_hint": "Confirmar presença e preparar pauta/material para a reunião",
+    },
+    "reunião agendada": {
+        "goal": "Reunião realizada com levantamento completo de necessidades",
+        "completion_signs": "reunião aconteceu, feedback ou ata registrada, próximo passo combinado com o cliente",
+        "next_task_type": "task",
+        "next_task_hint": "Preparar proposta comercial personalizada com base nas necessidades levantadas",
+    },
+    "reunião realizada": {
+        "goal": "Proposta comercial enviada ao cliente",
+        "completion_signs": "proposta enviada, cotação entregue, valor apresentado ao cliente",
+        "next_task_type": "task",
+        "next_task_hint": "Follow-up da proposta: marcar retorno para saber a posição do cliente",
+    },
+    "proposta em andamento": {
+        "goal": "Proposta aceita ou em negociação ativa de condições",
+        "completion_signs": "cliente respondeu sobre a proposta, negociação de preço/prazo em andamento, contraoferta ou aprovação parcial",
+        "next_task_type": "task",
+        "next_task_hint": "Negociar condições finais e encaminhar para fechamento do pedido",
+    },
+    "entrada (carteira)": {
+        "goal": "Retomar contato com cliente da carteira e identificar nova necessidade",
+        "completion_signs": "contato reativado, interesse em novo pedido ou recompra identificado no histórico",
+        "next_task_type": "call",
+        "next_task_hint": "Ligar para mapear necessidade e coletar informações para nova proposta",
+    },
+    "contato": {
+        "goal": "Necessidade mapeada, pronto para elaborar proposta de recompra",
+        "completion_signs": "necessidade e itens de interesse confirmados pelo cliente",
+        "next_task_type": "task",
+        "next_task_hint": "Elaborar e enviar proposta de recompra com condições atualizadas",
+    },
+    "proposta": {
+        "goal": "Proposta aprovada e pedido colocado",
+        "completion_signs": "proposta aceita, pedido confirmado pelo cliente ou programação de entrega solicitada",
+        "next_task_type": "task",
+        "next_task_hint": "Confirmar programação de entrega e acompanhar emissão do pedido",
+    },
+}
+
+
 class SalesStrategyService:
     """
     Serviço dedicado à inteligência comercial B2B.
@@ -239,6 +300,67 @@ class SalesStrategyService:
             except Exception as e:
                 log.warning(f"Erro ao buscar snapshot hard do CRM para estrategia: {e}")
 
+        # ── 1.8. Resolve contexto de progressão de estágio via Pipedrive ────────
+        _raw_stage = crm_snapshot.get("deal_stage") or ""
+        _stage_rule = _STAGE_RULES.get(_raw_stage.lower().strip())
+        _next_stage_name: str | None = None
+        _deal_id_for_prompt = crm_snapshot.get("deal_id") or "VER_HISTÓRICO"
+
+        if _stage_rule:
+            try:
+                from modules.crm.service.pipedrive_service import pipedrive_service
+                _all_stages = await pipedrive_service.get_all_stages_full()
+                # Acha o stage atual pelo nome
+                _current_entry = next(
+                    ((sid, sdata) for sid, sdata in _all_stages.items()
+                     if sdata.get("name", "").lower().strip() == _raw_stage.lower().strip()),
+                    None,
+                )
+                if _current_entry:
+                    _cur_id, _cur_data = _current_entry
+                    _cur_order = _cur_data.get("order_nr", 0)
+                    _cur_pipeline = _cur_data.get("pipeline_id")
+                    # Próximo stage = mesmo pipeline, menor order_nr acima do atual
+                    _best_order = None
+                    for _sid, _sdata in _all_stages.items():
+                        if _sdata.get("pipeline_id") != _cur_pipeline:
+                            continue
+                        _o = _sdata.get("order_nr", 0)
+                        if _o > _cur_order and (_best_order is None or _o < _best_order):
+                            _best_order = _o
+                            _next_stage_name = _sdata.get("name")
+            except Exception as _e:
+                log.warning("sales_strategy.stage_progression_lookup_failed", error=str(_e))
+
+        if _stage_rule and _next_stage_name:
+            stage_progression_section = f"""
+## PASSO 6 — INTELIGÊNCIA DE PROGRESSÃO DE FUNIL (execute APÓS os Passos 1-5):
+Analise se o objetivo do estágio atual JÁ foi cumprido e se é hora de avançar o deal.
+
+| Campo | Valor |
+|---|---|
+| Estágio atual | **{_raw_stage}** |
+| Objetivo deste estágio | {_stage_rule['goal']} |
+| Sinais de conclusão | {_stage_rule['completion_signs']} |
+| Próximo estágio | **{_next_stage_name}** |
+| Tarefa recomendada no novo estágio | {_stage_rule['next_task_hint']} (tipo: {_stage_rule['next_task_type']}) |
+
+REGRAS DO PASSO 6:
+- Se o histórico mostrar que os "Sinais de conclusão" acima foram atingidos → INCLUA obrigatoriamente uma sugestão de avanço.
+- A sugestão de avanço deve ser a PRIMEIRA (ou segunda, após desbloqueio crítico) da lista de ações.
+- O prompt da sugestão deve instruir o agente a executar EM SEQUÊNCIA:
+  1. `pipedrive_advance_deal` com target_stage='next' e deal_id={_deal_id_for_prompt}
+  2. `pipedrive_create_task` com task_type='{_stage_rule['next_task_type']}', a nota de contexto e o objetivo do novo estágio
+- label sugerido: "Avançar para {_next_stage_name}" (máx 55 chars)
+- categoria: "tarefa_crm"
+- razão: cite QUAL sinal de conclusão específico foi detectado no histórico
+
+- Se os sinais de conclusão NÃO foram detectados → NÃO sugira avançar. Foque nas ações do estágio atual.
+- Se o negócio pulou etapas (ex: cliente já marcou reunião estando em Qualificação) → sugira avançar diretamente para o estágio correto usando `pipedrive_advance_deal` com `target_stage=<ID_DO_ESTAGIO_CORRETO>`.
+"""
+        else:
+            stage_progression_section = ""
+
         # ── 2. Carrega contexto de negócio ────────────────────────────────────
         business_context = await BusinessContextService.get_tenant_context()
         biz_data_str = json.dumps(business_context, indent=2, ensure_ascii=False) if business_context else "{}"
@@ -313,6 +435,7 @@ Sua missão: analisar TODO o contexto disponível e gerar um conjunto COMPLETO e
 - pipedrive_update_task: atualiza ou conclui tarefa existente (activity_id, done=true/false, subject, due_date)
 - pipedrive_update_deal: atualiza deal (deal_id, fields)
 - pipedrive_create_note: cria nota no Pipedrive (content, deal_id, person_id, org_id)
+- pipedrive_advance_deal: avança o deal para o próximo estágio do funil (deal_id, target_stage='next' OU ID numérico do estágio de destino)
 
 ⛔ PROIBIDO nas sugestões: whatsapp_send_message, email_send, email_reply — essas ações NUNCA devem aparecer como sugestão de próximo passo. Em vez disso, crie uma tarefa no Pipedrive descrevendo o que precisa ser feito (ex: "Criar tarefa: Enviar e-mail de follow-up com contexto da última conversa").
 
@@ -355,6 +478,8 @@ SEMPRE inclua no campo `note` da tarefa o contexto da conversa: o que foi discut
 PASSO 5 (Encerramento da Tarefa): A ação de comunicação (Passo 4) já foi feita no histórico recente?
 - SIM: Sugira OBRIGATORIAMENTE "Marcar atividade como concluída" (`pipedrive_update_task` com `done=true`).
 - EM SEGUIDA: Nenhuma interação termina sem agenda. Logo após concluir, sugira "Criar tarefa de próximo Follow-up" para daqui a X dias.
+
+{stage_progression_section}
 
 ## REGRAS PARA AS SUGESTÕES (SAÍDA JSON):
 1. Gere de 5 a 15 ações — começando SEMPRE pelo passo no qual o algoritmo parou e incluindo opções alternativas.

@@ -17,7 +17,7 @@ interface OrgListItemProps {
     onToggleExpand?: (e: React.MouseEvent, orgId: number) => void;
     displayCount?: number;
     displayPics?: string[];
-    scanningOrgId?: number | null;
+    scanningOrgIds?: number[];
     showExpandToggle?: boolean;
     className?: string;
     style?: React.CSSProperties;
@@ -42,7 +42,7 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
     onToggleExpand,
     displayCount: propDisplayCount,
     displayPics: propDisplayPics,
-    scanningOrgId = null,
+    scanningOrgIds = [],
     showExpandToggle = true,
     className = '',
     style,
@@ -57,17 +57,25 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
         : false;
     const isNoTask = !isOverdue && !isToday && (!taskSummary || taskSummary.pending_count === 0);
 
-    // Calcular dados internos se não fornecidos
     const displayCount = propDisplayCount !== undefined ? propDisplayCount : (org.employees_count || org.employee_count || org.mapped_count || 0);
-    const displayPics = (propDisplayPics && propDisplayPics.length > 0) ? propDisplayPics : (
-        (org.decision_makers || org.employees || [])
-            .map((dm: any) => dm.profile_pic || dm.avatar)
-            .filter(Boolean) || []
-    );
+
+    // Apenas fotos reais (URLs válidas) — sem iniciais nem placeholders vazios
+    const displayPics: string[] = (() => {
+        if (propDisplayPics && propDisplayPics.length > 0) {
+            return propDisplayPics.filter((p: string) => p && p.length > 10);
+        }
+        const employees: any[] = org.decision_makers || org.employees || [];
+        const partners: any[] = org.partners || [];
+        const combined = [...employees, ...partners];
+        const pics = combined
+            .map((p: any) => p.profile_pic || p.avatar || p.logo)
+            .filter((p: string) => p && p.length > 10);
+        return [...new Set(pics)];
+    })();
 
     const hasMapping = displayCount > 0 || displayPics.length > 0;
 
-    const isMapping = scanningOrgId === orgId;
+    const isMapping = scanningOrgIds.includes(orgId);
 
     return (
         <div
@@ -194,9 +202,9 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                         </div>
                     ) : (hasMapping || isSelected) ? (
                         <>
-                            <div style={{ display: 'flex', alignItems: 'center', marginRight: '8px' }}>
-                                {displayPics.length > 0 ? (
-                                    displayPics.slice(0, 3).map((pic: string, i: number) => (
+                            {displayPics.length > 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', marginRight: '8px' }}>
+                                    {displayPics.slice(0, 3).map((pic: string, i: number) => (
                                         <Avatar
                                             key={i}
                                             src={pic}
@@ -204,28 +212,16 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                             kind="person"
                                             size={20}
                                             className={styles.stackedAvatar}
-                                            style={{ 
+                                            style={{
                                                 zIndex: 3 - i,
                                                 border: 'var(--sw-border-width) solid var(--sw-border)',
                                                 width: '20px',
                                                 height: '20px'
                                             }}
                                         />
-                                    ))
-                                ) : (
-                                    [0, 1, 2].map((i) => (
-                                        <div key={i} className={styles.stackedAvatar} style={{
-                                            background: i === 0 ? 'var(--sw-surface-raised)' : i === 1 ? 'var(--sw-hover)' : 'var(--sw-border-strong)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            zIndex: 3 - i
-                                        }}>
-                                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--sw-text-muted)', opacity: 0.3 }} />
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                             <span className={styles.empCountBadge}>
                                 {displayCount > 0 ? `${displayCount} ${displayCount === 1 ? 'funcionário' : 'mapeamento'}` : 'Pronta para mapeamento'}
                             </span>

@@ -145,15 +145,11 @@ async def agent_chat(payload: AgentChatRequest):
                     yield data if data.endswith('\n') else data + '\n'
         finally:
             await pubsub.unsubscribe(channel_name)
+            # Não aborta o job: o agente continua rodando no worker ARQ mesmo
+            # se o cliente recarregar a página. Os resultados são salvos no banco
+            # e ficam disponíveis quando o usuário voltar à conversa.
             if not finished:
-                try:
-                    from arq.jobs import Job
-                    job = Job(job_id, redis)
-                    aborted = await job.abort()
-                    if not aborted:
-                        log.warning("agent.stream.abort_uncertain", job_id=job_id)
-                except Exception as abort_err:
-                    log.warning("agent.stream.abort_failed", job_id=job_id, error=str(abort_err))
+                log.info("agent.stream.client_disconnected", job_id=job_id)
 
     return StreamingResponse(streamer(), media_type="application/x-ndjson")
 
@@ -208,14 +204,7 @@ async def agent_confirm(payload: AgentConfirmRequest):
         finally:
             await pubsub.unsubscribe(channel_name)
             if not finished:
-                try:
-                    from arq.jobs import Job
-                    job = Job(job_id, redis)
-                    aborted = await job.abort()
-                    if not aborted:
-                        log.warning("agent.stream.abort_uncertain", job_id=job_id)
-                except Exception as abort_err:
-                    log.warning("agent.stream.abort_failed", job_id=job_id, error=str(abort_err))
+                log.info("agent.stream.client_disconnected", job_id=job_id)
 
     return StreamingResponse(streamer(), media_type="application/x-ndjson")
 

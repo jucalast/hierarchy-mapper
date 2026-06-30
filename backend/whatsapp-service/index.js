@@ -16,22 +16,49 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Limpeza manual do lockfile para evitar erro EBUSY em crashes
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const lockfilePath = path.join(__dirname, '.wwebjs_auth', 'session', 'lockfile');
 const sessionPath = path.join(__dirname, '.wwebjs_auth', 'session');
 
-if (fs.existsSync(lockfilePath)) {
+/**
+ * Mata processos Chrome órfãos que ainda seguram a sessão wwebjs após um crash.
+ * É a causa raiz do loop "browser is already running" / "EBUSY lockfile":
+ * remover o lockfile não basta — o processo dono precisa morrer primeiro.
+ */
+function killZombieChrome() {
+    if (process.platform !== 'win32') {
+        // Linux/Mac: pkill por padrão do user-data-dir
+        try { execSync("pkill -f wwebjs_auth", { stdio: 'ignore', timeout: 10000 }); } catch (e) {}
+        return;
+    }
     try {
-        console.log('[WA Service] 🧹 Removendo lockfile órfão para liberar a sessão...');
-        fs.unlinkSync(lockfilePath);
+        const ps = "Get-CimInstance Win32_Process -Filter \\\"name = 'chrome.exe'\\\" | Where-Object { $_.CommandLine -like '*wwebjs_auth*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }";
+        execSync(`powershell -NoProfile -NonInteractive -Command "${ps}"`, { stdio: 'ignore', timeout: 15000 });
+        console.log('[WA Service] 🧨 Chrome órfão da sessão finalizado (se havia algum).');
     } catch (e) {
-        console.warn('[WA Service] ⚠️ Não foi possível remover o lockfile (pode estar em uso por outro processo):', e.message);
+        console.warn('[WA Service] ⚠️ Falha ao limpar Chrome órfão:', e.message);
     }
 }
+
+// Limpeza de sessão antes de iniciar: mata zumbi PRIMEIRO, depois remove o lockfile.
+function cleanupStaleSession() {
+    killZombieChrome();
+    if (fs.existsSync(lockfilePath)) {
+        try {
+            console.log('[WA Service] 🧹 Removendo lockfile órfão para liberar a sessão...');
+            fs.unlinkSync(lockfilePath);
+        } catch (e) {
+            console.warn('[WA Service] ⚠️ Não foi possível remover o lockfile:', e.message);
+        }
+    }
+}
+
+cleanupStaleSession();
 
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: false, // Abrir janela visível para depuração
+        headless: true,
         executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         args: [
             '--no-sandbox',
@@ -46,9 +73,12 @@ const client = new Client({
             '--disable-web-security',
             '--no-default-browser-check',
             '--disable-software-rasterizer',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
             '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
         ],
-        timeout: 90000 // Aumentar timeout para 90s
+        timeout: 90000
     }
 });
 
@@ -187,16 +217,37 @@ client.on('message', async msg => {
     console.log(`[WA Service] 💬 Mensagem de ${msg.from}: ${msg.body.substring(0, 50)}${msg.body.length > 50 ? '...' : ''}`);
 });
 
-console.log('[WA Service] 🛠️ Inicializando o cliente Puppeteer...');
-client.initialize().then(() => {
-    console.log('[WA Service] ⚙️ Comando de inicialização aceito. Aguardando eventos de login...');
-}).catch(err => {
-    console.error('[WA Service] ❌ Erro fatal na inicialização:', err);
-    console.error('[WA Service] DICA: Verifique se o Chrome está instalado em C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe');
-});
-
 // Helper para atrasos
 const delay = ms => new Promise(res => setTimeout(res, ms));
+
+/**
+ * Inicializa o cliente com retry automático em erros fatais de Puppeteer
+ * (Execution context destroyed, Protocol error, etc.), limpando a sessão
+ * órfã entre tentativas. Evita ficar preso num crash de inject transitório.
+ */
+async function startClientWithRetry(maxAttempts = 3) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            console.log(`[WA Service] 🛠️ Inicializando o cliente Puppeteer... (tentativa ${attempt}/${maxAttempts})`);
+            await client.initialize();
+            console.log('[WA Service] ⚙️ Comando de inicialização aceito. Aguardando eventos de login...');
+            return;
+        } catch (err) {
+            console.error(`[WA Service] ❌ Erro na inicialização (tentativa ${attempt}/${maxAttempts}):`, err.message || err);
+            if (isFatalPuppeteerError(err) && attempt < maxAttempts) {
+                console.log('[WA Service] 🔁 Erro transitório de Puppeteer — limpando sessão e retentando em 5s...');
+                try { await client.destroy(); } catch (e) {}
+                cleanupStaleSession();
+                await delay(5000);
+                continue;
+            }
+            console.error('[WA Service] DICA: Verifique se o Chrome está instalado em C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe');
+            return;
+        }
+    }
+}
+
+startClientWithRetry();
 
 /**
  * Normaliza número ou JID garantindo que números brasileiros de 10 ou 11 dígitos

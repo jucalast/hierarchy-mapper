@@ -89,7 +89,62 @@ async def _upsert_contact_cache(
             )
         )
         entry = result.scalar_one_or_none()
-        
+
+        # Lookup secundário: evita criar linha duplicada quando o mesmo contato
+        # já existe sob um identificador diferente (WA: phone vs LID; Email: email vs @domínio).
+        if not entry:
+            from sqlalchemy import or_
+            if channel == CHANNEL_WHATSAPP and contact_name and resolved_org_id:
+                # Mesmo contato pode ter sido salvo como número de telefone ou LID do WA
+                r2 = await session.execute(
+                    select(ContactConversationCache).where(
+                        ContactConversationCache.channel == channel,
+                        ContactConversationCache.org_id == resolved_org_id,
+                        ContactConversationCache.contact_name == contact_name,
+                    )
+                )
+                entry = r2.scalar_one_or_none()
+                if entry:
+                    # Promove identificador: prefere número de telefone (<=13 dígitos) ao LID
+                    _new_is_lid = "@lid" in contact_identifier or (
+                        contact_identifier.isdigit() and len(contact_identifier) > 13
+                    )
+                    _cur_is_lid = "@lid" in (entry.contact_identifier or "") or (
+                        (entry.contact_identifier or "").isdigit()
+                        and len(entry.contact_identifier or "") > 13
+                    )
+                    if not _new_is_lid and _cur_is_lid:
+                        entry.contact_identifier = contact_identifier
+
+            elif channel == CHANNEL_EMAIL and resolved_org_id:
+                # Email e domínio (@domain.com) do mesmo contato são a mesma conversa
+                _domain = (
+                    contact_identifier
+                    if contact_identifier.startswith("@")
+                    else (
+                        "@" + contact_identifier.split("@")[1]
+                        if "@" in contact_identifier
+                        # bare domain sem @: "dva.com" → "@dva.com"
+                        else ("@" + contact_identifier if "." in contact_identifier and " " not in contact_identifier else None)
+                    )
+                )
+                if _domain:
+                    r2 = await session.execute(
+                        select(ContactConversationCache).where(
+                            ContactConversationCache.channel == channel,
+                            ContactConversationCache.org_id == resolved_org_id,
+                            or_(
+                                ContactConversationCache.contact_identifier == _domain,
+                                ContactConversationCache.contact_identifier.like(f"%{_domain}"),
+                            ),
+                        )
+                    )
+                    entry = r2.scalar_one_or_none()
+                    if entry:
+                        # Promove para identificador de domínio se ainda for email específico
+                        if not entry.contact_identifier.startswith("@") and contact_identifier.startswith("@"):
+                            entry.contact_identifier = contact_identifier
+
         # Lógica de Mesclagem (Merge) e Deduplicação
         final_messages = messages
         if entry:

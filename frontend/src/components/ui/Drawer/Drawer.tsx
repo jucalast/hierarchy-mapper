@@ -162,7 +162,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
     const [confirmBusy, setConfirmBusy] = useState(false);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
-    const [scanningOrgId, setScanningOrgId] = useState<number | null>(null);
+    const [scanningOrgIds, setScanningOrgIds] = useState<number[]>([]);
 
     const fetchedOrgsRef = useRef<Record<number, boolean>>({});
 
@@ -180,8 +180,26 @@ export const Drawer: React.FC<DrawerProps> = ({
                 const data = await orgsApi.getOrganizationDetails(orgId);
                 setOrgDetails(prev => ({ ...prev, [orgId]: data }));
                 fetchedOrgsRef.current[orgId] = true;
+                // Persiste no localStorage para stale-while-revalidate no próximo load.
+                // Isolado do catch da API: QuotaExceededError não deve travar o fluxo.
                 if (typeof window !== 'undefined') {
-                    window.localStorage.setItem(`org-${orgId}-details`, JSON.stringify(data));
+                    const serialized = JSON.stringify(data);
+                    try {
+                        window.localStorage.setItem(`org-${orgId}-details`, serialized);
+                    } catch {
+                        // Quota excedida — despeja todos os caches de detalhes e tenta de novo
+                        try {
+                            const toEvict: string[] = [];
+                            for (let _i = 0; _i < localStorage.length; _i++) {
+                                const k = localStorage.key(_i);
+                                if (k?.startsWith('org-') && k.endsWith('-details')) toEvict.push(k);
+                            }
+                            toEvict.forEach(k => localStorage.removeItem(k));
+                            localStorage.setItem(`org-${orgId}-details`, serialized);
+                        } catch {
+                            // Ainda sem espaço — dado já está no estado React, segue sem cache
+                        }
+                    }
                 }
                 if (force) {
                     addNotification('success', 'Dados sincronizados com o Pipedrive.');
@@ -256,56 +274,69 @@ export const Drawer: React.FC<DrawerProps> = ({
         return null;
     };
 
-    const getLinkedinScanOrgId = (): number | null => {
+    const getLinkedinScanOrgIds = (): number[] => {
+        const ids: number[] = [];
         try {
-            const scanStr = typeof window !== 'undefined' ? window.localStorage.getItem('active-linkedin-scan') : null;
-            if (scanStr) {
-                const parsed = JSON.parse(scanStr);
-                if (parsed && parsed.orgId) return Number(parsed.orgId);
+            if (typeof window === 'undefined') return ids;
+            // Formato novo: mapa de orgId → entry
+            const newFmt = window.localStorage.getItem('active-linkedin-scans');
+            if (newFmt) {
+                const parsed = JSON.parse(newFmt);
+                if (parsed && typeof parsed === 'object') {
+                    ids.push(...Object.keys(parsed).map(Number));
+                    return ids;
+                }
+            }
+            // Formato legado: entrada única
+            const legacy = window.localStorage.getItem('active-linkedin-scan');
+            if (legacy) {
+                const parsed = JSON.parse(legacy);
+                if (parsed?.orgId) ids.push(Number(parsed.orgId));
             }
         } catch {}
-        return null;
+        return ids;
     };
 
-    // Mantém scanningOrgId baseado no localStorage (não no currentOrgId reativo do Zustand)
-    // para que o indicador persista mesmo após sair da empresa
+    // Mantém scanningOrgIds baseado no in-memory hook + localStorage para
+    // que o indicador persista mesmo após sair da empresa e suporte multi-scan.
     useEffect(() => {
-        const computeScanningId = (): number | null => {
-            // Scan LinkedIn em andamento (in-memory hook)
-            if (scan.isScanning && scan.scanOrgId) return scan.scanOrgId;
-            // LinkedIn scan persistido (detecta reload)
-            const linkedinOrgId = getLinkedinScanOrgId();
-            if (linkedinOrgId) return linkedinOrgId;
-            // Discovery job (IA) ativo no localStorage
-            return getDiscoveryJobOrgId();
+        const computeScanningIds = (): number[] => {
+            const ids = new Set<number>();
+            // Scans LinkedIn em andamento (in-memory hook — todos os orgs ativos)
+            for (const id of scan.activeScanOrgIds) ids.add(id);
+            // Scans persistidos no localStorage (detecta reload antes do hook reconectar)
+            for (const id of getLinkedinScanOrgIds()) ids.add(id);
+            // Discovery jobs (IA) ativos no localStorage
+            const discoveryId = getDiscoveryJobOrgId();
+            if (discoveryId) ids.add(discoveryId);
+            return Array.from(ids);
         };
 
-        const updateScanningId = () => setScanningOrgId(computeScanningId());
+        const updateScanningIds = () => setScanningOrgIds(computeScanningIds());
 
         const handleFinished = () => {
-            // Aguarda um tick para garantir que o localStorage já foi atualizado antes de re-checar
-            setTimeout(updateScanningId, 300);
+            setTimeout(updateScanningIds, 300);
         };
 
-        updateScanningId();
+        updateScanningIds();
 
-        // Eventos diretos (mais rápidos que polling)
-        window.addEventListener('hierarchy_scan_started', updateScanningId);
+        window.addEventListener('hierarchy_scan_started', updateScanningIds);
         window.addEventListener('hierarchy_scan_done', handleFinished);
-        window.addEventListener('hierarchy_job_finished', handleFinished);   // Discovery WS terminou
-        window.addEventListener('hierarchy_scan_cancelled', handleFinished); // Cancelado pelo usuário
+        window.addEventListener('hierarchy_job_finished', handleFinished);
+        window.addEventListener('hierarchy_scan_cancelled', handleFinished);
 
-        // Polling de segurança a cada 5s — captura casos onde eventos não foram disparados (ex: reload)
-        const pollingInterval = setInterval(updateScanningId, 5000);
+        const pollingInterval = setInterval(updateScanningIds, 5000);
 
         return () => {
-            window.removeEventListener('hierarchy_scan_started', updateScanningId);
+            window.removeEventListener('hierarchy_scan_started', updateScanningIds);
             window.removeEventListener('hierarchy_scan_done', handleFinished);
             window.removeEventListener('hierarchy_job_finished', handleFinished);
             window.removeEventListener('hierarchy_scan_cancelled', handleFinished);
             clearInterval(pollingInterval);
         };
-    }, [scan.isScanning, scan.scanOrgId]);
+    // activeScanOrgIds é um array novo a cada render; usar JSON para estabilidade de dep
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scan.isAnyScanning, JSON.stringify(scan.activeScanOrgIds)]);
 
     const toggleExpand = (e: React.MouseEvent, orgId: number) => {
         e.stopPropagation();
@@ -703,7 +734,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         setEditingNameOrgId={setEditingNameOrgId}
                         handleRenameOrg={handleRenameOrg}
                         handleUpdateOrg={handleUpdateOrg}
-                        scanningOrgId={scanningOrgId}
+                        scanningOrgIds={scanningOrgIds}
                         selectedOrgId={selectedOrgId}
                         selectedOrgLogo={selectedOrgLogo}
                         graphEmployees={graphEmployees}
@@ -723,7 +754,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         setExpandedOrgId={setExpandedOrgId}
                         fetchOrgDetails={fetchOrgDetails}
                         toggleExpand={toggleExpand}
-                        scanningOrgId={scanningOrgId}
+                        scanningOrgIds={scanningOrgIds}
                     />
                 )                }
             </div>

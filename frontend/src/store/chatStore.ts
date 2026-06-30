@@ -4,6 +4,12 @@ import { Message, CompanyResult } from '../components/chat/ChatInterfaces';
 import { AgentEvent } from '../components/chat/AgentV2Message';
 import { Edge } from 'reactflow';
 
+export interface BatchQueueItem {
+  messageId: string;
+  actionIndex: number;
+  action: { label: string; prompt: string; categoria?: string };
+}
+
 export interface ChatSession {
   messages: Message[];
   inputValue: string;
@@ -28,6 +34,10 @@ export interface ChatSession {
   } | null;
   approvedSuggestedActions: Record<string, any>;
   taskInlineConfirmed: Record<string, boolean>;
+  batchQueue: BatchQueueItem[];
+  isBatchRunning: boolean;
+  batchRunningSnapshot: BatchQueueItem[];
+  batchCurrentIndex: number;
 }
 
 export interface MappingSession {
@@ -66,6 +76,10 @@ interface ChatStore {
   setActiveRunningTask: (orgId: number | null | undefined, threadId: string | null | undefined, task: any | ((prev: any | null) => any | null)) => void;
   setApprovedSuggestedActions: (orgId: number | null | undefined, threadId: string | null | undefined, actions: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => void;
   setTaskInlineConfirmed: (orgId: number | null | undefined, threadId: string | null | undefined, confirmed: Record<string, boolean> | ((prev: Record<string, boolean>) => Record<string, boolean>)) => void;
+  setBatchQueue: (orgId: number | null | undefined, threadId: string | null | undefined, queue: BatchQueueItem[] | ((prev: BatchQueueItem[]) => BatchQueueItem[])) => void;
+  setIsBatchRunning: (orgId: number | null | undefined, threadId: string | null | undefined, running: boolean) => void;
+  setBatchRunningSnapshot: (orgId: number | null | undefined, threadId: string | null | undefined, snapshot: BatchQueueItem[]) => void;
+  setBatchCurrentIndex: (orgId: number | null | undefined, threadId: string | null | undefined, index: number) => void;
 
   // Actions de Mapeamento
   setRawEmployees: (orgId: number, employees: any[] | ((prev: any[]) => any[])) => void;
@@ -98,6 +112,10 @@ const defaultSession = (): ChatSession => ({
   activeRunningTask: null,
   approvedSuggestedActions: {},
   taskInlineConfirmed: {},
+  batchQueue: [],
+  isBatchRunning: false,
+  batchRunningSnapshot: [],
+  batchCurrentIndex: -1,
 });
 
 const defaultMapping = (): MappingSession => ({
@@ -341,6 +359,53 @@ export const useChatStore = create<ChatStore>()(
     });
   },
 
+  setBatchQueue: (orgId, threadId, queue) => {
+    const key = getSessionKey(orgId, threadId);
+    set((state) => {
+      const session = state.sessions[key] || defaultSession();
+      const nextQueue = typeof queue === 'function' ? queue(session.batchQueue || []) : queue;
+      return {
+        sessions: {
+          ...state.sessions,
+          [key]: { ...session, batchQueue: nextQueue },
+        },
+      };
+    });
+  },
+
+  setIsBatchRunning: (orgId, threadId, running) => {
+    const key = getSessionKey(orgId, threadId);
+    set((state) => ({
+      sessions: {
+        ...state.sessions,
+        [key]: {
+          ...(state.sessions[key] || defaultSession()),
+          isBatchRunning: running,
+        },
+      },
+    }));
+  },
+
+  setBatchRunningSnapshot: (orgId, threadId, snapshot) => {
+    const key = getSessionKey(orgId, threadId);
+    set((state) => ({
+      sessions: {
+        ...state.sessions,
+        [key]: { ...(state.sessions[key] || defaultSession()), batchRunningSnapshot: snapshot },
+      },
+    }));
+  },
+
+  setBatchCurrentIndex: (orgId, threadId, index) => {
+    const key = getSessionKey(orgId, threadId);
+    set((state) => ({
+      sessions: {
+        ...state.sessions,
+        [key]: { ...(state.sessions[key] || defaultSession()), batchCurrentIndex: index },
+      },
+    }));
+  },
+
   // Mapping state setters
   setRawEmployees: (orgId, employees) => {
     set((state) => {
@@ -505,12 +570,14 @@ export const useChatStore = create<ChatStore>()(
         activeRunningTask: null,
         isLoading: false,
         agentStreaming: false,
+        batchQueue: [],
+        isBatchRunning: false,
       }])
     ),
     mappings: Object.fromEntries(
       Object.entries(state.mappings).map(([k, m]) => [k, {
         loading: false,
-        discovering: m.discovering,
+        discovering: false,
         error: m.error,
         activeJobId: m.activeJobId,
         isSmartSyncLoading: false,

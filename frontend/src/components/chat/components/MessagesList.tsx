@@ -30,6 +30,8 @@ interface MessagesListProps {
     activeOrgId: number | null;
     cleanOrgName: string;
     activeThreadId?: string;
+    handleToggleBatch?: (messageId: string, actionIndex: number, action: { label: string; prompt: string; categoria?: string }) => void;
+    batchQueue?: Array<{ messageId: string; actionIndex: number; action: any }>;
 }
 
 export const MessagesList: React.FC<MessagesListProps> = ({
@@ -57,6 +59,8 @@ export const MessagesList: React.FC<MessagesListProps> = ({
     activeOrgId,
     cleanOrgName,
     activeThreadId,
+    handleToggleBatch,
+    batchQueue = [],
 }) => {
     return (
         <div 
@@ -92,6 +96,10 @@ export const MessagesList: React.FC<MessagesListProps> = ({
                             onHierarchyMappingDone={handleMainChatMappingDone}
                             model={model}
                             onOpenTaskConsole={handleOpenTaskConsole}
+                            onToggleBatch={handleToggleBatch
+                                ? (action, idx, parentMessageId) => handleToggleBatch(parentMessageId || message.id, idx, action)
+                                : undefined}
+                            batchQueue={batchQueue}
                         />
                     );
                 }

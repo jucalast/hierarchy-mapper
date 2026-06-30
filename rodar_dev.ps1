@@ -19,11 +19,23 @@ try {
     Write-Host "Ollama iniciado." -ForegroundColor Green
 }
 
-# 1. Limpar processos antigos
+# 1. Limpar processos antigos (apenas sessões LINKB2B — nunca mata processos do Claude ou do sistema)
 Write-Host "Limpando servicos e terminais antigos..." -ForegroundColor Yellow
-Get-Process | Where-Object { $_.MainWindowTitle -like "*LINKB2B-*" } | Stop-Process -Force
-Get-NetTCPConnection -LocalPort 3000, 8000, 8001, 8002 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
-Get-Process headless_shell -ErrorAction SilentlyContinue | Stop-Process -Force
+
+# Mata janelas LINKB2B abertas de sessões anteriores
+Get-Process | Where-Object { $_.MainWindowTitle -like "LINKB2B-SVC-*" } | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-Process headless_shell -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 1
+
+# Libera portas matando apenas python.exe e node.exe (claude.exe nunca é atingido)
+$safeToKill = @("python", "node")
+Get-NetTCPConnection -LocalPort 3000, 8000, 8001, 8002 -State Listen -ErrorAction SilentlyContinue |
+    ForEach-Object {
+        $proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
+        if ($proc -and ($safeToKill -contains $proc.Name.ToLower())) {
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+        }
+    }
 Start-Sleep -Seconds 1
 
 # 2. Iniciar Redis

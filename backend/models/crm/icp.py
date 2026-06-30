@@ -9,20 +9,20 @@ ICPScoreRule aplica pesos numericos para calcular icp_score (0-100) por org.
 Classes: ICPConfig, ICPScoreRule
 """
 import uuid
-from sqlalchemy import Column, String, Integer, ForeignKey, JSON
+from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy.orm import relationship
-from core.infra.database import Base
+from core.infra.database import Base, SafeJSON
 
 class ICPConfig(Base):
     __tablename__ = "icp_configs"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     tenant_id = Column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
-    industries_target = Column(JSON) # List of strings
-    company_size_target = Column(JSON) # List of strings
-    decision_makers = Column(JSON) # List of strings
-    disqualifiers = Column(JSON) # List of strings
-    pain_points = Column(JSON) # List of strings
+    industries_target = Column(SafeJSON) # List of strings
+    company_size_target = Column(SafeJSON) # List of strings
+    decision_makers = Column(SafeJSON) # List of strings
+    disqualifiers = Column(SafeJSON) # List of strings
+    pain_points = Column(SafeJSON) # List of strings
 
     tenant = relationship("Tenant", back_populates="icp_configs")
     score_rules = relationship("ICPScoreRule", back_populates="icp_config", cascade="all, delete-orphan")

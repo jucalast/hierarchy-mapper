@@ -33,7 +33,7 @@
     gap: 5px;
     padding: 6px 10px;
     border: none;
-    border-radius: 0;
+    border-radius: 7px;
     background: transparent;
     color: var(--sw-text-muted);
     font-size: var(--font-xs);

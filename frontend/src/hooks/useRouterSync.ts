@@ -14,6 +14,19 @@ interface UseRouterSyncProps {
     addNotification: (type: 'success' | 'error' | 'warning' | 'info', message: string) => void;
 }
 
+const LAST_ORG_KEYS = ['id', 'name', 'logo', 'cnpj', 'domain', 'linkedin_url', 'linkedin', 'product_focus', 'category'] as const;
+
+const saveLastViewedOrg = (org: any) => {
+    if (!org) return;
+    const slim: Record<string, unknown> = {};
+    for (const k of LAST_ORG_KEYS) if (org[k] !== undefined) slim[k] = org[k];
+    try {
+        localStorage.setItem('last-viewed-org', JSON.stringify(slim));
+    } catch (e) {
+        console.warn('[useRouterSync] localStorage quota excedida ao salvar last-viewed-org:', e);
+    }
+};
+
 const cleanName = (name: string) => {
     if (!name) return "";
     return name
@@ -83,7 +96,7 @@ export function useRouterSync({
                     try {
                         const list = JSON.parse(cachedOrgsStr);
                         if (Array.isArray(list)) {
-                            org = list.find((o: any) => Number(o.id) === orgId || Number(o.pipedrive_id) === orgId || Number(o.local_id) === orgId);
+                            org = list.find((o: any) => Number(o.id) === orgId);
                         }
                     } catch (e) {
                         console.error(e);
@@ -128,7 +141,7 @@ export function useRouterSync({
                     setCurrentOrgId(orgId);
                     setChatOrgId(orgId);
                     useChatStore.getState().setCurrentOrgId(orgId);
-                    localStorage.setItem('last-viewed-org', JSON.stringify(org));
+                    saveLastViewedOrg(org);
 
                     const isValidLinkedin = (url: any) => typeof url === 'string' && url.includes('linkedin.com');
                     const lUrl = isValidLinkedin(org.linkedin_url) ? org.linkedin_url : isValidLinkedin(org.linkedin) ? org.linkedin : "";
@@ -162,13 +175,21 @@ export function useRouterSync({
             // Verifica primeiro se havia um scan LinkedIn em andamento — o job roda
             // no worker ARQ desacoplado da página, então só precisamos reabrir o WS.
             const linkedinScanStr = localStorage.getItem('active-linkedin-scan');
-            if (linkedinScanStr && linkedinScanStr !== "NaN" && linkedinScanStr !== "undefined") {
+            const linkedinScansStr = localStorage.getItem('active-linkedin-scans');
+            const hasLegacyScan = !!(linkedinScanStr && linkedinScanStr !== "NaN" && linkedinScanStr !== "undefined");
+            const hasNewFormatScan = (() => {
+                if (!linkedinScansStr) return false;
+                try { const p = JSON.parse(linkedinScansStr); return p && typeof p === 'object' && Object.keys(p).length > 0; }
+                catch { return false; }
+            })();
+
+            if (hasLegacyScan) {
                 // 🔄 Reconciliação REST ANTES de reabrir o WS — espelha o que o discovery já
                 // fazia (loadStoredHierarchy). Sem isso, um reload de página fazia o
                 // connectionManager achar o store vazio e recomeçar do zero visualmente,
                 // mesmo com nós já persistidos no banco pelos lotes recebidos antes do reload.
                 try {
-                    const scanJobData = JSON.parse(linkedinScanStr);
+                    const scanJobData = JSON.parse(linkedinScanStr!);
                     if (scanJobData?.orgId) {
                         const data = await loadStoredHierarchy(Number(scanJobData.orgId), true);
                         if (data && data.nodes && data.nodes.length > 0) {
@@ -189,6 +210,11 @@ export function useRouterSync({
                 } else {
                     addNotification('info', 'A varredura do LinkedIn já havia sido concluída ou expirado.');
                 }
+            } else if (hasNewFormatScan) {
+                // Novo formato (active-linkedin-scans): chama reconnectLinkedinScan para
+                // verificar o backend e limpar entradas expiradas. Sem isso, orgs continuam
+                // mostrando "Mapeando..." ao reiniciar mesmo após o scan ter concluído.
+                await reconnectLinkedinScan();
             }
 
             let jobDataStr: string | null = null;
@@ -231,7 +257,7 @@ export function useRouterSync({
                     // Guard against duplicate calls (e.g. from React double-invoking effects in dev or Next.js hydration)
                     if (reconnectLockRef.current) return;
                     reconnectLockRef.current = true;
-                    const reconnected = await reconnectToActiveJob(addNotification);
+                    const reconnected = await reconnectToActiveJob(addNotification, Number(orgId));
                     if (!reconnected) {
                         console.warn("[Job Check] Job expirou no backend.");
                         setStep("confirm");
@@ -297,7 +323,7 @@ export function useRouterSync({
                                 try {
                                     const list = JSON.parse(cachedOrgsStr);
                                     if (Array.isArray(list)) {
-                                        org = list.find((o: any) => Number(o.id) === orgId || Number(o.pipedrive_id) === orgId || Number(o.local_id) === orgId);
+                                        org = list.find((o: any) => Number(o.id) === orgId);
                                     }
                                 } catch (e) {
                                     console.error(e);
@@ -314,7 +340,7 @@ export function useRouterSync({
 
                         if (org) {
                             console.log(`[Router Sync] Organization details fetched for org ${orgId}. Applying details.`);
-                            localStorage.setItem('last-viewed-org', JSON.stringify(org));
+                            saveLastViewedOrg(org);
 
                             const jobDataStr = localStorage.getItem(`active-discovery-job-${orgId}`);
                             if (jobDataStr) {
@@ -335,7 +361,7 @@ export function useRouterSync({
                                         if (org.category === "compras" || org.category === "logistica") setAreaFocus(org.category);
                                         
                                         // Silently reconnect - the user sees the "Mapeando..." badge on the card
-                                        const reconnected = await reconnectToActiveJob(undefined);
+                                        const reconnected = await reconnectToActiveJob(undefined, orgId);
                                         if (reconnected) return;
                                         setStep("initial");
                                     }

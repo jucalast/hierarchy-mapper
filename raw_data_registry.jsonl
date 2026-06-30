@@ -12076,3 +12076,2095 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-26T10:41:16.390414",
+    "candidate": "Rodrigo Batistioli",
+    "linkedin": "https://www.linkedin.com/in/rodrigo-batistioli-03111165",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo Batistioli - Consultor Técnico Chemetall do Brasil ... Chemetall - Globale Homepage CHEMETALL DO BRASIL LTDA Company Profile | JUNDIAI, SAO PAULO ... 13 Chemetall jobs in Worldwide - LinkedIn I have been working at Chemetall for over 25 years ... - LinkedIn",
+            "body": "Descrição do cargo: analista de processos e de tratamento de superfície, óleos e lubrificantes e auxiliar de produção como full time na Mercedes Benz – Daimler Chrysler do Brasil (S.B.C). Die globale Geschäftseinheit Oberflächentechnik des Unternehmensbereichs Coatings der BASF, die unter der Marke Chemetall operiert, ist ein führender Lieferant angewandter Oberflächentechnik für metallische und nichtmetallische Oberflächen. Find company research, competitor information, contact details & financial data for CHEMETALL DO BRASIL LTDA of JUNDIAI, SAO PAULO. Get the latest business insights from Dun & Bradstreet. Leverage your professional network, and get hired. New Chemetall jobs added daily. Project Manager / BASF- Chemetall Automotive Solutions. Führungskraft mit Ausdauer, Geduld, Kreativität und 20 Jahre Erfahrung im Top Management. I have been working at Chemetall for over 25..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Formação Técnico Químico\n15 anos de experiencia na área comercial e técnica com… · Experiência: Chemetall · Formação acadêmica: FASB - Faculdade São Bernardo · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Rodrigo Batistioli no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Rodrigo Batistioli",
+        "role": "Consultor Técnico",
+        "matching_score": 0,
+        "department": "Comercial e Suporte Técnico",
+        "evidence": "Especialista marcou como irrelevante e o departamento 'Comercial' não é alinhado com o foco em Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rodrigo Batistioli - Consultor Técnico Chemetall do Brasil",
+                "Experiência na Chemetall",
+                "Cargo Detectado: Consultor Técnico"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Formação Técnico Químico. 15 anos de experiencia na área comercial e técnica. Experiência na Chemetall. Localidade: São Paulo."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rodrigo Batistioli",
+                    "role": "Consultor Técnico"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rodrigo Batistioli",
+                "detected_role": "Consultor Técnico",
+                "clean_bio": "Formação Técnico Químico. 15 anos de experiencia na área comercial e técnica. Experiência na Chemetall. Localidade: São Paulo."
+            }
+        },
+        "specialist": {
+            "role_name": "Consultor Técnico",
+            "dept": "Comercial e Suporte Técnico",
+            "is_relevant": false,
+            "reasoning": "O cargo de 'Consultor Técnico' com experiência na área 'comercial e técnica' (conforme a bio) indica uma função de suporte a vendas ou atendimento ao cliente, que não se alinha com o foco em SUPRIMENTOS / COMPRAS / PROCUREMENT, sendo uma função vetada."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Consultor Técnico",
+        "department": "Comercial e Suporte Técnico",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-26T10:42:40.351116",
+    "candidate": "Luiz Guilherme Auresco",
+    "linkedin": "https://www.linkedin.com/in/guilhermeauresco",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Guilherme Auresco - São Paulo, São Paulo, Brasil | Perfil ... Luiz Guilherme - a | LinkedIn Guilherme Auresco Email & Phone Number | Chemetall Chief ... CHEMETALL DO BRASIL LTDA Company Profile | JUNDIAI, SAO PAULO ... Chemetall | (11) 4525-5300 | Jundiaí - br.todosnegocios.com Chemetal inaugura planta em Jundiaí | Mecânica, Metalurgia ... Chemetall Management Team | Org Chart - RocketReach",
+            "body": "Localidade: São Paulo · + de 500 conexões no LinkedIn . Veja o perfil de Guilherme Auresco no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. a · Localidade: São Paulo · 123 conexões no LinkedIn . Veja Luiz Guilherme o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Guilherme Auresco Summary Guilherme Auresco , based in State of São Paulo, Brazil, is currently a Chief Executive Officer at Chemetall . Guilherme Auresco brings experience from previous roles at Chemetall , National Starch and Chemical and Schering. Guilherme Auresco holds a 2001 - 2002 Master of Business Administration in Finance @ Ibmec. Find company research, competitor information, contact details & financial data for CHEMETALL DO BRASIL LTDA of JUNDIAI, SAO PAULO. Get the latest business insights from Dun & Bradstreet. Luiz Guilherme Auresco é o contato principal na Chemetall . A Chemetall gera aproximadamente USD 26.260.000 em receita anualmente. A escolha da cidade foi por sua posição estratégica e logística. Além disso, a nova planta da Chemetall do Brasil permite atender, com excelência, os clientes fidelizados e conquistar novos”, ressalta Luiz Guilherme Auresco , diretor geral da Chemetall do Brasil . A Chemetall do Brasil apresenta grande potencial de crescimento, segundo ... Chemetall employs 1,729 employees. The Chemetall management team includes Guilherme Auresco (Chief Executive Officer), Judy Habbart (Human Resources Manager), and Ron Ascenzo (Head Of Business Development, North America)."
+        },
+        "osint_metadata": {
+            "role": "são paulo, são paulo, brasil",
+            "bio": "Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Guilherme Auresco no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Luiz Guilherme Auresco",
+        "role": "Chief Executive Officer",
+        "matching_score": 95,
+        "department": "Diretoria/Gestão",
+        "evidence": "Candidato é Chief Executive Officer na empresa-alvo 'Chemetall' e todas as regras de veto foram atendidas. O cargo é relevante para qualificação B2B em Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Luiz Guilherme Auresco, based in State of São Paulo, Brazil, is currently a Chief Executive Officer at Chemetall.",
+                "Guilherme Auresco , based in State of São Paulo, Brazil, is currently a Chief Executive Officer at Chemetall ."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Luiz Guilherme Auresco, based in State of São Paulo, Brazil, is currently a Chief Executive Officer at Chemetall. He holds a Master of Business Administration in Finance from Ibmec."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luiz Guilherme Auresco",
+                    "role": "Chief Executive Officer"
+                },
+                {
+                    "name": "Luiz Guilherme Auresco",
+                    "role": "Contato Principal"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luiz Guilherme Auresco",
+                "detected_role": "Chief Executive Officer",
+                "clean_bio": "Luiz Guilherme Auresco, based in State of São Paulo, Brazil, is currently a Chief Executive Officer at Chemetall. He holds a Master of Business Administration in Finance from Ibmec."
+            }
+        },
+        "specialist": {
+            "role_name": "Chief Executive Officer",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Chief Executive Officer (CEO) é um cargo C-level e, conforme as instruções, deve ser considerado relevante para Suprimentos/Compras/Procurement, pois CEOs são frequentemente decisores finais em aprovações financeiras e de compras em negócios B2B."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Chief Executive Officer",
+        "department": "Diretoria/Gestão",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-26T10:44:51.976333",
+    "candidate": "Hans Mitteldorf",
+    "linkedin": "https://www.linkedin.com/in/hans-mitteldorf-ab83b748",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Hans Mitteldorf - CEO/Managing Director - LinkedIn Brasil CHEMETALL DO BRASIL LTDA Company Profile | JUNDIAI, SAO PAULO ... Chemetall do Brasil LTDA - 01359916000103 Diadema - CNPJ Biz Chemetall do Brasil LTDA - 01359916000448 Jundiaí CHEMETALL DO BRASIL LTDA - CNPJ: 01.359.916/0007-90 CHEMETALL DO BRASIL LTDA - CNPJ: 01.359.916/0006-00",
+            "body": "CEO/Managing Director - ex CHEMSON LTDA / Industria Quimica - Aditivos- CEO Until 03/2021 · 2015 - 02/2019 : CEO -CHEMSON Polymer Additive AG (Austria). 2000 - 03/2021 : Diretor Geral / CEO- CHEMSON LTDA ( Brasil ). 1998 - 2000 : Diretor CHEMETALL DO BRASIL LTDA 1990 - 1998 : Diretor de Marketing INBRA INDUSTRIAS QUIMICAS LTDA 1990 - 1998 : Diretor de Marketing DIADEMA INDUSTRIAS QUIMICAS LTDA ... Find company research, competitor information, contact details & financial data for CHEMETALL DO BRASIL LTDA of JUNDIAI, SAO PAULO. Get the latest business insights from Dun & Bradstreet. Aug 5, 1996 · Todos os dados da empresa Chemetall do Brasil LTDA com CNPJ 01.359.916/0001-03 - 01359916000103 de Diadema/SP. Endereço, Sócios , Situação, CNAE(s)... Aug 4, 2008 · Todos os dados da empresa Chemetall do Brasil LTDA com CNPJ 01.359.916/0004-48 - 01359916000448 de Jundiaí/SP. Telefone, E-mail, Endereço, Sócios ... Administrador - LUIZ GUILHERME AURESCO Sócio Pessoa Jurídica Domiciliado no Exterior - CHEMETALL GMBH Sócio Pessoa Jurídica Domiciliado no Exterior - ROCKWOOD SPECIALTIES GROUP GMBH Remover Empresa Endereço: AVENIDA DAS NACOES UNIDAS Número: 14171 Bairro: VILA GERTRUDES Município: SAO PAULO UF: SP Telefones: 11-20392273 Quadro Societário: Administrador - LUIZ GUILHERME AURESCO Sócio Pessoa Jurídica Domiciliado no Exterior - CHEMETALL GMBH Sócio Pessoa Jurídica Domiciliado no Exterior - ROCKWOOD SPECIALTIES GROUP GMBH Remover Empresa"
+        },
+        "osint_metadata": {
+            "role": "são paulo, são paulo, brasil",
+            "bio": "2015 - 02/2019 : CEO -CHEMSON Polymer Additive AG (Austria).\n2000 - 03/2021 : Diretor… · Formação acadêmica: FEI ( Faculdade de Engenharia Industrial ) · Localidade: São Paulo · 380 conexões no LinkedIn. Veja Hans Mitteldorf  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Hans Mitteldorf",
+        "role": "Nenhum",
+        "matching_score": 0,
+        "department": "Nenhum",
+        "evidence": "O candidato trabalhou na CHEMSON LTDA e CHEMSON Polymer Additive AG, e não na Chemetall. A regra de Veto de Empresa (Regra 1) foi acionada pois o candidato não trabalha na empresa-alvo.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Diretor na CHEMETALL DO BRASIL LTDA (1998-2000)",
+                "atuou como CEO na CHEMSON Polymer Additive AG (Áustria) de 2015 a 2019",
+                "Diretor Geral / CEO na CHEMSON LTDA (Brasil) de 2000 a 2021",
+                "ex CHEMSON LTDA / Industria Quimica - Aditivos- CEO Until 03/2021"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Hans Mitteldorf atuou como CEO na CHEMSON Polymer Additive AG (Áustria) de 2015 a 2019 e como Diretor Geral / CEO na CHEMSON LTDA (Brasil) de 2000 a 2021. Também foi Diretor na CHEMETALL DO BRASIL LTDA (1998-2000)."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Hans Mitteldorf",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Hans Mitteldorf",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Hans Mitteldorf atuou como CEO na CHEMSON Polymer Additive AG (Áustria) de 2015 a 2019 e como Diretor Geral / CEO na CHEMSON LTDA (Brasil) de 2000 a 2021. Também foi Diretor na CHEMETALL DO BRASIL LTDA (1998-2000) e Diretor de Marketing na INBRA INDUSTRIAS QUIMICAS LTDA e DIADEMA INDUSTRIAS QUIMICAS LTDA (1990-1998). Formado pela FEI (Faculdade de Engenharia Industrial). Localizado em São Paulo."
+            }
+        },
+        "specialist": {
+            "role_name": "CEO / Diretor Geral",
+            "dept": "Diretoria / Gestão",
+            "is_relevant": true,
+            "reasoning": "Hans Mitteldorf atuou como CEO e Diretor Geral, cargos de nível C-level. Conforme as instruções, cargos de Diretoria/Gestão (CEO, Diretor Geral) são considerados relevantes para Suprimentos/Compras/Procurement, pois envolvem decisões estratégicas e aprovações financeiras. Ele também possui experiência anterior como Diretor na Chemetall do Brasil LTDA."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Nenhum",
+        "department": "Nenhum",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-26T10:46:04.299631",
+    "candidate": "David Villegas",
+    "linkedin": "https://www.linkedin.com/in/david-villegas-08015a66",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "David Villegas - Chemetall | LinkedIn",
+            "body": "· Experience: Chemetall · Education: POSGRADO UNIVERSIDAD DEL NOROESTE · Location: Jackson · 500+ connections on LinkedIn. View David Villegas ’ profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Industrial Engineer with strong experience in the automotive industry based on Six Sigma… · Experiência: Chemetall · Formação acadêmica: POSGRADO UNIVERSIDAD DEL NOROESTE · Localidade: Saline · + de 500 conexões no LinkedIn. Veja o perfil de David Villegas no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "David Villegas",
+        "role": "Industrial Engineer",
+        "matching_score": 0,
+        "department": "Engenharia Industrial",
+        "evidence": "Especialista marcou como não relevante para Compras/Suprimentos e o cargo funcional não foi identificado oficialmente.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "David Villegas - Chemetall",
+                "Experience: Chemetall",
+                "LinkedIn CURRENT COMPANY (Declarada): Chemetall",
+                "Experiência: Chemetall"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Industrial Engineer with strong experience in the automotive industry based on Six Sigma"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "David Villegas",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "David Villegas",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Industrial Engineer with strong experience in the automotive industry based on Six Sigma"
+            }
+        },
+        "specialist": {
+            "role_name": "Industrial Engineer",
+            "dept": "Engenharia Industrial",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Industrial Engineer' está explicitamente na lista de veto (engenheiro/engineering) e não indica foco direto em Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Industrial Engineer",
+        "department": "Engenharia Industrial",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-26T10:47:29.727183",
+    "candidate": "Mauro Beccaro",
+    "linkedin": "https://www.linkedin.com/in/mauro-beccaro-6739b8110",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Mauro Beccaro - Chemetall | LinkedIn",
+            "body": "Mauro can introduce you to 10+ people at Chemetall"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Chemetall · Formação acadêmica: University of KwaZulu-Natal · Localidade: New Providence · 93 conexões no LinkedIn. Veja o perfil de Mauro Beccaro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Mauro Beccaro",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Chemetall",
+                "Search Snippet: Mauro can introduce you to 10+ people at Chemetall",
+                "Google Page Title: Mauro Beccaro - Chemetall",
+                "Bio Higienizada: Experiência: Chemetall"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: Chemetall · Formação acadêmica: University of KwaZulu-Natal · Localidade: New Providence · 93 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Mauro Beccaro",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Mauro Beccaro",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência: Chemetall · Formação acadêmica: University of KwaZulu-Natal · Localidade: New Providence · 93 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Mauro Beccaro não foi identificado nos dados fornecidos. A bio não contém termos explícitos relacionados a Suprimentos, Compras ou Procurement, conforme exigido pela instrução 9 para cargos não identificados."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-26T10:48:36.386955",
+    "candidate": "Pedro Henrique Oliveira",
+    "linkedin": "https://www.linkedin.com/in/pedro-henrique-lopes-de-oliveira-comprador82",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Pedro Henrique Oliveira - Autônomo | LinkedIn",
+            "body": "Comprador comprometido com a profissão. Atuei decisivamente na implementação e… · Experiência: Autônomo · Formação acadêmica: Centro Universitário UNIFAAT · Localidade: Atibaia · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "autônomo",
+            "bio": "Comprador comprometido com a profissão. Atuei decisivamente na implementação e… · Experiência: Autônomo · Formação acadêmica: Centro Universitário UNIFAAT · Localidade: Atibaia · + de 500 conexões no LinkedIn. Veja o perfil de Pedro Henrique Oliveira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-26T12:25:42.639723",
+    "candidate": "Carlos Jacomini",
+    "linkedin": "https://www.linkedin.com/in/carlos-jacomini-44a72a1a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Jacomini - CEO at Isoletri Ind.Com.Isolantes Eletricos ... Isoletri - Industria de Materiais Isolantes - LinkedIn Brasil Carlos Jacomini Email & Phone Number | Isoletri Ind.Com ... Isoletri - Industria de Materiais Isolantes Information ISOLETRI INDUSTRIA DE MATERIAIS ISOLANTES LTDA. Isoletri Industria De Materiais Isolantes Ltda. - 06.271.755 ... ISOLETRI Indstria de Materiais Isolantes Employee Directory",
+            "body": "Responsible for the development of the company in the electrical insulating market for Latam, introducing a new option for the moulded components produced with our own raw material with high... Empresa fundada em 2004, a ISOLETRI converte materiais isolantes a base de celulose para isolação de transformadores, reatores e equipamentos elétricos para baixa, média e alta tensão. Carlos Jacomini , based in Itupeva, SP, BR, is currently a Chief Executive Officer at Isoletri Ind .Com. Isolantes Eletricos Ltda. Carlos Jacomini holds a 2020 - 2021 FIA Business School. Empresa fundada em 2004, a ISOLETRI converte materiais isolantes a base de celulose para isolação de transformadores, reatores e equipamentos elétricos para baixa, média e alta tensão. Find company research, competitor information, contact details & financial data for ISOLETRI INDUSTRIA DE MATERIAIS ISOLANTES LTDA. of JUNDIAI, SAO PAULO. Get the latest business insights from Dun & Bradstreet. As informações exibidas neste site são públicas e extraídas de fontes oficiais, especialmente dos dados abertos disponibilizados pela Receita Federal do Brasil . Search our free database to find email addresses and direct dials for ISOLETRI Indstria de Materiais Isolantes employees."
+        },
+        "osint_metadata": {
+            "role": "isoletri ind.com.isolantes eletricos ltda",
+            "bio": "Experienced, proactive, customer-focused leader with several years of experience in… · Experiência: Isoletri Ind.Com.Isolantes Eletricos Ltda · Formação acadêmica: FIA Business School · Localidade: Itupeva · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Jacomini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Carlos Jacomini",
+        "role": "Chief Executive Officer",
+        "matching_score": 95,
+        "department": "Diretoria/Gestão",
+        "evidence": "Candidato é CEO da empresa-alvo 'Isoletri Industriade Materiais Isolantes' (incluindo abreviações). Departamento de Diretoria/Gestão. Nenhuma regra de veto foi acionada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Carlos Jacomini - CEO at Isoletri Ind.Com.Isolantes Eletricos",
+                "Carlos Jacomini , based in Itupeva, SP, BR, is currently a Chief Executive Officer at Isoletri Ind .Com. Isolantes Eletricos Ltda."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experienced, proactive, customer-focused leader with several years of experience in…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Carlos Jacomini",
+                    "role": "Chief Executive Officer"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Carlos Jacomini",
+                "detected_role": "Chief Executive Officer",
+                "clean_bio": "Experienced, proactive, customer-focused leader with several years of experience in…"
+            }
+        },
+        "specialist": {
+            "role_name": "Chief Executive Officer",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Chief Executive Officer (CEO) é um cargo C-level e, conforme as instruções, deve ser considerado relevante para Suprimentos/Compras/Procurement em negócios B2B, pois CEOs são decisores finais ou aprovadores de compras e estratégias."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Chief Executive Officer",
+        "department": "Diretoria/Gestão",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-26T12:31:35.495635",
+    "candidate": "Carlos Jacomini",
+    "linkedin": "https://www.linkedin.com/in/carlos-jacomini-44a72a1a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Jacomini - CEO at Isoletri Ind.Com.Isolantes Eletricos ... Isoletri Industria de Materiais Isolante... - 06271755000107 Isoletri Industria De Materiais Isolantes Ltda. - 06.271.755 ... ISOLETRI INDUSTRIA DE MATERIAIS ISOLANTES LTDA. ISOLETRI INDUSTRIA DE MATERIAIS ISOLANTES LTDA. ISOLETRI INDUSTRIA DE MATERIAIS ISOLANTES LTDA.",
+            "body": "Responsible for the development of the company in the electrical insulating market for Latam, introducing a new option for the moulded components produced with our own raw material with high... May 21, 2004 · Todos os dados da empresa Isoletri Industria de Materiais Isolantes Ltda. com CNPJ 06.271.755/0001-07 - 06271755000107 de Jundiaí/SP. Telefone, E-mail... As informações exibidas neste site são públicas e extraídas de fontes oficiais, especialmente dos dados abertos disponibilizados pela Receita Federal do Brasil . Esta página não é da empresa ISOLETRI INDUSTRIA DE MATERIAIS ISOLANTES LTDA. e, trata somente de um site com informações cadastrais, não possuindo qualquer vínculo com o negócio. Qual a atividade principal da ISOLETRI INDUSTRIA DE MATERIAIS ISOLANTES LTDA.? A atividade principal (CNAE) da empresa é Comércio atacadista de material elétrico (Código: 4673700). Find company research, competitor information, contact details & financial data for ISOLETRI INDUSTRIA DE MATERIAIS ISOLANTES LTDA. of JUNDIAI, SAO PAULO. Get the latest business insights from Dun & Bradstreet."
+        },
+        "osint_metadata": {
+            "role": "isoletri ind.com.isolantes eletricos ltda",
+            "bio": "Experienced, proactive, customer-focused leader with several years of experience in… · Experiência: Isoletri Ind.Com.Isolantes Eletricos Ltda · Formação acadêmica: FIA Business School · Localidade: Itupeva · + de 500 conexões no LinkedIn. Veja o perfil de Carlos Jacomini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Carlos Jacomini",
+        "role": "CEO",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "Candidato é CEO na empresa-alvo 'Isoletri Ind.Com.Isolantes Eletricos', uma abreviação da empresa-alvo oficial. Todas as regras de veto foram verificadas e não se aplicam.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Carlos Jacomini - CEO at Isoletri Ind.Com.Isolantes Eletricos",
+                "Responsible for the development of the company in the electrical insulating market for Latam"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experienced, proactive, customer-focused leader with several years of experience, responsible for the development of the company in the electrical insulating market for Latam."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Carlos Jacomini",
+                    "role": "CEO"
+                },
+                {
+                    "name": "Carlos Jacomini",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Carlos Jacomini",
+                "detected_role": "CEO",
+                "clean_bio": "Experienced, proactive, customer-focused leader with several years of experience, responsible for the development of the company in the electrical insulating market for Latam."
+            }
+        },
+        "specialist": {
+            "role_name": "CEO",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de CEO é um cargo C-Level e, conforme as instruções, deve ser considerado relevante para suprimentos/compras/procurement, pois decisores finais de compras ou aprovações financeiras."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Ceo At Isoletri Ind.Com.Isolantes Eletricos ... Isoletri Industria De Materiais Isolante...",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-26T12:33:50.595953",
+    "candidate": "Dener Silva",
+    "linkedin": "https://www.linkedin.com/in/dener-silva-",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Dener Silva - ISOLETRI INDÚSTRIA DE MATERIAIS ... | LinkedIn",
+            "body": "· Experiência: ISOLETRI INDÚSTRIA DE MATERIAIS ISOLANTES LTDA · Formação acadêmica: Fundação Getulio Vargas · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Dener Silva no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Controller e Gerente Financeiro com mais de 10 anos de experiência consolidada na… · Experiência: ISOLETRI INDÚSTRIA DE MATERIAIS ISOLANTES LTDA  · Formação acadêmica: Fundação Getulio Vargas · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Dener Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Dener Silva",
+        "role": "Controller e Gerente Financeiro",
+        "matching_score": 0,
+        "department": "Financeiro",
+        "evidence": "Especialista marcou 'is_relevant: false' para cargo de Financeiro, que não é relevante para Compras. Não há Cargo Oficial Verificado para contradizer.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Candidate Name: Dener Silva | Google Page Title: Dener Silva - ISOLETRI INDÚSTRIA DE MATERIAIS | Search Snippet: · Experiência: ISOLETRI INDÚSTRIA DE MATERIAIS ISOLANTES LTDA",
+                "LinkedIn CURRENT COMPANY (Declarada): Isoletri Industriade Materiais Isolantes",
+                "· Experiência: ISOLETRI INDÚSTRIA DE MATERIAIS ISOLANTES LTDA"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Controller e Gerente Financeiro com mais de 10 anos de experiência consolidada na…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Dener Silva",
+                    "role": "Controller e Gerente Financeiro"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Dener Silva",
+                "detected_role": "Controller e Gerente Financeiro",
+                "clean_bio": "Controller e Gerente Financeiro com mais de 10 anos de experiência consolidada na…"
+            }
+        },
+        "specialist": {
+            "role_name": "Controller e Gerente Financeiro",
+            "dept": "Financeiro",
+            "is_relevant": false,
+            "reasoning": "O cargo de 'Controller e Gerente Financeiro' é explicitamente vetado para a área de SUPRIMENTOS / COMPRAS / PROCUREMENT, conforme as instruções técnicas que excluem perfis financeiros."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Controller e Gerente Financeiro",
+        "department": "Financeiro",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:10:23.285828",
+    "candidate": "Leandro Godoi",
+    "linkedin": "https://www.linkedin.com/in/leandro-godoi-0ba926159",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leandro Godoi - Jaguar Plásticos | LinkedIn Leandro Godoi - -- | LinkedIn Leandro Godoi - Gerir equipe | Produzir | Operação | Inovação ... Geraldo Godoi Salgado Junior - -- | LinkedIn Leandro Godoi - Permetal | LinkedIn Leandro Godoi - Escola de Engenharia de São Carlos - USP ... Wagner Magioli - Técnico Automação/Instrumentação | LinkedIn",
+            "body": "· Experiência: Jaguar Plásticos · Formação acadêmica: UNIFIA · Localidade: Pedreira · 206 conexões no LinkedIn . Veja o perfil de Leandro Godoi no LinkedIn , uma comunidade profissional... VIVO e OI. · Experiência: VIGORITO · Formação acadêmica: E.E Dona Maria Marcelina · Localidade: 09321-220 · 6 conexões no LinkedIn . Veja o perfil de Leandro Godoi no LinkedIn , uma... · Experiência: Clarios · Localidade: 18025-000 · 38 conexões no LinkedIn . Veja o perfil de Leandro Godoi no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. -- · Experiência: Jaguar Plásticos · Localidade: São Paulo · 160 conexões no LinkedIn . Veja o perfil de Geraldo Godoi Salgado Junior no LinkedIn , uma comunidade profissional de 1 bilhão... Veja o perfil de Leandro Godoi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. · Experiência: Escola de Engenharia de São Carlos - USP · Formação acadêmica: Universidade de São Paulo · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de Leandro Godoi ... Técnico em Automação Jaguar Plásticos abr. de 2019 - abr. de 20212 anos 1 mês Jaguariúna"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Profissional com mais de 20 anos de experiência na área de Compras e Suprimentos, atuando na indústria de injeção de plásticos. Carreira consolidada em negociação estratégica, gestão de fornecedores, homologação de parceiros e análise de propostas comerciais, sempre buscando redução de custos, eficiência operacional e garantia de qualidade.\nExperiência na utilização do ERP TOTVS e em processos de ..."
+        },
+        "theorg": {
+            "role": "Comprador Pleno",
+            "url": "https://theorg.com/org/jaguar-plasticos/org-chart/leandro-godoi"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Leandro Godoi",
+        "role": "Comprador Pleno",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato Leandro Godoi trabalha na Jaguar Plásticos, que é a empresa-alvo e a razão social oficial. O cargo de Comprador Pleno é relevante para a área de Suprimentos/Compras e não há indícios de alucinação ou veto.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Google Page Title: Leandro Godoi - Jaguar Plásticos",
+                "Experiência: Jaguar Plásticos",
+                "CURRENT COMPANY (Declarada): Jaguar Plásticos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional com mais de 20 anos de experiência na área de Compras e Suprimentos, atuando na indústria de injeção de plásticos. Carreira consolidada em negociação estratégica, gestão de fornecedores, homologação de parceiros e análise de propostas comerciais, sempre buscando redução de custos, eficiência operacional e garantia de qualidade."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leandro Godoi",
+                    "role": "Comprador Pleno"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leandro Godoi",
+                "detected_role": "Comprador Pleno",
+                "clean_bio": "Profissional com mais de 20 anos de experiência na área de Compras e Suprimentos, atuando na indústria de injeção de plásticos. Carreira consolidada em negociação estratégica, gestão de fornecedores, homologação de parceiros e análise de propostas comerciais, sempre buscando redução de custos, eficiência operacional e garantia de qualidade. Experiência na utilização do ERP TOTVS e em processos de ..."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador Pleno",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador Pleno' é diretamente relacionado à área de Compras e Suprimentos. A bio do candidato confirma mais de 20 anos de experiência em Compras e Suprimentos, com foco em negociação, gestão de fornecedores e análise de propostas, o que é altamente relevante para a área de Procurement. O vínculo com a Jaguar Plásticos foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador Pleno",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:11:05.349922",
+    "candidate": "Carlos Eduardo Moroni",
+    "linkedin": "https://www.linkedin.com/in/carlos-eduardo-moroni-67224352",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Carlos Eduardo Moroni - Jaguar Plasticos | LinkedIn",
+            "body": "Experiência: Jaguar Plasticos · Localidade: Jaguariúna · 60 conexões no LinkedIn . Veja o perfil de Carlos Eduardo Moroni no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Jaguar Plasticos · Localidade: Jaguariúna · 60 conexões no LinkedIn. Veja o perfil de Carlos Eduardo Moroni no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Carlos Eduardo Moroni",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Jaguar Plásticos",
+                "Jaguar Plasticos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Carlos Eduardo Moroni - Jaguar Plasticos. Experiência: Jaguar Plasticos · Localidade: Jaguariúna · 60 conexões no LinkedIn ."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Carlos Eduardo Moroni",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Carlos Eduardo Moroni",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Carlos Eduardo Moroni - Jaguar Plasticos. Experiência: Jaguar Plasticos · Localidade: Jaguariúna · 60 conexões no LinkedIn . Veja o perfil de Carlos Eduardo Moroni no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. LinkedIn Status: Carlos Eduardo Moroni | cargo não identificado nos metadados LinkedIn CURRENT COMPANY (Declarada): Jaguar Plásticos LinkedIn Personal Bio: Experiência: Jaguar Plasticos · Localidade: Jaguariúna · 60 conexões no LinkedIn. Veja o perfil de Carlos Eduardo Moroni no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. Verified Official Role: Não Encontrado"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Carlos Eduardo Moroni na Jaguar Plásticos não foi identificado nos metadados fornecidos. Sem informações sobre sua função, não é possível determinar a relevância para as áreas de Suprimentos/Compras/Procurement, e a regra de veto para cargos não identificados sem termos técnicos explícitos se aplica."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:11:48.816914",
+    "candidate": "Luiz Bascheira",
+    "linkedin": "https://www.linkedin.com/in/luizbascheira",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luiz Bascheira - Jaguar Indústria e Comércio de Plásticos Ltda. | LinkedIn",
+            "body": "Experience: Jaguar Indústria e Comércio de Plásticos Ltda. · Education: FAJ - Faculdade de Jaguariúna · Location: Jaguariúna · 500+ connections on LinkedIn. View Luiz Bascheira’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "jaguar indústria e comércio de plásticos ltda.",
+            "bio": "Experiência: Jaguar Indústria e Comércio de Plásticos Ltda. · Formação acadêmica: FAJ - Faculdade de Jaguariúna · Localidade: Jaguariúna · + de 500 conexões no LinkedIn. Veja o perfil de Luiz Bascheira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Diretor Comercial",
+            "url": "https://theorg.com/org/jaguar-plasticos/org-chart/luiz-bascheira"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Luiz Bascheira",
+        "role": "Diretor Comercial",
+        "matching_score": 100,
+        "department": "Comercial",
+        "evidence": "O candidato Luiz Bascheira trabalha na Jaguar Plásticos, que é a empresa-alvo e a razão social oficial. O cargo de Diretor Comercial é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Bio Higienizada: Luiz Bascheira - Jaguar Indústria e Comércio de Plásticos Ltda.",
+                "Experiência: Jaguar Indústria e Comércio de Plásticos Ltda.",
+                "LinkedIn CURRENT COMPANY (Declarada): Jaguar Plásticos",
+                "LinkedIn Personal Bio: Experiência: Jaguar Indústria e Comércio de Plásticos Ltda."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Diretor Comercial na Jaguar Plásticos, com formação na FAJ - Faculdade de Jaguariúna e baseado em Jaguariúna. Possui mais de 500 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luiz Bascheira",
+                    "role": "Diretor Comercial"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luiz Bascheira",
+                "detected_role": "Diretor Comercial",
+                "clean_bio": "Luiz Bascheira - Jaguar Indústria e Comércio de Plásticos Ltda. Experiência: Jaguar Indústria e Comércio de Plásticos Ltda. Formação acadêmica: FAJ - Faculdade de Jaguariúna. Localidade: Jaguariúna. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Diretor Comercial",
+            "dept": "Comercial",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Diretor Comercial'. Conforme as instruções técnicas, cargos de Vendas/Comercial devem ser vetados. A relevância para Suprimentos/Compras/Procurement é nula."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Diretor Comercial",
+        "department": "Comercial",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:12:40.012902",
+    "candidate": "Patriota Almeida",
+    "linkedin": "https://www.linkedin.com/in/patriotaalmeida",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Patriota Almeida - Jaguar Plásticos | LinkedIn",
+            "body": "· Experiência: Jaguar Plásticos · Formação acadêmica: Universidade de Pernambuco · Localidade: Jaboatão dos Guararapes · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "•\tProfissional com 25 anos de experiência no mercado atuando em posições de Liderança e… · Experiência: Jaguar Plásticos · Formação acadêmica: Universidade de Pernambuco · Localidade: Jaboatão dos Guararapes · + de 500 conexões no LinkedIn. Veja o perfil de Patriota Almeida no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Regional Vendas - Região Norte + Ce - Ma - Pi",
+            "url": "https://theorg.com/org/jaguar-plasticos/org-chart/patriota-almeida"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Patriota Almeida",
+        "role": "Regional Sales",
+        "matching_score": 95,
+        "department": "Sales",
+        "evidence": "O candidato trabalha na empresa alvo 'Jaguar Plásticos', conforme confirmado pelos dados do Detetive. O cargo 'Regional Vendas' é relevante para a área de Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Empresa Alvo: Jaguar Plásticos",
+                "Experiência: Jaguar Plásticos",
+                "LinkedIn CURRENT COMPANY (Declarada): Jaguar Plásticos",
+                "Verified Official Role: Regional Vendas",
+                "Cargo Detectado: Regional Vendas - Região Norte + Ce - Ma - Pi"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional com 25 anos de experiência no mercado atuando em posições de Liderança"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Patriota Almeida",
+                    "role": "Regional Vendas - Região Norte + Ce - Ma - Pi"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Patriota Almeida",
+                "detected_role": "Regional Vendas - Região Norte + Ce - Ma - Pi",
+                "clean_bio": "Profissional com 25 anos de experiência no mercado atuando em posições de Liderança e… Experiência: Jaguar Plásticos Formação acadêmica: Universidade de Pernambuco Localidade: Jaboatão dos Guararapes + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado e o cargo oficial verificado são 'Regional Vendas'. A política de veto absoluto rejeita cargos de Vendas. A bio não fornece detalhes suficientes para inferir uma conexão com Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Regional Vendas - Região Norte + Ce - Ma - Pi",
+        "department": "Sales",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:13:23.999507",
+    "candidate": "Vaner Vitor Versori",
+    "linkedin": "https://www.linkedin.com/in/vaner-vitor-versori-93200a177",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Vaner Vitor Versori - Jaguar Plásticos | LinkedIn Vaner Vitor Versori Filho - Bergen Plastics | LinkedIn Vaner Vitor Versori Filho - Director of Strategy (Diretor de ... Vaner Versori - Chief Executive Off.. - Jaguar Plásticos ... Vaner Vitor Versori - CEO at Jaguar Plásticos | The Org Jaguar Plasticos Management Team | Org Chart - RocketReach Vaner Vitor Versori Filho on LinkedIn: Jaguar Plásticos",
+            "body": "Experiência: Jaguar Plásticos · Localidade: Jaguariúna · 339 conexões no LinkedIn . Veja o perfil de Vaner Vitor Versori no LinkedIn , uma comunidade profissional de 1 bilhão de... Veja o perfil de Vaner Vitor Versori Filho no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Vaner Vitor Versori Filho has a diverse work experience in the plastics industry. Vaner Vitor currently holds the position of Director of Strategy at Jaguar Plásticos since January 2021. Vaner Versori has been working as a Chief Executive Officer at Jaguar Plásticos for 39 years. Jaguar Plásticos is part of the Banking industry, and located in Brazil . Reports Natana Binotto Head of Supply Planning Paulo Lenzi Jr. Vice President VF Vaner Vitor Versori Filho Director of Strategy (Diretor de Estratégia) Douglas Bertê Sales Manager + 4 more View in org chart Jaguar Plasticos employs 559 employees. The Jaguar Plasticos management team includes Vaner Versori (CEO), Paulo Lenzi (Vice President), and Jose Baldasso (Diretor Tecnico). A fabricante de embalagens plásticas captou R$ 100 milhões com a emissão de debêntures e escolheu o Itaú BBA como um dos coordenadores da oferta pública na sua estreia."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Jaguar Plásticos · Localidade: Jaguariúna · 341 conexões no LinkedIn. Veja o perfil de Vaner Vitor Versori no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Ceo",
+            "url": "https://theorg.com/org/jaguar-plasticos/org-chart/vaner-vitor-versori"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Vaner Vitor Versori",
+        "role": "Ceo",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato Vaner Vitor Versori trabalha na Jaguar Plásticos, que é a empresa-alvo declarada. O cargo de CEO é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Jaguar Plásticos",
+                "Jaguar Plásticos · Localidade: Jaguariúna",
+                "LinkedIn CURRENT COMPANY (Declarada): Jaguar Plásticos",
+                "Jaguar Plásticos · Localidade: Jaguariúna · 341 conexões no LinkedIn."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Vaner Vitor Versori - Jaguar Plásticos."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Vaner Vitor Versori",
+                    "role": "Ceo"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Vaner Vitor Versori",
+                "detected_role": "Ceo",
+                "clean_bio": "Vaner Vitor Versori - Jaguar Plásticos. Experiência: Jaguar Plásticos · Localidade: Jaguariúna · 339 conexões no LinkedIn. Veja o perfil de Vaner Vitor Versori no LinkedIn, uma comunidade profissional de 1 bilhão de LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Ceo",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de CEO (Verified Official Role) em uma empresa como a Jaguar Plásticos, especialmente em um contexto B2B, frequentemente envolve decisões estratégicas de compras e aprovações financeiras, o que o torna relevante para a área de Suprimentos/Compras/Procurement. A diretoria/gestão é um ponto de interface natural para negociações e definições de fornecedores."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Ceo",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:14:09.933955",
+    "candidate": "Henrique AGC vidros do Brasil",
+    "linkedin": "https://www.linkedin.com/in/henrique-agc-vidros-do-brasil-449b8b131",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Henrique AGC vidros do Brasil - Agc vidros do Brasil | LinkedIn",
+            "body": "Veja o perfil de Henrique AGC vidros do Brasil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "agc vidros do brasil",
+            "bio": "Experiência: Agc vidros do Brasil · Formação acadêmica: Miquelina cartolano  · Localidade: Lorena · 66 conexões no LinkedIn. Veja o perfil de Henrique AGC vidros do Brasil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:14:30.075713",
+    "candidate": "Luis Carvalhal",
+    "linkedin": "https://www.linkedin.com/in/luis-carvalhal-2094964",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luis Carvalhal - Jaguar Plásticos - LinkedIn",
+            "body": "Luis Carvalhal. Jaguar Plásticos Fundação Getulio Vargas. Campinas, São Paulo, Brasil. 2 mil seguidores ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "With over 30 years as a CFO, Finance Director and Controller in large multinational… · Experiência: Jaguar Plásticos · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Luis Carvalhal no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Cfo",
+            "url": "https://theorg.com/org/jaguar-plasticos/org-chart/luis-carvalhal"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Luis Carvalhal",
+        "role": "CFO",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato trabalha na empresa alvo 'Jaguar Plásticos', conforme confirmado pelo Detetive. O cargo de CFO é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Jaguar Plásticos",
+                "Jaguar Plásticos Fundação Getulio Vargas.",
+                "Jaguar Plásticos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "With over 30 years as a CFO, Finance Director and Controller in large multinational…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luis Carvalhal",
+                    "role": "Cfo"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luis Carvalhal",
+                "detected_role": "Cfo",
+                "clean_bio": "With over 30 years as a CFO, Finance Director and Controller in large multinational… · Experiência: Jaguar Plásticos · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Luis Carvalhal no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "CFO",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é CFO (Chief Financial Officer). Embora um CFO tenha interface com decisões de compra e aprovações financeiras, a função principal não é diretamente ligada a Suprimentos/Compras/Procurement. Além disso, a bio menciona 'Finance Director' e 'Controller', reforçando o foco financeiro. A regra 5 veta explicitamente perfis Financeiros."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Cfo",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:14:51.191516",
+    "candidate": "Franciele Ferreira",
+    "linkedin": "https://www.linkedin.com/in/franciele-ferreira-b21546196",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Franciele Ferreira - Jaguar Plastico - LinkedIn",
+            "body": "Jaguar Plastico · Experiência: Jaguar Plásticos · Formação acadêmica: Universidade Cruzeiro do Sul · Localidade: Jaguariúna · 387 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Jaguar Plásticos · Formação acadêmica: Universidade Cruzeiro do Sul · Localidade: Jaguariúna · 387 conexões no LinkedIn. Veja o perfil de Franciele Ferreira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Inspetor De Qualidade",
+            "url": "https://theorg.com/org/jaguar-plasticos/org-chart/franciele-ferreira"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Franciele Ferreira",
+        "role": "Inspetor De Qualidade",
+        "matching_score": 100,
+        "department": "Qualidade",
+        "evidence": "O candidato trabalha na empresa-alvo 'Jaguar Plásticos', conforme confirmado pelos dados do Detetive e pela bio. O cargo de Inspetor de Qualidade é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Jaguar Plásticos",
+                "Jaguar Plásticos",
+                "Jaguar Plásticos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Franciele Ferreira - Jaguar Plastico."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Franciele Ferreira",
+                    "role": "Inspetor De Qualidade"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Franciele Ferreira",
+                "detected_role": "Inspetor De Qualidade",
+                "clean_bio": "Franciele Ferreira - Jaguar Plastico. Experiência: Jaguar Plásticos. Formação acadêmica: Universidade Cruzeiro do Sul. Localidade: Jaguariúna. 387 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Inspetor De Qualidade",
+            "dept": "Qualidade",
+            "is_relevant": false,
+            "reasoning": "O cargo de Inspetor de Qualidade não possui interface direta com as áreas de Suprimentos/Compras/Procurement, conforme as regras de veto estabelecidas (item 6)."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Inspetor De Qualidade",
+        "department": "Qualidade",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:15:28.347104",
+    "candidate": "Cássio Scabora",
+    "linkedin": "https://www.linkedin.com/in/c%C3%A1ssio-scabora-12584331",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Cássio Scabora - Jaguar Plásticos - LinkedIn",
+            "body": "OBJETIVO: Atuar em Departamentos Logísticos (PPCP, Logística, Suprimentos, Compras, Expedição, Transporte e Distribuição). EXPERIÊNCIA:"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "OBJETIVO:\nAtuar em Departamentos Logísticos (PPCP, Logística, Suprimentos, Compras, Expedição, Transporte e Distribuição).\n\nEXPERIÊNCIA:\n- Conhecimento da rotina de PPCP;\n- Conhecimento da Rotina de Expedição, Armazenagem e Distribuição Física;\n- Sistema ERP MEGA 2000;\n- Filosofia 5s;\n- Sistema ERP MICROSIGA - Protheus 11 (TOTVS);\n- Filosofia Kaisen;\n- Lean Manufacturing;\n- Co-responsável do Proje..."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Cássio Scabora",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Google Page Title: Cássio Scabora - Jaguar Plásticos",
+                "LinkedIn CURRENT COMPANY (Declarada): Jaguar Plásticos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "OBJETIVO: Atuar em Departamentos Logísticos (PPCP, Logística, Suprimentos, Compras, Expedição, Transporte e Distribuição). EXPERIÊNCIA: - Conhecimento da rotina de PPCP; - Conhecimento da Rotina de Expedição, Armazenagem e Distribuição Física; - Sistema ERP MEGA 2000; - Filosofia 5s; - Sistema ERP MICROSIGA - Protheus 11 (TOTVS); - Filosofia Kaisen; - Lean Manufacturing; - Co-responsável do Proje..."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Cássio Scabora",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Cássio Scabora",
+                "detected_role": "Não Identificado",
+                "clean_bio": "OBJETIVO: Atuar em Departamentos Logísticos (PPCP, Logística, Suprimentos, Compras, Expedição, Transporte e Distribuição). EXPERIÊNCIA: - Conhecimento da rotina de PPCP; - Conhecimento da Rotina de Expedição, Armazenagem e Distribuição Física; - Sistema ERP MEGA 2000; - Filosofia 5s; - Sistema ERP MICROSIGA - Protheus 11 (TOTVS); - Filosofia Kaisen; - Lean Manufacturing; - Co-responsável do Proje..."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Logística/Suprimentos",
+            "is_relevant": true,
+            "reasoning": "O candidato demonstra conhecimento em rotinas de PPCP, Expedição, Armazenagem e Distribuição Física, além de experiência com sistemas ERP (MEGA 2000 e MICROSIGA - Protheus 11) e metodologias como 5s, Kaisen e Lean Manufacturing. Seu objetivo é atuar em departamentos logísticos, incluindo Suprimentos e Compras, o que o torna relevante para a área de Compras/Procurement, especialmente em um contexto industrial como o da Jaguar Plásticos. Embora o cargo exato não esteja identificado, as competências e o objetivo profissional indicam forte interface com a cadeia de suprimentos e aquisições."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:38:56.930831",
+    "candidate": "Leandro Godoi",
+    "linkedin": "https://www.linkedin.com/in/leandro-godoi-0ba926159",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leandro Godoi - Jaguar Plásticos | LinkedIn Leandro Godoi - -- | LinkedIn Leandro Godoi - Gerir equipe | Produzir | Operação | Inovação ... Geraldo Godoi Salgado Junior - -- | LinkedIn Leandro Godoi - Permetal | LinkedIn Leandro Godoi - Escola de Engenharia de São Carlos - USP ... Wagner Magioli - Técnico Automação/Instrumentação | LinkedIn",
+            "body": "· Experiência: Jaguar Plásticos · Formação acadêmica: UNIFIA · Localidade: Pedreira · 206 conexões no LinkedIn . Veja o perfil de Leandro Godoi no LinkedIn , uma comunidade profissional... VIVO e OI. · Experiência: VIGORITO · Formação acadêmica: E.E Dona Maria Marcelina · Localidade: 09321-220 · 6 conexões no LinkedIn . Veja o perfil de Leandro Godoi no LinkedIn , uma... · Experiência: Clarios · Localidade: 18025-000 · 38 conexões no LinkedIn . Veja o perfil de Leandro Godoi no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. -- · Experiência: Jaguar Plásticos · Localidade: São Paulo · 160 conexões no LinkedIn . Veja o perfil de Geraldo Godoi Salgado Junior no LinkedIn , uma comunidade profissional de 1 bilhão... Veja o perfil de Leandro Godoi no LinkedIn, uma comunidade profissional de 1 bilhão de usuários. · Experiência: Escola de Engenharia de São Carlos - USP · Formação acadêmica: Universidade de São Paulo · Localidade: Campinas · + de 500 conexões no LinkedIn . Veja o perfil de Leandro Godoi ... Técnico em Automação Jaguar Plásticos abr. de 2019 - abr. de 20212 anos 1 mês Jaguariúna"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Profissional com mais de 20 anos de experiência na área de Compras e Suprimentos, atuando na indústria de injeção de plásticos. Carreira consolidada em negociação estratégica, gestão de fornecedores, homologação de parceiros e análise de propostas comerciais, sempre buscando redução de custos, eficiência operacional e garantia de qualidade.\nExperiência na utilização do ERP TOTVS e em processos de ..."
+        },
+        "theorg": {
+            "role": "Comprador Pleno",
+            "url": "https://theorg.com/org/jaguar-plasticos/org-chart/leandro-godoi"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Leandro Godoi",
+        "role": "Comprador Pleno",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato Leandro Godoi trabalha na Jaguar Plásticos, que é a empresa-alvo declarada. O cargo de Comprador Pleno é relevante para a área de Suprimentos/Compras e não há indícios de alucinação ou veto.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Google Page Title: Leandro Godoi - Jaguar Plásticos",
+                "Experiência: Jaguar Plásticos",
+                "CURRENT COMPANY (Declarada): Jaguar Plásticos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional com mais de 20 anos de experiência na área de Compras e Suprimentos, atuando na indústria de injeção de plásticos. Carreira consolidada em negociação estratégica, gestão de fornecedores, homologação de parceiros e análise de propostas comerciais, sempre buscando redução de custos, eficiência operacional e garantia de qualidade."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leandro Godoi",
+                    "role": "Comprador Pleno"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leandro Godoi",
+                "detected_role": "Comprador Pleno",
+                "clean_bio": "Profissional com mais de 20 anos de experiência na área de Compras e Suprimentos, atuando na indústria de injeção de plásticos. Carreira consolidada em negociação estratégica, gestão de fornecedores, homologação de parceiros e análise de propostas comerciais, sempre buscando redução de custos, eficiência operacional e garantia de qualidade. Experiência na utilização do ERP TOTVS e em processos de ..."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador Pleno",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador Pleno' é diretamente relacionado à área de Compras e Suprimentos. A bio reforça a experiência em negociação, gestão de fornecedores e análise de propostas comerciais, alinhado com as responsabilidades de um comprador. O vínculo com a Jaguar Plásticos foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador Pleno",
+        "department": "Suprimentos/Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:39:20.881883",
+    "candidate": "Luiz Bascheira",
+    "linkedin": "https://www.linkedin.com/in/luizbascheira",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luiz Bascheira - Diretor Comercial na Jaguar Indústria e ... Jaguar Plasticos - Jaguar Industria e Comercio de Plasticos S ... Jaguar Plásticos - Think Plastic Brazil Jaguar Plásticos - Company Profile & Staff Directory | ContactOut Jaguar Industria E Comercio De Plasticos S.a CNPJ ...",
+            "body": "Veja o perfil de Luiz Bascheira no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Todos os dados de Jaguar Plasticos - Jaguar Industria e Comercio de Plasticos S.a, CNPJ 48839872000174, Jaguariuna-SP. Endereço, telefones, sócios e atividades. Site: www. jaguarplasticos .com. br LinkedIn : /company/1156223/admin/ Instagram: /jaguarplasticos Descrição: Baldes Industriais. O Grupo Jaguar Plásticos , de origem genuinamente brasileira, está entre as principais empresas do setor plástico do Brasil. Fundado em 1978, na cidade de Jaguariúna/SP, é referência em processos de injeção plástica, dispondo de alta capacidade técnica e tecnologia de ponta. Informações da Empresa Jaguar Industria E Comercio De Plasticos S.a - Jaguar Plasticos . Número de CNPJ 48.839.872/0001-74 - 48839872000174 em Jaguariuna - SP, contato de e-mail e telefone, sócios e mais"
+        },
+        "osint_metadata": {
+            "role": "jaguar indústria e comércio de plásticos ltda.",
+            "bio": "Experiência: Jaguar Indústria e Comércio de Plásticos Ltda. · Formação acadêmica: FAJ - Faculdade de Jaguariúna · Localidade: Jaguariúna · + de 500 conexões no LinkedIn. Veja o perfil de Luiz Bascheira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Diretor Comercial",
+            "url": "https://theorg.com/org/jaguar-plasticos/org-chart/luiz-bascheira"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Luiz Bascheira",
+        "role": "Diretor Comercial",
+        "matching_score": 100,
+        "department": "Comercial",
+        "evidence": "O candidato Luiz Bascheira trabalha na Jaguar Plásticos, que é a empresa-alvo e a razão social oficial. O cargo de Diretor Comercial é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Veja o perfil de Luiz Bascheira no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Todos os dados de Jaguar Plasticos - Jaguar Industria e Comercio de Plasticos S.a, CNPJ 48839872000174, Jaguariuna-SP. Endereço, telefones, sócios e atividades. Site: www. jaguarplasticos .com. br LinkedIn : /company/1156223/admin/ Instagram: /jaguarplasticos Descrição: Baldes Industriais. O Grupo Jaguar Plásticos , de origem genuinamente brasileira, está entre as principais empresas do setor plástico do Brasil. Fundado em 1978, na cidade de Jaguariúna/SP, é referência em processos de injeção plástica, dispondo de alta capacidade técnica e tecnologia de ponta. Informa"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Luiz Bascheira - Diretor Comercial na Jaguar Indústria e Comércio de Plásticos Ltda."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luiz Bascheira",
+                    "role": "Diretor Comercial"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luiz Bascheira",
+                "detected_role": "Diretor Comercial",
+                "clean_bio": "Luiz Bascheira - Diretor Comercial na Jaguar Indústria e Comércio de Plásticos Ltda."
+            }
+        },
+        "specialist": {
+            "role_name": "Diretor Comercial",
+            "dept": "Comercial",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Diretor Comercial'. Conforme as instruções técnicas, cargos de Vendas/Comercial devem ser rejeitados (VETO ABSOLUTO). Portanto, 'is_relevant' é false."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Diretor Comercial",
+        "department": "Comercial",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:39:39.142053",
+    "candidate": "Vaner Vitor Versori",
+    "linkedin": "https://www.linkedin.com/in/vaner-vitor-versori-93200a177",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Vaner Vitor Versori - Jaguar Plásticos - LinkedIn",
+            "body": "Experiência: Jaguar Plásticos · Localidade: Jaguariúna · 341 conexões no LinkedIn. Veja o perfil de Vaner Vitor Versori no LinkedIn, uma comunidade ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Jaguar Plásticos · Localidade: Jaguariúna · 341 conexões no LinkedIn. Veja o perfil de Vaner Vitor Versori no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Ceo",
+            "url": "https://theorg.com/org/jaguar-plasticos/org-chart/vaner-vitor-versori"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Vaner Vitor Versori",
+        "role": "Ceo",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato trabalha na empresa-alvo 'Jaguar Plásticos', conforme confirmado pelo Detetive e pela Etapa 0. O cargo de CEO é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Jaguar Plásticos",
+                "Jaguar Plásticos · Localidade: Jaguariúna",
+                "CURRENT COMPANY (Declarada): Jaguar Plásticos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Vaner Vitor Versori - Jaguar Plásticos."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Vaner Vitor Versori",
+                    "role": "Ceo"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Vaner Vitor Versori",
+                "detected_role": "Ceo",
+                "clean_bio": "Vaner Vitor Versori - Jaguar Plásticos. Experiência: Jaguar Plásticos · Localidade: Jaguariúna · 341 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Ceo",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de CEO (Verified Official Role) em uma empresa como a Jaguar Plásticos, especialmente em um contexto B2B, frequentemente envolve decisões estratégicas de compras e aprovações financeiras, o que o torna relevante para a área de Suprimentos/Compras/Procurement. A diretoria/gestão é um ponto de interface natural para negociações e aprovações de alto nível."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Ceo",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-28T02:39:51.855436",
+    "candidate": "Alexandre Pavilanis, M.sc ∴",
+    "linkedin": "https://www.linkedin.com/in/pavilanis",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alexandre Pavilanis, M.sc ∴ - C Level| Change Management - LinkedIn",
+            "body": "Alexandre Pavilanis é Bacharel em Administração e Engenharia de Produção, com especializações em Gestão de Pessoas, Finanças, Economia Internacional e ..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Alexandre Pavilanis é Bacharel em Administração e Engenharia de Produção, com… · Experiência: Jaguar Plásticos · Formação acadêmica: Unicamp - Universidade Estadual de Campinas · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Alexandre Pavilanis, M.sc  ∴ no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T00:18:00.590480",
+    "candidate": "Juliana Oliveira Nascimento",
+    "linkedin": "https://www.linkedin.com/in/julianaoliveiranascimento",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliana Oliveira Nascimento - Senior Executive | Head | Chief ...",
+            "body": "Veja o perfil de Juliana Oliveira Nascimento no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "sompo",
+            "bio": "Executive and Lawyer specializing in ESG, Sustainability, Corporate Governance… · Experiência: Sompo · Formação acadêmica: The London School of Economics and Political Science (LSE) · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Juliana Oliveira Nascimento no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T00:18:34.877396",
+    "candidate": "Juliana Oliveira Nascimento",
+    "linkedin": "https://www.linkedin.com/in/julianaoliveiranascimento/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Juliana Oliveira Nascimento - Senior Executive | Head | Chief ... LinkedIn Juliana Oliveira - FLABEG Automotive Group | LinkedIn Juliana Oliveira - Global Sales Manager, compromising to get ... Julianne Wegmann - Electrical Engineer | LinkedIn Julia Wegmann – Director Purchasing | LinkedIn",
+            "body": "Contact: +55 41 99683-1457/ juliana .nascimento7@yahoo.com.br · Experience: Sompo · Education: The London School of Economics and Political Science (LSE) · Location: Brazil · 500+ connections on... LinkedIn Experiência: FLABEG Automotive Group · Localidade: Indaiatuba. Veja o perfil de Juliana Oliveira no LinkedIn , uma comunidade profissional de 1 bilhão de usuários. Global Sales Manager, compromising to get things done. · Localidade: 01101-080 · + de 500 conexões no LinkedIn . Veja Juliana Oliveira o perfil no LinkedIn , uma comunidade profissional de 1... Electrical Engineer · Experience: McClure Engineering-St. Louis (MEP) · Education: Washington University in St. Louis · Location: United States · 182 connections on LinkedIn . View Julianne ... Director Purchasing · Berufserfahrung: Bosch · Ausbildung: Universität Heidelberg · Standort: Stuttgart · 500+ Kontakte auf LinkedIn . Sehen Sie sich das Profil von Julia Wegmann auf LinkedIn , einer professionellen Community mit mehr als 1 Milliarde Mitgliedern, an."
+        },
+        "osint_metadata": {
+            "role": "sompo",
+            "bio": "Executive and Lawyer specializing in ESG, Sustainability, Corporate Governance… · Experience: Sompo · Education: The London School of Economics and Political Science (LSE) · Location: Brazil · 500+ connections on LinkedIn. View Juliana Oliveira Nascimento’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Juliana Oliveira Nascimento",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "CURRENT COMPANY (Declarada): Wegmann Automotive Gmb H | LinkedIn",
+                "Outras pessoas mapeadas no mesmo snippet: [{\"name\": \"Juliana Oliveira Nascimento\", \"role\": \"Senior Executive | Head | Chief\"}]",
+                "Experience: Sompo",
+                "Personal Bio: Executive and Lawyer specializing in ESG, Sustainability, Corporate Governance… · Experience: Sompo"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Executive and Lawyer specializing in ESG, Sustainability, Corporate Governance…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Juliana Oliveira Nascimento",
+                    "role": "Senior Executive | Head | Chief"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Juliana Oliveira Nascimento",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Executive and Lawyer specializing in ESG, Sustainability, Corporate Governance…"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": false,
+            "reasoning": "O cargo de Juliana Oliveira Nascimento não foi identificado explicitamente. A bio indica especialização em ESG, Sustentabilidade e Governança Corporativa, o que não se alinha diretamente com Suprimentos/Compras/Procurement. Embora o snippet mencione 'Wegmann Automotive Gmb H' como empresa atual declarada, a experiência listada é em 'Sompo', e o vínculo com a Wegmann não é confirmado pelo Detetive. A função 'Senior Executive | Head | Chief' é genérica e, sem mais detalhes, não permite inferir relevância para a área de compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T00:19:28.454277",
+    "candidate": "Sérgio Goncalves",
+    "linkedin": "https://www.linkedin.com/in/s%C3%A9rgio-goncalves-a314169",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Sérgio Goncalves - Sales Director at Wegmann Automotive ... WEGMANN automotive GmbH - LinkedIn Wegmann Automotive Gmbh - Empresas no CNPJ Services WEGMANN AUTOMOTIVE BRASIL LTDA - Dun & Bradstreet WEGMANN AUTOMOTIVE BRASIL LTDA - CNPJ 20.192.361/0001-94 ... Wegmann Automotive Brasil Ltda CNPJ 20192361000194 ...",
+            "body": "Sales Director at Wegmann Automotive · Trabalho focado em resultados, baseado em fortes conhecimentos técnico-comerciais, de processos produtivos, sistemas de qualidade, gerenciamento de... We are part of a globally active group of companies with more than 6,000 employees and supply balancing weights, battery poles and valves to all major automotive manufacturers. O site não classifica o Sócio da empresa pelo CPF, ela é feita apenas pelo nome. Nós não exibimos número de CPF, apenas dados referentes a pessoa jurídica que são públicos e podem ser divulgados. Find company research, competitor information, contact details & financial data for WEGMANN AUTOMOTIVE BRASIL LTDA of JUNDIAI, SAO PAULO. Get the latest business insights from Dun & Bradstreet. Dados completos da empresa WEGMANN AUTOMOTIVE BRASIL LTDA (CNPJ: 20.192.361/0001-94). Consulte o quadro societário , telefone, endereço em JUNDIAI - SP e situação cadastral. May 6, 2014 · Informações da Empresa Wegmann Automotive Brasil Ltda. Número de CNPJ 20.192.361/0001-94 - 20192361000194 em Jundiai - SP, contato de e-mail e telefone, sócios e mais"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Trabalho focado em resultados, baseado em fortes conhecimentos técnico-comerciais, de… · Experiência: Wegmann Automotive · Formação acadêmica: Board Academy Br · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Sérgio Goncalves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Sérgio Goncalves",
+        "role": "Sales Director",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "Veto Mecânico Detectado: True",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Sérgio Goncalves - Sales Director at Wegmann Automotive",
+                "Sales Director at Wegmann Automotive"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Trabalho focado em resultados, baseado em fortes conhecimentos técnico-comerciais, de processos produtivos, sistemas de qualidade, gerenciamento de..."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Sérgio Goncalves",
+                    "role": "Sales Director"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Sérgio Goncalves",
+                "detected_role": "Sales Director",
+                "clean_bio": "Trabalho focado em resultados, baseado em fortes conhecimentos técnico-comerciais, de processos produtivos, sistemas de qualidade, gerenciamento de..."
+            }
+        },
+        "specialist": {
+            "role_name": "Sales Director",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Sales Director (Diretor de Vendas) não possui interface direta com as áreas de Suprimentos/Compras/Procurement, sendo explicitamente vetado pelas instruções técnicas (item 5 e 6)."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sales Director",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T00:19:59.726964",
+    "candidate": "Bryan Crowe",
+    "linkedin": "https://www.linkedin.com/in/bryan-crowe-496ba5aa",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bryan Crowe - Wegmann Automotive USA | LinkedIn",
+            "body": "· Experience: Wegmann Automotive USA · Education: franklin area senior high school franklin,pa · Location: Hillsboro · 123 connections on LinkedIn . View Bryan Crowe’s profile on LinkedIn , a professional community of 1 billion members."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Willing to learn. Everyday is a new day to succeed in life! Looking for was to improve… · Experiência: Wegmann Automotive USA · Formação acadêmica: franklin area senior high school franklin,pa · Localidade: Hillsboro · 126 conexões no LinkedIn. Veja o perfil de Bryan Crowe no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Bryan Crowe",
+        "role": "Não Identificado",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Veto Mecânico Detectado: True",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Google Page Title: Bryan Crowe - Wegmann Automotive USA",
+                "LinkedIn CURRENT COMPANY (Declarada): Wegmann Automotive Gmb H",
+                "Experiência: Wegmann Automotive USA"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Willing to learn. Everyday is a new day to succeed in life! Looking for was to improve…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Bryan Crowe",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Bryan Crowe",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Willing to learn. Everyday is a new day to succeed in life! Looking for was to improve…"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Bryan Crowe não foi identificado nos dados fornecidos. A bio indica 'Willing to learn' e 'Looking for ways to improve', mas não há termos técnicos explícitos relacionados a Suprimentos/Compras/Procurement. Portanto, não é possível confirmar a relevância para a área de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Wegmann Automotive Usa",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T00:20:43.713903",
+    "candidate": "Tiago Parpineli",
+    "linkedin": "https://www.linkedin.com/in/tiago-parpineli-b0807746",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Tiago Parpineli - Head of Production at Wegmann Automotive ... Sérgio Goncalves - Sales Director at Wegmann Automotive ... Wegmann Automotive Brasil LTDA - 20192361000194 Jundiaí Locations & WEGMANN Group - WEGMANN automotive Wegmann Automotive Brasil Ltda em Jundiaí, SP - Econodata ☑ CNPJ da WEGMANN AUTOMOTIVE BRASIL LTDA é 20.192.3 ... Wegmann Automotive Brasil Ltda - 20.192.361/0001-94 em ...",
+            "body": "Head of Production at Wegmann Automotive Brasil · Experiência: Wegmann Automotive Brasil · Formação acadêmica: Universidade São Francisco · Localidade: Jundiaí · + de 500 conexões no... · Experiência: Wegmann Automotive · Formação acadêmica: Board Academy Br · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Sérgio Goncalves no LinkedIn , uma comunidade... May 6, 2014 · A empresa Wegmann Automotive Brasil LTDA de CNPJ 20.192.361/0001-94, foi fundada em 06/05/2014 na cidade Jundiaí no estado São Paulo. Sua atividade principal, conforme a Receita Federal, é 45.30-7-01 - Comércio por atacado de peças e acessórios novos para veículos automotores. WEGMANN automotive is a member of the WEGMANN Group, which also includes KMW Nexter Defense Systems and Schleifring. The group, which is based in Munich, has a global workforce of more than 6,000 employees. A empresa com a razão social Wegmann Automotive Brasil Ltda, opera com o CNPJ 20.192.361/0001-94 (20192361000194) e foi fundada em 06/05/2014. O endereço de sua sede está localizada na Rodovia Vice-Prefeito Hermenegildo Tonolli, 1500 - Distrito Industrial, Jundiai - SP, 13.213-086. A empresa WEGMANN AUTOMOTIVE BRASIL LTDA está localizada em JUNDIAI-SP. Acesse e visualize mais informações como o CNPJ, CNAE, nome fantasia e outros dados do negócio! A empresa Wegmann Automotive Brasil Ltda, com CNPJ 20.192.361/0001-94, fundada em 06/05/2014, está localizada em Jundiai - SP. Conheça os serviços e mais detalhes!"
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Wegmann Automotive Brasil · Formação acadêmica: Universidade São Francisco · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Tiago Parpineli no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Tiago Parpineli",
+        "role": "Head of Production",
+        "matching_score": 0,
+        "department": "Production",
+        "evidence": "Veto Mecânico Detectado: O candidato trabalha na 'Wegmann Automotive Brasil', que é uma entidade diferente da empresa-alvo 'Wegmann Automotive Gmb H'. A regra de VETO DE EMPRESA (CRÍTICO) foi acionada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Head of Production at Wegmann Automotive Brasil",
+                "Experiência: Wegmann Automotive Brasil",
+                "A empresa Wegmann Automotive Brasil LTDA de CNPJ 20.192.361/0001-94, foi fundada em 06/05/2014 na cidade Jundiaí no estado São Paulo."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Head of Production at Wegmann Automotive Brasil"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Tiago Parpineli",
+                    "role": "Head of Production"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Tiago Parpineli",
+                "detected_role": "Head of Production",
+                "clean_bio": "Head of Production at Wegmann Automotive Brasil · Experiência: Wegmann Automotive Brasil · Formação acadêmica: Universidade São Francisco · Localidade: Jundiaí · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Head of Production",
+            "dept": "Production",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Head of Production' está explicitamente listado como um veto absoluto na instrução técnica número 5 e 6. Embora o candidato trabalhe na Wegmann Automotive, sua função principal é em produção, não em suprimentos, compras ou procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Head of Production",
+        "department": "Production",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T00:21:31.221361",
+    "candidate": "Rodolfo Störmer",
+    "linkedin": "https://www.linkedin.com/in/rodolfo-st%C3%B6rmer-08243323",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodolfo Störmer - WEGMANN automotive GmbH | LinkedIn",
+            "body": "· Experiência: WEGMANN automotive GmbH · Formação acadêmica: Universidade Católica de Brasília · Localidade: Campinas e Região · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Sou consultor especializado na gestão de médias empresas de capital estrangeiro, com… · Experiência: WEGMANN automotive GmbH · Formação acadêmica: Universidade Católica de Brasília · Localidade: Campinas e Região · + de 500 conexões no LinkedIn. Veja o perfil de Rodolfo Störmer no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Rodolfo Störmer",
+        "role": "Consultor",
+        "matching_score": 0,
+        "department": "Suprimentos",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Não Identificado). O candidato trabalha na empresa alvo 'Wegmann Automotive Gmb H', conforme confirmado pelo Detetive. A bio indica experiência relevante e o cargo de consultor é compatível com a área de Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: WEGMANN automotive GmbH",
+                "LinkedIn CURRENT COMPANY (Declarada): Wegmann Automotive Gmb H"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sou consultor especializado na gestão de médias empresas de capital estrangeiro, com…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rodolfo Störmer",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rodolfo Störmer",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Sou consultor especializado na gestão de médias empresas de capital estrangeiro, com… Experiência: WEGMANN automotive GmbH Formação acadêmica: Universidade Católica de Brasília Localidade: Campinas e Região + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Rodolfo Störmer não foi identificado nos dados fornecidos. A bio menciona 'consultor especializado na gestão de médias empresas de capital estrangeiro', o que não é suficiente para determinar uma relevância direta com Suprimentos/Compras/Procurement, e não há termos técnicos explícitos na bio que indiquem essa área. O vínculo com a Wegmann Automotive Gmb H é confirmado, mas sem um cargo específico, a relevância não pode ser estabelecida."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Consultor",
+        "department": "Suprimentos",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T00:22:11.209476",
+    "candidate": "Margrit Wegmann",
+    "linkedin": "https://www.linkedin.com/in/margrit-wegmann-297314226",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Margrit Wegmann – Administration – Wegmann ... | LinkedIn",
+            "body": "Administration bei Wegmann Automobile AG · Berufserfahrung: Wegmann Automobile AG · Standort: Volketswil · 3 Kontakte auf LinkedIn . Sehen Sie sich das Profil von Margrit Wegmann auf LinkedIn , einer professionellen Community mit mehr als 1 Milliarde Mitgliedern, an."
+        },
+        "osint_metadata": {
+            "role": "wegmann automobile ag",
+            "bio": "Experiência: Wegmann Automobile AG · Localidade: Volketswil · 5 conexões no LinkedIn. Veja o perfil de Margrit Wegmann no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Margrit Wegmann",
+        "role": "Administration",
+        "matching_score": 0,
+        "department": "Administration",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico, indicando uma inconsistência ou regra de rejeição automática acionada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Administration bei Wegmann Automobile AG",
+                "Wegmann Automobile AG",
+                "Wegmann Automotive Gmb H"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Margrit Wegmann – Administration – Wegmann"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Margrit Wegmann",
+                    "role": "Administration"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Margrit Wegmann",
+                "detected_role": "Administration",
+                "clean_bio": "Margrit Wegmann – Administration – Wegmann Search Snippet: Administration bei Wegmann Automobile AG · Berufserfahrung: Wegmann Automobile AG · Standort: Volketswil · 3 Kontakte auf LinkedIn . Sehen Sie sich das Profil von Margrit Wegmann auf LinkedIn , einer professionellen Community mit mehr als 1 Milliarde Mitgliedern, an. LinkedIn Status: Margrit Wegmann | wegmann automobile ag LinkedIn CURRENT COMPANY (Declarada): Wegmann Automotive Gmb H LinkedIn Personal Bio: Experiência: Wegmann Automobile AG · Localidade: Volketswil · 5 conexões no LinkedIn. Veja o perfil de Margrit Wegmann no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Administration",
+            "dept": "Administration",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Administration' não tem interface direta com Suprimentos/Compras/Procurement. A empresa alvo é Wegmann Automotive Gmb H, mas o cargo não indica qualquer ligação com a área de compras ou fornecedores."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Administration",
+        "department": "Administration",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T08:55:17.794977",
+    "candidate": "Nils Bielefeld",
+    "linkedin": "https://www.linkedin.com/in/nils-bielefeld-4bb72721",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nils Bielefeld - Managing Director at Knorr Bremse CVS Japan | Automobilindustrie, Unternehmensführung | LinkedIn",
+            "body": "Managing Director at Knorr Bremse CVS Japan | Automobilindustrie, Unternehmensführung · A proven global business leader possessing a rich blend of experience in both the \"hard skilled\" disciplines of manufacturing, engineering and platform ..."
+        },
+        "osint_metadata": {
+            "role": "managing director at knorr bremse cvs japan",
+            "bio": "Managing Director at Knorr Bremse CVS Japan | Automobilindustrie, Unternehmensführung · A proven global business leader possessing a rich blend of experience in both the \"hard skilled\" disciplines of manufacturing, engineering and platform management as well as the more \"soft skilled\" functions of sales, marketing and  planning\n\nSpezialgebiete: Delivering profitable growth and ..."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Nils Bielefeld",
+        "role": "Managing Director",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "Candidato é Managing Director na Knorr Bremse CVS Japan, parte da empresa-alvo 'Knorr Bremse'. Especialista confirmou relevância e nenhuma regra de veto foi acionada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Managing Director at Knorr Bremse CVS Japan",
+                "managing director at knorr bremse cvs japan",
+                "Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Managing Director at Knorr Bremse CVS Japan | Automobilindustrie, Unternehmensführung · A proven global business leader possessing a rich blend of experience in both the \"hard skilled\" disciplines of manufacturing, engineering and platform management as well as the more \"soft skilled\" functions of sales, marketing and planning"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nils Bielefeld",
+                    "role": "Managing Director"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nils Bielefeld",
+                "detected_role": "Managing Director",
+                "clean_bio": "Managing Director at Knorr Bremse CVS Japan | Automobilindustrie, Unternehmensführung · A proven global business leader possessing a rich blend of experience in both the \"hard skilled\" disciplines of manufacturing, engineering and platform management as well as the more \"soft skilled\" functions of sales, marketing and planning"
+            }
+        },
+        "specialist": {
+            "role_name": "Managing Director",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Managing Director (Diretor Geral) é um cargo C-level e, conforme as instruções, deve ser considerado relevante para a área de Suprimentos/Compras/Procurement, pois decisores de alto nível frequentemente aprovam ou influenciam decisões de compras e parcerias estratégicas."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Managing Director",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T08:56:02.009476",
+    "candidate": "Margarida Sousa",
+    "linkedin": "https://www.linkedin.com/in/margarida-sousa-1898942a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Margarida Sousa - Enc. de Depto. Pessoal - Candie's Ind.e Comércio | LinkedIn",
+            "body": "Sênior ( Encarregado de produção ) na Knorr-Bremse · São Paulo, SP · Connect · Consultora Técnica de Vendas na SMC Pneumáticos do Brasil Ltda. São Bernardo do Campo, SP · Connect · Líder de Administração de Pessoal | Analista ..."
+        },
+        "osint_metadata": {
+            "role": "candie's ind.e comércio",
+            "bio": "Encarregada de Departamento Pessoal com mais de 15 anos de experiência nas áreas de… · Experiência: Candie's Ind.e Comércio · Formação acadêmica: Senac São Paulo · Localidade: Barueri · 32 conexões no LinkedIn. Veja o perfil de Margarida Sousa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Margarida Sousa",
+        "role": "Sênior (Encarregado de produção)",
+        "matching_score": 0,
+        "department": "Departamento Pessoal",
+        "evidence": "Especialista marcou como não relevante e o cargo/departamento (Encarregado de Produção / Departamento Pessoal) não são relacionados a Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Sênior ( Encarregado de produção ) na Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Atua como Sênior (Encarregado de produção) na Knorr-Bremse. Possui mais de 15 anos de experiência em áreas como Departamento Pessoal."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Margarida Sousa",
+                    "role": "Enc. de Depto. Pessoal"
+                },
+                {
+                    "name": "Margarida Sousa",
+                    "role": "Sênior ( Encarregado de produção )"
+                },
+                {
+                    "name": "Margarida Sousa",
+                    "role": "Consultora Técnica de Vendas"
+                },
+                {
+                    "name": "Margarida Sousa",
+                    "role": "Líder de Administração de Pessoal | Analista"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Margarida Sousa",
+                "detected_role": "Sênior ( Encarregado de produção )",
+                "clean_bio": "Atua como Sênior (Encarregado de produção) na Knorr-Bremse. Possui mais de 15 anos de experiência em áreas como Departamento Pessoal."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado 'Sênior (Encarregado de produção)' e as outras funções listadas (Enc. de Depto. Pessoal, Consultora Técnica de Vendas, Líder de Administração de Pessoal | Analista) não se enquadram nas áreas de Suprimentos/Compras/Procurement. A função de produção direta é explicitamente vetada. As outras funções são de RH e Vendas, também vetadas."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sênior (Encarregado de produção)",
+        "department": "Departamento Pessoal",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T08:56:56.593014",
+    "candidate": "Anuroop Showri Sarangam",
+    "linkedin": "https://www.linkedin.com/in/anuroop-showri-sarangam-6547a5117",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Anuroop Showri Sarangam - Knorr-Bremse Systeme für Nutzfahrzeuge GmbH | LinkedIn",
+            "body": "Anuroop Showri can introduce you to 5 people at Knorr-Bremse Systeme für Nutzfahrzeuge GmbH"
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Exploring the Intersection of Tech, Travel and Tales. · Experiência: Knorr-Bremse Systeme für Nutzfahrzeuge GmbH · Formação acadêmica: Otto-von-Guericke University Magdeburg · Localidade: Dusseldorf · + de 500 conexões no LinkedIn. Veja o perfil de Anuroop Showri Sarangam no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Anuroop Showri Sarangam",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Google Page Title: Anuroop Showri Sarangam - Knorr-Bremse Systeme für Nutzfahrzeuge GmbH",
+                "Search Snippet: Anuroop Showri can introduce you to 5 people at Knorr-Bremse Systeme für Nutzfahrzeuge GmbH",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: Knorr-Bremse Systeme für Nutzfahrzeuge GmbH"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Exploring the Intersection of Tech, Travel and Tales."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Anuroop Showri Sarangam",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Anuroop Showri Sarangam",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Exploring the Intersection of Tech, Travel and Tales."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Anuroop Showri Sarangam não foi identificado explicitamente no perfil. A bio 'Exploring the Intersection of Tech, Travel and Tales' não contém termos técnicos relacionados a Suprimentos/Compras/Procurement. Portanto, não é possível confirmar a relevância para a área de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T08:57:30.892345",
+    "candidate": "Fernando Hazeu",
+    "linkedin": "https://www.linkedin.com/in/fernando-hazeu",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fernando Hazeu - Knorr-Bremse AG | LinkedIn",
+            "body": "Experience: Knorr-Bremse AG · Education: Duke University - The Fuqua School of Business · Location: Greater Madrid Metropolitan Area · 500+ connections on LinkedIn. View Fernando Hazeu ’s profile on LinkedIn, a professional community of ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse AG · Formação acadêmica: Duke University - The Fuqua School of Business · Localidade: Madrid e Região · + de 500 conexões no LinkedIn. Veja o perfil de Fernando Hazeu no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Vice President - Signaling Europe",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/fernando-hazeu"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Fernando Hazeu",
+        "role": "Vice President - Signaling Europe",
+        "matching_score": 100,
+        "department": "Supply Chain",
+        "evidence": "Candidato trabalha na empresa alvo Knorr Bremse, com cargo e departamento relevantes.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Candidate Name: Fernando Hazeu | Google Page Title: Fernando Hazeu - Knorr-Bremse AG | Search Snippet: Experience: Knorr-Bremse AG",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Verified Official Role: Vice President - Signaling Europe"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Fernando Hazeu - Knorr-Bremse AG. Vice President - Signaling Europe. Duke University - The Fuqua School of Business. Greater Madrid Metropolitan Area. 500+ connections on LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Fernando Hazeu",
+                    "role": "Vice President - Signaling Europe"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Fernando Hazeu",
+                "detected_role": "Vice President - Signaling Europe",
+                "clean_bio": "Fernando Hazeu - Knorr-Bremse AG. Experience: Knorr-Bremse AG. Education: Duke University - The Fuqua School of Business. Location: Greater Madrid Metropolitan Area. 500+ connections on LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Vice President - Signaling Europe",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Vice President - Signaling Europe na Knorr Bremse, embora não seja diretamente de Compras/Suprimentos, pode ter interface com a área de fornecedores e materiais, especialmente em um contexto de produção de sistemas de sinalização. A relevância é considerada alta devido à posição de liderança e potencial impacto nas decisões de aquisição de componentes e serviços."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Vice President - Signaling Europe",
+        "department": "Supply Chain",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T08:58:07.367039",
+    "candidate": "Fernando Hazeu",
+    "linkedin": "https://www.linkedin.com/in/fernando-hazeu",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fernando Hazeu - Knorr-Bremse AG | LinkedIn",
+            "body": "Experience: Knorr-Bremse AG · Education: Duke University - The Fuqua School of Business · Location: Greater Madrid Metropolitan Area · 500+ connections on LinkedIn. View Fernando Hazeu ’s profile on LinkedIn, a professional community of ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse AG · Formação acadêmica: Duke University - The Fuqua School of Business · Localidade: Madrid e Região · + de 500 conexões no LinkedIn. Veja o perfil de Fernando Hazeu no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Vice President - Signaling Europe",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/fernando-hazeu"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Fernando Hazeu",
+        "role": "Vice President - Signaling Europe",
+        "matching_score": 100,
+        "department": "Supply Chain",
+        "evidence": "Candidato trabalha na empresa alvo Knorr Bremse, com cargo e departamento relevantes.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Candidate Name: Fernando Hazeu | Google Page Title: Fernando Hazeu - Knorr-Bremse AG | Search Snippet: Experience: Knorr-Bremse AG",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Verified Official Role: Vice President - Signaling Europe"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Fernando Hazeu - Knorr-Bremse AG. Vice President - Signaling Europe. Duke University - The Fuqua School of Business. Greater Madrid Metropolitan Area. 500+ connections on LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Fernando Hazeu",
+                    "role": "Vice President - Signaling Europe"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Fernando Hazeu",
+                "detected_role": "Vice President - Signaling Europe",
+                "clean_bio": "Fernando Hazeu - Knorr-Bremse AG. Experience: Knorr-Bremse AG. Education: Duke University - The Fuqua School of Business. Location: Greater Madrid Metropolitan Area. 500+ connections on LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Vice President - Signaling Europe",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Vice President - Signaling Europe na Knorr Bremse, embora não seja diretamente de Compras/Suprimentos, pode ter interface com a área de fornecedores e materiais, especialmente em um contexto de produção de sistemas de sinalização. A relevância é considerada alta devido à posição de liderança e potencial impacto nas decisões de aquisição de componentes e serviços."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Vice President - Signaling Europe",
+        "department": "Supply Chain",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-06-29T08:59:58.687034",
+    "candidate": "Rafael Pelizzari",
+    "linkedin": "https://www.linkedin.com/in/rpelizzari",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rafael Pelizzari - Managing Director at Knorr-Bremse Brazil ...",
+            "body": "Self-confident, high motivated and team-working · Localidade: Brasil . + de 500 conexões no LinkedIn . Veja o perfil de Rafael Pelizzari no LinkedIn , uma comunidade profissional de 1 bilhão de..."
+        },
+        "osint_metadata": {
+            "role": "brasil",
+            "bio": "20+ years’ experience at Automotive Industry. Mainly at R&D, Business Strategy and… · Localidade: Brasil. + de 500 conexões no LinkedIn. Veja o perfil de Rafael Pelizzari no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Managing Director",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/rafael-pelizzari"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rafael Pelizzari",
+        "role": "Managing Director",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato Rafael Pelizzari trabalha como Managing Director na Knorr Bremse, que é a empresa-alvo declarada. Os dados do Detetive confirmam a empresa e o cargo. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rafael Pelizzari - Managing Director at Knorr-Bremse Brazil",
+                "CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Cargo Detectado: Managing Director",
+                "Verified Official Role: Managing Director"
+            ],
+            "is_institutional": false,
+            "bio_raw": "20+ years’ experience at Automotive Industry. Mainly at R&D, Business Strategy and…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rafael Pelizzari",
+                    "role": "Managing Director"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rafael Pelizzari",
+                "detected_role": "Managing Director",
+                "clean_bio": "20+ years’ experience at Automotive Industry. Mainly at R&D, Business Strategy and… Localidade: Brasil. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Managing Director",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Managing Director na Knorr Bremse, especialmente com 20+ anos de experiência na indústria automotiva em áreas como Estratégia de Negócios, indica uma posição de liderança sênior. Em um contexto B2B como o da Knorr Bremse, diretores seniores frequentemente têm interface direta ou decisória em processos de compras e suprimentos estratégicos. O veto absoluto para vendas, marketing, financeiro, RH, jurídico e produção direta não se aplica aqui, e a relevância para compras/suprimentos é alta devido à natureza estratégica da função e ao setor automotivo."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Managing Director",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------

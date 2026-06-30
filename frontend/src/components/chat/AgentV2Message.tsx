@@ -88,6 +88,8 @@ export interface AgentEvent {
  * 'cancelled' (toda falha presente foi uma confirmação recusada pelo usuário) ou
  * null (sem falhas, ou falhas que o próprio agente conseguiu contornar).
  */
+const SEND_TOOLS = new Set(['email_send', 'email_reply', 'whatsapp_send_message']);
+
 export function classifyFailure(events: AgentEvent[]): 'error' | 'cancelled' | null {
     if (events.length === 0) return 'error';
 
@@ -95,13 +97,17 @@ export function classifyFailure(events: AgentEvent[]): 'error' | 'cancelled' | n
     const hasGenericError = events.some(e => e.type === 'error');
     if (hasGenericError) return 'error';
 
-    // Se o agente chegou a uma conclusão real (resposta final ou suggested_actions),
-    // ele teve a chance de se recuperar de falhas intermediárias de tools (ex: tool falhou
-    // por faltar um dado, o agente buscou o dado e tentou de novo com sucesso) — nesse caso
-    // a falha anterior não deve ser reportada como erro fatal da tarefa como um todo.
-    const reachedConclusion = events.some(e => e.type === 'suggested_actions' || e.type === 'final');
-
     const failedResults = events.filter(e => e.type === 'tool_result' && e.ok === false);
+
+    // Falha de ferramenta de envio (email/WA) é sempre fatal: a ação principal não foi
+    // concluída. Mesmo que o agente tenha chegado a uma conclusão, o usuário precisa tentar
+    // de novo — não tratar como "recuperado".
+    const hasSendFailure = failedResults.some(e => !e.cancelled && SEND_TOOLS.has(e.tool as string));
+    if (hasSendFailure) return 'error';
+
+    // Para outras tools: se o agente chegou a uma conclusão real (resposta final ou
+    // suggested_actions) ele teve chance de se recuperar de falhas intermediárias.
+    const reachedConclusion = events.some(e => e.type === 'suggested_actions' || e.type === 'final');
     const hasRealFailure = failedResults.some(e => !e.cancelled);
 
     if (hasRealFailure && !reachedConclusion) return 'error';
@@ -131,6 +137,8 @@ export interface AgentMessageProps {
     onHierarchyMappingDone?: (contacts: any[], event?: AgentEvent) => void;
     model: AIModel;
     onOpenTaskConsole?: (action: any, index: number, parentMessageId?: string) => void;
+    onToggleBatch?: (action: { label: string; prompt: string; categoria?: string }, index: number, parentMessageId?: string) => void;
+    batchQueue?: Array<{ messageId: string; actionIndex: number; action: any }>;
 }
 
 // ─── Cores por ferramenta ─────────────────────────────────────────────────────
@@ -989,7 +997,9 @@ const SuggestedActionTask: React.FC<{
     sameCompanyAsNext?: boolean;
     model: AIModel;
     onOpenTaskConsole?: (action: any, index: number, parentMessageId?: string) => void;
-}> = ({ action, streamV2Url, confirmV2Url, orgId, selectedOrgName, threadId, parentMessageId, actionIndex, approvedSuggestedActions = {}, onApproveSuggestedAction, onRetrySuggestedAction, onAction, isLast = false, sameCompanyAsNext = false, model, onOpenTaskConsole }) => {
+    onToggleBatch?: (action: { label: string; prompt: string; categoria?: string }, index: number, parentMessageId?: string) => void;
+    isInBatch?: boolean;
+}> = ({ action, streamV2Url, confirmV2Url, orgId, selectedOrgName, threadId, parentMessageId, actionIndex, approvedSuggestedActions = {}, onApproveSuggestedAction, onRetrySuggestedAction, onAction, isLast = false, sameCompanyAsNext = false, model, onOpenTaskConsole, onToggleBatch, isInBatch = false }) => {
     const taskKey = `${parentMessageId}-${actionIndex}`;
     const externalStatus = approvedSuggestedActions[taskKey];
     const [localStatus, setLocalStatus] = useState<TaskStatus>(action.status || 'pending');
@@ -1222,11 +1232,11 @@ const SuggestedActionTask: React.FC<{
     const catCfg = CATEGORY_CONFIG[category];
     const isManual = action.label.toLowerCase().includes('linkedin') || catCfg.isManual;
 
-    // Estado compacto (concluído / rejeitado / erro)
-    if (status === 'done' || status === 'rejected' || status === 'error') {
-        const isClickable = status === 'done' || status === 'error';
-        const statusColor = status === 'done' ? accentColor : status === 'error' ? '#ef4444' : 'var(--sw-text-muted)';
-        const statusLabel = status === 'done' ? 'executado' : status === 'rejected' ? 'ignorado' : 'erro';
+    // Estado compacto (concluído / rejeitado apenas — erro fica expandido com botão de retry)
+    if (status === 'done' || status === 'rejected') {
+        const isClickable = status === 'done';
+        const statusColor = status === 'done' ? accentColor : 'var(--sw-text-muted)';
+        const statusLabel = status === 'done' ? 'executado' : 'ignorado';
         return (
             <div
                 onClick={isClickable ? () => onOpenTaskConsole && onOpenTaskConsole(action, actionIndex!, parentMessageId) : undefined}
@@ -1286,40 +1296,10 @@ const SuggestedActionTask: React.FC<{
                 }}>
                     {status === 'done'
                         ? <CheckCircle2 size={10} style={{ flexShrink: 0 }} />
-                        : status === 'error'
-                            ? <XCircle size={10} style={{ flexShrink: 0 }} />
-                            : <XCircle size={10} style={{ flexShrink: 0 }} />
+                        : <XCircle size={10} style={{ flexShrink: 0 }} />
                     }
                     {statusLabel}
                 </span>
-
-                {/* Refazer — só em falha real, deixa o agente investigar e tentar resolver */}
-                {status === 'error' && onRetrySuggestedAction && actionIndex !== undefined && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onRetrySuggestedAction(action, actionIndex, parentMessageId);
-                        }}
-                        title="Refazer — o agente vai investigar o erro e tentar resolver"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            fontSize: 'calc(var(--font-xs) - 1px)',
-                            fontWeight: 600,
-                            color: 'var(--sw-text-base)',
-                            background: 'var(--sw-hover)',
-                            border: 'var(--sw-border-width) solid var(--sw-border)',
-                            borderRadius: 5,
-                            padding: '2px 7px',
-                            cursor: 'pointer',
-                            flexShrink: 0,
-                        }}
-                    >
-                        <RotateCcw size={10} />
-                        Refazer
-                    </button>
-                )}
 
                 {/* Hint de clique */}
                 {isClickable && (
@@ -1332,7 +1312,7 @@ const SuggestedActionTask: React.FC<{
     return (
         <div style={{
             borderRadius: 10,
-            border: 'var(--sw-border-width) solid var(--sw-border)',
+            border: status === 'error' ? '1px solid #ef4444' : 'var(--sw-border-width) solid var(--sw-border)',
             background: 'transparent',
             overflow: 'hidden',
             marginBottom: isLast ? 0 : 10,
@@ -1344,8 +1324,8 @@ const SuggestedActionTask: React.FC<{
                 alignItems: 'center',
                 gap: 8,
                 padding: '8px 12px',
-                borderBottom: 'var(--sw-border-width) solid var(--sw-border)',
-                background: 'var(--chat-console-bg)',
+                borderBottom: status === 'error' ? '1px solid #ef444430' : 'var(--sw-border-width) solid var(--sw-border)',
+                background: status === 'error' ? '#ef444410' : 'var(--chat-console-bg)',
             }}>
                 {channelCfg.img
                     ? <img src={channelCfg.img} alt={channelCfg.label} style={{ width: 14, height: 14, borderRadius: 2, objectFit: 'contain' }} />
@@ -1359,16 +1339,41 @@ const SuggestedActionTask: React.FC<{
                         Ação Manual
                     </span>
                 )}
-                {/* Status badge (execução ativa) */}
-                {(status === 'streaming' || status === 'awaiting_confirm' || status === 'awaiting_mapping' || status === 'cancelled') && (
-                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--font-xs)', color: status === 'awaiting_confirm' ? '#f59e0b' : status === 'awaiting_mapping' ? '#818cf8' : status === 'cancelled' ? 'var(--sw-text-muted)' : 'var(--sw-text-muted)' }}>
+                {/* Checkbox de seleção em lote — visível apenas em estado pendente */}
+                {status === 'pending' && onToggleBatch && actionIndex !== undefined && (
+                    <div
+                        onClick={(e) => { e.stopPropagation(); onToggleBatch(action, actionIndex, parentMessageId); }}
+                        title={isInBatch ? 'Remover da fila' : 'Adicionar à fila de execução em lote'}
+                        style={{
+                            marginLeft: 'auto',
+                            width: 16,
+                            height: 16,
+                            borderRadius: 4,
+                            border: `2px solid ${isInBatch ? accentColor : 'var(--sw-border-strong, var(--sw-border))'}`,
+                            background: isInBatch ? accentColor : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                            transition: 'all 0.15s ease',
+                        }}
+                    >
+                        {isInBatch && <Check size={10} strokeWidth={3} color="white" />}
+                    </div>
+                )}
+                {/* Status badge (execução ativa ou erro) */}
+                {(status === 'streaming' || status === 'awaiting_confirm' || status === 'awaiting_mapping' || status === 'cancelled' || status === 'error') && (
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 'var(--font-xs)', color: status === 'error' ? '#ef4444' : status === 'awaiting_confirm' ? '#f59e0b' : status === 'awaiting_mapping' ? '#818cf8' : status === 'cancelled' ? 'var(--sw-text-muted)' : 'var(--sw-text-muted)' }}>
                         {status === 'streaming'
                             ? <><Loader2 size={10} className={styles.spinner} /><span>Executando...</span></>
                             : status === 'awaiting_confirm'
                                 ? <><AlertTriangle size={10} /><span>Aguardando confirmação</span></>
                                 : status === 'awaiting_mapping'
                                     ? <><Network size={10} /><span>Mapeando...</span></>
-                                    : <><XCircle size={10} /><span>Cancelado — pode tentar novamente</span></>
+                                    : status === 'error'
+                                        ? <><XCircle size={10} /><span style={{ fontWeight: 700 }}>Falhou</span></>
+                                        : <><XCircle size={10} /><span>Cancelado — pode tentar novamente</span></>
                         }
                     </div>
                 )}
@@ -1417,33 +1422,65 @@ const SuggestedActionTask: React.FC<{
                     </div>
                 )}
 
-                {/* Botões — apenas no estado pending */}
-                {(status === 'pending' || status === 'cancelled') && (
+                {/* Botões — pending/cancelled: Executar + Ignorar; error: Tentar novamente + Ignorar */}
+                {(status === 'pending' || status === 'cancelled' || status === 'error') && (
                     <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                        <button
-                            onClick={handleApprove}
-                            style={{
-                                flex: 1,
-                                padding: '7px 12px',
-                                borderRadius: 7,
-                                border: 'none',
-                                background: 'transparent',
-                                color: accentColor,
-                                fontSize: 'var(--font-sm)',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 5,
-                                transition: 'all 0.15s ease',
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.background = `${accentColor}12`; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                        >
-                            <Check size={12} strokeWidth={2.5} />
-                            {isManual ? 'Marcar como feito' : 'Executar'}
-                        </button>
+                        {status === 'error' ? (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onRetrySuggestedAction && actionIndex !== undefined) {
+                                        onRetrySuggestedAction(action, actionIndex, parentMessageId);
+                                    }
+                                }}
+                                style={{
+                                    flex: 1,
+                                    padding: '7px 12px',
+                                    borderRadius: 7,
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: '#ef4444',
+                                    fontSize: 'var(--font-sm)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 5,
+                                    transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#ef444414'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                            >
+                                <RotateCcw size={12} strokeWidth={2.5} />
+                                Tentar novamente
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleApprove}
+                                style={{
+                                    flex: 1,
+                                    padding: '7px 12px',
+                                    borderRadius: 7,
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: accentColor,
+                                    fontSize: 'var(--font-sm)',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 5,
+                                    transition: 'all 0.15s ease',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = `${accentColor}12`; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                            >
+                                <Check size={12} strokeWidth={2.5} />
+                                {isManual ? 'Marcar como feito' : 'Executar'}
+                            </button>
+                        )}
                         <button
                             onClick={async () => {
                                 setLocalStatus('rejected');
@@ -1528,7 +1565,7 @@ const ProspectingPlanCard = ({
     return (
         <div style={{
             margin: '12px 0',
-            background: 'var(--bg-card)',
+            background: 'var(--chat-bg-secondary)',
             border: 'var(--sw-border-width) solid var(--sw-border)',
             borderRadius: 12,
             overflow: 'hidden',
@@ -1606,6 +1643,8 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
     onHierarchyMappingDone,
     model,
     onOpenTaskConsole,
+    onToggleBatch,
+    batchQueue = [],
 }) => {
     const [copied, setCopied] = useState(false);
     const notifiedToolResultsRef = useRef<Set<string>>(new Set());
@@ -1892,6 +1931,9 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                         const currentCompany = getCompanyFromLabel(action.label);
                         const nextCompany = nextAction ? getCompanyFromLabel(nextAction.label) : null;
                         const sameCompanyAsNext = nextCompany ? currentCompany === nextCompany : false;
+                        const isInBatch = batchQueue.some(
+                            i => i.messageId === messageId && i.actionIndex === idx
+                        );
 
                         return (
                             <SuggestedActionTask
@@ -1912,6 +1954,8 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({
                                 sameCompanyAsNext={sameCompanyAsNext}
                                 model={model}
                                 onOpenTaskConsole={onOpenTaskConsole}
+                                onToggleBatch={onToggleBatch}
+                                isInBatch={isInBatch}
                             />
                         );
                     })}
