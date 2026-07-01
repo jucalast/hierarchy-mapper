@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '../ChatPanel.module.css';
+import styles from '../styles/ChatPanel.module.css';
 
 interface EmptyWelcomeStateProps {
     isOrgLoading: boolean;

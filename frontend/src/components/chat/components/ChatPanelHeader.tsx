@@ -1,7 +1,7 @@
 import React from 'react';
 import { Clock, Plus, PanelRightClose } from 'lucide-react';
 import { Avatar } from '../../ui';
-import styles from '../ChatPanel.module.css';
+import styles from '../styles/ChatPanel.module.css';
 
 interface ChatPanelHeaderProps {
     logo?: string;

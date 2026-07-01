@@ -118,13 +118,20 @@ class EmailClient:
         log.error("email.outlook.error", context=context_msg, error=e)
         return False
 
-    def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False, attachment_paths: Optional[List[str]] = None, cc_list: Optional[List[str]] = None):
+    def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False, attachment_paths: Optional[List[str]] = None, cc_list: Optional[List[str]] = None, attachment_names: Optional[List[Optional[str]]] = None):
         """
         Envia e-mail via Outlook App ou SMTP com suporte a Recibo de Leitura e cópia (CC).
 
         cc_list: lista de endereços a colocar em cópia (CC). Usada automaticamente em
                  e-mails de prospecção para incluir compras@ e suprimentos@.
+        attachment_names: nomes de EXIBIÇÃO opcionais, paralelos a attachment_paths
+                 (None = usa o basename real). Anexamos o arquivo original e apenas
+                 renomeamos o que o destinatário vê — evita cópias temporárias frágeis.
         """
+        def _display_name_for(index: int) -> Optional[str]:
+            if attachment_names and index < len(attachment_names):
+                return attachment_names[index]
+            return None
         # Delay humano
         time.sleep(random.uniform(1.0, 2.5))
 
@@ -186,11 +193,17 @@ class EmailClient:
                     
                     # Anexos (aceita lista de caminhos absolutos)
                     if attachment_paths:
-                        for ap in attachment_paths:
+                        for _i, ap in enumerate(attachment_paths):
                             if ap and os.path.exists(ap):
                                 try:
-                                    mail.Attachments.Add(ap)
-                                    log.info("email.outlook.attachment_added", path=ap)
+                                    att = mail.Attachments.Add(ap)
+                                    _dn = _display_name_for(_i)
+                                    if _dn:
+                                        try:
+                                            att.DisplayName = _dn
+                                        except Exception as dne:
+                                            log.warning("email.outlook.attachment_rename_failed", name=_dn, error=dne)
+                                    log.info("email.outlook.attachment_added", path=ap, display_name=_dn)
                                 except Exception as ae:
                                     log.warning("email.outlook.attachment_failed", path=ap, error=ae)
 
@@ -216,7 +229,7 @@ class EmailClient:
 
             # Anexos SMTP
             if attachment_paths:
-                for ap in attachment_paths:
+                for _i, ap in enumerate(attachment_paths):
                     if ap and os.path.exists(ap):
                         try:
                             mime_type, _ = mimetypes.guess_type(ap)
@@ -225,9 +238,10 @@ class EmailClient:
                                 part = MIMEBase(main_type, sub_type)
                                 part.set_payload(f.read())
                             encoders.encode_base64(part)
-                            part.add_header('Content-Disposition', 'attachment', filename=os.path.basename(ap))
+                            _fname = _display_name_for(_i) or os.path.basename(ap)
+                            part.add_header('Content-Disposition', 'attachment', filename=_fname)
                             msg.attach(part)
-                            log.info("email.smtp.attachment_added", path=ap)
+                            log.info("email.smtp.attachment_added", path=ap, display_name=_fname)
                         except Exception as ae:
                             log.warning("email.smtp.attachment_failed", path=ap, error=ae)
 
@@ -245,7 +259,8 @@ class EmailClient:
 
     def reply_to_email(self, entry_id: str, html_body: str, reply_all: bool = True,
                        attachment_paths: Optional[List[str]] = None,
-                       subject_hint: Optional[str] = None, contact_name: Optional[str] = None):
+                       subject_hint: Optional[str] = None, contact_name: Optional[str] = None,
+                       attachment_names: Optional[List[Optional[str]]] = None):
         """
         Responde a um e-mail específico mantendo a Thread (In-Reply-To).
         Quando GetItemFromID falha (entryId stale/corrompido), usa subject_hint para
@@ -349,10 +364,16 @@ class EmailClient:
 
                 # Anexos
                 if attachment_paths:
-                    for ap in attachment_paths:
+                    for _i, ap in enumerate(attachment_paths):
                         if ap and os.path.exists(ap):
                             try:
-                                reply_msg.Attachments.Add(ap)
+                                att = reply_msg.Attachments.Add(ap)
+                                _dn = attachment_names[_i] if attachment_names and _i < len(attachment_names) else None
+                                if _dn:
+                                    try:
+                                        att.DisplayName = _dn
+                                    except Exception as dne:
+                                        log.warning("email.outlook.reply_attachment_rename_failed", name=_dn, error=dne)
                             except Exception as ae:
                                 log.warning("email.outlook.reply_attachment_failed", path=ap, error=ae)
 

@@ -134,7 +134,10 @@
       "Bash(PYTHONUTF8=1 timeout 60 python -c ' *)",
       "Bash(PYTHONUTF8=1 timeout 30 python -c ' *)",
       "Bash(node --check index.js)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node \"C:/Users/JOOLUC~1/AppData/Local/Temp/claude/C--Users-Jo-o-Luccas-Desktop-LINKB2B-hierarchy-mapper/903b34a8-26dd-4b41-98f5-2d4f37f72c7f/scratchpad/fix-imports.mjs\")",
+      "Bash(node \"C:/Users/JOOLUC~1/AppData/Local/Temp/claude/C--Users-Jo-o-Luccas-Desktop-LINKB2B-hierarchy-mapper/903b34a8-26dd-4b41-98f5-2d4f37f72c7f/scratchpad/check-imports.mjs\")",
+      "Bash(rtk npm *)"
     ]
   }
 }

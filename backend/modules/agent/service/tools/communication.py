@@ -143,7 +143,14 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
                 org_name=args.get("org_name", "")
             )
             if not chat_id:
-                return {"ok": False, "error": f"Contato '{contact}' não encontrado no WhatsApp"}
+                return {
+                    "ok": True,
+                    "contact": contact,
+                    "phone": phone_arg,
+                    "messages": [],
+                    "count": 0,
+                    "summary": f"Aviso: Contato '{contact}' não possui número válido ou não foi encontrado no WhatsApp."
+                }
 
         # ─── Cache check ───
         # Verifica se já temos as mensagens no cache local e se não estão expiradas (stale)
@@ -195,11 +202,32 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
                             chat_id = chat_id_lid
                             found_name = found_name_lid
                         else:
-                            return {"ok": False, "error": f"Contato '{contact}' encontrado mas sem conversa ativa no WhatsApp"}
+                            return {
+                                "ok": True,
+                                "contact": contact,
+                                "phone": phone_arg,
+                                "messages": [],
+                                "count": 0,
+                                "summary": f"Aviso: Contato '{contact}' encontrado mas sem conversa ativa no WhatsApp"
+                            }
                     else:
-                        return {"ok": False, "error": f"Contato '{contact}' não possui conversa ativa no WhatsApp (sem LID)"}
+                        return {
+                            "ok": True,
+                            "contact": contact,
+                            "phone": phone_arg,
+                            "messages": [],
+                            "count": 0,
+                            "summary": f"Aviso: Contato '{contact}' não possui conversa ativa no WhatsApp (sem LID)"
+                        }
                 except Exception:
-                    return {"ok": False, "error": f"Contato '{contact}' não encontrado no WhatsApp (sem LID)"}
+                    return {
+                        "ok": True,
+                        "contact": contact,
+                        "phone": phone_arg,
+                        "messages": [],
+                        "count": 0,
+                        "summary": f"Aviso: Contato '{contact}' não encontrado no WhatsApp (sem LID)"
+                    }
             else:
                 return {"ok": False, "error": f"Erro ao buscar mensagens (HTTP {r.status_code})"}
 

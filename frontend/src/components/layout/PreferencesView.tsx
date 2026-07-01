@@ -28,7 +28,7 @@ import {
     Upload
 } from 'lucide-react';
 import { ai } from '@/services/api';
-import { ModelSelector, AIModel } from '@/components/chat/ModelSelector';
+import { ModelSelector, AIModel } from '@/components/chat/components/ModelSelector';
 import styles from './PreferencesView.module.css';
 
 interface PreferencesViewProps {

@@ -17,6 +17,7 @@ from .pipedrive import (
     exec_pipedrive_get_all_activities,
     exec_pipedrive_get_deals_without_tasks,
     exec_pipedrive_bulk_update_tasks,
+    exec_pipedrive_advance_deal,
 )
 from .communication import (
     exec_whatsapp_get_messages,
@@ -44,6 +45,28 @@ from .intelligence import (
 )
 
 log = get_logger(__name__)
+
+
+async def _presentation_display_name(src_path: str = "") -> str:
+    """Nome de EXIBIÇÃO do anexo de apresentação: 'Apresentação {empresa}.pdf'.
+
+    A empresa é a do REMETENTE (vendedor), lida do contexto do tenant
+    (`company_name`). Este nome é aplicado via `DisplayName` do anexo no Outlook —
+    o arquivo em disco (caminho original) é anexado intacto, evitando cópias
+    temporárias com acentos que quebravam o `Attachments.Add`.
+    """
+    import os as _os, re as _re
+    try:
+        from modules.ai.service.context.business_context_service import BusinessContextService
+        _ctx = await BusinessContextService.get_tenant_context()
+        company = ((_ctx or {}).get("company_name") or "").strip()
+    except Exception:
+        company = ""
+    base = f"Apresentação {company}".strip() if company else "Apresentação"
+    # Remove só caracteres inválidos para nome de arquivo (mantém acentos).
+    safe = _re.sub(r'[\\/:*?"<>|]+', '', base).strip() or "Apresentação"
+    ext = _os.path.splitext(src_path)[1] or ".pdf"
+    return f"{safe}{ext}"
 
 
 # ─── Registry ─────────────────────────────────────────────────────────────────
@@ -655,14 +678,17 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
         # Busca contexto para pegar anexo padrão e assinatura
         ctx = await BusinessContextService.get_tenant_context()
         
-        # Resolve attachment_name → caminho absoluto via settings ou contexto
+        # Resolve attachment_name → caminho absoluto via settings ou contexto.
+        # attachment_names guarda o nome de EXIBIÇÃO paralelo (None = usa o basename real).
         attachment_paths: list[str] = []
-        
+        attachment_names: list = []
+
         # Adiciona anexo customizado feito pelo usuário na confirmação
         user_attachment_path = args.get("attachment_path")
         if user_attachment_path and _os.path.exists(user_attachment_path):
             attachment_paths.append(user_attachment_path)
-            
+            attachment_names.append(None)
+
         # Prioriza 'apresentacao_linkb2b' se mencionado no body ou se veio nos args
         att_name = args.get("attachment_name", "")
         if not att_name and any(kw in body.lower() for kw in ["apresentação", "pdf", "anexo"]):
@@ -674,6 +700,7 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                 path = ctx.get("presentation_path")
                 if path and _os.path.exists(path):
                     attachment_paths.append(path)
+                    attachment_names.append(await _presentation_display_name(path))
             else:
                 # Fallback legado para compatibilidade
                 try:
@@ -684,6 +711,7 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                     path = _ATTACHMENT_MAP.get(att_name, "")
                     if path and _os.path.exists(path):
                         attachment_paths.append(path)
+                        attachment_names.append(await _presentation_display_name(path))
                 except Exception:
                     pass
 
@@ -743,6 +771,8 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                     "body": final_body,
                     "attachment_paths": attachment_paths or None,
                 }
+                if any(n for n in attachment_names):
+                    payload["attachment_names"] = attachment_names
                 if _cc_emails:
                     payload["cc"] = _cc_emails
                 r = await client.post(f"{EMAIL_SERVICE_BASE}/send", json=payload)
@@ -771,18 +801,21 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
         ctx = await BusinessContextService.get_tenant_context()
 
         attachment_paths: list[str] = []
+        attachment_names: list = []
         user_attachment_path = args.get("attachment_path")
         if user_attachment_path and _os.path.exists(user_attachment_path):
             attachment_paths.append(user_attachment_path)
-            
+            attachment_names.append(None)
+
         if not entry_id or not body:
             return {"ok": False, "error": "entry_id e body são obrigatórios"}
-            
+
         # Prioriza 'apresentacao_linkb2b' se mencionado no body
         if any(kw in body.lower() for kw in ["apresentação", "pdf", "anexo"]):
             path = ctx.get("presentation_path")
             if path and _os.path.exists(path):
                 attachment_paths.append(path)
+                attachment_names.append(await _presentation_display_name(path))
 
         # Adiciona conversão básica de Markdown -> HTML para preservar quebras de linha e formatação
         import re as _re
@@ -833,17 +866,17 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
 
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
-                r = await client.post(
-                    f"{EMAIL_SERVICE_BASE}/reply",
-                    json={
-                        "entry_id": entry_id,
-                        "body": final_body,
-                        "reply_all": True,
-                        "attachment_paths": attachment_paths or None,
-                        "subject_hint": args.get("subject", ""),
-                        "contact_name": args.get("contact_name", ""),
-                    },
-                )
+                _reply_payload = {
+                    "entry_id": entry_id,
+                    "body": final_body,
+                    "reply_all": True,
+                    "attachment_paths": attachment_paths or None,
+                    "subject_hint": args.get("subject", ""),
+                    "contact_name": args.get("contact_name", ""),
+                }
+                if any(n for n in attachment_names):
+                    _reply_payload["attachment_names"] = attachment_names
+                r = await client.post(f"{EMAIL_SERVICE_BASE}/reply", json=_reply_payload)
                 ok = r.status_code in (200, 201, 202)
                 if ok:
                     await _log_activity_bg(

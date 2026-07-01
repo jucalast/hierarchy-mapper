@@ -214,6 +214,50 @@ async def intercept_pre_execution(
             except Exception as db_err:
                 log.warning(f"Erro ao verificar email no banco local: {db_err}")
 
+        # Verificação por NOME no banco local (camada resiliente):
+        # O resultado de pipedrive_get_persons chega SANITIZADO ao histórico (sem o e-mail),
+        # então as checagens por JSON/string acima não encontram o endereço. Aqui resolvemos
+        # o contato pelo nome dentro da org: se ele já tem e-mail cadastrado, o sistema o
+        # considera "validado" (mesma definição de email_validated em pipedrive.py) — usamos
+        # esse e-mail e dispensamos discover_and_validate_email.
+        if not _already_validated and _contact_name:
+            try:
+                from core.infra.database import async_session
+                from models.people.employee import Employee
+                from models.organization import Organization
+                from sqlalchemy import select, func as _sql_func
+
+                async with async_session() as session:
+                    _local_org_id = None
+                    if org_id:
+                        _o_res = await session.execute(
+                            select(Organization.id).where(
+                                (Organization.id == org_id) | (Organization.pipedrive_id == org_id)
+                            )
+                        )
+                        _local_org_id = _o_res.scalar_one_or_none()
+
+                    _emp_stmt = select(Employee).where(
+                        _sql_func.lower(Employee.name) == _contact_name.strip().lower(),
+                        Employee.email.isnot(None),
+                        Employee.email != "",
+                    )
+                    if _local_org_id is not None:
+                        _emp_stmt = _emp_stmt.where(Employee.company_id == _local_org_id)
+                    _emp = (await session.execute(_emp_stmt)).scalars().first()
+                    if _emp and _emp.email:
+                        log.info(
+                            "agent.interceptor.email_validated_via_db_name",
+                            contact=_contact_name,
+                            email=_emp.email,
+                            corrected=(_emp.email.lower() != (_target_email or "").lower()),
+                        )
+                        tool_args["to"] = _emp.email
+                        _target_email = _emp.email
+                        _already_validated = True
+            except Exception as _db_name_err:
+                log.warning(f"Erro ao verificar email por nome no banco local: {_db_name_err}")
+
         _looks_like_pattern = _target_email and ("." in _target_email.split("@")[0] or "_" in _target_email.split("@")[0])
         if not _already_validated and (_looks_like_pattern or not _target_email):
             log.info("agent.interceptor.email_validation_forced", email=_target_email)
@@ -323,6 +367,36 @@ async def intercept_pre_execution(
                         ),
                         "is_error": False,
                     }
+
+    # 3.5 generate_sales_message pre-req check
+    if tool_name == "generate_sales_message":
+        _local_called_ctx = set()
+        for _m in messages:
+            _mc = _m.get("content", "")
+            if isinstance(_mc, list):
+                for _b in _mc:
+                    if isinstance(_b, dict) and _b.get("type") in ("tool_use", "tool_result"):
+                        _tn = _b.get("name") or _b.get("tool_name")
+                        if _tn:
+                            _local_called_ctx.add(_tn)
+
+        _needed = {"whatsapp_get_messages", "email_get_contact_history"}
+        _missing = _needed - _local_called_ctx
+        
+        if _missing and (is_task_action or org_id):
+            log.info("agent.interceptor.generate_sales_message_blocked", missing=list(_missing))
+            _missing_names = ", ".join(_missing)
+            return {
+                "type": "tool_result",
+                "tool_use_id": tool_id,
+                "tool_name": tool_name,
+                "content": (
+                    f"AÇÃO BLOQUEADA: Você deve investigar os canais de comunicação ({_missing_names}) "
+                    f"ANTES de gerar a mensagem de vendas para aproveitar o histórico (se houver) como contexto. "
+                    f"CHAME AGORA as ferramentas faltantes."
+                ),
+                "is_error": True,
+            }
 
     # 4. Target locking
     if session_task_person and is_task_action:

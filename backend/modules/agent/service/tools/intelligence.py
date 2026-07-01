@@ -837,6 +837,20 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
     from modules.ai.service.context.business_context import get_business_context_for_prompt
     biz_data_str = await get_business_context_for_prompt()
 
+    # Identidade do remetente (vendedor) — usada na apresentação pessoal da abertura.
+    _seller_ctx = await BusinessContextService.get_tenant_context()
+    seller_name = (_seller_ctx.get("seller_name") or "").strip()
+    seller_role = (_seller_ctx.get("seller_role") or "").strip()
+    company_name = (_seller_ctx.get("company_name") or "J.Ferres").strip()
+    if seller_name:
+        seller_identity = (
+            f"REMETENTE (apresente-se com estes dados reais): {seller_name}"
+            + (f", {seller_role}" if seller_role else "")
+            + f", da {company_name}."
+        )
+    else:
+        seller_identity = f"REMETENTE: equipe comercial da {company_name}."
+
     prospecting_context_str = ""
     if org_id:
         try:
@@ -906,8 +920,10 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         if channel == "whatsapp" else
         "CANAL: Email — pode ter mais profundidade técnica. Linha de assunto impactante. Evite parágrafos longos. "
         f"Comece com '{greeting_hint}, [Nome]'. "
+        f"APRESENTAÇÃO OBRIGATÓRIA (1ª frase após a saudação, EXCETO em follow-ups MODO 1/2/4): apresente-se com os dados reais do REMETENTE. {seller_identity} "
         "Escreva o corpo do e-mail de forma profissional. "
         "Como a apresentação comercial em PDF será anexada automaticamente, você DEVE fazer referência a ela no texto do e-mail (ex: 'Estou enviando em anexo nossa apresentação...', 'Segue anexo nossa apresentação comercial...'). "
+        "FECHAMENTO OBRIGATÓRIO (1º contato / venda ativa): antes do 'Atenciosamente,', inclua um CTA claro propondo uma reunião curta (15-20 min) para diagnóstico, oferecendo disponibilidade concreta (ex: 'Podemos conversar 15 minutos esta semana? Tenho disponibilidade na quinta ou sexta de manhã.'). "
         "TERMINE SEMPRE o e-mail APENAS com 'Atenciosamente,'. É ESTRITAMENTE PROIBIDO colocar o seu nome, cargo (ex: Diretor Comercial Sênior) ou empresa abaixo do 'Atenciosamente', pois a assinatura em imagem será inserida automaticamente na parte inferior pelo sistema."
     )
 
@@ -931,9 +947,12 @@ async def exec_generate_sales_message(args: dict, messages: list | None = None, 
         "**MODO 3 — VENDA ATIVA**\n"
         "Use quando: primeiro contato, reativação de lead frio, apresentação de proposta, "
         "rebate de concorrente direto, criação de urgência comercial.\n"
+        f"→ ABERTURA OBRIGATÓRIA: logo após a saudação, apresente-se em UMA frase com os dados reais do remetente. {seller_identity}\n"
         "→ Use os diferenciais técnicos e contexto da empresa acima. CHALLENGER SALE: ensine algo que o cliente "
         "ainda não sabe. SPIN SELLING: mencione dores reais do histórico. DATA-DRIVEN: cite itens reais "
-        "(códigos, preços, datas). NUNCA use placeholders.\n\n"
+        "(códigos, preços, datas). NUNCA use placeholders.\n"
+        "→ FECHAMENTO OBRIGATÓRIO: feche com um CTA claro propondo uma reunião curta (15-20 min) de diagnóstico, "
+        "com disponibilidade concreta. Não basta anexar a apresentação — peça o próximo passo (a reunião).\n\n"
         "**MODO 4 — RETORNO DE FÉRIAS / RAPPORT (SOFT FOLLOW-UP)**\n"
         "Use quando: o histórico recente (seja WhatsApp ou e-mail) indicar que o contato esteve de férias, ausente, viajando ou fora do escritório recentemente (ou se desculpou pelo atraso devido a esses motivos).\n"
         "→ Mensagem calorosa, empática e acolhedora. Dê as boas-vindas no retorno das férias/ausência, deseje que tenha descansado, tire ABSOLUTAMENTE toda a pressão de cobrança comercial e se coloque à disposição para quando a rotina dele normalizar. NÃO tente vender novos produtos cartonados ou cobrar cotações anteriores nesse momento. A prioridade máxima é gerar conexão (rapport) e se colocar à disposição. Feche de forma super leve e profissional.\n\n"
@@ -1348,7 +1367,7 @@ async def exec_discover_and_validate_email(args: Dict[str, Any]) -> Dict[str, An
             from sqlalchemy import select
             async with async_session() as session:
                 stmt = select(Employee).where(
-                    (Employee.pipedrive_id == str(person_id)) | (Employee.id == int(person_id))
+                    Employee.pipedrive_id == str(person_id)
                 )
                 emp = (await session.execute(stmt)).scalar_one_or_none()
                 if emp and emp.email and "@" in emp.email and emp.email_verified:

@@ -717,7 +717,6 @@ async def resume_after_confirmation(
         })
         return
 
-    # Monta a lista completa de tool results (reads anteriores + write confirmado)
     write_result = {
         "type": "tool_result",
         "tool_use_id": tool_use_id,
@@ -726,12 +725,68 @@ async def resume_after_confirmation(
     }
     all_results = pending["prior_results"] + [write_result]
 
+    # Quando o LLM propõe dois tool_use de escrita simultâneos (ex: create_task email +
+    # create_task ligação), apenas o primeiro é capturado em `pending` e executado aqui.
+    # O segundo tool_use fica no messages_snapshot SEM uma resposta correspondente —
+    # o que faz o LLM re-propor toda a sequência ao retomar, causando duplicatas.
+    #
+    # Solução: para cada tool_use_id no último bloco de assistente que NÃO tem resposta
+    # em all_results, injetamos um placeholder informando que a ação ainda está pendente.
+    # Assim o LLM continua o fluxo normalmente (pedindo a próxima confirmação) em vez de
+    # recomeçar e duplicar as ações já aprovadas.
+    answered_ids = {r.get("tool_use_id") for r in all_results if isinstance(r, dict)}
+    snapshot_messages = pending.get("messages_snapshot", [])
+    # Encontra o último bloco de assistente com tool_use
+    last_assistant_content = []
+    for msg in reversed(snapshot_messages):
+        if msg.get("role") == "assistant":
+            raw = msg.get("content", [])
+            if isinstance(raw, list) and any(b.get("type") == "tool_use" for b in raw if isinstance(b, dict)):
+                last_assistant_content = raw
+                break
+    # Blocos de escrita ainda sem resposta (estavam "na fila" atrás do que foi confirmado agora)
+    queued_write_blocks = []
+    for block in last_assistant_content:
+        if not isinstance(block, dict) or block.get("type") != "tool_use":
+            continue
+        pending_tool_id = block.get("id")
+        if pending_tool_id and pending_tool_id not in answered_ids:
+            queued_write_blocks.append(block)
+            all_results.append({
+                "type": "tool_result",
+                "tool_use_id": pending_tool_id,
+                "tool_name": block.get("name", ""),
+                "content": (
+                    "[SISTEMA]: Esta ação estava na fila e foi substituída pelo placeholder. "
+                    "O agente deve propô-la novamente no próximo turno para que o usuário confirme."
+                ),
+                "is_error": False,
+            })
+
     # Restaura conversa e adiciona os resultados
     messages = pending["messages_snapshot"]  # Já inclui a mensagem do assistente com tool_use blocks
     
     # Se aprovado, adicionamos um nudge para o agente continuar o fluxo
     system_nudge = ""
-    if approved and not ok and "resolver o contato" in str(result.get("error", "")):
+
+    # PRIORIDADE MÁXIMA: se há ações de escrita na fila (o LLM propôs várias escritas de uma
+    # vez e apenas a primeira foi confirmada), instrui o agente a propor a próxima imediatamente.
+    # Isso garante que cada ação seja confirmada sequencialmente, sem re-propor as já feitas.
+    if queued_write_blocks and ok:
+        next_block = queued_write_blocks[0]
+        next_tool = next_block.get("name", "")
+        next_args = next_block.get("input") or {}
+        next_subject = next_args.get("subject") or next_args.get("title") or next_tool
+        system_nudge = (
+            f"\n\n[SISTEMA]: Ação anterior concluída com sucesso.\n\n"
+            f"PRÓXIMA AÇÃO OBRIGATÓRIA — proponha AGORA a seguinte ferramenta para que o "
+            f"usuário confirme:\n"
+            f"  Ferramenta: {next_tool}\n"
+            f"  Assunto/Parâmetros: {next_subject}\n\n"
+            f"NÃO proponha novamente ações que já foram executadas. "
+            f"NÃO chame suggest_next_actions ainda — há ações pendentes na fila."
+        )
+    elif approved and not ok and "resolver o contato" in str(result.get("error", "")):
         # pipedrive_create_task/pipedrive_update_deal falham com este erro quando person_id
         # é um nome (não um ID numérico) e o contato ainda não existe no Pipedrive. Sem este
         # nudge, o agente costuma desistir e só SUGERIR cadastrar o contato como uma próxima
@@ -779,24 +834,59 @@ async def resume_after_confirmation(
                     f"2. suggest_next_actions — somente após o update acima.\n\n"
                     f"É PROIBIDO encerrar a tarefa sem executar ambas as ferramentas."
                 )
-            else:
-                error_detail = result.get("error") or result.get("result") or "Erro desconhecido"
-                system_nudge = (
-                    f"\n\n[SISTEMA]: ⚠️ FALHA NO ENVIO — O {channel_label} NÃO foi enviado. Erro: \"{error_detail}\"\n\n"
-                    f"REGRAS OBRIGATÓRIAS:\n"
-                    f"1. É ESTRITAMENTE PROIBIDO chamar pipedrive_update_task com done=true — a tarefa NÃO foi concluída.\n"
-                    f"2. Encerre sua execução AGORA chamando suggest_next_actions.\n"
-                    f"3. Em suggest_next_actions inclua uma ação de retry para que o usuário possa tentar o envio novamente.\n"
-                    f"NÃO tente corrigir o erro sozinho. Apenas encerre com suggest_next_actions."
-                )
 
         elif tool_name == "pipedrive_update_task":
-            system_nudge = (
-                "\n\n[SISTEMA]: Atividade do Pipedrive atualizada com sucesso.\n\n"
-                "ATENÇÃO: Continue o fluxo previsto pelas instruções (ex: Etapa 7 de Outreach se houver, etc). "
-                "Quando terminar TODAS as etapas obrigatórias da sua instrução base, sua ÚLTIMA AÇÃO ANTES DE ENCERRAR O TURNO "
-                "deve ser chamar 'suggest_next_actions' para apresentar os próximos passos estratégicos."
-            )
+            if ok:
+                system_nudge = (
+                    "\n\n[SISTEMA]: Atividade do Pipedrive atualizada com sucesso.\n\n"
+                    "ATENÇÃO: Continue o fluxo previsto pelas instruções (ex: Etapa 7 de Outreach se houver, etc). "
+                    "Quando terminar TODAS as etapas obrigatórias da sua instrução base, sua ÚLTIMA AÇÃO ANTES DE ENCERRAR O TURNO "
+                    "deve ser chamar 'suggest_next_actions' para apresentar os próximos passos estratégicos."
+                )
+            else:
+                error_msg = result.get("error", "")
+                # Erro de person_id enviado como nome (string) em vez de inteiro:
+                # o agente tenta corrigir sozinho (busca o ID numérico e repete).
+                if "exige um número inteiro" in error_msg or "person_id" in error_msg.lower():
+                    person_name = tool_args.get("person_id")
+                    system_nudge = (
+                        f"\n\n[SISTEMA]: ⚠️ FALHA — A atividade NÃO foi atualizada. Erro: \"{error_msg}\"\n\n"
+                        f"OBRIGATÓRIO — resolva isso AGORA, nesta mesma execução:\n"
+                        f"1. Chame 'pipedrive_get_persons' para encontrar o ID numérico de '{person_name}'.\n"
+                        f"2. Repita 'pipedrive_update_task' usando o ID numérico retornado (não o nome).\n"
+                        f"3. Somente após a atualização ser bem-sucedida, chame 'suggest_next_actions'.\n\n"
+                        f"PROIBIDO encerrar o turno sem corrigir e repetir a ação."
+                    )
+
+        # Se houve falha (ok=False) e não definimos um system_nudge para recuperação automática (ex: corrigir person_id),
+        # assumimos que é uma falha irrecuperável. Interrompemos o loop IMEDIATAMENTE emitindo um evento de erro.
+        # Isso impede que a conversa volte para o LLM, o que faria ele chamar 'suggest_next_actions', 
+        # mascarando o erro no frontend (o UI veria 'suggested_actions' logo após a falha e acharia que foi recuperado, 
+        # escondendo o botão "Tentar novamente").
+        if not ok and not system_nudge:
+            error_detail = result.get("error") or result.get("result") or "Erro desconhecido"
+            err_event = {
+                "type": "error",
+                "content": f"Falha na ação ({tool_name}): {error_detail}",
+                "recoverable": True,
+            }
+            collected_events.append(err_event)
+            yield _emit(err_event)
+            # Persiste os logs antes de sair para o frontend ter acesso ao histórico
+            if thread_id:
+                await _save_run_state(
+                    thread_id=thread_id,
+                    parent_message_id=parent_message_id,
+                    action_index=action_index,
+                    message="",
+                    is_regeneration=False,
+                    final_response="",
+                    collected_events=collected_events,
+                    process_id=pending_process_id,
+                    is_resume=True,
+                    user_msg_saved=True,
+                )
+            return
 
     messages.append({
         "role": "user", 

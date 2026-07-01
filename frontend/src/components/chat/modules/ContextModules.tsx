@@ -6,7 +6,7 @@ import { TimelineEventRow, TimelineEvent } from '../../prospecting/TimelineEvent
 import { PersonaCard } from '../../prospecting/PersonaCard';
 import { CompactEmployeeCard } from '../../network-graph/CompactEmployeeCard';
 import { OrgListItem } from '../../prospecting/OrgListItem';
-import styles from '../ChatPanel.module.css';
+import styles from '../styles/ChatPanel.module.css';
 import ctx from './ContextModules.module.css';
 
 /* ─── TaskList ───────────────────────────────────────────────── */

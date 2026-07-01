@@ -50,7 +50,9 @@ async def resolve_procurement_email(
 
     if contact_email and "@" in contact_email:
         domain = contact_email.split("@")[1].lower()
-        cc = [f"compras@{domain}"]
+        # Mesmo com decisor conhecido, mantemos os setores de compras em cópia
+        # (compras@ + suprimentos@) para dar visibilidade ao processo de aquisição.
+        cc = [f"compras@{domain}", f"suprimentos@{domain}"]
         log.info(
             "email_resolver.decisor_known",
             email=contact_email,

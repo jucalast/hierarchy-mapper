@@ -42,7 +42,7 @@ import { useChatStore } from '@/store/chatStore';
 import { FloatingToolbar } from './FloatingToolbar';
 import { SmartBackground } from './components/SmartBackground';
 import { FitViewHandler } from './components/FitViewHandler';
-import { ModelSelector } from '../chat/ModelSelector';
+import { ModelSelector } from '../chat/components/ModelSelector';
 import { useGlobalHierarchyScan } from '@/contexts/HierarchyScanContext';
 import { ScanTerminalPanel } from './components/ScanTerminalPanel';
 import { ScanPreviewBubble } from './components/ScanPreviewBubble';

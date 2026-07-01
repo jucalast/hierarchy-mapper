@@ -1,12 +1,12 @@
 import React from 'react';
 import { Clock, Plus } from 'lucide-react';
-import styles from './ChatPanel.module.css';
+import styles from './styles/ChatPanel.module.css';
 
 import { Modal, Button } from '../ui';
-import { ChatInput } from './ChatInput';
-import { ChatTabs } from './ChatTabs';
-import { ConversationContextAccordion } from './ConversationContextAccordion';
-import { ThreadList } from './ThreadList';
+import { ChatInput } from './components/ChatInput';
+import { ChatTabs } from './components/ChatTabs';
+import { ConversationContextAccordion } from './components/ConversationContextAccordion';
+import { ThreadList } from './components/ThreadList';
 
 // Micro Components Imports
 import { CollapsedChatHandle } from './components/CollapsedChatHandle';
@@ -15,7 +15,7 @@ import { EmptyWelcomeState } from './components/EmptyWelcomeState';
 import { MessagesList } from './components/MessagesList';
 
 import { ai } from '@/services/api';
-import { useChatPanel } from './useChatPanel';
+import { useChatPanel } from './hooks/useChatPanel';
 
 const AGENT_STREAM_URL = ai.getAgentChatStreamUrl();
 const AGENT_CONFIRM_URL = ai.getAgentConfirmStreamUrl();

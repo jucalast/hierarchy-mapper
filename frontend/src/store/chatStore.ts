@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Message, CompanyResult } from '../components/chat/ChatInterfaces';
 import { AgentEvent } from '../components/chat/AgentV2Message';
 import { Edge } from 'reactflow';
@@ -556,11 +556,11 @@ export const useChatStore = create<ChatStore>()(
 }),
 {
   name: 'linkb2b-chat-store',
-  storage: {
+  storage: createJSONStorage(() => ({
     getItem: (name) => { try { return localStorage.getItem(name); } catch { return null; } },
     setItem: (name, value) => { try { localStorage.setItem(name, value); } catch (e) { console.warn('[chatStore] localStorage quota exceeded, persist skipped:', e); } },
     removeItem: (name) => { try { localStorage.removeItem(name); } catch {} },
-  },
+  })),
   partialize: (state) => ({
     sessions: Object.fromEntries(
       Object.entries(state.sessions).map(([k, s]) => [k, {

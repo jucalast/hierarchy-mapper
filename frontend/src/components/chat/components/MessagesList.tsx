@@ -1,9 +1,9 @@
 import React from 'react';
 import { AgentMessage } from '../AgentV2Message';
-import { ChatMessage } from '../ChatMessage';
-import { AIModel } from '../ModelSelector';
+import { ChatMessage } from './ChatMessage';
+import { AIModel } from './ModelSelector';
 import { Message } from '../ChatInterfaces';
-import styles from '../ChatPanel.module.css';
+import styles from '../styles/ChatPanel.module.css';
 
 interface MessagesListProps {
     messages: Message[];

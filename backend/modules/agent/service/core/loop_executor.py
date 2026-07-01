@@ -295,24 +295,56 @@ async def handle_write_tool_pending(
 
     label_fn = TOOLS[tool_name].get("confirm_label")
     confirm_label = label_fn(tool_args) if callable(label_fn) else write_tool_pending["label"]
-    
+
+    # Renomeia o anexo de apresentação no label do card para "Apresentação {empresa}"
+    # (empresa do REMETENTE/vendedor, vinda do contexto do tenant), espelhando o
+    # arquivo real enviado em registry.py.
+    if tool_name in ("email_send", "email_reply") and "apresenta" in (tool_args.get("attachment_name") or "").lower() and "anexo:" in confirm_label:
+        try:
+            import re as _re_att
+            from modules.ai.service.context.business_context_service import BusinessContextService
+            _ctx = await BusinessContextService.get_tenant_context()
+            _company = ((_ctx or {}).get("company_name") or "").strip()
+            _nice = f"Apresentação {_company}".strip() if _company else "Apresentação"
+            confirm_label = _re_att.sub(r'\+\s*anexo:\s*[^)]+\)', f'+ anexo: {_nice})', confirm_label)
+        except Exception as e:
+            log.warning(f"Erro ao renomear anexo no card: {e}")
+
     if tool_name == "open_ligacao_view":
         _steps_count = len(tool_args.get("flight_plan", {}).get("steps", []))
         preview = f"Plano de voo incluído ({_steps_count} passos). Prontos para ligar!"
     else:
         preview = tool_args.get("message") or tool_args.get("body") or json.dumps(tool_args, ensure_ascii=False)[:120]
 
+    # Resolução de destinatário + CC (compras@/suprimentos@) — apenas para exibição
+    # no card de confirmação. A lógica real de envio é refeita em registry.py.
+    _cc_emails: list[str] = []
+    _to_display: str = tool_args.get("to") or tool_args.get("contact_email") or ""
     if tool_name in ("email_send", "email_reply") and isinstance(preview, str):
         try:
             from modules.ai.service.context.business_context_service import BusinessContextService
             ctx = await BusinessContextService.get_tenant_context()
             sig_path = ctx.get("signature_path")
             if sig_path:
-                sig_html = f'<br><br><img src="http://localhost:8000/api/v1/settings/v2/profile/signature/image" style="max-width: 400px; height: auto; border-radius: 8px;" />'
+                sig_html = f'<br><br><img src="http://localhost:8000/api/v1/settings/v2/profile/signature/image" style="display: block; max-width: 100%; height: auto; border-radius: 8px;" />'
                 if "img src" not in preview:
                     preview = preview + "\n\n" + sig_html
         except Exception as e:
             log.warning(f"Erro no preview email signature: {e}")
+
+        try:
+            from modules.communication.service.email_resolver import resolve_procurement_email
+            _resolve_org_id = write_tool_pending.get("org_id") or org_id
+            _res = await resolve_procurement_email(
+                org_id=_resolve_org_id,
+                contact_email=_to_display,
+            )
+            if _res:
+                _cc_emails = _res.cc_emails or []
+                if not _to_display:
+                    _to_display = _res.email  # sem decisor → compras@ vira destinatário
+        except Exception as e:
+            log.warning(f"Erro ao resolver CC para o card de confirmação: {e}")
 
     yield _emit({
         "type": "confirmation_required",
@@ -322,6 +354,8 @@ async def handle_write_tool_pending(
         "label": confirm_label,
         "preview": str(preview),
         "args": tool_args,
+        "to": _to_display,
+        "cc": _cc_emails,
     })
     
     yield _emit({"type": "final", "response": preview if tool_name == "open_ligacao_view" else "Aguardando confirmação para executar a ação comercial."})

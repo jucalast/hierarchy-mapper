@@ -9,7 +9,7 @@ import { LigacaoView } from '../ligacao/LigacaoView';
 import { ProspectingView } from '../prospecting/ProspectingView';
 import { PreferencesView } from '../layout/PreferencesView';
 import { HierarchyScanView } from '../hierarchy-scan/HierarchyScanView';
-import { ModelSelector } from '../chat/ModelSelector';
+import { ModelSelector } from '../chat/components/ModelSelector';
 import { NotificationContainer } from '../ui/Notification';
 import type { NotificationType } from '../ui/Notification';
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -143,7 +143,7 @@ export function NetworkGraphLayout(props: NetworkGraphLayoutProps) {
                     refineHierarchy(rawEmployees);
                 }}
                 onSmartSync={async () => {
-                    await smartSyncPipedrive((type, msg) => {
+                    await smartSyncPipedrive((type: 'success' | 'error' | 'info', msg: string) => {
                         addNotification(type, msg);
                         if (type === 'success') {
                             fetchPipedriveOrgs();

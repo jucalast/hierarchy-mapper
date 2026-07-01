@@ -90,17 +90,22 @@ async def send_email(
     subject: str = Body(..., embed=True),
     body: str = Body(..., embed=True),
     attachment_paths: Optional[List[str]] = Body(None, embed=True),
+    attachment_names: Optional[List[Optional[str]]] = Body(None, embed=True),
     tracking_id: Optional[str] = Body(None, embed=True),
     request_receipt: bool = Body(False, embed=True),
     cc: Optional[List[str]] = Body(None, embed=True),
 ):
-    """Envia um email utilizando o Outlook Desktop ou SMTP. cc aceita lista de endereços em cópia."""
+    """Envia um email utilizando o Outlook Desktop ou SMTP. cc aceita lista de endereços em cópia.
+
+    attachment_names: nomes de EXIBIÇÃO opcionais, paralelos a attachment_paths (None = usa o
+    basename do arquivo). Permite anexar o arquivo original renomeando o que o destinatário vê.
+    """
     c = await get_client()
     try:
         success = await asyncio.to_thread(
             c.send_outbound_email, to, subject, body, tracking_id,
             request_read_receipt=request_receipt, attachment_paths=attachment_paths,
-            cc_list=cc,
+            cc_list=cc, attachment_names=attachment_names,
         )
         if success:
             return {"success": True, "to": to, "subject": subject, "cc": cc or []}
@@ -115,6 +120,7 @@ async def reply_email(
     entry_id: str = Body(..., embed=True),
     body: str = Body(..., embed=True),
     attachment_paths: Optional[List[str]] = Body(None, embed=True),
+    attachment_names: Optional[List[Optional[str]]] = Body(None, embed=True),
     reply_all: bool = Body(True, embed=True),
     subject_hint: Optional[str] = Body(None, embed=True),
     contact_name: Optional[str] = Body(None, embed=True),
@@ -125,6 +131,7 @@ async def reply_email(
         success = await asyncio.to_thread(
             c.reply_to_email, entry_id, body, reply_all,
             attachment_paths=attachment_paths,
+            attachment_names=attachment_names,
             subject_hint=subject_hint,
             contact_name=contact_name,
         )
