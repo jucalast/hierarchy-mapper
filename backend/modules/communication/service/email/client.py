@@ -42,6 +42,40 @@ try:
 except ImportError:
     HAS_PYWIN32 = False
 
+
+def _ascii_safe_attachment_path(path: str) -> str:
+    """Retorna um caminho 100% ASCII para anexar no Outlook.
+
+    O `Attachments.Add` do Outlook falha (RPC 0x800706BE) quando o caminho contém
+    acentos/caracteres não-ASCII. Copiamos o arquivo para um temp de nome ASCII e
+    usamos o DisplayName do anexo (que aceita acentos) para o nome exibido. Se o
+    caminho já é ASCII, retorna-o intacto.
+    """
+    try:
+        path.encode("ascii")
+        return path  # já é ASCII, nada a fazer
+    except (UnicodeEncodeError, AttributeError):
+        pass
+    try:
+        import tempfile, shutil, hashlib
+        base = tempfile.gettempdir()
+        try:
+            import win32api
+            base = win32api.GetShortPathName(base)  # garante diretório ASCII (8.3)
+        except Exception:
+            pass
+        ext = os.path.splitext(path)[1] or ".pdf"
+        digest = hashlib.md5(path.encode("utf-8", "ignore")).hexdigest()[:10]
+        dst_dir = os.path.join(base, "linkb2b_attachments")
+        os.makedirs(dst_dir, exist_ok=True)
+        dst = os.path.join(dst_dir, f"att_{digest}{ext}")
+        shutil.copyfile(path, dst)
+        return dst
+    except Exception as e:
+        log.warning("email.attachment_ascii_copy_failed", error=str(e))
+        return path
+
+
 class EmailClient:
     """
     Cliente de email que utiliza integração direta com o Outlook (via pywin32) no Windows,
@@ -189,15 +223,25 @@ class EmailClient:
                         for account in outlook.Session.Accounts:
                             if account.SmtpAddress.lower() == self.email_address.lower():
                                 mail._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
+                                # Ao forçar SendUsingAccount via COM, o Outlook pode NÃO gravar a
+                                # cópia em "Itens Enviados". Apontamos explicitamente a pasta Sent
+                                # dessa conta (olFolderSentMail = 5) para garantir o registro.
+                                try:
+                                    mail.SaveSentMessageFolder = account.DeliveryStore.GetDefaultFolder(5)
+                                except Exception as _sf_e:
+                                    log.warning("email.outlook.set_sent_folder_failed", error=str(_sf_e))
                                 break
-                    
+
                     # Anexos (aceita lista de caminhos absolutos)
                     if attachment_paths:
                         for _i, ap in enumerate(attachment_paths):
                             if ap and os.path.exists(ap):
                                 try:
-                                    att = mail.Attachments.Add(ap)
-                                    _dn = _display_name_for(_i)
+                                    _add_path = _ascii_safe_attachment_path(ap)
+                                    att = mail.Attachments.Add(_add_path)
+                                    # Nome exibido: o solicitado, ou o basename original quando
+                                    # tivemos de anexar via cópia ASCII (para não vazar 'att_xxx.pdf').
+                                    _dn = _display_name_for(_i) or (os.path.basename(ap) if _add_path != ap else None)
                                     if _dn:
                                         try:
                                             att.DisplayName = _dn
@@ -360,6 +404,11 @@ class EmailClient:
                     for account in outlook.Session.Accounts:
                         if account.SmtpAddress.lower() == self.email_address.lower():
                             reply_msg._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
+                            # Garante a cópia em "Itens Enviados" dessa conta (ver send_outbound_email).
+                            try:
+                                reply_msg.SaveSentMessageFolder = account.DeliveryStore.GetDefaultFolder(5)
+                            except Exception as _sf_e:
+                                log.warning("email.outlook.reply_set_sent_folder_failed", error=str(_sf_e))
                             break
 
                 # Anexos
@@ -367,8 +416,10 @@ class EmailClient:
                     for _i, ap in enumerate(attachment_paths):
                         if ap and os.path.exists(ap):
                             try:
-                                att = reply_msg.Attachments.Add(ap)
-                                _dn = attachment_names[_i] if attachment_names and _i < len(attachment_names) else None
+                                _add_path = _ascii_safe_attachment_path(ap)
+                                att = reply_msg.Attachments.Add(_add_path)
+                                _dn = (attachment_names[_i] if attachment_names and _i < len(attachment_names) else None) \
+                                    or (os.path.basename(ap) if _add_path != ap else None)
                                 if _dn:
                                     try:
                                         att.DisplayName = _dn

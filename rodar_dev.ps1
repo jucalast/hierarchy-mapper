@@ -123,6 +123,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     Set-Location '$emailPath'
     & '$pythonPath' -X utf8 -m uvicorn main:app --port 8002 --loop asyncio --reload ``
         --reload-dir . ``
+        --reload-dir '..\..\modules\communication' ``
         --reload-exclude '__pycache__' ``
         --reload-exclude '*.pyc' ``
         --reload-exclude '*.tmp' ``

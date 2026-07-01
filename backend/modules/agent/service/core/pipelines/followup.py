@@ -39,7 +39,12 @@ class FollowupPipeline(BasePipeline):
             f"      ⚠️ NÃO escreva o texto do e-mail em prosa na resposta — CHAME A FERRAMENTA.\n"
             f"  6. pipedrive_update_task(activity_id={act_id}, done=true) → APENAS após o card de envio\n"
             f"      ⚠️ Só chame este passo SE E SOMENTE SE a ferramenta do passo 5 retornou ok=true.\n"
-            f"⛔ PROIBIDO: NÃO chame pipedrive_update_task antes da ferramenta de envio retornar ok=true.\n"
+            + cls.stage_advancement_step(
+                7, deal_id,
+                "cobrança/follow-up. Em geral a etapa NÃO muda — só sugira avanço se o retorno recebido destravou algo "
+                "concreto (ex.: cliente aceitou reunião → 'Reunião Agendada' 4; pediu proposta → 'Proposta em Andamento' 27)"
+            )
+            + f"⛔ PROIBIDO: NÃO chame pipedrive_update_task antes da ferramenta de envio retornar ok=true.\n"
             f"⛔ PROIBIDO: NÃO escreva o rascunho do e-mail como texto na resposta — use a ferramenta de envio.\n"
             f"⛔ PROIBIDO: NÃO crie nova tarefa — use pipedrive_update_task na atividade {act_id}.\n\n"
         )

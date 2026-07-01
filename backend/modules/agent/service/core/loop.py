@@ -35,6 +35,7 @@ from modules.agent.service.core.loop_utils import (
     _suggest_actions_done,
     _extract_json_objects,
     _prune_messages,
+    _sanitize_messages,
 )
 from modules.agent.service.core.loop_interceptors import (
     intercept_pre_execution,
@@ -381,9 +382,15 @@ async def _agent_loop(
                     ),
                 })
 
+        # Sanitiza mensagens antes do LLM: remove conteúdo vazio e turnos duplicados
+        # que podem surgir de messages_snapshot corrompidos de execuções anteriores.
+        # Turnos vazios fazem o adaptador Gemini pular mensagens → turnos consecutivos
+        # do mesmo role → erro 400 da API → worker falha → card mostra "Falhou" indevido.
+        _messages_sanitized = _sanitize_messages(messages)
+
         # Executa a chamada do LLM em background para reportar pacing ao front
         _llm_task = asyncio.create_task(_call_with_tools(
-            system, messages, _current_tools,
+            system, _messages_sanitized, _current_tools,
             preferred=preferred, strict_mode=strict_mode,
             pending_events=_pending_events,
             force_tool_call=_force,

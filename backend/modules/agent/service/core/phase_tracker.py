@@ -15,6 +15,7 @@ from typing import Optional
 from core.observability.logging_config import get_logger
 from modules.agent.service.prompts import SYSTEM_PROMPT_POWERFUL
 from modules.agent.service.helpers import _get_tools_called
+from modules.agent.service.core.pipelines.base import BasePipeline
 
 log = get_logger(__name__)
 
@@ -536,6 +537,8 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             "   - Identifique a tarefa de ligação no Pipedrive (use `pipedrive_get_activities`).\n"
             "   - Marque-a como concluída (`done=true`) e adicione o resumo como nota.\n"
             "   - Se uma nova reunião ou follow-up foi acordado, use `pipedrive_create_task` para agendar.\n"
+            "   - 🎯 SUGIRA O AVANÇO DE ETAPA com base no CONTEÚDO REAL da ligação: chame `pipedrive_advance_deal(deal_id=<id>, target_stage='<ID da etapa>', reason='<motivo>')` — isso abre um card de confirmação para o João, NÃO avança sozinho. Ex.: ficou agendada uma reunião → 'Reunião Agendada' (4); cliente pediu proposta → 'Proposta em Andamento' (27); apenas qualificou interesse → 'Qualificação' (18)/'Contatado' (19). Descubra o deal_id via `pipedrive_get_deals`/`pipedrive_get_activities`. NUNCA retroceda de etapa nem repita a atual; respeite o funil do deal. "
+            f"{BasePipeline.STAGE_MAP_HINT}\n"
             "4. REGRA DE OURO (NÃO DUPLICAR): Antes de sugerir ou criar QUALQUER nova tarefa, você DEVE obrigatoriamente chamar `pipedrive_get_activities` para ver as tarefas futuras. Se já existir uma tarefa para o mesmo objetivo (ex: 'Enviar proposta'), VOCÊ ESTÁ PROIBIDO de sugerir uma nova. Apenas atualize a nota da tarefa existente se necessário.\n"
             "5. CONTINUIDADE: Sua missão só termina quando o CRM refletir a realidade da ligação. Sugira os botões de ação necessários.\n\n"
             "Seja proativo. Se o cliente pediu uma proposta, sua sugestão de próximo passo DEVE ser rascunhar essa proposta.",

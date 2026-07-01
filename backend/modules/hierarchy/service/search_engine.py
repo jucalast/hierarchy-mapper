@@ -157,8 +157,13 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
             ua = random.choice(user_agents)
             print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4) com UA: {ua[:30]}...")
 
-            # Executa em thread para não bloquear o event loop (permite scans concorrentes)
-            raw_results = await asyncio.to_thread(_sync_ddg_search, query, max_results)
+            # Executa em thread para não bloquear o event loop (permite scans concorrentes).
+            # wait_for externo é ESSENCIAL: a lib do DDG às vezes ignora o timeout interno e
+            # trava a thread quando é rate-limitada — sem isso, a corrotina esperaria para sempre.
+            raw_results = await asyncio.wait_for(
+                asyncio.to_thread(_sync_ddg_search, query, max_results),
+                timeout=8.0,
+            )
 
             if raw_results:
                 if filter_linkedin:
@@ -178,6 +183,10 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
                     ddg_success = True
                     break
 
+        except asyncio.TimeoutError:
+            # DDG travou (não respondeu em 8s) — não adianta insistir, vai direto pro fallback Bing.
+            print(f"[SearchEngine] ⏱️ DuckDuckGo excedeu o tempo limite (tentativa {attempt+1}) — acionando fallback Bing.")
+            break
         except Exception as e:
             msg = str(e)
             is_403 = "403" in msg or "Forbidden" in msg

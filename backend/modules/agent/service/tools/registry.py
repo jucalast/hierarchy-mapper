@@ -236,10 +236,17 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "confirm_label": lambda args: f"Avançar deal #{args.get('deal_id')} para '{args.get('target_stage')}'",
     },
     "pipedrive_update_deal": {
-        "description": "Atualiza campos de um deal no Pipedrive (stage_id, status, value etc.). Requer confirmação.",
+        "description": (
+            "Atualiza campos de um deal no Pipedrive (stage_id, status, value etc.). Requer confirmação. "
+            "MAPA DE ETAPAS (stage_id): Funil 'Novos Negócios' → 2=Entrada, 18=Qualificação, 19=Contatado, "
+            "4=Reunião Agendada, 26=Reunião Realizada, 27=Proposta em Andamento, 28=Em Negociação. "
+            "Funil 'Carteira' → 14=Entrada, 16=Contato, 17=Proposta, 32=Programação. "
+            "⚠️ Use SEMPRE um stage_id do MESMO funil em que o deal está — passar um stage_id de outro funil causa erro. "
+            "Se não souber o funil/etapa atual, chame pipedrive_get_deals antes."
+        ),
         "args_schema": {
             "deal_id": "int (ID do deal)",
-            "fields": "dict (campos a atualizar, ex: {\"stage_id\": 5, \"status\": \"won\", \"person_id\": 1234}). Pode passar o NOME completo da pessoa (string) em 'person_id' caso não tenha o ID numérico.",
+            "fields": "dict (campos a atualizar, ex: {\"stage_id\": 18, \"status\": \"won\", \"person_id\": 1234}). Para stage_id use o MAPA DE ETAPAS da descrição (ex: Qualificação=18). Pode passar o NOME completo da pessoa (string) em 'person_id' caso não tenha o ID numérico.",
         },
         "type": "write",
         "executor": None,

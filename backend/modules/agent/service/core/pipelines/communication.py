@@ -50,7 +50,13 @@ class CommunicationPipeline(BasePipeline):
             f"      Chame email_send / email_reply OU whatsapp_send_message como FERRAMENTA ({canal_preferencial} preferencial).\n"
             f"      ⚠️ Isso exibirá automaticamente o card de confirmação ao usuário — NÃO escreva o e-mail em prosa.\n"
             f"  6. pipedrive_update_task(activity_id={act_id}, done=true) → APENAS se o passo 5 retornou ok=true.\n"
-            f"⛔ PROIBIDO: NÃO chame pipedrive_update_task antes da ferramenta de envio retornar ok=true.\n"
+            + cls.stage_advancement_step(
+                7, deal_id,
+                "envio de comunicação escrita. Se foi uma APRESENTAÇÃO/primeiro contato, o avanço típico é "
+                "para 'Contatado' (19) ou 'Qualificação' (18) no funil Novos Negócios (ou 'Contato' 16 na Carteira). "
+                "Se foi apenas um follow-up de um negócio já em andamento, provavelmente a etapa NÃO muda"
+            )
+            + f"⛔ PROIBIDO: NÃO chame pipedrive_update_task antes da ferramenta de envio retornar ok=true.\n"
             f"⛔ PROIBIDO: NÃO escreva o rascunho como texto na resposta — CHAME a ferramenta de envio.\n"
             f"⛔ PROIBIDO: NÃO chame prepare_live_coaching_session e NÃO crie roteiros de ligação, pois esta tarefa é de comunicação escrita.\n"
             f"⛔ PROIBIDO: Nunca use um email diferente do que o contato tem validado no sistema.\n\n"

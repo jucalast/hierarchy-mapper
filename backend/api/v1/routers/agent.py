@@ -135,8 +135,10 @@ async def agent_chat(payload: AgentChatRequest):
                             finished = True
                             break
                         if msg_obj.get('type') == 'error':
-                            error_msg = msg_obj.get("error", "Erro interno no worker")
-                            yield json.dumps({"type": "error", "content": error_msg}) + "\n"
+                            # O evento de erro pode trazer a mensagem em "error" (exceção do worker)
+                            # OU em "content" (falha de tool emitida pelo runner). Preserva a real.
+                            error_msg = msg_obj.get("error") or msg_obj.get("content") or "Erro interno no worker"
+                            yield json.dumps({"type": "error", "content": error_msg, "recoverable": msg_obj.get("recoverable", False)}) + "\n"
                             finished = True
                             break
                     except (json.JSONDecodeError, AttributeError):
@@ -193,8 +195,10 @@ async def agent_confirm(payload: AgentConfirmRequest):
                             finished = True
                             break
                         if msg_obj.get('type') == 'error':
-                            error_msg = msg_obj.get("error", "Erro interno no worker")
-                            yield json.dumps({"type": "error", "content": error_msg}) + "\n"
+                            # O evento de erro pode trazer a mensagem em "error" (exceção do worker)
+                            # OU em "content" (falha de tool emitida pelo runner). Preserva a real.
+                            error_msg = msg_obj.get("error") or msg_obj.get("content") or "Erro interno no worker"
+                            yield json.dumps({"type": "error", "content": error_msg, "recoverable": msg_obj.get("recoverable", False)}) + "\n"
                             finished = True
                             break
                     except (json.JSONDecodeError, AttributeError):

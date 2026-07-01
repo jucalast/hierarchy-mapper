@@ -8,7 +8,9 @@ import { WRITE_TOOLS } from './constants';
  * null (sem falhas, ou falhas que o próprio agente conseguiu contornar).
  */
 export function classifyFailure(events: AgentEvent[]): 'error' | 'cancelled' | null {
-    if (events.length === 0) return 'error';
+    // Lista vazia = resultado desconhecido (race condition de subscrição Redis ou stream
+    // sem eventos). NÃO interpretar como erro — o deal pode ter sido atualizado com sucesso.
+    if (events.length === 0) return null;
 
     // Erro genérico (loop do agente quebrou) é sempre fatal, não importa o que veio depois.
     const hasGenericError = events.some(e => e.type === 'error');
