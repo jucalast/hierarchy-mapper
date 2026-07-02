@@ -467,6 +467,60 @@ async def run_linkedin_scrape(
                             else:
                                 approved_tasks.append(asyncio.sleep(0, result=None))
 
+                    # 🆘 FALLBACK ADMINISTRATIVO (nível de conjunto): se NINGUÉM foi aprovado
+                    # (nenhum contato de compras/logística/decisor), promovemos o MELHOR perfil
+                    # administrativo/financeiro dos rejeitados. Em PMEs, quem cuida de compras
+                    # costuma ser o Financeiro/Administrativo — melhor um contato real do que nenhum.
+                    if not approved_candidates_data and rejected_candidates:
+                        def _pick_admin_fallback(cands):
+                            ADMIN_FIN = ["administrativ", "financeir", "faturament", "contas a pagar",
+                                         "compras", "suprimento", "procurement", "supply", "logística",
+                                         "logistica", "pcp", "office", "escritório", "escritorio"]
+                            AVOID = ["vendedor", "vendas", "comercial", "operador", "máquina", "maquina",
+                                     "produção", "producao", "motorista", "estoquista"]
+                            best, best_score = None, 0
+                            for _c in cands:
+                                _role = (_c.get('role') or "").lower()
+                                if any(a in _role for a in AVOID):
+                                    continue
+                                _score = sum(1 for kw in ADMIN_FIN if kw in _role)
+                                if _score > best_score:
+                                    best, best_score = _c, _score
+                            return best
+
+                        _fb = _pick_admin_fallback(rejected_candidates)
+                        if _fb:
+                            rejected_candidates = [c for c in rejected_candidates if c is not _fb]
+                            _fb_name = _fb.get('name')
+                            await send_log(f"🆘 [Fallback Administrativo] Sem contato de compras/logística — aprovando {_fb_name} ({_fb.get('role')}) como melhor opção disponível para compras.")
+                            approved_candidates_data.append({
+                                "res": {
+                                    "is_valid": True,
+                                    "proper_name": _fb_name,
+                                    "role": _fb.get('role'),
+                                    "department": "Administrativo",
+                                    "matching_score": 40,
+                                    "evidence": "Fallback administrativo: melhor contato disponível para compras (PME sem cargo de compras dedicado).",
+                                },
+                                "candidate": _fb,
+                                "emp_name": _fb_name,
+                            })
+                            # Descoberta de e-mail para o promovido (mantém aprovados/tasks alinhados por índice)
+                            if db_org and db_org.domain:
+                                try:
+                                    _np = (_fb_name or "").split()
+                                    _fn = _np[0] if _np else ""
+                                    _ln = _np[-1] if len(_np) > 1 else ""
+                                    if _fn and _ln:
+                                        from core.external.email_service import discover_and_validate_email
+                                        approved_tasks.append(discover_and_validate_email(first=_fn, last=_ln, domain=db_org.domain, do_smtp=True))
+                                    else:
+                                        approved_tasks.append(asyncio.sleep(0, result=None))
+                                except Exception:
+                                    approved_tasks.append(asyncio.sleep(0, result=None))
+                            else:
+                                approved_tasks.append(asyncio.sleep(0, result=None))
+
                     # Marca todas as rejeições no banco em uma única query
                     if rejected_candidates:
                         all_emps_rej_res = await session.execute(

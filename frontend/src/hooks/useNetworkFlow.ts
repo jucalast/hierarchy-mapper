@@ -18,6 +18,12 @@ interface UseNetworkFlowProps {
     confirmedBrand: string;
     confirmedLogo: string;
     getStableId: (n: any) => string;
+    /**
+     * Chave canônica de cache do grafo. Quando fornecida, é a ÚNICA usada para ler/gravar
+     * posições e arestas manuais — DEVE ser idêntica à passada para saveGraphState, senão
+     * o layout salvo por arraste não é restaurado. Cai no formato legado se ausente.
+     */
+    cacheId?: string;
     deleteEmployee?: (id: string) => void;
     editEmployee?: (id: string) => void;
     isScanning?: boolean;
@@ -31,6 +37,7 @@ export function useNetworkFlow({
     confirmedBrand,
     confirmedLogo,
     getStableId,
+    cacheId: cacheIdProp,
     deleteEmployee,
     editEmployee,
     isScanning = false,
@@ -83,7 +90,9 @@ export function useNetworkFlow({
         let finalEdges = calculateEdges(uiNodes, rawBackendEdges);
 
         // 3. Aplicar Cache de Edges (Conexões customizadas)
-        const cacheId = currentOrgId || confirmedBrand || "default";
+        // Usa a chave canônica passada pelo componente (idêntica à do saveGraphState).
+        // Só cai no formato legado se nenhuma for fornecida.
+        const cacheId = cacheIdProp || String(currentOrgId || confirmedBrand || "default");
         const edgesCacheKey = `edges-cache-${cacheId}`;
         let cachedEdges: Record<string, string> | null = null;
         try {
@@ -229,7 +238,7 @@ export function useNetworkFlow({
         if (finalNodes.length === 1 && finalNodes[0].id === 'root_company') {
             setShouldFitView(true);
         }
-    }, [rawEmployees, rawBackendEdges, currentOrgId, confirmedBrand, confirmedLogo, getStableId, deleteEmployee, editEmployee, isScanning, discovering]);
+    }, [rawEmployees, rawBackendEdges, currentOrgId, confirmedBrand, confirmedLogo, cacheIdProp, getStableId, deleteEmployee, editEmployee, isScanning, discovering]);
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => {

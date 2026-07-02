@@ -73,7 +73,7 @@ async def exec_pipedrive_advance_deal(args: Dict[str, Any], org_id: int | None =
         ok = update_res.get("success", False)
 
         if ok:
-            note_content = f"⏩ Deal avançado para '{stage_name}' via Assistente V2."
+            note_content = f"⏩ Deal avançado para '{stage_name}'."
             if reason:
                 note_content += f"\nMotivo: {reason}"
             try:

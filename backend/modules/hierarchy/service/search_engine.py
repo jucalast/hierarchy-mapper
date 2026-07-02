@@ -12,10 +12,33 @@ import asyncio
 import random
 import re
 import html
+import os
+import sys
+import json
+import time
+import subprocess
+import concurrent.futures
 import httpx
 import urllib.parse
 from typing import List, Dict, Optional
-from ddgs import DDGS
+
+# Caminho do runner isolado (roda o DDG num subprocess matável — ver _sync_ddg_search).
+_DDG_RUNNER_PATH = os.path.join(os.path.dirname(__file__), "ddg_runner.py")
+_DDG_SUBPROCESS_TIMEOUT = 15.0
+
+# Executor DEDICADO para o DuckDuckGo. A lib do DDG às vezes pendura a thread quando é
+# rate-limitada, e wait_for NÃO mata a thread — ele só abandona a corrotina. Isolando aqui,
+# uma thread pendurada nunca esgota o ThreadPoolExecutor padrão do asyncio (que o resto do
+# app usa via asyncio.to_thread), evitando que o app inteiro trave. Threads penduradas ficam
+# capadas ao tamanho deste pool.
+_DDG_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="ddg")
+# Limita buscas DDG concorrentes para não empilhar submissões no executor dedicado.
+_DDG_SEMAPHORE = asyncio.Semaphore(2)
+# Circuit breaker: depois de N timeouts/falhas seguidos, pula o DDG por um tempo e vai direto
+# pro Bing — evita ficar penando o timeout a cada busca quando o DDG está claramente bloqueado.
+_DDG_CB = {"fails": 0, "open_until": 0.0}
+_DDG_CB_THRESHOLD = 5
+_DDG_CB_COOLDOWN = 60.0
 
 def normalize_linkedin_url(url: str) -> str:
     """
@@ -140,6 +163,11 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     ]
     
+    # Circuit breaker: se o DDG falhou seguidamente há pouco, nem tenta — vai direto pro Bing.
+    if time.monotonic() < _DDG_CB["open_until"]:
+        print(f"[SearchEngine] ⏭️ DuckDuckGo em cooldown (circuit breaker) — indo direto pro Bing.")
+        return await _get_bing_fallback(query, is_company, filter_linkedin)
+
     # Delay inicial adaptativo
     await asyncio.sleep(random.uniform(0.5, 1.5))
 
@@ -147,23 +175,35 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
     consecutive_403 = 0
     ddg_success = False
     ddg_results = []
-    
+
     def _sync_ddg_search(q: str, n: int) -> list:
-        with DDGS(timeout=5) as ddgs:
-            return list(ddgs.text(q, region="br-pt", max_results=n))
+        # Roda o DDG num SUBPROCESS matável. A lib ddgs/primp (Rust) pode SEGURAR o GIL
+        # durante uma chamada de rede travada — se rodar in-process, congela o event loop
+        # inteiro (nem asyncio.wait acorda). O subprocess tem GIL próprio e é MORTO no
+        # timeout (subprocess.run(timeout=...) → TimeoutExpired), e o subprocess.run libera
+        # o GIL enquanto espera, então o processo pai continua respondendo.
+        proc = subprocess.run(
+            [sys.executable, _DDG_RUNNER_PATH, q, str(n)],
+            capture_output=True, text=True, timeout=_DDG_SUBPROCESS_TIMEOUT,
+        )
+        if proc.returncode == 0 and (proc.stdout or "").strip():
+            return json.loads(proc.stdout)
+        return []
 
     for attempt in range(2):
         try:
             ua = random.choice(user_agents)
             print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4) com UA: {ua[:30]}...")
 
-            # Executa em thread para não bloquear o event loop (permite scans concorrentes).
-            # wait_for externo é ESSENCIAL: a lib do DDG às vezes ignora o timeout interno e
-            # trava a thread quando é rate-limitada — sem isso, a corrotina esperaria para sempre.
-            raw_results = await asyncio.wait_for(
-                asyncio.to_thread(_sync_ddg_search, query, max_results),
-                timeout=8.0,
-            )
+            # Roda no executor DEDICADO, sob semáforo. asyncio.wait (não wait_for) é o backstop:
+            # o guard principal é o timeout do próprio subprocess, que MATA o processo travado.
+            loop = asyncio.get_running_loop()
+            async with _DDG_SEMAPHORE:
+                _ddg_fut = loop.run_in_executor(_DDG_EXECUTOR, _sync_ddg_search, query, max_results)
+                _done, _pending = await asyncio.wait({_ddg_fut}, timeout=_DDG_SUBPROCESS_TIMEOUT + 5.0)
+                if _ddg_fut not in _done:
+                    raise asyncio.TimeoutError  # não deveria ocorrer (subprocess já tem timeout)
+                raw_results = _ddg_fut.result()
 
             if raw_results:
                 if filter_linkedin:
@@ -181,11 +221,17 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
                     print(f"[SearchEngine] ✅ Sucesso (DDG)! {len(filtered)} resultados encontrados.")
                     ddg_results = filtered
                     ddg_success = True
+                    _DDG_CB["fails"] = 0  # sucesso reseta o circuit breaker
+                    _DDG_CB["open_until"] = 0.0
                     break
 
-        except asyncio.TimeoutError:
-            # DDG travou (não respondeu em 8s) — não adianta insistir, vai direto pro fallback Bing.
+        except (asyncio.TimeoutError, subprocess.TimeoutExpired):
+            # DDG travou (subprocess morto no timeout) — não insiste, vai direto pro fallback Bing.
             print(f"[SearchEngine] ⏱️ DuckDuckGo excedeu o tempo limite (tentativa {attempt+1}) — acionando fallback Bing.")
+            _DDG_CB["fails"] += 1
+            if _DDG_CB["fails"] >= _DDG_CB_THRESHOLD:
+                _DDG_CB["open_until"] = time.monotonic() + _DDG_CB_COOLDOWN
+                print(f"[SearchEngine] 🧯 Circuit breaker ABERTO — pulando o DDG por {int(_DDG_CB_COOLDOWN)}s.")
             break
         except Exception as e:
             msg = str(e)

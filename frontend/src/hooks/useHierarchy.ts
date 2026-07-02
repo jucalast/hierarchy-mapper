@@ -8,6 +8,7 @@ import {
 } from '@/services/api';
 import { useChatStore } from '@/store/chatStore';
 import { connectionManager } from '@/services/connectionManager';
+import { clearGraphCache } from '@/hooks/useGraphPersistence';
 
 const EMPTY_ARRAY: any[] = [];
 const EMPTY_EDGES: Edge[] = [];
@@ -440,15 +441,11 @@ export const useHierarchy = () => {
           }
         });
         store.setRawBackendEdges(targetOrgId, newEdges);
-        
-        const keysToDelete: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (key.startsWith('layout-cache-') || key.startsWith('edges-cache-'))) {
-            keysToDelete.push(key);
-          }
-        }
-        keysToDelete.forEach(key => localStorage.removeItem(key));
+
+        // Limpa o cache de layout APENAS desta empresa (não de todas).
+        // Escopa por orgId e pelo nome do root (empresas não integradas são cacheadas por nome).
+        const rootBrand = refreshedNodes.find((n: any) => n.id === 'root_company')?.name;
+        clearGraphCache(targetOrgId, rootBrand);
 
         if (chatContextRef.current.chatPrompted && !chatDoneDispatchedRef.current) {
           scanFinishedRef.current = true;

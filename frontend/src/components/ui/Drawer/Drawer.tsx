@@ -257,8 +257,10 @@ export const Drawer: React.FC<DrawerProps> = ({
     }, [expandedOrgId, fetchOrgDetails]);
 
     // Helpers para checar jobs ativos no localStorage
-    const getDiscoveryJobOrgId = (): number | null => {
-        if (typeof window === 'undefined') return null;
+    // Retorna TODAS as orgs com discovery ativo (suporta múltiplos mapeamentos simultâneos).
+    const getDiscoveryJobOrgIds = (): number[] => {
+        const ids: number[] = [];
+        if (typeof window === 'undefined') return ids;
         try {
             for (let _i = 0; _i < window.localStorage.length; _i++) {
                 const key = window.localStorage.key(_i);
@@ -266,12 +268,12 @@ export const Drawer: React.FC<DrawerProps> = ({
                     const jobStr = window.localStorage.getItem(key);
                     if (jobStr) {
                         const parsed = JSON.parse(jobStr);
-                        if (parsed && parsed.orgId) return Number(parsed.orgId);
+                        if (parsed && parsed.orgId) ids.push(Number(parsed.orgId));
                     }
                 }
             }
         } catch {}
-        return null;
+        return ids;
     };
 
     const getLinkedinScanOrgIds = (): number[] => {
@@ -306,9 +308,8 @@ export const Drawer: React.FC<DrawerProps> = ({
             for (const id of scan.activeScanOrgIds) ids.add(id);
             // Scans persistidos no localStorage (detecta reload antes do hook reconectar)
             for (const id of getLinkedinScanOrgIds()) ids.add(id);
-            // Discovery jobs (IA) ativos no localStorage
-            const discoveryId = getDiscoveryJobOrgId();
-            if (discoveryId) ids.add(discoveryId);
+            // Discovery jobs (IA) ativos no localStorage — TODOS (suporta multi-discovery)
+            for (const id of getDiscoveryJobOrgIds()) ids.add(id);
             return Array.from(ids);
         };
 

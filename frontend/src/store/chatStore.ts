@@ -579,7 +579,7 @@ export const useChatStore = create<ChatStore>()(
         loading: false,
         discovering: false,
         error: m.error,
-        activeJobId: m.activeJobId,
+        activeJobId: null, // Evita persistir um job fantasma após reload
         isSmartSyncLoading: false,
         rawEmployees: [],
         rawBackendEdges: [],

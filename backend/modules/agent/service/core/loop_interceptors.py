@@ -335,35 +335,45 @@ async def intercept_pre_execution(
                         _user_instructions_clean.append(re.sub(r'\[.*?\]', '', _mc, flags=re.DOTALL))
             _user_instructions_text = " ".join(_user_instructions_clean).lower()
             
-            _is_comm_task = (not is_find_decisor_task) and any(kw in _user_instructions_text for kw in ["enviar", "email", "whatsapp", "mensagem", "mandar", "falar", "apresentação", "proposta", "follow", "otimização"])
+            _is_comm_task = (not is_find_decisor_task) and any(kw in _user_instructions_text for kw in ["enviar", "email", "whatsapp", "mensagem", "mandar", "apresentação", "proposta", "otimização"])
             if _is_comm_task:
-                _comm_proposed = False
-                _COMM_TOOLS = {"whatsapp_send_message", "email_send", "email_reply", "generate_sales_message"}
+                # Verifica se uma ferramenta de ENVIO real foi chamada E retornou ok=true.
+                # generate_sales_message NÃO conta — é só um rascunho, não um envio real.
+                _SEND_TOOLS = {"whatsapp_send_message", "email_send", "email_reply"}
+                _send_succeeded = False
                 for _m in messages:
                     _mc = _m.get("content", "")
                     if isinstance(_mc, list):
                         for _b in _mc:
-                            if isinstance(_b, dict) and (_b.get("tool_name") or _b.get("name")) in _COMM_TOOLS:
-                                _comm_proposed = True
-                                break
-                if not _comm_proposed:
-                    for _b in tool_use_blocks:
-                        if _b.get("name") in _COMM_TOOLS:
-                            _comm_proposed = True
-                if not _comm_proposed:
-                    log.info("agent.interceptor.value_task_close_blocked", tool=tool_name, reason="no_comm_found")
+                            if isinstance(_b, dict) and _b.get("type") == "tool_result" and _b.get("tool_name") in _SEND_TOOLS:
+                                # Verifica se retornou ok=true
+                                try:
+                                    _res = json.loads(_b.get("content", "{}"))
+                                    if _res.get("ok"):
+                                        _send_succeeded = True
+                                        break
+                                except Exception:
+                                    # Se não é JSON, tenta buscar por "ok": true no texto bruto
+                                    if '"ok": true' in str(_b.get("content", "")) or "'ok': True" in str(_b.get("content", "")):
+                                        _send_succeeded = True
+                                        break
+                    if _send_succeeded:
+                        break
+                if not _send_succeeded:
+                    log.info("agent.interceptor.value_task_close_blocked", tool=tool_name, reason="send_not_confirmed")
                     return {
                         "type": "tool_result",
                         "tool_use_id": tool_id,
                         "tool_name": tool_name,
                         "content": (
                             "ERRO DE FLUXO: Você está tentando concluir uma Tarefa de Comunicação no Pipedrive, "
-                            "mas ainda NÃO gerou o rascunho da mensagem nem propôs o envio real.\n\n"
-                            "É PROIBIDO fechar a tarefa sem antes realizar o trabalho comercial.\n"
+                            "mas o envio real ainda NÃO foi confirmado (ok=true).\n\n"
+                            "É PROIBIDO fechar a tarefa sem que a ferramenta de envio retorne ok=true.\n"
                             "OBRIGATÓRIO AGORA: \n"
-                            "1. Use `generate_sales_message` para criar o e-mail/WhatsApp.\n"
+                            "1. Use `generate_sales_message` para criar o e-mail/WhatsApp (se ainda não o fez).\n"
                             "2. Use `email_send` ou `whatsapp_send_message` para propor o envio ao João.\n"
-                            "3. Somente após essas etapas você poderá marcar a tarefa como concluída."
+                            "3. Aguarde a confirmação do usuário e o retorno ok=true.\n"
+                            "4. SOMENTE ENTÃO chame pipedrive_update_task com done=true."
                         ),
                         "is_error": False,
                     }
@@ -1570,7 +1580,7 @@ async def intercept_post_llm_turn(
                             f"RESUMO DAS FONTES:\n{context_str}\n\n"
                             f"{_task_action_hint}\n"
                             "Você é um Consultor de Vendas B2B sênior e altamente estratégico.\n"
-                            "AÇÃO OBRIGATÓRIA 1: Se a instrução do usuário exigia CONCLUIR/FECHAR uma tarefa específica, você DEVE chamar `pipedrive_update_task` com `done=true` agora. ATENÇÃO: Se o usuário pediu APENAS para atualizar a tarefa (ex: 'atribuir a Renata', 'mudar a data'), NÃO passe `done=true`! Atualize apenas os campos solicitados.\n"
+                            "AÇÃO OBRIGATÓRIA 1: Se a instrução do usuário exigia CONCLUIR/FECHAR uma tarefa de comunicação (email/WhatsApp), você SÓ PODE chamar `pipedrive_update_task` com `done=true` se o histórico desta conversa confirmar que a ferramenta de envio (email_send, email_reply ou whatsapp_send_message) retornou ok=true. Se o envio NÃO foi confirmado com ok=true, NÃO marque como concluído — instrua o João sobre o que falta. Para tarefas que NÃO são de comunicação (ex: tarefa de buscar contato, reunião agendada), você PODE marcar como concluído se o trabalho for feito. ATENÇÃO: Se o usuário pediu APENAS para atualizar a tarefa (ex: 'atribuir a Renata', 'mudar a data'), NÃO passe `done=true`! Atualize apenas os campos solicitados.\n"
                             "AÇÃO OBRIGATÓRIA 2: Chame OBRIGATORIAMENTE 'suggest_next_actions' com ações específicas, contextualizadas e comercialmente brilhantes.\n"
                             "IMPORTANTE: Você não precisa fazer as duas coisas no mesmo turno. Se precisar chamar `pipedrive_update_task`, faça-o agora e no turno seguinte você chamará `suggest_next_actions`.\n"
                             "ATENÇÃO: Se a busca retornou uma LISTA de entidades (ex: 12 negócios sem tarefas, múltiplos prospects), "

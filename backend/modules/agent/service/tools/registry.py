@@ -253,7 +253,7 @@ TOOLS: Dict[str, Dict[str, Any]] = {
         "confirm_label": lambda args: f"Atualizar deal #{args.get('deal_id') if args.get('deal_id') else '(aberto da empresa)'} → {args.get('fields')}",
     },
     "pipedrive_create_task": {
-        "description": "Cria uma nova atividade/tarefa no Pipedrive vinculada a um deal ou empresa. Requer confirmação. REGRA CRÍTICA DE AGENDAMENTO: O vendedor tem limite de atividades por dia. Quando criar novas tarefas, especialmente se estiver sugerindo os próximos passos de um follow-up, OBRIGATORIAMENTE espace as datas (due_date) ao longo das próximas 2 semanas (ex: daqui a 3, 5 ou 7 dias). É ESTRITAMENTE PROIBIDO agendar todas as tarefas para 'hoje' ou 'amanhã'.",
+        "description": "Cria uma nova atividade/tarefa no Pipedrive vinculada a um deal ou empresa. Requer confirmação. REGRA CRÍTICA DE AGENDAMENTO: É ESTRITAMENTE PROIBIDO agendar tarefas para 'hoje' ou 'amanhã'. Espace as tarefas de 7 EM 7 DIAS: a 1ª daqui a 7 dias, a 2ª a 14, a 3ª a 21, a 4ª a 28, e assim por diante (+7 a cada nova tarefa). due_date sempre no formato YYYY-MM-DD no futuro.",
         "args_schema": {
             "subject": "string (título da tarefa)",
             "task_type": "string (call | meeting | task | deadline — use 'call' para ligações, 'task' para tarefas genéricas)",
@@ -945,7 +945,7 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                 try:
                     await pipedrive_service.make_request(
                         "POST", "notes",
-                        json={"content": f"✅ Deal atualizado via Assistente V2.\nAlterações: {json.dumps(fields, ensure_ascii=False)}", "deal_id": deal_id}
+                        json={"content": f"✅ Deal atualizado.\nAlterações: {json.dumps(fields, ensure_ascii=False)}", "deal_id": deal_id}
                     )
                 except Exception:
                     pass
@@ -1150,7 +1150,7 @@ async def execute_write_tool(tool_name: str, args: Dict[str, Any], org_id=None, 
                         deal_id = int(open_deal.get("id"))
                         await pipedrive_service.make_request(
                             "POST", "notes",
-                            json={"content": f"👤 Novo contato adicionado via Assistente V2: {name} ({email or 'sem email'})", "deal_id": deal_id}
+                            json={"content": f"👤 Novo contato adicionado: {name} ({email or 'sem email'})", "deal_id": deal_id}
                         )
                         if person_id:
                             # 1. Sempre vincula como contato principal (pois foi promovida como decisora)

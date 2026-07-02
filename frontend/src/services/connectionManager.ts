@@ -2,6 +2,7 @@ import { useChatStore } from '../store/chatStore';
 import { getJobWebSocketUrl } from './api/jobs';
 import { Edge } from 'reactflow';
 import { hierarchy as hierarchyApi, organizations as organizationsApi } from './api';
+import { clearGraphCache } from '../hooks/useGraphPersistence';
 
 const DIACRITICS_RE = new RegExp('[\\u0300-\\u036f]', 'g');
 const normalizeName = (name?: string) =>
@@ -421,7 +422,15 @@ class ConnectionManager {
   private async refineHierarchyAfterMapping(orgId: number, nodes: any[], chatPrompted?: boolean, brand?: string) {
     console.log(`[ConnectionManager] Executando refinamento final IA para orgId=${orgId}`);
     try {
-      const data = await hierarchyApi.refineHierarchy(nodes);
+      // Reconcilia com o banco ANTES de refinar: o worker persiste cada candidato aprovado
+      // incrementalmente, mas nem tudo chega via streaming (WS pode ter caído, ou o conjunto
+      // final vem num evento 'result' que o grafo não consome — o segundo socket do scan).
+      // Sem isto, o refino rodaria sobre um conjunto incompleto e "perderia" gente que já
+      // está no banco, só reaparecendo num reload manual.
+      await this.reconcileFromDatabase(orgId);
+      const freshNodes = useChatStore.getState().mappings[orgId]?.rawEmployees || nodes;
+
+      const data = await hierarchyApi.refineHierarchy(freshNodes);
       if (data && data.nodes) {
         const refreshedNodes = data.nodes.map((emp: any) => {
           if (!emp.manager_id && emp.id !== "root_company") {
@@ -446,15 +455,9 @@ class ConnectionManager {
         });
         store.setRawBackendEdges(orgId, newEdges);
 
-        // Limpa caches de layout
-        const keysToDelete: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (key.startsWith('layout-cache-') || key.startsWith('edges-cache-'))) {
-            keysToDelete.push(key);
-          }
-        }
-        keysToDelete.forEach(key => localStorage.removeItem(key));
+        // Limpa o cache de layout APENAS desta empresa (o refino reordenou a hierarquia).
+        // Escopado por orgId e pela marca (empresas ainda não integradas são cacheadas por nome).
+        clearGraphCache(orgId, brand);
 
         console.log(`[ConnectionManager] Refinamento concluído para orgId=${orgId}. Notificando listeners.`);
 

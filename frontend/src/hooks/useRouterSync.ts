@@ -388,7 +388,13 @@ export function useRouterSync({
                                 setStep("confirm");
                             }
 
-                            if (!hasNodes && !mappingState?.discovering && !mappingState?.activeJobId) {
+                            // Carrega do banco quando não há nós em memória. Usa `loading` (e não
+                            // `activeJobId`) como sinal de "job vivo": `loading` é resetado para false
+                            // no rehydrate do store (partialize), enquanto `activeJobId` é PERSISTIDO.
+                            // Um job que não encerrou limpo deixa um activeJobId fantasma persistido —
+                            // confiar nele fazia o grafo ficar vazio na primeira navegação (só aparecendo
+                            // após um reload, que carrega incondicionalmente no caminho de mount).
+                            if (!hasNodes && !mappingState?.discovering && !mappingState?.loading) {
                                 data = await loadStoredHierarchy(orgId, true);
                                 hasNodes = data && data.nodes && data.nodes.length > 1;
                             }

@@ -14168,3 +14168,995 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T14:40:40.383201",
+    "candidate": "Caio Mesquita",
+    "linkedin": "https://www.linkedin.com/in/caio-mesquita-6181b616b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Caio Mesquita - Sócio-Diretor na Tecnocon Chicotes. | LinkedIn Sobre | Grupo Tecnocon - Chicotes Eletrônicos TECNOCON CHICOTES ELETRO ELETRONICOS INDUSTRIA E COMERCIO ... Tecnocon Chicotes Eletro Eletronicos Industria E Comercio ... TECNOCON CHICOTES ELETRO ELETRONICOS INDUSTRIA E COMERCIO ... Tecnocon Chicotes Eletro Eletronicos Industria e Comercio ...",
+            "body": "· Experiência: Tecnocon Chicotes Eletroeletrônicos · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: Jundiaí · 382 conexões no LinkedIn . Veja o perfil de Caio... Fundada em 1987, a TECNOCON oferece a seus clientes produtos com a mais alta tecnologia, levando para o mercado os mais avançados métodos para atender empresas de pequeno, médio e grande porte. A empresa TECNOCON CHICOTES ELETRO ELETRONICOS INDUSTRIA E COMERCIO LTDA, registrada sob o CNPJ 57.588.360/0001-73 e razão social TECNOCON CHICOTES ELETRO ELETRONICOS INDUSTRIA E COMERCIO LTDA, foi fundada em 23/06/1987. A empresa Tecnocon Chicotes Eletro Eletronicos Industria E Comercio Ltda, com CNPJ 57.588.360/0001-73, fundada em 23/06/1987 , Está Localizada em Itupeva - SP. Conheça os serviços e mais detalhes! TECNOCON CHICOTES ELETRO ELETRONICOS INDUSTRIA E COMERCIO LTDA - CNPJ: 57.588.360/0001-73 Fundada em 23/06/1987, a empresa Tecnocon Chicotes Eletro Eletronicos Industria e Comercio LTDA de CNPJ 57.588.360/0001-73, está localizada na cidade de Itupeva no estado São Paulo."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Estudante de Relações Internacionais da PUC Campinas. Competência em visão… · Experiência: Tecnocon Chicotes Eletroeletrônicos · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: Jundiaí · 382 conexões no LinkedIn. Veja o perfil de Caio Mesquita no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Caio Mesquita",
+        "role": "Sócio-Diretor",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato Caio Mesquita trabalha na empresa-alvo Tecnocon Chicotes Eletroeletrônicos, conforme confirmado pelo Especialista e pelo Detetive. O cargo de Sócio-Diretor é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Sócio-Diretor na Tecnocon Chicotes.",
+                "Experiência: Tecnocon Chicotes Eletroeletrônicos",
+                "CURRENT COMPANY (Declarada): Tecnocon Chicotes Eletroeletrônicos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sócio-Diretor na Tecnocon Chicotes. Estudante de Relações Internacionais da PUC Campinas. Localidade: Jundiaí."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Caio Mesquita",
+                    "role": "Sócio-Diretor"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Caio Mesquita",
+                "detected_role": "Sócio-Diretor",
+                "clean_bio": "Sócio-Diretor na Tecnocon Chicotes. Estudante de Relações Internacionais da PUC Campinas. Localidade: Jundiaí."
+            }
+        },
+        "specialist": {
+            "role_name": "Sócio-Diretor",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Sócio-Diretor é um cargo de nível C-level. Conforme as instruções, cargos de sócios e diretores devem ser considerados relevantes para suprimentos/compras/procurement, pois são frequentemente decisores finais ou aprovadores estratégicos em negócios B2B."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Sócio-Diretor",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T14:42:44.831678",
+    "candidate": "Nicole Pucci",
+    "linkedin": "https://www.linkedin.com/in/nicole-pucci-26b7aa304",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nicole Pucci - LinkedIn Brasil",
+            "body": "-- · Formação acadêmica: Universidade Presbiteriana Mackenzie · Localidade: Jundiaí. Veja Nicole Pucci o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "jundiaí, são paulo, brasil",
+            "bio": "Formação acadêmica: Universidade Presbiteriana Mackenzie · Localidade: Jundiaí. Veja o perfil de Nicole Pucci no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T14:45:09.266044",
+    "candidate": "Felipe Welberth Scarelli",
+    "linkedin": "https://www.linkedin.com/in/felipe-welberth-scarelli-161679279",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Felipe Welberth Scarelli - Espumas Prorubber | LinkedIn",
+            "body": "Experiência: Espumas Prorubber · Formação acadêmica: Faculdade Pitagoras · Localidade: Brasil · 23 conexões no LinkedIn . Veja o perfil de Felipe Welberth Scarelli no LinkedIn , uma..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Espumas Prorubber · Formação acadêmica: Faculdade Pitagoras · Localidade: Brasil · 23 conexões no LinkedIn. Veja o perfil de Felipe Welberth Scarelli no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Felipe Welberth Scarelli",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Espumas Prorubber",
+                "LinkedIn CURRENT COMPANY (Declarada): Espumas Prorubber",
+                "Google Page Title: Felipe Welberth Scarelli - Espumas Prorubber"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: Espumas Prorubber · Formação acadêmica: Faculdade Pitagoras · Localidade: Brasil"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Felipe Welberth Scarelli",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Felipe Welberth Scarelli",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência: Espumas Prorubber · Formação acadêmica: Faculdade Pitagoras · Localidade: Brasil"
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Felipe Welberth Scarelli não foi identificado nos dados fornecidos. A bio não apresenta termos técnicos explícitos de SUPRIMENTOS / COMPRAS / PROCUREMENT, o que impede a inferência de relevância para a vaga."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T14:45:33.527557",
+    "candidate": "Lívia Santana",
+    "linkedin": "https://www.linkedin.com/in/l%C3%ADvia-santana-965167206",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Lívia Santana - Tecnocon Chicotes Eletroeletrônicos | LinkedIn",
+            "body": "Experiência: Tecnocon Chicotes Eletroeletrônicos · Formação acadêmica: Etec · Localidade: 13295-000 · 2 conexões no LinkedIn . Veja o perfil de Lívia Santana no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Tecnocon Chicotes Eletroeletrônicos · Formação acadêmica: Etec · Localidade: 13295-000 · 2 conexões no LinkedIn. Veja o perfil de Lívia Santana no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Lívia Santana",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Tecnocon Chicotes Eletroeletrônicos",
+                "CURRENT COMPANY (Declarada): Tecnocon Chicotes Eletroeletrônicos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Lívia Santana - Tecnocon Chicotes Eletroeletrônicos."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Lívia Santana",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Lívia Santana",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Lívia Santana - Tecnocon Chicotes Eletroeletrônicos. Experiência: Tecnocon Chicotes Eletroeletrônicos · Formação acadêmica: Etec · Localidade: 13295-000 · 2 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Lívia Santana não foi identificado nos dados fornecidos ('Cargo Detectado: Não Identificado', 'LinkedIn Status: cargo não identificado nos metadados'). A bio não contém termos explícitos relacionados a Suprimentos, Compras ou Procurement, o que impede a relevância para a vaga conforme a instrução técnica 9 para cargos não identificados."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T14:47:42.224241",
+    "candidate": "Marcel Silva",
+    "linkedin": "https://www.linkedin.com/in/marcel-silva-75463a388",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcel Silva - LinkedIn Brasil",
+            "body": "-- · Experiência: Espumas Prorubber · Localidade: Jundiaí. Veja Marcel Silva o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Espumas Prorubber · Localidade: Jundiaí. Veja o perfil de Marcel Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Marcel Silva",
+        "role": "Não Identificado",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Especialista marcou como não relevante e cargo não identificado. Veto Mecânico Detectado.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Espumas Prorubber",
+                "LinkedIn CURRENT COMPANY (Declarada): Espumas Prorubber"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência na Espumas Prorubber, localizado em Jundiaí."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Marcel Silva",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Marcel Silva",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Experiência na Espumas Prorubber, localizado em Jundiaí."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Marcel Silva não foi identificado nos dados fornecidos. A bio higienizada não contém termos técnicos explícitos de Suprimentos, Compras ou Procurement, o que impede a confirmação de relevância para um cargo não identificado, conforme instrução técnica #9."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Linkedin Brasil",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T14:48:22.610148",
+    "candidate": "Lomase Ferreira Vaz",
+    "linkedin": "https://www.linkedin.com/in/lomase-ferreira-vaz",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Lomase Ferreira Vaz - Comprador Pleno | Especialista em ...",
+            "body": "Comprador Pleno | Especialista em Compras | Procurement | Strategic Sourcing | Supply Chain | Negociação Estratégica | Gestão e Desenvolvimento de Fornecedores | Cost Reduction | Best Cost · Compras é, na minha visão, um dos pontos mais estratégicos de qualquer operação industrial, e é nisso que venho me dedicando há mais de 8 anos. 🌐 Construí minha trajetória profissional na ..."
+        },
+        "osint_metadata": {
+            "role": "imbera brasil",
+            "bio": "Compras é, na minha visão, um dos pontos mais estratégicos de qualquer operação… · Experiência: Imbera Brasil · Formação acadêmica: Centro Universitário Nossa Senhora do Patrocínio - CEUNSP · Localidade: Itu · + de 500 conexões no LinkedIn. Veja o perfil de Lomase Ferreira Vaz no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T14:50:12.335257",
+    "candidate": "Fábio Kerche",
+    "linkedin": "https://www.linkedin.com/in/f%C3%A1bio-kerche-a72439270",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fábio Kerche - Espumas Prorubber | LinkedIn",
+            "body": "Técnico de Planejamento / Desenvolvimento de Produto · Experiência: Espumas Prorubber · Formação acadêmica: Anhanguera Educacional · Localidade: 13201-720 · 21 conexões no LinkedIn . Veja o..."
+        },
+        "osint_metadata": {
+            "role": "cargo não identificado nos metadados",
+            "bio": "Experiência: Espumas Prorubber · Formação acadêmica: Anhanguera Educacional · Localidade: 13201-720 · 24 conexões no LinkedIn. Veja o perfil de Fábio Kerche no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Fábio Kerche",
+        "role": "Técnico de Planejamento / Desenvolvimento de Produto",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "Especialista marcou 'is_relevant: false' e não há 'Cargo Oficial Verificado' para contradizer.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Técnico de Planejamento / Desenvolvimento de Produto na Espumas Prorubber",
+                "Experiência: Espumas Prorubber",
+                "LinkedIn CURRENT COMPANY (Declarada): Espumas Prorubber"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Técnico de Planejamento / Desenvolvimento de Produto na Espumas Prorubber, com formação acadêmica na Anhanguera Educacional."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Fábio Kerche",
+                    "role": "Técnico de Planejamento / Desenvolvimento de Produto"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Fábio Kerche",
+                "detected_role": "Técnico de Planejamento / Desenvolvimento de Produto",
+                "clean_bio": "Técnico de Planejamento / Desenvolvimento de Produto na Espumas Prorubber, com formação acadêmica na Anhanguera Educacional."
+            }
+        },
+        "specialist": {
+            "role_name": "Técnico de Planejamento / Desenvolvimento de Produto",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Técnico de Planejamento / Desenvolvimento de Produto' não possui interface direta com as áreas de Suprimentos/Compras/Procurement. Não há menção a atividades de compras, logística ou supply chain na descrição do cargo. O cargo também não se enquadra nas exceções de perfis administrativos ou de diretoria/sócios."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Técnico de Planejamento / Desenvolvimento de Produto",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T16:30:00.001457",
+    "candidate": "Ezequiel Araujo da Silva Junior",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-araujo-da-silva-junior-0a8b3663",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel Araujo da Silva Junior - Knorr - Bremse | LinkedIn",
+            "body": "Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.Ver conexões em comum com Ezequiel Araujo da. Ezequiel Araujo da pode apresentar você a mais de 10 pessoas na empresa Knorr - Bremse . E-mail ou telefone."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Profissional Graduado em Administração de Empresas e Pós graduando MBA… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Purchasing Buyer",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/ezequiel-araujo-da-silva-junior"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Ezequiel Araujo da Silva Junior",
+        "role": "Purchasing Buyer",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Ezequiel Araujo da Silva Junior trabalha na Knorr Bremse, que é a empresa-alvo declarada. O cargo de Purchasing Buyer é relevante para a área de Suprimentos/Compras/Procurement e não há indícios de alucinação ou veto.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.Ver conexões em comum com Ezequiel Araujo da. Ezequiel Araujo da pode apresentar você a mais de 10 pessoas na empresa Knorr - Bremse . E-mail ou telefone. | LinkedIn Status: Ezequiel Araujo da Silva Junior | knorr | LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse | LinkedIn Personal Bio: Profissional Graduado em Administração de Empresas e Pós graduando MBA… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel Araujo da Silva Junior n"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional Graduado em Administração de Empresas e Pós graduando MBA. Experiência na Knorr-Bremse."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ezequiel Araujo da Silva Junior",
+                    "role": "Purchasing Buyer"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ezequiel Araujo da Silva Junior",
+                "detected_role": "Purchasing Buyer",
+                "clean_bio": "Profissional Graduado em Administração de Empresas e Pós graduando MBA. Experiência na Knorr-Bremse. Formação acadêmica na Universidade Anhembi Morumbi. Localidade: São Paulo."
+            }
+        },
+        "specialist": {
+            "role_name": "Purchasing Buyer",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Purchasing Buyer' é diretamente relacionado à área de Suprimentos/Compras/Procurement. O candidato possui experiência declarada na Knorr-Bremse e formação em Administração, o que é compatível com a função."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Purchasing Buyer",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T16:30:30.069454",
+    "candidate": "Ezequiel Araujo da Silva Junior",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-araujo-da-silva-junior-0a8b3663",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel Araujo da Silva Junior - Senior Buyer at Knorr ...",
+            "body": "Senior Buyer at Knorr - Bremse - Key User módulo MM · Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Profissional Graduado em Administração de Empresas e Pós graduando MBA… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Purchasing Buyer",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/ezequiel-araujo-da-silva-junior"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Ezequiel Araujo da Silva Junior",
+        "role": "Senior Buyer",
+        "matching_score": 100,
+        "department": "Compras/Suprimentos",
+        "evidence": "O candidato trabalha na Knorr Bremse, conforme confirmado pelo Detetive e pelo Especialista. O cargo de Senior Buyer é relevante para a área de Compras/Suprimentos.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Senior Buyer at Knorr - Bremse",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ezequiel Araujo da Silva Junior",
+                    "role": "Senior Buyer"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ezequiel Araujo da Silva Junior",
+                "detected_role": "Purchasing Buyer",
+                "clean_bio": "Profissional Graduado em Administração de Empresas e Pós graduando MBA Controladoria, Auditoria e Compliance."
+            }
+        },
+        "specialist": {
+            "role_name": "Senior Buyer",
+            "dept": "Compras/Suprimentos",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Senior Buyer' e a menção a 'Key User módulo MM' (Módulo de Gerenciamento de Materiais no SAP, comum em compras) confirmam a relevância direta para a área de Compras/Suprimentos. O vínculo com a Knorr Bremse foi confirmado pelo Detetive."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Purchasing Buyer",
+        "department": "Compras/Suprimentos",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T16:31:22.109048",
+    "candidate": "Arun Kumar Bhat V S",
+    "linkedin": "https://www.linkedin.com/in/arunkumarbhatvs",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Arun Kumar Bhat V S - KNORR - BREMSE TECHNOLOGY... | LinkedIn",
+            "body": "Proud moment for Knorr - Bremse family and all Knorr - Bremse units in India. Knorr - bremse technology center india private limited. 11mo."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Senior executive with 25+ years of Automotive industry exposure, Automotive Embedded… · Experiência: KNORR-BREMSE TECHNOLOGY CENTER INDIA PRIVATE LIMITED · Formação acadêmica: IIM Bangalore · Localidade: Maharashtra · + de 500 conexões no LinkedIn. Veja o perfil de Arun Kumar Bhat V S no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Arun Kumar Bhat V S",
+        "role": "Senior executive",
+        "matching_score": 100,
+        "department": "Supply Chain",
+        "evidence": "O candidato trabalha na Knorr Bremse, que é a empresa-alvo declarada. O especialista confirmou que o cargo é relevante.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Google Page Title: Arun Kumar Bhat V S - KNORR - BREMSE TECHNOLOGY",
+                "Proud moment for Knorr - Bremse family and all Knorr - Bremse units in India.",
+                "Knorr - bremse technology center india private limited.",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: KNORR-BREMSE TECHNOLOGY CENTER INDIA PRIVATE LIMITED"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Senior executive with 25+ years of Automotive industry exposure, Automotive Embedded…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Arun Kumar Bhat V S",
+                    "role": "Senior executive"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Arun Kumar Bhat V S",
+                "detected_role": "Senior executive",
+                "clean_bio": "Senior executive with 25+ years of Automotive industry exposure, Automotive Embedded…"
+            }
+        },
+        "specialist": {
+            "role_name": "Senior executive",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Senior executive' com 25+ anos de experiência na indústria automotiva, mencionado na bio, é relevante para a área de Suprimentos/Compras/Procurement, especialmente em um contexto de Supply Chain. A empresa alvo (Knorr Bremse) é uma fabricante de sistemas automotivos, onde a gestão de suprimentos é crucial. O vínculo com a empresa é confirmado pelos snippets."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Senior executive",
+        "department": "Supply Chain",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T16:31:55.014070",
+    "candidate": "Matheus Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/matheusribeiro1",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Matheus Ribeiro - Knorr - Bremse | LinkedIn",
+            "body": "· Experiência: Knorr - Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Matheus Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Engenheiro de Processos com ampla experiência em otimização de processos, melhoria… · Experiência: Knorr-Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Matheus Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Engenheiro De Processos",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/matheus-ribeiro"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Matheus Ribeiro",
+        "role": "Engenheiro de Processos",
+        "matching_score": 100,
+        "department": "Não Identificado",
+        "evidence": "O candidato Matheus Ribeiro trabalha na Knorr Bremse, que é a empresa-alvo declarada. O cargo de Engenheiro de Processos é consistente com os dados recebidos e não há indícios de alucinação ou veto mecânico que se aplique.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Candidate Name: Matheus Ribeiro | Google Page Title: Matheus Ribeiro - Knorr - Bremse | Search Snippet: · Experiência: Knorr - Bremse",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "LinkedIn Personal Bio: Engenheiro de Processos com ampla experiência em otimização de processos, melhoria… · Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Engenheiro de Processos com ampla experiência em otimização de processos, melhoria…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Matheus Ribeiro",
+                    "role": "Engenheiro De Processos"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Matheus Ribeiro",
+                "detected_role": "Engenheiro De Processos",
+                "clean_bio": "Engenheiro de Processos com ampla experiência em otimização de processos, melhoria…"
+            }
+        },
+        "specialist": {
+            "role_name": "Engenheiro de Processos",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Engenheiro de Processos não tem interface direta com Suprimentos/Compras/Procurement. A bio menciona otimização de processos e melhoria, mas não especifica em qual área, e não há termos explícitos relacionados a compras ou suprimentos."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Engenheiro De Processos",
+        "department": "Não Identificado",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-01T16:33:12.717449",
+    "candidate": "Moisés Lana",
+    "linkedin": "https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Moisés Lana - Knorr Bremse Sistemas P Veiculos... | LinkedIn",
+            "body": "Estes… · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "knorr bremse sistemas p veiculos comerciais brasil",
+            "bio": "Fascinado por desafios, trabalho em equipe, comunicativo, ansioso por aprendizados. Estes… · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Moisés Lana no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Moisés Lana",
+        "role": "Project Manager",
+        "matching_score": 95,
+        "department": "Supply Chain",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Moisés Lana trabalha como Project Manager na Knorr Bremse, o que é relevante para a área de Suprimentos/Compras/Procurement. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "TÍTULO: Moisés Lana - Project Manager at Knorr-Bremse Brazil | LinkedIn",
+                "Sugestão via URL: https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Atuando há mais de 15 anos na indústria de autopeças, com experiência em Gerenciamento de Projetos, Qualidade de fornecedores, conhecedor de ferramentas da Qualidade e gestão como: PMBOOK, SCRUM."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Moisés Lana",
+                    "role": "Project Manager"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Moisés Lana",
+                "detected_role": "Project Manager",
+                "clean_bio": "Atuando há mais de 15 anos na indústria de autopeças, com experiência em Gerenciamento de Projetos, Qualidade de fornecedores, conhecedor de ferramentas da Qualidade e gestão como: PMBOOK, SCRUM,."
+            }
+        },
+        "specialist": {
+            "role_name": "Project Manager",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Project Manager na Knorr Bremse, com experiência em Gerenciamento de Projetos e Qualidade de fornecedores na indústria de autopeças, tem interface direta com as áreas de Suprimentos/Compras/Procurement, especialmente em gestão de projetos relacionados a fornecedores e qualidade."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Project Manager",
+        "department": "Supply Chain",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T07:32:14.010536",
+    "candidate": "Samara Malerba Dias",
+    "linkedin": "https://www.linkedin.com/in/samara-malerba-dias-6b5b2a110",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Samara Malerba Dias - CFO South America na Knorr-Bremse - LinkedIn",
+            "body": "CFO South America na Knorr-Bremse · Experiência: Knorr-Bremse · Formação acadêmica: SDA Bocconi · Localidade: Campinas · + de 500 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Formação acadêmica: SDA Bocconi · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Samara Malerba Dias no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Cfo South America",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/samara-malerba-dias"
+        }
+    },
+    "ai_pipeline": {
+        "error": "No LLM provider is available (missing keys or circuit open).",
+        "facts": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "proper_name": "Samara Malerba Dias",
+        "clean_data": {
+            "target_profile": {
+                "name": "Samara Malerba Dias",
+                "detected_role": "Linkedin Status: Samara Malerba Dias",
+                "clean_bio": "Candidate Name: Samara Malerba Dias Google Page Title: Samara Malerba Dias - CFO South America na Knorr-Bremse Search Snippet: CFO South America na Knorr-Bremse · Experiência: Knorr-Bremse · Formação acadêmica: SDA Bocconi · Localidade: Campinas · + de 500 conexões no LinkedIn. LinkedIn Status: Samara Malerba Dias | knorr LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse LinkedIn Personal Bio: Experiência: Knorr-Bremse · Formação acadêmica: SDA Bocconi · Localidade: Campinas · + de 500 conexões"
+            },
+            "all_mappings": [
+                {
+                    "name": "Samara Malerba Dias",
+                    "role": "Linkedin Status: Samara Malerba Dias"
+                }
+            ]
+        },
+        "specialist": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 10,
+        "evidence": "VETO: Confiança insuficiente (0%)."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Cfo South America",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T07:33:11.100295",
+    "candidate": "Wilson Rimonato",
+    "linkedin": "https://www.linkedin.com/in/wilson-rimonato-840629184",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Wilson Rimonato - Sales & Technical Sales Manager at Knorr - LinkedIn",
+            "body": "Sales & Technical Sales Manager at Knorr- Bremse Sistemas P Veiculos Comerciais Brasil · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil ..."
+        },
+        "osint_metadata": {
+            "role": "knorr bremse sistemas p veiculos comerciais brasil",
+            "bio": "Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja Wilson Rimonato  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "role": "Não Identificado",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "error": "'NoneType' object has no attribute 'json_data'",
+        "evidence": "REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. "
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sales & Technical Sales Manager At Knorr",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T07:33:32.400542",
+    "candidate": "Marcelo Barbieri",
+    "linkedin": "https://www.linkedin.com/in/marcelo-barbieri/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcelo Barbieri - Knorr-Bremse - LinkedIn",
+            "body": "Especialista em Controladoria de Custos e… · Experience: Knorr-Bremse · Education: FACESM · Location: Itajubá · 500+ connections on LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "𝗘𝘀𝗽𝗲𝗰𝗶𝗮𝗹𝗶𝘀𝘁𝗮 𝗲𝗺 𝗖𝗼𝗻𝘁𝗿𝗼𝗹𝗮𝗱𝗼𝗿𝗶𝗮 𝗱𝗲 𝗖𝘂𝘀𝘁𝗼𝘀 𝗲… · Experience: Knorr-Bremse · Education: FACESM · Location: Itajubá · 500+ connections on LinkedIn. View Marcelo Barbieri’s profile on LinkedIn, a professional community of 1 billion members."
+        },
+        "theorg": {
+            "role": "Analista De Custos Sênior",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/marcelo-barbieri"
+        }
+    },
+    "ai_pipeline": {
+        "error": "No LLM provider is available (missing keys or circuit open).",
+        "facts": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "proper_name": "Marcelo Barbieri",
+        "clean_data": {
+            "target_profile": {
+                "name": "Marcelo Barbieri",
+                "detected_role": "Linkedin Status: Marcelo Barbieri",
+                "clean_bio": "Candidate Name: Marcelo Barbieri Google Page Title: Marcelo Barbieri - Knorr-Bremse Search Snippet: Especialista em Controladoria de Custos e… · Experience: Knorr-Bremse · Education: FACESM · Location: Itajubá · 500+ connections on LinkedIn. LinkedIn Status: Marcelo Barbieri | knorr LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse LinkedIn Personal Bio: 𝗘𝘀𝗽𝗲𝗰𝗶𝗮𝗹𝗶𝘀𝘁𝗮 𝗲𝗺 𝗖𝗼𝗻𝘁𝗿𝗼𝗹𝗮𝗱𝗼𝗿𝗶𝗮 𝗱𝗲 𝗖𝘂𝘀𝘁𝗼𝘀 𝗲… · Experience: Knorr-Bremse · Education: FACESM · Location: Itajubá · 500+ connections on LinkedIn. "
+            },
+            "all_mappings": [
+                {
+                    "name": "Marcelo Barbieri",
+                    "role": "Linkedin Status: Marcelo Barbieri"
+                }
+            ]
+        },
+        "specialist": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 10,
+        "evidence": "VETO: Confiança insuficiente (0%)."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Analista De Custos Sênior",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T07:33:55.324470",
+    "candidate": "Diego Freire",
+    "linkedin": "https://www.linkedin.com/in/diegofreirescience",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Diego Freire - Knorr-Bremse - LinkedIn",
+            "body": "Experiência: Knorr-Bremse · Formação acadêmica: Universidade Paulista · Localidade: Cabreúva · 311 conexões no LinkedIn. Veja o perfil de Diego Freire no ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Formação acadêmica: Universidade Paulista · Localidade: Cabreúva · 313 conexões no LinkedIn. Veja o perfil de Diego Freire no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "System Analyst Jr",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/diego-freire"
+        }
+    },
+    "ai_pipeline": {
+        "error": "No LLM provider is available (missing keys or circuit open).",
+        "facts": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "proper_name": "Diego Freire",
+        "clean_data": {
+            "target_profile": {
+                "name": "Diego Freire",
+                "detected_role": "Linkedin Status: Diego Freire",
+                "clean_bio": "Candidate Name: Diego Freire Google Page Title: Diego Freire - Knorr-Bremse Search Snippet: Experiência: Knorr-Bremse · Formação acadêmica: Universidade Paulista · Localidade: Cabreúva · 311 conexões no LinkedIn. Veja o perfil de Diego Freire no LinkedIn Status: Diego Freire | knorr LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse LinkedIn Personal Bio: Experiência: Knorr-Bremse · Formação acadêmica: Universidade Paulista · Localidade: Cabreúva · 313 conexões no LinkedIn. Veja o perfil de Dieg"
+            },
+            "all_mappings": [
+                {
+                    "name": "Diego Freire",
+                    "role": "Linkedin Status: Diego Freire"
+                }
+            ]
+        },
+        "specialist": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 10,
+        "evidence": "VETO: Confiança insuficiente (0%)."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "System Analyst Jr",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T07:34:13.827919",
+    "candidate": "Diego Guiso",
+    "linkedin": "https://www.linkedin.com/in/diego-guiso-5b885893",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Diego Guiso - Knorr-Bremse - LinkedIn",
+            "body": "Sou Engenheiro de Produtos na Knorr-Bremse desde junho de 2022, com ampla experiência em… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Sou Engenheiro de Produtos na Knorr-Bremse desde junho de 2022, com ampla experiência em… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Metodista de Piracicaba · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Diego Guiso no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Engenheiro De Produtos",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/diego-guiso"
+        }
+    },
+    "ai_pipeline": {
+        "error": "No LLM provider is available (missing keys or circuit open).",
+        "facts": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "proper_name": "Diego Guiso",
+        "clean_data": {
+            "target_profile": {
+                "name": "Diego Guiso",
+                "detected_role": "Linkedin Status: Diego Guiso",
+                "clean_bio": "Candidate Name: Diego Guiso Google Page Title: Diego Guiso - Knorr-Bremse Search Snippet: Sou Engenheiro de Produtos na Knorr-Bremse desde junho de 2022, com ampla experiência em… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade ... LinkedIn Status: Diego Guiso | knorr LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse LinkedIn Personal Bio: Sou Engenheiro de Produtos na Knorr-Bremse desde junho de 2022, com ampla experiência em… · Experiência: Knorr-Bremse · Formação acadêmica: Un"
+            },
+            "all_mappings": [
+                {
+                    "name": "Diego Guiso",
+                    "role": "Linkedin Status: Diego Guiso"
+                }
+            ]
+        },
+        "specialist": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 10,
+        "evidence": "VETO: Confiança insuficiente (0%)."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Engenheiro De Produtos",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T07:34:50.370802",
+    "candidate": "Moisés Lana",
+    "linkedin": "https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Moisés Lana - Knorr Bremse Sistemas P Veiculos... | LinkedIn",
+            "body": "Estes… · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "error": "No LLM provider is available (missing keys or circuit open).",
+        "facts": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "proper_name": "Moisés Lana",
+        "clean_data": {
+            "target_profile": {
+                "name": "Moisés Lana",
+                "detected_role": "Linkedin Status: None",
+                "clean_bio": "Candidate Name: Moisés Lana Google Page Title: Moisés Lana - Knorr Bremse Sistemas P Veiculos Search Snippet: Estes… · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn . LinkedIn Status: None |  LinkedIn CURRENT COMPANY (Declarada): Não detectada LinkedIn Personal Bio: N/A Verified Official Role: Não Encontrado"
+            },
+            "all_mappings": [
+                {
+                    "name": "Moisés Lana",
+                    "role": "Linkedin Status: None"
+                }
+            ]
+        },
+        "specialist": {
+            "error": "No LLM provider is available (missing keys or circuit open)."
+        },
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 10,
+        "evidence": "VETO: Confiança insuficiente (0%)."
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------

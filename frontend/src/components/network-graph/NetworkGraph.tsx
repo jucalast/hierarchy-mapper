@@ -19,7 +19,7 @@ import { useHierarchy } from '@/hooks/useHierarchy';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useProspecting } from '@/hooks/useProspecting';
 import { useNetworkFlow } from '@/hooks/useNetworkFlow';
-import { useGraphPersistence } from '@/hooks/useGraphPersistence';
+import { useGraphPersistence, getGraphCacheId } from '@/hooks/useGraphPersistence';
 import { useDiscoveryWorkflow } from '@/hooks/useDiscoveryWorkflow';
 import { usePipedriveSync } from '@/hooks/usePipedriveSync';
 import { useNotifications } from '@/contexts/NotificationContext';
@@ -188,6 +188,15 @@ function NetworkGraphContent({
         []
     );
 
+    // Chave canônica de cache do grafo — fonte única compartilhada entre o caminho de
+    // leitura (useNetworkFlow) e o de escrita (saveGraphState). Antes cada lado derivava
+    // sua própria chave (currentOrgId vs last-viewed-org), o que fazia o layout manual
+    // salvo numa chave nunca ser lido de volta na outra.
+    const graphCacheId = useMemo(
+        () => getGraphCacheId(currentOrgId, confirmedBrand),
+        [currentOrgId, confirmedBrand]
+    );
+
     const {
         nodes, setNodes, edges, setEdges,
         onNodesChange, onEdgesChange, onConnect,
@@ -199,6 +208,7 @@ function NetworkGraphContent({
         confirmedBrand,
         confirmedLogo,
         getStableId,
+        cacheId: graphCacheId,
         deleteEmployee,
         editEmployee: handleEditEmployee,
         isScanning: isScanForCurrentOrg,
@@ -232,10 +242,14 @@ function NetworkGraphContent({
             // Sync global state to null so useHierarchy returns EMPTY_ARRAY
             useChatStore.getState().setCurrentOrgId(null);
 
-            // Reset local states unconditionally to clear the UI
+            // Reset local states unconditionally to clear a UI (currentOrgId apenas —
+            // NÃO chamar resetWorkflow()/resetHierarchy() aqui: isso apagaria do Zustand
+            // os rawEmployees/rawBackendEdges já mapeados da empresa que está sendo deixada,
+            // fazendo os cards sumirem ao navegar de volta para ela. O reset dos campos
+            // locais de discovery (step, cnpj, marca, etc.) já é feito pelo próprio efeito
+            // de pathname dentro de useDiscoveryWorkflow.
             setCurrentOrgId(null);
             setChatOrgId(null);
-            resetWorkflow();
             setShowDrawer(true);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -443,8 +457,8 @@ function NetworkGraphContent({
     useEffect(() => {
         // Evita salvar estado transiente/incompleto onde há múltiplos nós mas 0 arestas
         if (nodes.length > 1 && edges.length === 0) return;
-        if (nodes.length > 0) saveGraphState(nodes, edges);
-    }, [nodes, edges, saveGraphState]);
+        if (nodes.length > 0) saveGraphState(nodes, edges, graphCacheId);
+    }, [nodes, edges, saveGraphState, graphCacheId]);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem("preferred-theme") || "dark";
