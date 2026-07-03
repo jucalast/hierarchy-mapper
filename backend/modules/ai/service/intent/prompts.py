@@ -113,6 +113,23 @@ REGRAS DE OURO:
 3. Se a intenção for 'agent_workflow' ou 'deal_status', o data_scope DEVE incluir OBRIGATORIAMENTE ['activities', 'deals', 'persons', 'notes', 'emails', 'whatsapp'].
 4. Não seja conservador: se há ambiguidade entre deal_status e agent_workflow, avalie o VERBO PRINCIPAL. Verbos de ação = agent_workflow. Verbos de pergunta/informação = deal_status.
 5. REGRA ANTI-GENERAL: "general" é o ÚLTIMO recurso. Se a pergunta pode ser respondida com dados do sistema (tarefas, emails, WhatsApp, CRM), use a categoria específica. "o que tenho pra fazer?" = pipedrive_tasks, NUNCA general.
+6. CLASSIFICAÇÃO DE PIPELINE ("pipeline_intent"): Determine qual é a esteira/pipeline de tarefa mais adequada para a mensagem/atividade atual do usuário:
+   - "prospecting_plan": Se o usuário quer gerar, atualizar, refazer ou planejar a prospecção da empresa.
+   - "search": Se a tarefa principal é buscar decisor, encontrar contato, pesquisar pessoas ou usar o mapeador de hierarquia (ICP).
+   - "followup": Se o usuário quer cobrar retorno, dar retorno, acompanhar pendências ou fazer follow-up.
+   - "meeting": Se a tarefa é agendar ou realizar uma reunião ou visita.
+   - "quote": Se a tarefa envolve orçamento, cotação, proposta comercial ou valores.
+   - "communication": Se a tarefa é enviar uma mensagem escrita, e-mail de abordagem ou contato inicial.
+   - "call": Se a tarefa é realizar uma ligação telefônica (call).
+   - "none": Se for uma pergunta geral ou não corresponder a nenhuma das tarefas estruturadas acima.
+7. CLASSIFICAÇÃO DE SKILL ("skill_intent"): Determine qual é a habilidade específica que o agente deve usar para responder:
+   - "call": Para ligações telefônicas.
+   - "prospect": Para encontrar decisores e mapear contatos (pesquisa).
+   - "outreach": Para e-mails/mensagens de abordagem inicial (outreach).
+   - "followup": Para tarefas de cobrança, acompanhamento ou reuniões/negociações.
+   - "meeting": Para agendamento e preparação de reuniões.
+   - "negotiate": Para propostas comerciais e negociações de fechamento.
+   - "unknown": Caso não se encaixe em nenhuma categoria específica.
 
 Retorne um JSON válido:
 {{
@@ -128,7 +145,9 @@ Retorne um JSON válido:
     "whatsapp_message": "texto da mensagem para enviar | null",
     "email_action": "send_email" | "reply_email" | "get_messages" | null,
     "email_subject": "assunto do email | null",
-    "email_body": "corpo do email | null"
+    "email_body": "corpo do email | null",
+    "pipeline_intent": "prospecting_plan" | "search" | "followup" | "meeting" | "quote" | "communication" | "call" | "none",
+    "skill_intent": "call" | "prospect" | "outreach" | "followup" | "meeting" | "negotiate" | "unknown"
 }}
 """
 

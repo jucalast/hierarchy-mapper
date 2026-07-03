@@ -6,10 +6,26 @@ export function listOrganizations() {
   return api.get<OrganizationSummary[]>('/pipedrive/organizations');
 }
 
+const detailsCache = new Map<string, Promise<any>>();
+
 /** Detalhes 'Raio-X' de uma organização (deals, persons, activities, notes). */
 export function getOrganizationDetails(orgId: number, done?: 0 | 1) {
+  const cacheKey = `${orgId}_${done}`;
+  const cached = detailsCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const qs = done !== undefined ? `?done=${done}` : '';
-  return api.get<Record<string, unknown>>(`/pipedrive/organizations/${orgId}/details${qs}`);
+  const promise = api.get<Record<string, unknown>>(`/pipedrive/organizations/${orgId}/details${qs}`);
+  
+  detailsCache.set(cacheKey, promise);
+  
+  promise.finally(() => {
+    detailsCache.delete(cacheKey);
+  });
+  
+  return promise;
 }
 
 export function getLocalOrganization(orgId: number) {
@@ -69,5 +85,17 @@ export function deleteNote(noteId: number | string) {
 
 export function getPipelineBoard() {
   return api.get<{ stages: any[]; deals: any[] }>('/pipedrive/pipeline/board');
+}
+
+export function batchValidateEmails(orgId: number) {
+  return api.post<{ ok?: boolean; message?: string }>(`/organizations/${orgId}/validate-emails`);
+}
+
+export function deleteProspectingPlan(orgId: number) {
+  return api.delete<{ ok?: boolean; message?: string }>(`/organizations/${orgId}/prospecting-plan`);
+}
+
+export function getOrganizationPhoto(orgId: number) {
+  return api.get<{ ok: boolean; photo_url: string | null }>(`/organizations/${orgId}/photo`);
 }
 

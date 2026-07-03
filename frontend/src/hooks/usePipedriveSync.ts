@@ -1,11 +1,15 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { organizations, api } from '@/services/api';
 
+const TASK_SUMMARY_CACHE_KEY = 'pipedrive-task-summary-cache';
+const ACTIVE_STAGE_FILTER_KEY = 'drawer-active-stage-filter';
+
 export function usePipedriveSync() {
     const [pipedriveOrgs, setPipedriveOrgs] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loadingOrgs, setLoadingOrgs] = useState(true);
     const [taskSummary, setTaskSummary] = useState<Record<number, { next_due_date: string; overdue_count: number; pending_count: number }>>({});
+    const [activeStageFilter, setActiveStageFilterState] = useState<string | null>(null);
 
     const fetchTaskSummary = useCallback(async () => {
         try {
@@ -19,8 +23,21 @@ export function usePipedriveSync() {
                 const map: Record<number, typeof items[0]> = {};
                 items.forEach(i => { map[i.org_id] = i; });
                 setTaskSummary(map);
+                try { localStorage.setItem(TASK_SUMMARY_CACHE_KEY, JSON.stringify(map)); } catch {}
             }
         } catch { /* silent */ }
+    }, []);
+
+    // Persiste a aba de stage ativa (não reordena a lista — apenas mantém a seleção entre reload/navegação)
+    const setActiveStageFilter = useCallback((stage: string | null) => {
+        setActiveStageFilterState(stage);
+        try {
+            if (stage === null) {
+                localStorage.removeItem(ACTIVE_STAGE_FILTER_KEY);
+            } else {
+                localStorage.setItem(ACTIVE_STAGE_FILTER_KEY, stage);
+            }
+        } catch {}
     }, []);
 
     const SYNC_TTL_MS = 5 * 60 * 1000;
@@ -64,10 +81,12 @@ export function usePipedriveSync() {
                 const id = Number(org.id);
                 if (!id || seen.has(id)) return false;
                 seen.add(id);
-                return (
+                const matchesSearch = (
                     org.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     org.domain?.toLowerCase().includes(searchTerm.toLowerCase())
                 );
+                const matchesStage = !activeStageFilter || org.stage_name === activeStageFilter;
+                return matchesSearch && matchesStage;
             })
             .map(org => ({
                 ...org,
@@ -84,7 +103,27 @@ export function usePipedriveSync() {
                 if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
                 return ta.next_due_date.localeCompare(tb.next_due_date);
             });
-    }, [pipedriveOrgs, searchTerm, taskSummary]);
+    }, [pipedriveOrgs, searchTerm, taskSummary, activeStageFilter]);
+
+    // Coleta estágios únicos das orgs carregadas e ordena pela ordem do Pipedrive (ordem fixa, nunca reordenada)
+    const uniqueStages = useMemo(() => {
+        const seen = new Set<string>();
+        const stages: { name: string; count: number; order_nr: number }[] = [];
+        for (const org of pipedriveOrgs) {
+            const s = org.stage_name;
+            if (s && !seen.has(s)) {
+                seen.add(s);
+                stages.push({ name: s, count: 0, order_nr: org.stage_order_nr || 0 });
+            }
+        }
+        // Conta orgs por estágio
+        for (const stage of stages) {
+            stage.count = pipedriveOrgs.filter(o => o.stage_name === stage.name).length;
+        }
+        // Ordena pela ordem oficial do Pipedrive (stage_order_nr)
+        stages.sort((a, b) => a.order_nr - b.order_nr);
+        return stages;
+    }, [pipedriveOrgs]);
 
     useEffect(() => {
         const cached = localStorage.getItem("pipedrive-orgs-cache");
@@ -97,6 +136,20 @@ export function usePipedriveSync() {
                 }
             } catch (e) {}
         }
+
+        try {
+            const cachedSummary = localStorage.getItem(TASK_SUMMARY_CACHE_KEY);
+            if (cachedSummary) {
+                const parsed = JSON.parse(cachedSummary);
+                if (parsed && typeof parsed === 'object') setTaskSummary(parsed);
+            }
+        } catch (e) {}
+
+        try {
+            const savedFilter = localStorage.getItem(ACTIVE_STAGE_FILTER_KEY);
+            if (savedFilter) setActiveStageFilterState(savedFilter);
+        } catch (e) {}
+
         fetchPipedriveOrgs();
     }, []);
 
@@ -104,8 +157,12 @@ export function usePipedriveSync() {
         pipedriveOrgs, setPipedriveOrgs,
         searchTerm, setSearchTerm,
         loadingOrgs,
+        taskSummary,
         filteredOrgs,
         fetchPipedriveOrgs,
-        handleOrgRenamed
+        handleOrgRenamed,
+        uniqueStages,
+        activeStageFilter,
+        setActiveStageFilter,
     };
 }

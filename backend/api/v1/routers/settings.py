@@ -86,6 +86,24 @@ async def upload_profile_file(
     await session.commit()
     return {"ok": True, "path": abs_path}
 
+from fastapi.responses import FileResponse
+
+@router.get("/v2/profile/signature/image")
+async def get_signature_image(session: AsyncSession = Depends(get_db)):
+    """Retorna o arquivo de imagem da assinatura do Tenant."""
+    res = await session.execute(select(Tenant).limit(1))
+    tenant = res.scalars().first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant não encontrado.")
+        
+    profile_res = await session.execute(select(BusinessProfile).where(BusinessProfile.tenant_id == tenant.id))
+    profile = profile_res.scalars().first()
+    
+    if not profile or not profile.signature_path or not os.path.exists(profile.signature_path):
+        raise HTTPException(status_code=404, detail="Assinatura não configurada ou não encontrada.")
+        
+    return FileResponse(profile.signature_path)
+
 @router.get("")
 async def get_all_settings(session: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     """Retorna todas as configurações salvas no banco de dados."""

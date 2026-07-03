@@ -10,10 +10,10 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from sqlalchemy import (
-    Column, DateTime, ForeignKey, Index, Integer, JSON, String, Text
+    Column, DateTime, ForeignKey, Index, Integer, String, Text
 )
 from sqlalchemy.orm import relationship
-from core.infra.database import Base
+from core.infra.database import Base, SafeJSON
 
 
 def _new_uuid() -> str:
@@ -35,7 +35,7 @@ class ConversationThread(Base):
     updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_message_at = Column(DateTime, nullable=True, index=True)
     message_count   = Column(Integer, default=0)
-    meta        = Column(JSON, nullable=True)            # {pipedrive_deal_id, tags, ...}
+    meta        = Column(SafeJSON, nullable=True)            # {pipedrive_deal_id, tags, ...}
 
     # Relacionamentos
     organization = relationship("Organization", lazy="select")
@@ -75,8 +75,8 @@ class ConversationMessage(Base):
 
     # Dados extras para rerender o módulo UI sem nova chamada
     ui_module = Column(String, nullable=True)           # "EmailThread" | "WhatsAppThread" | ...
-    data      = Column(JSON, nullable=True)             # payload do módulo
-    logs      = Column(JSON, nullable=True)             # streaming logs (list)
+    data      = Column(SafeJSON, nullable=True)             # payload do módulo
+    logs      = Column(SafeJSON, nullable=True)             # streaming logs (list)
     sources   = Column(Integer, nullable=True)          # contagem de fontes usadas
 
     # Relacionamento
@@ -130,7 +130,7 @@ class ActivityLog(Base):
     # email_sent:    {to_name, to_email, subject, message_preview, entry_id}
     # whatsapp_sent: {to_name, to_phone, message_preview}
     # stage_changed: {from_stage, to_stage, deal_id, deal_title}
-    payload       = Column(JSON, nullable=True)
+    payload       = Column(SafeJSON, nullable=True)
 
     # Timestamps
     created_at    = Column(DateTime, default=datetime.utcnow, index=True)
@@ -158,7 +158,7 @@ class AgentPendingConfirmation(Base):
     __tablename__ = "agent_pending_confirmations"
 
     id         = Column(String, primary_key=True)  # O action_id
-    payload    = Column(JSON, nullable=False)      # O dicionário completo do _PENDING[action_id]
+    payload    = Column(SafeJSON, nullable=False)      # O dicionário completo do _PENDING[action_id]
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 
@@ -177,8 +177,8 @@ class CallSession(Base):
     contact_name          = Column(String, nullable=False)
     phone                 = Column(String, nullable=True)
     profile_pic           = Column(String, nullable=True)   # URL/base64 da foto do contato
-    flight_plan           = Column(JSON, nullable=True)     # JSON contendo os passos SPIN
-    latest_insight        = Column(JSON, nullable=True)     # O último copiloto insight
+    flight_plan           = Column(SafeJSON, nullable=True)     # JSON contendo os passos SPIN
+    latest_insight        = Column(SafeJSON, nullable=True)     # O último copiloto insight
     created_at            = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at            = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

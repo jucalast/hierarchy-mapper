@@ -13,7 +13,8 @@ import {
   Trash2,
   Brain,
   Quote,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 
 import { getAvatarUrl, getCompanyLogoUrl, getProxiedUrl } from '../../utils/avatarUtils';
@@ -55,7 +56,7 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
   return (
     <div 
         className={`${styles.customNode} ${!isNode ? styles.chatNode : ''} ${styles['level_' + effectiveLevel]} ${data.isRoot ? styles.rootNode : ''}`} 
-        style={!isNode ? { position: 'relative', width: '300px', margin: '20px 0 10px 20px', zoom: 0.85 } : {}}
+        style={!isNode ? { position: 'relative', width: '380px', margin: '20px 0 10px 20px', zoom: 0.85 } : {}}
     >
       {isNode && <div className={styles.handleTopLine}></div>}
       
@@ -69,6 +70,16 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
         <div className={styles.levelBadge}>
           <Layers size={14} />
           <span>Tier {effectiveLevel}</span>
+          {data.isLoading && (
+            <Loader2 
+                size={16} 
+                style={{ 
+                    animation: 'spin 1s linear infinite', 
+                    color: '#a855f7',
+                    marginLeft: '8px'
+                }} 
+            />
+          )}
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -273,7 +284,8 @@ export const PersonaCard = memo(
       a.profile_pic === b.profile_pic &&
       a.headline === b.headline &&
       a.email === b.email &&
-      a.phone === b.phone
+      a.phone === b.phone &&
+      a.isLoading === b.isLoading
     );
   },
 );

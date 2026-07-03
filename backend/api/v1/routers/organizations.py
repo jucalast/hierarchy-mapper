@@ -8,7 +8,7 @@ GET /organizations/{org_id}  → detalhes de uma organização
 """
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -72,13 +72,16 @@ async def get_organization(
     Busca uma organização específica pelo ID.
     """
     try:
-        from sqlalchemy import or_
-        stmt = select(Organization).where(
-            or_(Organization.id == org_id, Organization.pipedrive_id == org_id)
-        )
+        # Prioriza pipedrive_id (que a URL usa) antes de id local,
+        # evitando colisão quando pipedrive_id de uma empresa = id local de outra.
+        stmt = select(Organization).where(Organization.pipedrive_id == org_id)
         result = await db.execute(stmt)
         org = result.scalars().first()
-        
+        if not org:
+            stmt = select(Organization).where(Organization.id == org_id)
+            result = await db.execute(stmt)
+            org = result.scalars().first()
+
         if not org:
             return {"error": "Organization not found"}
         
@@ -92,9 +95,76 @@ async def get_organization(
             "address": org.address,
             "icp_score": org.icp_score,
             "icp_tier": org.icp_tier,
-            "prospecting_context": org.prospecting_context
+            "prospecting_context": org.prospecting_context,
+            "maps_phone": org.maps_phone or None,
         }
     
     except Exception as e:
         log.warning("organizations.get.failed", org_id=org_id, error=str(e))
         raise HTTPException(status_code=500, detail="Erro ao buscar organização.")
+
+@router.get("/{org_id}/photo")
+async def get_organization_photo(
+    org_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Retorna a foto da empresa (Google Maps/Places) para usar de background no header
+    do Drawer. Busca e persiste no banco (cache permanente) na primeira chamada;
+    chamadas seguintes para a mesma empresa retornam o valor já salvo sem nova
+    consulta à API.
+    """
+    from modules.intelligence.service.company_photo_service import fetch_and_cache_company_photo
+    try:
+        photo_url = await fetch_and_cache_company_photo(org_id, db)
+        return {"ok": bool(photo_url), "photo_url": photo_url}
+    except Exception as e:
+        log.warning("organizations.get_photo.failed", org_id=org_id, error=str(e))
+        return {"ok": False, "photo_url": None}
+
+
+@router.post("/{org_id}/validate-emails")
+async def start_batch_email_validation(
+    org_id: int,
+    background_tasks: BackgroundTasks
+):
+    """
+    Inicia o Superteste (validação em lote) de todos os e-mails da empresa em segundo plano.
+    """
+    from modules.agent.service.tools.intelligence import batch_discover_and_validate_org_emails
+    
+    # Executa a função pesada em segundo plano para não dar timeout no frontend
+    background_tasks.add_task(batch_discover_and_validate_org_emails, org_id)
+        
+    return {"ok": True, "message": "Validação em lote iniciada em segundo plano."}
+
+
+@router.delete("/{org_id}/prospecting-plan")
+async def delete_prospecting_plan(
+    org_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Apaga o plano de prospecção (prospecting_context) de uma organização.
+    """
+    try:
+        stmt = select(Organization).where(Organization.pipedrive_id == org_id)
+        result = await db.execute(stmt)
+        org = result.scalars().first()
+        if not org:
+            stmt = select(Organization).where(Organization.id == org_id)
+            result = await db.execute(stmt)
+            org = result.scalars().first()
+
+        if not org:
+            raise HTTPException(status_code=404, detail="Organização não encontrada.")
+            
+        org.prospecting_context = None
+        await db.commit()
+        return {"ok": True, "message": "Plano de prospecção apagado com sucesso."}
+    except Exception as e:
+        log.warning("organizations.delete_prospecting_plan.failed", org_id=org_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Erro ao apagar plano: {e}")
+
+
+

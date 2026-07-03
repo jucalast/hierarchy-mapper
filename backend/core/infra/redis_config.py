@@ -42,3 +42,4 @@ try:
 except Exception as e:
     log.warning("redis.connection_failed", error=str(e), detail="Cache de imagens desativado")
     redis_client = None
+# Force restart for arq worker

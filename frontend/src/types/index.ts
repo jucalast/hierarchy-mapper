@@ -51,6 +51,8 @@ export interface OrganizationSummary {
   product_focus?: string | null;
   employee_count?: number;
   employee_pics?: string[];
+  stage_name?: string;
+  stage_order_nr?: number;
 }
 
 export interface ApiErrorBody {

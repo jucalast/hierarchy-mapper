@@ -1,5 +1,5 @@
 .container {
-    width: 100%;
+
     z-index: 100;
     display: flex;
     flex-direction: column;
@@ -24,6 +24,7 @@
         transform: translateY(-10px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -77,37 +78,74 @@
 }
 
 @keyframes progress {
-    from { width: 100%; }
-    to { width: 0%; }
+    from {
+        width: 100%;
+    }
+
+    to {
+        width: 0%;
+    }
 }
 
 /* SUCCESS THEME */
-.success { background: var(--sw-status-success); }
-.success .iconWrapper, 
+.success {
+    background: var(--sw-status-success);
+}
+
+.success .iconWrapper,
 .success .message,
-.success .closeBtn { color: #ffffff; }
-.success .closeBtn:hover { background: rgba(255, 255, 255, 0.15); }
+.success .closeBtn {
+    color: #ffffff;
+}
+
+.success .closeBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 /* ERROR THEME */
-.error { background: var(--sw-status-danger); }
+.error {
+    background: var(--sw-status-danger);
+}
+
 .error .iconWrapper,
 .error .message,
-.error .closeBtn { color: #ffffff; }
-.error .closeBtn:hover { background: rgba(255, 255, 255, 0.15); }
+.error .closeBtn {
+    color: #ffffff;
+}
+
+.error .closeBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 /* INFO THEME */
-.info { background: var(--sw-primary); }
+.info {
+    background: var(--sw-primary);
+}
+
 .info .iconWrapper,
 .info .message,
-.info .closeBtn { color: #ffffff; }
-.info .closeBtn:hover { background: rgba(255, 255, 255, 0.15); }
+.info .closeBtn {
+    color: #ffffff;
+}
+
+.info .closeBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 /* WARNING THEME */
-.warning { background: var(--sw-status-warning); }
+.warning {
+    background: var(--sw-status-warning);
+}
+
 .warning .iconWrapper,
 .warning .message,
-.warning .closeBtn { color: #ffffff; }
-.warning .closeBtn:hover { background: rgba(255, 255, 255, 0.15); }
+.warning .closeBtn {
+    color: #ffffff;
+}
+
+.warning .closeBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 /* Theme-specific adjustments for light mode if needed */
 [data-theme='light'] .success,

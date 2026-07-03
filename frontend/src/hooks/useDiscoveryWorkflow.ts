@@ -11,6 +11,7 @@ interface DiscoveryWorkflowProps {
     rawEmployees: any[];
     fetchPipedriveOrgs: () => void;
     setPipedriveOrgs: (updater: (prev: any[]) => any[]) => void;
+    pathname: string;
 }
 
 export function useDiscoveryWorkflow({
@@ -21,7 +22,8 @@ export function useDiscoveryWorkflow({
     setChatOrgId,
     rawEmployees,
     fetchPipedriveOrgs,
-    setPipedriveOrgs
+    setPipedriveOrgs,
+    pathname
 }: DiscoveryWorkflowProps) {
     const { addNotification } = useNotifications();
     const [step, setStep] = useState<"input" | "confirm" | "scanning" | "loading" | "initial">("input");
@@ -54,6 +56,11 @@ export function useDiscoveryWorkflow({
     const [confirmedBrand, setConfirmedBrand] = useState("");
     const [confirmedLogo, setConfirmedLogo] = useState("");
     const [confirmedFollowers, setConfirmedFollowers] = useState("");
+
+    useEffect(() => {
+        console.log(`[useDiscoveryWorkflow State Monitor] step: "${step}", confirmedBrand: "${confirmedBrand}", cnpj: "${cnpj}", domainTarget: "${domainTarget}"`);
+    }, [step, confirmedBrand, cnpj, domainTarget]);
+
     const [refreshDrawerTrigger, setRefreshDrawerTrigger] = useState(0);
     const [enrichingIds, setEnrichingIds] = useState<Set<number>>(new Set());
     const [partners, setPartners] = useState<any[]>([]);
@@ -70,6 +77,25 @@ export function useDiscoveryWorkflow({
         confirmIntelligence,
         resetHierarchy
     } = useHierarchy;
+
+    useEffect(() => {
+        const isOrgRoute = pathname.match(/\/org\/(\d+)/);
+        if (!isOrgRoute) {
+            console.log("[useDiscoveryWorkflow] Path changed to non-org route. Resetting states.");
+            setStep("input");
+            setCnpj("");
+            setDomainTarget("");
+            setProductFocus("");
+            setAreaFocus("compras");
+            setConfirmedBrand("");
+            setConfirmedLogo("");
+            setConfirmedFollowers("");
+            setBrandOptions([]);
+            setPartners([]);
+            setMappingMode('discovery');
+            setConfirmedLinkedInUrl('');
+        }
+    }, [pathname, setBrandOptions]);
 
     // Helper para sanitizar valores
     const sanitizeVal = (val: any) => {
@@ -119,7 +145,10 @@ export function useDiscoveryWorkflow({
                 (rootNode as any).domain === domainTarget
             );
 
-            // Se for a mesma empresa, filtramos para manter apenas Root e Sócios
+            // Se for a mesma empresa, filtramos para manter Root, Sócios e contatos
+            // do Pipedrive (CRM) — estes últimos não são "descobertos" pelo scan, então
+            // não devem sumir; se o scan os reencontrar, o merge por linkedin/nome/
+            // pipedrive_id atualiza o registro em vez de duplicar.
             const rootAndPartnersOnly = isSameCompany ? rawEmployees.filter(emp => {
                 const isRoot = emp.id === 'root_company' || emp.level === 0;
                 const isPartner = emp.level === 6 || String(emp.id).startsWith('partner_');
@@ -129,8 +158,19 @@ export function useDiscoveryWorkflow({
                     emp.department.includes('Societário') ||
                     emp.department.includes('Conselho')
                 );
-                return isRoot || isPartner || isPartnerDept;
+                const isPipedrive = emp.source === 'pipedrive' || !!emp.pipedrive_id;
+                return isRoot || isPartner || isPartnerDept || isPipedrive;
             }) : [];
+
+            // 🧹 Limpa o estado persistido ANTES de iniciar novo scan para garantir começo do zero
+            if (currentOrgId) {
+                const { useChatStore } = await import('../store/chatStore');
+                useChatStore.getState().setRawEmployees(currentOrgId, []);
+                useChatStore.getState().setRawBackendEdges(currentOrgId, []);
+                // Limpa cache de layout para o novo mapeamento
+                localStorage.removeItem(`layout-cache-${currentOrgId}`);
+                localStorage.removeItem(`edges-cache-${currentOrgId}`);
+            }
 
             fetchHierarchy(
                 cnpj,
@@ -187,6 +227,7 @@ export function useDiscoveryWorkflow({
         setPartners(newPartners);
         setConfirmedLinkedInUrl(brandObj.url || '');
         setStep("confirm");
+        setBrandOptions([]);
 
         if (cnpj) {
             const result = await confirmIntelligence({
@@ -227,9 +268,9 @@ export function useDiscoveryWorkflow({
             }
         }
     }, [
-        discovering, cancelDiscovery, addNotification, cnpj, domainTarget, 
-        currentOrgId, setCurrentOrgId, fetchPipedriveOrgs, setPipedriveOrgs, 
-        confirmIntelligence
+        discovering, cancelDiscovery, addNotification, cnpj, domainTarget,
+        currentOrgId, setCurrentOrgId, fetchPipedriveOrgs, setPipedriveOrgs,
+        confirmIntelligence, setBrandOptions
     ]);
 
     const handleAutoEnrich = useCallback(async () => {
@@ -293,11 +334,14 @@ export function useDiscoveryWorkflow({
         }
     }, [cnpj, enrichingIds, confirmedBrand, currentOrgId, fetchPipedriveOrgs, addNotification, setCurrentOrgId, setConfirmedBrand, setConfirmedLogo]);
 
+    const lastSearchedCnpj = useRef("");
+
     const resetWorkflow = useCallback(() => {
         setStep("input");
         setCnpj("");
         setDomainTarget("");
         setProductFocus("");
+        setAreaFocus("compras");
         setConfirmedBrand("");
         setConfirmedLogo("");
         setConfirmedFollowers("");
@@ -309,7 +353,25 @@ export function useDiscoveryWorkflow({
         setConfirmedLinkedInUrl('');
         resetHierarchy();
         localStorage.removeItem('last-viewed-org');
+        lastSearchedCnpj.current = "";
     }, [setBrandOptions, setCurrentOrgId, setChatOrgId, resetHierarchy]);
+
+    useEffect(() => {
+        const digits = cnpj.replace(/\D/g, '');
+        if (digits.length === 14) {
+            const formatted = formatCnpj(digits);
+            if (cnpj !== formatted) {
+                setCnpj(formatted);
+            }
+            // Only auto-enrich when actively typing in the input step (no org loaded yet)
+            if (lastSearchedCnpj.current !== digits && step === "input" && !currentOrgId) {
+                lastSearchedCnpj.current = digits;
+                handleAutoEnrich();
+            }
+        } else if (digits.length === 0) {
+            lastSearchedCnpj.current = "";
+        }
+    }, [cnpj, step, currentOrgId, handleAutoEnrich]);
 
     return {
         step, setStep,

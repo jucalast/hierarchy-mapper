@@ -43,9 +43,77 @@ LOGISTICS_KEYWORDS = [
     "Logística", "Supply Chain", "Warehouse Manager", "PCP", "Coordenador de Logística",
     "Inventory", "Almoxarifado", "Expedição", "Logistics Operations", "Cadeia de Suprimentos",
     "Transporte", "Distribuição", "WMS", "TMS", "Fleet Manager", "Gerente de Logística",
-    "Analista de Logística", "Analista de PCP", "Planejamento de Produção", 
+    "Analista de Logística", "Analista de PCP", "Planejamento de Produção",
     "Supply Chain Manager", "Demand Planner", "Logística Internacional"
 ]
+
+# Cargos administrativos — fallback quando não há pessoas de compras identificáveis
+ADMINISTRATIVE_KEYWORDS = [
+    "Auxiliar Administrativo", "Assistente Administrativo", "Analista Administrativo",
+    "Coordenador Administrativo", "Gerente Administrativo", "Supervisor Administrativo",
+    "Diretor Administrativo", "Assistente de Escritório", "Auxiliar de Escritório",
+    "Office Manager", "Assistente de Diretoria", "Assistente Executiva",
+    "Assistente Executivo", "Secretária Executiva", "Secretário Executivo",
+    "Aux Administrativo", "Auxiliar Adm", "Assistente Adm"
+]
+
+# Termos que confirmam localização brasileira
+_BR_LOCATION_TERMS = {
+    "brasil", "brazil", "são paulo", "sao paulo", "rio de janeiro", "minas gerais",
+    "parana", "paraná", "santa catarina", "rio grande do sul", "bahia", "ceara",
+    "ceará", "pernambuco", "goias", "goiás", "espirito santo", "espírito santo",
+    "curitiba", "belo horizonte", "porto alegre", "recife", "fortaleza", "manaus",
+    "belem", "belém", "salvador", "campinas", "florianopolis", "florianópolis",
+    "brasilia", "brasília", "natal", "maceio", "maceió", "campo grande", "teresina",
+    "vitoria", "vitória", "joinville", "uberlandia", "uberlândia", "sorocaba",
+    "ribeirao preto", "ribeirão preto", "osasco", "guarulhos", "santo andre",
+    "santo andré", "são bernardo", "abc paulista", "grande sp",
+}
+
+# Termos que indicam localização estrangeira (não-brasileira)
+_NON_BR_FLAGS = [
+    "united states", "united kingdom", " usa", " us,", "new york", "california",
+    "texas", "florida", "chicago", "illinois", "washington",
+    "germany", "deutschland", "munich", "münchen", "berlin", "frankfurt",
+    "argentina", "buenos aires",
+    "mexico", "méxico", "ciudad de mexico",
+    "colombia", "bogota", "bogotá",
+    "chile", "santiago de chile",
+    "spain", "españa", "madrid", "barcelona",
+    "portugal", "lisboa", "lisbon", "porto,",
+    "england", "london",
+    "france", "paris",
+    "italy", "italia", "milan", "milano",
+    "china", "beijing", "shanghai",
+    "india", "mumbai", "delhi", "bangalore",
+    "canada", "toronto", "ontario",
+    "australia", "sydney", "melbourne",
+    "japan", "tokyo",
+    "netherlands", "amsterdam",
+    "switzerland", "zurich", "zürich",
+    "sweden", "stockholm",
+    "norway", "oslo",
+    "denmark", "copenhagen",
+    "austria", "wien", "vienna",
+]
+
+
+def check_location_is_brazilian(location: str | None) -> tuple:
+    """
+    Verifica se a localização do perfil é brasileira.
+    Retorna (True, motivo) se confirmado BR, (False, motivo) se estrangeiro,
+    (None, "") se inconclusivo.
+    """
+    if not location:
+        return None, ""
+    loc = location.lower().strip()
+    for flag in _NON_BR_FLAGS:
+        if flag in loc:
+            return False, f"Localização estrangeira detectada: '{location}'"
+    for term in _BR_LOCATION_TERMS:
+        if term in loc:
+            return True, f"Localização brasileira confirmada: '{location}'"
+    return None, ""
 
 def normalize_str(s: str) -> str:
     if not s: return ""
@@ -57,13 +125,24 @@ def is_same_person(name1: str, name2: str) -> bool:
     if not name1 or not name2:
         return False
         
-    c1 = normalize_str(name1)
-    c2 = normalize_str(name2)
+    def clean_name(n: str) -> str:
+        # Remove parenthesized or bracketed terms, e.g. "Giovanna (Compras)" -> "Giovanna"
+        n = re.sub(r'\s*[\(\[].*?[\)\]]', '', n)
+        # Remove hyphens or pipes followed by department/role terms, e.g. "Giovanna - Compras" -> "Giovanna"
+        n = re.sub(
+            r'\s*[-|]\s*(compras|logistica|suprimentos|vendas|comercial|financeiro|rh|diretora|diretor|gerente|buyer|procurement|supply|operacoes)\b.*',
+            '',
+            n,
+            flags=re.IGNORECASE
+        )
+        return n.strip()
+
+    c1 = normalize_str(clean_name(name1))
+    c2 = normalize_str(clean_name(name2))
     
     if c1 == c2:
         return True
         
-    import re
     from difflib import SequenceMatcher
     
     # Remove special characters and split to tokens
@@ -93,8 +172,10 @@ def is_same_person(name1: str, name2: str) -> bool:
         return matches >= 2
 
 
-async def get_seniority_level(role: str) -> int:
-    role = role.lower()
+async def get_seniority_level(role: str | None) -> int:
+    if not role:
+        return 2
+    role = str(role).lower()
     ctx = await BusinessContextService.get_tenant_context()
     rules = ctx.get("hierarchy", {}).get("seniority_rules", {})
     
@@ -114,8 +195,10 @@ async def get_seniority_level(role: str) -> int:
     
     return 2 
 
-async def get_department_tag(role: str) -> str:
-    role = role.lower()
+async def get_department_tag(role: str | None) -> str:
+    if not role:
+        return "Operations"
+    role = str(role).lower()
     ctx = await BusinessContextService.get_tenant_context()
     mapping = ctx.get("hierarchy", {}).get("department_mapping", {})
 

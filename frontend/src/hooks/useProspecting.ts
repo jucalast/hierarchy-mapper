@@ -378,6 +378,9 @@ export function useProspecting() {
         await apiPost(`/prospecting/sessions/${sessionId}/stop`, {});
       } catch (e) {
         console.warn("Erro ao parar no backend:", e);
+        // A chamada de stop pode não ter chegado ao servidor (falha de rede) —
+        // avisa o usuário em vez de só fingir que a busca parou.
+        setError("Não foi possível confirmar a parada no servidor; a busca pode continuar em segundo plano.");
       }
     }
     clearInterval(pollRef.current!);

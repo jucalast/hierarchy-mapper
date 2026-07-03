@@ -37,31 +37,59 @@
 
 /* Level Borders on Hover */
 .level_6:hover {
-    border-color: #7A8BFF !important;
+    border: 2px solid #7A8BFF !important;
+}
+.level_6:hover .seniorityWrapper {
+    border: 2px solid #7A8BFF !important;
+    border-bottom: none !important;
 }
 
 .level_5:hover {
-    border-color: #60A5FA !important;
+    border: 2px solid #60A5FA !important;
+}
+.level_5:hover .seniorityWrapper {
+    border: 2px solid #60A5FA !important;
+    border-bottom: none !important;
 }
 
 .level_4:hover {
-    border-color: #2DD4BF !important;
+    border: 2px solid #2DD4BF !important;
+}
+.level_4:hover .seniorityWrapper {
+    border: 2px solid #2DD4BF !important;
+    border-bottom: none !important;
 }
 
 .level_3:hover {
-    border-color: #4ADE80 !important;
+    border: 2px solid #4ADE80 !important;
+}
+.level_3:hover .seniorityWrapper {
+    border: 2px solid #4ADE80 !important;
+    border-bottom: none !important;
 }
 
 .level_2:hover {
-    border-color: #FBBF24 !important;
+    border: 2px solid #FBBF24 !important;
+}
+.level_2:hover .seniorityWrapper {
+    border: 2px solid #FBBF24 !important;
+    border-bottom: none !important;
 }
 
 .level_1:hover {
-    border-color: #A1A1AA !important;
+    border: 2px solid #A1A1AA !important;
+}
+.level_1:hover .seniorityWrapper {
+    border: 2px solid #A1A1AA !important;
+    border-bottom: none !important;
 }
 
 .level_0:hover {
-    border-color: #F4F4F5 !important;
+    border: 2px solid #F4F4F5 !important;
+}
+.level_0:hover .seniorityWrapper {
+    border: 2px solid #F4F4F5 !important;
+    border-bottom: none !important;
 }
 
 .handle {

@@ -18,8 +18,16 @@ interface UseNetworkFlowProps {
     confirmedBrand: string;
     confirmedLogo: string;
     getStableId: (n: any) => string;
+    /**
+     * Chave canônica de cache do grafo. Quando fornecida, é a ÚNICA usada para ler/gravar
+     * posições e arestas manuais — DEVE ser idêntica à passada para saveGraphState, senão
+     * o layout salvo por arraste não é restaurado. Cai no formato legado se ausente.
+     */
+    cacheId?: string;
     deleteEmployee?: (id: string) => void;
     editEmployee?: (id: string) => void;
+    isScanning?: boolean;
+    discovering?: boolean;
 }
 
 export function useNetworkFlow({
@@ -29,8 +37,11 @@ export function useNetworkFlow({
     confirmedBrand,
     confirmedLogo,
     getStableId,
+    cacheId: cacheIdProp,
     deleteEmployee,
     editEmployee,
+    isScanning = false,
+    discovering = false,
 }: UseNetworkFlowProps) {
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
@@ -38,6 +49,7 @@ export function useNetworkFlow({
 
     // 🔄 Transformação de dados e cálculo de Layout
     useEffect(() => {
+        console.log(`[useNetworkFlow] 🛠️ Calculando layout para ${rawEmployees.length} funcionários. isScanning: ${isScanning}, discovering: ${discovering}`);
         if (rawEmployees.length === 0) {
             setNodes([]);
             setEdges([]);
@@ -55,7 +67,10 @@ export function useNetworkFlow({
 
         // 1. Criar nós base
         const uiNodes: Node[] = visibleEmployees.map((emp) => {
-            const isRootNode = emp.id === 'root_company' || emp.level === 0;
+            // Apenas o nó com id literal 'root_company' é raiz — usar level===0 como
+            // critério adicional causava que funcionários sem level (defaulting to 0)
+            // fossem posicionados na mesma fileira do nó raiz e tratados como isRoot.
+            const isRootNode = emp.id === 'root_company';
             return {
                 id: emp.id.toString(),
                 type: 'supplyChain',
@@ -65,6 +80,7 @@ export function useNetworkFlow({
                     confirmedLogo: confirmedLogo,
                     onDelete: deleteEmployee,
                     onEdit: editEmployee,
+                    isLoading: isRootNode && (isScanning || discovering),
                 },
                 position: { x: 0, y: 0 }, // Dagre vai calcular
             };
@@ -74,7 +90,9 @@ export function useNetworkFlow({
         let finalEdges = calculateEdges(uiNodes, rawBackendEdges);
 
         // 3. Aplicar Cache de Edges (Conexões customizadas)
-        const cacheId = currentOrgId || confirmedBrand || "default";
+        // Usa a chave canônica passada pelo componente (idêntica à do saveGraphState).
+        // Só cai no formato legado se nenhuma for fornecida.
+        const cacheId = cacheIdProp || String(currentOrgId || confirmedBrand || "default");
         const edgesCacheKey = `edges-cache-${cacheId}`;
         let cachedEdges: Record<string, string> | null = null;
         try {
@@ -86,7 +104,9 @@ export function useNetworkFlow({
             finalEdges = finalEdges.filter(e => {
                 const childNode = uiNodes.find(n => n.id === e.target);
                 const childStableId = childNode ? getStableId(childNode) : e.target;
-                return !(childStableId in cachedEdges!);
+                const cachedParent = cachedEdges![childStableId];
+                // Só filtra a aresta do backend se houver um pai customizado válido na cache (diferente de "NONE")
+                return !cachedParent || cachedParent === "NONE";
             });
 
             Object.entries(cachedEdges).forEach(([childStableId, parentStableId]) => {
@@ -100,7 +120,7 @@ export function useNetworkFlow({
                             source: parentNode.id,
                             target: childNode.id,
                             animated: false,
-                            style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 },
+                            style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 3.0 },
                         });
                     }
                 }
@@ -218,7 +238,7 @@ export function useNetworkFlow({
         if (finalNodes.length === 1 && finalNodes[0].id === 'root_company') {
             setShouldFitView(true);
         }
-    }, [rawEmployees, rawBackendEdges, currentOrgId, confirmedBrand, confirmedLogo, getStableId]);
+    }, [rawEmployees, rawBackendEdges, currentOrgId, confirmedBrand, confirmedLogo, cacheIdProp, getStableId, deleteEmployee, editEmployee, isScanning, discovering]);
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => {
@@ -239,7 +259,7 @@ export function useNetworkFlow({
             setEdges((eds) => {
                 const filteredEdges = eds.filter((e) => e.target !== params.target);
                 return addEdge(
-                    { ...params, animated: false, style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 } },
+                    { ...params, animated: false, style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 3.0 } },
                     filteredEdges
                 );
             });

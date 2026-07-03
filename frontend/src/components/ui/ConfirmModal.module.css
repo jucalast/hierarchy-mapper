@@ -4,13 +4,22 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: color-mix(in srgb, var(--sw-bg) 60%, transparent);
     backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: fadeIn var(--transition-fast) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Variante "contida": mantém o fundo escurecido/borrado cobrindo a tela
+   inteira (mesmo overlay de sempre), mas alinha a caixa do modal para a
+   direita — onde o chat panel fica docado — em vez de centralizar na tela
+   toda. O chat panel sempre fica encostado na borda direita da viewport. */
+.overlayContained {
+    justify-content: flex-end;
+    padding-right: var(--space-24);
 }
 
 .modal {
@@ -18,22 +27,22 @@
     border: var(--sw-border-width) solid var(--sw-border);
     width: 100%;
     max-width: 400px;
-    border-radius: 16px;
-    padding: 24px;
+    border-radius: var(--radius-lg);
+    padding: var(--space-24);
     position: relative;
     box-shadow: var(--sw-shadow);
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: slideUp var(--transition-smooth) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .closeBtn {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: var(--space-16);
+    right: var(--space-16);
     background: transparent;
     border: none;
     color: var(--sw-text-muted);
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color var(--transition-fast);
 }
 
 .closeBtn:hover {
@@ -42,14 +51,14 @@
 
 .content {
     display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
+    gap: var(--space-16);
+    margin-bottom: var(--space-24);
 }
 
 .iconWrapper {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: var(--space-48);
+    height: var(--space-48);
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -64,7 +73,7 @@
 .textGroup {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .title {
@@ -84,19 +93,19 @@
 .actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .cancelBtn {
     background: transparent;
     border: var(--sw-border-width) solid var(--sw-border);
     color: var(--sw-text-base);
-    padding: 8px 16px;
-    border-radius: 8px;
+    padding: var(--space-8) var(--space-16);
+    border-radius: var(--radius-sm);
     font-size: var(--font-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
 }
 
 .cancelBtn:hover {
@@ -107,12 +116,12 @@
 .confirmBtn {
     border: none;
     color: #ffffff;
-    padding: 8px 16px;
-    border-radius: 8px;
+    padding: var(--space-8) var(--space-16);
+    border-radius: var(--radius-sm);
     font-size: var(--font-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
 }
 
 .confirm-danger {

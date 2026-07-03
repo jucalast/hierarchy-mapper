@@ -15,6 +15,7 @@ from typing import Optional
 from core.observability.logging_config import get_logger
 from modules.agent.service.prompts import SYSTEM_PROMPT_POWERFUL
 from modules.agent.service.helpers import _get_tools_called
+from modules.agent.service.core.pipelines.base import BasePipeline
 
 log = get_logger(__name__)
 
@@ -32,6 +33,17 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
 
     today = datetime.now().strftime('%Y-%m-%d')
 
+    # ── ESCAPAMENTO DE HISTÓRICO: Escopa as mensagens à última tarefa iniciada pelo usuário ──
+    _last_user_idx = 0
+    for _i, _m in enumerate(messages):
+        _msg_body = str(_m.get("content", "")).lower()
+        if _m.get("role") == "user" and any(kw in _msg_body for kw in ["execute a seguinte atividade", "atividade #", "execute agora"]):
+            _last_user_idx = _i
+        elif _m.get("role") == "user" and _last_user_idx == 0:
+            _last_user_idx = _i
+    
+    messages_scoped = messages[_last_user_idx:]
+
     # ── Extrai estado da investigação de forma robusta ──────────────────────
     # Inclui TODAS as ferramentas fundamentais para evitar loops
     _CORE_TRACKED = {
@@ -42,7 +54,7 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
         "generate_dossier", "deep_company_investigation", "evaluate_prospects",
         "generate_sales_message", "email_send", "whatsapp_send_message"
     }
-    tools_called = _get_tools_called(messages, target_tools=_CORE_TRACKED)
+    tools_called = _get_tools_called(messages_scoped, target_tools=_CORE_TRACKED)
     
     # Detecta rascunho pronto
     draft_done = "generate_sales_message" in tools_called
@@ -525,6 +537,8 @@ def _build_phase_status(messages: list, query_type: str = "agent_workflow", org_
             "   - Identifique a tarefa de ligação no Pipedrive (use `pipedrive_get_activities`).\n"
             "   - Marque-a como concluída (`done=true`) e adicione o resumo como nota.\n"
             "   - Se uma nova reunião ou follow-up foi acordado, use `pipedrive_create_task` para agendar.\n"
+            "   - 🎯 SUGIRA O AVANÇO DE ETAPA com base no CONTEÚDO REAL da ligação: chame `pipedrive_advance_deal(deal_id=<id>, target_stage='<ID da etapa>', reason='<motivo>')` — isso abre um card de confirmação para o João, NÃO avança sozinho. Ex.: ficou agendada uma reunião → 'Reunião Agendada' (4); cliente pediu proposta → 'Proposta em Andamento' (27); apenas qualificou interesse → 'Qualificação' (18)/'Contatado' (19). Descubra o deal_id via `pipedrive_get_deals`/`pipedrive_get_activities`. NUNCA retroceda de etapa nem repita a atual; respeite o funil do deal. "
+            f"{BasePipeline.STAGE_MAP_HINT}\n"
             "4. REGRA DE OURO (NÃO DUPLICAR): Antes de sugerir ou criar QUALQUER nova tarefa, você DEVE obrigatoriamente chamar `pipedrive_get_activities` para ver as tarefas futuras. Se já existir uma tarefa para o mesmo objetivo (ex: 'Enviar proposta'), VOCÊ ESTÁ PROIBIDO de sugerir uma nova. Apenas atualize a nota da tarefa existente se necessário.\n"
             "5. CONTINUIDADE: Sua missão só termina quando o CRM refletir a realidade da ligação. Sugira os botões de ação necessários.\n\n"
             "Seja proativo. Se o cliente pediu uma proposta, sua sugestão de próximo passo DEVE ser rascunhar essa proposta.",

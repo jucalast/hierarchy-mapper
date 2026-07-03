@@ -42,16 +42,54 @@ try:
 except ImportError:
     HAS_PYWIN32 = False
 
+
+def _ascii_safe_attachment_path(path: str) -> str:
+    """Retorna um caminho 100% ASCII para anexar no Outlook.
+
+    O `Attachments.Add` do Outlook falha (RPC 0x800706BE) quando o caminho contém
+    acentos/caracteres não-ASCII. Copiamos o arquivo para um temp de nome ASCII e
+    usamos o DisplayName do anexo (que aceita acentos) para o nome exibido. Se o
+    caminho já é ASCII, retorna-o intacto.
+    """
+    try:
+        path.encode("ascii")
+        return path  # já é ASCII, nada a fazer
+    except (UnicodeEncodeError, AttributeError):
+        pass
+    try:
+        import tempfile, shutil, hashlib
+        base = tempfile.gettempdir()
+        try:
+            import win32api
+            base = win32api.GetShortPathName(base)  # garante diretório ASCII (8.3)
+        except Exception:
+            pass
+        ext = os.path.splitext(path)[1] or ".pdf"
+        digest = hashlib.md5(path.encode("utf-8", "ignore")).hexdigest()[:10]
+        dst_dir = os.path.join(base, "linkb2b_attachments")
+        os.makedirs(dst_dir, exist_ok=True)
+        dst = os.path.join(dst_dir, f"att_{digest}{ext}")
+        shutil.copyfile(path, dst)
+        return dst
+    except Exception as e:
+        log.warning("email.attachment_ascii_copy_failed", error=str(e))
+        return path
+
+
 class EmailClient:
     """
     Cliente de email que utiliza integração direta com o Outlook (via pywin32) no Windows,
     ou SMTP/IMAP tradicional como fallback ou em outros sistemas.
     """
-    
+
     SMTP_SERVER = "smtp.office365.com"
     SMTP_PORT = 587
     IMAP_SERVER = "outlook.office365.com"
     IMAP_PORT = 993
+
+    # Servidores Office 365 que não aceitam mais autenticação básica (removida out/2022)
+    _MODERN_AUTH_SERVERS = {"outlook.office365.com", "outlook.office.com"}
+    _imap_legacy_warned: bool = False  # emite aviso apenas uma vez por processo
     
     def __init__(self, email_address=None, password=None, use_outlook_app=True):
         from core.config import settings
@@ -114,16 +152,29 @@ class EmailClient:
         log.error("email.outlook.error", context=context_msg, error=e)
         return False
 
-    def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False, attachment_paths: Optional[List[str]] = None):
+    def send_outbound_email(self, to_email: str, subject: str, html_body: str, tracking_id: Optional[str] = None, request_read_receipt: bool = False, attachment_paths: Optional[List[str]] = None, cc_list: Optional[List[str]] = None, attachment_names: Optional[List[Optional[str]]] = None):
         """
-        Envia e-mail via Outlook App ou SMTP com suporte a Recibo de Leitura.
+        Envia e-mail via Outlook App ou SMTP com suporte a Recibo de Leitura e cópia (CC).
+
+        cc_list: lista de endereços a colocar em cópia (CC). Usada automaticamente em
+                 e-mails de prospecção para incluir compras@ e suprimentos@.
+        attachment_names: nomes de EXIBIÇÃO opcionais, paralelos a attachment_paths
+                 (None = usa o basename real). Anexamos o arquivo original e apenas
+                 renomeamos o que o destinatário vê — evita cópias temporárias frágeis.
         """
+        def _display_name_for(index: int) -> Optional[str]:
+            if attachment_names and index < len(attachment_names):
+                return attachment_names[index]
+            return None
         # Delay humano
         time.sleep(random.uniform(1.0, 2.5))
 
         # Limpeza básica do e-mail (remove menções ou espaços acidentais)
         if to_email:
             to_email = to_email.strip().lstrip("@")
+
+        # Filtra entradas inválidas do cc_list
+        clean_cc = [e.strip() for e in (cc_list or []) if e and "@" in e and e.strip() != to_email]
 
         # Injetar Pixel de Rastreio
         final_body = html_body
@@ -138,9 +189,11 @@ class EmailClient:
                     pythoncom.CoInitialize()
                     outlook = self._get_outlook_instance(force_new=(attempt > 0))
                     if not outlook: raise Exception("Não foi possível conectar ao Outlook")
-                    
+
                     mail = outlook.CreateItem(0) # 0 = olMailItem
                     mail.To = to_email
+                    if clean_cc:
+                        mail.CC = "; ".join(clean_cc)
                     mail.Subject = subject
                     
                     # Mágica para pegar a ASSINATURA OFICIAL do Outlook:
@@ -170,15 +223,31 @@ class EmailClient:
                         for account in outlook.Session.Accounts:
                             if account.SmtpAddress.lower() == self.email_address.lower():
                                 mail._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
+                                # Ao forçar SendUsingAccount via COM, o Outlook pode NÃO gravar a
+                                # cópia em "Itens Enviados". Apontamos explicitamente a pasta Sent
+                                # dessa conta (olFolderSentMail = 5) para garantir o registro.
+                                try:
+                                    mail.SaveSentMessageFolder = account.DeliveryStore.GetDefaultFolder(5)
+                                except Exception as _sf_e:
+                                    log.warning("email.outlook.set_sent_folder_failed", error=str(_sf_e))
                                 break
-                    
+
                     # Anexos (aceita lista de caminhos absolutos)
                     if attachment_paths:
-                        for ap in attachment_paths:
+                        for _i, ap in enumerate(attachment_paths):
                             if ap and os.path.exists(ap):
                                 try:
-                                    mail.Attachments.Add(ap)
-                                    log.info("email.outlook.attachment_added", path=ap)
+                                    _add_path = _ascii_safe_attachment_path(ap)
+                                    att = mail.Attachments.Add(_add_path)
+                                    # Nome exibido: o solicitado, ou o basename original quando
+                                    # tivemos de anexar via cópia ASCII (para não vazar 'att_xxx.pdf').
+                                    _dn = _display_name_for(_i) or (os.path.basename(ap) if _add_path != ap else None)
+                                    if _dn:
+                                        try:
+                                            att.DisplayName = _dn
+                                        except Exception as dne:
+                                            log.warning("email.outlook.attachment_rename_failed", name=_dn, error=dne)
+                                    log.info("email.outlook.attachment_added", path=ap, display_name=_dn)
                                 except Exception as ae:
                                     log.warning("email.outlook.attachment_failed", path=ap, error=ae)
 
@@ -197,12 +266,14 @@ class EmailClient:
             msg = MIMEMultipart()
             msg['From'] = self.email_address
             msg['To'] = to_email
+            if clean_cc:
+                msg['CC'] = ", ".join(clean_cc)
             msg['Subject'] = subject
             msg.attach(MIMEText(final_body, 'html'))
 
             # Anexos SMTP
             if attachment_paths:
-                for ap in attachment_paths:
+                for _i, ap in enumerate(attachment_paths):
                     if ap and os.path.exists(ap):
                         try:
                             mime_type, _ = mimetypes.guess_type(ap)
@@ -211,9 +282,10 @@ class EmailClient:
                                 part = MIMEBase(main_type, sub_type)
                                 part.set_payload(f.read())
                             encoders.encode_base64(part)
-                            part.add_header('Content-Disposition', 'attachment', filename=os.path.basename(ap))
+                            _fname = _display_name_for(_i) or os.path.basename(ap)
+                            part.add_header('Content-Disposition', 'attachment', filename=_fname)
                             msg.attach(part)
-                            log.info("email.smtp.attachment_added", path=ap)
+                            log.info("email.smtp.attachment_added", path=ap, display_name=_fname)
                         except Exception as ae:
                             log.warning("email.smtp.attachment_failed", path=ap, error=ae)
 
@@ -229,9 +301,14 @@ class EmailClient:
                 log.error("email.sent.error", provider="smtp", error=e)
                 return False
 
-    def reply_to_email(self, entry_id: str, html_body: str, reply_all: bool = True, attachment_paths: Optional[List[str]] = None):
+    def reply_to_email(self, entry_id: str, html_body: str, reply_all: bool = True,
+                       attachment_paths: Optional[List[str]] = None,
+                       subject_hint: Optional[str] = None, contact_name: Optional[str] = None,
+                       attachment_names: Optional[List[Optional[str]]] = None):
         """
         Responde a um e-mail específico mantendo a Thread (In-Reply-To).
+        Quando GetItemFromID falha (entryId stale/corrompido), usa subject_hint para
+        localizar o e-mail nas pastas Inbox e Enviados.
         """
         if not self.use_outlook_app:
             log.warning("email.reply.outlook_only")
@@ -243,12 +320,66 @@ class EmailClient:
                 outlook = self._get_outlook_instance(force_new=(attempt > 0))
                 if not outlook: return False
 
-                # Localiza a mensagem original
+                # Localiza a mensagem original.
+                # GetItemFromID sem StoreID pode falhar em Exchange Online — tenta com StoreID de cada store.
+                namespace = outlook.GetNamespace("MAPI")
+                original_msg = None
                 try:
-                    namespace = outlook.GetNamespace("MAPI")
                     original_msg = namespace.GetItemFromID(entry_id)
-                except Exception as e:
-                    log.error("email.outlook.item_not_found", entry_id=entry_id[:10], error=e)
+                except Exception:
+                    for store in namespace.Stores:
+                        try:
+                            original_msg = namespace.GetItemFromID(entry_id, store.StoreID)
+                            if original_msg:
+                                break
+                        except Exception:
+                            continue
+
+                # Fallback por assunto: busca nas pastas Inbox + Enviados quando o entryId falhou.
+                if not original_msg and subject_hint:
+                    log.warning("email.outlook.entry_id_fallback", entry_id=entry_id[:10], subject_hint=subject_hint[:40])
+                    try:
+                        import re as _re
+                        _clean_subj = subject_hint.lower().strip()
+                        _folders_to_try = []
+                        try:
+                            for _store in namespace.Stores:
+                                if "joao.moura" in (_store.DisplayName or "").lower():
+                                    _root = _store.GetRootFolder()
+                                    for _f in _root.Folders:
+                                        _fname = (_f.Name or "").lower()
+                                        if _fname in ("caixa de entrada", "inbox", "itens enviados", "sent items", "sent"):
+                                            _folders_to_try.append(_f)
+                                    break
+                        except Exception:
+                            pass
+                        if not _folders_to_try:
+                            _folders_to_try = [namespace.GetDefaultFolder(6), namespace.GetDefaultFolder(5)]
+
+                        for _folder in _folders_to_try:
+                            try:
+                                _items = _folder.Items
+                                _items.Sort("[ReceivedTime]", True)
+                                for _item in _items:
+                                    try:
+                                        _subj = (getattr(_item, "Subject", "") or "").lower().strip()
+                                        # Remove prefixo "re:", "re: " antes de comparar
+                                        _subj_clean = _re.sub(r'^(re:\s*)+', '', _subj)
+                                        _hint_clean = _re.sub(r'^(re:\s*)+', '', _clean_subj)
+                                        if _subj_clean == _hint_clean or _hint_clean in _subj_clean or _subj_clean in _hint_clean:
+                                            original_msg = _item
+                                            break
+                                    except Exception:
+                                        continue
+                            except Exception:
+                                continue
+                            if original_msg:
+                                break
+                    except Exception as _fe:
+                        log.warning("email.outlook.subject_fallback_failed", error=_fe)
+
+                if not original_msg:
+                    log.error("email.outlook.item_not_found", entry_id=entry_id[:10], subject_hint=subject_hint)
                     return False
 
                 # Cria a resposta (Reply ou ReplyAll)
@@ -273,14 +404,27 @@ class EmailClient:
                     for account in outlook.Session.Accounts:
                         if account.SmtpAddress.lower() == self.email_address.lower():
                             reply_msg._oleobj_.Invoke(*(64209, 0, 8, 0, account)) # SendUsingAccount
+                            # Garante a cópia em "Itens Enviados" dessa conta (ver send_outbound_email).
+                            try:
+                                reply_msg.SaveSentMessageFolder = account.DeliveryStore.GetDefaultFolder(5)
+                            except Exception as _sf_e:
+                                log.warning("email.outlook.reply_set_sent_folder_failed", error=str(_sf_e))
                             break
 
                 # Anexos
                 if attachment_paths:
-                    for ap in attachment_paths:
+                    for _i, ap in enumerate(attachment_paths):
                         if ap and os.path.exists(ap):
                             try:
-                                reply_msg.Attachments.Add(ap)
+                                _add_path = _ascii_safe_attachment_path(ap)
+                                att = reply_msg.Attachments.Add(_add_path)
+                                _dn = (attachment_names[_i] if attachment_names and _i < len(attachment_names) else None) \
+                                    or (os.path.basename(ap) if _add_path != ap else None)
+                                if _dn:
+                                    try:
+                                        att.DisplayName = _dn
+                                    except Exception as dne:
+                                        log.warning("email.outlook.reply_attachment_rename_failed", name=_dn, error=dne)
                             except Exception as ae:
                                 log.warning("email.outlook.reply_attachment_failed", path=ap, error=ae)
 
@@ -349,6 +493,21 @@ class EmailClient:
         else:
             # Fallback IMAP (exige senha)
             if not self.password:
+                return []
+            # Office 365 removeu autenticação básica do IMAP em out/2022.
+            # Tentativas retornam "AUTHENTICATE failed" — aborta antes de conectar.
+            from core.config import settings
+            is_modern_auth_server = self.IMAP_SERVER in self._MODERN_AUTH_SERVERS
+            if is_modern_auth_server and not getattr(settings.email, "imap_legacy_auth", False):
+                if not EmailClient._imap_legacy_warned:
+                    log.warning(
+                        "email.imap.skipped.modern_auth_required",
+                        server=self.IMAP_SERVER,
+                        hint="Office 365 não aceita mais Basic Auth para IMAP. "
+                             "Configure EMAIL_SCAN_IMAP_LEGACY_AUTH=true se o tenant ainda tiver legacy auth, "
+                             "ou implemente OAuth2/Graph API.",
+                    )
+                    EmailClient._imap_legacy_warned = True
                 return []
             try:
                 mail = imaplib.IMAP4_SSL(self.IMAP_SERVER)
@@ -665,7 +824,11 @@ class EmailClient:
                         
                         # Usamos MAPI Property Tags para maior compatibilidade no Restrict
                         # 0x0065001F = SenderEmailAddress, 0x0E04001F = DisplayTo, 0x0E03001F = DisplayCc, 0x0037001F = Subject, 0x1000001F = Body
-                        if "@" in q_clean:
+                        # Buscas por domínio puro (ex: "empresa.com.br", sem "@") também precisam checar
+                        # SenderEmailAddress + Body — do contrário o Restrict() nativo do Outlook só compara
+                        # contra SenderName (nome de exibição, não o e-mail) e Subject/To/Cc, descartando a
+                        # maioria dos e-mails reais da empresa antes mesmo do filtro em Python rodar.
+                        if "@" in q_clean or "." in q_clean:
                             filter_str = (
                                 f"@SQL=(\"http://schemas.microsoft.com/mapi/proptag/0x0065001F\" LIKE '%{q_clean}%' "
                                 f"OR \"http://schemas.microsoft.com/mapi/proptag/0x0E04001F\" LIKE '%{q_clean}%' "

@@ -24,15 +24,12 @@ from .service.manual_enricher import enrich_employee_manually, update_employee_d
 from .service.hierarchy_loader import get_stored_hierarchy, get_stored_hierarchy_by_pipedrive
 from .service.hierarchy_refiner import refine_and_persist
 from .service.b2b_scanner import discover_employees, discover_employees_stream
-from .service.filters import get_seniority_level, get_department_tag
+from .service.filters import get_seniority_level, get_department_tag, is_same_person
 from .service.cnpj_resolver import fetch_company_data_by_cnpj, build_full_address
 from .service.org_persistence import upsert_organization, persist_socios
 from .service.graph_builder import build_root_node, build_socio_nodes, assign_managers, reparent_subordinates
 
 router = APIRouter()
-
-# Armazena o subprocesso ativo de raspagem do LinkedIn para permitir controle interativo por stdin
-active_scraper_process = None
 
 
 @router.post("/candidate-action")
@@ -87,11 +84,12 @@ async def get_company_hierarchy(
 
     temp_employees = []
     for idx, socio in enumerate(qsa):
-        cargo = socio.get("qualificacao_socio", "Sócio")
+        cargo = socio.get("qualificacao_socio") or "Sócio"
+        cargo_lower = cargo.lower()
         temp_employees.append(EmployeeNode(
-            id=f"socio_{idx}", name=socio.get("nome_socio", "Sócio Anônimo"), role=cargo,
+            id=f"socio_{idx}", name=socio.get("nome_socio") or "Sócio Anônimo", role=cargo,
             department="Quadro de Sócios (QSA)", company=razao_social, manager_id=None,
-            level=1 if "sócio" in cargo.lower() or "administrador" in cargo.lower() else await get_seniority_level(cargo),
+            level=1 if "sócio" in cargo_lower or "administrador" in cargo_lower else await get_seniority_level(cargo),
         ))
 
     raw_name = data.get("nome_fantasia") or razao_social
@@ -99,9 +97,9 @@ async def get_company_hierarchy(
     domain_guess = domain or f"{search_name.lower().replace(' ', '')}.com.br"
 
     for lead in await discover_employees(search_name, domain_guess, email_api_key=EMAIL_API_KEY, max_results=100):
-        cargo = lead.get("role", "Especialista")
+        cargo = lead.get("role") or "Especialista"
         temp_employees.append(EmployeeNode(
-            id=f"engine_{len(temp_employees)}", name=lead.get("name", "Colaborador"), role=cargo,
+            id=f"engine_{len(temp_employees)}", name=lead.get("name") or "Colaborador", role=cargo,
             department=await get_department_tag(cargo), company=lead.get("company"),
             manager_id=None, level=await get_seniority_level(cargo),
             email=lead.get("email"), linkedin=lead.get("linkedin"),
@@ -237,7 +235,7 @@ async def stream_company_hierarchy(
                     f"node_{re.sub(r'[^a-zA-Z0-9]', '_', href.split('/in/')[-1])}" if "/in/" in href
                     else f"node_{hash(href)}"
                 )
-                if any(h.id == node_id or (h.name.lower() == name_norm and h.role.lower() == lead.get("role", "").lower()) for h in hierarchy_pool):
+                if any(h.id == node_id or is_same_person(h.name, lead.get("name", "")) for h in hierarchy_pool):
                     continue
 
                 emp = EmployeeNode(
@@ -249,6 +247,7 @@ async def stream_company_hierarchy(
                     education=lead.get("education"), location=lead.get("location"),
                     connections=lead.get("connections"), highlights=lead.get("highlights"),
                     observations=lead.get("observations"), temperature=lead.get("temperature"),
+                    pipedrive_id=lead.get("pipedrive_id"), source=lead.get("source"),
                 )
                 emp.manager_id = await assign_managers(emp, hierarchy_pool)
                 reparented = reparent_subordinates(emp, hierarchy_pool)
@@ -259,6 +258,10 @@ async def stream_company_hierarchy(
 
             if new_nodes:
                 yield f"data: {json.dumps({'type': 'batch', 'nodes': new_nodes}, ensure_ascii=False)}\n\n"
+
+        if org_id:
+            from modules.agent.service.tools.intelligence import batch_discover_and_validate_org_emails
+            asyncio.create_task(batch_discover_and_validate_org_emails(org_id))
 
         yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
 
@@ -404,8 +407,8 @@ async def get_linkedin_scrape_preview():
     )
 
 
-@router.get("/linkedin-scrape/stream")
-async def stream_linkedin_scrape(
+@router.post("/linkedin-scrape/start")
+async def start_linkedin_scrape(
     company_url: str = Query(..., description="A URL da empresa no LinkedIn"),
     session_cookie: Optional[str] = Query(None, description="O cookie li_at opcional"),
     headless: bool = Query(True, description="Se deve rodar em segundo plano"),
@@ -414,462 +417,31 @@ async def stream_linkedin_scrape(
     model: Optional[str] = Query(None, description="Modelo de IA selecionado"),
 ):
     """
-    Executa o scraping do LinkedIn em segundo plano e transmite os logs do terminal,
-    as notificações de novos prints (screenshots) e os resultados finais via Server-Sent Events (SSE).
+    Enfileira o scraping do LinkedIn como um background job (ARQ), desacoplado
+    da conexão HTTP. O progresso é transmitido via WebSocket em /jobs/ws/{job_id}.
     """
-    import subprocess
-    import sys
-    import os
-    import json
-    import uuid
-    import asyncio
-    from fastapi.responses import StreamingResponse
-    
-    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    tmp_dir = os.path.join(backend_dir, "tmp")
-    os.makedirs(tmp_dir, exist_ok=True)
-    
-    unique_id = str(uuid.uuid4())
-    output_filepath = os.path.join(tmp_dir, f"hierarchy_scan_{unique_id}.json")
-    
-    python_exe = sys.executable
-    script_path = os.path.join(backend_dir, "scripts", "test_hierarchy_scan.py")
-    
-    # Prepara o comando
-    cmd = [python_exe, "-X", "utf8", script_path, company_url, output_filepath, "--no-delay"]
-    
-    env = os.environ.copy()
-    if session_cookie:
-        env["LINKEDIN_LI_AT"] = session_cookie
-    env["LINKEDIN_HEADLESS"] = "true" if headless else "false"
-    
-    # Remove qualquer screenshot antigo para iniciar do zero
-    preview_path = os.path.join(tmp_dir, "scraper_preview.jpg")
-    if os.path.exists(preview_path):
-        try:
-            os.remove(preview_path)
-        except Exception:
-            pass
+    from arq import create_pool
+    from core.infra.redis_config import redis_settings
 
-    async def sse_generator():
-        # Helper para enviar log para o SSE e para o Terminal via Redis
-        async def send_log(message: str, msg_type: str = "log"):
-            yield_data = f"data: {json.dumps({'type': msg_type, 'message': message}, ensure_ascii=False)}\n\n"
-            if redis_client:
-                try:
-                    loop.run_in_executor(
-                        None, 
-                        lambda: redis_client.publish(
-                            "linkedin_scan_logs", 
-                            json.dumps({"message": message}, ensure_ascii=False)
-                        )
-                    )
-                except Exception:
-                    pass
-            return yield_data
-
-        # 🏢 IDENTIFICAÇÃO DA ORGANIZAÇÃO (CONTEXTO)
-        from sqlalchemy import select, func
-        from models.organization.organization import Organization
-        from models.people.employee import Employee
-        from .service.candidate_processor import CandidateProcessor
-        
-        db_org = None
-        async with async_session() as session:
-            clean_url = company_url.split("/people/")[0].split("?")[0].rstrip("/")
-            res = await session.execute(
-                select(Organization).where(
-                    (Organization.linkedin_url.contains(clean_url)) | 
-                    (func.lower(Organization.name).contains(clean_url.split("/")[-1].replace("-", " ")))
-                )
-            )
-            db_org = res.scalars().first()
-            
-            if db_org:
-                yield await send_log(f"[Agent] Empresa identificada: {db_org.name} (ID: {db_org.id})")
-            else:
-                yield await send_log(f"[Agent] Empresa não encontrada no banco. Criando registro temporário para {clean_url.split('/')[-1]}...")
-                db_org = Organization(
-                    name=clean_url.split("/")[-1].replace("-", " ").title(),
-                    linkedin_url=company_url,
-                    source="discovery_scan"
-                )
-                session.add(db_org)
-                await session.commit()
-                await session.refresh(db_org)
-
-            # 🚀 LIMPEZA: Deleta funcionários antigos (MENOS Sócios/QSA e decisões manuais)
-            # Preservamos contatos que já possuem cargo definido (aprovados) ou foram reprovados
-            from sqlalchemy import delete, and_, not_, or_
-            await session.execute(
-                delete(Employee).where(
-                    and_(
-                        Employee.company_id == db_org.id,
-                        not_(
-                            or_(
-                                Employee.department == "Quadro de Sócios (QSA)",
-                                Employee.seniority == 6,
-                                # 🛡️ Preservar decisões: Qualquer coisa que não seja 'Análise Humana' ou genérico
-                                and_(
-                                    Employee.role != "Análise Humana",
-                                    Employee.role != "Não Identificado",
-                                    Employee.role != "Erro no Processamento",
-                                    Employee.role != "Professional"
-                                )
-                            )
-                        )
-                    )
-                )
-            )
-            await session.commit()
-            yield f"data: {json.dumps({'type': 'clear_nodes'}, ensure_ascii=False)}\n\n"
-
-        # ─── Compatibilidade Windows: subprocess via thread + asyncio.Queue ───
-        # asyncio.create_subprocess_exec NÃO funciona no WindowsSelectorEventLoop.
-        import subprocess
-        import threading
-        import queue as thread_queue
-
-        loop = asyncio.get_running_loop()
-        log.info("hierarchy.scrape.loop_check", loop_type=str(type(loop)))
-
-        line_queue: thread_queue.Queue = thread_queue.Queue()
-        process_ref: dict = {}
-
-        def run_scraper():
-            """Roda o subprocesso em thread bloqueante e enfileira linhas."""
-            try:
-                proc = subprocess.Popen(
-                    cmd,
-                    env=env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    stdin=subprocess.PIPE,
-                    encoding="utf-8",
-                    errors="replace",
-                )
-                process_ref["proc"] = proc
-                global active_scraper_process
-                active_scraper_process = proc  # type: ignore[assignment]
-                for line in proc.stdout:  # type: ignore[union-attr]
-                    line_queue.put(("line", line.rstrip()))
-                # Stdout fechou — enfileira "done" ANTES de proc.wait()
-                # O proc.wait() pode demorar (cleanup do Playwright/Chromium),
-                # mas o frontend já pode começar a processar os resultados.
-                rc = proc.poll()  # Tenta pegar o returncode imediatamente
-                line_queue.put(("done", rc if rc is not None else 0))
-                proc.wait()  # Aguarda em background (sem bloquear a fila)
-            except Exception as exc:
-                line_queue.put(("error", str(exc)))
-
-        scraper_thread = threading.Thread(target=run_scraper, daemon=True)
-        scraper_thread.start()
-        
-        try:
-            yield await send_log("[Agent] Inicializando motor de automação Playwright...")
-            
-            returncode = 0
-            while True:
-                # Polling não-bloqueante da fila em asyncio
-                try:
-                    kind, payload = await loop.run_in_executor(
-                        None,
-                        lambda: line_queue.get(timeout=10)  # 10s entre mensagens é suficiente
-                    )
-                except Exception:
-                    # Timeout de 10s sem mensagem — verifica se o processo já terminou
-                    proc = process_ref.get("proc")
-                    if proc and proc.poll() is not None:
-                        # Processo já terminou — prossegue sem aguardar mais
-                        returncode = proc.returncode or 0
-                        yield await send_log("[Agent] Processo finalizado. Iniciando processamento...")
-                        break
-                    yield await send_log("[Agent] Aguardando resposta do scraper...")
-                    continue
-
-                if kind == "done":
-                    returncode = payload
-                    break
-                elif kind == "error":
-                    yield await send_log(f"[Agent Fatal] Erro ao iniciar scraper: {payload}", "error")
-                    return
-                else:
-                    line: str = payload
-                    if not line:
-                        continue
-                    # Intercepta notificações de novos screenshots e cookies capturados
-                    if "[SCREENSHOT_UPDATED]" in line:
-                        yield f"data: {json.dumps({'type': 'screenshot'})}\n\n"
-                    elif line.startswith("[COOKIE_CAPTURED] "):
-                        cookie_val = line.split("[COOKIE_CAPTURED] ")[1].strip()
-                        yield f"data: {json.dumps({'type': 'cookie', 'cookie': cookie_val})}\n\n"
-                    else:
-                        yield await send_log(line)
-            
-            # Aguarda a finalização definitiva
-            if returncode != 0:
-                yield await send_log(f"[Agent Error] O processo secundário encerrou com código de erro {returncode}", "error")
-                return
-                
-            # Lê o JSON de saída final gerado pelo script
-            if os.path.exists(output_filepath):
-                with open(output_filepath, "r", encoding="utf-8") as f:
-                    results_data = json.load(f)
-                
-                if results_data:
-                    yield await send_log(f"[AI Filter] Iniciando processamento inteligente de {len(results_data)} perfis...")
-                    
-                    # Deduplica por linkedin_url
-                    unique_employees = []
-                    seen_urls = set()
-                    for emp in results_data:
-                        url = emp.get("linkedin_url")
-                        if url:
-                            clean_url_emp = url.split("?")[0].rstrip("/")
-                            if clean_url_emp not in seen_urls:
-                                seen_urls.add(clean_url_emp)
-                                unique_employees.append(emp)
-                        else:
-                            unique_employees.append(emp)
-                    
-                    # 🚀 PROCESSAMENTO COM CANDIDATE_PROCESSOR (Em Lotes de 10 para Performance)
-                    nodes_to_yield = []
-                    async with async_session() as session:
-                        stmt_rej = select(Employee).where(
-                            Employee.company_id == db_org.id,
-                            (Employee.role == "Reprovado") | (Employee.department == "Reprovado")
-                        )
-                        res_rej = await session.execute(stmt_rej)
-                        rejected_urls = {emp.linkedin_url.split("?")[0].rstrip("/") for emp in res_rej.scalars().all() if emp.linkedin_url}
-
-                        # Prepara candidatos válidos
-                        valid_candidates = []
-                        for idx, emp in enumerate(unique_employees):
-                            emp_url = emp.get("linkedin_url", "").split("?")[0].rstrip("/")
-                            if emp_url in rejected_urls:
-                                yield await send_log(f"⏩ [Ignorado] {emp.get('name')} já foi reprovado anteriormente.")
-                                continue
-                            
-                            valid_candidates.append({
-                                "idx": idx,
-                                "name": emp.get("name"),
-                                "role": emp.get("role"),
-                                "linkedin_url": emp_url,
-                                "context": [
-                                    f"--- DADOS RASPADO DO LINKEDIN ---",
-                                    f"NOME: {emp.get('name')}",
-                                    f"CARGO EXIBIDO: {emp.get('role')}",
-                                    f"LOCALIZAÇÃO: {emp.get('location', 'Brasil')}",
-                                    f"PERFIL: {emp_url}"
-                                ],
-                                "emp_raw": emp
-                            })
-
-                        # Processa em lotes de 10
-                        from .service.role_engine import role_engine
-                        batch_size = 10
-                        for i in range(0, len(valid_candidates), batch_size):
-                            batch = valid_candidates[i:i + batch_size]
-                            yield await send_log(f"🧠 [AI Batch] Processando lote {i//batch_size + 1} ({len(batch)} perfis)...")
-                            
-                            try:
-                                batch_results = await role_engine.distill_roles_batch_v2(
-                                    batch,
-                                    db_org.name,
-                                    area_focus=area_focus or "compras",
-                                    product_focus=product_focus or "Geral B2B"
-                                )
-                                
-                                # 🚀 PROCESSAMENTO PARALELO DE E-MAILS PARA O LOTE
-                                approved_tasks = []
-                                approved_candidates_data = []
-
-                                for c in batch:
-                                    res = batch_results.get(c['idx'])
-                                    if not res or not res.get("is_valid"):
-                                        yield await send_log(f"❌ [Filtrado] {c['name']} ({c['role']})")
-                                        continue
-
-                                    # Prepara dados para processamento
-                                    emp_name = res.get("proper_name", c['name'])
-                                    approved_candidates_data.append({
-                                        "res": res,
-                                        "candidate": c,
-                                        "emp_name": emp_name
-                                    })
-
-                                    # Cria tarefa de descoberta de e-mail se houver domínio
-                                    if db_org and db_org.domain:
-                                        try:
-                                            name_parts = emp_name.split()
-                                            first_name = name_parts[0] if name_parts else ""
-                                            last_name = name_parts[-1] if len(name_parts) > 1 else ""
-                                            if first_name and last_name:
-                                                from core.external.email_service import discover_and_validate_email
-                                                approved_tasks.append(discover_and_validate_email(
-                                                    first=first_name,
-                                                    last=last_name,
-                                                    domain=db_org.domain,
-                                                    do_smtp=True
-                                                ))
-                                            else:
-                                                approved_tasks.append(asyncio.sleep(0, result=None))
-                                        except Exception:
-                                            approved_tasks.append(asyncio.sleep(0, result=None))
-                                    else:
-                                        approved_tasks.append(asyncio.sleep(0, result=None))
-
-                                # Executa todas as descobertas de e-mail em paralelo
-                                email_results = await asyncio.gather(*approved_tasks)
-
-                                # Processa cada aprovado com seu respectivo e-mail
-                                for idx, data in enumerate(approved_candidates_data):
-                                    res = data['res']
-                                    c = data['candidate']
-                                    emp_name = data['emp_name']
-                                    emp_email_data = email_results[idx]
-                                    emp_email = emp_email_data.get("email") if emp_email_data else None
-
-                                    final_role = res.get("role", c['role'])
-                                    dept = res.get("department", "A validar")
-                                    score = res.get("matching_score", 50)
-                                    evidence = res.get("evidence")
-                                    emp_url = c['linkedin_url']
-                                    emp_raw = c['emp_raw']
-
-                                    # Resolução resiliente da localização
-                                    fallback_loc = "Brasil"
-                                    if db_org and db_org.address:
-                                        normalized = db_org.address.replace(",", " - ")
-                                        addr_parts = [p.strip() for p in normalized.split(" - ") if p.strip()]
-                                        if len(addr_parts) >= 2:
-                                            city = addr_parts[-2].title()
-                                            state = addr_parts[-1].upper()
-                                            fallback_loc = f"{city}, {state}, Brasil" if len(state) == 2 else f"{city}, {state}"
-                                        else:
-                                            fallback_loc = db_org.address
-
-                                    emp_loc = emp_raw.get("location")
-                                    if not emp_loc or emp_loc == "Localização não identificada":
-                                        emp_loc = fallback_loc
-
-                                    existing_res = await session.execute(
-                                        select(Employee).where(Employee.linkedin_url == emp_url)
-                                    )
-                                    existing = existing_res.scalars().first()
-                                    
-                                    if not existing:
-                                        new_emp = Employee(
-                                            name=emp_name,
-                                            role=final_role,
-                                            department=dept,
-                                            linkedin_url=emp_url,
-                                            profile_pic=emp_raw.get("avatar"),
-                                            location=emp_loc,
-                                            company_id=db_org.id,
-                                            is_discovery=1,
-                                            source="discovery_scan",
-                                            matching_score=score,
-                                            evidence=evidence,
-                                            description=c['role'],
-                                            email=emp_email,
-                                        )
-                                        session.add(new_emp)
-                                        await session.commit()
-                                        await session.refresh(new_emp)
-                                        employee_id = f"node_{new_emp.id}"
-                                    else:
-                                        # 🛡️ PROTEÇÃO: Não sobrescreve se o contato já foi aprovado ou se o novo status é "pior"
-                                        current_is_valid = existing.role and "análise humana" not in existing.role.lower() and "reprovado" not in existing.role.lower()
-                                        new_is_vague = "análise humana" in final_role.lower()
-                                        
-                                        if current_is_valid and new_is_vague:
-                                            # Mantém o que já estava lá (decisão manual ou automática anterior)
-                                            yield await send_log(f"ℹ️ [Preservado] {emp_name} já possui cargo definido.")
-                                        else:
-                                            existing.role = final_role
-                                            existing.department = dept
-                                            existing.matching_score = score
-                                            existing.company_id = db_org.id
-                                            if not existing.description: existing.description = c['role']
-                                            if not existing.profile_pic: existing.profile_pic = emp_raw.get("avatar")
-                                            if not existing.location or existing.location == "Localização não identificada":
-                                                existing.location = emp_loc
-                                            if not existing.evidence: existing.evidence = evidence
-                                            if not existing.email: existing.email = emp_email
-                                            await session.commit()
-                                        
-                                        employee_id = f"node_{existing.id}"
-                                    
-                                    node = {
-                                        "id": employee_id,
-                                        "name": emp_name,
-                                        "role": final_role,
-                                        "department": dept,
-                                        "company": db_org.name,
-                                        "linkedin": emp_url,
-                                        "avatar": emp_raw.get("avatar"),
-                                        "profile_pic": emp_raw.get("avatar"),
-                                        "location": emp_loc,
-                                        "matching_score": score,
-                                        "observations": c['role'],
-                                        "evidence": evidence,
-                                        "email": emp_email or (existing.email if existing else None),
-                                    }
-                                    nodes_to_yield.append(node)
-                                    yield await send_log(f"✅ [Aprovado] {emp_name} -> {final_role} ({dept})")
-                                    
-                                    if len(nodes_to_yield) >= 3:
-                                        yield f"data: {json.dumps({'type': 'batch', 'nodes': nodes_to_yield}, ensure_ascii=False)}\n\n"
-                                        nodes_to_yield = []
-
-                                        
-                            except Exception as e:
-                                yield await send_log(f"⚠️ [Erro no Lote] {str(e)}", "error")
-
-                        if nodes_to_yield:
-                            yield f"data: {json.dumps({'type': 'batch', 'nodes': nodes_to_yield}, ensure_ascii=False)}\n\n"
-
-
-                    yield await send_log(f"🎉 Processamento concluído!")
-                
-                yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
-                
-                try:
-                    os.remove(output_filepath)
-                except Exception:
-                    pass
-            else:
-                yield await send_log("[Agent Error] O arquivo de resultados não foi gerado pelo Scraper.", "error")
-                yield f"data: {json.dumps({'type': 'done'}, ensure_ascii=False)}\n\n"
-                
-        except Exception as e:
-            try:
-                yield f"data: {json.dumps({'type': 'error', 'message': f'[Agent Fatal Error] Falha na transmissão: {str(e)}'}, ensure_ascii=False)}\n\n"
-            except Exception:
-                pass
-        finally:
-            proc = process_ref.get("proc")
-            if proc:
-                try:
-                    proc.stdin.close()
-                except Exception:
-                    pass
-                try:
-                    proc.stdout.close()
-                except Exception:
-                    pass
-                try:
-                    if proc.poll() is None:
-                        proc.terminate()
-                except Exception:
-                    pass
-                
-    return StreamingResponse(sse_generator(), media_type="text/event-stream")
+    try:
+        redis = await create_pool(redis_settings)
+        job = await redis.enqueue_job(
+            "run_linkedin_scrape_task",
+            company_url=company_url,
+            session_cookie=session_cookie,
+            headless=headless,
+            area_focus=area_focus,
+            product_focus=product_focus,
+            model=model,
+        )
+        return {"job_id": job.job_id, "status": "queued"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao enfileirar scraping: {str(e)}")
 
 
 @router.post("/linkedin-scrape/interact")
 async def linkedin_scrape_interact(
+    job_id: str = Query(..., description="ID do job de scraping em andamento"),
     action: str = Query(..., description="Ação: click, type, press"),
     x: Optional[float] = Query(None),
     y: Optional[float] = Query(None),
@@ -878,49 +450,45 @@ async def linkedin_scrape_interact(
 ):
     """
     Interage com o navegador de raspagem em tempo real (clique, escrita ou teclas).
-    Permite controle remoto completo diretamente da interface web!
+    Publica o comando no canal Redis do job para o worker repassar ao subprocesso.
     """
-    global active_scraper_process
-    
-    if not active_scraper_process or active_scraper_process.returncode is not None:
-        raise HTTPException(status_code=400, detail="Não há nenhum agente de raspagem ativo no momento.")
-        
+    command: dict = {"action": action}
+    if action == "click" and x is not None and y is not None:
+        command.update({"x": x, "y": y})
+    elif action == "type" and text:
+        command["text"] = text
+    elif action == "press" and key:
+        command["key"] = key
+    else:
+        raise HTTPException(status_code=400, detail="Ação de interação inválida ou parâmetros insuficientes.")
+
+    if not redis_client:
+        raise HTTPException(status_code=503, detail="Redis indisponível para enviar comandos ao agente.")
+
     try:
-        command = ""
-        if action == "click" and x is not None and y is not None:
-            command = f"cmd_click {x} {y}\n"
-        elif action == "type" and text:
-            # Substitui quebras de linha para evitar que o comando quebre
-            safe_text = text.replace("\n", " ")
-            command = f"cmd_type {safe_text}\n"
-        elif action == "press" and key:
-            command = f"cmd_press {key}\n"
-            
-        if command:
-            active_scraper_process.stdin.write(command.encode('utf-8'))
-            await active_scraper_process.stdin.drain()
-            return {"status": "success", "message": f"Comando '{action}' enviado ao agente."}
-        else:
-            raise HTTPException(status_code=400, detail="Ação de interação inválida ou parâmetros insuficientes.")
-            
+        import asyncio
+        await asyncio.to_thread(redis_client.publish, f"scraper_commands_{job_id}", json.dumps(command, ensure_ascii=False))
+        return {"status": "success", "message": f"Comando '{action}' enviado ao agente."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao interagir com o agente: {str(e)}")
 
 
 @router.post("/linkedin-scrape/stop")
-async def linkedin_scrape_stop():
+async def linkedin_scrape_stop(job_id: str = Query(..., description="ID do job de scraping em andamento")):
     """
     Para o processo de varredura ativo graciosamente, forçando a extração imediata
     de todas as pessoas localizadas até então.
     """
-    global active_scraper_process
-    
-    if not active_scraper_process or active_scraper_process.returncode is not None:
-        raise HTTPException(status_code=400, detail="Não há nenhum agente de raspagem ativo no momento.")
-        
+    if not redis_client:
+        raise HTTPException(status_code=503, detail="Redis indisponível para enviar comandos ao agente.")
+
     try:
-        active_scraper_process.stdin.write("cmd_stop\n".encode('utf-8'))
-        await active_scraper_process.stdin.drain()
+        import asyncio
+        # Flag durável (TTL 1h): garante que o stop é respeitado mesmo se o job ainda
+        # estiver na fila do ARQ (sem nenhum listener de pub/sub ativo ainda) ou se a
+        # mensagem de pub/sub for perdida por qualquer motivo.
+        await asyncio.to_thread(redis_client.set, f"scraper_stop_requested_{job_id}", "1", ex=3600)
+        await asyncio.to_thread(redis_client.publish, f"scraper_commands_{job_id}", json.dumps({"action": "stop"}, ensure_ascii=False))
         return {"status": "success", "message": "Solicitação de parada graciosa enviada ao agente."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao parar o agente graciosamente: {str(e)}")

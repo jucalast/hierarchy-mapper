@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -52,6 +52,8 @@ class PipedriveService:
     _open_org_ids_cache: Optional[set] = None
     _open_org_ids_cache_ts: float = 0.0
     _OPEN_ORG_IDS_TTL: float = 300.0  # 5 minutos
+    # Mapa org_id -> stage_name para o estágio real do deal aberto mais recente
+    _org_stage_cache: Dict[int, str] = {}
 
     def __init__(self) -> None:
         self.api_token = settings.PIPEDRIVE_API_TOKEN
@@ -89,10 +91,18 @@ class PipedriveService:
             return
         try:
             ids: set = set()
+            org_stage_map: Dict[int, str] = {}
             start = 0
             limit = 500
             has_more = True
-            
+
+            # Busca mapa de estágios para resolver stage_id -> nome
+            stages_full = {}
+            try:
+                stages_full = await self.get_all_stages_full()
+            except Exception:
+                pass
+
             while has_more:
                 deals_resp = await self._request("GET", "deals", params={"status": "open", "limit": limit, "start": start})
                 if deals_resp is not None and deals_resp.status_code == 200:
@@ -106,7 +116,22 @@ class PipedriveService:
                         if org_info:
                             oid = org_info.get("value") if isinstance(org_info, dict) else org_info
                             if oid:
-                                ids.add(int(oid))
+                                oid = int(oid)
+                                ids.add(oid)
+                                # Mapeia org -> stage (usa o primeiro deal encontrado por org)
+                                if oid not in org_stage_map:
+                                    sid = d.get("stage_id")
+                                    if sid is not None:
+                                        stage_info = stages_full.get(sid)
+                                        stage_order_nr = 0
+                                        if isinstance(stage_info, dict):
+                                            stage_name = stage_info.get("name", f"Estágio {sid}")
+                                            stage_order_nr = stage_info.get("order_nr", 0)
+                                        elif isinstance(stage_info, str):
+                                            stage_name = stage_info
+                                        else:
+                                            stage_name = d.get("stage_order_nr", f"Estágio {sid}")
+                                        org_stage_map[oid] = {"name": stage_name, "order_nr": stage_order_nr}
                                 
                     pagination = data.get("additional_data", {}).get("pagination", {})
                     has_more = pagination.get("more_items_in_collection", False)
@@ -120,6 +145,7 @@ class PipedriveService:
                     break
 
             PipedriveService._open_org_ids_cache = ids
+            PipedriveService._org_stage_cache = org_stage_map
             PipedriveService._open_org_ids_cache_ts = time.time()
             log.info("pipedrive.open_org_ids_cache.refreshed", count=len(ids))
         except Exception as e:
@@ -569,9 +595,9 @@ class PipedriveService:
 
         payload: Dict[str, Any] = {}
         if data.get("phone"):
-            payload["phone"] = [{"value": data["phone"], "primary": True}]
+            payload["phone"] = data["phone"] if isinstance(data["phone"], list) else [{"value": data["phone"], "primary": True}]
         if data.get("email"):
-            payload["email"] = [{"value": data["email"], "primary": True}]
+            payload["email"] = data["email"] if isinstance(data["email"], list) else [{"value": data["email"], "primary": True}]
         if data.get("name"):
             payload["name"] = data["name"]
 
@@ -786,23 +812,40 @@ class PipedriveService:
             counts_map = {row[0]: row[1] for row in count_res.all()}
 
             # 4. OTIMIZAÇÃO: Busca fotos de funcionários em lote (Heurística: pega alguns de cada)
-            # Para manter performance, fazemos uma query que pega fotos de funcionários das orgs listadas
+            # Inclui profile_pic salvo OU linkedin_url para gerar avatar via unavatar.io
             pics_stmt = (
-                select(Employee.company_id, Employee.profile_pic)
+                select(Employee.company_id, Employee.profile_pic, Employee.linkedin_url)
                 .where(
                     and_(
                         Employee.company_id.in_(org_ids),
-                        Employee.profile_pic.is_not(None),
-                        Employee.profile_pic != ""
+                        or_(
+                            and_(Employee.profile_pic.is_not(None), Employee.profile_pic != ""),
+                            Employee.linkedin_url.is_not(None),
+                        )
                     )
                 )
             )
             pics_res = await session.execute(pics_stmt)
             pics_raw = pics_res.all()
-            
-            pics_map = defaultdict(list)
-            for cid, pic in pics_raw:
-                if len(pics_map[cid]) < 3:
+
+            def _linkedin_to_unavatar(url: str) -> str | None:
+                """Extrai username do LinkedIn e retorna URL do unavatar.io."""
+                import re
+                if not url:
+                    return None
+                m = re.search(r'linkedin\.com/in/([^/\?#]+)', url)
+                if m:
+                    username = m.group(1).strip('/')
+                    if username:
+                        return f"https://unavatar.io/linkedin/{username}"
+                return None
+
+            pics_map: dict = defaultdict(list)
+            for cid, profile_pic, linkedin_url in pics_raw:
+                if len(pics_map[cid]) >= 3:
+                    continue
+                pic = profile_pic or _linkedin_to_unavatar(linkedin_url)
+                if pic:
                     pics_map[cid].append(pic)
 
             # 5. Monta o resultado final
@@ -810,8 +853,12 @@ class PipedriveService:
             users_map = await self.get_users_map()
             users_pics_map = await self.get_users_pics_map()
             for o in local_orgs:
+                pid = o.pipedrive_id or o.id
+                stage_data = PipedriveService._org_stage_cache.get(pid) if pid else None
+                stage_name = stage_data.get("name") if isinstance(stage_data, dict) else stage_data
+                stage_order_nr = stage_data.get("order_nr", 0) if isinstance(stage_data, dict) else 0
                 result.append({
-                    "id": o.pipedrive_id or o.id,
+                    "id": pid,
                     "name": o.name,
                     "domain": o.domain,
                     "cnpj": o.cnpj,
@@ -829,6 +876,8 @@ class PipedriveService:
                     "owner_id": o.owner_id,
                     "owner_name": users_map.get(o.owner_id) if o.owner_id in users_map else "Sistema",
                     "owner_avatar": users_pics_map.get(o.owner_id) if o.owner_id in users_pics_map else None,
+                    "stage_name": stage_name,
+                    "stage_order_nr": stage_order_nr,
                 })
 
             return result
@@ -888,52 +937,90 @@ class PipedriveService:
         log.info("pipedrive.smart_reschedule.start", base_date=today_date.isoformat())
 
         try:
-            resp_act = await self._request(
-                "GET",
-                "activities",
-                params={"user_id": self.user_id, "limit": 500, "done": 0},
-            )
-            if resp_act is None or resp_act.status_code != 200:
-                return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
-            act_data = resp_act.json()
-            if not act_data.get("success"):
-                return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
+            # Busca paginada de atividades PENDENTES — apenas do usuário João Luccas, apenas deals abertos
+            activities: list = []
+            _start = 0
+            while True:
+                resp_act = await self._request(
+                    "GET",
+                    "activities",
+                    params={"user_id": self.user_id, "limit": 500, "done": 0, "start": _start},
+                )
+                if resp_act is None or resp_act.status_code != 200:
+                    return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
+                act_data = resp_act.json()
+                if not act_data.get("success"):
+                    return {"status": "error", "message": "Falha ao buscar atividades pendentes."}
+                activities.extend(act_data.get("data") or [])
+                pag = (act_data.get("additional_data") or {}).get("pagination") or {}
+                if not pag.get("more_items_in_collection"):
+                    break
+                _start = pag.get("next_start", _start + 500)
+                if _start > 10000:
+                    break
 
-            # 🚀 Busca atividades CONCLUÍDAS (done=1) para mapear o histórico de tarefas de cada empresa
+            # Busca paginada de atividades CONCLUÍDAS — histórico de último contato por deal
             deal_last_done: Dict[int, str] = {}
-            resp_done_act = await self._request(
-                "GET",
-                "activities",
-                params={"user_id": self.user_id, "limit": 500, "done": 1},
-            )
-            if resp_done_act and resp_done_act.status_code == 200:
+            _start = 0
+            while True:
+                resp_done_act = await self._request(
+                    "GET",
+                    "activities",
+                    params={"user_id": self.user_id, "limit": 500, "done": 1, "start": _start},
+                )
+                if not resp_done_act or resp_done_act.status_code != 200:
+                    break
                 done_data = resp_done_act.json()
-                if done_data.get("success"):
-                    for act in done_data.get("data") or []:
-                        deal_id = act.get("deal_id")
-                        if not deal_id:
-                            continue
-                        due_date = act.get("due_date")
-                        if due_date:
-                            current_last = deal_last_done.get(deal_id, "1900-01-01")
-                            if due_date > current_last:
-                                deal_last_done[deal_id] = due_date
+                if not done_data.get("success"):
+                    break
+                for act in done_data.get("data") or []:
+                    deal_id = act.get("deal_id")
+                    if not deal_id:
+                        continue
+                    due_date = act.get("due_date")
+                    if due_date:
+                        current_last = deal_last_done.get(deal_id, "1900-01-01")
+                        if due_date > current_last:
+                            deal_last_done[deal_id] = due_date
+                pag = (done_data.get("additional_data") or {}).get("pagination") or {}
+                if not pag.get("more_items_in_collection"):
+                    break
+                _start = pag.get("next_start", _start + 500)
+                if _start > 10000:
+                    break
 
-            resp_deals = await self._request(
-                "GET",
-                "deals",
-                params={"user_id": self.user_id, "limit": 500, "status": "open"},
-            )
-            deals_data = resp_deals.json() if resp_deals is not None else {"success": False}
-
+            # Busca paginada de deals ABERTOS — apenas do usuário João Luccas
             deal_stages: Dict[int, int] = {}
             deal_expected_close: Dict[int, str] = {}
-            if deals_data.get("success"):
+            _start = 0
+            while True:
+                resp_deals = await self._request(
+                    "GET",
+                    "deals",
+                    params={"user_id": self.user_id, "status": "open", "limit": 500, "start": _start},
+                )
+                if resp_deals is None or resp_deals.status_code != 200:
+                    break
+                deals_data = resp_deals.json()
+                if not deals_data.get("success"):
+                    break
                 for d in deals_data.get("data") or []:
                     deal_stages[d["id"]] = d.get("stage_id")
                     deal_expected_close[d["id"]] = d.get("expected_close_date")
+                pag = (deals_data.get("additional_data") or {}).get("pagination") or {}
+                if not pag.get("more_items_in_collection"):
+                    break
+                _start = pag.get("next_start", _start + 500)
+                if _start > 10000:
+                    break
 
-            activities = act_data.get("data") or []
+            log.info(
+                "pipedrive.smart_reschedule.scope",
+                user_id=self.user_id,
+                open_deals=len(deal_stages),
+                pending_activities=len(activities),
+            )
+
             deal_open_tasks: Dict[int, list] = defaultdict(list)
             all_stages: set[int] = set()
 
@@ -966,69 +1053,99 @@ class PipedriveService:
                 key=lambda did: deal_last_done.get(did, "1900-01-01"),
             )
 
-            # Criando uma única fila global ordenada por prioridade de tempo (descartando funil)
-            global_queue = []
+            # --- Distribuição proporcional por stage ---
+            # Agrupa tasks por stage mantendo ordem de prioridade (mais antigos primeiro)
+            DAILY_LIMIT = 10
+            stage_task_list: Dict[int, list] = defaultdict(list)
             for did in sorted_deals:
-                global_queue.extend(deal_open_tasks[did])
+                for task in deal_open_tasks[did]:
+                    stage_task_list[task.get("stage_id")].append(task)
+
+            # Calcula a quota diária de cada stage proporcional ao seu total de tasks
+            total_tasks_count = sum(len(v) for v in stage_task_list.values())
+            stage_daily_quota: Dict[int, int] = {}
+            if total_tasks_count > 0:
+                stages_sorted_by_size = sorted(
+                    stage_task_list.keys(), key=lambda s: -len(stage_task_list[s])
+                )
+                allocated = 0
+                for i, sid in enumerate(stages_sorted_by_size):
+                    if i == len(stages_sorted_by_size) - 1:
+                        stage_daily_quota[sid] = max(1, DAILY_LIMIT - allocated)
+                    else:
+                        weight = len(stage_task_list[sid]) / total_tasks_count
+                        q = max(1, round(weight * DAILY_LIMIT))
+                        stage_daily_quota[sid] = q
+                        allocated += q
+
+            # Intercala as filas em round-robin ponderado (pela quota) para manter
+            # proporção por stage dentro de cada bloco de DAILY_LIMIT tarefas
+            stage_deques: Dict[int, deque] = {
+                sid: deque(tasks) for sid, tasks in stage_task_list.items()
+            }
+            global_queue: list = []
+            stages_order = sorted(stage_deques.keys(), key=lambda s: -len(stage_task_list[s]))
+            while any(stage_deques.values()):
+                for sid in stages_order:
+                    q = stage_deques[sid]
+                    for _ in range(stage_daily_quota.get(sid, 1)):
+                        if q:
+                            global_queue.append(q.popleft())
 
             scheduled_updates: List[tuple[int, str]] = []
             scheduled_deal_updates: Dict[int, str] = {}
-            current_day = today_date
             daily_load: Dict[str, int] = defaultdict(int)
+            daily_stage_load: Dict[str, Dict[int, int]] = defaultdict(lambda: defaultdict(int))
             deal_day_map: Dict[tuple, bool] = {}
 
             for task in global_queue:
                 deal_id = task.get("deal_id")
-                
-                # 🚀 ENVELHECIMENTO / INTERVALO:
+                stage_id = task.get("stage_id")
+
                 # Calcula a data mínima permitida baseada na última tarefa realizada
                 last_done = deal_last_done.get(deal_id)
                 if last_done:
                     try:
                         last_dt = datetime.strptime(last_done, "%Y-%m-%d").date()
-                        # Se a tarefa foi feita hoje ou no futuro (agendada), pula 7 dias para a próxima
                         if last_dt >= today_date:
                             min_allowed = last_dt + timedelta(days=7)
                         else:
-                            # Se a tarefa é antiga, permite agendar para hoje se houver vaga
                             min_allowed = today_date
                     except Exception:
                         min_allowed = today_date
                 else:
                     min_allowed = today_date
-                    
+
                 target_day = min_allowed
-                
                 found_day = False
                 attempt = 0
                 while not found_day and attempt < 365:
                     d_str = target_day.isoformat()
-                    # Pula finais de semana
                     if target_day.weekday() >= 5:
                         target_day += timedelta(days=1)
                         continue
-                    
-                    # Verifica se o dia atual tem menos de 10 tarefas E se este negócio já não tem tarefa neste dia
+
+                    stage_quota = stage_daily_quota.get(stage_id, 1)
+                    # Aceita se: total do dia < limite, stage ainda tem cota e deal não tem outra task no mesmo dia
                     if (
-                        daily_load[d_str] < 10
+                        daily_load[d_str] < DAILY_LIMIT
+                        and daily_stage_load[d_str][stage_id] < stage_quota
                         and (d_str, deal_id) not in deal_day_map
                     ):
-                        # ONLY add to scheduled_updates if the date actually changes!
                         if task.get("due_date") != d_str:
                             scheduled_updates.append((task.get("id"), d_str))
-                        
+
                         daily_load[d_str] += 1
+                        daily_stage_load[d_str][stage_id] += 1
                         deal_day_map[(d_str, deal_id)] = True
-                        
-                        # Atualiza o rastro de "última tarefa" para as próximas tasks do mesmo deal
                         deal_last_done[deal_id] = d_str
-                        
+
                         current_close = deal_expected_close.get(deal_id)
                         if not current_close or current_close < d_str:
                             if current_close != d_str:
                                 scheduled_deal_updates[deal_id] = d_str
                             deal_expected_close[deal_id] = d_str
-                            
+
                         found_day = True
                     else:
                         target_day += timedelta(days=1)
@@ -1378,26 +1495,101 @@ class PipedriveService:
                 local_org = res_org.scalars().first()
 
                 if local_org:
+                    # Enriquece org_data com campos do banco local não presentes no Pipedrive
+                    if isinstance(results["org"], dict):
+                        # Telefone: busca do banco ou da API do Google Maps (cache permanente)
+                        phone = local_org.maps_phone
+                        if not phone:
+                            from modules.intelligence.service.company_phone_service import fetch_and_cache_company_phone
+                            phone = await fetch_and_cache_company_phone(local_org.id, session)
+                        if phone:
+                            results["org"]["maps_phone"] = phone
+                        if local_org.domain and not results["org"].get("domain"):
+                            results["org"]["domain"] = local_org.domain
+
                     for p in results["persons"]:
                         pid = str(p.get("id"))
                         name = p.get("name")
                         if not pid or not name: continue
 
-                        # 2. Busca/Cria funcionário
+                         # 2. Busca/Cria funcionário
+                        # Primeiro, tenta buscar por pipedrive_id
                         stmt_emp = select(Employee).where(Employee.pipedrive_id == pid)
                         res_emp = await session.execute(stmt_emp)
                         db_emp = res_emp.scalars().first()
 
-                        if not db_emp:
-                            db_emp = Employee(
-                                pipedrive_id=pid,
-                                company_id=local_org.id,
-                                name=name,
-                                source="pipedrive",
-                                is_discovery=1
-                            )
-                            session.add(db_emp)
+                        import unicodedata
+                        def normalize_name(s: str) -> str:
+                            return "".join(
+                                c for c in unicodedata.normalize('NFD', s.lower())
+                                if unicodedata.category(c) != 'Mn'
+                            ).replace(" ", "").replace("-", "").strip()
+
+                        # Busca se há um duplicado local com o mesmo nome e sem pipedrive_id
+                        stmt_dup = select(Employee).where(
+                            Employee.company_id == local_org.id,
+                            Employee.pipedrive_id.is_(None)
+                        )
+                        res_dup = await session.execute(stmt_dup)
+                        all_dups = res_dup.scalars().all()
                         
+                        normalized_name = normalize_name(name)
+                        dup_emp = next((e for e in all_dups if normalize_name(e.name) == normalized_name), None)
+
+                        if dup_emp:
+                            # Temos um contato local sem pipedrive_id. Queremos preservar o ID desse contato local!
+                            # Vincula o pipedrive_id
+                            dup_emp.pipedrive_id = pid
+                            if dup_emp.source == "discovery":
+                                dup_emp.source = "pipedrive + local"
+                            
+                            if db_emp and db_emp.id != dup_emp.id:
+                                # Se já existia um registro separado com o pipedrive_id, mescla as informações do db_emp para o dup_emp
+                                if not dup_emp.role and db_emp.role:
+                                    dup_emp.role = db_emp.role
+                                if not dup_emp.department and db_emp.department:
+                                    dup_emp.department = db_emp.department
+                                if not dup_emp.seniority and db_emp.seniority:
+                                    dup_emp.seniority = db_emp.seniority
+                                if not dup_emp.linkedin_url and db_emp.linkedin_url:
+                                    dup_emp.linkedin_url = db_emp.linkedin_url
+                                if not dup_emp.description and db_emp.description:
+                                    dup_emp.description = db_emp.description
+                                if not dup_emp.profile_pic and db_emp.profile_pic:
+                                    dup_emp.profile_pic = db_emp.profile_pic
+                                if not dup_emp.email and db_emp.email:
+                                    dup_emp.email = db_emp.email
+                                if not dup_emp.phone and db_emp.phone:
+                                    dup_emp.phone = db_emp.phone
+                                if not dup_emp.location and db_emp.location:
+                                    dup_emp.location = db_emp.location
+                                if not dup_emp.whatsapp_number and db_emp.whatsapp_number:
+                                    dup_emp.whatsapp_number = db_emp.whatsapp_number
+                                
+                                # Limpa campos únicos do db_emp para evitar conflito de UNIQUE antes do delete/flush
+                                db_emp.pipedrive_id = None
+                                db_emp.linkedin_url = None
+                                db_emp.email = None
+                                db_emp.whatsapp_number = None
+                                
+                                await session.delete(db_emp)
+                                log.info("pipedrive.persons.merged_and_deleted_synced_duplicate", name=name, keep_id=dup_emp.id, deleted_id=db_emp.id)
+                            else:
+                                log.info("pipedrive.persons.linked_pipedrive_id_to_local", name=name, employee_id=dup_emp.id, pipedrive_id=pid)
+                            
+                            db_emp = dup_emp
+                        else:
+                            # Se não há duplicado local com esse nome
+                            if not db_emp:
+                                db_emp = Employee(
+                                    pipedrive_id=pid,
+                                    company_id=local_org.id,
+                                    name=name,
+                                    source="pipedrive",
+                                    is_discovery=1
+                                )
+                                session.add(db_emp)
+                            
                         # 3. Atualiza campos se vazios
                         if not db_emp.email and p.get("email"):
                             emails = p.get("email")
@@ -1474,6 +1666,16 @@ class PipedriveService:
                     icp_info["product_focus"] = org.product_focus
                     icp_info["temperature"] = org.temperature
                     icp_info["prospecting_context"] = org.prospecting_context
+                    if org.photo_url:
+                        icp_info["photo_url"] = org.photo_url
+                    if org.logo_url:
+                        icp_info["logo_url"] = org.logo_url
+                        icp_info["logo"] = org.logo_url
+                        if isinstance(org_data, dict):
+                            org_data["logo_url"] = org.logo_url
+                            org_data["logo"] = org.logo_url
+                            org_data["organization_logo"] = org.logo_url
+                            org_data["company_logo"] = org.logo_url
         except Exception:
             pass
 
@@ -1520,6 +1722,73 @@ class PipedriveService:
         phone: str | None = None,
         org_id: int | None = None,
     ) -> dict:
+        # Tenta buscar contato existente para evitar duplicidade e mesclar dados
+        existing_person_id = None
+        existing_person = None
+        
+        # 1. Busca por e-mail primeiro
+        if email:
+            search_resp = await self._request(
+                "GET", 
+                "persons/search", 
+                params={"term": email, "search_by_email": 1, "exact_match": 1, "limit": 1}
+            )
+            if search_resp and search_resp.status_code == 200:
+                data = search_resp.json()
+                items = data.get("data", {}).get("items") or []
+                if items and items[0].get("item"):
+                    existing_person = items[0]["item"]
+                    existing_person_id = existing_person["id"]
+
+        # 2. Se não achou por e-mail, mas temos nome e org_id, busca por nome na mesma empresa
+        if not existing_person_id and name and org_id:
+            search_resp = await self._request(
+                "GET", 
+                "persons/search", 
+                params={"term": name, "exact_match": 0, "limit": 5}
+            )
+            if search_resp and search_resp.status_code == 200:
+                data = search_resp.json()
+                items = data.get("data", {}).get("items") or []
+                for i in items:
+                    p = i.get("item", {})
+                    org = p.get("organization")
+                    if org and org.get("id") == org_id:
+                        n1, n2 = name.lower(), p.get("name", "").lower()
+                        if n1 in n2 or n2 in n1:
+                            existing_person = p
+                            existing_person_id = p["id"]
+                            break
+                            
+        # Se encontrou um contato existente, vamos ATUALIZÁ-LO (mesclar) preservando Pipedrive
+        if existing_person_id and existing_person:
+            update_payload = {}
+            
+            # Atualiza o nome apenas se o novo for mais completo
+            if len(name.strip()) > len(existing_person.get("name", "").strip()):
+                update_payload["name"] = name
+                
+            # Se a pessoa não tinha organização, e agora temos, vincula
+            if org_id and not existing_person.get("organization"):
+                update_payload["org_id"] = org_id
+                
+            # Adiciona email apenas se a pessoa já não tivesse nenhum
+            if email and not existing_person.get("primary_email"):
+                 update_payload["email"] = [{"value": email, "primary": True}]
+                 
+            # Adiciona telefone apenas se a pessoa já não tivesse nenhum (array phones)
+            if phone and not existing_person.get("phones"):
+                 update_payload["phone"] = [{"value": phone, "primary": True}]
+
+            if update_payload:
+                await self._request("PUT", f"persons/{existing_person_id}", json=update_payload)
+                log.info("pipedrive.person.merged", person_id=existing_person_id, updates=update_payload)
+            else:
+                log.info("pipedrive.person.merge_skipped", person_id=existing_person_id, reason="no new data")
+
+            # Retorna os dados como se tivesse sido criado com sucesso
+            return {"success": True, "data": {"id": existing_person_id}}
+
         payload = {
             "name": name,
             "owner_id": self.user_id,
@@ -1534,6 +1803,41 @@ class PipedriveService:
             return resp.json()
         except Exception:
             return {"success": False}
+
+    async def create_procurement_contact(self, org_id: int, domain: str) -> dict:
+        """
+        Garante que existe um contato 'Departamento de Compras' vinculado à organização.
+        Idempotente: não cria duplicata se já existir contato com compras@domínio.
+        """
+        procurement_email = f"compras@{domain}"
+
+        search_resp = await self._request(
+            "GET",
+            "persons/search",
+            params={"term": procurement_email, "search_by_email": 1, "exact_match": 1, "limit": 1},
+        )
+        if search_resp and search_resp.status_code == 200:
+            items = search_resp.json().get("data", {}).get("items") or []
+            if items:
+                existing_id = items[0]["item"]["id"]
+                log.info(
+                    "pipedrive.procurement_contact.exists",
+                    person_id=existing_id,
+                    email=procurement_email,
+                )
+                return {"success": True, "data": {"id": existing_id}, "existing": True}
+
+        result = await self.create_person(
+            name="Departamento de Compras",
+            email=procurement_email,
+            org_id=org_id,
+        )
+        log.info(
+            "pipedrive.procurement_contact.created",
+            email=procurement_email,
+            org_id=org_id,
+        )
+        return result
 
     async def update_deal(self, deal_id: int, data: dict) -> dict:
         resp = await self._request("PUT", f"deals/{deal_id}", json=data)
@@ -1576,7 +1880,66 @@ class PipedriveService:
 pipedrive_service = PipedriveService()
 
 
+AUTO_RESCHEDULE_SETTING_KEY = "crm_auto_reschedule_overdue"
+# Chave separada do toggle acima de propósito: o toggle é editado pelo usuário via tela de
+# preferências (POST /settings/{key} substitui o `value` inteiro), então guardar o controle de
+# "já rodou hoje" na mesma chave faria o usuário apagá-lo sem querer ao ligar/desligar o switch.
+AUTO_RESCHEDULE_LAST_RUN_KEY = "crm_auto_reschedule_last_run"
+
+
+async def run_daily_overdue_reschedule_if_needed() -> None:
+    """Roda `sync_overdue_activities()` uma vez por dia calendário (fuso America/Sao_Paulo),
+    apenas se o toggle `crm_auto_reschedule_overdue` estiver habilitado.
+
+    Pensado para ser chamado a cada boot do backend (lifespan de main.py): se o servidor
+    já rodou hoje, ou se o usuário desligou o toggle (ex: período de férias), não faz nada.
+    """
+    from datetime import datetime, timezone, timedelta
+    from sqlalchemy import select
+    from core.infra.database import async_session
+    from models.system.system_setting import SystemSetting
+
+    sao_paulo_tz = timezone(timedelta(hours=-3))
+    today = datetime.now(sao_paulo_tz).date().isoformat()
+
+    async with async_session() as session:
+        toggle_result = await session.execute(
+            select(SystemSetting).where(SystemSetting.key == AUTO_RESCHEDULE_SETTING_KEY)
+        )
+        toggle_setting = toggle_result.scalars().first()
+
+        # Ainda não configurado pelo usuário — habilitado por padrão.
+        enabled = toggle_setting.value.get("enabled", True) if toggle_setting else True
+        if not enabled:
+            log.info("crm.auto_reschedule.disabled_skip")
+            return
+
+        last_run_result = await session.execute(
+            select(SystemSetting).where(SystemSetting.key == AUTO_RESCHEDULE_LAST_RUN_KEY)
+        )
+        last_run_setting = last_run_result.scalars().first()
+
+        if last_run_setting and last_run_setting.value.get("date") == today:
+            log.info("crm.auto_reschedule.already_run_today", date=today)
+            return
+
+        try:
+            sync_result = await pipedrive_service.sync_overdue_activities()
+            log.info("crm.auto_reschedule.completed", date=today, result=sync_result)
+        except Exception as e:
+            log.warning("crm.auto_reschedule.failed", error=str(e))
+            return
+
+        if last_run_setting:
+            last_run_setting.value = {"date": today}
+        else:
+            session.add(SystemSetting(key=AUTO_RESCHEDULE_LAST_RUN_KEY, category="crm", value={"date": today}))
+        await session.commit()
+
+
 __all__ = [
     "PipedriveService",
     "pipedrive_service",
+    "run_daily_overdue_reschedule_if_needed",
+    "AUTO_RESCHEDULE_SETTING_KEY",
 ]

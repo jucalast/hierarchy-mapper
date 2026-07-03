@@ -162,8 +162,18 @@ export default function ProspectMap({
     mapRef.current = map;
     setMapReady(true);
     // Força o Leaflet a recalcular o tamanho do container (resolve problemas de tiles cinzas ou mapa cortado)
-    setTimeout(() => map.invalidateSize(), 100);
-    return () => { map.remove(); mapRef.current = null; setMapReady(false); hasFittedRef.current = false; };
+    const timeoutId = setTimeout(() => {
+      if (mapRef.current === map) {
+        map.invalidateSize();
+      }
+    }, 100);
+    return () => { 
+      clearTimeout(timeoutId);
+      map.remove(); 
+      mapRef.current = null; 
+      setMapReady(false); 
+      hasFittedRef.current = false; 
+    };
   }, []); // eslint-disable-line
 
   // ── Atualiza centro + círculo ────────────────────────────────────────

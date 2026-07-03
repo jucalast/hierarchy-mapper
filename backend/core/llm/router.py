@@ -446,15 +446,20 @@ class LLMRouter:
             elif preferred_model in settings.ai_ollama_models_list:
                 target_provider = "ollama"
             
+            # Heurística caso não ache na lista exata do config
+            if not target_provider:
+                pm_lower = preferred_model.lower()
+                if "gemini" in pm_lower: target_provider = "gemini"
+                elif "claude" in pm_lower: target_provider = "claude"
+                elif "qwen-3-235b" in pm_lower: target_provider = "cerebras"
+                elif "llama-3.3" in pm_lower: target_provider = "groq"
+                elif "deepseek" in pm_lower: target_provider = "deepseek"
+                elif "qwen2.5" in pm_lower: target_provider = "ollama"
+            
             if target_provider and target_provider in self._providers:
                 target_p = self._providers[target_provider]
                 providers = [target_p]
-                # Se o target não for gemini, adiciona gemini (mais estável) como safety fallback interno
-                if target_p.name != "gemini" and "gemini" in self._providers:
-                    providers.append(self._providers["gemini"])
-                
-                log.info("llm.strict_mode.with_internal_fallback", 
-                         primary=target_provider, fallback="gemini", model=preferred_model)
+                log.info("llm.strict_mode.enforced", primary=target_provider, model=preferred_model)
             else:
                 providers = self.chain(preferred=preferred_model)
         else:
@@ -474,7 +479,17 @@ class LLMRouter:
                 heavyweight = ["gemini", "claude", "sambanova"]
                 sorted_prov_names = [p for p in heavyweight if p in base_prov_names] + [p for p in base_prov_names if p not in heavyweight]
                 providers = [self._providers[name] for name in sorted_prov_names if name in self._providers]
-            
+
+            # A heurística acima ignora qualquer preferred_model explícito (via
+            # ai_preference.json ou parâmetro direto) — sem isso, forçar um provider
+            # específico nunca tinha efeito prático em prompts curtos ou muito longos.
+            # Reaplica a preferência por cima da ordenação por tamanho, mantendo o
+            # restante da chain como fallback.
+            if preferred_model and preferred_model in self._providers:
+                prov_names = [p.name for p in providers]
+                if preferred_model in prov_names:
+                    providers = [self._providers[preferred_model]] + [p for p in providers if p.name != preferred_model]
+
         if not providers:
             raise NoProviderAvailableError("No LLM providers registered.")
 
@@ -602,6 +617,16 @@ class LLMRouter:
             raise NoProviderAvailableError(
                 "No LLM provider is available (missing keys or circuit open)."
             )
+
+        # Chegou aqui sem retornar nem cair no "not any_available": pelo menos um
+        # provider foi tentado e disponível, mas todos falharam durante a execução
+        # (ex: erro definitivo não relacionado a rate-limit, como em strict_mode
+        # com um único provider). Sem isso, complete()/ask_llm() retornava None
+        # silenciosamente e chamadores que acessam result.json_data/.text direto
+        # (ex: intent_classifier) quebravam com AttributeError em vez de um erro claro.
+        raise NoProviderAvailableError(
+            f"Todos os providers disponíveis falharam. Último erro: {last_error}"
+        )
 
     async def stream_complete(
         self,

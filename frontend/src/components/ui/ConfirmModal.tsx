@@ -11,6 +11,10 @@ interface ConfirmModalProps {
     onConfirm: () => void;
     onCancel: () => void;
     type?: 'danger' | 'info' | 'warning';
+    /** Se true, mantém o fundo escurecido/borrado cobrindo a tela inteira,
+     * mas alinha a caixa do modal à direita (onde o chat panel fica docado)
+     * em vez de centralizar na tela toda. */
+    contained?: boolean;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -21,12 +25,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     cancelLabel = "Cancelar",
     onConfirm,
     onCancel,
-    type = 'danger'
+    type = 'danger',
+    contained = false
 }) => {
     if (!isOpen) return null;
 
     return (
-        <div className={styles.overlay} onClick={onCancel}>
+        <div
+            className={`${styles.overlay} ${contained ? styles.overlayContained : ''}`}
+            onClick={onCancel}
+        >
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
                 <button className={styles.closeBtn} onClick={onCancel}>
                     <X size={18} />

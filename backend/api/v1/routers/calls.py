@@ -23,6 +23,8 @@ _insight_lock = asyncio.Lock()
 
 
 async def save_call_message(role: str, text: str, activity_id: str | None, phone: str | None, latency_ms: int | None = None, buffer_secs: float | None = None):
+    if not activity_id and not phone:
+        return
     try:
         async with async_session() as session:
             stmt = select(CallSession).where(
@@ -47,6 +49,8 @@ async def save_call_message(role: str, text: str, activity_id: str | None, phone
 
 
 async def save_call_insight(insight_data: dict, activity_id: str | None, phone: str | None):
+    if not activity_id and not phone:
+        return
     try:
         async with async_session() as session:
             stmt = select(CallSession).where(
@@ -58,7 +62,7 @@ async def save_call_insight(insight_data: dict, activity_id: str | None, phone: 
             if db_session:
                 db_session.latest_insight = insight_data
                 await session.commit()
-                log.debug("CallSession latest_insight atualizada no banco")
+                log.debug("CallSession latest_insight updated in DB")
     except Exception as e:
         log.error(f"Erro ao atualizar insight de ligação: {e}")
 
@@ -119,13 +123,31 @@ async def get_call_session(
 
 
 @router.get("/history")
-async def get_call_history():
+async def get_call_history(org_id: Optional[int] = Query(None)):
     try:
         from models.organization import Organization
+        from sqlalchemy import or_
         async with async_session() as session:
             stmt = select(CallSession, Organization.logo_url, Organization.domain).outerjoin(
-                Organization, CallSession.org_id == Organization.id
-            ).order_by(CallSession.created_at.desc())
+                Organization,
+                or_(CallSession.org_id == Organization.id, CallSession.org_id == Organization.pipedrive_id)
+            )
+
+            if org_id is not None:
+                possible_ids = {org_id}
+                org_result = await session.execute(
+                    select(Organization.id, Organization.pipedrive_id).where(
+                        or_(Organization.id == org_id, Organization.pipedrive_id == org_id)
+                    )
+                )
+                for row in org_result.all():
+                    if row.id is not None:
+                        possible_ids.add(row.id)
+                    if row.pipedrive_id is not None:
+                        possible_ids.add(row.pipedrive_id)
+                stmt = stmt.where(CallSession.org_id.in_(possible_ids))
+                
+            stmt = stmt.order_by(CallSession.created_at.desc())
             res = await session.execute(stmt)
             rows = res.all()
             
@@ -178,11 +200,13 @@ async def call_assistant_websocket(websocket: WebSocket):
     # Sincronizar plano de voo e histórico a partir do SQLite
     try:
         async with async_session() as session:
-            stmt = select(CallSession).where(
-                (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
-            )
-            res = await session.execute(stmt)
-            db_session = res.scalar_one_or_none()
+            db_session = None
+            if activity_id or phone:
+                stmt = select(CallSession).where(
+                    (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
+                )
+                res = await session.execute(stmt)
+                db_session = res.scalar_one_or_none()
             org_id = db_session.org_id if db_session else None
             
             mapped_contacts_str = "Nenhum contato mapeado."
@@ -284,11 +308,13 @@ async def call_assistant_websocket(websocket: WebSocket):
             log.info(f"[calls] Salvando sessao de ligacao finalizada com {len(session_messages)} mensagens no banco de dados.")
             try:
                 async with async_session() as session:
-                    stmt = select(CallSession).where(
-                        (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
-                    )
-                    res = await session.execute(stmt)
-                    db_session = res.scalar_one_or_none()
+                    db_session = None
+                    if activity_id or phone:
+                        stmt = select(CallSession).where(
+                            (CallSession.pipedrive_activity_id == activity_id) if activity_id else (CallSession.phone == phone)
+                        )
+                        res = await session.execute(stmt)
+                        db_session = res.scalar_one_or_none()
                     
                     if db_session:
                         # Salva mensagens
@@ -326,6 +352,7 @@ async def _get_static_prompt() -> tuple[str, str, str]:
     
     from modules.agent.skills.skill_call import CallSkill
     from modules.ai.service.context.business_context_service import BusinessContextService
+    from modules.agent.skills.call_types import get_call_type_config
     
     ctx = await BusinessContextService.get_tenant_context()
     _cached_ctx = ctx
@@ -338,43 +365,58 @@ async def _get_static_prompt() -> tuple[str, str, str]:
     products_str = "\n".join(products_info)
     reference_clients = ", ".join([c.get("name", "") for c in ctx.get("reference_clients", [])])
 
+    # ── Seleciona regras de vendas baseado no call_type do plano de voo ativo ─
+    # O call_type é salvo no flight_plan quando prepare_live_coaching_session é chamado.
+    call_type = "cold_call"
+    if assistant_manager.active_coaching_plan and isinstance(assistant_manager.active_coaching_plan, dict):
+        call_type = assistant_manager.active_coaching_plan.get("call_type", "cold_call")
+    
+    call_config = get_call_type_config(call_type)
+    call_type_label = call_config["type_label"]
+    call_type_rules = call_config["rules"]
+    call_type_steps = call_config["steps"]
+    
+    # Regras de contorno de objeção são universais
+    objection_rules = CallSkill.OBJECTION_HANDLING_RULES
+
     _cached_static_prompt = f"""Você é o Copiloto de Vendas da {company_name}, analisando uma ligação B2B em tempo real.
 Seu objetivo é guiar o vendedor ({seller_name}) pelas etapas do plano de voo, detectar objeções do cliente imediatamente, fornecer contornos assertivos, rápidos e ADAPTAR dinamicamente o plano de voo ao linguajar e revelações do cliente.
 
-CONTEXTO DA EMPRESA E VENDEDOR (Use isso para persuadir e gerar autoridade):
-- Vendedor: {seller_name}
-- Empresa: {company_name}
-- Nossos Diferenciais: {differentials}
-- Clientes de Referência: {reference_clients}
-- Nossos Produtos:
-{products_str}
+CONTEXTO DA EMPRESA E VENDEDOR (Use isso para persuadir e gerar autoridade):\n- Vendedor: {seller_name}\n- Empresa: {company_name}\n- Nossos Diferenciais: {differentials}\n- Clientes de Referência: {reference_clients}\n- Nossos Produtos:\n{products_str}
 
-DIRETRIZES DE VENDAS E CONTORNO DE OBJEÇÕES:
-{CallSkill.SPIN_SELLING_RULES}
-{CallSkill.OBJECTION_HANDLING_RULES}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TIPO DE LIGAÇÃO ATIVA: {call_type_label.upper()}
+ETAPAS DO PLANO DE VOO: {' → '.join(call_type_steps)}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DIRETRIZES PARA ESTE TIPO DE LIGAÇÃO (SIGA RIGOROSAMENTE):
+{call_type_rules}
+
+REGRAS DE CONTORNO DE OBJEÇÃO (UNIVERSAIS):
+{objection_rules}
 
 INSTRUÇÕES DE ANÁLISE E ADAPTAÇÃO:
 1. **MODO SCRIPT COMPLETO (Teleprompter)**: O vendedor precisa do roteiro exato e literal para ler na tela. 
-   - A sua resposta em "content" das Etapas Relâmpago ou do plano DEVE ser o bloco de texto completo, conversacional e humano.
-   - NÃO use dicas curtas em "content". Escreva a frase exata que o vendedor deve falar em primeira pessoa.
-   - Exemplo de Contorno: "[⚡ TÁTICA: 20 SEGS] Entendo perfeitamente que a correria é grande. Prometo não tomar seu tempo. Em 20 segundos: vocês têm sofrido com avarias nas embalagens ultimamente?"
-2. **DETECÇÃO DE BRUSH-OFF / OBJEÇÃO**: Analise a ÚLTIMA fala do cliente. Se ela contiver "me manda por e-mail", "agora não posso", "já temos fornecedor", etc. marque "objection_detected" como true.
+   - A sua resposta em \"content\" das Etapas Relâmpago ou do plano DEVE ser o bloco de texto completo, conversacional e humano.
+   - NÃO use dicas curtas em \"content\". Escreva a frase exata que o vendedor deve falar em primeira pessoa.
+   - Exemplo de Contorno: \"[⚡ TÁTICA: 20 SEGS] Entendo perfeitamente que a correria é grande. Prometo não tomar seu tempo. Em 20 segundos: vocês têm sofrido com avarias nas embalagens ultimamente?\"
+2. **DETECÇÃO DE BRUSH-OFF / OBJEÇÃO**: Analise a ÚLTIMA fala do cliente. Se ela contiver \"me manda por e-mail\", \"agora não posso\", \"já temos fornecedor\", etc. marque \"objection_detected\" como true.
    - ATENÇÃO: Na indústria B2B, pedir e-mail é um *brush-off* (tentativa de desligar). Trate como objeção grave, não como avanço de etapa.
 3. **CONTORNO DE OBJEÇÃO (OBRIGATÓRIO se objection_detected = true)**:
-   - INJETE uma Etapa Relâmpago com label "⚡ Contorno" contendo o texto tático curto.
-   - NÃO avance o funil SPIN (SITUAÇÃO/PROBLEMA) se a objeção/brush-off não foi superada.
-4. Em "suggestion", forneça apenas dicas COMPORTAMENTAIS muito curtas (ex: "Fale devagar", "Ele está fugindo, mude o ângulo").
-5. **FLEXIBILIDADE DE FUNIL (Recuo Estratégico)**: Não seja um robô do SPIN. Se o cliente minimizar a dor (ex: "temos problemas isolados, mas resolvemos"), NÃO empurre perguntas de [IMPLICAÇÃO] complexas sobre "custo e retrabalho". Isso afasta o cliente frio. Em vez disso, recue para curiosidade rápida em [QUALIFICAÇÃO]: "[RECUO] Entendi. E quando acontece, como vocês resolvem?".
+   - INJETE uma Etapa Relâmpago com label \"⚡ Contorno\" contendo o texto tático curto.
+   - NÃO avance o funil se a objeção/brush-off não foi superada.
+4. Em \"suggestion\", forneça apenas dicas COMPORTAMENTAIS muito curtas (ex: \"Fale devagar\", \"Ele está fugindo, mude o ângulo\").
+5. **FLEXIBILIDADE DE FUNIL (Recuo Estratégico)**: Não seja um robô. Se o cliente minimizar a dor, NÃO empurre perguntas pesadas imediatamente. Recue para curiosidade antes de avançar.
 6. **ADAPTAÇÃO DO PLANO DE VOO (updated_steps)**: Retorne no array `updated_steps` APENAS as etapas que sofreram alteração (para economizar tokens e acelerar a resposta). O backend cuidará de mesclar com o plano atual.
-   - **ETAPAS RELÂMPAGO (Lightning Steps)**: Injetadas em caso de brush-off, objeção ou dúvida complexa. Retorne a Etapa Relâmpago no array `updated_steps`. O backend se encarregará de fazer o "append" no histórico da tela.
-   - **REGRA DE TRANSFERÊNCIA / GATEKEEPER**: Após a transferência, mesmo que a pessoa se identifique, sua PRIMEIRA Etapa Relâmpago DEVE ser Qualificar o Alvo (ex: "[⚡ TÁTICA: QUALIFICAR] Oi Luciana, é você que cuida da área de embalagens?").
-   - **INTELIGÊNCIA DE CONTATOS**: Se a telefonista disser "Vou passar pro Fernando" ou "É com o Fernando", cruze esse nome com os "CONTATOS MAPEADOS DA EMPRESA" (fornecidos abaixo no prompt). Se ele existir lá, diga: "[⚡ TÁTICA: PEDIR TRANSFERÊNCIA] Ah, o Fernando é o Gerente! Consegue me transferir pra ele?".
-   - **PROGRESSÃO / SHORT-CIRCUIT**: Se o objetivo foi alcançado (agendou visita), PULE para "FECHAMENTO".
-   - Etapas muito distantes continuam "Pendente...".
+   - **ETAPAS RELÂMPAGO (Lightning Steps)**: Injetadas em caso de brush-off, objeção ou dúvida complexa. Retorne a Etapa Relâmpago no array `updated_steps`. O backend se encarregará de fazer o \"append\" no histórico da tela.
+   - **REGRA DE TRANSFERÊNCIA / GATEKEEPER**: Se a telefonista/recepcionista confirmar que vai transferir a ligação (ex: \"um momento, vou transferir\", \"só um instante\", \"vou passar\"), você DEVE obrigatoriamente marcar `[TRANSFER_DETECTED=true]`. Após a transferência, mesmo que a pessoa se identifique, sua PRIMEIRA Etapa Relâmpago DEVE ser Qualificar o Alvo (ex: \"[⚡ TÁTICA: QUALIFICAR] Oi Luciana, é você que cuida da área de embalagens?\").
+   - **INTELIGÊNCIA DE CONTATOS**: Se a telefonista disser \"Vou passar pro Fernando\" ou \"É com o Fernando\", cruze esse nome com os \"CONTATOS MAPEADOS DA EMPRESA\" (fornecidos abaixo no prompt). Se ele existir lá, diga: \"[⚡ TÁTICA: PEDIR TRANSFERÊNCIA] Ah, o Fernando é o Gerente! Consegue me transferir pra ele?\".
+   - **PROGRESSÃO / SHORT-CIRCUIT**: Se o objetivo foi alcançado (agendou reunião/visita, ou cliente confirmou avaliação da proposta), PULE para \"FECHAMENTO\".
+   - Etapas muito distantes continuam \"Pendente...\".
 
 ATENÇÃO — REGRA CRÍTICA DE MEMÓRIA E DESISTÊNCIA:
-Antes de responder, leia minuciosamente o HISTÓRICO. Se o vendedor já usou uma tática (ex: "Só 20 segundos") e o cliente respondeu negando novamente, É PROIBIDO gerar a mesma tática de novo. Se o cliente rejeitar o avanço 3 vezes seguidas, pare de forçar o funil e injete uma Etapa Relâmpago com [TÁTICA: DESLIGAMENTO EDUCADO]. 
-**EXCEÇÃO DE OURO (DOR GRAVE)**: Se em QUALQUER momento o cliente revelar uma dor grave (ex: "perdemos 2 dias de produção", "temos muita avaria", "tá custando caro"), **IGNORE TOTALMENTE** a regra de desligamento e o brush-off. Ancore imediatamente na dor para fisgar a reunião: "[⚡ TÁTICA: ANCORAR NA DOR] Luciana, 2 dias perdidos é muito dinheiro no ralo. Posso te mostrar em 5 min como a Toyota zerou isso com a gente?". NUNCA desista se houver dor exposta!
+Antes de responder, leia minuciosamente o HISTÓRICO. Se o vendedor já usou uma tática (ex: \"Só 20 segundos\") e o cliente respondeu negando novamente, É PROIBIDO gerar a mesma tática de novo. Se o cliente rejeitar o avanço 3 vezes seguidas, pare de forçar o funil e injete uma Etapa Relâmpago com [TÁTICA: DESLIGAMENTO EDUCADO]. 
+**EXCEÇÃO DE OURO (DOR GRAVE)**: Se em QUALQUER momento o cliente revelar uma dor grave (ex: \"perdemos 2 dias de produção\", \"temos muita avaria\", \"tá custando caro\"), **IGNORE TOTALMENTE** a regra de desligamento e o brush-off. Ancore imediatamente na dor para fisgar a reunião: \"[⚡ TÁTICA: ANCORAR NA DOR] Luciana, 2 dias perdidos é muito dinheiro no ralo. Posso te mostrar em 5 min como a Toyota zerou isso com a gente?\". NUNCA desista se houver dor exposta!
 """
     return _cached_static_prompt, seller_name, company_name
 
@@ -507,6 +549,13 @@ Aqui entra o texto falado que o vendedor vai ler, e NADA MAIS.
                             "chunk": chunk,
                             "label": metadata.get("label", "⚡ Sugestão")
                         })
+                    
+                    if _pending_insight_request is not None:
+                        log.info("[coaching] Abortando stream atual devido a uma nova mensagem!")
+                        break
+                        
+                if _pending_insight_request is not None:
+                    continue # Pula o resto (não salva no banco nem atualiza memória) e vai pro próximo!
                 
                 # Finaliza stream e atualiza memória do plano
                 await ws.send_json({

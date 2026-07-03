@@ -6,7 +6,7 @@ from __future__ import annotations
 import re
 from typing import List
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import Employee, Organization
@@ -22,7 +22,11 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession) -> dict:
 
     res_emp = await db.execute(
         select(Employee)
-        .where(Employee.company_id == org_id, Employee.role != "Reprovado", Employee.department != "Reprovado")
+        .where(
+            Employee.company_id == org_id,
+            or_(Employee.role.is_(None), Employee.role != "Reprovado"),
+            or_(Employee.department.is_(None), Employee.department != "Reprovado")
+        )
         .order_by(Employee.seniority.desc())
     )
     employees = res_emp.scalars().all()
@@ -75,16 +79,21 @@ async def get_stored_hierarchy(org_id: int, db: AsyncSession) -> dict:
         if clean_email and clean_email.endswith("@") and org.domain:
             clean_email = f"{clean_email}{org.domain}"
 
+        is_qsa = emp.department == "Quadro de Sócios (QSA)"
         nodes.append({
-            "id": new_id, "name": emp.name, "role": emp.role, 
-            "level": 6 if emp.department == "Quadro de Sócios (QSA)" else level, 
-            "seniority": 6 if emp.department == "Quadro de Sócios (QSA)" else level,
-            "department": await get_department_tag(emp.role), "manager_id": manager_id,
+            "id": new_id, "name": emp.name, "role": emp.role,
+            "level": 6 if is_qsa else level,
+            "seniority": 6 if is_qsa else level,
+            # get_department_tag não conhece "sócio"/"administrador" — recalcular para QSA
+            # sempre cai no fallback genérico (ex: "Operations") e perde a marcação que o
+            # front usa pra proteger/identificar esses nós (ex: filtro de clear_nodes).
+            "department": "Quadro de Sócios (QSA)" if is_qsa else await get_department_tag(emp.role), "manager_id": manager_id,
             "linkedin": emp.linkedin_url, "url": emp.linkedin_url, "profile_pic": emp.profile_pic,
-            "email": clean_email, "education": emp.education, "observations": emp.description,
+            "email": clean_email, "email_verified": bool(emp.email_verified), "education": emp.education, "observations": emp.description,
             "evidence": emp.evidence, "matching_score": emp.matching_score,
             "location": emp.location, "phone": emp.phone, "headline": emp.headline,
             "whatsapp_number": emp.whatsapp_number, "temperature": emp.temperature,
+            "pipedrive_id": int(emp.pipedrive_id) if emp.pipedrive_id and emp.pipedrive_id.isdigit() else emp.pipedrive_id, "source": emp.source,
         })
 
     return {"company_name": org.name, "nodes": nodes, "status": "cached"}

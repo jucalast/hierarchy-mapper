@@ -10,6 +10,9 @@ interface EmailDiscoveryViewProps {
     anchorRect: DOMRect;
     onClose: () => void;
     onComplete?: (email: string) => void;
+    jobTitle?: string;
+    personId?: string | number;
+    orgId?: number;
 }
 
 type DiscoveryStep = 'loading' | 'success' | 'error';
@@ -19,7 +22,10 @@ export const EmailDiscoveryView: React.FC<EmailDiscoveryViewProps> = ({
     orgName,
     anchorRect,
     onClose,
-    onComplete
+    onComplete,
+    jobTitle,
+    personId,
+    orgId,
 }) => {
     const [step, setStep] = useState<DiscoveryStep>('loading');
     const [discoveredEmail, setDiscoveredEmail] = useState('');
@@ -27,48 +33,72 @@ export const EmailDiscoveryView: React.FC<EmailDiscoveryViewProps> = ({
 
     useEffect(() => {
         setMounted(true);
-        startDiscovery();
-        return () => setMounted(false);
-    }, []);
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 240000);
 
-    const startDiscovery = async () => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/intelligence/discover-email`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contact_name: personName,
-                    org_name: orgName
-                })
-            });
+        const doDiscovery = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/api/v1/intelligence/discover-email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        contact_name: personName,
+                        org_name: orgName,
+                        job_title: jobTitle,
+                        ...(personId !== undefined ? { person_id: personId } : {}),
+                        ...(orgId !== undefined ? { org_id: orgId } : {}),
+                    }),
+                    signal: abortController.signal
+                });
 
-            const data = await response.json();
-            
-            if (data.ok && (data.recommended || data.email)) {
-                const email = data.recommended || data.email;
-                setDiscoveredEmail(email);
-                setStep('success');
-                if (onComplete) onComplete(email);
-            } else {
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    if (!abortController.signal.aborted) setStep('error');
+                    return;
+                }
+
+                const data = await response.json();
+                if (abortController.signal.aborted) return;
+
+                if (data.ok && (data.recommended || data.email)) {
+                    const email = data.recommended || data.email;
+                    setDiscoveredEmail(email);
+                    setStep('success');
+                    if (onComplete) onComplete(email);
+                } else {
+                    setStep('error');
+                }
+            } catch (error: any) {
+                if (error.name === 'AbortError' || abortController.signal.aborted) return;
                 setStep('error');
             }
-        } catch (error) {
-            setStep('error');
-        }
-    };
+        };
+
+        doDiscovery();
+
+        return () => {
+            abortController.abort();
+            clearTimeout(timeoutId);
+            setMounted(false);
+        };
+    }, [personName, orgName]);
 
     if (!mounted) return null;
 
-    // Alinhamento centralizado verticalmente com o e-mail do Drawer
     const popoverStyle: React.CSSProperties = {
         top: anchorRect.top + anchorRect.height / 2 - 25,
         left: anchorRect.right + 15,
     };
 
     return createPortal(
-        <div 
-            className={`${styles.container} ${step === 'error' ? styles.error : ''}`} 
-            style={popoverStyle} 
+        <div
+            className={`${styles.container} ${step === 'error' ? styles.error : ''}`}
+            style={popoverStyle}
             onClick={(e) => {
                 e.stopPropagation();
                 if (step !== 'loading') onClose();

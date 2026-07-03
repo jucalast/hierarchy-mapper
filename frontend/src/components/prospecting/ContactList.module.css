@@ -5,6 +5,99 @@
     padding-bottom: 24px;
 }
 
+.listHeader {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.listHeaderVertical {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.listCount {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--sw-text-base);
+}
+
+.batchActionBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.batchActionBtn:hover:not(:disabled) {
+    color: var(--sw-text-base);
+}
+
+.batchActionBtnLoading {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Barra de progresso da validação em lote — linha própria, largura total */
+.batchProgressBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+
+    border: 1px solid var(--sw-border, rgba(255, 255, 255, 0.08));
+    border-radius: 8px;
+}
+
+.batchProgressLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--sw-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.batchCancelBtn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 5px 10px;
+    background: var(--sw-status-danger, #ef4444);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
+}
+
+.batchCancelBtn:hover {
+    opacity: 0.88;
+}
+
+
 .empty {
     padding: 60px 0;
     text-align: center;
@@ -137,12 +230,10 @@
 }
 
 .emailDiscovering {
-    background: linear-gradient(
-        90deg, 
-        var(--sw-text-muted) 0%, 
-        #818cf8 50%, 
-        var(--sw-text-muted) 100%
-    );
+    background: linear-gradient(90deg,
+            var(--sw-text-muted) 0%,
+            var(--sw-status-success) 50%,
+            var(--sw-text-muted) 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -151,8 +242,13 @@
 }
 
 @keyframes shimmerEmail {
-    0% { background-position: 100% 0; }
-    100% { background-position: -100% 0; }
+    0% {
+        background-position: 100% 0;
+    }
+
+    100% {
+        background-position: -100% 0;
+    }
 }
 
 .actions {
@@ -172,4 +268,13 @@
 
 .actionBtn:hover {
     color: var(--sw-text-base);
+}
+
+.verifiedBadge {
+    flex-shrink: 0;
+    opacity: 1 !important;
+}
+
+.verifiedBadge path:last-child {
+    stroke: #ffffff;
 }

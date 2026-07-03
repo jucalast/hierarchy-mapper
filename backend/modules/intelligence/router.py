@@ -7,7 +7,7 @@ Rotas:
     POST /intelligence/enrich-org/{org_id} -> enriquece logo, dominio, LinkedIn
     POST /intelligence/sync                -> dispara sync manual do Pipedrive
 """
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Request
 from typing import Optional, Any, Dict
 from pydantic import BaseModel
 from sqlalchemy import select, delete, func
@@ -22,27 +22,37 @@ class EmailDiscoveryRequest(BaseModel):
     contact_name: str
     org_name: Optional[str] = None
     domain: Optional[str] = None
+    job_title: Optional[str] = None
+    person_id: Optional[Any] = None
+    org_id: Optional[int] = None
+    force: bool = False
 
 @router.post("/discover-email")
-async def discover_email(payload: EmailDiscoveryRequest):
+async def discover_email(payload: EmailDiscoveryRequest, request: Request):
     """
     Endpoint manual para a ferramenta discover_and_validate_email.
     Utilizado para descobrir e validar e-mails profissionais via Drawer.
     """
     from modules.agent.service.tools.intelligence import exec_discover_and_validate_email
-    
+
     try:
         args = {
             "contact_name": payload.contact_name,
             "org_name": payload.org_name,
-            "domain": payload.domain
+            "domain": payload.domain,
+            "job_title": payload.job_title,
+            "person_id": payload.person_id,
+            "org_id": payload.org_id,
+            "force": payload.force,
+            # Se o usuário cancelar (frontend aborta o fetch), o backend detecta
+            # a desconexão e não persiste o email — o "Cancelar" para de verdade.
+            "cancel_check": request.is_disconnected,
         }
-        
+
         result = await exec_discover_and_validate_email(args)
-        
-        if not result.get("ok"):
-            return {"ok": False, "error": result.get("error")}
-            
+
+        # Retorna o resultado completo (inclui identity_score/verdict/evidence
+        # mesmo quando ok=False, para a UI exibir a prova auditável).
         return result
         
     except Exception as e:
@@ -113,6 +123,63 @@ async def confirm_enrich_data(payload: ConfirmEnrichRequest):
                     org = Organization(pipedrive_id=target_pid)
                     session.add(org)
                 else:
+                    org.pipedrive_id = target_pid
+
+            # Verifica se há conflito de CNPJ duplicado com outra organização no banco
+            if payload.cnpj:
+                clean_cnpj = payload.cnpj.replace(".", "").replace("/", "").replace("-", "")
+                stmt = select(Organization).where(Organization.cnpj == clean_cnpj)
+                if org and org.id:
+                    stmt = stmt.where(Organization.id != org.id)
+                res = await session.execute(stmt)
+                duplicate_cnpj_org = res.scalars().first()
+
+                if duplicate_cnpj_org:
+                    # Se houver outra organização com o mesmo CNPJ, mesclamos a atual nela
+                    if org:
+                        if org.id and org.id != duplicate_cnpj_org.id:
+                            from models import ConversationThread, ActivityLog, CallSession, AutomatedAction
+                            from sqlalchemy import update
+
+                            # Migra relacionamentos
+                            await session.execute(
+                                update(Employee)
+                                .where(Employee.company_id == org.id)
+                                .values(company_id=duplicate_cnpj_org.id)
+                            )
+                            await session.execute(
+                                update(ConversationThread)
+                                .where(ConversationThread.org_id == org.id)
+                                .values(org_id=duplicate_cnpj_org.id)
+                            )
+                            await session.execute(
+                                update(ActivityLog)
+                                .where(ActivityLog.org_id == org.id)
+                                .values(org_id=duplicate_cnpj_org.id)
+                            )
+                            await session.execute(
+                                update(CallSession)
+                                .where(CallSession.org_id == org.id)
+                                .values(org_id=duplicate_cnpj_org.id)
+                            )
+                            await session.execute(
+                                update(AutomatedAction)
+                                .where(AutomatedAction.org_id == org.id)
+                                .values(org_id=duplicate_cnpj_org.id)
+                            )
+
+                            # Deleta a organização antiga (shell ou duplicada)
+                            await session.delete(org)
+                            await session.flush()
+                        elif not org.id:
+                            # Se é um objeto novo que apenas instanciamos nesta chamada, removemos da sessão
+                            try:
+                                session.expunge(org)
+                            except Exception:
+                                pass
+
+                    # A sobrevivente passa a ser a nossa org e herda o pipedrive_id
+                    org = duplicate_cnpj_org
                     org.pipedrive_id = target_pid
 
             if payload.name: org.name = payload.name

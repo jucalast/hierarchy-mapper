@@ -10,6 +10,7 @@ class CommunicationPipeline(BasePipeline):
     """Pipeline voltada para comunicações escritas (E-mail, WhatsApp, Apresentação)."""
     name = "Communication"
     description = "Pipeline para envios de e-mail, WhatsApp e apresentações comerciais"
+    intent_name = "communication"
 
     _email_msg_keys = [
         "enviar email", "mandar email", "escrever email", "email",
@@ -40,10 +41,23 @@ class CommunicationPipeline(BasePipeline):
         return (
             f"ETAPAS PARA ESTA ATIVIDADE (siga nesta ordem):\n"
             f"  1. pipedrive_get_persons → mapear os contatos e encontrar o email/canal correto do decisor.\n"
-            f"  2. email_get_contact_history E/OU whatsapp_get_messages → buscar histórico de comunicação do contato selecionado para contextualizar.\n"
-            f"  3. generate_sales_message → (OBRIGATÓRIO) criar o rascunho da mensagem personalizada usando o histórico e anotações do CRM.\n"
-            f"  4. email_send / whatsapp_send_message → apresentar o rascunho de {canal_preferencial} para aprovação do João no chat.\n"
-            f"  5. pipedrive_update_task(activity_id={act_id}, done=true) → marcar como concluída após a aprovação do envio.\n"
+            f"  2. VALIDAÇÃO DE E-MAIL (CONDICIONAL):\n"
+            f"     ✔ Se o contato já tiver `email_validated: true` no resultado de pipedrive_get_persons: USE esse email diretamente, sem chamar discover_and_validate_email.\n"
+            f"     ⚠ Se o contato NÃO tiver email ou tiver `email_validated: false`: chame discover_and_validate_email para descobrir o email correto.\n"
+            f"  3. email_get_contact_history E/OU whatsapp_get_messages → buscar histórico de comunicação do contato selecionado para contextualizar.\n"
+            f"  4. generate_sales_message → (OBRIGATÓRIO) criar o rascunho da mensagem personalizada usando o histórico e anotações do CRM.\n"
+            f"  5. ⚡ CHAMAR A FERRAMENTA DE ENVIO (NÃO APENAS ESCREVER TEXTO):\n"
+            f"      Chame email_send / email_reply OU whatsapp_send_message como FERRAMENTA ({canal_preferencial} preferencial).\n"
+            f"      ⚠️ Isso exibirá automaticamente o card de confirmação ao usuário — NÃO escreva o e-mail em prosa.\n"
+            f"  6. pipedrive_update_task(activity_id={act_id}, done=true) → APENAS se o passo 5 retornou ok=true.\n"
+            + cls.stage_advancement_step(
+                7, deal_id,
+                "envio de comunicação escrita. Se foi uma APRESENTAÇÃO/primeiro contato, o avanço típico é "
+                "para 'Contatado' (19) ou 'Qualificação' (18) no funil Novos Negócios (ou 'Contato' 16 na Carteira). "
+                "Se foi apenas um follow-up de um negócio já em andamento, provavelmente a etapa NÃO muda"
+            )
+            + f"⛔ PROIBIDO: NÃO chame pipedrive_update_task antes da ferramenta de envio retornar ok=true.\n"
+            f"⛔ PROIBIDO: NÃO escreva o rascunho como texto na resposta — CHAME a ferramenta de envio.\n"
             f"⛔ PROIBIDO: NÃO chame prepare_live_coaching_session e NÃO crie roteiros de ligação, pois esta tarefa é de comunicação escrita.\n"
-            f"⛔ PROIBIDO: Nunca envie a mensagem antes do João aprovar no card correspondente.\n\n"
+            f"⛔ PROIBIDO: Nunca use um email diferente do que o contato tem validado no sistema.\n\n"
         )

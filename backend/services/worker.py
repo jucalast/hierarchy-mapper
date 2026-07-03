@@ -26,10 +26,39 @@ from arq.cron import cron
 from core.infra.redis_config import redis_settings
 from core.observability.logging_config import get_logger, configure_logging
 from modules.hierarchy.service.b2b_scanner import discover_employees_stream
+from modules.hierarchy.service.graph_builder import assign_managers, reparent_subordinates
 from modules.triggers.service.trigger_service import scan_email_triggers, scan_whatsapp_triggers
+from api.v1.schemas import EmployeeNode
 
 
 log = get_logger(__name__)
+
+
+def _normalize_stream_node_id(raw_id) -> str:
+    """Normaliza o id de um nó vindo do streaming para o formato estável usado
+    em toda a UI e em hierarchy_loader.py (`node_<id_no_banco>`), evitando
+    incompatibilidade entre IDs efêmeros do streaming e IDs persistidos no reload."""
+    str_id = str(raw_id)
+    if str_id.startswith(("node_", "root_company", "socio_", "partner_")):
+        return str_id
+    return f"node_{str_id}"
+
+
+async def _persist_node_manager_id(node_id: str, manager_id: str) -> None:
+    """Persiste o manager_id calculado em tempo real (durante o streaming) no Employee correspondente."""
+    if not node_id.startswith("node_"):
+        return
+    try:
+        db_id = int(node_id.split("_", 1)[1])
+    except (ValueError, IndexError):
+        return
+    from core.infra.database import async_session
+    from models import Employee
+    async with async_session() as session:
+        emp = await session.get(Employee, db_id)
+        if emp:
+            emp.manager_id = manager_id
+            await session.commit()
 
 
 async def run_b2b_discovery_task(
@@ -60,6 +89,7 @@ async def run_b2b_discovery_task(
     from sqlalchemy import select
     
     fast_nodes = []
+    update_nodes = None
     async with async_session() as session:
         # Busca por CNPJ normalizado ou Nome
         norm_cnpj = cnpj.replace(".", "").replace("/", "").replace("-", "") if cnpj else None
@@ -244,6 +274,25 @@ async def run_b2b_discovery_task(
                 json.dumps({"type": "initial", "nodes": [{"id": "root_company", "logo": logo_proxy}]}, ensure_ascii=False)
             )
 
+    # 🌳 Pool de hierarquia em memória: usado para calcular manager_id de cada
+    # novo nó (mesmo cálculo que antes só existia no endpoint SSE legado),
+    # agora aplicado ao streaming real consumido pelo frontend.
+    hierarchy_pool: list = []
+    for seed_node in (fast_nodes or []) + (update_nodes or []):
+        if seed_node.get("id") == "root_company":
+            continue  # raiz não precisa estar no pool (fallback já é "root_company")
+        try:
+            hierarchy_pool.append(EmployeeNode(
+                id=_normalize_stream_node_id(seed_node["id"]),
+                name=seed_node.get("name") or "Sócio",
+                role=seed_node.get("role") or "Sócio",
+                department=seed_node.get("department") or "Quadro de Sócios (QSA)",
+                manager_id=seed_node.get("manager_id") or "root_company",
+                level=seed_node.get("level", 6),
+            ))
+        except Exception:
+            continue
+
     count = 0
     async for batch in discover_employees_stream(
         company_name=company_name,
@@ -262,14 +311,50 @@ async def run_b2b_discovery_task(
             if batch[0].get("type") == "done":
                 await ctx['redis'].publish(f"job_updates_{ctx['job_id']}", json.dumps({"type": "done"}))
                 break
-            
-            # Envia o lote de novos nós para o frontend
+
             msg_type = batch[0].get("type", "batch")
+            extra_nodes = []
+
+            if msg_type == "batch":
+                for node in batch:
+                    raw_id = node.get("id")
+                    if raw_id is None:
+                        continue
+                    node_id = _normalize_stream_node_id(raw_id)
+                    node["id"] = node_id
+
+                    try:
+                        emp_node = EmployeeNode(
+                            id=node_id,
+                            name=node.get("name") or "Colaborador",
+                            role=node.get("role") or "Professional",
+                            department=node.get("department") or "Operations",
+                            level=int(node.get("level") or node.get("seniority") or 2),
+                        )
+                    except Exception:
+                        continue
+
+                    emp_node.manager_id = await assign_managers(emp_node, hierarchy_pool)
+                    reparented = reparent_subordinates(emp_node, hierarchy_pool)
+                    hierarchy_pool.append(emp_node)
+
+                    node["manager_id"] = emp_node.manager_id
+                    node["level"] = emp_node.level
+
+                    await _persist_node_manager_id(node_id, emp_node.manager_id)
+                    for r in reparented:
+                        await _persist_node_manager_id(r["id"], r["manager_id"])
+                    extra_nodes.extend(reparented)
+
+            if extra_nodes:
+                batch = batch + extra_nodes
+
+            # Envia o lote de novos nós (e re-parenteamentos) para o frontend
             await ctx['redis'].publish(
-                f"job_updates_{ctx['job_id']}", 
+                f"job_updates_{ctx['job_id']}",
                 json.dumps({"type": msg_type, "nodes": batch}, ensure_ascii=False)
             )
-            
+
             count += len(batch)
 
     log.info("worker.task.completed", company=company_name, total=count)
@@ -287,6 +372,12 @@ async def run_b2b_discovery_task(
 async def startup(ctx):
     """Hook executado quando o worker ARQ inicia."""
     configure_logging()
+    # Limpa o sorted-set de cron do ARQ para não processar backlog acumulado
+    # em hot-reloads rápidos (watchfiles), que causaria burst de centenas de runs.
+    try:
+        await ctx['redis'].delete('arq:cron')
+    except Exception as e:
+        log.warning("worker.startup.cron_flush_failed", error=str(e))
     log.info("worker.started")
 
 
@@ -310,9 +401,10 @@ async def run_agent_task(ctx, payload_dict: dict):
             parent_message_id=payload_dict.get("parent_message_id"),
             action_index=payload_dict.get("action_index"),
             is_regeneration=payload_dict.get("is_regeneration", False),
+            job_id=job_id,
         ):
             await ctx['redis'].publish(f"agent_updates_{job_id}", chunk)
-        
+
         await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "job_done"}))
         log.info("worker.agent_task.completed", job_id=job_id)
     except Exception as e:
@@ -329,14 +421,45 @@ async def resume_agent_task(ctx, payload_dict: dict):
             approved=payload_dict["approved"],
             thread_id=payload_dict.get("thread_id"),
             attachment_path=payload_dict.get("attachment_path"),
+            job_id=job_id,
         ):
             await ctx['redis'].publish(f"agent_updates_{job_id}", chunk)
-            
+
         await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "job_done"}))
         log.info("worker.resume_agent_task.completed", job_id=job_id)
     except Exception as e:
         log.exception("worker.resume_agent_task.failed", job_id=job_id, error=str(e))
         await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "error", "error": str(e)}))
+
+
+async def run_linkedin_scrape_task(
+    ctx,
+    company_url: str,
+    session_cookie: Optional[str] = None,
+    headless: bool = True,
+    area_focus: Optional[str] = None,
+    product_focus: Optional[str] = None,
+    model: Optional[str] = None,
+):
+    from modules.hierarchy.service.linkedin_scraper import run_linkedin_scrape
+
+    job_id = ctx['job_id']
+    log.info("worker.linkedin_scrape.started", job_id=job_id, company_url=company_url)
+    try:
+        await run_linkedin_scrape(
+            redis=ctx['redis'],
+            job_id=job_id,
+            company_url=company_url,
+            session_cookie=session_cookie,
+            headless=headless,
+            area_focus=area_focus,
+            product_focus=product_focus,
+            model=model,
+        )
+        log.info("worker.linkedin_scrape.completed", job_id=job_id)
+    except Exception as e:
+        log.exception("worker.linkedin_scrape.failed", job_id=job_id, error=str(e))
+        await ctx['redis'].publish(f"job_updates_{job_id}", json.dumps({"type": "error", "message": str(e)}))
 
 
 async def run_smart_reschedule_task(ctx):
@@ -370,10 +493,10 @@ async def run_smart_reschedule_task(ctx):
 
 
 class WorkerSettings:
-    functions = [run_b2b_discovery_task, run_agent_task, resume_agent_task, run_smart_reschedule_task]
+    functions = [run_b2b_discovery_task, run_agent_task, resume_agent_task, run_smart_reschedule_task, run_linkedin_scrape_task]
     cron_jobs = [
-        cron(scan_email_triggers, minute=set(range(0, 60, 2))),
-        cron(scan_whatsapp_triggers, minute=set(range(0, 60, 1))),
+        cron(scan_email_triggers, minute=set(range(0, 60, 2))),  # a cada 2 minutos
+        cron(scan_whatsapp_triggers),  # a cada minuto (minute=None → ARQ calcula next_run corretamente)
     ]
     redis_settings = redis_settings
     job_timeout = 1800 # 30 min (Aumentando de 300s pra dar tempo aos fallback engines e delays)

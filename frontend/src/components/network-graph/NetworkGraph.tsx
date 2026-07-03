@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useReactFlow, ReactFlowProvider, Edge } from 'reactflow';
-import { HierarchyEmployee } from '@/types';
+import { useReactFlow, ReactFlowProvider } from 'reactflow';
 import { PanelRight, PanelRightOpen, LogOut } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../../utils/avatarUtils';
 
@@ -20,7 +19,7 @@ import { useHierarchy } from '@/hooks/useHierarchy';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useProspecting } from '@/hooks/useProspecting';
 import { useNetworkFlow } from '@/hooks/useNetworkFlow';
-import { useGraphPersistence } from '@/hooks/useGraphPersistence';
+import { useGraphPersistence, getGraphCacheId } from '@/hooks/useGraphPersistence';
 import { useDiscoveryWorkflow } from '@/hooks/useDiscoveryWorkflow';
 import { usePipedriveSync } from '@/hooks/usePipedriveSync';
 import { useNotifications } from '@/contexts/NotificationContext';
@@ -35,14 +34,15 @@ import { apiGet } from '../../services/config';
 import { Avatar } from '../ui';
 import { ChatPanel } from '../chat/ChatPanel';
 import { PreferencesView } from '../layout/PreferencesView';
-import { HierarchyScanView } from '../hierarchy-scan/HierarchyScanView';
 import { GraphCanvas } from './GraphCanvas';
 import { HierarchyDiscoveryOverlay } from './HierarchyDiscoveryOverlay';
+import { NetworkGraphLayout } from './NetworkGraphLayout';
+import { useChatStore } from '@/store/chatStore';
 import { FloatingToolbar } from './FloatingToolbar';
 import { SmartBackground } from './components/SmartBackground';
 import { FitViewHandler } from './components/FitViewHandler';
-import { ModelSelector } from '../chat/ModelSelector';
-import { useHierarchyScan } from '@/hooks/useHierarchyScan';
+import { ModelSelector } from '../chat/components/ModelSelector';
+import { useGlobalHierarchyScan } from '@/contexts/HierarchyScanContext';
 import { ScanTerminalPanel } from './components/ScanTerminalPanel';
 import { ScanPreviewBubble } from './components/ScanPreviewBubble';
 import { TriggerNotifications } from '../ui/TriggerNotifications';
@@ -50,6 +50,8 @@ import { API_BASE_URL } from '@/services/config';
 import { EmployeeDetailsModal } from './components/EmployeeDetailsModal';
 
 const styles = { ...graphStyles, ...haStyles, ...sidebarStyles, ...headerStyles };
+
+import { useRouterSync } from '@/hooks/useRouterSync';
 
 const cleanName = (name: string) => {
     if (!name) return "";
@@ -68,7 +70,21 @@ const formatCnpj = (val: string) => {
     return `${s.slice(0, 2)}.${s.slice(2, 5)}.${s.slice(5, 8)}/${s.slice(8, 12)}-${s.slice(12)}`;
 };
 
-function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
+function NetworkGraphContent({ 
+    onLogout, 
+    currentUser, 
+    tasksForToday, 
+    onToggleChat 
+}: { 
+    onLogout?: () => void;
+    currentUser?: { name: string; avatar: string | null } | null;
+    tasksForToday?: number;
+    onToggleChat?: () => void;
+}) {
+    const pathname = usePathname() || '/';
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
     const { addNotification, notifications, removeNotification } = useNotifications();
     const { saveGraphState, getStableId } = useGraphPersistence();
     const [theme, setTheme] = useState("dark");
@@ -76,21 +92,39 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     const [chatOrgId, setChatOrgId] = useState<number | null>(null);
     const [prospectHoveredLeadId, setProspectHoveredLeadId] = useState<string | null>(null);
     const hasAttemptedReconnect = useRef(false);
+    const currentPathRef = useRef(pathname);
+    currentPathRef.current = pathname;
 
     // CRM Sync
     const {
         pipedriveOrgs, setPipedriveOrgs, searchTerm, setSearchTerm,
-        loadingOrgs, filteredOrgs, fetchPipedriveOrgs, handleOrgRenamed
+        loadingOrgs, taskSummary, filteredOrgs, fetchPipedriveOrgs, handleOrgRenamed,
+        uniqueStages, activeStageFilter, setActiveStageFilter
     } = usePipedriveSync();
 
     // Hierarchy Data
     const hierarchy = useHierarchy();
     const {
-        rawEmployees, rawBackendEdges, loading, discovering, brandOptions, setBrandOptions,
+        rawEmployees, rawBackendEdges, discovering, brandOptions, setBrandOptions,
         activeJobId, stopHierarchyScan, cancelDiscovery, resetHierarchy,
         reconnectToActiveJob, approveCandidate, refineHierarchy, smartSyncPipedrive,
-        loadStoredHierarchy, deleteEmployee, setRawEmployees, setRawBackendEdges
+        deleteEmployee
     } = hierarchy;
+
+    useEffect(() => {
+        // Evita disparar contagem zerada enquanto as orgs ainda estão carregando (ex: navegação entre páginas)
+        if (loadingOrgs && pipedriveOrgs.length === 0) return;
+
+        const brToday = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+        let count = 0;
+        pipedriveOrgs.forEach((org: any) => {
+            const summary = taskSummary[Number(org.id)];
+            if (summary && !summary.overdue_count && summary.next_due_date === brToday) {
+                count++;
+            }
+        });
+        window.dispatchEvent(new CustomEvent('update_tasks_today', { detail: count }));
+    }, [pipedriveOrgs, taskSummary, loadingOrgs]);
 
     // Discovery Workflow
     const discovery = useDiscoveryWorkflow({
@@ -100,7 +134,8 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         setChatOrgId,
         rawEmployees,
         fetchPipedriveOrgs,
-        setPipedriveOrgs
+        setPipedriveOrgs,
+        pathname
     });
 
     const {
@@ -114,8 +149,35 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     } = discovery;
 
     // HierarchyScan Integration
-    const scan = useHierarchyScan();
+    const scan = useGlobalHierarchyScan();
+    // Estado de scan isolado para a empresa atual — persiste independente de outras empresas sendo escaneadas
+    const currentScanState = scan.getScanState(currentOrgId ?? 0);
+    const isScanForCurrentOrg = currentScanState.isScanning;
     const [previewExpanded, setPreviewExpanded] = useState(false);
+
+    // scopedScan: adapter com API flat para os componentes filhos (NetworkGraphLayout).
+    // Encapsula as chamadas multi-org, expondo apenas o escopo da empresa atual.
+    const scopedScan = useMemo(() => ({
+        ...currentScanState,
+        startScan: scan.startScan,
+        stopScan: () => { if (currentOrgId) scan.stopScan(currentOrgId); },
+        handleImageClick: (e: React.MouseEvent<HTMLImageElement>) => { if (currentOrgId) scan.handleImageClick(currentOrgId, e); },
+        sendText: (text: string) => { if (currentOrgId) scan.sendText(currentOrgId, text); },
+        pressEnter: () => { if (currentOrgId) scan.pressEnter(currentOrgId); },
+        pressBackspace: () => { if (currentOrgId) scan.pressBackspace(currentOrgId); },
+        resetScan: () => { if (currentOrgId) scan.resetScan(currentOrgId); },
+        scanOrgId: currentOrgId ?? null,
+    }), [currentScanState, scan, currentOrgId]);
+
+    // Sincroniza mappingMode com o estado de scan:
+    // 'scan' quando há scan ativo nesta empresa, 'discovery' em qualquer outro caso.
+    useEffect(() => {
+        if (isScanForCurrentOrg) {
+            setMappingMode('scan');
+        } else {
+            setMappingMode('discovery');
+        }
+    }, [isScanForCurrentOrg, setMappingMode]);
 
     // Network Flow
     // IMPORTANTE: editEmployee DEVE ser memoizado com useCallback para não recriar a cada render
@@ -123,6 +185,15 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
     const handleEditEmployee = useCallback(
         (id: string) => setEditEmployeeModal({ isOpen: true, empId: id }),
         []
+    );
+
+    // Chave canônica de cache do grafo — fonte única compartilhada entre o caminho de
+    // leitura (useNetworkFlow) e o de escrita (saveGraphState). Antes cada lado derivava
+    // sua própria chave (currentOrgId vs last-viewed-org), o que fazia o layout manual
+    // salvo numa chave nunca ser lido de volta na outra.
+    const graphCacheId = useMemo(
+        () => getGraphCacheId(currentOrgId, confirmedBrand),
+        [currentOrgId, confirmedBrand]
     );
 
     const {
@@ -136,8 +207,11 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         confirmedBrand,
         confirmedLogo,
         getStableId,
+        cacheId: graphCacheId,
         deleteEmployee,
         editEmployee: handleEditEmployee,
+        isScanning: isScanForCurrentOrg,
+        discovering: discovering,
     });
 
     // UI States
@@ -150,21 +224,47 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         window.dispatchEvent(new CustomEvent('toggle_chat', { detail: { open: val } }));
     };
     
-    const pathname = usePathname() || '/';
-    const router = useRouter();
-    const searchParams = useSearchParams();
+
+
+    // Reset drawer expansion and organization states when leaving organization routes
+    useEffect(() => {
+        const isOrgRoute = pathname.match(/\/org\/(\d+)/);
+        console.log(`[NetworkGraph Reset Effect] pathname: "${pathname}", isOrgRoute: ${!!isOrgRoute}`);
+        if (!isOrgRoute) {
+            console.log('[NetworkGraph Reset Effect] Resetting all organization states client-side.');
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('drawer-expanded-org-id');
+                localStorage.removeItem('last-viewed-org');
+                localStorage.setItem('show-drawer', 'true');
+                window.dispatchEvent(new CustomEvent('drawer_reset_expansion'));
+            }
+            // Sync global state to null so useHierarchy returns EMPTY_ARRAY
+            useChatStore.getState().setCurrentOrgId(null);
+
+            // Reset local states unconditionally to clear a UI (currentOrgId apenas —
+            // NÃO chamar resetWorkflow()/resetHierarchy() aqui: isso apagaria do Zustand
+            // os rawEmployees/rawBackendEdges já mapeados da empresa que está sendo deixada,
+            // fazendo os cards sumirem ao navegar de volta para ela. O reset dos campos
+            // locais de discovery (step, cnpj, marca, etc.) já é feito pelo próprio efeito
+            // de pathname dentro de useDiscoveryWorkflow.
+            setCurrentOrgId(null);
+            setChatOrgId(null);
+            setShowDrawer(true);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname]);
+
 
     const activeView = useMemo(() => {
         if (pathname.startsWith('/prospecting')) return 'prospecting';
         if (pathname.startsWith('/settings')) return 'preferences';
         if (pathname.startsWith('/messages')) return 'messages';
-        if (pathname.startsWith('/linkedin-scrape')) return 'linkedin-scrape';
         if (pathname.startsWith('/ligacao') || searchParams?.get('view') === 'ligacao') return 'ligacao';
         if (searchParams?.get('view') === 'messages') return 'messages';
         return 'graph';
     }, [pathname, searchParams]);
 
-    const setActiveView = useCallback((view: 'graph' | 'prospecting' | 'preferences' | 'messages' | 'linkedin-scrape' | 'ligacao') => {
+    const setActiveView = useCallback((view: 'graph' | 'prospecting' | 'preferences' | 'messages' | 'ligacao') => {
         if (view === 'graph') {
            if (currentOrgId) router.push(`/org/${currentOrgId}`);
            else router.push('/');
@@ -176,47 +276,29 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
            // Se estiver dentro de uma empresa, mantém o contexto da org
            if (currentOrgId) router.push(`/org/${currentOrgId}?view=messages`);
            else router.push('/messages');
-        } else if (view === 'linkedin-scrape') {
-           router.push('/linkedin-scrape');
         } else if (view === 'ligacao') {
            if (currentOrgId) router.push(`/org/${currentOrgId}?view=ligacao`);
            else router.push('/?view=ligacao');
         }
     }, [router, currentOrgId]);
 
+    const handleNavigateToRoot = useCallback(() => {
+        // Apenas navega — o efeito de reset acima (pathname !isOrgRoute) já cuida de
+        // limpar currentOrgId/estado cosmético da UI. NÃO chamar resetWorkflow()/
+        // resetHierarchy() aqui: isso apagaria do Zustand os rawEmployees/rawBackendEdges
+        // já mapeados (incluindo root, sócios e contatos do Pipedrive), fazendo os
+        // cards sumirem ao navegar de volta para a empresa.
+        router.push('/');
+    }, [router]);
+
     const [unreadCount, setUnreadCount] = useState(0);
     const prospecting = useProspecting();
     const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
     const [editEmployeeModal, setEditEmployeeModal] = useState<{ isOpen: boolean, empId: string | null }>({ isOpen: false, empId: null });
 
-    const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string | null } | null>(null);
-
-    useEffect(() => {
-        const fetchCurrentUser = async () => {
-            try {
-                if (typeof window !== 'undefined') {
-                    const cached = window.localStorage.getItem('pipedrive-current-user');
-                    if (cached) {
-                        setCurrentUser(JSON.parse(cached));
-                    }
-                }
-                
-                const data = await apiGet('/pipedrive/current-user');
-                if (data) {
-                    setCurrentUser(data);
-                    if (typeof window !== 'undefined') {
-                        window.localStorage.setItem('pipedrive-current-user', JSON.stringify(data));
-                    }
-                }
-            } catch (err) {
-                console.error('Erro ao buscar usuário do Pipedrive:', err);
-            }
-        };
-        void fetchCurrentUser();
-    }, []);
 
     // Wrapper para suportar mapeamento por busca/IA (Discovery) ou varredura (Scan)
-    const handleSearchOrScan = useCallback((e?: React.FormEvent) => {
+    const handleSearchOrScan = useCallback(async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (mappingMode === 'scan') {
             if (!cnpj) {
@@ -227,122 +309,44 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
                 addNotification('error', 'Nenhum link do LinkedIn confirmado para realizar a varredura.');
                 return;
             }
+            if (!currentOrgId) {
+                addNotification('error', 'Nenhuma organização selecionada para iniciar a varredura.');
+                return;
+            }
             let peopleUrl = confirmedLinkedInUrl.trim();
             if (!peopleUrl.endsWith('/people/')) {
                 peopleUrl = peopleUrl.replace(/\/+$/, '') + '/people/';
             }
             const sessionCookie = localStorage.getItem('linkedin_li_at_cookie') || '';
-            scan.startScan(peopleUrl, sessionCookie, areaFocus, productFocus, selectedModel);
+
+            // 🧹 Limpa apenas os caches de layout (posições x/y antigas). A limpeza dos nós
+            // em si é feita pelo evento 'clear_nodes' do backend (via connectionManager),
+            // sincronizada com o momento real em que o backend apaga os funcionários antigos.
+            localStorage.removeItem(`layout-cache-${currentOrgId}`);
+            localStorage.removeItem(`edges-cache-${currentOrgId}`);
+
+            scan.startScan(currentOrgId, peopleUrl, sessionCookie, areaFocus, productFocus, selectedModel);
             addNotification('info', 'Iniciando varredura do LinkedIn...');
         } else {
             handleSearch(e as any);
         }
-    }, [mappingMode, cnpj, confirmedLinkedInUrl, scan, handleSearch, addNotification, areaFocus, productFocus, selectedModel]);
-
-    // Mantém ref estável dos funcionários para evitar loop de dependência no useEffect de scanResults
-    const rawEmployeesRef = useRef(rawEmployees);
-    useEffect(() => {
-        rawEmployeesRef.current = rawEmployees;
-    }, [rawEmployees]);
+    }, [mappingMode, cnpj, confirmedLinkedInUrl, scan.startScan, handleSearch, addNotification, areaFocus, productFocus, selectedModel, currentOrgId]);
 
     // Trata erros de varredura
     useEffect(() => {
-        if (scan.scanError) {
-            addNotification('error', `Erro na varredura: ${scan.scanError}`);
+        if (currentScanState.scanError) {
+            addNotification('error', `Erro na varredura: ${currentScanState.scanError}`);
         }
-    }, [scan.scanError, addNotification]);
+    }, [currentScanState.scanError, addNotification]);
 
-    // ✅ NOVO: Limpa o grafo quando a varredura inicia do zero ou recebe comando de limpeza
-    useEffect(() => {
-        if (scan.isScanning && scan.scanResults.length === 0) {
-            console.log("[NetworkGraph] 🧹 Limpando grafo para nova varredura.");
-            const existingRootAndPartners = rawEmployeesRef.current.filter(e => e.id === 'root_company' || e.id.startsWith('partner_'));
-            setRawEmployees([...existingRootAndPartners]);
-            setRawBackendEdges([]);
-        }
-    }, [scan.isScanning, scan.scanResults.length, setRawEmployees, setRawBackendEdges]);
+    // O efeito que limpava scanOrgId foi removido intencionalmente
+    // para evitar que o scan desapareça da UI indevidamente.
 
-    // Trata resultados de varredura
-    useEffect(() => {
-        if (scan.scanResults && scan.scanResults.length > 0) {
-            const employees: HierarchyEmployee[] = scan.scanResults.map((p) => ({
-                id: p.id || Math.random().toString(36).substr(2, 9),
-                name: p.name,
-                role: p.role,
-                department: '',
-                company: confirmedBrand,
-                manager_id: undefined,
-                level: 0,
-                linkedin: p.linkedin_url,
-                avatar: p.avatar,
-                profile_pic: p.avatar,
-                location: p.location || '',
-                observations: p.observations || '',
-                evidence: p.evidence || '',
-                email: p.email || '',
-            }));
-
-            const existingRootAndPartners = rawEmployeesRef.current.filter(e => e.id === 'root_company' || e.id.startsWith('partner_'));
-            let baseEmployees = [...existingRootAndPartners];
-
-            if (baseEmployees.length === 0) {
-                baseEmployees.push({
-                    id: 'root_company',
-                    name: confirmedBrand || "Empresa",
-                    role: "Holding / Matriz",
-                    department: "Corporate Root",
-                    level: 0,
-                    logo: confirmedLogo,
-                    company_logo: confirmedLogo,
-                    domain: domainTarget
-                });
-
-                if (partners && partners.length > 0) {
-                    partners.forEach((p: any, idx: number) => {
-                        baseEmployees.push({
-                            id: `partner_${idx}`,
-                            name: p.name || `Sócio ${idx + 1}`,
-                            role: p.role || "Sócio / Administrador",
-                            department: "Quadro de Sócios (QSA)",
-                            level: 6,
-                            manager_id: 'root_company',
-                            company: confirmedBrand
-                        });
-                    });
-                }
-            }
-
-            const allEmployees = [...baseEmployees, ...employees];
-            setRawEmployees(allEmployees);
-
-            const initialEdges: Edge[] = [];
-            allEmployees.forEach(emp => {
-                if (emp.manager_id && emp.id !== "root_company") {
-                    initialEdges.push({
-                        id: `e-${emp.manager_id}-${emp.id}`,
-                        source: emp.manager_id,
-                        target: emp.id,
-                        animated: false
-                    });
-                } else if (emp.id !== 'root_company') {
-                    initialEdges.push({
-                        id: `e-root_company-${emp.id}`,
-                        source: 'root_company',
-                        target: emp.id,
-                        animated: false
-                    });
-                }
-            });
-            setRawBackendEdges(initialEdges);
-
-            // Somente dispara o refinamento e as notificações finais quando o scan terminar de fato
-            if (!scan.isScanning) {
-                addNotification('success', `Varredura concluída! ${employees.length} perfis extraídos.`);
-                addNotification('info', 'Processando varredura e gerando árvore hierárquica com IA...');
-                refineHierarchy(allEmployees);
-            }
-        }
-    }, [scan.scanResults, scan.isScanning, confirmedBrand, confirmedLogo, domainTarget, partners, setRawEmployees, setRawBackendEdges, addNotification, refineHierarchy]);
+    // 🌐 Unificação discovery/scan: tanto a varredura do LinkedIn quanto o discovery
+    // por IA agora alimentam o grafo via connectionManager (mesmo WebSocket por job_id,
+    // mesmo merge/dedup robusto, mesmo refinamento único pós-conclusão). useHierarchyScan
+    // conecta ao connectionManager internamente — não há mais tradução manual de
+    // scanResults para nós do grafo aqui.
 
     // Polling de mensagens não lidas (para o badge no header — filtra por org atual)
     useEffect(() => {
@@ -446,8 +450,10 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
 
     // Persistence & Theme
     useEffect(() => {
-        if (nodes.length > 0) saveGraphState(nodes, edges);
-    }, [nodes, edges, saveGraphState]);
+        // Evita salvar estado transiente/incompleto onde há múltiplos nós mas 0 arestas
+        if (nodes.length > 1 && edges.length === 0) return;
+        if (nodes.length > 0) saveGraphState(nodes, edges, graphCacheId);
+    }, [nodes, edges, saveGraphState, graphCacheId]);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem("preferred-theme") || "dark";
@@ -463,219 +469,26 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         return () => window.removeEventListener('theme_changed', handleThemeChanged as EventListener);
     }, []);
 
-    // Reconnection & Initial Load logic
-    useEffect(() => {
-        if (hasAttemptedReconnect.current) return;
-        hasAttemptedReconnect.current = true;
-
-        const checkLastOrg = async () => {
-            const lastOrgStr = localStorage.getItem('last-viewed-org');
-            if (lastOrgStr) {
-                if (lastOrgStr === "NaN" || lastOrgStr === "undefined") {
-                    localStorage.removeItem('last-viewed-org');
-                    setConfirmedBrand("");
-                    setStep("input");
-                    return;
-                }
-                try {
-                    const org = JSON.parse(lastOrgStr);
-                    const cleanOrgName = org.name || "";
-                    setConfirmedBrand(cleanOrgName);
-                    setConfirmedLogo(org.logo || "");
-
-                    let targetCnpj = org.cnpj || "";
-                    const onlyNums = targetCnpj.replace(/\D/g, '');
-                    if (onlyNums.length >= 5) {
-                        setCnpj(formatCnpj(targetCnpj));
-                    }
-                    setDomainTarget(org.domain || "");
-                    setCurrentOrgId(Number(org.id));
-                    setChatOrgId(Number(org.id));
-
-                    const lUrl = org.linkedin_url || org.linkedin || "";
-                    if (lUrl) setConfirmedLinkedInUrl(lUrl);
-
-                    if (org.id) {
-                        const data = await loadStoredHierarchy(Number(org.id), true);
-                        if (data && data.nodes && data.nodes.length > 0) {
-                            setStep("confirm");
-                            const rootLinkedin = data.nodes[0]?.linkedin || data.nodes[0]?.url;
-                            if (rootLinkedin && rootLinkedin.startsWith('http')) {
-                                setConfirmedLinkedInUrl(rootLinkedin);
-                            }
-                            setTimeout(() => setShouldFitView(true), 100);
-                        } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
-                            // 🚀 OTIMIZAÇÃO: Pula 'Detectar' se já temos metadados básicos ao recarregar
-                            setStep("confirm");
-                        } else {
-                            setStep("input");
-                        }
-                    }
- else {
-                        setStep("input");
-                    }
-                } catch (e) {
-                    console.error("[Last Org Check] Erro ao verificar last-viewed-org:", e);
-                    setConfirmedBrand("");
-                    setStep("input");
-                }
-            } else {
-                setConfirmedBrand("");
-                setStep("input");
-            }
-        };
-
-        const checkActiveJob = async () => {
-            const jobDataStr = localStorage.getItem('active-discovery-job');
-            if (jobDataStr && jobDataStr !== "NaN" && jobDataStr !== "undefined") {
-                try {
-                    const jobData = JSON.parse(jobDataStr);
-                    const { job_id, brand, logo, domain, orgId, cnpj } = jobData;
-                    console.log(`[Job Check] Detectado Job Ativo para ${brand}. Carregando dados prévios...`);
-
-                    if (orgId) {
-                        const data = await loadStoredHierarchy(Number(orgId), true);
-                        if (data && data.nodes && data.nodes.length > 0) {
-                            console.log(`[Job Check] ${data.nodes.length} nós restaurados do banco.`);
-                        }
-                    }
-
-                    setStep("scanning");
-                    setConfirmedBrand(brand);
-                    if (logo) setConfirmedLogo(logo);
-                    if (domain) setDomainTarget(domain);
-                    if (cnpj) {
-                        const onlyNums = cnpj.replace(/\D/g, '');
-                        if (onlyNums.length >= 5) {
-                            setCnpj(formatCnpj(cnpj));
-                        }
-                    }
-                    if (orgId) {
-                        setCurrentOrgId(orgId);
-                        setChatOrgId(orgId);
-                    }
-
-                    const reconnected = await reconnectToActiveJob(addNotification);
-                    if (!reconnected) {
-                        console.warn("[Job Check] Job expirou no backend.");
-                        setStep("confirm");
-                    }
-                } catch (e) {
-                    console.error("[Job Check] Erro", e);
-                    checkLastOrg();
-                }
-            } else {
-                checkLastOrg();
-            }
-        };
-
-        checkActiveJob();
-    }, [
-        reconnectToActiveJob, addNotification, setStep, setConfirmedBrand, setConfirmedLogo,
-        setCnpj, setDomainTarget, setCurrentOrgId, setChatOrgId, loadStoredHierarchy, setShouldFitView
-    ]);
+    // Hook para sincronização de roteamento e restauração de dados
+    useRouterSync({
+        pathname,
+        currentOrgId,
+        setCurrentOrgId,
+        setChatOrgId,
+        pipedriveOrgs,
+        hierarchy,
+        discovery,
+        setShouldFitView,
+        addNotification
+    });
 
     // Handlers
     const handleOrgClick = useCallback(async (org: any, openChat = false) => {
-        router.push(`/org/${org.id}`);
+        startTransition(() => {
+            router.push(`/org/${org.id}`);
+        });
         if (openChat) handleSetShowChat(true);
-        resetHierarchy();
-        setNodes([]);
-        setEdges([]);
-        setCurrentOrgId(Number(org.id));
-        if (openChat) setChatOrgId(Number(org.id));
-        localStorage.setItem('last-viewed-org', JSON.stringify(org));
-        
-        // Reset total de estados antes de carregar a nova empresa
-        setStep("input");
-        setCnpj("");
-        setDomainTarget("");
-        setConfirmedBrand("");
-        setConfirmedLogo("");
-        setBrandOptions([]);
-
-        try {
-            if (org.id) {
-                // 1. CHECAR SE EXISTE JOB ATIVO NESTA EMPRESA
-                const jobDataStr = localStorage.getItem('active-discovery-job');
-                if (jobDataStr) {
-                    try {
-                        const jobData = JSON.parse(jobDataStr);
-                        if (Number(jobData.orgId) === Number(org.id)) {
-                            setStep("loading");
-                            
-                            // Restaurar os dados da empresa na interface do toolbar
-                            setConfirmedBrand(jobData.brand || cleanName(org.name || ""));
-                            setConfirmedLogo(jobData.logo || org.logo || "");
-                            
-                            let targetCnpj = jobData.cnpj || org.cnpj || "";
-                            const onlyNums = targetCnpj.replace(/\D/g, '');
-                            if (onlyNums.length >= 5) {
-                                setCnpj(formatCnpj(targetCnpj));
-                            }
-                            setDomainTarget(jobData.domain || org.domain || "");
-                            if (org.product_focus) setProductFocus(org.product_focus);
-                            if (org.category === "compras" || org.category === "logistica") setAreaFocus(org.category);
-                            
-                            const reconnected = await reconnectToActiveJob(addNotification);
-                            if (reconnected) {
-                                return;
-                            } else {
-                                setStep("initial");
-                            }
-                        }
-                    } catch (e) {
-                        console.error("[Job Check] Erro de parse no jobData", e);
-                    }
-                }
-
-                // 2. SE NÃO TIVER JOB ATIVO, CARREGA OS DADOS SALVOS NORMALMENTE
-                console.log('Attempting to load hierarchy for pipedrive_id:', org.id);
-                const data = await loadStoredHierarchy(Number(org.id), true);
-                const hasNodes = data && data.nodes && data.nodes.length > 0;
-                const isProspecting = org.source === "prospecting";
-
-                if (hasNodes) {
-                    setConfirmedBrand(cleanName(org.name || ""));
-                    setConfirmedLogo(org.logo || "");
-                    setCnpj(formatCnpj(org.cnpj || ""));
-                    setDomainTarget(org.domain || "");
-                    setStep("confirm");
-                    setShouldFitView(true);
-
-                    const rootLinkedin = data.nodes[0]?.linkedin || data.nodes[0]?.url || org.linkedin_url || org.linkedin;
-                    if (rootLinkedin && rootLinkedin.startsWith('http')) {
-                        setConfirmedLinkedInUrl(rootLinkedin);
-                    }
-                } else if (org.linkedin_url || org.linkedin || (org.cnpj && org.domain)) {
-                    // 🚀 OTIMIZAÇÃO: Se já temos LinkedIn ou (CNPJ + Domínio), pulamos o passo de "Detectar"
-                    setConfirmedBrand(cleanName(org.name || ""));
-                    setConfirmedLogo(org.logo || "");
-                    setCnpj(formatCnpj(org.cnpj || ""));
-                    setDomainTarget(org.domain || "");
-                    setStep("confirm");
-
-                    const rootLinkedin = org.linkedin_url || org.linkedin;
-                    if (rootLinkedin && rootLinkedin.startsWith('http')) {
-                        setConfirmedLinkedInUrl(rootLinkedin);
-                    }
-                } else {
-                    setConfirmedBrand(cleanName(org.name || ""));
-                    setConfirmedLogo(org.logo || "");
-                    setStep("input");
-                }
-
-                if (org.product_focus) setProductFocus(org.product_focus);
-                if (org.category === "compras" || org.category === "logistica") setAreaFocus(org.category);
-            }
-        } catch (e) {
-            console.error("Critical error in handleOrgClick:", e);
-        }
-    }, [
-        resetHierarchy, setNodes, setEdges, setActiveView, setStep, setCnpj, setDomainTarget,
-        setConfirmedBrand, setConfirmedLogo, setBrandOptions, reconnectToActiveJob, addNotification,
-        loadStoredHierarchy, setProductFocus, setAreaFocus, setShouldFitView, setConfirmedLinkedInUrl
-    ]);
+    }, [router, handleSetShowChat]);
 
     const handleOrgReset = useCallback((orgId: number) => {
         console.log(`[Graph] Resetando UI para organização ${orgId}...`);
@@ -699,396 +512,91 @@ function NetworkGraphContent({ onLogout }: { onLogout?: () => void }) {
         // Notifica o Drawer para resetar o estado interno de expansão
         window.dispatchEvent(new CustomEvent('drawer_reset_expansion'));
         
+        // Limpa UI imediatamente ANTES de navegar para evitar flash do step "confirm"
         setCurrentOrgId(null);
-        localStorage.removeItem('last-viewed-org');
-        router.push('/');
         setNodes([]);
         setEdges([]);
         resetWorkflow();
         resetHierarchy();
+        localStorage.removeItem('last-viewed-org');
+        
+        router.push('/');
     }, [router, setNodes, setEdges, resetWorkflow, resetHierarchy]);
 
     return (
-        <div className={styles.container} data-theme={theme}>
-            
-            <Sidebar
-                showDrawer={showDrawer}
-                setShowDrawer={handleSetShowDrawer}
-                theme={theme}
-                onToggleTheme={() => {
-                    const newTheme = theme === "dark" ? "light" : "dark";
-                    setTheme(newTheme);
-                    localStorage.setItem("preferred-theme", newTheme);
-                    document.documentElement.setAttribute("data-theme", newTheme);
-                    window.dispatchEvent(new CustomEvent('theme_changed', { detail: newTheme }));
-                }}
-                onReset={handleNewCompany}
-                onCopyData={() => {
-                    const data = { nodes, edges };
-                    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-                    addNotification('info', "Dados do grafo copiados!");
-                }}
-                onRefine={() => {
-                    if (localStorage.getItem('active-discovery-job')) {
-                        addNotification('warning', "Aguarde o mapeamento atual terminar antes de utilizar o Analista de IA.");
-                        return;
-                    }
-                    refineHierarchy(rawEmployees);
-                }}
-                onSmartSync={async () => {
-                    // Pass notification callback directly to handle the background job messages
-                    await smartSyncPipedrive((type, msg) => {
-                        addNotification(type as any, msg);
-                        if (type === 'success') {
-                            fetchPipedriveOrgs(); // Refresh the list
-                        }
-                    });
-                }}
-                isSmartSyncLoading={hierarchy.isSmartSyncLoading}
-                onOpenProspecting={() => setActiveView(activeView === 'prospecting' ? 'graph' : 'prospecting')}
-                isProspecting={activeView === 'prospecting'}
-                onOpenPreferences={() => setActiveView(activeView === 'preferences' ? 'graph' : 'preferences')}
-                isPreferences={activeView === 'preferences'}
-                onOpenLinkedinScrape={() => setActiveView(activeView === 'linkedin-scrape' ? 'graph' : 'linkedin-scrape')}
-                isLinkedinScrape={activeView === 'linkedin-scrape'}
-                onOpenLigacao={() => setActiveView(activeView === 'ligacao' ? 'graph' : 'ligacao')}
-                isLigacao={activeView === 'ligacao'}
-                isScanActive={scan.isScanning}
-            />
-
-            <div className={styles.mainWrapper}>
-                <div className={styles.contentWrapper}>
-                    {activeView !== 'preferences' && activeView !== 'messages' && activeView !== 'ligacao' && (
-                        <Drawer
-                            showDrawer={showDrawer}
-                            setShowDrawer={handleSetShowDrawer}
-                            filteredOrgs={filteredOrgs}
-                            isLoading={loadingOrgs}
-                            searchTerm={searchTerm}
-                            setSearchTerm={setSearchTerm}
-                            onOrgClick={handleOrgClick}
-                            selectedOrgId={currentOrgId}
-                            onOrgRenamed={handleOrgRenamed}
-                            selectedOrgLogo={confirmedLogo}
-                            activeJobId={activeJobId}
-                            graphEmployees={rawEmployees}
-                            refreshDetailsTrigger={pipedriveOrgs.length}
-                            addNotification={addNotification}
-                            onOrgReset={handleOrgReset}
-                            onEditEmployee={(id) => setEditEmployeeModal({ isOpen: true, empId: id })}
-                            onOrgDomainChanged={(oldDomain, newDomain) => {
-                                // Extract the naked domains
-                                const getDomain = (url: string) => {
-                                    try {
-                                        return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
-                                    } catch {
-                                        return url;
-                                    }
-                                };
-                                const cleanOld = getDomain(oldDomain);
-                                const cleanNew = getDomain(newDomain);
-                                
-                                rawEmployees.forEach(emp => {
-                                    if (emp.email && emp.email.includes(`@${cleanOld}`)) {
-                                        const newEmail = emp.email.replace(`@${cleanOld}`, `@${cleanNew}`);
-                                        hierarchy.updateEmployee(emp.id, { email: newEmail });
-                                    }
-                                });
-                            }}
-                        />
-                    )}
-
-                    <div className={styles.mainContent}>
-                        {activeView !== 'preferences' && activeView !== 'ligacao' && (
-                            <Header
-                                confirmedBrand={confirmedBrand}
-                                activeView={activeView}
-                                onToggleMessages={() => setActiveView(activeView === 'messages' ? 'graph' : 'messages')}
-                                unreadCount={unreadCount}
-                            />
-                        )}
-                        <NotificationContainer notifications={notifications} removeNotification={removeNotification} />
-
-                        <div className={styles.graphWrapper}>
-                            {activeView === 'graph' && (
-                                <>
-                                    <GraphCanvas
-                                        nodes={nodes}
-                                        edges={edges}
-                                        onNodesChange={onNodesChange}
-                                        onEdgesChange={onEdgesChange}
-                                        onConnect={onConnect}
-                                        fitViewHandler={<FitViewHandler shouldFitView={shouldFitView} nodes={nodes} />}
-                                        smartBackground={<SmartBackground />}
-                                    />
-                                    
-                                    <HierarchyDiscoveryOverlay
-                                        error={null}
-                                        handleSearch={handleSearchOrScan}
-                                        cnpj={cnpj}
-                                        setCnpj={setCnpj}
-                                        confirmedBrand={confirmedBrand}
-                                        setConfirmedBrand={setConfirmedBrand}
-                                        confirmedLogo={confirmedLogo}
-                                        setConfirmedLogo={setConfirmedLogo}
-                                        confirmedFollowers={confirmedFollowers}
-                                        setConfirmedFollowers={setConfirmedFollowers}
-                                        domainTarget={domainTarget}
-                                        setDomainTarget={setDomainTarget}
-                                        productFocus={productFocus}
-                                        setProductFocus={setProductFocus}
-                                        areaFocus={areaFocus}
-                                        setAreaFocus={setAreaFocus}
-                                        handleAutoEnrich={handleAutoEnrich}
-                                        enrichingIds={enrichingIds}
-                                        discovering={discovering}
-                                        loading={loading}
-                                        step={step}
-                                        brandOptions={brandOptions}
-                                        onBrandSelect={handleBrandSelect}
-                                        hasMapping={nodes.length > 0}
-                                        stopHierarchyScan={() => stopHierarchyScan(addNotification)}
-                                        cancelDiscovery={cancelDiscovery}
-                                        activeJobId={activeJobId}
-                                        showDrawer={showDrawer}
-                                        showChat={false}
-                                        approveCandidate={async (id) => {
-                                            await approveCandidate(id);
-                                            addNotification('success', "Perfil aprovado.");
-                                        }}
-                                        rejectCandidate={(id) => setConfirmModal({ isOpen: true, empId: id })}
-                                        mappingMode={mappingMode}
-                                        onMappingModeChange={setMappingMode}
-                                        scanTerminal={
-                                            scan.isScanning ? (
-                                                <ScanTerminalPanel consoleLogs={scan.consoleLogs} isVisible={true} />
-                                            ) : undefined
-                                        }
-                                        scanPreview={
-                                            scan.isScanning ? (
-                                                <ScanPreviewBubble
-                                                    hasPreview={scan.hasPreview}
-                                                    previewUrl={scan.previewUrl}
-                                                    isScanning={scan.isScanning}
-                                                    expanded={previewExpanded}
-                                                    onToggleExpand={() => setPreviewExpanded(v => !v)}
-                                                    onImageClick={scan.handleImageClick}
-                                                    onSendText={scan.sendText}
-                                                    onPressEnter={scan.pressEnter}
-                                                    onPressBackspace={scan.pressBackspace}
-                                                    consoleLogs={scan.consoleLogs}
-                                                />
-                                            ) : undefined
-                                        }
-                                        isScanning={scan.isScanning}
-                                        onStopScan={scan.stopScan}
-                                        humanAnalysisContent={(() => {
-                                            const pending = rawEmployees.filter(e => e.role && e.role.toLowerCase().includes('humana'));
-                                            if (pending.length === 0) return null;
-                                            const layerClasses = [styles.stackLayer0, styles.stackLayer1, styles.stackLayer2];
-                                            return (
-                                                <div
-                                                    className={styles.humanAnalysisTrigger}
-                                                    onClick={() => {
-                                                        const isShowing = brandOptions.length > 0 && brandOptions[0]?.type === 'person';
-                                                        if (isShowing) { setBrandOptions([]); return; }
-                                                        setBrandOptions(pending.map(p => ({
-                                                            name: p.name,
-                                                            logo: getAvatarUrl(p),
-                                                            followers: p.department || 'Pendente',
-                                                            type: 'person',
-                                                            id: p.id,
-                                                            originalEmployee: p,
-                                                            // Expõe o LinkedIn real para o NormalToolbar usar diretamente via opt.url
-                                                            url: p.linkedin_url || p.linkedin || p.url || undefined,
-                                                        })));
-                                                    }}
-                                                >
-                                                    <div className={styles.humanAnalysisAvatarStack}>
-                                                        <div className={styles.humanAnalysisNotification}>
-                                                            {pending.length}
-                                                        </div>
-                                                        {pending.slice(0, 3).map((p, i) => {
-                                                            const avatarUrl = getAvatarUrl(p);
-                                                            return (
-                                                                <div
-                                                                    key={p.id}
-                                                                    className={`${styles.humanAnalysisStackedAvatar} ${layerClasses[i]}`}
-                                                                >
-                                                                    <img
-                                                                        src={avatarUrl || '/imagem_linkedin.png'}
-                                                                        alt={p.name}
-                                                                        style={{ width: '100%', height: '100%', objectFit: 'cover', transform: avatarUrl ? 'none' : 'scale(1.6)' }}
-                                                                        onError={(e) => {
-                                                                             const img = e.currentTarget as HTMLImageElement;
-                                                                             img.src = '/imagem_linkedin.png';
-                                                                             img.style.transform = 'scale(1.6)';
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
-                                    />
-                                </>
-                            )}
-
-                            {activeView === 'messages' && (
-                                <MessagesView key={`${pathname}?view=messages`} onBack={() => setActiveView('graph')} orgId={currentOrgId} />
-                            )}
-                            {activeView === 'ligacao' && (
-                                <LigacaoView onBack={() => setActiveView('graph')} initialData={ligacaoData} />
-                            )}
-                            {activeView === 'prospecting' && (
-                                <>
-                                    <ProspectingView
-                                        coords={prospecting.coords}
-                                        onMapClick={prospecting.setCoords}
-                                        radiusKm={prospecting.radiusKm}
-                                        leads={prospecting.leads}
-                                        selectedLead={prospecting.selectedLead}
-                                        onLeadClick={(lead) => {
-                                            prospecting.setSelectedLead(lead);
-                                        }}
-                                        onLeadClose={() => prospecting.setSelectedLead(null)}
-                                        onApproveLead={prospecting.approveLead}
-                                        onRejectLead={prospecting.rejectLead}
-                                        session={prospecting.session}
-                                    />
-                                    <div className={styles.bottomToolbarRow}>
-                                        <FloatingToolbar
-                                            error={null}
-                                            handleSearch={() => {}}
-                                            cnpj=""
-                                            setCnpj={() => {}}
-                                            confirmedBrand=""
-                                            setConfirmedBrand={() => {}}
-                                            confirmedLogo=""
-                                            setConfirmedLogo={() => {}}
-                                            confirmedFollowers=""
-                                            setConfirmedFollowers={() => {}}
-                                            domainTarget=""
-                                            setDomainTarget={() => {}}
-                                            productFocus=""
-                                            setProductFocus={() => {}}
-                                            areaFocus="compras"
-                                            setAreaFocus={() => {}}
-                                            handleAutoEnrich={() => {}}
-                                            enrichingIds={new Set()}
-                                            discovering={false}
-                                            loading={false}
-                                            step="initial"
-                                            brandOptions={[]}
-                                            onBrandSelect={() => {}}
-                                            isSidebarOpen={showDrawer}
-                                            isChatOpen={false}
-                                            
-                                            // Modo Prospecção
-                                            isProspectingMode={true}
-                                            prospectCoords={prospecting.coords}
-                                            prospectRadiusKm={prospecting.radiusKm}
-                                            onProspectRadiusChange={prospecting.setRadiusKm}
-                                            onProspectGeolocate={prospecting.geolocate}
-                                            prospectGeoLoading={prospecting.geoLoading}
-                                            onProspectSearch={prospecting.startSearch}
-                                            onProspectStop={prospecting.stopSearch}
-                                            prospectSearching={prospecting.searching}
-                                            prospectSession={prospecting.session}
-                                            prospectLeadsCount={prospecting.leads.length}
-                                            prospectTierACount={prospecting.leads.filter(l => l.icp_tier === 'A').length}
-                                            prospectError={prospecting.error}
-                                            prospectCityName={prospecting.cityName}
-                                            onProspectCepLookup={prospecting.lookupCep}
-                                            prospectSelectedLead={prospecting.selectedLead}
-                                            prospectPendingLeads={prospecting.leads.filter(l => l.status === 'pending')}
-                                            onProspectSelectLead={prospecting.setSelectedLead}
-                                            onProspectApproveLead={prospecting.approveLead}
-                                            onProspectRejectLead={prospecting.rejectLead}
-                                            onProspectCloseLead={() => prospecting.setSelectedLead(null)}
-                                            prospectCep={prospecting.cep}
-                                            onProspectCepChange={prospecting.setCep}
-                                        />
-                                    </div>
-                                </>
-                            )}
-                            {activeView === 'preferences' && (
-                                <PreferencesView onBack={() => setActiveView('graph')} />
-                            )}
-                            {activeView === 'linkedin-scrape' && (
-                                <HierarchyScanView
-                                    onBack={() => setActiveView('graph')}
-                                    defaultCompanyUrl={confirmedLinkedInUrl
-                                        ? (confirmedLinkedInUrl.trim().endsWith('/people/')
-                                            ? confirmedLinkedInUrl.trim()
-                                            : confirmedLinkedInUrl.trim().replace(/\/+$/, '') + '/people/')
-                                        : ''}
-                                    isScanning={scan.isScanning}
-                                    scanProgress={scan.scanProgress}
-                                    consoleLogs={scan.consoleLogs}
-                                    hasPreview={scan.hasPreview}
-                                    previewUrl={scan.previewUrl}
-                                    scanResults={scan.scanResults}
-                                    scanError={scan.scanError}
-                                    onStartScan={(url, cookie) =>
-                                        scan.startScan(url, cookie, areaFocus, productFocus, selectedModel)
-                                    }
-                                    onStopScan={scan.stopScan}
-                                    onImageClick={scan.handleImageClick}
-                                    onSendText={scan.sendText}
-                                    onPressEnter={scan.pressEnter}
-                                    onPressBackspace={scan.pressBackspace}
-                                />
-                            )}
-                        </div>
-
-                        {activeView === 'graph' && (
-                            <div 
-                                className="dropdownDown"
-                                style={{
-                                    position: 'absolute',
-                                    top: '68px',
-                                    right: '16px',
-                                    zIndex: 10,
-                                }}
-                            >
-                                <ModelSelector
-                                    model={selectedModel as any}
-                                    setModel={setSelectedModel as any}
-                                    strictMode={strictMode}
-                                    setStrictMode={setStrictMode}
-                                    theme={theme}
-                                />
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            <ConfirmModal
-                isOpen={confirmModal.isOpen}
-                onCancel={() => setConfirmModal({ isOpen: false, empId: null })}
-                onConfirm={async () => {
-                    if (confirmModal.empId) {
-                        await hierarchy.rejectCandidate(confirmModal.empId);
-                        addNotification('info', "Perfil descartado.");
-                    }
-                    setConfirmModal({ isOpen: false, empId: null });
-                }}
-                title="Descartar Perfil"
-                message="Tem certeza que deseja remover este profissional? Ele será movido para o grupo de descartados."
-            />
-
-            <EmployeeDetailsModal
-                isOpen={editEmployeeModal.isOpen}
-                onClose={() => setEditEmployeeModal({ isOpen: false, empId: null })}
-                empId={editEmployeeModal.empId}
-                rawEmployees={rawEmployees}
-                handleUpdateEmployee={hierarchy.updateEmployee}
-            />
-        </div>
+        <NetworkGraphLayout
+            theme={theme}
+            setTheme={setTheme}
+            showDrawer={showDrawer}
+            handleSetShowDrawer={handleSetShowDrawer}
+            activeView={activeView}
+            setActiveView={setActiveView}
+            currentUser={currentUser}
+            tasksForToday={tasksForToday}
+            onToggleChat={onToggleChat as any}
+            onLogout={onLogout as any}
+            handleNewCompany={handleNewCompany}
+            handleNavigateToRoot={handleNavigateToRoot}
+            refineHierarchy={refineHierarchy}
+            smartSyncPipedrive={smartSyncPipedrive}
+            hierarchy={hierarchy}
+            discovery={discovery}
+            scan={scopedScan}
+            isScanForCurrentOrg={isScanForCurrentOrg}
+            filteredOrgs={filteredOrgs}
+            loadingOrgs={loadingOrgs}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            handleOrgClick={handleOrgClick}
+            currentOrgId={currentOrgId}
+            handleOrgRenamed={handleOrgRenamed}
+            confirmedLogo={discovery.confirmedLogo}
+            activeJobId={activeJobId}
+            rawEmployees={rawEmployees}
+            pipedriveOrgs={pipedriveOrgs}
+            addNotification={addNotification}
+            handleOrgReset={handleOrgReset}
+            setEditEmployeeModal={setEditEmployeeModal}
+            uniqueStages={uniqueStages}
+            activeStageFilter={activeStageFilter}
+            setActiveStageFilter={setActiveStageFilter}
+            confirmedBrand={discovery.confirmedBrand}
+            unreadCount={unreadCount}
+            notifications={notifications}
+            removeNotification={removeNotification}
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            shouldFitView={shouldFitView}
+            setShouldFitView={setShouldFitView}
+            handleSearchOrScan={handleSearchOrScan}
+            handleAutoEnrich={handleAutoEnrich}
+            enrichingIds={enrichingIds}
+            stopHierarchyScan={stopHierarchyScan}
+            cancelDiscovery={cancelDiscovery}
+            approveCandidate={approveCandidate}
+            setConfirmModal={setConfirmModal}
+            previewExpanded={previewExpanded}
+            setPreviewExpanded={setPreviewExpanded}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+            strictMode={strictMode}
+            setStrictMode={setStrictMode}
+            confirmModal={confirmModal}
+            editEmployeeModal={editEmployeeModal}
+            ligacaoData={ligacaoData}
+            prospecting={prospecting}
+            fetchPipedriveOrgs={fetchPipedriveOrgs}
+            mappingMode={mappingMode}
+            setMappingMode={setMappingMode}
+            confirmedLinkedInUrl={discovery.confirmedLinkedInUrl}
+            areaFocus={discovery.areaFocus}
+            productFocus={discovery.productFocus}
+            SmartBackground={SmartBackground}
+            FitViewHandler={FitViewHandler}
+        />
     );
 }
 

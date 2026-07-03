@@ -10,6 +10,7 @@ class CallPipeline(BasePipeline):
     """Pipeline voltada para ligações telefônicas (Calls)."""
     name = "Call"
     description = "Pipeline para ligações e roteiros de voz"
+    intent_name = "call"
 
     _call_keys = [
         "ligar", "realizar ligação", "fazer ligação", "ligar para",

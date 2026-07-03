@@ -14,12 +14,13 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select, update
+from sqlalchemy import select, update, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.infra.database import get_db
 from core.observability.logging_config import get_logger
 from models.conversation.conversation import ConversationThread, ConversationMessage, ActivityLog
+from models.organization.organization import Organization
 
 router = APIRouter()
 log = get_logger(__name__)
@@ -82,6 +83,21 @@ class CreateThreadBody(BaseModel):
 # Rotas
 # ─────────────────────────────────────────────
 
+async def _resolve_internal_org_id(org_id: int, session: AsyncSession) -> Optional[int]:
+    """Resolve o pipedrive_id ou id local para o id interno da organização."""
+    if org_id <= 0:
+        return None
+    # Prioriza match por pipedrive_id (que o frontend envia); fallback para id interno
+    stmt = select(Organization.id).where(Organization.pipedrive_id == org_id).limit(1)
+    result = await session.execute(stmt)
+    internal_id = result.scalar_one_or_none()
+    if internal_id is not None:
+        return internal_id
+    stmt = select(Organization.id).where(Organization.id == org_id).limit(1)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 @router.get("/{org_id}", response_model=List[ThreadOut])
 async def list_threads(
     org_id: int,
@@ -91,7 +107,11 @@ async def list_threads(
     """Retorna threads da empresa ordenadas pela mais recente."""
     q = select(ConversationThread).order_by(ConversationThread.updated_at.desc()).limit(limit)
     if org_id > 0:
-        q = q.where(ConversationThread.org_id == org_id)
+        resolved_id = await _resolve_internal_org_id(org_id, session)
+        if resolved_id:
+            q = q.where(ConversationThread.org_id == resolved_id)
+        else:
+            q = q.where(ConversationThread.org_id == org_id)
         
     result = await session.execute(q)
     return result.scalars().all()
@@ -105,16 +125,39 @@ async def create_thread(
 ):
     """Cria uma nova thread de conversa para a empresa."""
     try:
+        resolved_id = await _resolve_internal_org_id(org_id, session)
+        if not resolved_id:
+            try:
+                from modules.crm.service.pipedrive_service import pipedrive_service
+                org_data = await pipedrive_service.get_organization_details(org_id)
+                if org_data:
+                    new_org = Organization(
+                        pipedrive_id=org_id,
+                        name=org_data.get("name", f"Empresa #{org_id}"),
+                        owner_id=org_data.get("owner_id", 0),
+                        source="pipedrive"
+                    )
+                    session.add(new_org)
+                    await session.flush()
+                    resolved_id = new_org.id
+            except Exception as e_pd:
+                log.warning("conversations.resolve_org.pipedrive_fallback_failed", org_id=org_id, error=str(e_pd))
+
+        if not resolved_id:
+            raise HTTPException(status_code=404, detail="Organização não encontrada no banco local.")
+
         thread = ConversationThread(
-            org_id=org_id,
+            org_id=resolved_id,
             title=body.title or f"Conversa {datetime.utcnow().strftime('%d/%m %H:%M')}",
             meta=body.meta,
         )
         session.add(thread)
         await session.commit()
         await session.refresh(thread)
-        log.info("conversation.thread.created", thread_id=thread.id, org_id=org_id)
+        log.info("conversation.thread.created", thread_id=thread.id, org_id=resolved_id)
         return thread
+    except HTTPException:
+        raise
     except Exception as e:
         await session.rollback()
         log.exception("conversation.thread.create_failed", org_id=org_id, error=str(e))
@@ -200,7 +243,11 @@ async def list_activities(
     """Retorna timeline de atividades da empresa, mais recentes primeiro."""
     q = select(ActivityLog).order_by(ActivityLog.created_at.desc()).limit(limit)
     if org_id > 0:
-        q = q.where(ActivityLog.org_id == org_id)
+        resolved_id = await _resolve_internal_org_id(org_id, session)
+        if resolved_id:
+            q = q.where(ActivityLog.org_id == resolved_id)
+        else:
+            q = q.where(ActivityLog.org_id == org_id)
     if activity_type:
         q = q.where(ActivityLog.activity_type == activity_type)
 
@@ -417,8 +464,14 @@ async def log_activity(
     external_ref: Optional[str] = None,
 ) -> ActivityLog:
     """Registra uma atividade do agente no ActivityLog."""
+    resolved_id = org_id
+    if org_id and org_id > 0:
+        resolved_id = await _resolve_internal_org_id(org_id, session)
+        if not resolved_id:
+            resolved_id = org_id
+
     activity = ActivityLog(
-        org_id=org_id,
+        org_id=resolved_id,
         thread_id=thread_id,
         activity_type=activity_type,
         status=status,
@@ -429,7 +482,7 @@ async def log_activity(
     await session.commit()
     log.info(
         "activity.logged",
-        org_id=org_id,
+        org_id=resolved_id,
         type=activity_type,
         status=status,
     )
@@ -444,7 +497,11 @@ async def get_recent_activities_context(
     """Busca atividades recentes para injeção no prompt do agente."""
     q = select(ActivityLog).order_by(ActivityLog.created_at.desc()).limit(limit)
     if org_id > 0:
-        q = q.where(ActivityLog.org_id == org_id)
+        resolved_id = await _resolve_internal_org_id(org_id, session)
+        if resolved_id:
+            q = q.where(ActivityLog.org_id == resolved_id)
+        else:
+            q = q.where(ActivityLog.org_id == org_id)
         
     result = await session.execute(q)
     return result.scalars().all()

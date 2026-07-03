@@ -40,6 +40,8 @@ class EmployeeNode(BaseModel):
     headline: Optional[str] = None
     profile_pic: Optional[str] = None
     seniority: Optional[int] = None
+    pipedrive_id: Optional[int] = None
+    source: Optional[str] = None
 
 class HierarchyResponse(BaseModel):
     company_name: str

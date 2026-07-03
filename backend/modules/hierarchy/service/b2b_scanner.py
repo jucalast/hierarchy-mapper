@@ -27,9 +27,19 @@ from .role_engine import role_engine
 from .org_search import org_search
 from .candidate_processor import CandidateProcessor
 from modules.intelligence.service.preview_service import get_url_preview
-from .filters import get_seniority_level, get_department_tag, PURCHASING_KEYWORDS, LOGISTICS_KEYWORDS, apply_strict_filters, is_same_person
+from .filters import get_seniority_level, get_department_tag, PURCHASING_KEYWORDS, LOGISTICS_KEYWORDS, apply_strict_filters, is_same_person, ADMINISTRATIVE_KEYWORDS
 from core.external.email_service import apply_pattern
 from .logging_utils import log_session_start, log_query_start
+
+def is_legal_entity(name: str) -> bool:
+    """Retorna True se o nome contiver termos típicos de Pessoa Jurídica (PJ/Holding)."""
+    name_upper = name.upper()
+    pj_terms = [
+        "LTDA", "S.A.", "S/A", "PARTICIPACOES", "PARTICIPACAO", "PARTICIPACÕES", "PARTICIPACÃO", 
+        "HOLDING", "EMPREENDIMENTOS", "ADMINISTRADORA", "INVESTIMENTOS", "GRUPO", "CORP", "INC",
+        "COOPERATIVA", "ASSOCIACAO", "ASSOCIAÇÃO", "FUNDACAO", "FUNDAÇÃO", "SERVICOS", "SERVIÇOS"
+    ]
+    return any(term in name_upper for term in pj_terms)
 
 async def discover_employees(company_name: str, domain: str, email_api_key: str = None, max_results: int = 50) -> List[Dict]:
     """Motor B2B síncrono para descoberta de funcionários (Agora Async)."""
@@ -90,8 +100,12 @@ async def discover_employees_stream(
         
         db_org_id = org.id
         
-        # 🚀 LIMPEZA IMEDIATA: Deleta funcionários antigos (MENOS os sócios e decisões manuais)
-        # Preservamos contatos que já possuem cargo definido ou foram explicitamente reprovados
+        # Limpa funcionários do mapeamento anterior para que o re-scan comece do zero.
+        # Preserva sócios (QSA), decisões humanas explícitas (aprovado/reprovado) e
+        # contatos vindos do Pipedrive (CRM) — estes últimos não devem ser apagados
+        # porque não são "descobertos" pelo scan, são dados já confirmados no CRM.
+        # Se o scan encontrar essa mesma pessoa de novo, o merge por linkedin/nome/
+        # pipedrive_id (mais abaixo) atualiza o registro existente em vez de duplicar.
         from sqlalchemy import delete, and_, not_, or_
         await session.execute(
             delete(Employee).where(
@@ -99,17 +113,19 @@ async def discover_employees_stream(
                     Employee.company_id == db_org_id,
                     not_(
                         or_(
+                            # Preserva sócios/QSA
                             Employee.department == "Quadro de Sócios (QSA)",
                             Employee.department.ilike("%Sócio%"),
                             Employee.department.ilike("%Societário%"),
                             Employee.department.ilike("%Conselho%"),
                             Employee.seniority == 6,
-                            # 🛡️ Preservar decisões: Qualquer coisa que não seja genérico (Análise Humana agora é preservada)
-                            and_(
-                                Employee.role != "Não Identificado",
-                                Employee.role != "Erro no Processamento",
-                                Employee.role != "Professional"
-                            )
+                            # Preserva apenas decisões humanas explícitas
+                            Employee.role.ilike("Aprovado%"),
+                            Employee.role == "Reprovado",
+                            Employee.department == "Reprovado",
+                            # Preserva contatos do Pipedrive
+                            Employee.source == "pipedrive",
+                            Employee.pipedrive_id.isnot(None),
                         )
                     )
                 )
@@ -169,8 +185,9 @@ async def discover_employees_stream(
                 "linkedin": p.linkedin_url,
                 "source": "CNPJ/QSA"
             })
-            # Cria query específica para o nome do sócio
-            base_queries.append(f'{p.name} {clean_brand} {search_location} linkedin')
+            # Cria query específica para o nome do sócio se não for pessoa jurídica
+            if not is_legal_entity(p.name):
+                base_queries.append(f'{p.name} {clean_brand} {search_location} linkedin')
         
         yield nodes_qsa
 
@@ -189,6 +206,10 @@ async def discover_employees_stream(
         
     # 4. Gera as queries operacionais depois dos sócios
     for term in selected_terms:
+        base_queries.append(f'{clean_brand} {term} {search_location} linkedin')
+        
+    # 4.5. Adiciona termos administrativos como fallback de prioridade menor
+    for term in ADMINISTRATIVE_KEYWORDS[:5]:
         base_queries.append(f'{clean_brand} {term} {search_location} linkedin')
     
     # 5. Adiciona query focada na empresa para pegar perfis variados (Deep Discovery)
@@ -314,23 +335,74 @@ async def discover_employees_stream(
                 node_data["source"] = "Pipedrive"
                 
                 async with async_session() as session:
-                    # Tenta encontrar contato existente pelo pipedrive_id, linkedin_url ou nome fuzzy
+                    # Tenta encontrar contato existente pelo pipedrive_id ou URL de placeholder do pipedrive
                     stmt_pd = select(Employee).where(
                         (Employee.company_id == db_org_id) & 
                         ((Employee.pipedrive_id == str(person.get('id'))) | 
                          (Employee.linkedin_url == f"pipedrive_{person.get('id')}"))
                     )
                     res_pd = await session.execute(stmt_pd)
-                    emp = res_pd.scalars().first()
+                    emp_by_pd = res_pd.scalars().first()
                     
-                    if not emp:
-                        stmt_all_pd = select(Employee).where(Employee.company_id == db_org_id)
-                        res_all_pd = await session.execute(stmt_all_pd)
-                        for e in res_all_pd.scalars().all():
-                            if is_same_person(e.name, name):
-                                emp = e
-                                break
+                    # Tenta encontrar contato existente com o mesmo nome e sem pipedrive_id (local/normal)
+                    stmt_all_pd = select(Employee).where(Employee.company_id == db_org_id)
+                    res_all_pd = await session.execute(stmt_all_pd)
+                    all_org_emps = res_all_pd.scalars().all()
+                    
+                    emp_by_name = None
+                    for e in all_org_emps:
+                        if is_same_person(e.name, name) and not e.pipedrive_id:
+                            emp_by_name = e
+                            break
                                 
+                    if emp_by_name:
+                        emp = emp_by_name
+                        emp.pipedrive_id = str(person.get('id'))
+                        
+                        if emp_by_pd and emp_by_pd.id != emp_by_name.id:
+                            # Mescla dados do emp_by_pd para o emp_by_name
+                            if not emp.role and emp_by_pd.role:
+                                emp.role = emp_by_pd.role
+                            if not emp.department and emp_by_pd.department:
+                                emp.department = emp_by_pd.department
+                            if not emp.seniority and emp_by_pd.seniority:
+                                emp.seniority = emp_by_pd.seniority
+                            if not emp.linkedin_url and emp_by_pd.linkedin_url:
+                                emp.linkedin_url = emp_by_pd.linkedin_url
+                            if not emp.description and emp_by_pd.description:
+                                emp.description = emp_by_pd.description
+                            if not emp.profile_pic and emp_by_pd.profile_pic:
+                                emp.profile_pic = emp_by_pd.profile_pic
+                            if not emp.email and emp_by_pd.email:
+                                emp.email = emp_by_pd.email
+                            if not emp.phone and emp_by_pd.phone:
+                                emp.phone = emp_by_pd.phone
+                            if not emp.location and emp_by_pd.location:
+                                emp.location = emp_by_pd.location
+                            if not emp.whatsapp_number and emp_by_pd.whatsapp_number:
+                                emp.whatsapp_number = emp_by_pd.whatsapp_number
+                            
+                            # Limpa campos únicos do emp_by_pd para evitar conflito de UNIQUE antes de deletar
+                            emp_by_pd.pipedrive_id = None
+                            emp_by_pd.linkedin_url = None
+                            emp_by_pd.email = None
+                            emp_by_pd.whatsapp_number = None
+                            
+                            await session.delete(emp_by_pd)
+                            print(f"[B2B Engine] Mesclado e excluído duplicado sincronizado de {name} (mantido ID local: {emp.id})")
+                        else:
+                            print(f"[B2B Engine] Vinculado pipedrive_id ao contato local {name} (ID: {emp.id})")
+                    else:
+                        if emp_by_pd:
+                            emp = emp_by_pd
+                        else:
+                            emp = None
+
+                    # Funcionários explicitamente reprovados não devem reaparecer no novo mapeamento
+                    if emp and (emp.role == "Reprovado" or emp.department == "Reprovado"):
+                        print(f"[B2B Engine/Pipedrive] Pulando '{name}' — reprovado no mapeamento anterior.")
+                        continue
+
                     if emp:
                         emp.pipedrive_id = str(person.get('id'))
                         emp.email = email or emp.email
@@ -363,19 +435,24 @@ async def discover_employees_stream(
         except Exception as e:
             print(f"[B2B Engine/Pipedrive] Erro ao processar pessoas via CRM: {str(e)}")
 
-    # Helper to check if job is cancelled
+    # Helper to check if job is cancelled (usa o cliente síncrono em thread para não criar pool a cada tick)
     async def is_cancelled() -> bool:
         if not job_id:
             return False
         try:
-            from arq import create_pool
-            from core.infra.redis_config import redis_settings
-            redis = await create_pool(redis_settings)
-            if await redis.exists(f"job_cancelled_{job_id}") or await redis.exists(f"arq:abort:{job_id}"):
+            from core.infra.redis_config import redis_client
+            if redis_client is None:
+                return False
+            cancelled = await asyncio.to_thread(
+                lambda: bool(
+                    redis_client.exists(f"job_cancelled_{job_id}") or
+                    redis_client.exists(f"arq:abort:{job_id}")
+                )
+            )
+            if cancelled:
                 print(f"[B2B Engine] ⏹️ Cancelamento detectado para o job {job_id}!")
-                return True
-        except Exception as e:
-            # print(f"[B2B Engine] Erro ao verificar cancelamento: {e}")
+            return cancelled
+        except Exception:
             pass
         return False
 
@@ -477,16 +554,100 @@ async def discover_employees_stream(
                     res_emp = await session.execute(stmt_emp)
                     existing_emp = res_emp.scalars().first()
                     
-                    # Se não achou por LinkedIn, tenta match por NOME fuzzy (para Pipedrive/QSA)
+                    # Se não achou por LinkedIn, tenta match por NOME fuzzy (para Pipedrive/QSA).
+                    # is_same_person() usa sobreposição de tokens do nome e não é transitiva:
+                    # "Ezequiel Araujo" e "Ezequiel Silva" batem ambos com "Ezequiel Araujo da
+                    # Silva Junior" (2 tokens em comum cada), mas não batem entre si. Sem a
+                    # checagem de URL abaixo, dois candidatos de LinkedIn DIFERENTES (URLs e
+                    # cargos diferentes) podem colidir na mesma linha do banco, e o processado
+                    # por último sobrescreve silenciosamente os dados aprovados do anterior.
                     if not existing_emp:
                         stmt_all_nodes = select(Employee).where(Employee.company_id == db_org_id)
                         res_all_nodes = await session.execute(stmt_all_nodes)
                         for e in res_all_nodes.scalars().all():
+                            # Se o funcionário já tem uma URL real do LinkedIn e ela é
+                            # DIFERENTE da do candidato atual, não é a mesma pessoa —
+                            # a URL do LinkedIn é sinal mais confiável que o nome.
+                            if (
+                                node_data.get("linkedin")
+                                and e.linkedin_url
+                                and e.linkedin_url.startswith("http")
+                                and e.linkedin_url.split("?")[0].rstrip("/") != node_data["linkedin"].split("?")[0].rstrip("/")
+                            ):
+                                continue
                             if is_same_person(e.name, node_data["name"]):
                                 existing_emp = e
                                 break
 
+                    # NOVA LÓGICA: Verifica no Pipedrive se já existe antes de criar local
+                    if not existing_emp:
+                        try:
+                            stmt_org = select(Organization).where(Organization.id == db_org_id)
+                            res_org = await session.execute(stmt_org)
+                            db_org = res_org.scalars().first()
+                            
+                            if db_org and db_org.pipedrive_id:
+                                from modules.crm.service.pipedrive_service import get_persons_by_name, get_persons_by_email
+                                pd_persons = []
+                                emp_email = node_data.get("email")
+                                emp_name = node_data["name"]
+                                
+                                if emp_email:
+                                    pd_res = await get_persons_by_email(emp_email)
+                                    if pd_res.get("success"): pd_persons = pd_res.get("data", [])
+                                
+                                if not pd_persons and emp_name:
+                                    pd_res = await get_persons_by_name(emp_name)
+                                    if pd_res.get("success"): pd_persons = pd_res.get("data", [])
+                                    
+                                if pd_persons:
+                                    for p in pd_persons:
+                                        pd_org_id = p.get("org_id", {}).get("value") if isinstance(p.get("org_id"), dict) else p.get("org_id")
+                                        if str(pd_org_id) == str(db_org.pipedrive_id):
+                                            pd_phone = None
+                                            if p.get("phone"):
+                                                phones = p.get("phone")
+                                                if isinstance(phones, list) and len(phones) > 0:
+                                                    pd_phone = phones[0].get("value")
+                                            
+                                            # check existing by pipedrive_id just in case
+                                            stmt_check = select(Employee).where(Employee.pipedrive_id == str(p.get("id")))
+                                            res_check = await session.execute(stmt_check)
+                                            existing_db = res_check.scalars().first()
+                                            
+                                            if existing_db:
+                                                existing_emp = existing_db
+                                                break
+                                            else:
+                                                new_emp = Employee(
+                                                    name=emp_name,
+                                                    role=node_data.get("role", "Professional"),
+                                                    company_id=db_org.id,
+                                                    department=node_data.get("department", "Operations"),
+                                                    seniority=node_data.get("level", 2),
+                                                    is_discovery=1,
+                                                    source="pipedrive",
+                                                    matching_score=node_data.get("matching_score"),
+                                                    evidence=node_data.get("evidence"),
+                                                    description=node_data.get("observations"),
+                                                    email=emp_email,
+                                                    phone=pd_phone,
+                                                    pipedrive_id=str(p.get("id"))
+                                                )
+                                                session.add(new_emp)
+                                                await session.commit()
+                                                await session.refresh(new_emp)
+                                                existing_emp = new_emp
+                                                print(f"🔗 [Pipedrive/Discovery] {emp_name} encontrado no Pipedrive. Importado e mesclado.")
+                                                break
+                        except Exception as e:
+                            print(f"Erro ao buscar no Pipedrive durante discovery: {e}")
+
                     if existing_emp:
+                        # Nunca ressuscita funcionários explicitamente reprovados
+                        if (existing_emp.role == "Reprovado" or existing_emp.department == "Reprovado"):
+                            continue
+
                         # 🛡️ PROTEÇÃO: Não sobrescreve se o contato já foi aprovado ou se o novo status é "pior"
                         current_is_valid = existing_emp.role and "análise humana" not in existing_emp.role.lower() and "reprovado" not in existing_emp.role.lower()
                         new_is_vague = "análise humana" in node_data["role"].lower()
@@ -501,10 +662,16 @@ async def discover_employees_stream(
                             existing_emp.department = node_data["department"]
                             existing_emp.seniority = node_data["level"]
                             existing_emp.company_id = db_org_id
-                            # Preenche o LinkedIn real se não tinha ou se era dummy do Pipedrive
-                            if not existing_emp.linkedin_url or "pipedrive_" in existing_emp.linkedin_url:
+                            # Preenche o LinkedIn real se não tinha ou se era um placeholder
+                            # (ex: "pipedrive_123", "scan_10_node_5") — URL real sempre começa
+                            # com "http"; sem isso, um placeholder nunca é substituído pela URL
+                            # real, o que também impede a checagem de conflito de URL acima de
+                            # detectar corretamente candidatos diferentes em scans futuros.
+                            if node_data.get("linkedin") and (
+                                not existing_emp.linkedin_url or not existing_emp.linkedin_url.startswith("http")
+                            ):
                                 existing_emp.linkedin_url = node_data["linkedin"]
-                            existing_emp.email = node_data.get("email") or existing_emp.email
+                            existing_emp.email = existing_emp.email or node_data.get("email")
                             existing_emp.profile_pic = node_data.get("avatar") or existing_emp.profile_pic
                             existing_emp.location = node_data.get("location") or existing_emp.location
                             existing_emp.description = node_data.get("observations") or existing_emp.description
@@ -539,6 +706,8 @@ async def discover_employees_stream(
                         node_data["id"] = new_emp.id
                     else:
                         node_data["id"] = existing_emp.id
+                        node_data["pipedrive_id"] = existing_emp.pipedrive_id
+                        node_data["source"] = existing_emp.source
                 
                 found_nodes.append(node_data)
                 yield [node_data]
@@ -624,10 +793,13 @@ async def discover_employees_stream(
         if found_nodes:
             consecutive_empty = 0  # Reset se encontrou alguém nesta query
         else:
-            consecutive_empty += 1
-            if consecutive_empty >= 3:
-                print(f"      [B2B Engine] 3 consultas consecutivas sem resultados. Encerrando escaneamento.")
-                break
+            # Só incrementa se for uma query operacional (não de sócio/específica de pessoa)
+            # Para evitar que holdings/sócios sem LinkedIn matem a busca antes de pesquisar "compras/logística"
+            if not is_partner_search:
+                consecutive_empty += 1
+                if consecutive_empty >= 3:
+                    print(f"      [B2B Engine] 3 consultas operacionais consecutivas sem resultados. Encerrando escaneamento.")
+                    break
                 
     # Sinal de conclusão (MUITO IMPORTANTE para o front-end parar o loading)
     yield [{"type": "done"}]

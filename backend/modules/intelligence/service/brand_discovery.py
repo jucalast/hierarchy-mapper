@@ -403,23 +403,41 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
     
     domain_base = domain.split(".")[0] if domain else ""
     
-    search_queries = [
-        f'"{brand_short}" linkedin' if brand_short else None,  # Busca pela marca curta direto
-        f'"{brand_short}" company linkedin' if brand_short else None,  # Variacao com "company"
-        f'"{brand_short}" Brasil linkedin' if brand_short else None,  # Variacao com pais
-        f'"{domain_base}" linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None, # Busca pelo prefixo do dominio
-        f'"{domain_base}" Brasil linkedin' if domain_base and domain_base.lower() != brand_short.lower() else None,
-        f'"{search_name}" linkedin',
-        f'site:linkedin.com/company "{search_name}"',
-        f'"{search_name}" {city} linkedin' if city else None,
-        f'linkedin "{search_name}" {domain if domain and search_name.lower() in domain.lower() else ""}'.strip(),
-        f'"{search_name.replace("&", " ")}" Brasil linkedin'
-    ]
+    search_queries = []
+    if brand_short:
+        search_queries.append(f'site:linkedin.com/company "{brand_short}"')
+    if domain:
+        search_queries.append(f'site:linkedin.com/company "{domain}"')
+    elif domain_base and domain_base.lower() != brand_short.lower():
+        search_queries.append(f'site:linkedin.com/company "{domain_base}"')
+    search_queries.append(f'site:linkedin.com/company "{search_name}"')
+    if brand_short:
+        search_queries.append(f'"{brand_short}" Brasil linkedin')
+        
+    active_queries = list(dict.fromkeys([q for q in search_queries if q]))
+    has_high_confidence = False
     
-    # candidates_raw já inicializado no topo
-    for query in filter(None, search_queries):
-        # Aumentado para 25 para capturar subsidiárias que rankeiam abaixo da holding
-        res = await get_duck_results(query, max_results=25, is_company=True)
+    print(f"      [BrandDiscovery] 🚀 Iniciando buscas concorrentes por perfis...")
+    
+    # Executa todas as queries em paralelo
+    tasks = [
+        asyncio.wait_for(get_duck_results(query, max_results=25, is_company=True), timeout=25.0)
+        for query in active_queries
+    ]
+    try:
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+    except Exception as e:
+        print(f"      [BrandDiscovery] Erro ao executar buscas em paralelo: {e}")
+        results = []
+
+    for idx, res in enumerate(results):
+        if isinstance(res, Exception):
+            query = active_queries[idx] if idx < len(active_queries) else "unknown"
+            print(f"      [BrandDiscovery] Erro na query '{query[:30]}': {res}")
+            continue
+        if not res:
+            continue
+            
         for r in res:
             title = r.get("title", "")
             snippet = (r.get("body") or r.get("snippet") or "").lower()
@@ -432,12 +450,14 @@ async def discover_company_brand(cnpj: str = "", domain: str = "", raw_name: str
                 followers = f_match.group(1).upper()
 
             if name: 
-                print(f"      [BrandDiscovery] ✨ Candidato encontrado: {name} -> {r.get('href', '')}")
+                url = r.get("href", "") or r.get("url", "") or r.get("link", "")
+                print(f"      [BrandDiscovery] ✨ Candidato encontrado: {name} -> {url}")
                 candidates_raw.append({
                     "name": name, 
-                    "url": r.get("href", ""),
+                    "url": url,
                     "followers": followers
                 })
+
     
     # ... (Decisão e Scoring permanecem os mesmos)
 

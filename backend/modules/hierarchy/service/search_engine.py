@@ -12,10 +12,33 @@ import asyncio
 import random
 import re
 import html
+import os
+import sys
+import json
+import time
+import subprocess
+import concurrent.futures
 import httpx
 import urllib.parse
 from typing import List, Dict, Optional
-from ddgs import DDGS
+
+# Caminho do runner isolado (roda o DDG num subprocess matável — ver _sync_ddg_search).
+_DDG_RUNNER_PATH = os.path.join(os.path.dirname(__file__), "ddg_runner.py")
+_DDG_SUBPROCESS_TIMEOUT = 15.0
+
+# Executor DEDICADO para o DuckDuckGo. A lib do DDG às vezes pendura a thread quando é
+# rate-limitada, e wait_for NÃO mata a thread — ele só abandona a corrotina. Isolando aqui,
+# uma thread pendurada nunca esgota o ThreadPoolExecutor padrão do asyncio (que o resto do
+# app usa via asyncio.to_thread), evitando que o app inteiro trave. Threads penduradas ficam
+# capadas ao tamanho deste pool.
+_DDG_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="ddg")
+# Limita buscas DDG concorrentes para não empilhar submissões no executor dedicado.
+_DDG_SEMAPHORE = asyncio.Semaphore(2)
+# Circuit breaker: depois de N timeouts/falhas seguidos, pula o DDG por um tempo e vai direto
+# pro Bing — evita ficar penando o timeout a cada busca quando o DDG está claramente bloqueado.
+_DDG_CB = {"fails": 0, "open_until": 0.0}
+_DDG_CB_THRESHOLD = 5
+_DDG_CB_COOLDOWN = 60.0
 
 def normalize_linkedin_url(url: str) -> str:
     """
@@ -36,7 +59,7 @@ def normalize_linkedin_url(url: str) -> str:
     except:
         return url
 
-async def _get_bing_fallback(query: str, is_company: bool = False) -> List[Dict]:
+async def _get_bing_fallback(query: str, is_company: bool = False, filter_linkedin: bool = True) -> List[Dict]:
     """
     Scraper tático de fallback usando o Bing Search.
     Extremamente leve, resiliente a rate limits e sem dependências externas.
@@ -78,7 +101,7 @@ async def _get_bing_fallback(query: str, is_company: bool = False) -> List[Dict]
                 print("[SearchEngine] ⚠️ Estrutura padrão do Bing não encontrada. Tentando extração genérica de links...")
                 links = re.findall(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html_content)
                 for href, raw_title in links:
-                    if "linkedin.com/" in href:
+                    if not filter_linkedin or "linkedin.com/" in href:
                         title = re.sub(r'<[^>]+>', '', raw_title).strip()
                         results.append({
                             "title": html.unescape(title) or "LinkedIn Profile",
@@ -116,12 +139,13 @@ async def _get_bing_fallback(query: str, is_company: bool = False) -> List[Dict]
                         "body": snippet or "Vínculo profissional identificado."
                     })
                 
-            valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
-            filtered = [r for r in results if any(p in r.get("href", "") for p in valid_patterns)]
+            if filter_linkedin:
+                valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
+                results = [r for r in results if any(p in r.get("href", "") for p in valid_patterns)]
             
-            if filtered:
-                print(f"[SearchEngine] ✅ Sucesso no Fallback (Bing)! {len(filtered)} perfis LinkedIn encontrados.")
-                return filtered
+            if results:
+                print(f"[SearchEngine] ✅ Sucesso no Fallback (Bing)! {len(results)} resultados encontrados.")
+                return results
                 
     except Exception as e:
         print(f"[SearchEngine] ❌ Falha no Fallback (Bing): {e}")
@@ -139,6 +163,11 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     ]
     
+    # Circuit breaker: se o DDG falhou seguidamente há pouco, nem tenta — vai direto pro Bing.
+    if time.monotonic() < _DDG_CB["open_until"]:
+        print(f"[SearchEngine] ⏭️ DuckDuckGo em cooldown (circuit breaker) — indo direto pro Bing.")
+        return await _get_bing_fallback(query, is_company, filter_linkedin)
+
     # Delay inicial adaptativo
     await asyncio.sleep(random.uniform(0.5, 1.5))
 
@@ -146,37 +175,64 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
     consecutive_403 = 0
     ddg_success = False
     ddg_results = []
-    
-    # 🚀 Otimização: Reduzi tentativas DDG de 4 para 2 se o erro for 403 (IP Bloqueado)
-    for attempt in range(4):
+
+    def _sync_ddg_search(q: str, n: int) -> list:
+        # Roda o DDG num SUBPROCESS matável. A lib ddgs/primp (Rust) pode SEGURAR o GIL
+        # durante uma chamada de rede travada — se rodar in-process, congela o event loop
+        # inteiro (nem asyncio.wait acorda). O subprocess tem GIL próprio e é MORTO no
+        # timeout (subprocess.run(timeout=...) → TimeoutExpired), e o subprocess.run libera
+        # o GIL enquanto espera, então o processo pai continua respondendo.
+        proc = subprocess.run(
+            [sys.executable, _DDG_RUNNER_PATH, q, str(n)],
+            capture_output=True, text=True, timeout=_DDG_SUBPROCESS_TIMEOUT,
+        )
+        if proc.returncode == 0 and (proc.stdout or "").strip():
+            return json.loads(proc.stdout)
+        return []
+
+    for attempt in range(2):
         try:
             ua = random.choice(user_agents)
             print(f"[SearchEngine] Tentando DuckDuckGo (Tentativa {attempt+1}/4) com UA: {ua[:30]}...")
 
-            with DDGS(timeout=15) as ddgs:
-                # Backend 'html' é confiável e não aciona o loop de auto-fallback
-                raw_results = list(ddgs.text(query, region="br-pt", max_results=max_results, backend="html"))
+            # Roda no executor DEDICADO, sob semáforo. asyncio.wait (não wait_for) é o backstop:
+            # o guard principal é o timeout do próprio subprocess, que MATA o processo travado.
+            loop = asyncio.get_running_loop()
+            async with _DDG_SEMAPHORE:
+                _ddg_fut = loop.run_in_executor(_DDG_EXECUTOR, _sync_ddg_search, query, max_results)
+                _done, _pending = await asyncio.wait({_ddg_fut}, timeout=_DDG_SUBPROCESS_TIMEOUT + 5.0)
+                if _ddg_fut not in _done:
+                    raise asyncio.TimeoutError  # não deveria ocorrer (subprocess já tem timeout)
+                raw_results = _ddg_fut.result()
 
-                if raw_results:
-                    if filter_linkedin:
-                        valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
-                        filtered = []
-                        for r in raw_results:
-                            href = r.get("href", "")
-                            if any(p in href for p in valid_patterns):
-                                r["href"] = normalize_linkedin_url(href)
-                                filtered.append(r)
-                    else:
-                        filtered = raw_results
-                            
-                    if filtered:
-                        print(f"[SearchEngine] ✅ Sucesso (DDG)! {len(filtered)} resultados encontrados.")
-                        ddg_results = filtered
-                        ddg_success = True
-                        break
+            if raw_results:
+                if filter_linkedin:
+                    valid_patterns = ["linkedin.com/company/", "linkedin.com/school/"] if is_company else ["linkedin.com/in/"]
+                    filtered = []
+                    for r in raw_results:
+                        href = r.get("href", "")
+                        if any(p in href for p in valid_patterns):
+                            r["href"] = normalize_linkedin_url(href)
+                            filtered.append(r)
+                else:
+                    filtered = raw_results
 
-                await asyncio.sleep(1.0)
+                if filtered:
+                    print(f"[SearchEngine] ✅ Sucesso (DDG)! {len(filtered)} resultados encontrados.")
+                    ddg_results = filtered
+                    ddg_success = True
+                    _DDG_CB["fails"] = 0  # sucesso reseta o circuit breaker
+                    _DDG_CB["open_until"] = 0.0
+                    break
 
+        except (asyncio.TimeoutError, subprocess.TimeoutExpired):
+            # DDG travou (subprocess morto no timeout) — não insiste, vai direto pro fallback Bing.
+            print(f"[SearchEngine] ⏱️ DuckDuckGo excedeu o tempo limite (tentativa {attempt+1}) — acionando fallback Bing.")
+            _DDG_CB["fails"] += 1
+            if _DDG_CB["fails"] >= _DDG_CB_THRESHOLD:
+                _DDG_CB["open_until"] = time.monotonic() + _DDG_CB_COOLDOWN
+                print(f"[SearchEngine] 🧯 Circuit breaker ABERTO — pulando o DDG por {int(_DDG_CB_COOLDOWN)}s.")
+            break
         except Exception as e:
             msg = str(e)
             is_403 = "403" in msg or "Forbidden" in msg
@@ -203,7 +259,7 @@ async def get_duck_results(query: str, max_results: int = 50, is_company: bool =
 
     # --- FALLBACK DE SEGURANÇA: BING SEARCH ---
     # Acionado se o DuckDuckGo falhar, der rate limit ou não retornar resultados orgânicos
-    fallback_res = await _get_bing_fallback(query, is_company)
+    fallback_res = await _get_bing_fallback(query, is_company, filter_linkedin)
     if fallback_res:
         return fallback_res
 

@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { API_V1_URL, apiPost } from '@/services/config';
+import { API_V1_URL } from '@/services/config';
+import { hierarchy as hierarchyApi, jobs as jobsApi } from '@/services/api';
+import { connectionManager } from '@/services/connectionManager';
 
 export interface ScanEmployeeProfile {
     id?: string;
@@ -15,15 +17,7 @@ export interface ScanEmployeeProfile {
     email?: string;
 }
 
-interface UseHierarchyScanReturn {
-    startScan: (
-        companyUrl: string, 
-        sessionCookie?: string,
-        areaFocus?: string,
-        productFocus?: string,
-        model?: string
-    ) => void;
-    stopScan: () => void;
+export interface OrgScanState {
     isScanning: boolean;
     scanError: string | null;
     scanProgress: number;
@@ -31,276 +25,510 @@ interface UseHierarchyScanReturn {
     hasPreview: boolean;
     previewTimestamp: number;
     previewUrl: string;
-    handleImageClick: (e: React.MouseEvent<HTMLImageElement>) => void;
-    sendText: (text: string) => void;
-    pressEnter: () => void;
-    pressBackspace: () => void;
     scanResults: ScanEmployeeProfile[];
-    resetScan: () => void;
 }
 
-export function useHierarchyScan(): UseHierarchyScanReturn {
-    const [isScanning, setIsScanning] = useState(false);
-    const [scanError, setScanError] = useState<string | null>(null);
-    const [scanProgress, setScanProgress] = useState(0);
-    const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
-    const [hasPreview, setHasPreview] = useState(false);
-    const [previewTimestamp, setPreviewTimestamp] = useState(Date.now());
-    const [scanResults, setScanResults] = useState<ScanEmployeeProfile[]>([]);
-
-    const eventSourceRef = useRef<EventSource | null>(null);
-
-    const previewUrl = `${API_V1_URL}/hierarchy/linkedin-scrape/preview?t=${previewTimestamp}`;
-
-    const appendLog = useCallback((message: string) => {
-        setConsoleLogs((prev) => [...prev, message]);
-    }, []);
-
-    const startScan = useCallback((
-        companyUrl: string, 
+export interface UseHierarchyScanReturn {
+    getScanState: (orgId: number) => OrgScanState;
+    startScan: (
+        orgId: number,
+        companyUrl: string,
         sessionCookie?: string,
         areaFocus?: string,
         productFocus?: string,
         model?: string
-    ) => {
-        setIsScanning(true);
-        // ✅ Notifica o chat panel que uma varredura iniciou (independente do modo)
-        window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
-        setScanError(null);
-        setScanResults([]);
-        setScanProgress(0);
-        setConsoleLogs([
-            '[System] Inicializando HierarchyScan...',
-            '[System] Conectando ao agente SSE...',
-        ]);
+    ) => void;
+    stopScan: (orgId: number) => void;
+    reconnectScan: () => Promise<boolean>;
+    handleImageClick: (orgId: number, e: React.MouseEvent<HTMLImageElement>) => void;
+    sendText: (orgId: number, text: string) => void;
+    pressEnter: (orgId: number) => void;
+    pressBackspace: (orgId: number) => void;
+    resetScan: (orgId: number) => void;
+    isAnyScanning: boolean;
+    activeScanOrgId: number | null;
+    activeScanOrgIds: number[];
+}
 
-        let sseUrl = `${API_V1_URL}/hierarchy/linkedin-scrape/stream?company_url=${encodeURIComponent(companyUrl)}&headless=true`;
-        if (sessionCookie) {
-            sseUrl += `&session_cookie=${encodeURIComponent(sessionCookie)}`;
-        }
-        if (areaFocus) {
-            sseUrl += `&area_focus=${encodeURIComponent(areaFocus)}`;
-        }
-        if (productFocus) {
-            sseUrl += `&product_focus=${encodeURIComponent(productFocus)}`;
-        }
-        if (model) {
-            sseUrl += `&model=${encodeURIComponent(model)}`;
-        }
+// ---------- localStorage helpers ----------
 
-        const eventSource = new EventSource(sseUrl);
+const SCANS_KEY = 'active-linkedin-scans';
+const LEGACY_KEY = 'active-linkedin-scan';
 
-        eventSource.onmessage = (event) => {
+type StoredEntry = {
+    job_id: string;
+    orgId: number;
+    companyUrl: string;
+    startTime: number;
+    chatPrompted: boolean;
+};
+
+function _readAllStored(): Record<number, StoredEntry> {
+    if (typeof window === 'undefined') return {};
+    try {
+        const raw = localStorage.getItem(SCANS_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<number, StoredEntry>;
+        }
+        // Retrocompatibilidade com o formato antigo (uma única entrada)
+        const legacy = localStorage.getItem(LEGACY_KEY);
+        if (legacy && legacy !== 'NaN' && legacy !== 'undefined') {
+            const p = JSON.parse(legacy) as StoredEntry;
+            if (p?.job_id && p?.orgId) return { [p.orgId]: p };
+        }
+    } catch { /* ignore */ }
+    return {};
+}
+
+function _writeScanEntry(orgId: number, entry: StoredEntry | null) {
+    if (typeof window === 'undefined') return;
+    const all = _readAllStored();
+    if (entry === null) {
+        delete all[orgId];
+    } else {
+        all[orgId] = entry;
+    }
+    if (Object.keys(all).length === 0) {
+        localStorage.removeItem(SCANS_KEY);
+    } else {
+        localStorage.setItem(SCANS_KEY, JSON.stringify(all));
+    }
+    localStorage.removeItem(LEGACY_KEY);
+}
+
+// ---------- hook ----------
+
+const EMPTY_STATE: OrgScanState = {
+    isScanning: false,
+    scanError: null,
+    scanProgress: 0,
+    consoleLogs: [],
+    hasPreview: false,
+    previewTimestamp: Date.now(),
+    previewUrl: '',
+    scanResults: [],
+};
+
+type ScanRefs = { ws: WebSocket | null; jobId: string | null };
+
+// Scans LinkedIn duram no máximo ~20 min (JOB_IDLE_TIMEOUT_MS). Qualquer entrada
+// com mais de 2 horas é considerada expirada e descartada para evitar falso "Mapeando..."
+// após reiniciar o sistema no dia seguinte.
+const MAX_SCAN_AGE_MS = 2 * 60 * 60 * 1000;
+
+function _buildInitialState(): Record<number, OrgScanState> {
+    const stored = _readAllStored();
+    const result: Record<number, OrgScanState> = {};
+    const now = Date.now();
+    for (const [orgIdStr, entry] of Object.entries(stored)) {
+        if (entry.startTime && (now - entry.startTime) > MAX_SCAN_AGE_MS) {
+            _writeScanEntry(Number(orgIdStr), null);
+            continue;
+        }
+        result[Number(orgIdStr)] = {
+            ...EMPTY_STATE,
+            isScanning: true,
+            consoleLogs: ['[System] Reconectando à varredura em andamento...'],
+        };
+    }
+    return result;
+}
+
+export function useHierarchyScan(): UseHierarchyScanReturn {
+    const [scanMap, setScanMap] = useState<Record<number, OrgScanState>>(_buildInitialState);
+    const refsMap = useRef<Record<number, ScanRefs>>({});
+
+    // Inicializa refs a partir do localStorage na montagem
+    useEffect(() => {
+        const stored = _readAllStored();
+        for (const [orgIdStr, entry] of Object.entries(stored)) {
+            const orgId = Number(orgIdStr);
+            if (!refsMap.current[orgId]) {
+                refsMap.current[orgId] = { ws: null, jobId: entry.job_id };
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const getScanState = useCallback((orgId: number): OrgScanState => {
+        const state = scanMap[orgId] ?? EMPTY_STATE;
+        return {
+            ...state,
+            previewUrl: `${API_V1_URL}/hierarchy/linkedin-scrape/preview?t=${state.previewTimestamp}`,
+        };
+    }, [scanMap]);
+
+    // Cria a conexão WebSocket para um orgId/jobId. Usa setScanMap com updater
+    // funcional em todos os handlers para evitar stale closure sobre scanMap.
+    const attachWebSocket = useCallback((orgId: number, jobId: string) => {
+        const existing = refsMap.current[orgId];
+        if (existing?.ws) existing.ws.close();
+        refsMap.current[orgId] = { ws: null, jobId };
+
+        const ws = new WebSocket(jobsApi.getJobWebSocketUrl(jobId));
+
+        ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-
                 switch (data.type) {
                     case 'log': {
-                        appendLog(data.message);
-                        const progressMatch = data.message.match(/Colaboradores na página:\s*(\d+)/);
-                        if (progressMatch) {
-                            const parsed = parseInt(progressMatch[1], 10);
-                            setScanProgress(Math.min(parsed * 1.5, 98));
-                        }
+                        setScanMap(prev => {
+                            const cur = prev[orgId] ?? EMPTY_STATE;
+                            const match = (data.message as string).match(/Colaboradores na página:\s*(\d+)/);
+                            const progress = match ? Math.min(parseInt(match[1], 10) * 1.5, 98) : cur.scanProgress;
+                            return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, data.message], scanProgress: progress } };
+                        });
                         break;
                     }
                     case 'screenshot': {
-                        setPreviewTimestamp(Date.now());
-                        setHasPreview(true);
+                        setScanMap(prev => {
+                            const cur = prev[orgId] ?? EMPTY_STATE;
+                            return { ...prev, [orgId]: { ...cur, hasPreview: true, previewTimestamp: Date.now() } };
+                        });
                         break;
                     }
                     case 'cookie': {
                         localStorage.setItem('linkedin_li_at_cookie', data.cookie);
-                        appendLog('[System] Cookie de sessão li_at capturado e salvo localmente para futuras varreduras!');
+                        setScanMap(prev => {
+                            const cur = prev[orgId] ?? EMPTY_STATE;
+                            return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, '[System] Cookie li_at capturado e salvo!'] } };
+                        });
                         break;
                     }
                     case 'clear_nodes': {
-                        console.log("[Scan] 🧹 Comando de limpeza recebido do backend.");
-                        setScanResults([]);
-                        setScanProgress(0);
+                        setScanMap(prev => {
+                            const cur = prev[orgId] ?? EMPTY_STATE;
+                            return { ...prev, [orgId]: { ...cur, scanResults: [], scanProgress: 0 } };
+                        });
                         break;
                     }
                     case 'batch': {
-                        if (data.nodes && data.nodes.length > 0) {
-                            setScanResults((prev) => {
-                                // Evita duplicatas pelo linkedin_url
-                                const newProfiles = data.nodes.map((n: any) => ({
-                                    id: n.id,
-                                    name: n.name,
-                                    role: n.role,
-                                    linkedin_url: n.linkedin || n.url,
-                                    avatar: n.avatar,
-                                    location: n.location,
-                                    observations: n.observations,
-                                    evidence: n.evidence,
-                                    email: n.email
+                        if (data.nodes?.length > 0) {
+                            setScanMap(prev => {
+                                const cur = prev[orgId] ?? EMPTY_STATE;
+                                const newProfiles: ScanEmployeeProfile[] = data.nodes.map((n: any) => ({
+                                    id: n.id, name: n.name, role: n.role,
+                                    linkedin_url: n.linkedin || n.url, avatar: n.avatar,
+                                    location: n.location, observations: n.observations,
+                                    evidence: n.evidence, email: n.email,
                                 }));
-                                
-                                const filtered = newProfiles.filter((newP: any) => 
-                                    !prev.some(oldP => oldP.linkedin_url === newP.linkedin_url)
+                                const filtered = newProfiles.filter(p =>
+                                    !cur.scanResults.some(e => e.linkedin_url === p.linkedin_url)
                                 );
-                                
-                                return [...prev, ...filtered];
+                                return { ...prev, [orgId]: { ...cur, scanResults: [...cur.scanResults, ...filtered] } };
                             });
                         }
                         break;
                     }
                     case 'result': {
-                        // O 'result' agora é opcional se usarmos 'batch', mas mantemos por retrocompatibilidade
-                        if (data.data && data.data.length > 0) {
-                            setScanResults(data.data);
+                        if (data.data?.length > 0) {
+                            setScanMap(prev => {
+                                const cur = prev[orgId] ?? EMPTY_STATE;
+                                return { ...prev, [orgId]: { ...cur, scanResults: data.data, scanProgress: 100 } };
+                            });
                         }
-                        setScanProgress(100);
                         break;
                     }
                     case 'done': {
-                        appendLog('[System] Varredura e processamento concluídos com sucesso!');
-                        setScanProgress(100);
-                        eventSource.close();
-                        setIsScanning(false);
+                        setScanMap(prev => {
+                            const cur = prev[orgId] ?? EMPTY_STATE;
+                            return { ...prev, [orgId]: { ...cur, isScanning: false, scanProgress: 100, consoleLogs: [...cur.consoleLogs, '[System] Varredura e processamento concluídos com sucesso!'] } };
+                        });
+                        ws.close();
+                        _writeScanEntry(orgId, null);
                         break;
                     }
                     case 'error': {
-                        setScanError(data.message);
-                        appendLog(`[Error] ${data.message}`);
-                        eventSource.close();
-                        setIsScanning(false);
+                        setScanMap(prev => {
+                            const cur = prev[orgId] ?? EMPTY_STATE;
+                            return { ...prev, [orgId]: { ...cur, isScanning: false, scanError: data.message, consoleLogs: [...cur.consoleLogs, `[Error] ${data.message}`] } };
+                        });
+                        ws.close();
+                        _writeScanEntry(orgId, null);
                         break;
                     }
                 }
             } catch {
-                appendLog(`[System] Mensagem não processada: ${event.data}`);
+                setScanMap(prev => {
+                    const cur = prev[orgId] ?? EMPTY_STATE;
+                    return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, `[System] Mensagem não processada: ${event.data}`] } };
+                });
             }
         };
 
-        eventSource.onerror = () => {
-            setScanError('Erro na conexão SSE...');
-            appendLog('[Error] Erro na conexão SSE...');
-            eventSource.close();
-            setIsScanning(false);
+        ws.onerror = () => {
+            setScanMap(prev => {
+                const cur = prev[orgId] ?? EMPTY_STATE;
+                return { ...prev, [orgId]: { ...cur, isScanning: false, consoleLogs: [...cur.consoleLogs, '[Error] Conexão com o agente perdida. O scan continua em segundo plano no servidor.'] } };
+            });
         };
 
-        eventSourceRef.current = eventSource;
-    }, [appendLog]);
+        refsMap.current[orgId] = { ws, jobId };
+    }, []); // setScanMap é estável; orgId/jobId chegam como parâmetros
 
-    const stopScan = useCallback(async () => {
-        appendLog('[System] Solicitando parada graciosa e extração dos dados coletados até o momento...');
-        try {
-            await apiPost(`${API_V1_URL}/hierarchy/linkedin-scrape/stop`, {});
-        } catch {
-            appendLog('[System Error] Falha ao enviar comando de parada. Fechando conexão de forma forçada.');
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-                eventSourceRef.current = null;
-            }
-            setIsScanning(false);
-        }
-    }, [appendLog]);
+    const attachGraphConnection = useCallback(async (
+        jobId: string,
+        orgId: number,
+        chatPrompted: boolean,
+        snapshotEmployees?: any[]
+    ) => {
+        const { useChatStore } = await import('@/store/chatStore');
+        const apiModule = await import('@/services/api');
+        const hierarchyApi = apiModule.hierarchy;
 
-    const handleImageClick = useCallback(
-        async (e: React.MouseEvent<HTMLImageElement>) => {
-            if (!isScanning) return;
+        // Prioriza o snapshot capturado em startScan (antes de qualquer await),
+        // depois tenta o store atual, e por último carrega do banco como fallback.
+        let existingEmployees = (snapshotEmployees && snapshotEmployees.length > 0)
+            ? snapshotEmployees
+            : useChatStore.getState().mappings[orgId]?.rawEmployees || [];
 
-            const rect = e.currentTarget.getBoundingClientRect();
-            // Calcula frações decimais (0 a 1) para total independência de resolução e proporção visual!
-            const x = (e.clientX - rect.left) / rect.width;
-            const y = (e.clientY - rect.top) / rect.height;
-
-            appendLog(`[Operator] Clique em (${Math.round(x * 100)}%, ${Math.round(y * 100)}%)`);
-
+        if (existingEmployees.length === 0 && orgId) {
             try {
-                await apiPost(
-                    `${API_V1_URL}/hierarchy/linkedin-scrape/interact?action=click&x=${x}&y=${y}`,
-                    {}
-                );
-            } catch {
-                appendLog('[System Error] Falha ao enviar clique');
+                const data = await hierarchyApi.loadHierarchyByPipedrive(orgId);
+                if (data?.nodes?.length) {
+                    existingEmployees = data.nodes;
+                }
+            } catch (e) {
+                console.warn('[HierarchyScan] Erro ao carregar hierarquia prévia para preservar sócios:', e);
             }
-        },
-        [isScanning, appendLog]
-    );
+        }
 
-    const sendText = useCallback(
-        async (text: string) => {
-            if (!text) return;
+        connectionManager.connectToJob({
+            jobId, orgId, brand: '', logo: '', domain: '', partners: [], chatPrompted,
+        }, existingEmployees);
+    }, []);
 
-            appendLog(`[Operator] Digitando: ${text}`);
+    const resolveChatPrompted = (orgId: number): boolean => {
+        const pending = localStorage.getItem('pending-hierarchy-continuation');
+        if (!pending) return false;
+        try {
+            const parsed = JSON.parse(pending);
+            return !!(parsed && Number(parsed.org_id) === Number(orgId));
+        } catch { return false; }
+    };
 
+    const startScan = useCallback(async (
+        orgId: number,
+        companyUrl: string,
+        sessionCookie?: string,
+        areaFocus?: string,
+        productFocus?: string,
+        model?: string
+    ) => {
+        // Captura o snapshot dos employees ANTES de qualquer await para evitar
+        // condição de corrida onde o store é limpo enquanto o HTTP request aguarda.
+        const { useChatStore: chatStoreModule } = await import('@/store/chatStore');
+        const snapshotEmployees = chatStoreModule.getState().mappings[orgId]?.rawEmployees || [];
+
+        setScanMap(prev => ({
+            ...prev,
+            [orgId]: {
+                ...EMPTY_STATE,
+                isScanning: true,
+                consoleLogs: ['[System] Inicializando HierarchyScan...', '[System] Enfileirando job de varredura...'],
+            }
+        }));
+        window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
+
+        try {
+            const { job_id } = await hierarchyApi.startLinkedinScrape({
+                companyUrl, sessionCookie, headless: true, areaFocus, productFocus, model,
+            });
+            const chatPrompted = resolveChatPrompted(orgId);
+            _writeScanEntry(orgId, { job_id, orgId, companyUrl, startTime: Date.now(), chatPrompted });
+            setScanMap(prev => {
+                const cur = prev[orgId] ?? EMPTY_STATE;
+                return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, '[System] Conectando ao agente...'] } };
+            });
+            attachWebSocket(orgId, job_id);
+            void attachGraphConnection(job_id, orgId, chatPrompted, snapshotEmployees);
+        } catch {
+            setScanMap(prev => ({
+                ...prev,
+                [orgId]: {
+                    ...EMPTY_STATE,
+                    isScanning: false,
+                    scanError: 'Não foi possível iniciar a varredura.',
+                    consoleLogs: ['[System Error] Falha ao iniciar a varredura.'],
+                }
+            }));
+        }
+    }, [attachWebSocket, attachGraphConnection]);
+
+    const reconnectScan = useCallback(async (): Promise<boolean> => {
+        const stored = _readAllStored();
+        if (Object.keys(stored).length === 0) return false;
+
+        let anyReconnected = false;
+        for (const [orgIdStr, entry] of Object.entries(stored)) {
+            const orgId = Number(orgIdStr);
+            if (!entry.job_id) continue;
             try {
-                await apiPost(
-                    `${API_V1_URL}/hierarchy/linkedin-scrape/interact?action=type&text=${encodeURIComponent(text)}`,
-                    {}
-                );
+                const status = await jobsApi.getJobStatus(entry.job_id);
+                if (status.status !== 'queued' && status.status !== 'in_progress') {
+                    _writeScanEntry(orgId, null);
+                    setScanMap(prev => {
+                        const cur = prev[orgId] ?? EMPTY_STATE;
+                        return { ...prev, [orgId]: { ...cur, isScanning: false } };
+                    });
+                    continue;
+                }
             } catch {
-                appendLog('[System Error] Falha ao enviar texto');
+                _writeScanEntry(orgId, null);
+                setScanMap(prev => {
+                    const cur = prev[orgId] ?? EMPTY_STATE;
+                    return { ...prev, [orgId]: { ...cur, isScanning: false } };
+                });
+                continue;
             }
-        },
-        [appendLog]
-    );
+            setScanMap(prev => ({
+                ...prev,
+                [orgId]: { ...(prev[orgId] ?? EMPTY_STATE), isScanning: true }
+            }));
+            window.dispatchEvent(new CustomEvent('hierarchy_scan_started'));
+            attachWebSocket(orgId, entry.job_id);
+            void attachGraphConnection(entry.job_id, orgId, !!entry.chatPrompted);
+            anyReconnected = true;
+        }
+        return anyReconnected;
+    }, [attachWebSocket, attachGraphConnection]);
 
-    const pressEnter = useCallback(async () => {
-        appendLog('[Operator] Pressionando Enter');
-
+    const stopScan = useCallback(async (orgId: number) => {
+        setScanMap(prev => {
+            const cur = prev[orgId] ?? EMPTY_STATE;
+            return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, '[System] Solicitando parada graciosa e extração dos dados coletados até o momento...'] } };
+        });
+        const jobId = refsMap.current[orgId]?.jobId;
         try {
-            await apiPost(
-                `${API_V1_URL}/hierarchy/linkedin-scrape/interact?action=press&key=Enter`,
-                {}
-            );
+            if (!jobId) throw new Error('Nenhum job ativo');
+            await hierarchyApi.stopLinkedinScrape(jobId);
         } catch {
-            appendLog('[System Error] Falha ao enviar tecla Enter');
+            setScanMap(prev => {
+                const cur = prev[orgId] ?? EMPTY_STATE;
+                return { ...prev, [orgId]: { ...cur, isScanning: false, consoleLogs: [...cur.consoleLogs, '[System Error] Falha ao enviar comando de parada. Fechando conexão de forma forçada.'] } };
+            });
+            const refs = refsMap.current[orgId];
+            if (refs?.ws) { refs.ws.close(); refs.ws = null; }
         }
-    }, [appendLog]);
 
-    const pressBackspace = useCallback(async () => {
-        appendLog('[Operator] Pressionando Backspace');
+        const { useChatStore } = await import('@/store/chatStore');
+        const store = useChatStore.getState();
+        const currentNodes = store.mappings[orgId]?.rawEmployees || [];
+        const keepers = currentNodes.filter((emp: any) => {
+            const isRoot = emp.id === 'root_company' || emp.level === 0;
+            const isPartner = String(emp.id).startsWith('partner_') || emp.level === 6;
+            const isPartnerDept = emp.department && (
+                emp.department.includes('QSA') ||
+                emp.department.includes('Sócio') ||
+                emp.department.includes('Societário') ||
+                emp.department.includes('Conselho')
+            );
+            const isPipedrive = emp.source === 'pipedrive' || !!emp.pipedrive_id;
+            return isRoot || isPartner || isPartnerDept || isPipedrive;
+        });
+        store.setRawEmployees(orgId, keepers);
+        store.setRawBackendEdges(orgId, []);
+        _writeScanEntry(orgId, null);
+        window.dispatchEvent(new CustomEvent('hierarchy_scan_cancelled', { detail: { orgId } }));
+    }, []);
 
+    const handleImageClick = useCallback(async (orgId: number, e: React.MouseEvent<HTMLImageElement>) => {
+        const refs = refsMap.current[orgId];
+        if (!refs?.jobId) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        setScanMap(prev => {
+            const cur = prev[orgId] ?? EMPTY_STATE;
+            return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, `[Operator] Clique em (${Math.round(x * 100)}%, ${Math.round(y * 100)}%)`] } };
+        });
         try {
-            await apiPost(
-                `${API_V1_URL}/hierarchy/linkedin-scrape/interact?action=press&key=Backspace`,
-                {}
-            );
+            await hierarchyApi.interactLinkedinScrape(refs.jobId, 'click', { x, y });
         } catch {
-            appendLog('[System Error] Falha ao enviar tecla Backspace');
+            setScanMap(prev => {
+                const cur = prev[orgId] ?? EMPTY_STATE;
+                return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, '[System Error] Falha ao enviar clique'] } };
+            });
         }
-    }, [appendLog]);
+    }, []);
 
-    const resetScan = useCallback(() => {
-        if (eventSourceRef.current) {
-            eventSourceRef.current.close();
-            eventSourceRef.current = null;
+    const sendText = useCallback(async (orgId: number, text: string) => {
+        const refs = refsMap.current[orgId];
+        if (!text || !refs?.jobId) return;
+        setScanMap(prev => {
+            const cur = prev[orgId] ?? EMPTY_STATE;
+            return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, `[Operator] Digitando: ${text}`] } };
+        });
+        try {
+            await hierarchyApi.interactLinkedinScrape(refs.jobId, 'type', { text });
+        } catch {
+            setScanMap(prev => {
+                const cur = prev[orgId] ?? EMPTY_STATE;
+                return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, '[System Error] Falha ao enviar texto'] } };
+            });
         }
-        setIsScanning(false);
-        setScanError(null);
-        setScanProgress(0);
-        setConsoleLogs([]);
-        setHasPreview(false);
-        setPreviewTimestamp(Date.now());
-        setScanResults([]);
+    }, []);
+
+    const pressEnter = useCallback(async (orgId: number) => {
+        const refs = refsMap.current[orgId];
+        if (!refs?.jobId) return;
+        setScanMap(prev => {
+            const cur = prev[orgId] ?? EMPTY_STATE;
+            return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, '[Operator] Pressionando Enter'] } };
+        });
+        try { await hierarchyApi.interactLinkedinScrape(refs.jobId, 'press', { key: 'Enter' }); } catch { /* ignore */ }
+    }, []);
+
+    const pressBackspace = useCallback(async (orgId: number) => {
+        const refs = refsMap.current[orgId];
+        if (!refs?.jobId) return;
+        setScanMap(prev => {
+            const cur = prev[orgId] ?? EMPTY_STATE;
+            return { ...prev, [orgId]: { ...cur, consoleLogs: [...cur.consoleLogs, '[Operator] Pressionando Backspace'] } };
+        });
+        try { await hierarchyApi.interactLinkedinScrape(refs.jobId, 'press', { key: 'Backspace' }); } catch { /* ignore */ }
+    }, []);
+
+    const resetScan = useCallback((orgId: number) => {
+        const refs = refsMap.current[orgId];
+        if (refs?.ws) refs.ws.close();
+        refsMap.current[orgId] = { ws: null, jobId: null };
+        setScanMap(prev => {
+            const next = { ...prev };
+            delete next[orgId];
+            return next;
+        });
     }, []);
 
     useEffect(() => {
         return () => {
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
+            for (const refs of Object.values(refsMap.current)) {
+                if (refs.ws) refs.ws.close();
             }
         };
     }, []);
 
+    const isAnyScanning = Object.values(scanMap).some(s => s.isScanning);
+
+    const activeScanOrgIds: number[] = Object.entries(scanMap)
+        .filter(([, s]) => s.isScanning)
+        .map(([id]) => Number(id));
+
+    const activeScanOrgId: number | null = activeScanOrgIds[0] ?? null;
+
     return {
+        getScanState,
         startScan,
         stopScan,
-        isScanning,
-        scanError,
-        scanProgress,
-        consoleLogs,
-        hasPreview,
-        previewTimestamp,
-        previewUrl,
+        reconnectScan,
         handleImageClick,
         sendText,
         pressEnter,
         pressBackspace,
-        scanResults,
         resetScan,
+        isAnyScanning,
+        activeScanOrgId,
+        activeScanOrgIds,
     };
 }

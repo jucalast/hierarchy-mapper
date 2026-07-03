@@ -77,7 +77,13 @@ async def get_pipedrive_organizations():
 
 @router.get("/pipedrive/activities/pending-summary")
 async def get_pending_activities_summary():
-    """Resumo leve de tarefas pendentes por empresa."""
+    """Resumo leve de tarefas pendentes por empresa.
+
+    A atividade do Pipedrive só carrega `org_id` quando ele é definido
+    explicitamente na criação — vinculando apenas via `deal_id` (caso comum
+    das tarefas automáticas) deixa esse campo nulo. Por isso resolvemos o
+    org_id também por fallback via `deal_id -> org_id` dos negócios abertos.
+    """
     try:
         sao_paulo_tz = timezone(timedelta(hours=-3))
         today = datetime.now(sao_paulo_tz).date().isoformat()
@@ -89,10 +95,41 @@ async def get_pending_activities_summary():
             return []
 
         activities = r.json().get("data") or []
+
+        # Mapa deal_id -> org_id/org_name para resolver atividades sem org_id direto
+        deal_org_map: Dict[int, Dict[str, Any]] = {}
+        missing_deal_ids = {
+            act.get("deal_id")
+            for act in activities
+            if act.get("deal_id") and not act.get("org_id")
+        }
+        if missing_deal_ids:
+            start = 0
+            while True:
+                dr = await pipedrive_service.make_request(
+                    "GET",
+                    f"deals?user_id={pipedrive_service.user_id}&status=open&limit=500&start={start}",
+                )
+                if not dr or dr.status_code != 200:
+                    break
+                d_data = dr.json()
+                deals = d_data.get("data") or []
+                for d in deals:
+                    org_info = d.get("org_id")
+                    if isinstance(org_info, dict):
+                        deal_org_map[d["id"]] = {"id": org_info.get("value"), "name": org_info.get("name", "")}
+                pag = (d_data.get("additional_data") or {}).get("pagination") or {}
+                if not pag.get("more_items_in_collection"):
+                    break
+                start = pag.get("next_start", start + 500)
+                if start > 10000:
+                    break
+
         org_map: dict = {}
         for act in activities:
             due = act.get("due_date")
-            if not due or not act.get("deal_id"):
+            deal_id = act.get("deal_id")
+            if not due or not deal_id:
                 continue
             raw_org = act.get("org_id")
             if isinstance(raw_org, dict):
@@ -101,6 +138,11 @@ async def get_pending_activities_summary():
             else:
                 org_id = raw_org
                 org_name = act.get("org_name", "")
+            if not org_id:
+                fallback = deal_org_map.get(deal_id)
+                if fallback:
+                    org_id = fallback.get("id")
+                    org_name = fallback.get("name", "")
             if not org_id:
                 continue
             if org_id not in org_map:
@@ -327,6 +369,16 @@ async def get_current_user():
                         
         log.info(f"Resultado final get_current_user: {name}, avatar={'sim' if avatar else 'não'}")
         
+        company_name = None
+        try:
+            me_resp = await pipedrive_service.make_request("GET", "users/me")
+            if me_resp and me_resp.status_code == 200:
+                me_data = me_resp.json().get("data", {})
+                company_name = me_data.get("company_name")
+                log.info(f"Encontrado company_name do Pipedrive: {company_name}")
+        except Exception as e:
+            log.error(f"Erro ao buscar company_name do Pipedrive: {e}")
+            
         # Sincroniza com o banco local
         from core.infra.database import async_session
         from models import User, Tenant
@@ -357,8 +409,8 @@ async def get_current_user():
                 db_sess.add(new_user)
                 await db_sess.commit()
 
-        return {"id": user_id, "name": name, "avatar": avatar}
+        return {"id": user_id, "name": name, "avatar": avatar, "company_name": company_name}
     except Exception as e:
         log.error(f"Erro em get_current_user: {e}")
-        return {"id": None, "name": "João Luccas", "avatar": None}
+        return {"id": None, "name": "João Luccas", "avatar": None, "company_name": None}
 

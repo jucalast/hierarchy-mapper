@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { API_V1_URL } from '../services/config';
 
 /**
@@ -19,7 +19,11 @@ export const useSpeechToText = () => {
     const audioCtxRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
 
-    const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+    const [isSupported, setIsSupported] = useState(false);
+
+    useEffect(() => {
+        setIsSupported(typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia);
+    }, []);
 
     const startListening = useCallback(async () => {
         if (!navigator.mediaDevices?.getUserMedia) {

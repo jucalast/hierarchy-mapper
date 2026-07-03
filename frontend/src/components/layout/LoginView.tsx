@@ -7,9 +7,10 @@ import { API_BASE_URL } from '@/services/config';
 
 interface LoginViewProps {
   onLoginSuccess: () => void;
+  inline?: boolean;
 }
 
-export default function LoginView({ onLoginSuccess }: LoginViewProps) {
+export default function LoginView({ onLoginSuccess, inline = false }: LoginViewProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -68,7 +69,7 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
   };
 
   return (
-    <div className={styles.loginPage}>
+    <div className={styles.loginPage} style={inline ? { position: 'relative', top: 'auto', left: 'auto', width: '100%', minHeight: 'auto', height: '100%', zIndex: 1 } : {}}>
       {/* Painel de Apresentação (Apenas Imagem de Fundo) */}
       <div className={styles.brandPane} />
 

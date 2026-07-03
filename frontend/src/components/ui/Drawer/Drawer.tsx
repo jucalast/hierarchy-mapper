@@ -3,7 +3,8 @@ import styles from './Drawer.module.css';
 import { Spinner } from '../';
 import { organizations as orgsApi, hierarchy as hierarchyApi } from '@/services/api';
 import type { NotificationType } from '../Notification';
-import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal, OrgDetailsModal } from './components';
+import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal, OrgDetailsModal, DrawerStageTabs } from './components';
+import { useGlobalHierarchyScan } from '@/contexts/HierarchyScanContext';
 
 interface DrawerProps {
     showDrawer: boolean;
@@ -23,7 +24,13 @@ interface DrawerProps {
     addNotification?: (type: NotificationType, message: string) => void;
     onEditEmployee?: (empId: string) => void;
     onSaveToPipedrive?: (person: any, orgId: number) => Promise<void> | void;
+    onEmailDiscovered?: (person: any, email: string) => Promise<void> | void;
     onOrgDomainChanged?: (oldDomain: string, newDomain: string) => void;
+    uniqueStages?: { name: string; count: number; order_nr?: number }[];
+    activeStageFilter?: string | null;
+    setActiveStageFilter?: (stage: string | null) => void;
+    totalOrgsCount?: number;
+    onNavigateToRoot?: () => void;
 }
 
 const LOCAL_CACHE_KEYS = (orgId: number) => [
@@ -68,14 +75,14 @@ export const Drawer: React.FC<DrawerProps> = ({
     onEditEmployee,
     onSaveToPipedrive,
     onOrgDomainChanged,
+    uniqueStages = [],
+    activeStageFilter = null,
+    setActiveStageFilter = () => {},
+    totalOrgsCount = 0,
+    onNavigateToRoot,
 }) => {
-    const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = window.localStorage.getItem('drawer-expanded-org-id');
-            return saved ? Number(saved) : null;
-        }
-        return null;
-    });
+    const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(null);
+    const scan = useGlobalHierarchyScan();
 
     const setExpandedOrgId = (orgId: number | null) => {
         setExpandedOrgIdState(orgId);
@@ -115,25 +122,10 @@ export const Drawer: React.FC<DrawerProps> = ({
         };
     }, [showDrawer, expandedOrgId]);
 
-    const [orgDetails, setOrgDetails] = useState<Record<number, any>>(() => {
-        if (typeof window !== 'undefined' && expandedOrgId) {
-            const cached = window.localStorage.getItem(`org-${expandedOrgId}-details`);
-            if (cached) {
-                try {
-                    return { [expandedOrgId]: JSON.parse(cached) };
-                } catch {}
-            }
-        }
-        return {};
-    });
+    const [orgDetails, setOrgDetails] = useState<Record<number, any>>({});
     const [loadingDetails, setLoadingDetails] = useState<Record<number, boolean>>({});
     
-    const [activeTab, setActiveTabState] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            return window.localStorage.getItem('drawer-active-tab') || 'activities';
-        }
-        return 'activities';
-    });
+    const [activeTab, setActiveTabState] = useState<string>('activities');
 
     const setActiveTab = (tab: string) => {
         setActiveTabState(tab);
@@ -142,10 +134,25 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
-    // 🚀 Carregamento inicial de detalhes se já houver empresa expandida
+    // 🚀 Carregamento inicial de detalhes e estados no client-side para evitar hydration mismatch
     useEffect(() => {
-        if (expandedOrgId) {
-            void fetchOrgDetails(expandedOrgId);
+        if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem('drawer-expanded-org-id');
+            const currentId = saved ? Number(saved) : null;
+            if (currentId) {
+                setExpandedOrgIdState(currentId);
+                const cached = window.localStorage.getItem(`org-${currentId}-details`);
+                if (cached) {
+                    try {
+                        setOrgDetails({ [currentId]: JSON.parse(cached) });
+                    } catch {}
+                }
+                void fetchOrgDetails(currentId);
+            }
+            const savedTab = window.localStorage.getItem('drawer-active-tab');
+            if (savedTab) {
+                setActiveTabState(savedTab);
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -155,14 +162,16 @@ export const Drawer: React.FC<DrawerProps> = ({
     const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
     const [confirmBusy, setConfirmBusy] = useState(false);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
-    const [scanningOrgId, setScanningOrgId] = useState<number | null>(null);
+    const [scanningOrgIds, setScanningOrgIds] = useState<number[]>([]);
 
     const fetchedOrgsRef = useRef<Record<number, boolean>>({});
 
-    const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false) => {
-        if (!force && fetchedOrgsRef.current[orgId]) return; // Já buscado nesta sessão
+    const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false, background: boolean = false) => {
+        if (!force && !background && fetchedOrgsRef.current[orgId]) return; // Já buscado nesta sessão
 
-        setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
+        if (!background) {
+            setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
+        }
         let attempt = 0;
         const maxAttempts = 3;
 
@@ -171,8 +180,26 @@ export const Drawer: React.FC<DrawerProps> = ({
                 const data = await orgsApi.getOrganizationDetails(orgId);
                 setOrgDetails(prev => ({ ...prev, [orgId]: data }));
                 fetchedOrgsRef.current[orgId] = true;
+                // Persiste no localStorage para stale-while-revalidate no próximo load.
+                // Isolado do catch da API: QuotaExceededError não deve travar o fluxo.
                 if (typeof window !== 'undefined') {
-                    window.localStorage.setItem(`org-${orgId}-details`, JSON.stringify(data));
+                    const serialized = JSON.stringify(data);
+                    try {
+                        window.localStorage.setItem(`org-${orgId}-details`, serialized);
+                    } catch {
+                        // Quota excedida — despeja todos os caches de detalhes e tenta de novo
+                        try {
+                            const toEvict: string[] = [];
+                            for (let _i = 0; _i < localStorage.length; _i++) {
+                                const k = localStorage.key(_i);
+                                if (k?.startsWith('org-') && k.endsWith('-details')) toEvict.push(k);
+                            }
+                            toEvict.forEach(k => localStorage.removeItem(k));
+                            localStorage.setItem(`org-${orgId}-details`, serialized);
+                        } catch {
+                            // Ainda sem espaço — dado já está no estado React, segue sem cache
+                        }
+                    }
                 }
                 if (force) {
                     addNotification('success', 'Dados sincronizados com o Pipedrive.');
@@ -197,22 +224,26 @@ export const Drawer: React.FC<DrawerProps> = ({
                 break; // Outro erro ou limite de tentativas excedido, sai do loop
             }
         }
-        setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
+        if (!background) {
+            setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
+        }
     }, [addNotification]);
 
     useEffect(() => {
         if (refreshDetailsTrigger > 0) {
-            // Em nova varredura atualiza os detalhes em vez de fechar
+            // Em nova varredura atualiza os detalhes em vez de fechar — silenciosamente (sem notificação)
             if (expandedOrgId) {
-                void fetchOrgDetails(expandedOrgId, true);
+                void fetchOrgDetails(expandedOrgId, false, true);
             }
         }
     }, [refreshDetailsTrigger]);
 
+
     useEffect(() => {
         const handleTimelineChanged = () => {
             if (expandedOrgId) {
-                void fetchOrgDetails(expandedOrgId, true);
+                // background=true, force=false: atualiza silenciosamente sem notificação
+                void fetchOrgDetails(expandedOrgId, false, true);
             }
         };
         window.addEventListener('crm_timeline_changed', handleTimelineChanged);
@@ -225,21 +256,88 @@ export const Drawer: React.FC<DrawerProps> = ({
         };
     }, [expandedOrgId, fetchOrgDetails]);
 
-    useEffect(() => {
-        if (activeJobId) {
-            try {
-                const jobStr = typeof window !== 'undefined' ? window.localStorage.getItem('active-discovery-job') : null;
-                if (jobStr) {
-                    const parsed = JSON.parse(jobStr);
-                    setScanningOrgId(parsed.orgId);
+    // Helpers para checar jobs ativos no localStorage
+    // Retorna TODAS as orgs com discovery ativo (suporta múltiplos mapeamentos simultâneos).
+    const getDiscoveryJobOrgIds = (): number[] => {
+        const ids: number[] = [];
+        if (typeof window === 'undefined') return ids;
+        try {
+            for (let _i = 0; _i < window.localStorage.length; _i++) {
+                const key = window.localStorage.key(_i);
+                if (key && key.startsWith('active-discovery-job-')) {
+                    const jobStr = window.localStorage.getItem(key);
+                    if (jobStr) {
+                        const parsed = JSON.parse(jobStr);
+                        if (parsed && parsed.orgId) ids.push(Number(parsed.orgId));
+                    }
                 }
-            } catch {
-                setScanningOrgId(null);
             }
-        } else {
-            setScanningOrgId(null);
-        }
-    }, [activeJobId]);
+        } catch {}
+        return ids;
+    };
+
+    const getLinkedinScanOrgIds = (): number[] => {
+        const ids: number[] = [];
+        try {
+            if (typeof window === 'undefined') return ids;
+            // Formato novo: mapa de orgId → entry
+            const newFmt = window.localStorage.getItem('active-linkedin-scans');
+            if (newFmt) {
+                const parsed = JSON.parse(newFmt);
+                if (parsed && typeof parsed === 'object') {
+                    ids.push(...Object.keys(parsed).map(Number));
+                    return ids;
+                }
+            }
+            // Formato legado: entrada única
+            const legacy = window.localStorage.getItem('active-linkedin-scan');
+            if (legacy) {
+                const parsed = JSON.parse(legacy);
+                if (parsed?.orgId) ids.push(Number(parsed.orgId));
+            }
+        } catch {}
+        return ids;
+    };
+
+    // Mantém scanningOrgIds baseado no in-memory hook + localStorage para
+    // que o indicador persista mesmo após sair da empresa e suporte multi-scan.
+    useEffect(() => {
+        const computeScanningIds = (): number[] => {
+            const ids = new Set<number>();
+            // Scans LinkedIn em andamento (in-memory hook — todos os orgs ativos)
+            for (const id of scan.activeScanOrgIds) ids.add(id);
+            // Scans persistidos no localStorage (detecta reload antes do hook reconectar)
+            for (const id of getLinkedinScanOrgIds()) ids.add(id);
+            // Discovery jobs (IA) ativos no localStorage — TODOS (suporta multi-discovery)
+            for (const id of getDiscoveryJobOrgIds()) ids.add(id);
+            return Array.from(ids);
+        };
+
+        const updateScanningIds = () => setScanningOrgIds(computeScanningIds());
+
+        const handleFinished = () => {
+            setTimeout(updateScanningIds, 300);
+        };
+
+        updateScanningIds();
+
+        window.addEventListener('hierarchy_scan_started', updateScanningIds);
+        window.addEventListener('hierarchy_scan_done', handleFinished);
+        window.addEventListener('hierarchy_job_finished', handleFinished);
+        window.addEventListener('hierarchy_scan_cancelled', handleFinished);
+
+        const pollingInterval = setInterval(updateScanningIds, 5000);
+
+        return () => {
+            window.removeEventListener('hierarchy_scan_started', updateScanningIds);
+            window.removeEventListener('hierarchy_scan_done', handleFinished);
+            window.removeEventListener('hierarchy_job_finished', handleFinished);
+            window.removeEventListener('hierarchy_scan_cancelled', handleFinished);
+            clearInterval(pollingInterval);
+        };
+    // activeScanOrgIds é um array novo a cada render; usar JSON para estabilidade de dep
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scan.isAnyScanning, JSON.stringify(scan.activeScanOrgIds)]);
 
     const toggleExpand = (e: React.MouseEvent, orgId: number) => {
         e.stopPropagation();
@@ -515,6 +613,17 @@ export const Drawer: React.FC<DrawerProps> = ({
                     const updatedPersons = (current.persons || []).filter((p: any) => p.id !== personId);
                     return { ...prev, [orgId]: { ...current, persons: updatedPersons } };
                 });
+                
+                // Se o contato tem emp_id, limpa o email no banco local também para não reaparecer no fallback
+                if (person.emp_id) {
+                    try {
+                        await hierarchyApi.updateEmployeeDetails(person.emp_id, { email: null as any });
+                        // Avisa o frontend para recarregar o grafo
+                        window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                    } catch (e) {
+                        console.error("Erro ao limpar email local:", e);
+                    }
+                }
             } else {
                 addNotification('error', 'Erro ao remover contato.');
             }
@@ -524,41 +633,30 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
-    const handleDiscoverEmail = async (person: any, orgId: number) => {
+    const handleSaveDiscoveredEmail = async (person: any, orgId: number, discoveredEmail: string) => {
         const contactName = person.name;
-        const orgName = focusedOrg?.name || '';
-        const domain = focusedOrg?.domain || orgDetails[orgId]?.domain || orgDetails[orgId]?.org?.website || '';
 
-        addNotification('info', `Buscando e-mail profissional para ${contactName}...`);
-        try {
-            const res = await hierarchyApi.discoverEmail({
-                contact_name: contactName,
-                org_name: orgName,
-                domain: domain || undefined
-            });
+        addNotification('success', `E-mail salvo: ${discoveredEmail}`);
 
-            if (res.ok && res.recommended) {
-                addNotification('success', `E-mail descoberto: ${res.recommended}`);
+        // 1. Se o contato tem emp_id, atualiza no banco local de hierarquia!
+        if (person.emp_id) {
+            try {
+                await hierarchyApi.updateEmployeeDetails(person.emp_id, {
+                    email: discoveredEmail
+                });
+            } catch (err: any) {
+                console.error("Erro ao salvar email no banco local:", err);
+            }
+        }
 
-                // 1. Se o contato tem emp_id, atualiza no banco local de hierarquia!
-                if (person.emp_id) {
-                    try {
-                        await hierarchyApi.updateEmployeeDetails(person.emp_id, {
-                            email: res.recommended
-                        });
-                    } catch (err: any) {
-                        console.error("Erro ao salvar email no banco local:", err);
-                    }
-                }
-
-                // 2. Se está cadastrado no Pipedrive, atualiza o Pipedrive também!
-                if (person.sources?.includes('pipedrive')) {
-                    try {
-                        await handleUpdateInPipedrive({ ...person, email: [{ value: res.recommended, primary: true }] }, orgId);
-                    } catch (err: any) {
-                        console.error("Erro ao atualizar email no Pipedrive:", err);
-                    }
-                }
+        // 2. Se está cadastrado no Pipedrive, atualiza o Pipedrive também!
+        if (person.sources?.includes('pipedrive')) {
+            try {
+                await handleUpdateInPipedrive({ ...person, email: [{ value: discoveredEmail, primary: true, label: "verified" }] }, orgId);
+            } catch (err: any) {
+                console.error("Erro ao atualizar email no Pipedrive:", err);
+            }
+        }
 
                 // 3. Atualiza no estado local do drawer para atualizar a tela instantaneamente
                 setOrgDetails(prev => {
@@ -570,7 +668,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         if (isTarget) {
                             return {
                                 ...p,
-                                email: [{ value: res.recommended, primary: true }]
+                                email: [{ value: discoveredEmail, primary: true, label: "verified" }]
                             };
                         }
                         return p;
@@ -588,22 +686,14 @@ export const Drawer: React.FC<DrawerProps> = ({
                 // 4. Dispara evento para sinalizar ao pai/sistema que a hierarquia mudou
                 const changeEvent = new CustomEvent('crm_timeline_changed');
                 window.dispatchEvent(changeEvent);
-            } else {
-                addNotification('error', res.error || `Não foi possível encontrar um e-mail válido para ${contactName}.`);
-            }
-        } catch (e: any) {
-            console.error('Erro ao descobrir e-mail:', e);
-            addNotification('error', e.message || 'Erro ao processar descoberta de e-mail.');
-        }
     };
 
     // Filtra a organização que está em foco
     const focusedOrg = expandedOrgId ? filteredOrgs.find(o => Number(o.id) === expandedOrgId) : null;
 
-    if (!showDrawer) return null;
-
     return (
-        <div className={styles.drawer}>
+        <div className={`${styles.drawerWrapper} ${showDrawer ? styles.drawerWrapperOpen : styles.drawerWrapperClosed}`}>
+        <div className={styles.drawerInner}>
             <DrawerHeader 
                 expandedOrgId={expandedOrgId}
                 setExpandedOrgId={setExpandedOrgId}
@@ -614,7 +704,17 @@ export const Drawer: React.FC<DrawerProps> = ({
                 loadingDetails={loadingDetails}
                 setConfirmKind={setConfirmKind}
                 onOpenDetailsModal={() => setShowDetailsModal(true)}
+                onNavigateToRoot={onNavigateToRoot}
             />
+
+            {!expandedOrgId && (
+                <DrawerStageTabs
+                    stages={uniqueStages}
+                    activeStage={activeStageFilter}
+                    onSelect={setActiveStageFilter}
+                    totalCount={totalOrgsCount}
+                />
+            )}
 
             <div className={styles.drawerList}>
                 {isLoading ? (
@@ -635,7 +735,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         setEditingNameOrgId={setEditingNameOrgId}
                         handleRenameOrg={handleRenameOrg}
                         handleUpdateOrg={handleUpdateOrg}
-                        scanningOrgId={scanningOrgId}
+                        scanningOrgIds={scanningOrgIds}
                         selectedOrgId={selectedOrgId}
                         selectedOrgLogo={selectedOrgLogo}
                         graphEmployees={graphEmployees}
@@ -643,7 +743,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         onSaveToPipedrive={(person) => handleSaveToPipedrive(person, expandedOrgId!)}
                         onUpdateInPipedrive={(person) => handleUpdateInPipedrive(person, expandedOrgId!)}
                         onDeleteFromPipedrive={(person) => handleDeleteFromPipedrive(person, expandedOrgId!)}
-                        onDiscoverEmail={(person) => handleDiscoverEmail(person, expandedOrgId!)}
+                        onEmailDiscovered={(person, email) => handleSaveDiscoveredEmail(person, expandedOrgId!, email)}
                     />
                 ) : (
                     <OrgList 
@@ -655,7 +755,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                         setExpandedOrgId={setExpandedOrgId}
                         fetchOrgDetails={fetchOrgDetails}
                         toggleExpand={toggleExpand}
-                        scanningOrgId={scanningOrgId}
+                        scanningOrgIds={scanningOrgIds}
                     />
                 )                }
             </div>
@@ -677,6 +777,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 focusedOrg={focusedOrg}
                 handleUpdateOrg={handleUpdateOrg}
             />
+        </div>
         </div>
     );
 };

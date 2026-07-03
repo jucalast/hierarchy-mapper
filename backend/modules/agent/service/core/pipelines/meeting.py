@@ -10,6 +10,7 @@ class MeetingPipeline(BasePipeline):
     """Pipeline voltada para agendamento de reuniões e visitas."""
     name = "Meeting"
     description = "Pipeline para agendar e marcar reuniões ou visitas comerciais"
+    intent_name = "meeting"
 
     _meeting_keys = [
         "agendar reunião", "agendar meeting", "marcar reunião",
@@ -30,5 +31,9 @@ class MeetingPipeline(BasePipeline):
             f"  2. pipedrive_get_deals → contexto do negócio em andamento\n"
             f"  3. generate_sales_message(goal='agendar reunião/visita') → proposta personalizada de agenda\n"
             f"  4. whatsapp_send_message / email_send → apresentar o convite ao João ANTES de enviar\n"
-            f"  5. pipedrive_update_task(activity_id={act_id}, done=true) → marcar concluído após aprovação\n\n"
+            f"  5. pipedrive_update_task(activity_id={act_id}, done=true) → marcar concluído após aprovação\n"
+            + cls.stage_advancement_step(
+                6, deal_id,
+                "convite de reunião/visita enviado ou reunião marcada → o avanço típico é para 'Reunião Agendada' (4)"
+            )
         )

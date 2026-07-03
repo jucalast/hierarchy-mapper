@@ -19,10 +19,57 @@ from modules.agent.service.prompts import (
     SYSTEM_PROMPT_TASK_AGENT, SYSTEM_PROMPT_TASK_AGENT_BASIC,
 )
 from modules.agent.service.core.loop import _agent_loop, _PENDING
+from modules.agent.service.core.thread_memory import load_thread_tool_memory
 from modules.agent.skills.router import route_task_to_skill
 from core.observability.logging_config import get_logger
-
 log = get_logger(__name__)
+
+
+def filter_tools_for_direct_action(all_tools, msg_text):
+    _msg_lower = msg_text.lower()
+    _is_followup_task = any(kw in _msg_lower for kw in [
+        "cobrar retorno", "follow-up", "follow up", "followup",
+        "acompanhar", "cobrar informações", "aguardar retorno",
+    ])
+    
+    _CTX_TOOLS = {
+        "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
+        "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history", "find_company_contact",
+    }
+    
+    _ALWAYS_AVAILABLE_IN_TASK = _CTX_TOOLS | {
+        "pipedrive_create_task",
+        # pipedrive_create_task e pipedrive_update_deal podem falhar pedindo para resolver
+        # um person_id passado por nome — o agente precisa de pipedrive_create_person
+        # disponível para cadastrar o contato e refazer a ação na mesma execução, mesmo que
+        # a mensagem original (usada para filtrar as tools deste turno) não a mencione.
+        "pipedrive_create_person",
+        # OBRIGATÓRIO em toda ação pontual (ver SYSTEM_PROMPT_TASK_DIRECTIVE: "Fim de Turno
+        # OBRIGATÓRIO: Chame suggest_next_actions"). Sem isso na lista, o modelo não tem como
+        # cumprir essa regra e acaba chamando outra ferramenta qualquer para "fechar" o turno.
+        "suggest_next_actions",
+    }
+    # open_hierarchy_drawer e prepare_live_coaching_session são ações de alto impacto (abrem
+    # telas/UI) que só fazem sentido quando o próprio pedido pontual é sobre isso — não são
+    # ferramentas de "contexto"/"recuperação de erro" como as acima. Deixá-las sempre
+    # disponíveis já causou o agente decidir sozinho, no meio de um card não relacionado
+    # (ex: "marcar tarefa concluída"), preparar uma ligação e abrir o mapeador de hierarquia
+    # para uma atividade que ninguém pediu. Só entram na lista se a própria mensagem pedir
+    # (via `matched_tools` abaixo, que checa o nome literal da ferramenta na mensagem).
+    from modules.agent.service.tools import TOOLS
+    matched_tools = [name for name in TOOLS.keys() if name in msg_text]
+    if matched_tools:
+        allowed = set(matched_tools) | _ALWAYS_AVAILABLE_IN_TASK
+        if _is_followup_task:
+            allowed.discard("prepare_live_coaching_session")
+        filtered_tools = [t for t in all_tools if t["name"] in allowed]
+        log.info("agent.direct_action.tools_filtered", matched=list(allowed), is_followup=_is_followup_task)
+        return filtered_tools
+    elif _is_followup_task:
+        filtered_tools = [t for t in all_tools if t["name"] != "prepare_live_coaching_session"]
+        log.info("agent.direct_action.followup_call_script_removed")
+        return filtered_tools
+    return all_tools
 
 MAX_ITERATIONS = 20
 
@@ -155,11 +202,23 @@ async def run_agent(
     parent_message_id: str | None = None,
     action_index: int | None = None,
     is_regeneration: bool = False,
+    job_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Gerador assíncrono — yields strings NDJSON.
     Usa native tool calling da API Anthropic.
     """
+    # Classifica a intenção para guiar o loop e o roteamento de forma inteligente
+    from modules.ai.service.intent.intent_classifier import classify_user_intent
+    try:
+        intent_info = await classify_user_intent(message, history)
+        query_type = intent_info.get("query_type", "general")
+    except Exception as e:
+        import logging
+        logging.warning(f"agent.intent_classification_failed: {e}")
+        intent_info = {}
+        query_type = "agent_workflow"
+
     pipeline_instructions = ""
     # === PIPELINE INJECTION FOR FRONTEND TASKS AND FREE CHAT ===
     if message and message.startswith("Execute a seguinte atividade do CRM:"):
@@ -167,23 +226,61 @@ async def run_agent(
         from modules.agent.service.core.pipelines.registry import PipelineRegistry
         id_match = re.search(r'\(ID da tarefa no Pipedrive:\s*(\d+)\)', message)
         title_match = re.search(r'"([^"]+)"', message)
-        if id_match and title_match:
+        if id_match:
             try:
                 act_id = int(id_match.group(1))
-                subject = title_match.group(1)
-                etapas = PipelineRegistry.dispatch(subject=subject, act_type="", act_id=act_id, org_pd_id=org_id, deal_id=None)
+                subject = title_match.group(1) if title_match else message
+                etapas = PipelineRegistry.dispatch(
+                    subject=subject,
+                    act_type="",
+                    act_id=act_id,
+                    org_pd_id=org_id,
+                    deal_id=None,
+                    pipeline_intent=intent_info.get("pipeline_intent")
+                )
                 if etapas:
                     pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
             except Exception as e:
                 import logging
                 logging.warning(f"Failed to inject pipeline: {e}")
+        else:
+            try:
+                import re
+                clean_subject = message
+                if "[ALERTA DE CONTEXTO" in clean_subject:
+                    clean_subject = re.sub(r'\[ALERTA DE CONTEXTO.*?\]', '', clean_subject, flags=re.DOTALL).strip()
+                etapas = PipelineRegistry.dispatch(
+                    subject=clean_subject,
+                    act_type="",
+                    act_id=None,
+                    org_pd_id=org_id,
+                    deal_id=None,
+                    pipeline_intent=intent_info.get("pipeline_intent")
+                )
+                if etapas:
+                    pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
+            except Exception as e:
+                import logging
+                logging.warning(f"Failed to inject pipeline fallback: {e}")
     else:
         # Detect intent via PipelineRegistry for free-form chat (e.g. "gerar plano de prospecção")
         # Do NOT apply this if the message is an automated call summary prompt, to avoid overriding the summary mission.
-        if "### TRANSCRIÇÃO DA CONVERSA" not in message and "[ALERTA DE CONTEXTO" not in message:
+        if "### TRANSCRIÇÃO DA CONVERSA" not in message:
             try:
+                import re
+                clean_subject = message
+                if "[ALERTA DE CONTEXTO" in clean_subject:
+                    clean_subject = re.sub(r'\[ALERTA DE CONTEXTO.*?\]', '', clean_subject, flags=re.DOTALL).strip()
+                
                 from modules.agent.service.core.pipelines.registry import PipelineRegistry
-                etapas = PipelineRegistry.dispatch(subject=message, act_type="", act_id=None, org_pd_id=org_id, deal_id=None)
+                etapas = PipelineRegistry.dispatch(
+                    subject=clean_subject,
+                    act_type="",
+                    act_id=None,
+                    org_pd_id=org_id,
+                    deal_id=None,
+                    pipeline_intent=intent_info.get("pipeline_intent")
+                )
                 if etapas:
                     pipeline_instructions = "\n\n[INSTRUÇÕES DA PIPELINE]\n" + etapas
             except Exception as e:
@@ -192,39 +289,11 @@ async def run_agent(
 
     tools = get_tools_anthropic_schema()
     if direct_action:
-        # Filtra ferramentas para as mencionadas na mensagem + ferramentas de decisão sempre presentes.
-        # "Ferramentas de decisão" são as que o agente pode precisar independente do prompt antigo:
-        # - prepare_live_coaching_session: para quando encontra telefone
-        # - open_hierarchy_drawer: para quando não tem contato
-        # - pipedrive_create_task: para criar tarefa de rastreamento
-        # Para tarefas de follow-up/cobrar retorno, prepare_live_coaching_session é irrelevante
-        _msg_lower = message.lower()
-        _is_followup_task = any(kw in _msg_lower for kw in [
-            "cobrar retorno", "follow-up", "follow up", "followup",
-            "acompanhar", "cobrar informações", "aguardar retorno",
-        ])
-        
-        _CTX_TOOLS = {
-            "deep_company_investigation", "pipedrive_get_org", "pipedrive_get_persons", "evaluate_prospects", "pipedrive_get_deals",
-            "pipedrive_get_activities", "whatsapp_get_messages", "email_get_contact_history", "find_company_contact",
-        }
-        
-        _ALWAYS_AVAILABLE_IN_TASK = _CTX_TOOLS | {
-            "open_hierarchy_drawer", "pipedrive_create_task",
-            # prepare_live_coaching_session só disponível se NÃO for follow-up
-            *( set() if _is_followup_task else {"prepare_live_coaching_session"} ),
-        }
-        from modules.agent.service.tools import TOOLS
-        matched_tools = [name for name in TOOLS.keys() if name in message]
-        if matched_tools:
-            allowed = set(matched_tools) | _ALWAYS_AVAILABLE_IN_TASK
-            if _is_followup_task:
-                allowed.discard("prepare_live_coaching_session")
-            tools = [t for t in tools if t["name"] in allowed]
-            log.info("agent.direct_action.tools_filtered", matched=list(allowed), is_followup=_is_followup_task)
-        elif _is_followup_task:
-            tools = [t for t in tools if t["name"] != "prepare_live_coaching_session"]
-            log.info("agent.direct_action.followup_call_script_removed")
+        # Inclui também o texto das instruções de pipeline injetadas acima (ex: SearchPipeline
+        # menciona `open_hierarchy_drawer` como fallback) — sem isso, uma ação pontual que
+        # dispara uma pipeline completa perderia acesso a ferramentas que a própria pipeline
+        # manda usar, só por não aparecerem literalmente na mensagem original do usuário.
+        tools = filter_tools_for_direct_action(tools, message + pipeline_instructions)
 
     # Resolve o nome real da org no Pipedrive quando org_id é fornecido
     # Evita que o modelo use nomes errados/variantes (ex: "GmbH" vs "Gmb H")
@@ -336,16 +405,7 @@ async def run_agent(
     messages.append({"role": "user", "content": user_content})
 
     process_id = f"proc_{uuid.uuid4().hex[:8]}"
-    _raw_log(process_id, "agent_start", {"message": message, "org_id": org_id, "preferred": preferred})
-
-    # Classifica a intenção para guiar o loop do agente de forma inteligente
-    from modules.ai.service.intent.intent_classifier import classify_user_intent
-    try:
-        intent_info = await classify_user_intent(message, history)
-        query_type = intent_info.get("query_type", "general")
-    except Exception as e:
-        log.warning("agent.intent_classification_failed", error=str(e))
-        query_type = "agent_workflow"
+    _raw_log(process_id, "agent_start", {"message": message, "org_id": org_id, "preferred": preferred, "thread_id": thread_id})
 
     # Quando MODO CONTEXTO está ativo, força query_type="general" para usar prompt leve
     # e remover o requisito de pipeline de investigação completa antes de write tools.
@@ -353,7 +413,7 @@ async def run_agent(
         query_type = "general"
         log.info("agent.context_followup.query_type_override")
 
-    active_skill = await route_task_to_skill(message, org_id)
+    active_skill = await route_task_to_skill(message, org_id, intent_info=intent_info)
 
     final_response = ""
     collected_events = []
@@ -371,6 +431,11 @@ async def run_agent(
         except Exception as e:
             log.warning("agent.user_message.save_immediate_failed", thread_id=thread_id, error=str(e))
 
+    # Carrega o que já foi consultado nesta thread em mensagens anteriores (possivelmente
+    # em execuções passadas do loop) para não repetir buscas que o frontend já não envia
+    # mais no `history` truncado — ver thread_memory.py.
+    thread_tool_memory = await load_thread_tool_memory(thread_id)
+
     saved_on_completion = False
     try:
         async for chunk in _agent_loop(
@@ -385,6 +450,8 @@ async def run_agent(
             action_index=action_index,
             query_type=query_type,
             active_skill=active_skill,
+            thread_tool_memory=thread_tool_memory,
+            job_id=job_id,
         ):
             try:
                 data = json.loads(chunk)
@@ -563,6 +630,7 @@ async def resume_after_confirmation(
     approved: bool,
     thread_id: str | None = None,
     attachment_path: str | None = None,
+    job_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """Retoma o agente após confirmação de uma ação de escrita."""
     pending = _PENDING.pop(action_id, None)
@@ -633,7 +701,7 @@ async def resume_after_confirmation(
         try:
             if attachment_path:
                 tool_args["attachment_path"] = attachment_path
-            _raw_log(pending_process_id, "tool_execute_write_start", {"tool": tool_name, "args": tool_args})
+            _raw_log(pending_process_id, "tool_execute_write_start", {"tool": tool_name, "args": tool_args, "thread_id": thread_id})
             result = await execute_write_tool(
                 tool_name, 
                 tool_args, 
@@ -644,13 +712,15 @@ async def resume_after_confirmation(
         except Exception as e:
             result = {"ok": False, "error": str(e)}
     else:
-        result = {"ok": False, "error": "Ação cancelada pelo usuário"}
+        result = {"ok": False, "error": "Ação cancelada pelo usuário", "cancelled": True}
 
     ok = result.get("ok", False)
     summary = result.get("result") or result.get("error") or ("OK" if ok else "Erro")
 
     # Emite o tool result e adiciona no logs
-    tr_event = {"type": "tool_result", "call_id": call_id, "tool": tool_name, "summary": summary, "ok": ok, "args": tool_args, "data": result}
+    # cancelled=True distingue "usuário recusou a confirmação" de uma falha real da tool,
+    # para o frontend não tratar os dois casos da mesma forma (ex: habilitar "Refazer").
+    tr_event = {"type": "tool_result", "call_id": call_id, "tool": tool_name, "summary": summary, "ok": ok, "cancelled": result.get("cancelled", False), "args": tool_args, "data": result}
     collected_events.append(tr_event)
     yield _emit(tr_event)
 
@@ -664,7 +734,6 @@ async def resume_after_confirmation(
         })
         return
 
-    # Monta a lista completa de tool results (reads anteriores + write confirmado)
     write_result = {
         "type": "tool_result",
         "tool_use_id": tool_use_id,
@@ -673,49 +742,204 @@ async def resume_after_confirmation(
     }
     all_results = pending["prior_results"] + [write_result]
 
+    # Quando o LLM propõe dois tool_use de escrita simultâneos (ex: create_task email +
+    # create_task ligação), apenas o primeiro é capturado em `pending` e executado aqui.
+    # O segundo tool_use fica no messages_snapshot SEM uma resposta correspondente —
+    # o que faz o LLM re-propor toda a sequência ao retomar, causando duplicatas.
+    #
+    # Solução: para cada tool_use_id no último bloco de assistente que NÃO tem resposta
+    # em all_results, injetamos um placeholder informando que a ação ainda está pendente.
+    # Assim o LLM continua o fluxo normalmente (pedindo a próxima confirmação) em vez de
+    # recomeçar e duplicar as ações já aprovadas.
+    answered_ids = {r.get("tool_use_id") for r in all_results if isinstance(r, dict)}
+    snapshot_messages = pending.get("messages_snapshot", [])
+    # Encontra o último bloco de assistente com tool_use
+    last_assistant_content = []
+    for msg in reversed(snapshot_messages):
+        if msg.get("role") == "assistant":
+            raw = msg.get("content", [])
+            if isinstance(raw, list) and any(b.get("type") == "tool_use" for b in raw if isinstance(b, dict)):
+                last_assistant_content = raw
+                break
+    # Blocos de escrita ainda sem resposta (estavam "na fila" atrás do que foi confirmado agora)
+    queued_write_blocks = []
+    for block in last_assistant_content:
+        if not isinstance(block, dict) or block.get("type") != "tool_use":
+            continue
+        pending_tool_id = block.get("id")
+        if pending_tool_id and pending_tool_id not in answered_ids:
+            queued_write_blocks.append(block)
+            all_results.append({
+                "type": "tool_result",
+                "tool_use_id": pending_tool_id,
+                "tool_name": block.get("name", ""),
+                "content": (
+                    "[SISTEMA]: Esta ação estava na fila e foi substituída pelo placeholder. "
+                    "O agente deve propô-la novamente no próximo turno para que o usuário confirme."
+                ),
+                "is_error": False,
+            })
+
     # Restaura conversa e adiciona os resultados
     messages = pending["messages_snapshot"]  # Já inclui a mensagem do assistente com tool_use blocks
     
     # Se aprovado, adicionamos um nudge para o agente continuar o fluxo
     system_nudge = ""
-    if approved:
+
+    # PRIORIDADE MÁXIMA: se há ações de escrita na fila (o LLM propôs várias escritas de uma
+    # vez e apenas a primeira foi confirmada), instrui o agente a propor a próxima imediatamente.
+    # Isso garante que cada ação seja confirmada sequencialmente, sem re-propor as já feitas.
+    if queued_write_blocks and ok:
+        next_block = queued_write_blocks[0]
+        next_tool = next_block.get("name", "")
+        next_args = next_block.get("input") or {}
+        next_subject = next_args.get("subject") or next_args.get("title") or next_tool
+        system_nudge = (
+            f"\n\n[SISTEMA]: Ação anterior concluída com sucesso.\n\n"
+            f"PRÓXIMA AÇÃO OBRIGATÓRIA — proponha AGORA a seguinte ferramenta para que o "
+            f"usuário confirme:\n"
+            f"  Ferramenta: {next_tool}\n"
+            f"  Assunto/Parâmetros: {next_subject}\n\n"
+            f"NÃO proponha novamente ações que já foram executadas. "
+            f"NÃO chame suggest_next_actions ainda — há ações pendentes na fila."
+        )
+    elif approved and not ok and "resolver o contato" in str(result.get("error", "")):
+        # pipedrive_create_task/pipedrive_update_deal falham com este erro quando person_id
+        # é um nome (não um ID numérico) e o contato ainda não existe no Pipedrive. Sem este
+        # nudge, o agente costuma desistir e só SUGERIR cadastrar o contato como uma próxima
+        # ação manual, em vez de resolver e tentar de novo na mesma execução.
+        person_name = tool_args.get("person_id") or (tool_args.get("fields") or {}).get("person_id")
+        system_nudge = (
+            f"\n\n[SISTEMA]: A ação '{tool_name}' falhou porque o contato '{person_name}' ainda não "
+            f"está cadastrado no Pipedrive.\n\n"
+            f"OBRIGATÓRIO — resolva isso AGORA, nesta mesma execução, sem esperar nova aprovação do usuário:\n"
+            f"1. pipedrive_create_person com name=\"{person_name}\" (reaproveite email/telefone já conhecidos "
+            f"deste contato no histórico acima, se houver).\n"
+            f"2. Repita a ação que falhou ('{tool_name}') usando o ID numérico retornado pela criação do contato.\n"
+            f"3. suggest_next_actions — somente depois da ação ser refeita com sucesso.\n\n"
+            f"PROIBIDO encerrar o turno apenas sugerindo 'cadastrar o contato' como próxima ação — você tem as "
+            f"ferramentas para resolver isso agora."
+        )
+    elif (
+        approved and ok and pending_direct_action
+        and tool_name not in ("whatsapp_send_message", "email_send", "email_reply")
+    ):
+        # Ação pontual de CRM (card de "próxima ação" tipo criar/concluir tarefa, vincular
+        # negócio, cadastrar contato etc.): o pedido era executar EXATAMENTE esta ferramenta,
+        # nada além disso — nem investigar, nem preparar outra coisa, e nem chamar
+        # suggest_next_actions (isso geraria uma nova leva de sugestões/cards que ninguém
+        # pediu). Encerramos o turno aqui mesmo, sem voltar pro LLM: nenhuma chance de o
+        # modelo aproveitar o contexto retornado para agir em outra atividade (já aconteceu:
+        # card "marcar tarefa concluída" que acabou abrindo o mapeador de hierarquia e
+        # preparando uma ligação para uma atividade não relacionada).
+        # Envio de email/WhatsApp fica de fora dessa regra mesmo quando pontual: a pipeline
+        # de comunicação é configurada para, após o envio, marcar a tarefa e SÓ ENTÃO chamar
+        # suggest_next_actions (ramo abaixo) — esse encadeamento é esperado, não é "scope
+        # creep".
+        final_response = summary if isinstance(summary, str) else "Ação concluída com sucesso."
+        fin_event = {"type": "final", "response": final_response}
+        collected_events.append(fin_event)
+        yield _emit(fin_event)
+        if thread_id:
+            saved_msg_id = await _save_run_state(
+                thread_id=thread_id,
+                parent_message_id=parent_message_id,
+                action_index=action_index,
+                message="",
+                is_regeneration=False,
+                final_response=final_response,
+                collected_events=collected_events,
+                process_id=pending_process_id,
+                is_resume=True,
+                user_msg_saved=True,
+            )
+            if saved_msg_id:
+                yield _emit({"type": "message_saved", "message_id": saved_msg_id})
+        return
+    elif approved:
         if tool_name in ("whatsapp_send_message", "email_send", "email_reply"):
             sent_msg_preview = pending.get("args", {}).get(
                 "message" if tool_name == "whatsapp_send_message" else "body", ""
             )
             channel_label = "WhatsApp" if tool_name == "whatsapp_send_message" else "Email"
 
-            # Extrai o ID real da atividade do snapshot para não deixar o agente adivinhar
-            activity_id_val = _extract_first_activity_id(pending.get("messages_snapshot", []))
-            activity_id_str = (
-                str(activity_id_val)
-                if activity_id_val
-                else "use o ID encontrado em pipedrive_get_activities no histórico acima"
-            )
+            if ok:
+                # Extrai o ID real da atividade do snapshot para não deixar o agente adivinhar
+                activity_id_val = _extract_first_activity_id(pending.get("messages_snapshot", []))
+                activity_id_str = (
+                    str(activity_id_val)
+                    if activity_id_val
+                    else "use o ID encontrado em pipedrive_get_activities no histórico acima"
+                )
 
-            msg_short = sent_msg_preview[:120].replace('"', "'")
+                msg_short = sent_msg_preview[:120].replace('"', "'")
 
-            system_nudge = (
-                f"\n\n[SISTEMA]: {channel_label} enviado com sucesso.\n"
-                f"MENSAGEM ENVIADA: \"{msg_short}...\"\n\n"
-                f"OBRIGATÓRIO — execute estas 2 ferramentas AGORA, nesta ordem:\n\n"
-                f"1. pipedrive_update_task\n"
-                f"   activity_id: {activity_id_str}\n"
-                f"   done: true\n"
-                f"   note: redija uma nota curta (1-2 linhas) resumindo o contexto da conversa "
-                f"encontrado no histórico acima (último contato, pendências discutidas, o que foi enviado). "
-                f"Use o histórico de WhatsApp/Email já visível nesta conversa — NÃO chame ferramentas.\n\n"
-                f"2. suggest_next_actions — somente após o update acima.\n\n"
-                f"É PROIBIDO encerrar a tarefa sem executar ambas as ferramentas."
-            )
+                system_nudge = (
+                    f"\n\n[SISTEMA]: {channel_label} enviado com sucesso.\n"
+                    f"MENSAGEM ENVIADA: \"{msg_short}...\"\n\n"
+                    f"OBRIGATÓRIO — execute estas 2 ferramentas AGORA, nesta ordem:\n\n"
+                    f"1. pipedrive_update_task\n"
+                    f"   activity_id: {activity_id_str}\n"
+                    f"   done: true\n"
+                    f"   note: redija uma nota curta (1-2 linhas) resumindo o contexto da conversa "
+                    f"encontrado no histórico acima (último contato, pendências discutidas, o que foi enviado). "
+                    f"Use o histórico de WhatsApp/Email já visível nesta conversa — NÃO chame ferramentas.\n\n"
+                    f"2. suggest_next_actions — somente após o update acima.\n\n"
+                    f"É PROIBIDO encerrar a tarefa sem executar ambas as ferramentas."
+                )
 
         elif tool_name == "pipedrive_update_task":
-            system_nudge = (
-                "\n\n[SISTEMA]: Atividade do Pipedrive atualizada com sucesso.\n\n"
-                "ÚLTIMA ETAPA OBRIGATÓRIA: chame agora 'suggest_next_actions' para "
-                "apresentar ao usuário os próximos passos estratégicos com base em tudo "
-                "que foi encontrado nesta investigação. NÃO encerre sem exibir as sugestões."
-            )
+            if ok:
+                system_nudge = (
+                    "\n\n[SISTEMA]: Atividade do Pipedrive atualizada com sucesso.\n\n"
+                    "ATENÇÃO: Continue o fluxo previsto pelas instruções (ex: Etapa 7 de Outreach se houver, etc). "
+                    "Quando terminar TODAS as etapas obrigatórias da sua instrução base, sua ÚLTIMA AÇÃO ANTES DE ENCERRAR O TURNO "
+                    "deve ser chamar 'suggest_next_actions' para apresentar os próximos passos estratégicos."
+                )
+            else:
+                error_msg = result.get("error", "")
+                # Erro de person_id enviado como nome (string) em vez de inteiro:
+                # o agente tenta corrigir sozinho (busca o ID numérico e repete).
+                if "exige um número inteiro" in error_msg or "person_id" in error_msg.lower():
+                    person_name = tool_args.get("person_id")
+                    system_nudge = (
+                        f"\n\n[SISTEMA]: ⚠️ FALHA — A atividade NÃO foi atualizada. Erro: \"{error_msg}\"\n\n"
+                        f"OBRIGATÓRIO — resolva isso AGORA, nesta mesma execução:\n"
+                        f"1. Chame 'pipedrive_get_persons' para encontrar o ID numérico de '{person_name}'.\n"
+                        f"2. Repita 'pipedrive_update_task' usando o ID numérico retornado (não o nome).\n"
+                        f"3. Somente após a atualização ser bem-sucedida, chame 'suggest_next_actions'.\n\n"
+                        f"PROIBIDO encerrar o turno sem corrigir e repetir a ação."
+                    )
+
+        # Se houve falha (ok=False) e não definimos um system_nudge para recuperação automática (ex: corrigir person_id),
+        # assumimos que é uma falha irrecuperável. Interrompemos o loop IMEDIATAMENTE emitindo um evento de erro.
+        # Isso impede que a conversa volte para o LLM, o que faria ele chamar 'suggest_next_actions', 
+        # mascarando o erro no frontend (o UI veria 'suggested_actions' logo após a falha e acharia que foi recuperado, 
+        # escondendo o botão "Tentar novamente").
+        if not ok and not system_nudge:
+            error_detail = result.get("error") or result.get("result") or "Erro desconhecido"
+            err_event = {
+                "type": "error",
+                "content": f"Falha na ação ({tool_name}): {error_detail}",
+                "recoverable": True,
+            }
+            collected_events.append(err_event)
+            yield _emit(err_event)
+            # Persiste os logs antes de sair para o frontend ter acesso ao histórico
+            if thread_id:
+                await _save_run_state(
+                    thread_id=thread_id,
+                    parent_message_id=parent_message_id,
+                    action_index=action_index,
+                    message="",
+                    is_regeneration=False,
+                    final_response="",
+                    collected_events=collected_events,
+                    process_id=pending_process_id,
+                    is_resume=True,
+                    user_msg_saved=True,
+                )
+            return
 
     messages.append({
         "role": "user", 
@@ -723,23 +947,35 @@ async def resume_after_confirmation(
     })
 
     tools = get_tools_anthropic_schema()
-    start_iter = pending.get("iteration", 1)
+    if pending_direct_action:
+        _msg_lower = ""
+        for m in pending["messages_snapshot"]:
+            if m.get("role") == "user" and isinstance(m.get("content"), str):
+                _msg_lower = m.get("content")
+                break
+            elif m.get("role") == "user" and isinstance(m.get("content"), list):
+                _msg_lower = " ".join([b.get("text", "") for b in m.get("content") if isinstance(b, dict) and b.get("type") == "text"])
+                break
+        tools = filter_tools_for_direct_action(tools, _msg_lower)
 
+    thread_tool_memory = await load_thread_tool_memory(thread_id)
     saved_on_completion = False
     try:
         async for chunk in _agent_loop(
             messages,
             tools,
-            start_iteration=start_iter,
+            start_iteration=pending.get("iteration", 0),
             org_id=pending_org_id,
             process_id=pending_process_id,
             parent_message_id=parent_message_id,
             action_index=action_index,
             direct_action=pending_direct_action,
             preferred=pending_preferred,
+            thread_tool_memory=thread_tool_memory,
             strict_mode=pending_strict_mode,
             query_type=pending_query_type,
             active_skill=None,
+            job_id=job_id,
         ):
             try:
                 data = json.loads(chunk)

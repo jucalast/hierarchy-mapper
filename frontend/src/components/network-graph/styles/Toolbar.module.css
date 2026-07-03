@@ -277,8 +277,10 @@
     border-top: none !important;
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
-    width: 100% !important; /* Força largura idêntica para alinhamento perfeito */
-    box-shadow: none !important; /* Remove o box shadow que sangra para cima no carrossel */
+    width: 100% !important;
+    /* Força largura idêntica para alinhamento perfeito */
+    box-shadow: none !important;
+    /* Remove o box shadow que sangra para cima no carrossel */
 }
 
 /* Carrossel — Flutuante conectado */
@@ -315,15 +317,19 @@
     align-items: center;
     min-width: 200px;
     max-width: 260px;
-    padding: 6px 12px; /* Padding idêntico ao do floating toolbar */
+    padding: 6px 12px;
+    /* Padding idêntico ao do floating toolbar */
     gap: 10px;
-    border-radius: var(--radius-lg); /* Radius idêntico ao do floating toolbar */
+    border-radius: var(--radius-lg);
+    /* Radius idêntico ao do floating toolbar */
     cursor: pointer;
     transition: all 0.2s ease;
     flex-shrink: 0;
 
-    background: transparent; /* Usa o mesmo BG do container por transparência */
-    border: none; /* Ultra-minimalista sem borda por padrão */
+    background: transparent;
+    /* Usa o mesmo BG do container por transparência */
+    border: none;
+    /* Ultra-minimalista sem borda por padrão */
     position: relative;
     overflow: hidden;
 }
@@ -335,9 +341,7 @@
 }
 
 .brandCardActive {
-    background: var(--sw-primary-soft) !important;
-    border-color: var(--sw-primary) !important;
-    box-shadow: 0 0 0 1px var(--sw-primary) !important;
+    background: #6c6c6c1f !important;
 }
 
 .brandAvatarWrapper,
@@ -691,28 +695,29 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
-    font-size: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
     font-weight: 600;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-family: var(--font-mono);
     color: var(--sw-text-muted);
-    opacity: 0.7;
+    opacity: 0.8;
     border-bottom: 1px solid var(--sw-border);
     user-select: none;
 }
 
 .scanTerminalBody {
-    padding: 6px 12px;
-    max-height: 160px;
+    padding: 8px 12px;
+    max-height: 180px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--sw-border) transparent;
-    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-    font-size: 11px;
-    line-height: 1.5;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
 }
 
 .scanTerminalLine {
+    font-family: var(--font-mono) !important;
     white-space: pre-wrap;
     word-break: break-all;
 }
@@ -729,6 +734,7 @@
         opacity: 0;
         transform: translateY(-8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -750,7 +756,7 @@
     pointer-events: auto;
     box-shadow: var(--sw-shadow);
     transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
-                height 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        height 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     animation: swSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -772,7 +778,8 @@
 }
 
 .previewExpanded .previewImage {
-    height: calc(100% - 40px); /* Leave room for interaction bar */
+    height: calc(100% - 40px);
+    /* Leave room for interaction bar */
     object-fit: contain;
     background: #0a0a0a;
 }
@@ -813,8 +820,15 @@
 }
 
 @keyframes swPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
 }
 
 .previewToggleBtn {
@@ -884,6 +898,7 @@
     background: var(--sw-hover);
     color: var(--sw-text-base);
 }
+
 .toolbarContentLayout {
     position: relative;
     display: flex;
@@ -936,7 +951,8 @@
 .mainToolbarSection {
     display: flex;
     flex-direction: column;
-    align-items: stretch; /* Garante que o carrossel ocupe toda a largura disponível da seção */
+    align-items: stretch;
+    /* Garante que o carrossel ocupe toda a largura disponível da seção */
     width: fit-content;
     max-width: 100%;
     min-width: 0;
@@ -978,9 +994,10 @@
 }
 
 .modeBtnActive {
-    background: #131313 !important; /* Dark color for active button */
+    background: #131313 !important;
+    /* Dark color for active button */
     color: white !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 :global([data-theme='light']) .modeBtnActive {

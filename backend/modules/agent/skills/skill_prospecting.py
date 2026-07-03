@@ -29,7 +29,10 @@ class ProspectingSkill(FunnelStageSkill):
             "pipedrive_update_task",
             "discover_and_validate_email",
             "generate_prospecting_plan",
-            "suggest_next_actions"
+            "suggest_next_actions",
+            "whatsapp_get_messages",
+            "email_get_contact_history",
+            "generate_sales_message"
         ]
 
     @property
@@ -44,12 +47,30 @@ class ProspectingSkill(FunnelStageSkill):
 Follow these steps strictly:
 1. CHECK context first (`pipedrive_get_org`). Only use Data Enrichment (`deep_company_investigation`) if you do NOT have a saved Dossier or Prospecting Plan.
 2. Fetch the persons (`pipedrive_get_persons`). 
-3. Generate a Prospecting Plan (`generate_prospecting_plan`) if one does not exist yet. ESTA ETAPA É OBRIGATÓRIA antes de decidir quem salvar.
+
+⚠️ REGRA CRÍTICA — ZERO CONTATOS:
+Se `pipedrive_get_persons` retornar 0 contatos (ou se não houver NENHUM contato com canal válido de comunicação — e-mail ou telefone — cadastrado no Pipedrive OU listado no Banco Local `[ID:LocalDB]`):
+  → Chame `open_hierarchy_drawer` IMEDIATAMENTE para abrir o mapeador de hierarquia.
+  → O mapeador vai descobrir os decisores da empresa automaticamente.
+  → Após o mapeamento, gere o plano de prospecção (`generate_prospecting_plan`) com os dados obtidos.
+  → Em seguida, siga com a pipeline normal a partir do passo 5 (evaluate_prospects).
+  → NÃO trave, NÃO encerre o turno — o mapeamento é a ação correta quando não há contatos.
+
+⚠️ REGRA CRÍTICA — CONTATOS NO BANCO LOCAL:
+Se houver contatos com canais válidos de comunicação (e-mail ou telefone) que estão no Banco Local `[ID:LocalDB]` (com ID Pipedrive nulo):
+  → Você NÃO DEVE chamar `open_hierarchy_drawer`.
+  → Em vez disso, prossiga com a pipeline normal (geração do plano, avaliação dos decisores, etc.) e sugira salvar os decisores principais no Pipedrive (`pipedrive_create_person`), vinculá-los ao negócio (`pipedrive_update_deal`) e criar as tarefas de abordagem.
+
+
+3. Generate a Prospecting Plan (`generate_prospecting_plan`) if one does not exist yet. ESTA ETAPA É OBRIGATÓRIA antes de decidir quem salvar. (Pule este passo se já chamou open_hierarchy_drawer acima — o plano será gerado após o mapeamento.)
 4. Output a summary of the context/Dossier and the Prospecting Plan to the user.
 5. Evaluate the persons (`evaluate_prospects`) based on the Prospecting Plan to identify the most suitable decision maker(s) (o contato mais apto).
 6. Apply Multithreading: Try to identify/save at least 2 key decision makers in the hierarchy to avoid single-point failure.
-7. ONLY AFTER evaluating the most suitable person(s) based on the plan, if they exist in local DB `[ID:LocalDB]`, suggest to create them in Pipedrive. If they have a numeric ID, link them to the Deal (`pipedrive_update_deal`).
-8. Finish the task. VOCÊ É OBRIGADO A CHAMAR A FERRAMENTA `suggest_next_actions` NO FINAL PARA GERAR OS CARDS DE APROVAÇÃO (ex: concluir tarefa, enviar email). NUNCA escreva sugestões de ação diretamente em formato de texto para o usuário. Sempre use a tool `suggest_next_actions`."""
+7. BEFORE any outreach, ensure the contact is in Pipedrive and linked to the deal:
+    - If the person exists in the local DB (`[ID:LocalDB]`) and needs to be added to Pipedrive, suggest `pipedrive_create_person`.
+    - If the person has a numeric Pipedrive ID but is not linked to the current deal, suggest `pipedrive_update_deal` to link them.
+8. Once contacts are in Pipedrive and linked, then for any outreach (email/whatsapp), suggest creating a task in Pipedrive for sending the message (e.g., `pipedrive_create_task` with subject="Enviar Email para [Nome]").
+9. Finish the task. VOCÊ É OBRIGADO A CHAMAR A FERRAMENTA `suggest_next_actions` NO FINAL PARA GERAR OS CARDS DE APROVAÇÃO (ex: concluir tarefa, enviar email). NUNCA escreva sugestões de ação diretamente em formato de texto para o usuário. Sempre use a tool `suggest_next_actions`."""
         # Injeta instrução de concluir tarefa se o activity_id foi mencionado no prompt
         activity_id = context.get("activity_id")
         if activity_id:

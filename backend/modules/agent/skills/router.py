@@ -28,6 +28,10 @@ STAGE_TO_SKILL = {
 
 def classify_intent(message: str) -> str:
     """Classifies user intent based on the message."""
+    from modules.agent.service.helpers import is_task_creation_message
+    if is_task_creation_message(message):
+        return "direct_command"
+
     message_lower = message.lower()
     
     # Tarefas de ligação têm precedência máxima
@@ -35,7 +39,7 @@ def classify_intent(message: str) -> str:
         return "call"
     if any(keyword in message_lower for keyword in ["encontrar", "decisor", "mapear", "prospectar"]):
         return "prospect"
-    if any(keyword in message_lower for keyword in ["apresentação", "apresentar", "cold", "outreach"]):
+    if any(keyword in message_lower for keyword in ["apresentação", "apresentar", "cold", "outreach", "introdução", "introducao", "enviar e-mail", "enviar email", "enviar mensagem"]):
         return "outreach"
     if any(keyword in message_lower for keyword in ["follow", "cobrar", "ligar", "responder"]):
         return "followup"
@@ -64,12 +68,19 @@ def get_skill_by_intent(intent: str) -> AgentSkill:
     skill_class = INTENT_TO_SKILL.get(intent)
     return skill_class() if skill_class else None
 
-async def route_task_to_skill(message: str, org_id: Optional[int] = None) -> AgentSkill:
+async def route_task_to_skill(message: str, org_id: Optional[int] = None, intent_info: Optional[dict] = None) -> AgentSkill:
     """
     FunnelAwareSkillRouter
     Routes based on Pipedrive deal stage and user intent.
     """
-    intent = classify_intent(message)
+    intent = None
+    if intent_info:
+        intent = intent_info.get("skill_intent")
+        if intent == "unknown":
+            intent = None
+
+    if not intent:
+        intent = classify_intent(message)
     deal_stage_id = None
     deal_id = None
     deal_stage_name = ""

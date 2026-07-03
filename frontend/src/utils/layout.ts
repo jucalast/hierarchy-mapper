@@ -20,7 +20,7 @@ export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
           source: sourceStr,
           target: targetStr,
           animated: false,
-          style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 },
+          style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 3.0 },
         });
         processedTargets.add(targetStr);
       }
@@ -36,42 +36,34 @@ export const calculateEdges = (nodes: Node[], backendEdges: any[]): Edge[] => {
 
     const childLevel = child.data.level || 1;
 
-    // Tenta encontrar o melhor pai (nível maior que o dele ou Root)
-    const potentialParents = nodes
-      .filter(p => p.data.isRoot || (p.data.level || 0) > childLevel)
-      .sort((a, b) => {
-        if (a.data.isRoot) return 1; // Coloca root por último na busca de "mais próximo"
-        if (b.data.isRoot) return -1;
-        return (a.data.level || 0) - (b.data.level || 0);
-      });
-
-    let bestParent = null;
-
-    // A. Prioridade: Mesmo Departamento + Nível mais próximo
-    bestParent = potentialParents.find(p => p.data.department === child.data.department);
-
-    // B. Fallback: Qualquer autoridade disponível acima dele
-    if (!bestParent && potentialParents.length > 0) {
-      bestParent = potentialParents[0];
+    // Nós sem manager_id ou com manager_id='root_company' que ainda não têm edge
+    // (o backend edge falhou porque root_company não estava em nodeIds ainda)
+    // devem ir diretamente para o root sem tentar encontrar um pai intermediário.
+    // Sócios (level 6) ficam fora dos "potentialParents" para não serem escolhidos
+    // como pai de funcionários regulares.
+    if (!child.data.manager_id || child.data.manager_id === 'root_company') {
+      if (rootEntity) {
+        finalEdges.push({
+          id: `e-impl-${rootEntity.id}-${child.id}`,
+          source: rootEntity.id,
+          target: child.id,
+          animated: false,
+          style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 3.0 },
+        });
+        processedTargets.add(child.id);
+      }
+      return;
     }
 
-    // B2. Se o nó é Nível 6 (Sócio/C-Level), ele deve reportar à Empresa Raiz se estiver sozinho no topo
-    if (childLevel === 6 && !bestParent) {
-        bestParent = rootEntity;
-    }
-
-    // C. Fallback de Segurança Máxima: Conecta na Empresa (Root 0)
-    if (!bestParent && rootEntity && child.id !== rootEntity.id) {
-       bestParent = rootEntity;
-    }
-
-    if (bestParent) {
+    // Nó tem manager_id explícito mas o manager ainda não existe no grafo —
+    // conecta ao root como fallback seguro.
+    if (rootEntity && child.id !== rootEntity.id) {
       finalEdges.push({
-        id: `e-impl-${bestParent.id}-${child.id}`,
-        source: bestParent.id,
+        id: `e-impl-${rootEntity.id}-${child.id}`,
+        source: rootEntity.id,
         target: child.id,
         animated: false,
-        style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 1.5 },
+        style: { stroke: 'var(--sw-graph-purple-edge)', strokeWidth: 3.0 },
       });
       processedTargets.add(child.id);
     }

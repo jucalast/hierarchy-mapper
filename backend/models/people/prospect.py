@@ -8,11 +8,11 @@ ProspectLead armazena cada empresa com qualificacao, coordenadas para
 o mapa Leaflet e status de integracao com Pipedrive.
 """
 import uuid
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text, JSON
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.infra.database import Base
+from core.infra.database import Base, SafeJSON
 
 
 class ProspectSession(Base):
@@ -25,7 +25,7 @@ class ProspectSession(Base):
     radius_km = Column(Integer, nullable=True)   # raio em km
     city_name = Column(String, nullable=True)    # cidade resolvida por geocoding reverso
     # Segmentos buscados (JSON list)
-    segments_searched = Column(JSON, nullable=True)
+    segments_searched = Column(SafeJSON, nullable=True)
     status = Column(String, default="running", index=True)  # running | completed | failed
     total_found = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -60,13 +60,13 @@ class ProspectLead(Base):
     description = Column(Text, nullable=True)
 
     # Contatos-chave encontrados via LinkedIn
-    contacts = Column(JSON, nullable=True)          # [{name, role, linkedin_url, department}]
+    contacts = Column(SafeJSON, nullable=True)          # [{name, role, linkedin_url, department}]
 
     # Qualificação ICP
     icp_score = Column(Integer, default=0, index=True)
     icp_tier = Column(String, nullable=True, index=True)    # A | B | C
-    icp_reasons = Column(JSON, nullable=True)
-    icp_penalties = Column(JSON, nullable=True)
+    icp_reasons = Column(SafeJSON, nullable=True)
+    icp_penalties = Column(SafeJSON, nullable=True)
     icp_recommendation = Column(Text, nullable=True)
     outreach_angle = Column(Text, nullable=True)
     relevance_signal = Column(Text, nullable=True)
@@ -75,7 +75,7 @@ class ProspectLead(Base):
     pipedrive_status = Column(String, default="new")  # new | lost_deal | stale | active
     pipedrive_org_id = Column(Integer, nullable=True)
     pipedrive_last_activity = Column(DateTime(timezone=True), nullable=True)
-    pipedrive_deal_info = Column(JSON, nullable=True)  # {title, status, stage, value, days_inactive}
+    pipedrive_deal_info = Column(SafeJSON, nullable=True)  # {title, status, stage, value, days_inactive}
 
     # Coordenadas para o mapa
     lat = Column(String, nullable=True)

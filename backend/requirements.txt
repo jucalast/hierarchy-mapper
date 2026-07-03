@@ -20,6 +20,7 @@ pyaudiowpatch==0.2.12.post4     # Usado para capturar áudio de loopback (WASAPI
 # === Database ===
 sqlalchemy==2.0.48
 aiosqlite==0.22.1
+asyncpg==0.29.0
 alembic==1.13.2                 # Migrations versionadas
 
 # === Cache & Queue ===

@@ -8,6 +8,56 @@ import { API_BASE_URL, apiGet } from '@/services/config';
 import { PanelRight, LogOut } from 'lucide-react';
 import { Avatar } from '@/components/ui';
 import { ChatPanel } from '@/components/chat/ChatPanel';
+import dynamic from 'next/dynamic';
+import { useBackendReady } from '@/hooks/useBackendReady';
+
+import { HierarchyScanProvider } from '@/contexts/HierarchyScanContext';
+
+const NetworkGraph = dynamic(() => import('@/components/network-graph/NetworkGraph'), { ssr: false });
+
+function BackendGate({ children }: { children: React.ReactNode }) {
+  const { state, elapsed } = useBackendReady();
+
+  if (state === 'checking') {
+    return (
+      <div style={{
+        height: '100vh', width: '100vw', background: 'var(--sw-sidebar)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        alignItems: 'center', gap: '8px',
+        color: 'var(--sw-text-muted)', fontFamily: 'var(--font-primary)', fontSize: '12px',
+        letterSpacing: '0.08em',
+      }}>
+        <span>CONECTANDO AO SERVIDOR{elapsed > 2 ? ` (${elapsed}s)` : '...'}</span>
+      </div>
+    );
+  }
+
+  if (state === 'timeout') {
+    return (
+      <div style={{
+        height: '100vh', width: '100vw', background: 'var(--sw-sidebar)',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        alignItems: 'center', gap: '12px',
+        color: 'var(--sw-status-danger)', fontFamily: 'var(--font-primary)', fontSize: '12px',
+        letterSpacing: '0.08em',
+      }}>
+        <span>SERVIDOR INDISPONÍVEL</span>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: 'transparent', border: '1px solid var(--sw-status-danger)',
+            color: 'var(--sw-status-danger)', padding: '6px 16px', cursor: 'pointer',
+            fontSize: '11px', letterSpacing: '0.08em', borderRadius: '4px',
+          }}
+        >
+          TENTAR NOVAMENTE
+        </button>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -15,8 +65,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const [showChat, setShowChat] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [currentOrg, setCurrentOrg] = useState<{ id: number; name: string; logo: string } | null>(null);
-  const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string | null } | null>(null);
+  const [currentOrg, setCurrentOrg] = useState<{ id: number; name: string; logo: string; prospectingContext?: string | null }>({ id: 0, name: "", logo: "" });
+  const [isOrgLoading, setIsOrgLoading] = useState(false);
+  // Ref para evitar race condition: fetch de empresa antiga sobrescrevendo dados da empresa nova
+  const latestFetchOrgIdRef = React.useRef<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ name: string; avatar: string | null; company_name?: string } | null>(null);
+  const [tasksForToday, setTasksForToday] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleUpdateTasks = (e: any) => setTasksForToday(e.detail ?? 0);
+    window.addEventListener('update_tasks_today', handleUpdateTasks);
+    return () => window.removeEventListener('update_tasks_today', handleUpdateTasks);
+  }, []);
 
   // Escuta evento para abrir o Chat a partir de componentes filhos
   useEffect(() => {
@@ -47,7 +107,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           if (parsed && parsed.name) {
             setCurrentUser({
               name: parsed.name,
-              avatar: parsed.avatar || null
+              avatar: parsed.avatar || null,
+              company_name: parsed.company_name || parsed.company_id?.name || parsed.company || 'Buscando...'
             });
           }
         } catch (e) {
@@ -58,16 +119,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         if (userName) {
           setCurrentUser({
             name: userName,
-            avatar: null
+            avatar: null,
+            company_name: 'LINKB2B'
           });
         }
       }
 
       // Busca atualizada do backend usando apiGet para garantir headers de auth
       try {
-        const data = await apiGet('/pipedrive/current-user');
+        const data = await apiGet('/pipedrive/current-user', { cache: 'no-store' });
         if (data) {
-          setCurrentUser(data);
+          setCurrentUser({
+            ...data,
+            company_name: data.company_name || data.company_id?.name || data.company || 'Buscando...'
+          });
           localStorage.setItem('pipedrive-current-user', JSON.stringify(data));
         }
       } catch (err) {
@@ -79,70 +144,116 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Sincroniza Contexto da Empresa baseado na URL /org/[id]
+  // Depende apenas de pathname (não de currentOrg.id) para evitar loops e garantir fetch
+  // sempre que o usuário navegar para uma empresa — mesmo que currentOrg.id já seja esse valor
+  // (stale de race condition anterior).
   useEffect(() => {
     const match = pathname?.match(/\/org\/(\d+)/);
     if (match && match[1]) {
       const orgId = parseInt(match[1]);
-      if (!currentOrg || currentOrg.id !== orgId) {
-        // 1. Tenta buscar primeiro no cache local de organizações (onde o logo e metadados estão sempre completos)
-        const cachedOrgsStr = localStorage.getItem('pipedrive-orgs-cache');
-        if (cachedOrgsStr) {
-          try {
-            const list = JSON.parse(cachedOrgsStr);
-            if (Array.isArray(list)) {
-              const cachedOrg = list.find((o: any) => Number(o.id) === orgId || Number(o.pipedrive_id) === orgId || Number(o.local_id) === orgId);
-              if (cachedOrg) {
-                const foundLogo = cachedOrg.logo || cachedOrg.organization_logo || cachedOrg.logo_url || cachedOrg.company_logo || "";
-                setCurrentOrg({
-                  id: orgId,
-                  name: cachedOrg.name || cachedOrg.title || "Empresa",
-                  logo: foundLogo
-                });
-                return;
-              }
-            }
-          } catch (e) {
-            console.error("Erro ao ler pipedrive-orgs-cache no layout:", e);
-          }
-        }
 
-        // 2. Fallback: busca atualizada do backend
-        orgsApi.getOrganizationDetails(orgId).then((res: any) => {
-          if (res && res.org) {
-            setCurrentOrg({
-              id: orgId,
-              name: res.org.name,
-              logo: res.org.logo || res.org.logo_url || res.org.organization_logo || res.org.company_logo || res.logo || ""
-            });
+      // Evita fetch duplicado para o mesmo org (ex: double-firing por deps)
+      if (latestFetchOrgIdRef.current === orgId) return;
+
+      // Inicializa imediatamente para limpar dados de empresa anterior
+      setCurrentOrg({ id: orgId, name: "Carregando...", logo: "", prospectingContext: null });
+
+      // 1. Cache local para logo e metadados imediatos
+      const cachedOrgsStr = localStorage.getItem('pipedrive-orgs-cache');
+      let cacheFound = false;
+      if (cachedOrgsStr) {
+        try {
+          const list = JSON.parse(cachedOrgsStr);
+          if (Array.isArray(list)) {
+            const cachedOrg = list.find((o: any) => Number(o.id) === orgId);
+            if (cachedOrg) {
+              const foundLogo = cachedOrg.logo || cachedOrg.organization_logo || cachedOrg.logo_url || cachedOrg.company_logo || "";
+              setCurrentOrg({
+                id: orgId,
+                name: cachedOrg.name || cachedOrg.title || "Empresa",
+                logo: foundLogo,
+                prospectingContext: cachedOrg.prospecting_context || null
+              });
+              cacheFound = true;
+            }
           }
-        }).catch(() => {
-            setCurrentOrg({ id: orgId, name: "Empresa", logo: "" });
-        });
+        } catch (e) {
+          console.error("Erro ao ler pipedrive-orgs-cache no layout:", e);
+        }
       }
+
+      // 2. Backend para dados atualizados (prospecting_context sempre volátil)
+      setIsOrgLoading(true);
+      latestFetchOrgIdRef.current = orgId;
+      orgsApi.getLocalOrganization(orgId).then((res: any) => {
+        if (res && res.id) {
+          setCurrentOrg(prev => {
+            // Guard: ignora resposta stale se usuário já navegou para outra empresa
+            if (prev.id !== orgId) return prev;
+            return {
+              id: orgId,
+              name: res.name || prev.name,
+              logo: res.logo_url || prev.logo || "",
+              prospectingContext: res.prospecting_context || null
+            };
+          });
+        }
+      }).catch(() => {
+        if (!cacheFound) {
+          setCurrentOrg(prev => {
+            if (prev.id !== orgId) return prev;
+            return { id: orgId, name: "Empresa", logo: "", prospectingContext: null };
+          });
+        }
+      }).finally(() => {
+        if (latestFetchOrgIdRef.current === orgId) setIsOrgLoading(false);
+      });
     } else {
-      setCurrentOrg(null);
+      // Saiu de rota de org: reseta ref para permitir re-fetch na próxima visita
+      latestFetchOrgIdRef.current = null;
+      setCurrentOrg({ id: 0, name: "", logo: "" });
+      setIsOrgLoading(false);
     }
-  }, [pathname, currentOrg]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // Escuta evento para atualizar o prospectingContext quando um novo plano for gerado
+  useEffect(() => {
+    const handlePlanUpdated = () => {
+      if (currentOrg && currentOrg.id) {
+        orgsApi.getLocalOrganization(currentOrg.id).then((res: any) => {
+          if (res && res.id) {
+            setCurrentOrg(prev => ({
+              ...prev,
+              prospectingContext: res.prospecting_context || prev.prospectingContext
+            }));
+          }
+        }).catch(console.error);
+      }
+    };
+    window.addEventListener('prospecting_plan_updated', handlePlanUpdated);
+    return () => window.removeEventListener('prospecting_plan_updated', handlePlanUpdated);
+  }, [currentOrg?.id]);
 
   function setAndSaveShowChat(val: boolean) {
     setShowChat(val);
     localStorage.setItem("show-chat", val.toString());
   }
 
-  // Esconde o ChatPanel automaticamente na rota /messages (ou ?view=messages) para não conflitar com o MessagesView
+  // Abre o ChatPanel automaticamente ao entrar na view de mensagens da empresa
   const [wasInMessages, setWasInMessages] = useState(false);
   useEffect(() => {
     const isMessages = pathname?.startsWith('/messages') || searchParams?.get('view') === 'messages';
-    if (isMessages) {
-      if (showChat) setShowChat(false);
+    if (isMessages && !wasInMessages) {
+      setShowChat(true);
       setWasInMessages(true);
-    } else if (wasInMessages) {
+    } else if (!isMessages && wasInMessages) {
       // Ao sair de /messages, restaura o estado salvo no localStorage
       const savedChat = localStorage.getItem("show-chat") === "true";
       setShowChat(savedChat);
       setWasInMessages(false);
     }
-  }, [pathname, searchParams, wasInMessages, showChat]);
+  }, [pathname, searchParams, wasInMessages]);
 
   // Escuta evento externo de alteração de tema (ex: do Sidebar no NetworkGraph)
   useEffect(() => {
@@ -171,126 +282,47 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
-      {/* Global Header spans full width */}
-      <header style={{ 
-        height: '48px', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        padding: '0 24px',
-        background: theme === 'dark' 
-          ? 'linear-gradient(135deg, #1e2145 30%, #131313 80%)' 
-          : 'linear-gradient(135deg, #eef2ff 30%, #f9fafb 80%)',
-        borderBottom: '1px solid var(--sw-border)',
-        zIndex: 100,
-        transition: 'background var(--transition-fast)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ 
-            fontFamily: 'Inter, sans-serif', 
-            fontSize: '12px', 
-            fontWeight: 600, 
-            color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)', 
-            letterSpacing: '0.08em', 
-            textTransform: 'uppercase' 
-          }}>
-            LINKB2B Hierarchy Mapper
-          </span>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <TriggerNotifications
-            apiBase={API_BASE_URL}
-            onOpenChat={(orgId, orgName) => {
-              window.dispatchEvent(new CustomEvent('toggle_chat', { detail: { open: true } }));
-            }}
-          />
-          
-          <button
-            onClick={() => {
-              const newVal = !showChat;
-              setAndSaveShowChat(newVal);
-            }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
-              marginRight: '8px'
-            }}
-            title="Abrir Assistente"
-          >
-            <PanelRight size={20} />
-          </button>
-
-          {currentUser && (
-            <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                marginRight: '8px', 
-                borderRight: `1px solid ${theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'var(--sw-border)'}`, 
-                paddingRight: '16px', 
-                height: '24px' 
-            }}>
-                <Avatar
-                    kind="person"
-                    name={currentUser.name}
-                    src={currentUser.avatar}
-                    size={24}
+    <HierarchyScanProvider>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            {children}
+            <BackendGate>
+              <main style={{ height: '100%', width: '100%' }}>
+                <NetworkGraph 
+                  onLogout={handleLogout} 
+                  currentUser={currentUser}
+                  tasksForToday={tasksForToday}
+                  onToggleChat={() => {
+                    const newVal = !showChat;
+                    setAndSaveShowChat(newVal);
+                  }}
                 />
-                <span style={{ fontSize: '12px', fontWeight: 500, color: theme === 'dark' ? 'white' : 'var(--sw-text-base)', opacity: 0.8 }}>
-                    {currentUser.name}
-                </span>
-            </div>
-          )}
+              </main>
+            </BackendGate>
+          </div>
 
-          <button
-            onClick={handleLogout}
-            style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '8px',
-                color: theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'var(--sw-text-subtle)',
-                display: 'flex',
-                alignItems: 'center'
-            }}
-            title="Sair"
-          >
-            <LogOut size={18} />
-          </button>
-        </div>
-      </header>
-
-      <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          {children}
+          <div style={{ 
+            height: '100%', 
+            display: 'flex',
+            borderLeft: 'none'
+          }}>
+            <ChatPanel
+              showChat={showChat}
+              setShowChat={setAndSaveShowChat}
+              selectedOrgId={currentOrg.id || null}
+              selectedOrgName={currentOrg.name || "Assistente IA"}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              selectedOrgLogo={currentOrg.logo || ""}
+              prospectingContext={currentOrg.prospectingContext}
+              isOrgLoading={isOrgLoading}
+            />
+          </div>
         </div>
 
-        <div style={{ 
-          height: '100%', 
-          display: showChat ? 'flex' : 'none',
-          borderLeft: '1px solid var(--sw-border)'
-        }}>
-          <ChatPanel
-            showChat={showChat}
-            setShowChat={setAndSaveShowChat}
-            selectedOrgId={currentOrg?.id || null}
-            selectedOrgName={currentOrg?.name || "Assistente IA"}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-            selectedOrgLogo={currentOrg?.logo || ""}
-          />
-        </div>
+        {/* Botão flutuante para abrir o Chat removido a pedido do usuário */}
       </div>
-
-      {/* Botão flutuante para abrir o Chat removido a pedido do usuário */}
-    </div>
+    </HierarchyScanProvider>
   );
 }

@@ -96,6 +96,12 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
     const [isFocused, setIsFocused] = React.useState(false);
     const [localSelected, setLocalSelected] = React.useState<string | null>(null);
 
+    React.useEffect(() => {
+        if (!confirmedBrand) {
+            setLocalSelected(null);
+        }
+    }, [confirmedBrand]);
+
     // Animação de entrada e saída do carrossel de opções
     React.useEffect(() => {
         if (brandOptions.length > 0) {
@@ -254,7 +260,7 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
                                             />
                                         </div>
 
-                                        {domainTarget && (
+                                        {(domainTarget || cnpj) && (
                                             <>
                                                 <div className={styles.toolbarDivider} />
                                                 <div className={styles.toolbarSegment}>
@@ -265,7 +271,7 @@ export const NormalToolbar: React.FC<NormalToolbarProps> = ({
                                                         value={domainTarget}
                                                         onChange={(e) => setDomainTarget(e.target.value)}
                                                     />
-                                                    {!discovering && !loading && (
+                                                    {domainTarget && !discovering && !loading && (
                                                         <button
                                                             type="button"
                                                             className={`${styles.cleanSearchBtn} ${enrichingIds.has(999) ? styles.cleanSearchLoading : ''}`}

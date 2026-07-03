@@ -9,14 +9,14 @@
   border: none;
   color: var(--sw-text-muted);
   cursor: pointer;
-  padding: 8px;
-  border-radius: 50%;
+  padding: var(--space-8);
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
-  width: 32px;
-  height: 32px;
+  width: var(--space-32);
+  height: var(--space-32);
 }
 
 .triggerBtn:hover {
@@ -45,17 +45,17 @@
 .dropdownMenu {
   position: absolute;
   top: 100%;
-  margin-top: 6px;
-  background: #131313;
+  margin-top: var(--space-6);
+  background: var(--sw-sidebar);
   border: var(--sw-border-width) solid var(--sw-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--sw-shadow);
-  padding: 4px;
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
   min-width: 150px;
   z-index: 500;
-  animation: dropdownFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: dropdownFadeIn var(--transition-fast) cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
@@ -70,9 +70,9 @@
 .dropdownItem {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-8);
   width: 100%;
-  padding: 8px 12px;
+  padding: var(--space-8) var(--space-12);
   border: none;
   background: transparent;
   color: var(--sw-text-base);
@@ -130,18 +130,18 @@
 }
 
 :global([data-theme='light']) .dropdownMenu {
-  background: #ffffff !important;
-  border-color: rgba(0, 0, 0, 0.1) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  background: var(--sw-sidebar) !important;
+  border-color: var(--sw-border) !important;
+  box-shadow: var(--sw-shadow) !important;
 }
 
 :global([data-theme='light']) .dropdownItem {
-  color: #1a1a1a !important;
+  color: var(--sw-text-base) !important;
 }
 
 :global([data-theme='light']) .dropdownItem:hover {
-  background: rgba(0, 0, 0, 0.05) !important;
-  color: #1a1a1a !important;
+  background: var(--sw-hover) !important;
+  color: var(--sw-text-base) !important;
 }
 
 :global([data-theme='light']) .dropdownItem.danger {

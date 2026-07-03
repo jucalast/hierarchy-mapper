@@ -86,16 +86,16 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
                                 continue
                             sender = "Você" if m.get("fromMe") else contact
                             fmt.append(f"[{sender}]: {body[:300]}")
-                        # Persiste o histórico LID no cache (usa chat_id como identifier)
-                        asyncio.create_task(
-                            cache_wa_messages(
-                                contact_identifier=lid_chat_id,
-                                contact_name=contact,
-                                org_id=org_id,
-                                org_name=args.get("org_name") or None,
-                                chat_id=lid_chat_id,
-                                raw_messages=list(msgs_lid),
-                            )
+                        # Persiste o histórico LID no cache (usa chat_id como identifier).
+                        # Aguarda o commit (em vez de create_task fire-and-forget) para garantir
+                        # que generate_prospecting_plan, ao ler o cache logo depois, já o encontre.
+                        await cache_wa_messages(
+                            contact_identifier=lid_chat_id,
+                            contact_name=contact,
+                            org_id=org_id,
+                            org_name=args.get("org_name") or None,
+                            chat_id=lid_chat_id,
+                            raw_messages=list(msgs_lid),
                         )
                         return {
                             "ok": True,
@@ -126,6 +126,8 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
                 pass
 
         if phone_digits_arg and len(phone_digits_arg) <= 13:
+            if len(phone_digits_arg) in (10, 11) and not phone_digits_arg.startswith("55"):
+                phone_digits_arg = f"55{phone_digits_arg}"
             pd_chat_id = f"{phone_digits_arg}@c.us"
             found_name = contact
         else:
@@ -141,7 +143,14 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
                 org_name=args.get("org_name", "")
             )
             if not chat_id:
-                return {"ok": False, "error": f"Contato '{contact}' não encontrado no WhatsApp"}
+                return {
+                    "ok": True,
+                    "contact": contact,
+                    "phone": phone_arg,
+                    "messages": [],
+                    "count": 0,
+                    "summary": f"Aviso: Contato '{contact}' não possui número válido ou não foi encontrado no WhatsApp."
+                }
 
         # ─── Cache check ───
         # Verifica se já temos as mensagens no cache local e se não estão expiradas (stale)
@@ -149,7 +158,11 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
         is_lid = "@lid" in chat_id or (phone_val.isdigit() and len(phone_val) > 13)
         pipedrive_phone = _re.sub(r'\D', '', phone_arg) if phone_arg else ""
         canonical_phone = pipedrive_phone if (pipedrive_phone and len(pipedrive_phone) <= 13) else ("" if is_lid else phone_val)
+        # Normaliza DDI: números brasileiros sempre com 55 (evita cache miss por formato diferente)
+        if canonical_phone and canonical_phone.isdigit() and not canonical_phone.startswith("55") and len(canonical_phone) in (10, 11):
+            canonical_phone = f"55{canonical_phone}"
         _cache_id = canonical_phone or chat_id
+
 
         from ._message_cache import get_cached_messages
         from models.communication.contact_cache import CHANNEL_WHATSAPP
@@ -189,11 +202,32 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
                             chat_id = chat_id_lid
                             found_name = found_name_lid
                         else:
-                            return {"ok": False, "error": f"Contato '{contact}' encontrado mas sem conversa ativa no WhatsApp"}
+                            return {
+                                "ok": True,
+                                "contact": contact,
+                                "phone": phone_arg,
+                                "messages": [],
+                                "count": 0,
+                                "summary": f"Aviso: Contato '{contact}' encontrado mas sem conversa ativa no WhatsApp"
+                            }
                     else:
-                        return {"ok": False, "error": f"Contato '{contact}' não possui conversa ativa no WhatsApp (sem LID)"}
+                        return {
+                            "ok": True,
+                            "contact": contact,
+                            "phone": phone_arg,
+                            "messages": [],
+                            "count": 0,
+                            "summary": f"Aviso: Contato '{contact}' não possui conversa ativa no WhatsApp (sem LID)"
+                        }
                 except Exception:
-                    return {"ok": False, "error": f"Contato '{contact}' não encontrado no WhatsApp (sem LID)"}
+                    return {
+                        "ok": True,
+                        "contact": contact,
+                        "phone": phone_arg,
+                        "messages": [],
+                        "count": 0,
+                        "summary": f"Aviso: Contato '{contact}' não encontrado no WhatsApp (sem LID)"
+                    }
             else:
                 return {"ok": False, "error": f"Erro ao buscar mensagens (HTTP {r.status_code})"}
 
@@ -217,19 +251,25 @@ async def exec_whatsapp_get_messages(args: Dict[str, Any], org_id: int | None = 
         pipedrive_phone = _re.sub(r'\D', '', phone_arg) if phone_arg else ""
         canonical_phone = pipedrive_phone if (pipedrive_phone and len(pipedrive_phone) <= 13) else ("" if is_lid else phone_val)
 
-        # Persiste no cache para a UI de mensagens (não bloqueia o retorno)
+        # Normaliza DDI brasileiro: garante que o número sempre começa com 55
+        # Evita duplicatas no cache por números "19..." vs "5519..." referentes ao mesmo contato
+        if canonical_phone and canonical_phone.isdigit() and not canonical_phone.startswith("55") and len(canonical_phone) in (10, 11):
+            canonical_phone = f"55{canonical_phone}"
+
+        # Persiste no cache para a UI de mensagens e para generate_prospecting_plan.
+        # Aguarda o commit (em vez de create_task fire-and-forget) para evitar que o plano
+        # de prospecção seja gerado antes do histórico recém-buscado estar salvo no banco.
         _cache_id = canonical_phone or chat_id
         _org_name = args.get("org_name") or None
-        asyncio.create_task(
-            cache_wa_messages(
-                contact_identifier=_cache_id,
-                contact_name=found_name or contact,
-                org_id=org_id,
-                org_name=_org_name,
-                chat_id=chat_id,
-                raw_messages=list(msgs_raw or []),
-            )
+        await cache_wa_messages(
+            contact_identifier=_cache_id,
+            contact_name=found_name or contact,
+            org_id=org_id,
+            org_name=_org_name,
+            chat_id=chat_id,
+            raw_messages=list(msgs_raw or []),
         )
+
 
         return {
             "ok": True,
@@ -422,7 +462,6 @@ async def exec_email_get_inbox(args: Dict[str, Any]) -> Dict[str, Any]:
                         "subject": m.get("subject", ""),
                         "date": (m.get("date") or "")[:10],
                         "preview": (m.get("body") or "")[:300].strip(),
-                        "entryId": m.get("entryId", ""),
                     }
                     for m in messages[:limit]
                 ]
@@ -463,7 +502,11 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
     if not term and not org_name and not org_id:
         return {"ok": False, "error": "Informe contact_name, contact_email, domain, org_name ou org_id"}
 
-    max_retries = 1
+    # max_retries=2: 1ª tentativa + 1 retry após aguardar o Outlook inicializar em caso de
+    # 503 (com max_retries=1 o retry nunca rodava — "attempt < max_retries" era sempre falso
+    # na única iteração — e a busca desistia na hora, retornando "0 encontrados" mesmo
+    # quando o e-mail existia, se o serviço estivesse reiniciando/inicializando o Outlook).
+    max_retries = 2
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -491,7 +534,7 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
             search_query = contact_email or contact_name
             if not search_query:
                 if domain and domain != JFERRES_DOMAIN:
-                    search_query = f"@{domain}"
+                    search_query = domain
                 else:
                     import unicodedata
                     import re
@@ -537,7 +580,7 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                 _sw = {"grupo", "cia", "ltda", "sistemas", "comercio", "industria", "servicos", "energia", "eletrica"}
                 _fallback_query = next((w for w in _words if len(w) > 3 and w not in _sw), _words[0] if _words else None)
 
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 # "conversations" varre TODAS as pastas do Outlook recursivamente
                 all_r = await client.get(f"{EMAIL_SERVICE_BASE}/messages", params={"folder": "conversations", "limit": limit * 2, "q": search_query})
 
@@ -641,43 +684,56 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                     "summary": f"0 e-mails encontrados para {label} (busca: {search_query})",
                 }
 
-            # Ordenar e formatar (removendo duplicados por segurança)
+            # Ordenar e formatar (removendo duplicados por segurança).
+            # Usa messageId (Message-ID RFC822, estável e igual em cópias físicas
+            # do mesmo e-mail em pastas diferentes) como chave primária — entryId
+            # sozinho não deduplica porque o Outlook gera um EntryID por cópia física
+            # do item, não por e-mail (mesma mensagem em Inbox + subpasta = 2 entryIds).
             seen_ids = set()
             unique_messages = []
             for m in all_messages:
-                eid = m.get("entryId", "")
-                if eid and eid not in seen_ids:
-                    seen_ids.add(eid)
+                key = m.get("messageId") or m.get("entryId", "")
+                if key and key not in seen_ids:
+                    seen_ids.add(key)
                     unique_messages.append(m)
 
             unique_messages.sort(key=lambda m: m.get("date") or "", reverse=True)
-            results = [
-                {
+
+            label = contact_name or contact_email or org_name
+
+            # Monta lista normalizada COM entryId/messageId para o cache (dedup exige os campos)
+            def _fmt_email(m: dict) -> dict:
+                full_body = (m.get("body") or "").strip()
+                return {
+                    "entryId": m.get("entryId", ""),
+                    "messageId": m.get("messageId", ""),
                     "from": m.get("sender", ""),
                     "to": m.get("to", ""),
                     "subject": m.get("subject", ""),
                     "date": (m.get("date") or "")[:10],
-                    "preview": (m.get("body") or "")[:200].strip(),
-                    "body": (m.get("body") or "").strip(),
-                    "entryId": m.get("entryId", ""),
+                    # "body": corpo completo (até o limite já truncado na origem/Outlook)
+                    # para a UI exibir na visão expandida. "preview": recorte curto para
+                    # listas/resumos — mantido separado para não inflar o payload do LLM.
+                    "body": full_body,
+                    "preview": full_body[:200],
                     "direction": "sent" if seller_domain in (m.get("sender") or "").lower() else "received",
-                    }
-                    for m in unique_messages[:10]
-                    ]
+                }
 
+            cache_emails = [_fmt_email(m) for m in unique_messages if m.get("entryId")]
+            results = cache_emails[:10]  # LLM recebe no máximo 10
 
-            label = contact_name or contact_email or org_name
-            # Persiste no cache para a UI de mensagens (não bloqueia o retorno)
+            # Persiste TODOS no banco (não só os 10 do LLM) para a UI de mensagens
             _email_id = contact_email or search_query
-            if _email_id and results:
-                asyncio.create_task(
-                    cache_email_messages(
-                        contact_identifier=_email_id,
-                        contact_name=label,
-                        org_id=org_id,
-                        org_name=org_name,
-                        emails=results,
-                    )
+            # Normaliza domínio: garante formato @domain.com (ex: "dva.com" → "@dva.com")
+            if _email_id and "@" not in _email_id and "." in _email_id and " " not in _email_id:
+                _email_id = "@" + _email_id
+            if _email_id and cache_emails:
+                await cache_email_messages(
+                    contact_identifier=_email_id,
+                    contact_name=label,
+                    org_id=org_id,
+                    org_name=org_name,
+                    emails=cache_emails,
                 )
             return {
                 "ok": True,
@@ -708,49 +764,41 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
 async def exec_batch_communication_search(args: Dict[str, Any], org_id: int | None = None) -> Dict[str, Any]:
     """
     Realiza buscas em lote (WhatsApp + Email) para uma lista de contatos e para a própria empresa.
-    Otimiza a investigação reduzindo múltiplos turnos em um só.
+    WhatsApp: busca por contato individual (precisa de número).
+    Email: busca única por domínio da empresa (cobre todos os contatos de uma vez).
     """
     contacts = args.get("contacts", [])
     org_name = args.get("org_name", "")
     limit_wa = int(args.get("limit_wa", 40))
-    limit_email = int(args.get("limit_email", 15))
-    
+    limit_email = int(args.get("limit_email", 25))
+
     if not org_name and not contacts:
         return {"ok": False, "error": "Forneça org_name ou uma lista de contacts."}
 
     tasks = []
 
-    # 1. Busca para cada contato (limitado a 5 contatos para não sobrecarregar o bridge)
-    for p in contacts[:5]:
+    # 1. WhatsApp: busca por contato individual (requer número de telefone)
+    for p in contacts[:7]:
         p_name = p.get("name")
         p_phone = p.get("phone")
-        p_email = p.get("email")
-        
-        if p_name:
-            # WhatsApp task (apenas se tiver telefone ou se for busca por nome)
+        if p_name and p_phone:
             tasks.append(exec_whatsapp_get_messages({
                 "contact": p_name,
                 "phone": p_phone,
                 "org_name": org_name,
                 "limit": limit_wa
             }, org_id=org_id))
-            
-            # Email task
-            tasks.append(exec_email_get_contact_history({
-                "contact_name": p_name,
-                "contact_email": p_email,
-                "org_name": org_name,
-                "limit": limit_email
-            }, org_id=org_id))
 
-    # 2. Busca para a organização (nome puro)
+    # WhatsApp para o nome da empresa (cobre grupos e chats da empresa)
     if org_name:
         tasks.append(exec_whatsapp_get_messages({
             "contact": org_name,
             "org_name": org_name,
             "limit": limit_wa
         }, org_id=org_id))
-        
+
+    # 2. Email: uma única busca por domínio da empresa — cobre todos os contatos
+    if org_name:
         tasks.append(exec_email_get_contact_history({
             "org_name": org_name,
             "limit": limit_email
@@ -766,6 +814,7 @@ async def exec_batch_communication_search(args: Dict[str, Any], org_id: int | No
     for r in all_res:
         if isinstance(r, Exception):
             log.warning(f"batch_search.task_failed: {r}")
+            print(f"Exception in batch_search: {r}")
             continue
         if r and r.get("ok"):
             # Apenas inclui no relatório final se houver histórico real (count > 0)

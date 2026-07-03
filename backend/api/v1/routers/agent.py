@@ -11,8 +11,10 @@ from typing import List, Optional
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from core.observability.logging_config import get_logger
 
 router = APIRouter()
+log = get_logger(__name__)
 
 
 class AgentChatRequest(BaseModel):
@@ -116,6 +118,10 @@ async def agent_chat(payload: AgentChatRequest):
     await redis.enqueue_job("run_agent_task", payload_dict=payload_dict)
 
     async def streamer():
+        # Primeiro evento: expõe o job_id pro frontend poder cancelar via
+        # POST /agent/chat/{job_id}/cancel (botão "Parar" do chat).
+        yield json.dumps({"type": "job_id", "job_id": job_id}) + "\n"
+
         pubsub = redis.pubsub()
         channel_name = f"agent_updates_{job_id}"
         await pubsub.subscribe(channel_name)
@@ -133,25 +139,51 @@ async def agent_chat(payload: AgentChatRequest):
                             finished = True
                             break
                         if msg_obj.get('type') == 'error':
-                            error_msg = msg_obj.get("error", "Erro interno no worker")
-                            yield json.dumps({"type": "error", "content": error_msg}) + "\n"
+                            # O evento de erro pode trazer a mensagem em "error" (exceção do worker)
+                            # OU em "content" (falha de tool emitida pelo runner). Preserva a real.
+                            error_msg = msg_obj.get("error") or msg_obj.get("content") or "Erro interno no worker"
+                            yield json.dumps({"type": "error", "content": error_msg, "recoverable": msg_obj.get("recoverable", False)}) + "\n"
                             finished = True
                             break
                     except (json.JSONDecodeError, AttributeError):
                         pass
-                    
+
                     yield data if data.endswith('\n') else data + '\n'
         finally:
             await pubsub.unsubscribe(channel_name)
+            # Não aborta o job aqui (queda de conexão != cancelamento intencional): o
+            # agente continua rodando no worker ARQ mesmo se o cliente recarregar a
+            # página. Cancelamento explícito (botão "Parar") passa por /cancel/{job_id}.
             if not finished:
-                try:
-                    from arq.jobs import Job
-                    job = Job(job_id, redis)
-                    await job.abort()
-                except Exception:
-                    pass
+                log.info("agent.stream.client_disconnected", job_id=job_id)
 
     return StreamingResponse(streamer(), media_type="application/x-ndjson")
+
+
+@router.post("/chat/cancel/{job_id}")
+async def agent_chat_cancel(job_id: str):
+    """Cancela um job de chat do agente em andamento (botão "Parar").
+
+    Mesmo padrão usado pelo scan de hierarquia (ver jobs.py:stop_scan): seta uma
+    chave de cancelamento no Redis, que o loop do agente checa a cada iteração
+    (cancelamento cooperativo — efetiva no próximo checkpoint), e também tenta
+    abortar o job via ARQ (interrompe de forma mais abrupta se estiver preso numa
+    chamada de LLM/ferramenta longa).
+    """
+    from core.infra.redis_config import redis_settings
+    from arq.connections import create_pool
+    from arq.jobs import Job
+
+    redis = await create_pool(redis_settings)
+    await redis.set(f"job_cancelled_{job_id}", "true", ex=600)
+
+    try:
+        job = Job(job_id, redis=redis)
+        await job.abort()
+    except Exception as abort_err:
+        log.warning("agent.chat.cancel.abort_failed", job_id=job_id, error=str(abort_err))
+
+    return {"job_id": job_id, "status": "cancelled"}
 
 
 @router.post("/confirm")
@@ -176,6 +208,8 @@ async def agent_confirm(payload: AgentConfirmRequest):
     await redis.enqueue_job("resume_agent_task", payload_dict=payload_dict)
 
     async def streamer():
+        yield json.dumps({"type": "job_id", "job_id": job_id}) + "\n"
+
         pubsub = redis.pubsub()
         channel_name = f"agent_updates_{job_id}"
         await pubsub.subscribe(channel_name)
@@ -193,23 +227,20 @@ async def agent_confirm(payload: AgentConfirmRequest):
                             finished = True
                             break
                         if msg_obj.get('type') == 'error':
-                            error_msg = msg_obj.get("error", "Erro interno no worker")
-                            yield json.dumps({"type": "error", "content": error_msg}) + "\n"
+                            # O evento de erro pode trazer a mensagem em "error" (exceção do worker)
+                            # OU em "content" (falha de tool emitida pelo runner). Preserva a real.
+                            error_msg = msg_obj.get("error") or msg_obj.get("content") or "Erro interno no worker"
+                            yield json.dumps({"type": "error", "content": error_msg, "recoverable": msg_obj.get("recoverable", False)}) + "\n"
                             finished = True
                             break
                     except (json.JSONDecodeError, AttributeError):
                         pass
-                    
+
                     yield data if data.endswith('\n') else data + '\n'
         finally:
             await pubsub.unsubscribe(channel_name)
             if not finished:
-                try:
-                    from arq.jobs import Job
-                    job = Job(job_id, redis)
-                    await job.abort()
-                except Exception:
-                    pass
+                log.info("agent.stream.client_disconnected", job_id=job_id)
 
     return StreamingResponse(streamer(), media_type="application/x-ndjson")
 

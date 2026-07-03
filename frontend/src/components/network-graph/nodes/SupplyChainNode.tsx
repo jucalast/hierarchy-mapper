@@ -36,11 +36,13 @@ export const SupplyChainNode = memo(
     return (
       a.id === b.id &&
       a.level === b.level &&
+      a.seniority === b.seniority &&
       a.name === b.name &&
       a.role === b.role &&
       a.matching_score === b.matching_score &&
       a.profile_pic === b.profile_pic &&
-      a.evidence === b.evidence
+      a.evidence === b.evidence &&
+      a.isLoading === b.isLoading
     );
   },
 );

@@ -270,14 +270,14 @@ function ContactAvatar({
 
     if (src && !imgErr) {
         return (
-            <div 
-                className={className} 
-                style={{ 
-                    width: size, 
-                    height: size, 
-                    borderRadius: '50%', 
+            <div
+                className={`${className ?? ''} ${styles.contactAvatarLogo}`}
+                style={{
+                    width: size,
+                    height: size,
+                    borderRadius: '50%',
                     overflow: 'visible', // Permite que o badge apareça fora dos limites circulares
-                    flexShrink: 0, 
+                    flexShrink: 0,
                     border: 'none',
                     position: 'relative',
                     boxSizing: 'border-box'
@@ -655,18 +655,31 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
     const [selectedCallSession, setSelectedCallSession] = useState<any>(null);
 
     const loadCallHistory = useCallback(async () => {
+        // Se o componente recebeu orgId (estamos dentro de uma empresa específica) mas ele
+        // ainda está undefined/null no estado local, aguardamos para não buscar sem filtro
+        // e trazer ligações de outras empresas.
+        if (orgId === undefined) {
+            // orgId prop não informado — componente aberto sem contexto de empresa, ok buscar tudo
+        } else if (orgId === null) {
+            // orgId prop veio explicitamente null — ainda carregando, aborta o fetch
+            setLoadingCalls(false);
+            return;
+        }
         setLoadingCalls(true);
         try {
-            const resp = await communication.fetchCallHistory();
+            console.log("loadCallHistory called with orgId:", orgId);
+            const resp = await communication.fetchCallHistory(orgId);
+            console.log("fetchCallHistory response:", resp);
             if (resp && resp.ok) {
                 setCalls(resp.calls || []);
             }
+
         } catch (err) {
             console.error("Error loading call history:", err);
         } finally {
             setLoadingCalls(false);
         }
-    }, []);
+    }, [orgId]);
 
     const loadContacts = useCallback(async (isSilent = false) => {
         if (!isSilent) {
@@ -1034,7 +1047,7 @@ export function MessagesView({ onBack, orgId }: MessagesViewProps) {
         });
 
         return items;
-    }, [contacts, emailConversations, userEmail]);
+    }, [contacts, emailConversations, userEmail, calls, channelFilter]);
 
     return (
         <div className={styles.container}>

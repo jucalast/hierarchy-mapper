@@ -5,12 +5,18 @@ from __future__ import annotations
 
 from typing import List
 
+import asyncio
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import Employee
 from core.external.groq_service import refine_hierarchy_ai
+from core.infra.redis_config import redis_client
+from core.observability.logging_config import get_logger
 from .filters import get_seniority_level, is_same_person
+
+log = get_logger(__name__)
 
 
 async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
@@ -60,11 +66,42 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
                 if org:
                     org_id = org.id
 
+    # 🔒 Lock distribuído: evita que dois refinamentos concorrentes na mesma org
+    # (ex: discovery e scan terminando quase ao mesmo tempo) façam o DELETE total
+    # um por cima do outro. Se não conseguir o lock, segue sem tocar o banco —
+    # apenas retorna a sugestão da IA para exibição (mesmo fallback de org_id=None).
+    lock_key = f"hierarchy_refine_lock_{org_id}" if org_id else None
+    lock_acquired = True
+    if lock_key and redis_client:
+        try:
+            lock_acquired = bool(await asyncio.to_thread(redis_client.set, lock_key, "1", nx=True, ex=120))
+        except Exception as e:
+            log.warning("hierarchy.refine.lock_check_failed", error=str(e))
+            lock_acquired = True
+        if not lock_acquired:
+            log.info("hierarchy.refine.skipped_concurrent", org_id=org_id)
+            org_id = None
+
     # 2. Carrega todos os funcionários existentes da organização para correspondência fuzzy na memória
-    all_db_emps = []
     if org_id:
+        from sqlalchemy import delete, and_, not_, or_
+        # 🔥 LIMPEZA TOTAL ANTES DE PERSISTIR: Remove tudo da empresa para garantir que o refinamento atual seja a única verdade
+        # Preservamos apenas decisões manuais reais.
+        await db.execute(
+            delete(Employee).where(
+                and_(
+                    Employee.company_id == org_id,
+                    Employee.role.notin_(["Análise Humana", "Não Identificado", "Erro no Processamento", "Professional"])
+                )
+            )
+        )
+        await db.commit()
+        
+        # Agora buscamos o que sobrou (provavelmente nada se for um novo scan limpo)
         res_all = await db.execute(select(Employee).where(Employee.company_id == org_id))
         all_db_emps = res_all.scalars().all()
+    else:
+        all_db_emps = []
 
     def is_real_linkedin(url):
         return url and "linkedin.com/in/" in url and "pd_" not in url and "pipedrive_" not in url
@@ -117,6 +154,16 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
             if emp_db.role in ["Contato no Pipedrive", None, ""] and node.get("role"):
                 emp_db.role = node.get("role")
                 emp_db.department = await get_department_tag(node.get("role"))
+                
+            # Enriquece novos metadados extraídos
+            if not emp_db.description and (node.get("observations") or node.get("description")):
+                emp_db.description = node.get("observations") or node.get("description")
+            if not emp_db.evidence and node.get("evidence"):
+                emp_db.evidence = node.get("evidence")
+            if not emp_db.education and node.get("education"):
+                emp_db.education = node.get("education")
+            if not emp_db.matching_score and node.get("matching_score"):
+                emp_db.matching_score = node.get("matching_score")
         else:
             # Novo funcionário do LinkedIn Scan. Persiste no banco de dados.
             if org_id:
@@ -133,7 +180,12 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
                     location=node.get("location"),
                     company_id=org_id,
                     source="discovery",
-                    is_discovery=1
+                    is_discovery=1,
+                    description=node.get("observations") or node.get("description"),
+                    evidence=node.get("evidence"),
+                    education=node.get("education"),
+                    matching_score=node.get("matching_score"),
+                    headline=node.get("headline")
                 )
                 db.add(new_emp)
                 await db.flush() # Gera o id para mapear o nó efêmero
@@ -168,6 +220,11 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
                 final_manager_id = "root_company" if original_id != "root_company" else None
 
             node["level"] = new_level
+            # O frontend (PersonaCard/SupplyChainNode) decide a cor do card priorizando
+            # "seniority" sobre "level" — sem sincronizar os dois aqui, o card volta pro
+            # frontend com o "level" novo mas o "seniority" antigo (do node de entrada),
+            # e a cor não reflete o resultado do refino.
+            node["seniority"] = new_level
             node["manager_id"] = final_manager_id
 
             # 4. Atualiza hierarquia e seniority de cada registro no banco
@@ -213,6 +270,12 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
 
     if org_id:
         await db.commit()
+
+    if lock_key and redis_client and lock_acquired:
+        try:
+            await asyncio.to_thread(redis_client.delete, lock_key)
+        except Exception:
+            pass
 
     return {"nodes": updated_nodes}
 

@@ -12,7 +12,7 @@ Campos relevantes para regras de negócio:
     source       → 'pipedrive' | 'discovery' | 'manual'
     matching_score → relevância ICP calculada pelo qualifier
 """
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -31,6 +31,7 @@ class Employee(Base):
     linkedin_url = Column(String, unique=True, index=True)
     profile_pic = Column(Text, nullable=True)
     email = Column(String, nullable=True, index=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
     description = Column(Text, nullable=True)
     location = Column(String, nullable=True)
     phone = Column(String, nullable=True, index=True)
@@ -48,7 +49,7 @@ class Employee(Base):
     education = Column(Text, nullable=True)
     headline = Column(String, nullable=True)
     is_discovery = Column(Integer, default=0, index=True)
-    source = Column(String, default="pipedrive", index=True)
+    source = Column(String, default="discovery", index=True)
     last_scanned = Column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )

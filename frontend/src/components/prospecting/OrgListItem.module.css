@@ -282,3 +282,41 @@
     color: var(--sw-text-muted);
     margin-left: 8px;
 }
+
+/* Mapping in background indicator */
+.mappingOrgItem {
+    box-shadow: inset 3px 0 0 0 rgb(122, 139, 255) !important;
+}
+
+.mappingBadge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: rgb(122, 139, 255);
+    animation: mappingPulse 2s ease-in-out infinite;
+}
+
+@keyframes mappingPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+}
+
+.mappingDot {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgb(122, 139, 255);
+    border: 2px solid var(--sw-sidebar);
+    animation: mappingDotPulse 1.5s ease-in-out infinite;
+    z-index: 5;
+}
+
+@keyframes mappingDotPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(122, 139, 255, 0.6); }
+    50% { box-shadow: 0 0 0 4px rgba(122, 139, 255, 0); }
+}

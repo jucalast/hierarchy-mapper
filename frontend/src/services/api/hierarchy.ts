@@ -47,11 +47,11 @@ export function fetchHierarchy(payload: FetchHierarchyPayload) {
   );
 }
 
-export function refineHierarchy(employees: HierarchyEmployee[]) {
+export function refineHierarchy(employees: HierarchyEmployee[], options?: { signal?: AbortSignal }) {
   return api.post<{ nodes?: HierarchyEmployee[] }>(
     '/hierarchy/refine',
     employees,
-    { timeout: TIMEOUTS.long },
+    { timeout: TIMEOUTS.long, signal: options?.signal },
   );
 }
 
@@ -110,6 +110,50 @@ export function confirmIntelligence(payload: ConfirmIntelligencePayload) {
     local_id?: number;
     pipedrive_id?: number;
   }>('/intelligence/confirm', payload);
+}
+
+export interface StartLinkedinScrapePayload {
+  companyUrl: string;
+  sessionCookie?: string;
+  headless?: boolean;
+  areaFocus?: string;
+  productFocus?: string;
+  model?: string;
+}
+
+/** Enfileira o scraping do LinkedIn como background job — sobrevive a reload de página. */
+export function startLinkedinScrape(payload: StartLinkedinScrapePayload) {
+  const qs = new URLSearchParams();
+  qs.append('company_url', payload.companyUrl);
+  if (payload.sessionCookie) qs.append('session_cookie', payload.sessionCookie);
+  qs.append('headless', String(payload.headless ?? true));
+  if (payload.areaFocus) qs.append('area_focus', payload.areaFocus);
+  if (payload.productFocus) qs.append('product_focus', payload.productFocus);
+  if (payload.model) qs.append('model', payload.model);
+  return api.post<{ job_id: string; status?: string }>(
+    `/hierarchy/linkedin-scrape/start?${qs.toString()}`
+  );
+}
+
+export function interactLinkedinScrape(
+  jobId: string,
+  action: 'click' | 'type' | 'press',
+  params: { x?: number; y?: number; text?: string; key?: string } = {}
+) {
+  const qs = new URLSearchParams({ job_id: jobId, action });
+  if (params.x !== undefined) qs.append('x', String(params.x));
+  if (params.y !== undefined) qs.append('y', String(params.y));
+  if (params.text !== undefined) qs.append('text', params.text);
+  if (params.key !== undefined) qs.append('key', params.key);
+  return api.post<{ status: string; message: string }>(
+    `/hierarchy/linkedin-scrape/interact?${qs.toString()}`
+  );
+}
+
+export function stopLinkedinScrape(jobId: string) {
+  return api.post<{ status: string; message: string }>(
+    `/hierarchy/linkedin-scrape/stop?job_id=${encodeURIComponent(jobId)}`
+  );
 }
 
 export function enrichIntelligence(params: { name?: string; cnpj: string; force?: boolean }) {

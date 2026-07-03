@@ -24,7 +24,14 @@ async def _resolve_wa_chat(client: httpx.AsyncClient, contact: str, phone: str =
     phone_digits = re.sub(r'\D', '', phone) if phone else ""
     # Normaliza org_name removendo espaços E acentos para comparar com nomes colados
     # (ex: "Master Sense" → "mastersense" para bater com "mastersense" no nome do chat)
-    org_clean = _remove_diacritics(org_name).replace(" ", "") if org_name else ""
+    org_clean = _remove_diacritics(org_name).replace(" ", "").lower() if org_name else ""
+
+    def _name_has_org(name: str) -> bool:
+        """Verifica se o nome do chat contém org_clean como palavra inteira."""
+        if not org_clean:
+            return False
+        clean = _remove_diacritics(name).replace(" ", "").lower()
+        return org_clean in clean
 
     try:
         r = await client.get(f"{WA_BASE}/chats", timeout=10.0)
@@ -94,11 +101,10 @@ async def _resolve_wa_chat(client: httpx.AsyncClient, contact: str, phone: str =
 
             # 2. Busca por nome (em chats ativos)
             term = contact.lower()
-            matches = [c for c in all_chats if term in (c.get("name") or "").lower()]
-
-            def _name_has_org(name: str) -> bool:
-                """Verifica se o nome do chat contém o org_clean (sem espaços para cobrir variações)."""
-                return org_clean in _remove_diacritics(name).replace(" ", "")
+            # Match requer limite de palavra para evitar falsos positivos por substring
+            # (ex: "Dva" não deve casar com "Edvaldo" porque "dva" é interior de palavra)
+            _term_re = re.compile(r'(?<!\w)' + re.escape(term) + r'(?!\w)')
+            matches = [c for c in all_chats if _term_re.search((c.get("name") or "").lower())]
 
             # Se temos nome da empresa, prioriza quem tem o nome da empresa no chat
             if org_clean and matches:
@@ -147,6 +153,14 @@ async def _resolve_wa_chat(client: httpx.AsyncClient, contact: str, phone: str =
                 return _chat_id_str(best), best.get("name", contact)
 
         # 🔍 Fallback: Busca nos CONTATOS cadastrados por nome
+        def _return_best_contact(best_contact: dict, fallback_name: str) -> tuple[str, str]:
+            chat_id = _chat_id_str(best_contact)
+            cid_num = chat_id.split("@")[0] if "@" in chat_id else chat_id
+            is_lid_like = "@lid" in chat_id or (cid_num.isdigit() and len(cid_num) > 13)
+            if is_lid_like and "@" not in chat_id:
+                chat_id = f"{cid_num}@lid"
+            return chat_id, best_contact.get("name") or fallback_name
+
         try:
             c_resp = await client.get(f"{WA_BASE}/contacts/search", params={"name": contact, "minSimilarity": 0.8}, timeout=5.0)
             if c_resp.status_code == 200:
@@ -158,20 +172,32 @@ async def _resolve_wa_chat(client: httpx.AsyncClient, contact: str, phone: str =
                     if org_contacts: contacts_list = org_contacts
 
                 if contacts_list:
-                    best_contact = contacts_list[0]
-                    chat_id = _chat_id_str(best_contact)
-
-                    cid_num = chat_id.split("@")[0] if "@" in chat_id else chat_id
-                    is_lid_like = "@lid" in chat_id or (cid_num.isdigit() and len(cid_num) > 13)
-                    if is_lid_like:
-                        # Contato usa LID — mantém @lid para leitura.
-                        # Mensagens ficam armazenadas sob o LID, não sob o número @c.us.
-                        if "@" not in chat_id:
-                            chat_id = f"{cid_num}@lid"
-                    found_name = best_contact.get("name") or contact
-                    return chat_id, found_name
+                    return _return_best_contact(contacts_list[0], contact)
         except Exception:
             pass
+
+        # 🔍 Fallback por primeiro nome + empresa: cobre contatos salvos como
+        # "Vinicius Oliveira Flyer" quando o nome CRM é "Vinicius Gustavo Dela Coleta".
+        # Contatos são frequentemente salvos com sobrenome da empresa no WhatsApp.
+        if org_clean:
+            first_name = contact.strip().split()[0] if contact.strip() else ""
+            if first_name and len(first_name) >= 3:
+                try:
+                    fb_resp = await client.get(
+                        f"{WA_BASE}/contacts/search",
+                        params={"name": first_name, "minSimilarity": 0.6},
+                        timeout=5.0,
+                    )
+                    if fb_resp.status_code == 200:
+                        fb_data = fb_resp.json()
+                        fb_list = fb_data if isinstance(fb_data, list) else fb_data.get("contacts") or []
+                        # Filtra apenas quem tem o nome da empresa no nome do contato
+                        org_hits = [c for c in fb_list if _name_has_org(c.get("name") or "")]
+                        if org_hits:
+                            print(f"[WA Resolver] Fallback primeiro-nome+empresa: '{first_name}'+'{org_clean}' → '{org_hits[0].get('name')}'")
+                            return _return_best_contact(org_hits[0], contact)
+                except Exception:
+                    pass
 
         return None, ""
     except Exception:
@@ -445,7 +471,35 @@ async def _extract_org_domain(org_name: str, org_id: int | None = None) -> str |
             if pd_domain and not pd_domain.endswith(seller_domain) and pd_domain not in INVALID_DOMAINS:
                 return pd_domain
 
-        # 3. Fallback: Busca via contatos no Pipedrive
+        # 3. Fallback: domínio mais frequente nos employees do banco local
+        try:
+            from models.people.employee import Employee
+            from models.organization import Organization as Org
+            from collections import Counter
+            async with async_session() as session:
+                local_org = await session.execute(
+                    select(Org.id).where(Org.pipedrive_id == org_id)
+                )
+                local_org_id = local_org.scalar()
+                if local_org_id:
+                    emps = await session.execute(
+                        select(Employee.email)
+                        .where(Employee.company_id == local_org_id)
+                        .where(Employee.email.isnot(None))
+                    )
+                    domains = [
+                        e[0].split("@")[1].lower()
+                        for e in emps.all()
+                        if e[0] and "@" in e[0]
+                        and e[0].split("@")[1].lower() not in INVALID_DOMAINS
+                        and not e[0].split("@")[1].lower().endswith(seller_domain)
+                    ]
+                    if domains:
+                        return Counter(domains).most_common(1)[0][0]
+        except Exception:
+            pass
+
+        # 4. Último recurso: primeiro email de contato no Pipedrive
         from modules.crm.service.pipedrive_service import pipedrive_service
         details = await pipedrive_service.get_organization_details(org_id)
         for p in (details.get("persons") or []):

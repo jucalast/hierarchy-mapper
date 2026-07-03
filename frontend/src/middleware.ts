@@ -4,6 +4,11 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const isAuthPage = request.nextUrl.pathname.startsWith('/login');
+  const isDevPage = request.nextUrl.pathname.startsWith('/dev-components');
+
+  if (isDevPage) {
+    return NextResponse.next();
+  }
 
   if (!token) {
     if (!isAuthPage) {

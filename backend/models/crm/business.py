@@ -9,9 +9,9 @@ Classes:
     ReferenceClient  -- cliente de referencia com segmento e dor resolvida
 """
 import uuid
-from sqlalchemy import Column, String, Text, ForeignKey, JSON
+from sqlalchemy import Column, String, Text, ForeignKey
 from sqlalchemy.orm import relationship
-from core.infra.database import Base
+from core.infra.database import Base, SafeJSON
 
 class BusinessProfile(Base):
     __tablename__ = "business_profiles"
@@ -19,9 +19,9 @@ class BusinessProfile(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     tenant_id = Column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
     segment = Column(String) # Ex: Embalagens Manuais
-    differentials = Column(JSON) # List of strings
+    differentials = Column(SafeJSON) # List of strings
     methodology = Column(Text) # Guia de prospecção do agente
-    value_propositions = Column(JSON) # Dictionary of value propositions
+    value_propositions = Column(SafeJSON) # Dictionary of value propositions
     presentation_path = Column(String) # Caminho para o PDF de apresentação
     signature_path = Column(String) # Caminho para a imagem de assinatura
 
@@ -34,7 +34,7 @@ class Product(Base):
     tenant_id = Column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
     name = Column(String, nullable=False)
     description = Column(Text)
-    use_cases = Column(JSON) # List of strings
+    use_cases = Column(SafeJSON) # List of strings
 
     tenant = relationship("Tenant", back_populates="products")
 

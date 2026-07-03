@@ -18,7 +18,7 @@ interface FocusedOrgViewProps {
     setEditingNameOrgId: (id: number | null) => void;
     handleRenameOrg: (orgId: number) => Promise<void>;
     handleUpdateOrg: (orgId: number, data: Record<string, any>) => Promise<void>;
-    scanningOrgId: number | null;
+    scanningOrgIds: number[];
     selectedOrgId?: number | null;
     selectedOrgLogo?: string;
     graphEmployees?: any[];
@@ -26,7 +26,7 @@ interface FocusedOrgViewProps {
     onSaveToPipedrive?: (person: any) => Promise<void> | void;
     onUpdateInPipedrive?: (person: any) => Promise<void> | void;
     onDeleteFromPipedrive?: (person: any) => Promise<void> | void;
-    onDiscoverEmail?: (person: any) => Promise<void> | void;
+    onEmailDiscovered?: (person: any, email: string) => Promise<void> | void;
 }
 
 
@@ -44,7 +44,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
     setEditingNameOrgId,
     handleRenameOrg,
     handleUpdateOrg,
-    scanningOrgId,
+    scanningOrgIds,
     selectedOrgId,
     selectedOrgLogo,
     graphEmployees = [],
@@ -52,32 +52,91 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
     onSaveToPipedrive,
     onUpdateInPipedrive,
     onDeleteFromPipedrive,
-    onDiscoverEmail
+    onEmailDiscovered
 }) => {
-    const rawLinkedinUrl = focusedOrg?.linkedin || 
-                           focusedOrg?.linkedin_url || 
-                           orgDetails[expandedOrgId]?.linkedin_url || 
-                           orgDetails[expandedOrgId]?.org?.linkedin_url || 
-                           orgDetails[expandedOrgId]?.org?.linkedin;
+    const rawUrls = [
+        focusedOrg?.linkedin,
+        focusedOrg?.linkedin_url,
+        orgDetails[expandedOrgId]?.linkedin_url,
+        orgDetails[expandedOrgId]?.org?.linkedin_url,
+        orgDetails[expandedOrgId]?.org?.linkedin
+    ];
+    const rawLinkedinUrl = rawUrls.find(url => typeof url === 'string' && url.includes('linkedin.com/'));
     
-    const linkedinUrl = rawLinkedinUrl || (focusedOrg?.name ? `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(focusedOrg.name)}` : undefined);
-    const linkedinTitle = rawLinkedinUrl ? "Ver no LinkedIn" : `Pesquisar "${focusedOrg?.name || 'Empresa'}" no LinkedIn`;
+    const linkedinUrl = rawLinkedinUrl || null;
+    const linkedinTitle = "Ver no LinkedIn";
 
 
+
+    const [isBatchValidating, setIsBatchValidating] = React.useState(false);
+
+    const cachedPhoto = orgDetails[expandedOrgId]?.photo_url ?? null;
+    const [photoUrl, setPhotoUrl] = React.useState<string | null>(cachedPhoto);
+
+    React.useEffect(() => {
+        const fromCache = orgDetails[expandedOrgId]?.photo_url ?? null;
+        if (fromCache) {
+            setPhotoUrl(fromCache);
+            return;
+        }
+        setPhotoUrl(null);
+        const orgId = focusedOrg?.local_id || focusedOrg?.id || expandedOrgId;
+        if (!orgId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const { organizations } = await import('@/services/api');
+                const res = await organizations.getOrganizationPhoto(orgId);
+                if (!cancelled && res?.photo_url) setPhotoUrl(res.photo_url);
+            } catch { /* foto é opcional */ }
+        })();
+        return () => { cancelled = true; };
+    }, [expandedOrgId, orgDetails]);
+
+    const handleBatchValidateEmails = async () => {
+        setIsBatchValidating(true);
+        try {
+            const orgId = focusedOrg.local_id || focusedOrg.id || expandedOrgId;
+            const { organizations } = await import('@/services/api');
+            const res = await organizations.batchValidateEmails(orgId);
+            if (res.ok) {
+                window.dispatchEvent(new CustomEvent('crm_notification', {
+                    detail: { type: 'success', message: 'Validação iniciada! Os e-mails serão atualizados em instantes.' }
+                }));
+                // Backend processa em background (~30s). Mantém animação e dispara refresh ao final.
+                setTimeout(() => {
+                    setIsBatchValidating(false);
+                    window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                }, 35000);
+            } else {
+                setIsBatchValidating(false);
+            }
+        } catch (error) {
+            console.error('Erro ao iniciar validação em lote:', error);
+            window.dispatchEvent(new CustomEvent('crm_notification', {
+                detail: { type: 'error', message: 'Erro ao iniciar validação de e-mails.' }
+            }));
+            setIsBatchValidating(false);
+        }
+    };
 
     return (
         <div className={styles.focusedOrgView}>
-            <div className={styles.focusedOrgHero}>
-                <div className={styles.focusedOrgLogoWrapper}>
+            <div
+                className={`${styles.focusedOrgHero}${photoUrl ? ' ' + styles.focusedOrgHeroWithPhoto : ''}`}
+                style={photoUrl ? { backgroundImage: `url("${photoUrl}")` } : undefined}
+            >
+                {photoUrl && <div className={styles.focusedOrgHeroOverlay} aria-hidden="true" />}
+                <div className={styles.focusedOrgLogoWrapper} style={photoUrl ? { position: 'relative', zIndex: 1 } : undefined}>
                     <Avatar
                         kind="company"
-                        src={focusedOrg.logo || (Number(focusedOrg.id) === selectedOrgId || Number(focusedOrg.local_id) === selectedOrgId ? selectedOrgLogo : undefined)}
+                        src={focusedOrg.logo || (Number(focusedOrg.id) === selectedOrgId ? selectedOrgLogo : undefined)}
                         name={focusedOrg.name}
                         data={focusedOrg}
                         size={48}
                     />
                 </div>
-                <div className={styles.focusedOrgIdentity}>
+                <div className={styles.focusedOrgIdentity} style={photoUrl ? { position: 'relative', zIndex: 1 } : undefined}>
                     {editingNameOrgId === expandedOrgId ? (
                         <input
                             type="text"
@@ -103,7 +162,14 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                 setEditingNameValue(focusedOrg.name);
                             }}
                             title="Clique duas vezes para renomear"
-                            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', width: '100%', overflow: 'hidden' }}
+                            style={{
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                overflow: 'hidden',
+                            }}
                         >
                             <span style={{ 
                                 whiteSpace: 'nowrap', 
@@ -144,7 +210,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                     Tier {orgDetails[expandedOrgId].icp_tier} • {orgDetails[expandedOrgId].icp_score}%
                                 </Badge>
                             )}
-                            {scanningOrgId === expandedOrgId && (
+                            {expandedOrgId !== null && scanningOrgIds.includes(expandedOrgId) && (
                                 <Spinner size={16} inline color="var(--sw-primary)" />
                             )}
                         </h2>
@@ -205,6 +271,22 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                             {activeTab === 'persons' && (
                                 <ContactList
                                     orgName={focusedOrg.name}
+                                    genericContacts={(() => {
+                                        const domain: string | undefined =
+                                            orgDetails[expandedOrgId]?.org?.domain ||
+                                            focusedOrg?.domain;
+                                        const mapsPhone: string | undefined =
+                                            orgDetails[expandedOrgId]?.org?.maps_phone || undefined;
+                                        const gc: { id: string; email?: string; phone?: string; label: string }[] = [];
+                                        if (domain) {
+                                            gc.push({ id: 'gc_compras', email: `compras@${domain}`, label: 'compras' });
+                                            gc.push({ id: 'gc_suprimentos', email: `suprimentos@${domain}`, label: 'suprimentos' });
+                                        }
+                                        if (mapsPhone) {
+                                            gc.push({ id: 'gc_maps', phone: mapsPhone, label: 'google_maps' });
+                                        }
+                                        return gc;
+                                    })()}
                                     persons={(() => {
                                         const pipedrivePersons = orgDetails[expandedOrgId]?.persons || [];
                                         const validEmps = graphEmployees.filter(emp => {
@@ -223,6 +305,7 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                         const merged = [];
                                         const seenPipedriveIds = new Set();
                                         const mappedByName = new Map();
+                                        const mappedById = new Map();
 
                                         for (const p of pipedrivePersons) {
                                             if (!p.id || seenPipedriveIds.has(p.id)) continue;
@@ -232,23 +315,31 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                             const personItem = {
                                                 ...p,
                                                 sources: ['pipedrive'],
-                                                emp_id: validEmps.find(e => e.name?.trim().toLowerCase() === nameKey)?.id
+                                                emp_id: validEmps.find(e => (e.pipedrive_id && Number(e.pipedrive_id) === Number(p.id)) || (e.name?.trim().toLowerCase() === nameKey))?.id
                                             };
                                             merged.push(personItem);
                                             if (nameKey) {
                                                 mappedByName.set(nameKey, personItem);
                                             }
+                                            mappedById.set(Number(p.id), personItem);
                                         }
 
                                         for (const emp of validEmps) {
                                             const nameKey = emp.name ? emp.name.trim().toLowerCase() : '';
-                                            if (nameKey && mappedByName.has(nameKey)) {
-                                                const existing = mappedByName.get(nameKey);
+                                            const pidMatch = emp.pipedrive_id ? mappedById.get(Number(emp.pipedrive_id)) : null;
+                                            const existing = pidMatch || (nameKey && mappedByName.has(nameKey) ? mappedByName.get(nameKey) : null);
+                                            
+                                            if (existing) {
                                                 if (!existing.profile_pic && (emp.profile_pic || emp.avatar)) {
                                                     existing.profile_pic = emp.profile_pic || emp.avatar;
                                                 }
                                                 if (!existing.job_title && (emp.role || emp.title)) {
                                                     existing.job_title = emp.role || emp.title;
+                                                }
+                                                if (!existing.name && emp.name) {
+                                                    existing.name = emp.name;
+                                                } else if (existing.name && emp.name && emp.name.length > existing.name.length) {
+                                                    existing.name = emp.name;
                                                 }
                                                 // Merge local email and phone if available
                                                 let hasPipedriveEmail = false;
@@ -285,7 +376,8 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                                     id: `mapped_${emp.id}`,
                                                     name: emp.name,
                                                     job_title: emp.role || emp.title || 'Cargo não informado',
-                                                    email: emp.email ? [{ value: emp.email, primary: true }] : undefined,
+                                                    email: emp.email ? [{ value: emp.email, primary: true, label: emp.email_verified ? 'verified' : undefined }] : undefined,
+                                                    email_verified: !!emp.email_verified,
                                                     phone: emp.phone ? [{ value: emp.phone, primary: true }] : undefined,
                                                     sources: ['mapped'],
                                                     linkedin: emp.linkedin,
@@ -300,7 +392,10 @@ export const FocusedOrgView: React.FC<FocusedOrgViewProps> = ({
                                     onSaveToPipedrive={onSaveToPipedrive}
                                     onUpdateInPipedrive={onUpdateInPipedrive}
                                     onDeleteFromPipedrive={onDeleteFromPipedrive}
-                                    onDiscoverEmail={onDiscoverEmail}
+                                    onEmailDiscovered={onEmailDiscovered}
+                                    onBatchValidateEmails={handleBatchValidateEmails}
+                                    isBatchValidating={isBatchValidating}
+                                    orgId={expandedOrgId}
                                 />
                             )}
 

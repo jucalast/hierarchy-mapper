@@ -20,7 +20,7 @@
 :root {
   /* CENTRAL FONT SYSTEM */
   --font-primary: SF Pro Rounded, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "JetBrains Mono", "Fira Code", monospace;
 
   /* CENTRAL TYPOGRAPHY SCALE */
   --font-xs: 15px;
@@ -49,9 +49,16 @@
   --sw-text-base: #e4e4e7;
   --sw-text-subtle: #a1a1aa;
   --sw-text-muted: #71717a;
-  --sw-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-  --sw-border-width: 1.5px;
   --sw-map-filter: brightness(1.2) contrast(0.9) grayscale(0.2);
+
+  /* Terminal Colors */
+  --terminal-system: #818cf8;
+  --terminal-success: #34d17c;
+  --terminal-info: #60a5fa;
+  --terminal-warning: #f59e0b;
+  --terminal-error: #ef4444;
+  --terminal-muted: #71717a;
+  --terminal-text: #e4e4e7;
 
   /* Graph Purple Themes */
   --sw-graph-purple-bg: #0c0d0e;   /* Neutral Dark */
@@ -68,18 +75,70 @@
   --sw-status-danger: #ef4444;
   --sw-status-info: #60a5fa;
 
-  /* DESIGN TOKENS */
-  --radius-sm: 8px;
-  --radius-md: 12px;
+  /* DESIGN TOKENS - BORDER RADII */
+  /* Referência: o floating toolbar (Toolbar.module.css), que já definia dois
+     raios de propósito — caixas/containers (.refineTab, .optionsContainer) em
+     --radius-lg (16px) e botões (.toolbarSegment, .areaBtn, .detectBtn) em
+     8px (--radius-sm). --radius-md (12px) segue independente: é usado por
+     vários painéis/cards/modais (ConfirmModal, notificações, scheduler etc.)
+     que não são botões — colapsar ele em --radius-sm encolheria esses
+     componentes sem necessidade. --radius-xs aponta pra --radius-sm porque,
+     em todo uso encontrado, já era badge/botão minúsculo.
+     --radius-full (círculo) fica de fora de propósito: avatares, botões de
+     fechar redondos etc. continuam circulares. */
   --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-xs: var(--radius-sm);
+  --radius-xl: 24px;
+  --radius-full: 9999px;
 
+  /* DESIGN TOKENS - ICON SIZES */
+  --icon-xs: 12px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 32px;
   --icon-sidebar: 20px;
   --icon-input: 16px;
   --icon-card-main: 20px;
   --icon-card-sub: 12px;
 
+  /* DESIGN TOKENS - SPACING SCALE (Margens e Paddings) */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+
+  /* BORDER WIDTHS */
+  --border-width-sm: 1px;
+  --border-width-md: 1.5px;
+  --border-width-lg: 2px;
+
+  /* TRANSITIONS */
   --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* GLOBAL SHADOWS */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.5);
+
+  /* LAYOUT DIMENSIONS */
+  --sidebar-width: 56px;
+  --header-height: 48px;
+  --chat-panel-width: 420px;
 }
 
 [data-theme='light'] {
@@ -100,8 +159,16 @@
   --sw-text-base: #09090b;
   --sw-text-subtle: #374151;
   --sw-text-muted: #6b7280;
-  --sw-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.08);
   --sw-map-filter: brightness(0.92) contrast(0.95) grayscale(0.2);
+
+  /* Terminal Colors - Light Mode */
+  --terminal-system: #4f46e5;
+  --terminal-success: #16a34a;
+  --terminal-info: #2563eb;
+  --terminal-warning: #d97706;
+  --terminal-error: #dc2626;
+  --terminal-muted: #6b7280;
+  --terminal-text: #09090b;
 
   /* Graph Purple Themes - Unified with Dark Mode */
   --sw-graph-purple-bg: #ffffff;   /* Neutral Light */
@@ -117,6 +184,12 @@
   --sw-status-warning: #d97706;
   --sw-status-danger: #dc2626;
   --sw-status-info: #2563eb;
+
+  /* GLOBAL SHADOWS - LIGHT MODE */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.15);
 }
 
 * {

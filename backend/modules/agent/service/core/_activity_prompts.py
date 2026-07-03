@@ -70,7 +70,7 @@ def _build_task_action_prompt(act_id: Any, subject: str, org: str, org_pd_id: An
         f"REGRAS DE OURO:\n"
         f"  1. PROIBIDO questionar ou pedir confirmação sobre o nome da empresa '{org}'. Ele é um fato absoluto do CRM.\n"
         f"  2. Se `evaluate_prospects` identificar um decisor (ICP) melhor que o contato da tarefa, VOCÊ DEVE priorizar a abordagem para esse novo decisor. Gere a mensagem para ele imediatamente e explique o motivo no seu raciocínio.\n"
-        f"  3. (CRÍTICO) VALIDAÇÃO DE E-MAIL: Antes de enviar um e-mail, se o endereço for desconhecido, parecer inválido ou for um padrão genérico, você DEVE obrigatoriamente usar `discover_and_validate_email` para encontrar o padrão correto (ex: seu.nome@empresa.com.br) e validar o DNS.\n"
+        f"  3. VALIDAÇÃO DE E-MAIL (CONDICIONAL): Se o contato JÁ tiver `email_validated: true` no resultado de `pipedrive_get_persons`, USE esse email diretamente sem chamar `discover_and_validate_email`. Só chame `discover_and_validate_email` se o contato não tiver email ou tiver `email_validated: false`.\n"
         f"  4. Use apenas dados reais retornados pelas ferramentas — nunca invente nomes, números ou histórico.\n"
         f"  5. Para ações externas (enviar mensagem, marcar concluído), apresente ao {seller_name.split()[0]} e aguarde aprovação.\n"
         f"  6. Não marque a atividade #{act_id} como concluída a menos que seja o objetivo explícito da tarefa.\n\n"

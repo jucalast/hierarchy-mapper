@@ -366,7 +366,30 @@ class HierarchyScanService:
                 # 2. NAVEGAR PARA A PÁGINA DE PESSOAS
                 log.info("hierarchy_scan.navigate_target", url=company_url)
                 print(f"\n🚀 [Terminal Scraper] Navegando para a aba de pessoas: {company_url}")
-                await page.goto(company_url, wait_until="load")
+                
+                # Usa domcontentloaded (mais rápido que 'load') e timeout de 60s
+                # LinkedIn é uma SPA pesada — 'load' pode nunca disparar por lazy scripts
+                nav_ok = False
+                for nav_attempt in range(2):
+                    try:
+                        await page.goto(company_url, wait_until="domcontentloaded", timeout=60000)
+                        nav_ok = True
+                        break
+                    except Exception as nav_err:
+                        log.warning("hierarchy_scan.goto_retry", attempt=nav_attempt + 1, error=str(nav_err))
+                        print(f"   ⚠️ [Terminal Scraper] Timeout na navegação (tentativa {nav_attempt + 1}/2). Aguardando e tentando novamente...")
+                        await asyncio.sleep(3)
+                
+                if not nav_ok:
+                    # Último recurso: tenta com networkidle e timeout mais longo
+                    try:
+                        await page.goto(company_url, wait_until="networkidle", timeout=90000)
+                        nav_ok = True
+                    except Exception as final_err:
+                        log.error("hierarchy_scan.goto_failed", error=str(final_err))
+                        print("   ❌ [Terminal Scraper] Falha ao carregar a página após 3 tentativas. Encerrando.")
+                        return []
+                
                 await self._save_preview(page)
                 
                 # Aguarda carregamento de elementos estruturais da aba de pessoas
@@ -379,6 +402,7 @@ class HierarchyScanService:
                     print("   ⚠️ [Terminal Scraper] Aba demorou para responder. Iniciando expansão direta...")
 
                 await self._save_preview(page)
+
 
                 # 3. LOOP "INCANSÁVEL" DE ROLAGEM E CLIQUES NO BOTÃO "EXIBIR MAIS"
                 click_count = 0

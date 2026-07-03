@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ApprovalAction } from '../ChatInterfaces';
 import { WhatsAppThreadCard, EmailThreadCard } from './CommunicationModules';
-import styles from '../ChatPanel.module.css';
+import styles from '../styles/ChatPanel.module.css';
 import * as ai from '../../../services/api/ai';
 
 interface ActionApprovalProps {

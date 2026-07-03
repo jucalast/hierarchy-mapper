@@ -2,7 +2,7 @@ import React from 'react';
 import {
     Mail, ExternalLink, CheckCheck, User2, Reply, Send, XCircle, Loader2, ShieldCheck, CornerDownLeft, Wand2
 } from 'lucide-react';
-import styles from '../ChatPanel.module.css';
+import styles from '../styles/ChatPanel.module.css';
 
 interface ThreadCardProps {
     type: 'whatsapp' | 'email';
