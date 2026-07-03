@@ -32,7 +32,7 @@
   gap: 5px;
   padding: 6px 10px;
   border: none;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--sw-text-muted);
   font-size: var(--font-xs);
@@ -98,7 +98,7 @@
   color: inherit;
   cursor: pointer;
   padding: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;

@@ -85,7 +85,7 @@
     left: 16px;
     background: var(--sw-sidebar);
     border: var(--sw-border-width) solid var(--sw-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     box-shadow: var(--sw-shadow);
     overflow: hidden;
     padding: 2px;
@@ -97,8 +97,8 @@
 
 .graphWrapper :global(.react-flow__controls-button) {
     background: transparent;
-    border: none;
-    border-bottom: var(--sw-border-width) solid var(--sw-border);
+    border: var(--sw-border-width) solid transparent;
+    border-radius: var(--radius-sm);
     color: var(--sw-text-muted);
     fill: currentColor;
     transition: var(--transition-fast);
@@ -107,15 +107,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.graphWrapper :global(.react-flow__controls-button:last-child) {
-    border-bottom: none;
+    margin: 1px;
 }
 
 .graphWrapper :global(.react-flow__controls-button:hover) {
     background: var(--sw-hover);
+    border-color: var(--sw-border);
     color: var(--sw-text-base);
+}
+
+/* Estado "Analista de IA" analisando — mesmo padrão visual do botão "Parar"
+   da Floating Toolbar (fundo/texto vermelho + ícone girando via .loadingAnim) */
+.aiAnalyzing,
+.aiAnalyzing:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: var(--sw-status-danger) !important;
+    cursor: default;
 }
 
 .graphWrapper :global(.react-flow__controls-button svg) {

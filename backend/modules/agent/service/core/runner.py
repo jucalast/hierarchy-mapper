@@ -38,14 +38,24 @@ def filter_tools_for_direct_action(all_tools, msg_text):
     }
     
     _ALWAYS_AVAILABLE_IN_TASK = _CTX_TOOLS | {
-        "open_hierarchy_drawer", "pipedrive_create_task",
+        "pipedrive_create_task",
         # pipedrive_create_task e pipedrive_update_deal podem falhar pedindo para resolver
         # um person_id passado por nome — o agente precisa de pipedrive_create_person
         # disponível para cadastrar o contato e refazer a ação na mesma execução, mesmo que
         # a mensagem original (usada para filtrar as tools deste turno) não a mencione.
         "pipedrive_create_person",
-        *( set() if _is_followup_task else {"prepare_live_coaching_session"} ),
+        # OBRIGATÓRIO em toda ação pontual (ver SYSTEM_PROMPT_TASK_DIRECTIVE: "Fim de Turno
+        # OBRIGATÓRIO: Chame suggest_next_actions"). Sem isso na lista, o modelo não tem como
+        # cumprir essa regra e acaba chamando outra ferramenta qualquer para "fechar" o turno.
+        "suggest_next_actions",
     }
+    # open_hierarchy_drawer e prepare_live_coaching_session são ações de alto impacto (abrem
+    # telas/UI) que só fazem sentido quando o próprio pedido pontual é sobre isso — não são
+    # ferramentas de "contexto"/"recuperação de erro" como as acima. Deixá-las sempre
+    # disponíveis já causou o agente decidir sozinho, no meio de um card não relacionado
+    # (ex: "marcar tarefa concluída"), preparar uma ligação e abrir o mapeador de hierarquia
+    # para uma atividade que ninguém pediu. Só entram na lista se a própria mensagem pedir
+    # (via `matched_tools` abaixo, que checa o nome literal da ferramenta na mensagem).
     from modules.agent.service.tools import TOOLS
     matched_tools = [name for name in TOOLS.keys() if name in msg_text]
     if matched_tools:
@@ -192,6 +202,7 @@ async def run_agent(
     parent_message_id: str | None = None,
     action_index: int | None = None,
     is_regeneration: bool = False,
+    job_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Gerador assíncrono — yields strings NDJSON.
@@ -278,7 +289,11 @@ async def run_agent(
 
     tools = get_tools_anthropic_schema()
     if direct_action:
-        tools = filter_tools_for_direct_action(tools, message)
+        # Inclui também o texto das instruções de pipeline injetadas acima (ex: SearchPipeline
+        # menciona `open_hierarchy_drawer` como fallback) — sem isso, uma ação pontual que
+        # dispara uma pipeline completa perderia acesso a ferramentas que a própria pipeline
+        # manda usar, só por não aparecerem literalmente na mensagem original do usuário.
+        tools = filter_tools_for_direct_action(tools, message + pipeline_instructions)
 
     # Resolve o nome real da org no Pipedrive quando org_id é fornecido
     # Evita que o modelo use nomes errados/variantes (ex: "GmbH" vs "Gmb H")
@@ -436,6 +451,7 @@ async def run_agent(
             query_type=query_type,
             active_skill=active_skill,
             thread_tool_memory=thread_tool_memory,
+            job_id=job_id,
         ):
             try:
                 data = json.loads(chunk)
@@ -614,6 +630,7 @@ async def resume_after_confirmation(
     approved: bool,
     thread_id: str | None = None,
     attachment_path: str | None = None,
+    job_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """Retoma o agente após confirmação de uma ação de escrita."""
     pending = _PENDING.pop(action_id, None)
@@ -803,6 +820,42 @@ async def resume_after_confirmation(
             f"PROIBIDO encerrar o turno apenas sugerindo 'cadastrar o contato' como próxima ação — você tem as "
             f"ferramentas para resolver isso agora."
         )
+    elif (
+        approved and ok and pending_direct_action
+        and tool_name not in ("whatsapp_send_message", "email_send", "email_reply")
+    ):
+        # Ação pontual de CRM (card de "próxima ação" tipo criar/concluir tarefa, vincular
+        # negócio, cadastrar contato etc.): o pedido era executar EXATAMENTE esta ferramenta,
+        # nada além disso — nem investigar, nem preparar outra coisa, e nem chamar
+        # suggest_next_actions (isso geraria uma nova leva de sugestões/cards que ninguém
+        # pediu). Encerramos o turno aqui mesmo, sem voltar pro LLM: nenhuma chance de o
+        # modelo aproveitar o contexto retornado para agir em outra atividade (já aconteceu:
+        # card "marcar tarefa concluída" que acabou abrindo o mapeador de hierarquia e
+        # preparando uma ligação para uma atividade não relacionada).
+        # Envio de email/WhatsApp fica de fora dessa regra mesmo quando pontual: a pipeline
+        # de comunicação é configurada para, após o envio, marcar a tarefa e SÓ ENTÃO chamar
+        # suggest_next_actions (ramo abaixo) — esse encadeamento é esperado, não é "scope
+        # creep".
+        final_response = summary if isinstance(summary, str) else "Ação concluída com sucesso."
+        fin_event = {"type": "final", "response": final_response}
+        collected_events.append(fin_event)
+        yield _emit(fin_event)
+        if thread_id:
+            saved_msg_id = await _save_run_state(
+                thread_id=thread_id,
+                parent_message_id=parent_message_id,
+                action_index=action_index,
+                message="",
+                is_regeneration=False,
+                final_response=final_response,
+                collected_events=collected_events,
+                process_id=pending_process_id,
+                is_resume=True,
+                user_msg_saved=True,
+            )
+            if saved_msg_id:
+                yield _emit({"type": "message_saved", "message_id": saved_msg_id})
+        return
     elif approved:
         if tool_name in ("whatsapp_send_message", "email_send", "email_reply"):
             sent_msg_preview = pending.get("args", {}).get(
@@ -904,6 +957,7 @@ async def resume_after_confirmation(
                 _msg_lower = " ".join([b.get("text", "") for b in m.get("content") if isinstance(b, dict) and b.get("type") == "text"])
                 break
         tools = filter_tools_for_direct_action(tools, _msg_lower)
+
     thread_tool_memory = await load_thread_tool_memory(thread_id)
     saved_on_completion = False
     try:
@@ -921,6 +975,7 @@ async def resume_after_confirmation(
             strict_mode=pending_strict_mode,
             query_type=pending_query_type,
             active_skill=None,
+            job_id=job_id,
         ):
             try:
                 data = json.loads(chunk)

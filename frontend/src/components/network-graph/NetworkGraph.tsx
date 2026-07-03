@@ -34,7 +34,6 @@ import { apiGet } from '../../services/config';
 import { Avatar } from '../ui';
 import { ChatPanel } from '../chat/ChatPanel';
 import { PreferencesView } from '../layout/PreferencesView';
-import { HierarchyScanView } from '../hierarchy-scan/HierarchyScanView';
 import { GraphCanvas } from './GraphCanvas';
 import { HierarchyDiscoveryOverlay } from './HierarchyDiscoveryOverlay';
 import { NetworkGraphLayout } from './NetworkGraphLayout';
@@ -260,13 +259,12 @@ function NetworkGraphContent({
         if (pathname.startsWith('/prospecting')) return 'prospecting';
         if (pathname.startsWith('/settings')) return 'preferences';
         if (pathname.startsWith('/messages')) return 'messages';
-        if (pathname.startsWith('/linkedin-scrape')) return 'linkedin-scrape';
         if (pathname.startsWith('/ligacao') || searchParams?.get('view') === 'ligacao') return 'ligacao';
         if (searchParams?.get('view') === 'messages') return 'messages';
         return 'graph';
     }, [pathname, searchParams]);
 
-    const setActiveView = useCallback((view: 'graph' | 'prospecting' | 'preferences' | 'messages' | 'linkedin-scrape' | 'ligacao') => {
+    const setActiveView = useCallback((view: 'graph' | 'prospecting' | 'preferences' | 'messages' | 'ligacao') => {
         if (view === 'graph') {
            if (currentOrgId) router.push(`/org/${currentOrgId}`);
            else router.push('/');
@@ -278,8 +276,6 @@ function NetworkGraphContent({
            // Se estiver dentro de uma empresa, mantém o contexto da org
            if (currentOrgId) router.push(`/org/${currentOrgId}?view=messages`);
            else router.push('/messages');
-        } else if (view === 'linkedin-scrape') {
-           router.push('/linkedin-scrape');
         } else if (view === 'ligacao') {
            if (currentOrgId) router.push(`/org/${currentOrgId}?view=ligacao`);
            else router.push('/?view=ligacao');
@@ -287,14 +283,13 @@ function NetworkGraphContent({
     }, [router, currentOrgId]);
 
     const handleNavigateToRoot = useCallback(() => {
-        // Limpa todos os estados relacionados à empresa selecionada
-        setCurrentOrgId(null);
-        setChatOrgId(null);
-        resetWorkflow();
-        
-        // Navega para a raiz
+        // Apenas navega — o efeito de reset acima (pathname !isOrgRoute) já cuida de
+        // limpar currentOrgId/estado cosmético da UI. NÃO chamar resetWorkflow()/
+        // resetHierarchy() aqui: isso apagaria do Zustand os rawEmployees/rawBackendEdges
+        // já mapeados (incluindo root, sócios e contatos do Pipedrive), fazendo os
+        // cards sumirem ao navegar de volta para a empresa.
         router.push('/');
-    }, [router, resetWorkflow]);
+    }, [router]);
 
     const [unreadCount, setUnreadCount] = useState(0);
     const prospecting = useProspecting();
@@ -541,6 +536,7 @@ function NetworkGraphContent({
             onToggleChat={onToggleChat as any}
             onLogout={onLogout as any}
             handleNewCompany={handleNewCompany}
+            handleNavigateToRoot={handleNavigateToRoot}
             refineHierarchy={refineHierarchy}
             smartSyncPipedrive={smartSyncPipedrive}
             hierarchy={hierarchy}

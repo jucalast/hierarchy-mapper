@@ -176,7 +176,23 @@
       "Read(//tmp/**)",
       "Bash(./venv/Scripts/python.exe -m py_compile core/config.py core/llm/router.py modules/agent/service/llm/caller.py modules/agent/service/core/loop.py)",
       "Bash(echo \"---exit=$?---\")",
-      "Bash(where python *)"
+      "Bash(where python *)",
+      "Bash(PYTHONIOENCODING=utf-8 python -c ' *)",
+      "PowerShell(Stop-Process *)",
+      "Bash(\"/c/Users/João Luccas/AppData/Local/Programs/Python/Python312/python.exe\" -m playwright install chromium --dry-run)",
+      "Bash(\"/c/Users/João Luccas/AppData/Local/Programs/Python/Python312/python.exe\" \"C:/Users/JOOLUC~1/AppData/Local/Temp/claude/C--Users-Jo-o-Luccas-Desktop-LINKB2B-hierarchy-mapper/8c2fa033-91ac-48f8-ab43-447da0211226/scratchpad/verify_toggle.py\")",
+      "Bash(sort -t: -k2 -n -u)",
+      "Bash(/c/Users/João Luccas/AppData/Local/Programs/Python/Python312/python.exe *)",
+      "Bash(rtk npx *)",
+      "Bash(netstat -ano)",
+      "Bash(iconv -f utf-8 -t utf-8)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8000/api/v1/pipedrive/activities/pending-summary\" -UseBasicParsing -TimeoutSec 10; $r.Content } catch { Write-Output \"ERROR: $\\($_.Exception.Message\\)\" })",
+      "Bash(xargs -I{} sh -c 'echo ==={}===; grep -m1 \"^description:\" {}')",
+      "Bash(node -e \"console.log\\(require.resolve\\('playwright'\\)\\)\")",
+      "Bash(mkdir -p \"/c/Users/JOOLUC~1/AppData/Local/Temp/claude/C--Users-Jo-o-Luccas-Desktop-LINKB2B-hierarchy-mapper/e778488e-1bb7-433c-af5a-da163db6f40f/scratchpad/pwtest\")",
+      "Read(//c/Users/JOOLUC~1/AppData/Local/Temp/claude/C--Users-Jo-o-Luccas-Desktop-LINKB2B-hierarchy-mapper/e778488e-1bb7-433c-af5a-da163db6f40f/scratchpad/**)",
+      "Bash(npm init *)",
+      "Bash(xargs -I{} echo {})"
     ]
   }
 }

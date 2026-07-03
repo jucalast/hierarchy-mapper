@@ -11,6 +11,11 @@ export function getAgentConfirmStreamUrl(): string {
   return `${API_V1_URL}/agent/confirm`;
 }
 
+/** Cancela um job de chat do Agente em andamento (botão "Parar"). */
+export function cancelAgentJob(jobId: string) {
+  return api.post<{ job_id: string; status: string }>(`/agent/chat/cancel/${jobId}`, {});
+}
+
 export interface AgentActionPayload {
   action_id: string;
   approved: boolean;

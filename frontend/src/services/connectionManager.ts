@@ -156,8 +156,11 @@ class ConnectionManager {
         if (data.type === 'clear_nodes') {
           console.log(`[ConnectionManager] Comando de limpeza para orgId=${orgId}`);
 
-          // Alinhado com a lógica de delete do b2b_scanner.py: preserva apenas
-          // root, sócios/QSA e decisões humanas explícitas (Aprovado/Reprovado).
+          // Alinhado com a lógica de delete do b2b_scanner.py: preserva
+          // root, sócios/QSA, decisões humanas explícitas (Aprovado/Reprovado)
+          // e contatos vindos do Pipedrive (CRM — não são "descobertos" pelo
+          // scan, então não devem sumir; se o scan os reencontrar, o merge por
+          // linkedin/nome/pipedrive_id atualiza o registro em vez de duplicar).
           // Funcionários com cargos identificados do mapeamento ANTERIOR são descartados
           // para que o re-scan comece do zero — evita que nós antigos persistam na tela.
           const currentNodes = store.mappings[orgId]?.rawEmployees || [];
@@ -171,7 +174,8 @@ class ConnectionManager {
               emp.department.includes('Conselho')
             );
             const isHumanDecision = emp.role?.startsWith('Aprovado') || emp.role === 'Reprovado';
-            return isRoot || isPartner || isPartnerDept || isHumanDecision;
+            const isPipedrive = emp.source === 'pipedrive' || !!emp.pipedrive_id;
+            return isRoot || isPartner || isPartnerDept || isHumanDecision || isPipedrive;
           });
 
           store.setRawEmployees(orgId, keepers);

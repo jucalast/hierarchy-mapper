@@ -4,13 +4,22 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: color-mix(in srgb, var(--sw-bg) 60%, transparent);
     backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
     animation: fadeIn var(--transition-fast) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Variante "contida": mantém o fundo escurecido/borrado cobrindo a tela
+   inteira (mesmo overlay de sempre), mas alinha a caixa do modal para a
+   direita — onde o chat panel fica docado — em vez de centralizar na tela
+   toda. O chat panel sempre fica encostado na borda direita da viewport. */
+.overlayContained {
+    justify-content: flex-end;
+    padding-right: var(--space-24);
 }
 
 .modal {

@@ -45,6 +45,7 @@ export interface MappingSession {
   rawBackendEdges: Edge[];
   loading: boolean;
   discovering: boolean;
+  refining: boolean;
   brandOptions: any[];
   error: string | null;
   activeJobId: string | null;
@@ -86,6 +87,7 @@ interface ChatStore {
   setRawBackendEdges: (orgId: number, edges: Edge[] | ((prev: Edge[]) => Edge[])) => void;
   setMappingLoading: (orgId: number, loading: boolean) => void;
   setDiscovering: (orgId: number, discovering: boolean) => void;
+  setRefiningHierarchy: (orgId: number, refining: boolean) => void;
   setBrandOptions: (orgId: number, options: any[] | ((prev: any[]) => any[])) => void;
   setMappingError: (orgId: number, error: string | null) => void;
   setActiveJobId: (orgId: number, jobId: string | null) => void;
@@ -123,6 +125,7 @@ const defaultMapping = (): MappingSession => ({
   rawBackendEdges: [],
   loading: false,
   discovering: false,
+  refining: false,
   brandOptions: [],
   error: null,
   activeJobId: null,
@@ -451,6 +454,18 @@ export const useChatStore = create<ChatStore>()(
     }));
   },
 
+  setRefiningHierarchy: (orgId, refining) => {
+    set((state) => ({
+      mappings: {
+        ...state.mappings,
+        [orgId]: {
+          ...(state.mappings[orgId] || defaultMapping()),
+          refining,
+        },
+      },
+    }));
+  },
+
   setDiscovering: (orgId, discovering) => {
     set((state) => ({
       mappings: {
@@ -578,6 +593,7 @@ export const useChatStore = create<ChatStore>()(
       Object.entries(state.mappings).map(([k, m]) => [k, {
         loading: false,
         discovering: false,
+        refining: false,
         error: m.error,
         activeJobId: null, // Evita persistir um job fantasma após reload
         isSmartSyncLoading: false,

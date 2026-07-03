@@ -2179,29 +2179,28 @@ async def exec_update_prospecting_plan(args: Dict[str, Any], **kwargs) -> Dict[s
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
-async def batch_discover_and_validate_org_emails(org_id: int):
+async def batch_discover_and_validate_org_emails(org_id: int) -> Dict[str, Any]:
     """
     Superteste em lote: Varrer todos os funcionários de uma organização,
     descobrir e validar e-mails, salvar válidos e deletar os inválidos do Pipedrive.
     """
     import asyncio
-    import time
     from core.infra.database import async_session
     from models.people import Employee
     from models.organization import Organization
     from sqlalchemy import select
     from modules.crm.service.pipedrive_service import pipedrive_service
-    
+
     async with async_session() as session:
         stmt = select(Organization).where(Organization.id == org_id)
         org = (await session.execute(stmt)).scalars().first()
-        
+
         if not org or not org.domain:
             return {"ok": False, "error": "Organização não encontrada ou sem domínio"}
-            
+
         stmt = select(Employee).where(Employee.company_id == org.id)
         employees = (await session.execute(stmt)).scalars().all()
-        
+
     verified_pipedrive_ids = set()
     if org.pipedrive_id:
         try:
@@ -2214,15 +2213,16 @@ async def batch_discover_and_validate_org_emails(org_id: int):
                             verified_pipedrive_ids.add(str(p.get("id")))
                             break
         except Exception as e:
-            import logging
-            logging.getLogger(__name__).warning(f"Erro ao buscar detalhes do Pipedrive: {e}")
+            log.warning("batch_discover_and_validate_org_emails.pipedrive_details_failed", error=str(e))
+
+    skipped, validated, removed, failed = [], [], [], []
 
     for emp in employees:
         if emp.pipedrive_id and str(emp.pipedrive_id) in verified_pipedrive_ids:
-            import logging
-            logging.getLogger(__name__).info(f"Pulando {emp.name}: E-mail já validado no Pipedrive.")
+            log.info("batch_discover_and_validate_org_emails.skip_already_verified", name=emp.name)
+            skipped.append(emp.name)
             continue
-            
+
         await asyncio.sleep(2)  # Delay para evitar rate limit
         res = await exec_discover_and_validate_email({
             "contact_name": emp.name,
@@ -2231,9 +2231,12 @@ async def batch_discover_and_validate_org_emails(org_id: int):
             "person_id": emp.id,
             "org_id": org.id,
         })
-        
-        # Se for inválido, remover do Pipedrive!
-        if not res.get("ok"):
+
+        if res.get("ok"):
+            validated.append({"name": emp.name, "email": res.get("recommended")})
+        else:
+            failed.append(emp.name)
+            # Se for inválido, remover do Pipedrive!
             if emp.pipedrive_id:
                 try:
                     await pipedrive_service.delete_person(int(emp.pipedrive_id))
@@ -2243,7 +2246,25 @@ async def batch_discover_and_validate_org_emails(org_id: int):
                         if e:
                             e.pipedrive_id = None
                             await s2.commit()
+                    removed.append(emp.name)
                 except Exception as e:
-                    import logging
-                    logging.getLogger(__name__).warning(f"Falha ao deletar fantasma do Pipedrive: {e}")
+                    log.warning("batch_discover_and_validate_org_emails.ghost_delete_failed", name=emp.name, error=str(e))
+
+    summary = (
+        f"Validação em lote concluída para {org.name}: "
+        f"{len(validated)} validado(s), {len(skipped)} já confirmado(s), "
+        f"{len(failed)} sem e-mail válido ({len(removed)} removido(s) do Pipedrive)."
+    )
+    log.info("batch_discover_and_validate_org_emails.done", org_id=org.id, **{
+        "validated": len(validated), "skipped": len(skipped), "failed": len(failed), "removed": len(removed)
+    })
+    return {
+        "ok": True,
+        "org_id": org.id,
+        "validated": validated,
+        "skipped": skipped,
+        "failed": failed,
+        "removed": removed,
+        "summary": summary,
+    }
 

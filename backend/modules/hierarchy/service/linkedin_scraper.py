@@ -144,7 +144,9 @@ async def run_linkedin_scrape(
             await session.refresh(db_org)
 
         # Limpa funcionários do mapeamento anterior para começar do zero.
-        # Mesma regra do b2b_scanner.py: preserva sócios/QSA e decisões humanas explícitas.
+        # Mesma regra do b2b_scanner.py: preserva sócios/QSA, decisões humanas explícitas
+        # e contatos do Pipedrive (CRM) — se o scraping encontrar essa pessoa de novo,
+        # o merge por linkedin/nome/pipedrive_id (mais abaixo) atualiza em vez de duplicar.
         await session.execute(
             delete(Employee).where(
                 and_(
@@ -159,6 +161,8 @@ async def run_linkedin_scrape(
                             Employee.role.ilike("Aprovado%"),
                             Employee.role == "Reprovado",
                             Employee.department == "Reprovado",
+                            Employee.source == "pipedrive",
+                            Employee.pipedrive_id.isnot(None),
                         )
                     )
                 )

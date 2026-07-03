@@ -146,6 +146,10 @@
     color: var(--sw-primary);
 }
 
+.contactAvatarLogo {
+    background: #ffffff;
+}
+
 .contactInfo {
     flex: 1;
     min-width: 0;

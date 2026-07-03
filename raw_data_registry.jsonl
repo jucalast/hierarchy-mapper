@@ -15160,3 +15160,3768 @@
     }
 }
 --------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:22:05.780704",
+    "candidate": "Ezequiel Araujo da Silva Junior",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-araujo-da-silva-junior-0a8b3663",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel Araujo da Silva Junior - Knorr - Bremse | LinkedIn",
+            "body": "Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.Ver conexões em comum com Ezequiel Araujo da. Ezequiel Araujo da pode apresentar você a mais de 10 pessoas na empresa Knorr - Bremse . E-mail ou telefone."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Purchasing Buyer",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/ezequiel-araujo-da-silva-junior"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Ezequiel Araujo da Silva Junior",
+        "role": "Purchasing Buyer",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Ezequiel Araujo da Silva Junior trabalha na Knorr Bremse como Purchasing Buyer, o que corresponde à área de Suprimentos/Compras/Procurement. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Ezequiel Araujo da Silva Junior - Knorr - Bremse",
+                "Ezequiel Araujo da pode apresentar você a mais de 10 pessoas na empresa Knorr - Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Ezequiel Araujo da Silva Junior trabalha na Knorr Bremse como Purchasing Buyer."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ezequiel Araujo da Silva Junior",
+                    "role": "Purchasing Buyer"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ezequiel Araujo da Silva Junior",
+                "detected_role": "Purchasing Buyer",
+                "clean_bio": "Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários.Ver conexões em comum com Ezequiel Araujo da. Ezequiel Araujo da pode apresentar você a mais de 10 pessoas na empresa Knorr - Bremse ."
+            }
+        },
+        "specialist": {
+            "role_name": "Purchasing Buyer",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Purchasing Buyer' está diretamente alinhado com a área de Suprimentos/Compras/Procurement. O vínculo com a Knorr Bremse foi confirmado pelo Detetive."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Purchasing Buyer",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:22:32.911149",
+    "candidate": "Ezequiel Araujo",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-araujo-968b4628",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel Araujo - Analista Logistico na Knorr-Bremse | LinkedIn",
+            "body": "Analista Logistico na Knorr - Bremse · Experiência: Knorr - Bremse · Localidade: São Paulo · 1 conexão no LinkedIn . Veja o perfil de Ezequiel Araujo no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Localidade: São Paulo · 1 conexão no LinkedIn. Veja o perfil de Ezequiel Araujo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Ezequiel Araujo",
+        "role": "Analista Logístico",
+        "matching_score": 100,
+        "department": "Logística/Supply Chain",
+        "evidence": "O candidato Ezequiel Araujo trabalha na Knorr Bremse como Analista Logístico, o que é relevante para a área de Suprimentos/Compras/Procurement. Não há indícios de falsos positivos ou vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Analista Logistico na Knorr-Bremse",
+                "Experiência: Knorr - Bremse",
+                "CURRENT COMPANY (Declarada): Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Ezequiel Araujo - Analista Logistico na Knorr-Bremse. Experiência: Knorr - Bremse. Localidade: São Paulo."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ezequiel Araujo",
+                    "role": "Analista Logistico"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ezequiel Araujo",
+                "detected_role": "Analista Logistico",
+                "clean_bio": "Ezequiel Araujo - Analista Logistico na Knorr-Bremse. Experiência: Knorr - Bremse. Localidade: São Paulo."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista Logistico",
+            "dept": "Logística/Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Analista Logístico tem interface direta com a área de Suprimentos/Compras, pois a logística é um componente essencial da cadeia de suprimentos. O vínculo com a Knorr Bremse foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Analista Logístico",
+        "department": "Logística/Supply Chain",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:22:59.226932",
+    "candidate": "Jean Leardini",
+    "linkedin": "https://www.linkedin.com/in/jean-leardini-5b1505107",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jean Leardini - Especialista em Gestão de Contratos - LinkedIn",
+            "body": "Knorr-Bremse. 7 anos 2 meses · Gráfico Knorr-Bremse. Analista de Contatos Sênior. Knorr-Bremse. abr. de 2022 - set. de 2024 2 anos 6 meses. Itupeva ..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Jean Leardini",
+        "role": "Analista de Contatos Sênior",
+        "matching_score": 0,
+        "department": "Administrativo",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Analista de Contatos Sênior). O candidato trabalha na empresa-alvo 'Knorr Bremse' e o cargo 'Analista de Contatos Sênior' é relevante para a área de Suprimentos/Compras/Procurement. Não há vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Analista de Contatos Sênior. Knorr-Bremse. abr. de 2022 - set. de 2024 2 anos 6 meses."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Jean Leardini - Especialista em Gestão de Contratos. Knorr-Bremse. 7 anos 2 meses · Gráfico Knorr-Bremse. Analista de Contatos Sênior. Knorr-Bremse. abr. de 2022 - set. de 2024 2 anos 6 meses. Itupeva"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jean Leardini",
+                    "role": "Analista de Contatos Sênior"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jean Leardini",
+                "detected_role": "Analista de Contatos Sênior",
+                "clean_bio": "Jean Leardini - Especialista em Gestão de Contratos. Knorr-Bremse. 7 anos 2 meses · Gráfico Knorr-Bremse. Analista de Contatos Sênior. Knorr-Bremse. abr. de 2022 - set. de 2024 2 anos 6 meses. Itupeva"
+            }
+        },
+        "specialist": {
+            "role_name": "Analista de Contatos Sênior",
+            "dept": "Administrativo",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Analista de Contatos Sênior' não possui interface direta com Suprimentos/Compras/Procurement. Embora o vínculo com a Knorr Bremse seja confirmado, a função não se alinha com as áreas de interesse, e não há termos técnicos explícitos de compras ou logística na descrição."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista de Contatos Sênior",
+        "department": "Administrativo",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:23:21.249488",
+    "candidate": "Camila Carvalho da Silva Bulhões",
+    "linkedin": "https://www.linkedin.com/in/camila-carvalho-da-silva-bulh%C3%B5es-5b3215196/en",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Camila Carvalho da Silva Bulhões - LinkedIn",
+            "body": "Gráfico Knorr-Bremse. Analista Contábil Pleno. Knorr-Bremse. ago. de 2008 - nov. de 2008 4 meses. São Paulo, Brasil. • Conciliação e análise de todas as contas ..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Camila Carvalho da Silva Bulhões",
+        "role": "Analista Contábil Pleno",
+        "matching_score": 0,
+        "department": "Administrativo",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico, indicando uma inconsistência ou regra de rejeição automática ativada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Knorr-Bremse. ago. de 2008 - nov. de 2008 4 meses. São Paulo, Brasil. • Conciliação e análise de todas as contas ...",
+                "Analista Contábil Pleno. Knorr-Bremse. ago. de 2008 - nov. de 2008 4 meses. São Paulo, Brasil."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Analista Contábil Pleno"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Camila Carvalho da Silva Bulhões",
+                    "role": "Analista Contábil Pleno"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Camila Carvalho da Silva Bulhões",
+                "detected_role": "Analista Contábil Pleno",
+                "clean_bio": "Analista Contábil Pleno. Knorr-Bremse. ago. de 2008 - nov. de 2008 4 meses. São Paulo, Brasil. • Conciliação e análise de todas as contas ..."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista Contábil Pleno",
+            "dept": "Administrativo",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Analista Contábil Pleno'. A contabilidade não tem interface direta com Suprimentos/Compras/Procurement e está explicitamente na lista de vetos absolutos. Embora o candidato tenha trabalhado na Knorr Bremse, a função não é relevante para a área de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista Contábil Pleno",
+        "department": "Administrativo",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:23:42.761139",
+    "candidate": "Guilherme Nogueira",
+    "linkedin": "https://www.linkedin.com/in/guilherme-nogueira-002532",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Guilherme Nogueira - Senior Project Manager - LinkedIn",
+            "body": "... Knorr-Bremse, totaling 6,000 hours - Ensured project delivery within scope, time, and quality requirements for international clients. IT Project Manager."
+        },
+        "osint_metadata": {
+            "role": "mjv technology & innovation",
+            "bio": "Seasoned Senior Project Manager with a strong background in software development, digital… · Experiência: MJV Technology & Innovation · Formação acadêmica: FaCiencia · Localidade: Curitiba · + de 500 conexões no LinkedIn. Veja o perfil de Guilherme Nogueira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Guilherme Nogueira",
+        "role": "Senior Project Manager",
+        "matching_score": 0,
+        "department": "Project Management",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Senior Project Manager). O candidato trabalha na Knorr Bremse, que é a empresa-alvo declarada. O especialista marcou como relevante, e não há vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Knorr-Bremse, totaling 6,000 hours",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Seasoned Senior Project Manager with a strong background in software development, digital…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Guilherme Nogueira",
+                    "role": "IT Project Manager"
+                },
+                {
+                    "name": "Guilherme Nogueira",
+                    "role": "Senior Project Manager"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Guilherme Nogueira",
+                "detected_role": "Senior Project Manager",
+                "clean_bio": "Seasoned Senior Project Manager with a strong background in software development, digital…"
+            }
+        },
+        "specialist": {
+            "role_name": "Senior Project Manager",
+            "dept": "Project Management",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Senior Project Manager'. Embora o candidato tenha vínculo confirmado com a Knorr Bremse, a função de Gerente de Projetos, especialmente com foco em software e digital, não tem interface direta com Suprimentos/Compras/Procurement. A bio menciona 'software development, digital', e a lista de vetos inclui 'it, ti, developer, desenvolvedor, programador, software, infrastructure, infraestrutura, suporte, helpdesk', o que reforça a não relevância para a área de compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Senior Project Manager",
+        "department": "Project Management",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:23:52.021271",
+    "candidate": "Roger Ribeiro Dos Santos",
+    "linkedin": "https://www.linkedin.com/in/roger-ribeiro-dos-santos-8928021a3",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Roger Ribeiro Dos Santos - Bridgestone do Brasil - LinkedIn",
+            "body": "Experiência de quase 7 anos em rotinas de Operador de Máquina. Durante o exercício desta… · Experiência: Bridgestone do Brasil · Formação acadêmica: E.E ..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:24:06.032143",
+    "candidate": "Elizeu Belei",
+    "linkedin": "https://www.linkedin.com/in/elizeu-belei-61a63527",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Elizeu Belei - Administrador | Hora Oftalmologia Ltda. - LinkedIn",
+            "body": "3 de fev. de 2016 · Administrador | Hora Oftalmologia Ltda. · Experiência: Hora Oftalmologia Ltda · Formação acadêmica: UNIRP · Localidade: São José do Rio ..."
+        },
+        "osint_metadata": {
+            "role": "hora oftalmologia ltda",
+            "bio": "Experiência: Hora Oftalmologia Ltda · Formação acadêmica: UNIRP · Localidade: São José do Rio Preto · 491 conexões no LinkedIn. Veja o perfil de Elizeu Belei no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:24:41.658153",
+    "candidate": "Matheus M.",
+    "linkedin": "https://www.linkedin.com/in/matheuspmuniz",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Matheus M. - Knorr-Bremse | LinkedIn Matheus Muniz - Quality Engineer at SKF do Brasil | LinkedIn Matheus Motta Garcia - Sales Coordinator | Business ... Matheus Ribeiro - Engenheiro de Processos | Black Belt | LinkedIn Matheus Faria - Knorr-Bremse | LinkedIn Matheus Adriano Lima Sousa - Knorr-Bremse | LinkedIn Matheus Arruda - Tecnico em Automação industrial / inspetor ...",
+            "body": "Experiência: Knorr - Bremse · Formação acadêmica: Universidade Paulista · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Matheus M. no LinkedIn , uma comunidade... Quality Engineer at SKF do Brasil · Experiência: SKF Group · Formação acadêmica: Faculdade Pitágoras de Jundiaí · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Matheus ... A sales coordinator with solid experience in managing strategic clients in the automotive sector, I am currently responsible for major automaker accounts at Knorr - Bremse , a global leader in... · Experiência: Knorr - Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Matheus Ribeiro no LinkedIn , uma... · Experiência: Knorr - Bremse · Formação acadêmica: Grupo Anchieta · Localidade: Jundiaí · 373 conexões no LinkedIn . Veja o perfil de Matheus Faria no LinkedIn , uma comunidade profissional... Experiência: Knorr - Bremse · Formação acadêmica: UNIFACCAMP Centro Universitário Campo Limpo Paulista · Localidade: Jundiaí. Veja o perfil de Matheus Adriano Lima Sousa no LinkedIn , uma... Tecnico em Automação industrial / inspetor de qualidade · Experiência: thyssenkrupp · Formação acadêmica: ETEC - Escola Técnica Estadual de São Paulo · Localidade: Campo Limpo Paulista · 431..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Formação acadêmica: Universidade Paulista · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Matheus M. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Buyer Pl",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/matheus-m"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Matheus M.",
+        "role": "Buyer",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Matheus M. trabalha na Knorr Bremse, que é a empresa-alvo declarada. O cargo de Buyer é relevante para a área de Suprimentos/Compras/Procurement. Não há indícios de falsos positivos ou vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Knorr - Bremse",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experiência: Knorr - Bremse · Formação acadêmica: Universidade Paulista · Localidade: Jundiaí · + de 500 conexões no LinkedIn ."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Matheus M.",
+                    "role": "Buyer"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Matheus M.",
+                "detected_role": "Buyer",
+                "clean_bio": "Experiência: Knorr - Bremse · Formação acadêmica: Universidade Paulista · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Matheus M. no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Buyer",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Buyer' está diretamente relacionado a Suprimentos/Compras/Procurement. O vínculo com a Knorr Bremse foi confirmado e o candidato possui experiência na área."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Buyer Pl",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:25:33.097670",
+    "candidate": "Moisés Lana",
+    "linkedin": "https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Moisés Lana - Knorr Bremse Sistemas P Veiculos... | LinkedIn",
+            "body": "Estes… · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Moisés Lana",
+        "role": "Project Manager",
+        "matching_score": 95,
+        "department": "Supply Chain",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Moisés Lana trabalha como Project Manager na Knorr Bremse, empresa-alvo. O especialista confirmou a relevância e o detetive confirmou o vínculo empregatício. Nenhuma regra de veto foi acionada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "TÍTULO: Moisés Lana - Project Manager at Knorr-Bremse Brazil | LinkedIn",
+                "Sugerido via URL: https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Atuando há mais de 15 anos na indústria de autopeças, com experiência em Gerenciamento de Projetos, Qualidade de fornecedores, conhecedor de ferramentas da Qualidade e gestão como: PMBOOK, SCRUM."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Moisés Lana",
+                    "role": "Project Manager"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Moisés Lana",
+                "detected_role": "Project Manager",
+                "clean_bio": "Atuando há mais de 15 anos na indústria de autopeças, com experiência em Gerenciamento de Projetos, Qualidade de fornecedores, conhecedor de ferramentas da Qualidade e gestão como: PMBOOK, SCRUM,."
+            }
+        },
+        "specialist": {
+            "role_name": "Project Manager",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Project Manager, com experiência na indústria de autopeças e conhecimento em ferramentas de gestão como PMBOOK e SCRUM, é relevante para a área de Supply Chain, especialmente em uma empresa como a Knorr Bremse, que opera nesse setor. A experiência em Qualidade de fornecedores também se alinha com as funções de compras e suprimentos."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Project Manager",
+        "department": "Supply Chain",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:25:56.804403",
+    "candidate": "Henrique Gonçalves",
+    "linkedin": "https://www.linkedin.com/in/henrique-gon%C3%A7alves-4231913ba",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Henrique Gonçalves - Sales Manager Latam da empresa Knorr ...",
+            "body": "Sales Manager Latam da empresa Knorr- Bremse Brasil · Experiência: Knorr- Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: 05873-190 · + de 500 conexões no LinkedIn ...."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: 05873-190 · + de 500 conexões no LinkedIn. Veja o perfil de Henrique Gonçalves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Henrique Gonçalves",
+        "role": "Sales Manager Latam",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "O especialista marcou o candidato como irrelevante (is_relevant: false), e não há um cargo oficial verificado que contradiga essa avaliação. Além disso, o departamento de Vendas não é o foco para uma busca em Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Sales Manager Latam da empresa Knorr- Bremse Brasil",
+                "Experiência: Knorr- Bremse",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sales Manager Latam da empresa Knorr- Bremse Brasil"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Henrique Gonçalves",
+                    "role": "Sales Manager Latam"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Henrique Gonçalves",
+                "detected_role": "Sales Manager Latam",
+                "clean_bio": "Sales Manager Latam da empresa Knorr- Bremse Brasil · Experiência: Knorr- Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: 05873-190 · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Sales Manager Latam",
+            "dept": "Vendas",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Sales Manager Latam', que se enquadra na categoria de Vendas, explicitamente vetada pelas instruções técnicas (item 5 e 6)."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sales Manager Latam",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:27:04.305606",
+    "candidate": "Rafael Pelizzari",
+    "linkedin": "https://www.linkedin.com/in/rpelizzari",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rafael Pelizzari - Managing Director at Knorr-Bremse Brazil ...",
+            "body": "Self-confident, high motivated and team-working · Localidade: Brasil . + de 500 conexões no LinkedIn . Veja o perfil de Rafael Pelizzari no LinkedIn , uma comunidade profissional de 1 bilhão de..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Managing Director",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/rafael-pelizzari"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rafael Pelizzari",
+        "role": "Managing Director",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato trabalha na empresa alvo Knorr Bremse como Managing Director, o que é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Managing Director at Knorr-Bremse Brazil",
+                "Managing Director"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Managing Director at Knorr-Bremse Brazil"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rafael Pelizzari",
+                    "role": "Managing Director"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rafael Pelizzari",
+                "detected_role": "Managing Director",
+                "clean_bio": "Managing Director at Knorr-Bremse Brazil"
+            }
+        },
+        "specialist": {
+            "role_name": "Managing Director",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Managing Director em uma empresa como a Knorr Bremse, especialmente em um mercado como o Brasil, implica em responsabilidades de gestão geral e estratégica. Embora não seja diretamente um cargo de Suprimentos/Compras, a posição de liderança sênior (C-level) frequentemente envolve decisões de alto nível que impactam ou aprovam processos de compras e aquisições estratégicas. Conforme a instrução 10, posições de diretoria devem ser consideradas relevantes."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Managing Director",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T17:28:05.024137",
+    "candidate": "Jefferson Germano",
+    "linkedin": "https://www.linkedin.com/in/jefferson-germano-0694181a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jefferson Germano - Knorr - Bremse | LinkedIn",
+            "body": "Parabéns ao time Knorr - Bremse Brasil ! Congratulations to Knorr - Bremse Brazil team! Jefferson Germano gostou. Veja o perfil completo de Jefferson."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Gerente De Aftermarket - Brasil / America Latina",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/jefferson-germano"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Jefferson Germano",
+        "role": "Gerente de Aftermarket",
+        "matching_score": 95,
+        "department": "Não Identificado",
+        "evidence": "O candidato Jefferson Germano trabalha na Knorr Bremse, conforme confirmado pelo Detetive e pelo Cargo Oficial Verificado. Não há indícios de que ele trabalhe em outra empresa ou que seu cargo seja irrelevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Jefferson Germano - Knorr - Bremse",
+                "Parabéns ao time Knorr - Bremse Brasil ! Congratulations to Knorr - Bremse Brazil team! Jefferson Germano gostou. Veja o perfil completo de Jefferson.",
+                "Verified Official Role: Gerente De Aftermarket - Brasil / America Latina"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Jefferson Germano gostou. Veja o perfil completo de Jefferson. Cargo Detectado: Gerente De Aftermarket - Brasil / America Latina"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jefferson Germano",
+                    "role": "Gerente De Aftermarket - Brasil / America Latina"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jefferson Germano",
+                "detected_role": "Gerente De Aftermarket - Brasil / America Latina",
+                "clean_bio": "Jefferson Germano gostou. Veja o perfil completo de Jefferson."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente De Aftermarket - Brasil / America Latina",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Gerente De Aftermarket' não possui interface direta com as áreas de Suprimentos/Compras/Procurement. A área de Aftermarket geralmente está ligada a vendas, serviços pós-venda ou operações de suporte técnico, e não a aquisição de bens e serviços."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Gerente De Aftermarket - Brasil / America Latina",
+        "department": "Não Identificado",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:47:17.212252",
+    "candidate": "Ezequiel Silva",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-silva",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel Silva - Consultant at Egon Zehnder",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "egon zehnder",
+            "bio": "Leads Egon Zehnder's Tech practice in Brazil. Also deep expertise in the Consumer, Retail… · Experiência: Egon Zehnder · Formação acadêmica: Northwestern University - Kellogg School of Management · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:47:21.942484",
+    "candidate": "Ezequiel c silva",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-c-silva-a70077157",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel c silva - Líder - GIRO LAR E LAZER",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:47:26.013137",
+    "candidate": "Ezequiel C.Silva",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-c-silva-666744218",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel C.Silva - Produtor - Família do Sítio",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:47:33.074395",
+    "candidate": "Ezequiel da Silva Oliveira",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-da-silva-oliveira-3b49b384",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel da Silva Oliveira - Técnico em Informática na ...",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:47:40.364760",
+    "candidate": "Ezequiel Pereira da Silva",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-pereira-da-silva-75bb7250",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel Pereira da Silva - Advogado",
+            "body": "1 bilhões de usuários | Gerencie sua identidade profissional. Crie e interaja com sua rede profissional. Aproveite o acesso a informações, estatísticas e oportunidades."
+        },
+        "osint_metadata": {
+            "role": "ezequiel pereira sociedade individual de advocacia",
+            "bio": "Advogado com 15 anos de atuação nas áreas de Direito Civil, Trabalhista, Previdenciário e… · Experiência: Ezequiel Pereira Sociedade Individual de Advocacia · Formação acadêmica: UNIVEN - FACULDADE CAPIXABA DE NOVA VENECIA · Localidade: Vitória e Região · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel Pereira da Silva no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:48:18.730590",
+    "candidate": "Ezequiel Araujo da Silva Junior",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-araujo-da-silva-junior-0a8b3663",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel Araujo da Silva Junior - Knorr - Bremse | LinkedIn",
+            "body": "Ver conexões em comum com Ezequiel Araujo da. Ezequiel Araujo da pode apresentar você a mais de 10 pessoas na empresa Knorr - Bremse ."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Profissional Graduado em Administração de Empresas e Pós graduando MBA… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Ezequiel Araujo da Silva Junior",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Knorr-Bremse",
+                "Knorr-Bremse",
+                "Knorr - Bremse",
+                "Knorr - Bremse",
+                "Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional Graduado em Administração de Empresas e Pós graduando MBA…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ezequiel Araujo da Silva Junior",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ezequiel Araujo da Silva Junior",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Profissional Graduado em Administração de Empresas e Pós graduando MBA… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Anhembi Morumbi · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Ezequiel Araujo da Silva Junior no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Ezequiel não foi identificado explicitamente no perfil. Embora ele trabalhe na Knorr Bremse, a bio menciona apenas que ele é graduado em Administração e pós-graduando em MBA, sem detalhar sua função ou área de atuação específica dentro da empresa. Não há termos explícitos relacionados a Suprimentos/Compras/Procurement na bio que permitam inferir relevância para a área."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:48:43.113503",
+    "candidate": "Otávio Augusto Camargo Angolini",
+    "linkedin": "https://www.linkedin.com/in/otavioangolini",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Otávio Augusto Camargo Angolini - Accounting Coordinator... | LinkedIn",
+            "body": "Accounting Coordinator na Knorr - Bremse · • Ensures implementation of accounting policies, guidelines and standards in the accounting teams."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "• Ensures implementation of accounting policies, guidelines and standards in the… · Experiência: Knorr-Bremse · Formação acadêmica: FACAMP - Faculdades de Campinas · Localidade: Campinas · 484 conexões no LinkedIn. Veja o perfil de Otávio Augusto Camargo Angolini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Otávio Augusto Camargo Angolini",
+        "role": "Accounting Coordinator",
+        "matching_score": 0,
+        "department": "Administrativo",
+        "evidence": "O especialista marcou o cargo como irrelevante (False).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Accounting Coordinator na Knorr - Bremse",
+                "CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Ensures implementation of accounting policies, guidelines and standards in the accounting teams."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Otávio Augusto Camargo Angolini",
+                    "role": "Accounting Coordinator"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Otávio Augusto Camargo Angolini",
+                "detected_role": "Accounting Coordinator",
+                "clean_bio": "Ensures implementation of accounting policies, guidelines and standards in the accounting teams."
+            }
+        },
+        "specialist": {
+            "role_name": "Accounting Coordinator",
+            "dept": "Administrativo",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Accounting Coordinator', que se refere à área de Contabilidade. Conforme as instruções técnicas, cargos da área Financeira/Contabilidade devem ser rejeitados (veto absoluto). Portanto, o perfil não é relevante para as áreas de Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Accounting Coordinator",
+        "department": "Administrativo",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:49:03.462954",
+    "candidate": "Pablo Gago Maestre",
+    "linkedin": "https://www.linkedin.com/in/pablogago",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Pablo Gago Maestre - Knorr - Bremse Rail Vehicle Systems | LinkedIn",
+            "body": "· Experiencia: Knorr - Bremse Rail Vehicle Systems · Ubicación: Madrid y alrededores · Más de 500 contactos en LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Profesional con sólida experiencia en compras estratégicas y gestión de proveedores en… · Experiência: Knorr-Bremse Rail Vehicle Systems · Localidade: Madrid e Região · + de 500 conexões no LinkedIn. Veja o perfil de Pablo Gago Maestre no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Pablo Gago Maestre",
+        "role": "Compras Estratégicas e Gestão de Fornecedores",
+        "matching_score": 95,
+        "department": "Suprimentos / Compras / Procurement",
+        "evidence": "O candidato trabalha na Knorr Bremse, conforme indicado pelos dados do Detetive e pela declaração da empresa-alvo. A especialidade e o departamento são relevantes para a busca.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Knorr-Bremse Rail Vehicle Systems",
+                "LinkedIn Status: Pablo Gago Maestre | knorr | LinkedIn",
+                "CURRENT COMPANY (Declarada): Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profesional con sólida experiencia en compras estratégicas y gestión de proveedores en…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Pablo Gago Maestre",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Pablo Gago Maestre",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Profesional con sólida experiencia en compras estratégicas y gestión de proveedores en… Experiência: Knorr-Bremse Rail Vehicle Systems Localidade: Madrid e Região + de 500 conexões no LinkedIn. Veja o perfil de Pablo Gago Maestre no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Compras Estratégicas e Gestão de Fornecedores",
+            "dept": "Suprimentos / Compras / Procurement",
+            "is_relevant": true,
+            "reasoning": "A bio menciona explicitamente 'compras estratégicas e gestão de fornecedores', que são áreas centrais de Suprimentos/Compras/Procurement. O vínculo com a Knorr Bremse é confirmado e a experiência é diretamente relevante para a área de interesse."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras Estratégicas e Gestão de Fornecedores",
+        "department": "Suprimentos / Compras / Procurement",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:49:27.635704",
+    "candidate": "Matheus Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/matheusribeiro1",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Matheus Ribeiro - Knorr - Bremse | LinkedIn",
+            "body": "· Experiência: Knorr - Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Matheus Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Engenheiro de Processos com ampla experiência em otimização de processos, melhoria… · Experiência: Knorr-Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Matheus Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Engenheiro De Processos",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/matheus-ribeiro"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Matheus Ribeiro",
+        "role": "Engenheiro de Processos",
+        "matching_score": 100,
+        "department": "Não Identificado",
+        "evidence": "O candidato Matheus Ribeiro trabalha na Knorr Bremse, que é a empresa-alvo declarada. O cargo de Engenheiro de Processos é relevante para a área de Suprimentos/Compras/Procurement. Não há indícios de veto mecânico ou de alucinação.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Candidate Name: Matheus Ribeiro | Google Page Title: Matheus Ribeiro - Knorr - Bremse | Search Snippet: · Experiência: Knorr - Bremse",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "LinkedIn Personal Bio: Engenheiro de Processos com ampla experiência em otimização de processos, melhoria… · Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Engenheiro de Processos com ampla experiência em otimização de processos, melhoria…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Matheus Ribeiro",
+                    "role": "Engenheiro De Processos"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Matheus Ribeiro",
+                "detected_role": "Engenheiro De Processos",
+                "clean_bio": "Engenheiro de Processos com ampla experiência em otimização de processos, melhoria…"
+            }
+        },
+        "specialist": {
+            "role_name": "Engenheiro de Processos",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Engenheiro de Processos não tem interface direta com Suprimentos/Compras/Procurement. A bio menciona otimização e melhoria de processos, mas não especifica em qual área, e não há termos explícitos relacionados a compras ou suprimentos."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Engenheiro De Processos",
+        "department": "Não Identificado",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:49:50.796779",
+    "candidate": "Henrique Gonçalves",
+    "linkedin": "https://www.linkedin.com/in/henrique-gon%C3%A7alves-4231913ba",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Henrique Gonçalves - Sales Manager Latam da empresa Knorr ...",
+            "body": "Sales Manager Latam da empresa Knorr- Bremse Brasil · Experiência: Knorr- Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: 05873-190 · + de 500 conexões no LinkedIn ...."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: 05873-190 · + de 500 conexões no LinkedIn. Veja o perfil de Henrique Gonçalves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Henrique Gonçalves",
+        "role": "Sales Manager Latam",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "Veto Mecânico Detectado: True. O Especialista marcou 'is_relevant: false' para o cargo de Sales Manager Latam, indicando que não é relevante para a busca em Suprimentos/Compras/Procurement. Além disso, o departamento de Vendas não é o foco da busca.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Sales Manager Latam da empresa Knorr- Bremse Brasil",
+                "Experiência: Knorr- Bremse",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sales Manager Latam da empresa Knorr- Bremse Brasil"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Henrique Gonçalves",
+                    "role": "Sales Manager Latam"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Henrique Gonçalves",
+                "detected_role": "Sales Manager Latam",
+                "clean_bio": "Sales Manager Latam da empresa Knorr- Bremse Brasil · Experiência: Knorr- Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: 05873-190 · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Sales Manager Latam",
+            "dept": "Vendas",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Sales Manager Latam', que pertence à área de Vendas. Conforme as instruções técnicas, perfis de Vendas devem ser vetados (item 5 e 6)."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sales Manager Latam",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:50:28.999843",
+    "candidate": "Moisés Lana",
+    "linkedin": "https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Moisés Lana - Knorr Bremse Sistemas P Veiculos... | LinkedIn",
+            "body": "Estes… · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "knorr bremse sistemas p veiculos comerciais brasil",
+            "bio": "Fascinado por desafios, trabalho em equipe, comunicativo, ansioso por aprendizados. Estes… · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Moisés Lana no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Moisés Lana",
+        "role": "Project Manager",
+        "matching_score": 95,
+        "department": "Supply Chain",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Moisés Lana trabalha como Project Manager na Knorr Bremse, empresa alvo, e sua área de atuação (Supply Chain) é relevante para a busca em Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "TÍTULO: Moisés Lana - Project Manager at Knorr-Bremse Brazil | LinkedIn"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Atuando há mais de 15 anos na indústria de autopeças, com experiência em Gerenciamento de Projetos, Qualidade de fornecedores, conhecedor de ferramentas da Qualidade e gestão como: PMBOOK, SCRUM."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Moisés Lana",
+                    "role": "Project Manager"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Moisés Lana",
+                "detected_role": "Project Manager",
+                "clean_bio": "Atuando há mais de 15 anos na indústria de autopeças, com experiência em Gerenciamento de Projetos, Qualidade de fornecedores, conhecedor de ferramentas da Qualidade e gestão como: PMBOOK, SCRUM,."
+            }
+        },
+        "specialist": {
+            "role_name": "Project Manager",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Project Manager, com experiência na indústria de autopeças e conhecimento em ferramentas de gestão como PMBOOK e SCRUM, é relevante para a área de Suprimentos/Compras, especialmente em um contexto de gestão de projetos relacionados a fornecedores e qualidade, que são interfaces diretas com Procurement e Supply Chain. O vínculo com a Knorr Bremse foi confirmado."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Project Manager",
+        "department": "Supply Chain",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:51:18.681546",
+    "candidate": "Rafael Pelizzari",
+    "linkedin": "https://www.linkedin.com/in/rpelizzari",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rafael Pelizzari - Managing Director at Knorr-Bremse Brazil ...",
+            "body": "Self-confident, high motivated and team-working · Localidade: Brasil . + de 500 conexões no LinkedIn . Veja o perfil de Rafael Pelizzari no LinkedIn , uma comunidade profissional de 1 bilhão de..."
+        },
+        "osint_metadata": {
+            "role": "brasil",
+            "bio": "20+ years’ experience at Automotive Industry. Mainly at R&D, Business Strategy and… · Localidade: Brasil. + de 500 conexões no LinkedIn. Veja o perfil de Rafael Pelizzari no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Managing Director",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/rafael-pelizzari"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rafael Pelizzari",
+        "role": "Managing Director",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato Rafael Pelizzari trabalha na Knorr Bremse como Managing Director, conforme confirmado pelo Detetive e Especialista. Não há indícios de Veto de Empresa, Trava de Sobrenome, Veto Técnico, Alucinação de Cargo ou Veto de Departamento.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rafael Pelizzari - Managing Director at Knorr-Bremse Brazil",
+                "CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Verified Official Role: Managing Director"
+            ],
+            "is_institutional": false,
+            "bio_raw": "20+ years’ experience at Automotive Industry. Mainly at R&D, Business Strategy and…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rafael Pelizzari",
+                    "role": "Managing Director"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rafael Pelizzari",
+                "detected_role": "Managing Director",
+                "clean_bio": "20+ years’ experience at Automotive Industry. Mainly at R&D, Business Strategy and… Localidade: Brasil. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Managing Director",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Managing Director' na Knorr Bremse, especialmente com mais de 20 anos na indústria automotiva e foco em Estratégia de Negócios, é considerado relevante. Diretores e executivos de alto escalão frequentemente têm interface direta ou são decisores em processos de compras e suprimentos estratégicos. O veto para vendas, marketing, financeiro, RH, jurídico e produção direta não se aplica aqui, pois o cargo é de gestão geral com potencial impacto em compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Managing Director",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:51:55.290633",
+    "candidate": "Bruno Rodrigues",
+    "linkedin": "https://www.linkedin.com/in/bruno-rodrigues-16404131",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Bruno Rodrigues - Knorr-Bremse | LinkedIn",
+            "body": "Experiência: Knorr-Bremse · Formação acadêmica: FEI - Faculdade de Engenharia Industrial · Localidade: São Paulo · 11 conexões no LinkedIn."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Formação acadêmica: FEI - Faculdade de Engenharia Industrial · Localidade: São Paulo · 11 conexões no LinkedIn. Veja o perfil de Bruno Rodrigues no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Bruno Rodrigues",
+        "role": "Comprador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato trabalha na Knorr Bremse, que é a empresa-alvo. O cargo é Comprador, o que é relevante para a área de Suprimentos/Compras/Procurement. Não há indícios de falsos positivos.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Comprador na Knorr-Bremse.",
+                "Comprador na Knorr-Bremse · Experiência : Knorr - Bremse",
+                "Bruno Rodrigues - Comprador na Knorr-Bremse | LinkedIn"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Comprador na Knorr-Bremse com formação na FEI - Faculdade de Engenharia Industrial, localizado em São Paulo."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Bruno Rodrigues",
+                    "role": "Comprador"
+                },
+                {
+                    "name": "Bruno Bertolini",
+                    "role": "Sales Engineer"
+                },
+                {
+                    "name": "Bruno Noronha",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Bruno Rodrigues",
+                "detected_role": "Comprador",
+                "clean_bio": "Comprador na Knorr-Bremse. Formação acadêmica: FEI - Faculdade de Engenharia Industrial. Localidade: São Paulo. 11 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador' está diretamente alinhado com a área de Suprimentos/Compras/Procurement. O vínculo com a Knorr Bremse foi confirmado e a formação na FEI é um diferencial técnico."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/bruno-rodrigues-16404131"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:52:22.422820",
+    "candidate": "Bruno Bertolini",
+    "linkedin": "https://www.linkedin.com/in/bruno-bertolini-b6236865",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Orphan Upgrade",
+            "body": "N/D"
+        },
+        "osint_metadata": {
+            "role": "Knorr",
+            "bio": "Experiência: Knorr-Bremse · Formação acadêmica: Faculdade Pitágoras de Jundiaí · Localidade: Itupeva · + de 500 conexões no LinkedIn. Veja o perfil de Bruno Bertolini no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Bruno Bertolini",
+        "role": "Engenheiro de Vendas",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "VETO TÉCNICO: Cargo considerado irrelevante pelo Especialista de RH (Não Identificado). O candidato trabalha na Knorr Bremse, que é a empresa-alvo. O cargo de Engenheiro de Vendas é relevante para a área de Suprimentos/Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Sales Engineer at Knorr-Bremse.",
+                "Sales Engineer | Knorr - Bremse",
+                "Engenheiro De Vendas at Knorr-Bremse",
+                "Engenheiro De Vendas - Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sales Engineer at Knorr-Bremse. Holds a degree in Mechanical Engineering from Faculdade Pitágoras de Jundiaí and a technical degree in Machining from Escola SENAI \"Conde Alexandre Siciliano.\""
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Bruno Bertolini",
+                    "role": "Sales Engineer"
+                },
+                {
+                    "name": "Bruno Bertolini",
+                    "role": "Engenheiro De Vendas"
+                },
+                {
+                    "name": "Bruno Bertolini",
+                    "role": "Engenheiro de vendas"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Bruno Bertolini",
+                "detected_role": "Engenheiro de vendas",
+                "clean_bio": "Sales Engineer at Knorr-Bremse. Holds a degree in Mechanical Engineering from Faculdade Pitágoras de Jundiaí and a technical degree in Machining from Escola SENAI \"Conde Alexandre Siciliano.\""
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Sales Engineer' (Engenheiro de Vendas), que é explicitamente vetado pela instrução 5. A bio e os snippets confirmam a atuação em vendas, não havendo interface com Suprimentos/Compras/Procurement."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/bruno-bertolini-b6236865"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Engenheiro de Vendas",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:52:41.962000",
+    "candidate": "Bruno Noronha",
+    "linkedin": "https://www.linkedin.com/in/bruno-bertolini-b6236865",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Orphan Upgrade",
+            "body": "N/D"
+        },
+        "osint_metadata": {
+            "role": null,
+            "bio": null
+        },
+        "theorg": {
+            "role": "Não Encontrado"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Bruno Noronha",
+        "role": "Sales Engineer",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com 'Veto Mecânico Detectado: True', indicando uma inconsistência ou regra de veto ativada que impede a qualificação.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Sales Engineer | Knorr-Bremse",
+                "Sales Engineer | Knorr - Bremse",
+                "Experiência : Knorr - Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sales Engineer"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Bruno Bertolini",
+                    "role": "Sales Engineer"
+                },
+                {
+                    "name": "Bruno Noronha",
+                    "role": "Sales Engineer"
+                },
+                {
+                    "name": "Bruno Noronha",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Bruno Noronha",
+                    "role": "Sales Engineer"
+                },
+                {
+                    "name": "Bruno Noronha",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Bruno Noronha",
+                    "role": "Sales Engineer"
+                },
+                {
+                    "name": "Bruno Noronha",
+                    "role": "Não Identificado"
+                },
+                {
+                    "name": "Bruno Noronha",
+                    "role": "Sales Engineer"
+                },
+                {
+                    "name": "Bruno Noronha",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Bruno Noronha",
+                "detected_role": "Sales Engineer",
+                "clean_bio": "Sales Engineer | Knorr-Bremse"
+            }
+        },
+        "specialist": {
+            "role_name": "Sales Engineer",
+            "dept": "Vendas",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Sales Engineer' está explicitamente listado na bio higienizada e nos snippets. Conforme a instrução técnica 5, cargos de Vendas (Sales) devem ser rejeitados. A instrução 6 também lista 'sales' como um termo que torna o perfil irrelevante."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/bruno-bertolini-b6236865"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sales Engineer",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:53:06.463543",
+    "candidate": "João Vitor Mazziero",
+    "linkedin": "https://www.linkedin.com/in/joaomazziero",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "João Vitor Mazziero - Coordenador de Engenharia de Produto | LinkedIn",
+            "body": "Knorr-Bremse ... Engenheiro de produto em equipe de 4 colaboradores, desenvolvimento e aplicação de caixas de direção, freios motor, sapatas de freio e freios ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "•\tProfissional com 10 anos de experiência como engenheiro mecânico  de produto em… · Experiência: Knorr-Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de João Vitor Mazziero no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "João Vitor Mazziero",
+        "role": "Coordenador de Engenharia de Produto",
+        "matching_score": 0,
+        "department": "Engenharia",
+        "evidence": "Veto técnico: Especialista marcou Relevante: False.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Profissional com 10 anos de experiência como engenheiro mecânico de produto em Knorr-Bremse.",
+                "Knorr-Bremse ... Engenheiro de produto em equipe de 4 colaboradores, desenvolvimento e aplicação de caixas de direção, freios motor, sapatas de freio e freios ...",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Engenheiro mecânico de produto com 10 anos de experiência na Knorr-Bremse, formado pela FGV, residente em Campinas."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "João Vitor Mazziero",
+                    "role": "Coordenador de Engenharia de Produto"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "João Vitor Mazziero",
+                "detected_role": "Coordenador de Engenharia de Produto",
+                "clean_bio": "Profissional com 10 anos de experiência como engenheiro mecânico de produto em Knorr-Bremse. Formado pela Fundação Getulio Vargas. Reside em Campinas e possui mais de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Coordenador de Engenharia de Produto",
+            "dept": "Engenharia",
+            "is_relevant": false,
+            "reasoning": "O cargo de Coordenador de Engenharia de Produto, com foco em desenvolvimento de componentes mecânicos como caixas de direção e freios, não possui interface direta com as áreas de Suprimentos/Compras/Procurement. A experiência é em engenharia mecânica, que está explicitamente listada para veto na instrução 6."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Coordenador de Engenharia de Produto",
+        "department": "Engenharia",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:53:14.038436",
+    "candidate": "Felipe Fernandes",
+    "linkedin": "https://www.linkedin.com/in/felipe-fernandes-1990",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Felipe Fernandes - Head de Tecnologia e AI - LinkedIn",
+            "body": "Sou engenheiro, builder de produtos digitais e líder de tecnologia com 14 anos de trajetória entre indústria multinacional, empreendedorismo e operações ..."
+        },
+        "osint_metadata": {
+            "role": "v4 company",
+            "bio": "Sou engenheiro, builder de produtos digitais e líder de tecnologia com 14 anos de… · Experiência: V4 Company · Formação acadêmica: V4 Company  · Localidade: Osasco · + de 500 conexões no LinkedIn. Veja o perfil de Felipe Fernandes no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:53:21.333399",
+    "candidate": "Rui E.",
+    "linkedin": "https://www.linkedin.com/in/rui-e-a019777a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rui E. - Engenheiro Mecânico e Automotivo - LinkedIn",
+            "body": "Profissional da indústria metal mecânica e automotiva com vivência nas áreas de engenharia de produto, processo e produtiva. Grande vivência focada no ..."
+        },
+        "osint_metadata": {
+            "role": "grupo dambroz",
+            "bio": "Formação em Engenharia Mecânica, Pós-Graduação em Engenharia Automotiva e Capacitação em… · Experiência: Grupo Dambroz · Formação acadêmica: Universidade de Caxias do Sul e USP · Localidade: Caxias do Sul · + de 500 conexões no LinkedIn. Veja o perfil de Rui E. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "evidence": "REJEIÇÃO MECÂNICA: Marca não encontrada no contexto (Título/Snippet/Meta)"
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "N/D",
+        "department": "N/D",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:53:39.249033",
+    "candidate": "Vitor C.",
+    "linkedin": "https://www.linkedin.com/in/vitorcaldoncellidossantos",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Vitor C. - IA no Comércio Exterior e Supply Chain | CEO @Cometrix",
+            "body": "Fundador. Cometrix. out. de 2023 ; MBA Candidate. Esade. set. de 2020 ; Venture Architect. Flagship Founders. jun. de 2021 ; Estagiário de logística. Knorr-Bremse."
+        },
+        "osint_metadata": {
+            "role": "cometrix",
+            "bio": "Experiência: Cometrix  · Formação acadêmica: Esade · Localidade: São Paulo · + de 500 conexões no LinkedIn. Veja o perfil de Vitor C. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Vitor C.",
+        "role": "CEO",
+        "matching_score": 0,
+        "department": "Supply Chain",
+        "evidence": "O candidato é CEO na Cometrix Cargo e foi estagiário na Knorr-Bremse. O Detetive confirmou que ele não trabalha mais na Knorr-Bremse, indicando que ele está em outra empresa. A regra 1 (Veto de Empresa) é aplicada.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Estagiário de logística. Knorr-Bremse.",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Vitor C. é CEO na Cometrix Cargo e foi estagiário de logística na Knorr-Bremse."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Vitor C.",
+                    "role": "CEO"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Vitor C.",
+                "detected_role": "CEO",
+                "clean_bio": "Vitor C. - IA no Comércio Exterior e Supply Chain | CEO @Cometrix"
+            }
+        },
+        "specialist": {
+            "role_name": "Estagiário de Logística",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O candidato atuou como Estagiário de Logística na Knorr-Bremse, o que é relevante para a área de Supply Chain/Logística, com interface direta com Suprimentos/Compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Ia No Comércio Exterior E Supply Chain",
+        "department": "Supply Chain",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:54:32.751978",
+    "candidate": "Jefferson Germano",
+    "linkedin": "https://www.linkedin.com/in/jefferson-germano-0694181a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Jefferson Germano - Knorr - Bremse | LinkedIn",
+            "body": "Parabéns ao time Knorr - Bremse Brasil ! Congratulations to Knorr - Bremse Brazil team! Jefferson Germano gostou. Veja o perfil completo de Jefferson."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Graduado em Administração de Empresas e pós graduado em Gestão estratégica de Negócios… · Experiência: Knorr-Bremse · Formação acadêmica: Pontifícia Universidade Católica de Campinas · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Jefferson Germano no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Gerente De Aftermarket - Brasil / America Latina",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/jefferson-germano"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Jefferson Germano",
+        "role": "Gerente de Aftermarket",
+        "matching_score": 100,
+        "department": "Administrativo",
+        "evidence": "O candidato Jefferson Germano trabalha na Knorr Bremse, que é a empresa-alvo declarada. O cargo de Gerente de Aftermarket é relevante para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "CURRENT COMPANY (Declarada): Knorr Bremse",
+                "LinkedIn Status: Jefferson Germano | knorr | LinkedIn",
+                "Google Page Title: Jefferson Germano - Knorr - Bremse",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Graduado em Administração de Empresas e pós graduado em Gestão estratégica de Negócios…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Jefferson Germano",
+                    "role": "Gerente De Aftermarket - Brasil / America Latina"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Jefferson Germano",
+                "detected_role": "Gerente De Aftermarket - Brasil / America Latina",
+                "clean_bio": "Graduado em Administração de Empresas e pós graduado em Gestão estratégica de Negócios…"
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente De Aftermarket - Brasil / America Latina",
+            "dept": "Administrativo",
+            "is_relevant": false,
+            "reasoning": "O cargo de Gerente de Aftermarket, embora em uma empresa do setor automotivo (Knorr Bremse), não demonstra interface direta com as áreas de Suprimentos, Compras ou Procurement. A bio indica formação em Administração e Gestão Estratégica de Negócios, mas não especifica atividades relacionadas às áreas de interesse. O cargo não contém palavras-chave que o tornem relevante para Suprimentos/Compras, e não se enquadra nas exceções de Logística ou cargos administrativos de fallback, nem em C-level."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Gerente De Aftermarket - Brasil / America Latina",
+        "department": "Administrativo",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:55:30.079739",
+    "candidate": "Nelson Beck",
+    "linkedin": "https://www.linkedin.com/in/nelson-beck-comprador",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nelson Beck - Knorr - Bremse Rail Vehicle Systems | LinkedIn",
+            "body": "Highly skilled in supply base methodologies and best practices, with a deep understanding… · Experiência: Knorr - Bremse Rail Vehicle Systems · Formação acadêmica: Universidade de São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Highly skilled in supply base methodologies and best practices, with a deep understanding… · Experiência: Knorr-Bremse Rail Vehicle Systems · Formação acadêmica: Universidade de São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn. Veja o perfil de Nelson Beck no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Nelson Beck",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "ENVIADO PARA ANÁLISE HUMANA: Vínculo confirmado, mas cargo exato oculto/genérico.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Knorr-Bremse Rail Vehicle Systems",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Highly skilled in supply base methodologies and best practices, with a deep understanding…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nelson Beck",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nelson Beck",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Highly skilled in supply base methodologies and best practices, with a deep understanding… · Experiência: Knorr-Bremse Rail Vehicle Systems · Formação acadêmica: Universidade de São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O candidato Nelson Beck trabalha na Knorr Bremse, empresa do setor automotivo/ferroviário. A bio menciona 'supply base methodologies and best practices', indicando forte interface com a área de Suprimentos/Compras. Como o cargo específico não foi identificado, mas a bio sugere relevância, a relevância é marcada como true."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 90
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:56:18.903769",
+    "candidate": "Diana S.",
+    "linkedin": "https://www.linkedin.com/in/diana-s-compras/pt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Diana S. - Compradora | Gestão de Compras | Material Direto & Indireto",
+            "body": "Experiência ; Regional Category Manager. Knorr-Bremse AG. mai. de 2025 ; Especialista em Gestão de Suprimentos. John Deere. abr. de 2022 ; Compradora de Material ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Administradora de empresas com alta experiência nas áreas de compras e marketing… · Experiência: Knorr-Bremse AG · Formação acadêmica: UniMax - Centro Universitário Max Planck · Localidade: Indaiatuba · + de 500 conexões no LinkedIn. Veja o perfil de Diana S. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Regional Category Manager",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/diana-s"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Diana S.",
+        "role": "Regional Category Manager",
+        "matching_score": 100,
+        "department": "Compras/Suprimentos",
+        "evidence": "O candidato trabalha na empresa alvo Knorr Bremse, com cargo relevante em Compras/Suprimentos.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Regional Category Manager. Knorr-Bremse AG. mai. de 2025",
+                "Knorr Bremse | LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Verified Official Role: Regional Category Manager"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Administradora de empresas com alta experiência nas áreas de compras e marketing…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Diana S.",
+                    "role": "Regional Category Manager"
+                },
+                {
+                    "name": "Diana S.",
+                    "role": "Especialista em Gestão de Suprimentos"
+                },
+                {
+                    "name": "Diana S.",
+                    "role": "Compradora de Material"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Diana S.",
+                "detected_role": "Regional Category Manager",
+                "clean_bio": "Administradora de empresas com alta experiência nas áreas de compras e marketing…"
+            }
+        },
+        "specialist": {
+            "role_name": "Regional Category Manager",
+            "dept": "Compras/Suprimentos",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Regional Category Manager' está diretamente alinhado com a área de Compras/Suprimentos. O vínculo com a Knorr Bremse foi confirmado pelo Detetive e o cargo é explícito na descrição."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Regional Category Manager",
+        "department": "Compras/Suprimentos",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:56:42.900398",
+    "candidate": "Luciana Camargo",
+    "linkedin": "https://www.linkedin.com/in/luciana-camargo-8a06a7108",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Luciana Camargo - Gerente de compras na Knorr-Bremse | LinkedIn",
+            "body": "Gerente de compras na Knorr-Bremse · Experiência: Knorr-Bremse · Localidade: Jundiaí. Veja Luciana Camargo o perfil no LinkedIn, uma comunidade profissional ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Localidade: Jundiaí. Veja o perfil de Luciana Camargo no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Luciana Camargo",
+        "role": "Gerente de Compras",
+        "matching_score": 100,
+        "department": "Compras",
+        "evidence": "O candidato trabalha na Knorr Bremse, que é a empresa-alvo declarada. O cargo e departamento são relevantes para a busca.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Gerente de compras na Knorr-Bremse",
+                "Experiência: Knorr-Bremse",
+                "CURRENT COMPANY (Declarada): Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Gerente de compras na Knorr-Bremse. Experiência: Knorr-Bremse. Localidade: Jundiaí."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Luciana Camargo",
+                    "role": "Gerente de compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Luciana Camargo",
+                "detected_role": "Gerente de compras",
+                "clean_bio": "Gerente de compras na Knorr-Bremse. Experiência: Knorr-Bremse. Localidade: Jundiaí."
+            }
+        },
+        "specialist": {
+            "role_name": "Gerente de Compras",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Gerente de Compras' está diretamente alinhado com a área de Suprimentos/Compras/Procurement. O vínculo com a Knorr Bremse é confirmado e a candidata possui experiência na empresa."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Gerente de Compras",
+        "department": "Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:57:01.436881",
+    "candidate": "Rafael Costa",
+    "linkedin": "https://www.linkedin.com/in/rafael-costa-49151392",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rafael Costa - Comprador | LinkedIn",
+            "body": "Entre para ver o perfil completo de Rafael. Rafael pode apresentar você a mais de 10 pessoas na empresa Knorr-Bremse ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Olá, tudo bem?\nSou formado em relações internacionais pela Universidade Estadual… · Experiência: Knorr-Bremse · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Rafael Costa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Compras",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/rafael-costa"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rafael Costa",
+        "role": "Compras",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Rafael Costa trabalha na Knorr Bremse, que é a empresa-alvo e a razão social oficial. O cargo é Compras, o departamento é Suprimentos/Compras/Procurement e o especialista confirmou a relevância. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Knorr-Bremse · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn.",
+                "Knorr Bremse · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Rafael Costa no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sou formado em relações internacionais pela Universidade Estadual… Experiência: Knorr-Bremse · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rafael Costa",
+                    "role": "Comprador"
+                },
+                {
+                    "name": "Rafael Costa",
+                    "role": "Compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rafael Costa",
+                "detected_role": "Compras",
+                "clean_bio": "Sou formado em relações internacionais pela Universidade Estadual… Experiência: Knorr-Bremse · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Compras",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Compras' e o 'Verified Official Role' também é 'Compras', que se alinha diretamente com a área de Suprimentos/Compras/Procurement. O vínculo com a Knorr Bremse foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:57:18.586504",
+    "candidate": "Leonardo Pereira",
+    "linkedin": "https://www.linkedin.com/in/leonardo-pereira-356503249",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leonardo Pereira - Administração | Analista de Compras Jr - LinkedIn",
+            "body": "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil, onde desempenho o papel de apoio aos compradores responsáveis por ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil,… · Experiência: Knorr-Bremse · Formação acadêmica: FADITU · Localidade: Cabreúva · 213 conexões no LinkedIn. Veja o perfil de Leonardo Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Analista De Compras Jr",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/leonardo-pereira"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Leonardo Pereira",
+        "role": "Analista de Compras Jr",
+        "matching_score": 100,
+        "department": "Compras",
+        "evidence": "O candidato Leonardo Pereira trabalha na Knorr Bremse como Analista de Compras Jr, o que corresponde à meta declarada e às informações do detetive e especialista.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil, onde desempenho o papel de apoio aos compradores responsáveis por...",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil,…"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Profissional no departamento de compras direto na empresa Knorr-Bremse Brasil, com papel de apoio aos compradores."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leonardo Pereira",
+                    "role": "Analista de Compras Jr"
+                },
+                {
+                    "name": "Leonardo Pereira",
+                    "role": "Analista De Compras Jr"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leonardo Pereira",
+                "detected_role": "Analista De Compras Jr",
+                "clean_bio": "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil, onde desempenho o papel de apoio aos compradores responsáveis por..."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista De Compras Jr",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Analista De Compras Jr' e a descrição 'apoio aos compradores' confirmam a relevância direta para a área de Compras/Suprimentos. O vínculo com a Knorr Bremse também foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Analista De Compras Jr",
+        "department": "Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:57:35.797120",
+    "candidate": "Alisson V.",
+    "linkedin": "https://www.linkedin.com/in/alisson-vinicius",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alisson V. - Knorr-Bremse - LinkedIn",
+            "body": "* Atividades: Atuação direta com sistema SAP, solicitação de cotações, compilação de dados, análise de reajustes, criação de pedidos, participação no ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "- Aprendiz \n*Jucip - Astra SA \n* Período: 18/02/2018 - 18/10/2018.\n*Atividades:… · Experiência: Knorr-Bremse · Localidade: Campo Limpo Paulista · 249 conexões no LinkedIn. Veja o perfil de Alisson V. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Comprador Júnior",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/alisson-v"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Alisson V.",
+        "role": "Comprador Júnior",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato trabalha na Knorr Bremse, conforme declarado e verificado pelo detetive. O cargo de Comprador Júnior é relevante para a área de Suprimentos/Compras/Procurement e não há indícios de falsos positivos ou vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Verified Official Role: Comprador Júnior",
+                "Atividades: Atuação direta com sistema SAP, solicitação de cotações, compilação de dados, análise de reajustes, criação de pedidos, participação no ...",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Aprendiz"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Alisson V.",
+                    "role": "Comprador Júnior"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Alisson V.",
+                "detected_role": "Comprador Júnior",
+                "clean_bio": "Aprendiz"
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador Júnior",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador Júnior' é diretamente relacionado a Suprimentos/Compras/Procurement. O candidato possui vínculo confirmado com a Knorr Bremse e as atividades descritas (SAP, cotações, análise de reajustes, criação de pedidos) são típicas da área."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador Júnior",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T18:57:53.974958",
+    "candidate": "Nicoly A.",
+    "linkedin": "https://www.linkedin.com/in/nicoly-a-846841103",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nicoly A. - Buyer at Siemens Energy | Strategic Procurement & Sourcing",
+            "body": "Experiência ; Comprador. Siemens Energy. fev. de 2026 ; Purchasing Co-op. Knorr-Bremse. fev. de 2024 ; Comprador. Thatuito. out. de 2020 ; Assistente de compras."
+        },
+        "osint_metadata": {
+            "role": "siemens energy",
+            "bio": "Experiência: Siemens Energy · Localidade: Louveira · + de 500 conexões no LinkedIn. Veja Nicoly A.  o perfil no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Nicoly A.",
+        "role": "Buyer",
+        "matching_score": 0,
+        "department": "Procurement",
+        "evidence": "O detetive encontrou que o candidato trabalha na Siemens Energy, que é uma empresa diferente da Knorr Bremse, violando a Regra Crítica 1 (Veto de Empresa).",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Candidate Name: Nicoly A. | Google Page Title: Nicoly A. - Buyer at Siemens Energy | Strategic Procurement & Sourcing | Search Snippet: Experiência ; Comprador. Siemens Energy. fev. de 2026 ; Purchasing Co-op. Knorr-Bremse. fev. de 2024 ; Comprador. Thatuito. out. de 2020 ; Assistente de compras. | LinkedIn Status: Nicoly A. | siemens energy | LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Buyer at Siemens Energy"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nicoly A.",
+                    "role": "Buyer"
+                },
+                {
+                    "name": "Nicoly A.",
+                    "role": "Purchasing Co-op"
+                },
+                {
+                    "name": "Nicoly A.",
+                    "role": "Buyer"
+                },
+                {
+                    "name": "Nicoly A.",
+                    "role": "Assistente de compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nicoly A.",
+                "detected_role": "Buyer",
+                "clean_bio": "Nicoly A. - Buyer at Siemens Energy | Strategic Procurement & Sourcing"
+            }
+        },
+        "specialist": {
+            "role_name": "Buyer",
+            "dept": "Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Buyer' (Comprador) é diretamente relacionado a Suprimentos/Compras/Procurement. Embora o vínculo com a Knorr Bremse não seja confirmado pelo Detetive, o histórico do candidato inclui 'Purchasing Co-op. Knorr-Bremse', indicando uma experiência prévia relevante. O cargo atual é 'Buyer at Siemens Energy', que também se alinha com a área de compras."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Buyer",
+        "department": "Procurement",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:14:16.932426",
+    "candidate": "Ezequiel Araujo",
+    "linkedin": "https://www.linkedin.com/in/ezequiel-araujo-968b4628",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ezequiel Araujo - Analista Logistico na Knorr-Bremse | LinkedIn",
+            "body": "Analista Logistico na Knorr - Bremse · Experiência: Knorr - Bremse · Localidade: São Paulo · 1 conexão no LinkedIn . Veja o perfil de Ezequiel Araujo no LinkedIn , uma comunidade..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Ezequiel Araujo",
+        "role": "Analista Logistico",
+        "matching_score": 100,
+        "department": "Logística/Supply Chain",
+        "evidence": "O candidato Ezequiel Araujo trabalha como Analista Logistico na Knorr Bremse, que é a empresa-alvo. Não há indícios de que ele trabalhe em outra empresa, nem de que o cargo seja irrelevante ou uma alucinação. O veto mecânico detectado foi superado pela confirmação dos dados.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Analista Logistico na Knorr-Bremse",
+                "Analista Logistico na Knorr - Bremse",
+                "Experiência: Knorr - Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Analista Logistico na Knorr-Bremse"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ezequiel Araujo",
+                    "role": "Analista Logistico"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ezequiel Araujo",
+                "detected_role": "Analista Logistico",
+                "clean_bio": "Analista Logistico na Knorr-Bremse"
+            }
+        },
+        "specialist": {
+            "role_name": "Analista Logistico",
+            "dept": "Logística/Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Analista Logístico tem interface direta com a área de Suprimentos/Compras, pois a logística é um componente essencial da cadeia de suprimentos. O vínculo com a Knorr Bremse foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Analista Logistico",
+        "department": "Logística/Supply Chain",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:15:02.973087",
+    "candidate": "Marcos Cirne",
+    "linkedin": "https://www.linkedin.com/in/marcos-cirne-b2621220",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Marcos Cirne - QUALYTRAIL | LinkedIn",
+            "body": "September 23, 2022 - 🚀🏆 A FST foi aprovada na auditoria PSA da Knorr Bremse , reforçando nosso compromisso com a qualidade e melhoria contínua 📊✅, evidenciando nosso sistema de gestão, o alinhamento com nossos clientes , e principalmente, o empenho ..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Marcos Cirne",
+        "role": "Não Identificado",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "REJEITADO APÓS REPESCAGEM: O perfil foi investigado e o cargo é irrelevante/não confirmado. Veto Mecânico Detectado: True. O candidato não foi encontrado na empresa alvo e o especialista marcou como não relevante.",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "A FST foi aprovada na auditoria PSA da Knorr Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Marcos Cirne"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Marcos Cirne",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Marcos Cirne",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Candidate Name: Marcos Cirne Google Page Title: Marcos Cirne - QUALYTRAIL Search Snippet: September 23, 2022 - 🚀🏆 A FST foi aprovada na auditoria PSA da Knorr Bremse , reforçando nosso compromisso com a qualidade e melhoria contínua 📊✅, evidenciando nosso sistema de gestão, o alinhamento com nossos clientes , e principalmente, o empenho ..."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Marcos Cirne não foi identificado nos dados fornecidos. Embora o snippet mencione a Knorr Bremse em relação a uma auditoria da FST, não há informações que vinculem diretamente Marcos Cirne a um cargo relevante para Suprimentos/Compras/Procurement na Knorr Bremse ou em qualquer outra empresa. A menção à auditoria PSA não especifica o papel de Marcos Cirne."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Qualytrail",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:15:18.248055",
+    "candidate": "Fernando Hazeu",
+    "linkedin": "https://www.linkedin.com/in/fernando-hazeu",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Fernando Hazeu - Knorr-Bremse AG | LinkedIn",
+            "body": "Experience: Knorr-Bremse AG · Education: Duke University - The Fuqua School of Business · Location: Greater Madrid Metropolitan Area · 500+ connections on LinkedIn. View Fernando Hazeu ’s profile on LinkedIn, a professional community of ..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Vice President - Signaling Europe",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/fernando-hazeu"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Fernando Hazeu",
+        "role": "Vice President - Signaling Europe",
+        "matching_score": 100,
+        "department": "Supply Chain",
+        "evidence": "O candidato trabalha na empresa-alvo Knorr Bremse, com cargo relevante em Supply Chain.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Fernando Hazeu - Knorr-Bremse AG",
+                "Experience: Knorr-Bremse AG",
+                "Verified Official Role: Vice President - Signaling Europe",
+                "Cargo Detectado: Vice President - Signaling Europe"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Fernando Hazeu - Knorr-Bremse AG. Vice President - Signaling Europe. Education: Duke University - The Fuqua School of Business. Location: Greater Madrid Metropolitan Area. 500+ connections on LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Fernando Hazeu",
+                    "role": "Vice President - Signaling Europe"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Fernando Hazeu",
+                "detected_role": "Vice President - Signaling Europe",
+                "clean_bio": "Fernando Hazeu - Knorr-Bremse AG. Experience: Knorr-Bremse AG. Education: Duke University - The Fuqua School of Business. Location: Greater Madrid Metropolitan Area. 500+ connections on LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Vice President - Signaling Europe",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Vice President - Signaling Europe, embora não explicitamente de Suprimentos/Compras, pode ter interface direta com a área, especialmente em uma empresa como a Knorr Bremse, que lida com componentes e produção. A posição de liderança em uma unidade de negócios europeia sugere responsabilidades estratégicas que podem incluir a gestão de fornecedores e custos. A relevância é confirmada pela posição de liderança e pela natureza da empresa."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Vice President - Signaling Europe",
+        "department": "Supply Chain",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:15:44.910493",
+    "candidate": "Matheus Ribeiro",
+    "linkedin": "https://www.linkedin.com/in/matheusribeiro1",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Matheus Ribeiro - Knorr - Bremse | LinkedIn",
+            "body": "· Experiência: Knorr - Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Matheus Ribeiro no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Engenheiro De Processos",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/matheus-ribeiro"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Matheus Ribeiro",
+        "role": "Engenheiro De Processos",
+        "matching_score": 100,
+        "department": "Não Identificado",
+        "evidence": "O candidato Matheus Ribeiro trabalha na Knorr Bremse como Engenheiro De Processos, o que corresponde à empresa-alvo e à função buscada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Knorr - Bremse",
+                "Candidate Name: Matheus Ribeiro | Google Page Title: Matheus Ribeiro - Knorr - Bremse",
+                "Verified Official Role: Engenheiro De Processos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Engenheiro De Processos na Knorr Bremse, com formação pela Fundação Getulio Vargas e mais de 500 conexões no LinkedIn. Reside em Jundiaí."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Matheus Ribeiro",
+                    "role": "Engenheiro De Processos"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Matheus Ribeiro",
+                "detected_role": "Engenheiro De Processos",
+                "clean_bio": "Matheus Ribeiro - Knorr - Bremse. Formação acadêmica: Fundação Getulio Vargas. Localidade: Jundiaí. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Engenheiro De Processos",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Engenheiro De Processos' não tem interface direta com Suprimentos/Compras/Procurement. Além disso, a palavra 'engenharia' e 'engenheiro' estão na lista de veto absoluto."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Engenheiro De Processos",
+        "department": "Não Identificado",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:16:14.275061",
+    "candidate": "Henrique Gonçalves",
+    "linkedin": "https://www.linkedin.com/in/henrique-gon%C3%A7alves-4231913ba",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Henrique Gonçalves - Sales Manager Latam da empresa Knorr ...",
+            "body": "Sales Manager Latam da empresa Knorr- Bremse Brasil · Experiência: Knorr- Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: 05873-190 · + de 500 conexões no LinkedIn ...."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: 05873-190 · + de 500 conexões no LinkedIn. Veja o perfil de Henrique Gonçalves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Henrique Gonçalves",
+        "role": "Sales Manager Latam",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "O especialista marcou o candidato como irrelevante (is_relevant: false) e o departamento é Vendas, o que viola a regra de veto de departamento para a área de Compras.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Sales Manager Latam da empresa Knorr- Bremse Brasil",
+                "Experiência: Knorr- Bremse",
+                "LinkedIn CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Sales Manager Latam da empresa Knorr- Bremse Brasil com experiência na Knorr-Bremse e formação pela Fundação Getulio Vargas."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Henrique Gonçalves",
+                    "role": "Sales Manager Latam"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Henrique Gonçalves",
+                "detected_role": "Sales Manager Latam",
+                "clean_bio": "Sales Manager Latam da empresa Knorr- Bremse Brasil · Experiência: Knorr- Bremse · Formação acadêmica: Fundação Getulio Vargas · Localidade: 05873-190 · + de 500 conexões no LinkedIn. Veja o perfil de Henrique Gonçalves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Sales Manager Latam",
+            "dept": "Vendas",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Sales Manager Latam', que se enquadra na categoria de Vendas, explicitamente vetada pelas instruções técnicas (item 5 e 6)."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Sales Manager Latam",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:16:55.944311",
+    "candidate": "Moisés Lana",
+    "linkedin": "https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Moisés Lana - Knorr Bremse Sistemas P Veiculos... | LinkedIn",
+            "body": "Estes… · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "knorr bremse sistemas p veiculos comerciais brasil",
+            "bio": "Fascinado por desafios, trabalho em equipe, comunicativo, ansioso por aprendizados. Estes… · Experiência: Knorr Bremse Sistemas P Veiculos Comerciais Brasil · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn. Veja o perfil de Moisés Lana no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Moisés Lana",
+        "role": "Project Manager",
+        "matching_score": 95,
+        "department": "Supply Chain",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Moisés Lana trabalha como Project Manager na Knorr Bremse, o que é relevante para a área de Suprimentos/Compras/Procurement. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "TÍTULO: Moisés Lana - Project Manager at Knorr-Bremse Brazil | LinkedIn",
+                "Sugestão via URL: https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Atuando há mais de 15 anos na indústria de autopeças, com experiência em Gerenciamento de Projetos, Qualidade de fornecedores, conhecedor de ferramentas da Qualidade e gestão como: PMBOOK, SCRUM."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Moisés Lana",
+                    "role": "Project Manager"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Moisés Lana",
+                "detected_role": "Project Manager",
+                "clean_bio": "Atuando há mais de 15 anos na indústria de autopeças, com experiência em Gerenciamento de Projetos, Qualidade de fornecedores, conhecedor de ferramentas da Qualidade e gestão como: PMBOOK, SCRUM,."
+            }
+        },
+        "specialist": {
+            "role_name": "Project Manager",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo de Project Manager na Knorr Bremse, com experiência em Gerenciamento de Projetos e Qualidade de fornecedores na indústria de autopeças, tem interface direta com a área de Suprimentos/Compras, especialmente em gestão de projetos relacionados a fornecedores e qualidade. A experiência em ferramentas como PMBOOK e SCRUM reforça a capacidade de gerenciar processos complexos dentro da cadeia de suprimentos."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/mois%C3%A9s-lana-4216a742"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Project Manager",
+        "department": "Supply Chain",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:17:43.359838",
+    "candidate": "Rafael Pelizzari",
+    "linkedin": "https://www.linkedin.com/in/rpelizzari",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rafael Pelizzari - Managing Director at Knorr-Bremse Brazil ...",
+            "body": "Self-confident, high motivated and team-working · Localidade: Brasil . + de 500 conexões no LinkedIn . Veja o perfil de Rafael Pelizzari no LinkedIn , uma comunidade profissional de 1 bilhão de..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Managing Director",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/rafael-pelizzari"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rafael Pelizzari",
+        "role": "Managing Director",
+        "matching_score": 100,
+        "department": "Diretoria/Gestão",
+        "evidence": "O candidato trabalha na empresa alvo Knorr Bremse como Managing Director, o que é consistente com os dados fornecidos.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Managing Director at Knorr-Bremse Brazil",
+                "Managing Director"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Managing Director at Knorr-Bremse Brazil"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rafael Pelizzari",
+                    "role": "Managing Director"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rafael Pelizzari",
+                "detected_role": "Managing Director",
+                "clean_bio": "Managing Director at Knorr-Bremse Brazil"
+            }
+        },
+        "specialist": {
+            "role_name": "Managing Director",
+            "dept": "Diretoria/Gestão",
+            "is_relevant": true,
+            "reasoning": "O cargo de Managing Director em uma empresa como a Knorr Bremse, especialmente em um mercado como o Brasil, implica em responsabilidades de gestão geral e estratégica. Embora não seja diretamente um cargo de Suprimentos/Compras, a posição de liderança sênior (C-level) frequentemente envolve decisões de aprovação e influência em processos de aquisição e parcerias estratégicas, o que o torna relevante para a área de Compras/Procurement em um nível decisório. A instrução 10 sobre Diretoria e Sócios (C-level) justifica a relevância."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Managing Director",
+        "department": "Diretoria/Gestão",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:18:32.852735",
+    "candidate": "Rodrigo Santos",
+    "linkedin": "https://www.linkedin.com/in/rodrigo-santos-135a331a3",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rodrigo Santos - Knorr - Bremse | LinkedIn",
+            "body": "Experiência: Knorr - Bremse · Formação acadêmica: PUC Minas · Localidade: 13230-001 · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Engenheiro De Qualidade Jr",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/rodrigo-santos"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Rodrigo Santos",
+        "role": "Engenheiro De Qualidade Jr",
+        "matching_score": 0,
+        "department": "Qualidade",
+        "evidence": "Veto Mecânico Detectado: True",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Knorr - Bremse",
+                "Rodrigo Santos - Knorr - Bremse",
+                "Engenheiro De Qualidade Jr"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rodrigo Santos - Knorr - Bremse"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rodrigo Santos",
+                    "role": "Engenheiro De Qualidade Jr"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rodrigo Santos",
+                "detected_role": "Engenheiro De Qualidade Jr",
+                "clean_bio": "Rodrigo Santos - Knorr - Bremse"
+            }
+        },
+        "specialist": {
+            "role_name": "Engenheiro De Qualidade Jr",
+            "dept": "Qualidade",
+            "is_relevant": false,
+            "reasoning": "O cargo de Engenheiro de Qualidade Jr não possui interface direta com as áreas de Suprimentos/Compras/Procurement. Além disso, a palavra 'qualidade' está explicitamente listada como critério de veto."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Engenheiro De Qualidade Jr",
+        "department": "Qualidade",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:19:35.570596",
+    "candidate": "Nelson Beck",
+    "linkedin": "https://www.linkedin.com/in/nelson-beck-comprador",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Nelson Beck - Knorr - Bremse Rail Vehicle Systems | LinkedIn",
+            "body": "Highly skilled in supply base methodologies and best practices, with a deep understanding… · Experiência: Knorr - Bremse Rail Vehicle Systems · Formação acadêmica: Universidade de São Paulo · Localidade: Brasil · + de 500 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Nelson Beck",
+        "role": "Comprador",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "APROVADO VIA REPESCAGEM: O candidato Nelson Beck trabalha na Knorr Bremse, que é a empresa-alvo. O especialista confirmou que a função é relevante para Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Knorr-Bremse Brasil | LinkedIn",
+                "Knorr-Bremse | LinkedIn",
+                "Gabriel Coelho - Accounts Payable Analyst | Knorr-Bremse ...",
+                "Experiência : Knorr - Bremse Rail Vehicle Systems",
+                "Trabalhou como operador centro de usinagem na Knorr - Bremse",
+                "Experiência : Knorr - Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Veja o perfil de Nelson Beck no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Nelson Beck",
+                    "role": "Comprador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Nelson Beck",
+                "detected_role": "Comprador",
+                "clean_bio": "Veja o perfil de Nelson Beck no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Comprador', que se alinha diretamente com a área de Suprimentos/Compras/Procurement. O vínculo com a Knorr Bremse foi confirmado pelo Detetive."
+        },
+        "verified_linkedin": "https://www.linkedin.com/in/nelson-beck-comprador"
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:19:51.005350",
+    "candidate": "Rafael Costa",
+    "linkedin": "https://www.linkedin.com/in/rafael-costa-49151392",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rafael Costa - Knorr - Bremse | LinkedIn",
+            "body": "· Experiência: Knorr - Bremse · Formação acadêmica: MBA USP/Esalq · Localidade: Jundiaí · + de 500 conexões no LinkedIn . Veja o perfil de Rafael Costa no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Compras",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/rafael-costa"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rafael Costa",
+        "role": "Compras",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Rafael Costa trabalha na Knorr Bremse, que é a empresa-alvo e a razão social oficial. O cargo é Compras, o departamento é Suprimentos/Compras/Procurement e o especialista confirmou a relevância. Não há vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rafael Costa - Knorr - Bremse",
+                "Experiência: Knorr - Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rafael Costa, Compras na Knorr Bremse, Jundiaí. MBA USP/Esalq. Mais de 500 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rafael Costa",
+                    "role": "Compras"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rafael Costa",
+                "detected_role": "Compras",
+                "clean_bio": "Rafael Costa - Knorr - Bremse. MBA USP/Esalq. Localidade: Jundiaí. + de 500 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Compras",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo detectado é 'Compras' e o vínculo com a Knorr Bremse é confirmado. A função de Compras é diretamente relevante para a área de Suprimentos/Compras/Procurement."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Compras",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:21:12.733366",
+    "candidate": "Ana Beatriz Santiago",
+    "linkedin": "https://www.linkedin.com/in/ana-beatriz-santiago-9672481a7",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Ana Beatriz Santiago - Knorr - Bremse | LinkedIn",
+            "body": "· Experiência: Knorr - Bremse · Formação acadêmica: Universidade Paulista · Localidade: Jundiaí · 405 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Analista Fiscal Jr",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/ana-beatriz-santiago"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Ana Beatriz Santiago",
+        "role": "Analista Fiscal Jr",
+        "matching_score": 0,
+        "department": "Administrativo",
+        "evidence": "Veto Mecânico Detectado: True",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Knorr - Bremse",
+                "Cargo Detectado: Analista Fiscal Jr",
+                "Verified Official Role: Analista Fiscal Jr"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Ana Beatriz Santiago é Analista Fiscal Jr na Knorr Bremse em Jundiaí, com 405 conexões no LinkedIn e formação pela Universidade Paulista."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Ana Beatriz Santiago",
+                    "role": "Analista Fiscal Jr"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Ana Beatriz Santiago",
+                "detected_role": "Analista Fiscal Jr",
+                "clean_bio": "Ana Beatriz Santiago - Knorr - Bremse. Experiência: Knorr - Bremse. Formação acadêmica: Universidade Paulista. Localidade: Jundiaí. 405 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista Fiscal Jr",
+            "dept": "Administrativo",
+            "is_relevant": false,
+            "reasoning": "O cargo de Analista Fiscal Jr não possui interface direta com as áreas de Suprimentos/Compras/Procurement. A função fiscal está relacionada a tributos e impostos, o que a exclui do escopo de relevância técnica para as áreas solicitadas, conforme as regras de veto absoluto (item 5 e 6)."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista Fiscal Jr",
+        "department": "Administrativo",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:22:54.192904",
+    "candidate": "Leonardo Pereira",
+    "linkedin": "https://www.linkedin.com/in/leonardo-pereira-356503249",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Leonardo Pereira - Administração | Analista de Compras Jr ...",
+            "body": "Administração | Analista de Compras Jr | Regional Procurement Excellence · Atualmente profissional no departamento de compras direto na empresa Knorr - Bremse Brasil , onde desempenho o..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil,… · Experiência: Knorr-Bremse · Formação acadêmica: FADITU · Localidade: Cabreúva · 213 conexões no LinkedIn. Veja o perfil de Leonardo Pereira no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Analista De Compras Jr",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/leonardo-pereira"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Leonardo Pereira",
+        "role": "Analista de Compras Jr",
+        "matching_score": 100,
+        "department": "Compras",
+        "evidence": "O candidato Leonardo Pereira trabalha na Knorr Bremse como Analista de Compras Jr, o que corresponde à meta da empresa e ao cargo declarado.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil.",
+                "CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil,…"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Leonardo Pereira",
+                    "role": "Analista de Compras Jr"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Leonardo Pereira",
+                "detected_role": "Analista De Compras Jr",
+                "clean_bio": "Atualmente profissional no departamento de compras direto na empresa Knorr-Bremse Brasil."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista de Compras Jr",
+            "dept": "Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Analista de Compras Jr' está diretamente alinhado com a área de Compras/Suprimentos. O candidato trabalha atualmente na Knorr Bremse, empresa alvo, o que confirma a relevância do vínculo."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Analista De Compras Jr",
+        "department": "Compras",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:23:15.343559",
+    "candidate": "Emily Morais",
+    "linkedin": "https://www.linkedin.com/in/emily-morais-3a55001b3",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Emily Morais - Analista de vendas na Knorr-Bremse | LinkedIn",
+            "body": "Analista de vendas na Knorr - Bremse · Experiência: Knorr - Bremse · Formação acadêmica: Universidade Paulista · Localidade: Jundiaí · 490 conexões no LinkedIn . Veja o perfil de Emily..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Experiência: Knorr-Bremse · Formação acadêmica: Universidade Paulista · Localidade: Jundiaí · 491 conexões no LinkedIn. Veja o perfil de Emily Morais no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Analista De Vendas",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/emily-morais"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Emily Morais",
+        "role": "Analista De Vendas",
+        "matching_score": 0,
+        "department": "Vendas",
+        "evidence": "Veto Mecânico Detectado: True. O candidato foi marcado com Veto Mecânico, indicando uma inconsistência ou regra de rejeição automática ativada.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Analista de vendas na Knorr-Bremse.",
+                "Experiência: Knorr-Bremse.",
+                "CURRENT COMPANY (Declarada): Knorr Bremse | LinkedIn",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Analista de vendas na Knorr-Bremse. Experiência: Knorr-Bremse. Formação acadêmica: Universidade Paulista. Localidade: Jundiaí. 490 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Emily Morais",
+                    "role": "Analista de vendas"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Emily Morais",
+                "detected_role": "Analista De Vendas",
+                "clean_bio": "Analista de vendas na Knorr-Bremse. Experiência: Knorr-Bremse. Formação acadêmica: Universidade Paulista. Localidade: Jundiaí. 490 conexões no LinkedIn."
+            }
+        },
+        "specialist": {
+            "role_name": "Analista de Vendas",
+            "dept": "Vendas",
+            "is_relevant": false,
+            "reasoning": "O cargo detectado é 'Analista de Vendas', que é explicitamente vetado pela instrução técnica 5 e 6."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Analista De Vendas",
+        "department": "Vendas",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:23:29.892093",
+    "candidate": "Alisson V.",
+    "linkedin": "https://www.linkedin.com/in/alisson-vinicius",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Alisson V. - Knorr-Bremse | LinkedIn",
+            "body": "· Experiência: Knorr - Bremse · Localidade: Campo Limpo Paulista · 249 conexões no LinkedIn . Veja o perfil de Alisson V. no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Comprador Júnior",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/alisson-v"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Alisson V.",
+        "role": "Comprador Júnior",
+        "matching_score": 100,
+        "department": "Suprimentos / Compras / Procurement",
+        "evidence": "O candidato Alisson V. trabalha na Knorr Bremse como Comprador Júnior, o que é consistente com a busca em Suprimentos / Compras / Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Empresa Alvo: Knorr Bremse",
+                "Bio Higienizada: Alisson V. - Knorr-Bremse",
+                "Experiência: Knorr - Bremse",
+                "Cargo Detectado: Comprador Júnior",
+                "Verified Official Role: Comprador Júnior"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Comprador Júnior na Knorr-Bremse em Campo Limpo Paulista com 249 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Alisson V.",
+                    "role": "Comprador Júnior"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Alisson V.",
+                "detected_role": "Comprador Júnior",
+                "clean_bio": "Alisson V. - Knorr-Bremse. Localidade: Campo Limpo Paulista. 249 conexões no LinkedIn. Veja o perfil de Alisson V. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Comprador Júnior",
+            "dept": "Suprimentos / Compras / Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Comprador Júnior' foi confirmado pelo 'Cargo Detectado' e 'Verified Official Role'. Este cargo está diretamente alinhado com a área de Suprimentos/Compras/Procurement, e o vínculo com a Knorr Bremse foi confirmado."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Comprador Júnior",
+        "department": "Suprimentos / Compras / Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:25:02.961199",
+    "candidate": "Odilom C.",
+    "linkedin": "https://www.linkedin.com/in/odilom-c-454b4331",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Odilom C. - Purchasing Manager at Knorr - Bremse Brasil | LinkedIn",
+            "body": "· Experiência: Knorr - Bremse · Formação acadêmica: UNAT - Brasil · Localidade: Campinas · + de 500 conexões no LinkedIn .Itupeva, São Paulo, Brasil . In charge of Commercial and Project Purchasing activities, related to direct material, for Commercial Vehicle Systems division."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Engaged, willing to learn, willing to contribute, focused on results, team player, good… · Experiência: Knorr-Bremse · Formação acadêmica: UNAT - Brasil · Localidade: Campinas · + de 500 conexões no LinkedIn. Veja o perfil de Odilom C. no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Purchasing Manager",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/odilom-c"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Odilom C.",
+        "role": "Purchasing Manager",
+        "matching_score": 100,
+        "department": "Suprimentos / Compras / Procurement",
+        "evidence": "O candidato trabalha na Knorr Bremse, conforme confirmado pelo Detetive e pelo Especialista. O cargo e o departamento são relevantes para a busca.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Knorr - Bremse Brasil",
+                "Purchasing Manager at Knorr - Bremse Brasil",
+                "CURRENT COMPANY (Declarada): Knorr Bremse",
+                "Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "In charge of Commercial and Project Purchasing activities, related to direct material, for Commercial Vehicle Systems division."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Odilom C.",
+                    "role": "Purchasing Manager"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Odilom C.",
+                "detected_role": "Purchasing Manager",
+                "clean_bio": "In charge of Commercial and Project Purchasing activities, related to direct material, for Commercial Vehicle Systems division."
+            }
+        },
+        "specialist": {
+            "role_name": "Purchasing Manager",
+            "dept": "Suprimentos / Compras / Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Purchasing Manager' e a descrição 'In charge of Commercial and Project Purchasing activities, related to direct material, for Commercial Vehicle Systems division' indicam claramente uma função em Compras/Suprimentos, alinhada com a área de interesse da Knorr Bremse."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Purchasing Manager",
+        "department": "Suprimentos / Compras / Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:26:00.053980",
+    "candidate": "Rubens Alves",
+    "linkedin": "https://www.linkedin.com/in/rubens-alves-58097417",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rubens Alves - Purchasing Specialist | LinkedIn",
+            "body": "Experiência ; Regional Category Manager. Knorr-Bremse. jun. de 2015 ; Purchasing Supervisor. Cosma International Group of Magna International Inc. set. de 2011 ..."
+        },
+        "osint_metadata": {
+            "role": "knorr",
+            "bio": "Skills and Professional Profile\n•Solid experience in strategic and routine… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Estadual de Campinas · Localidade: Jundiaí · 492 conexões no LinkedIn. Veja o perfil de Rubens Alves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "theorg": {
+            "role": "Regional Category Manager",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/rubens-alves"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rubens Alves",
+        "role": "Regional Category Manager",
+        "matching_score": 100,
+        "department": "Suprimentos / Compras / Procurement",
+        "evidence": "O candidato Rubens Alves trabalha na Knorr Bremse como Regional Category Manager, o que corresponde à meta da empresa e ao departamento de Suprimentos / Compras / Procurement. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Regional Category Manager. Knorr-Bremse. jun. de 2015",
+                "Experiência: Knorr-Bremse",
+                "Rubens Alves | knorr"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Rubens Alves - Purchasing Specialist. Experiência ; Regional Category Manager. Knorr-Bremse. jun. de 2015 ; Purchasing Supervisor. Cosma International Group of Magna International Inc. set. de 2011 ... Rubens Alves | knorr. Solid experience in strategic and routine… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Estadual de Campinas · Localidade: Jundiaí · 492 conexões no LinkedIn."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rubens Alves",
+                    "role": "Purchasing Specialist"
+                },
+                {
+                    "name": "Rubens Alves",
+                    "role": "Regional Category Manager"
+                },
+                {
+                    "name": "Rubens Alves",
+                    "role": "Purchasing Supervisor"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rubens Alves",
+                "detected_role": "Regional Category Manager",
+                "clean_bio": "Rubens Alves - Purchasing Specialist. Experiência ; Regional Category Manager. Knorr-Bremse. jun. de 2015 ; Purchasing Supervisor. Cosma International Group of Magna International Inc. set. de 2011 ... Rubens Alves | knorr. Solid experience in strategic and routine… · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Estadual de Campinas · Localidade: Jundiaí · 492 conexões no LinkedIn. Veja o perfil de Rubens Alves no LinkedIn, uma comunidade profissional de 1 bilhão de usuários."
+            }
+        },
+        "specialist": {
+            "role_name": "Regional Category Manager",
+            "dept": "Suprimentos / Compras / Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Regional Category Manager' e a experiência na Knorr-Bremse confirmam a relevância para a área de Suprimentos/Compras. O candidato possui experiência direta na empresa alvo e em funções de gestão de categorias, o que é crucial para a posição."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Regional Category Manager",
+        "department": "Suprimentos / Compras / Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:26:17.198741",
+    "candidate": "Edilson Teshima",
+    "linkedin": "https://www.linkedin.com/in/edilson-teshima-b4924620a",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Edilson Teshima - Technical Purchasing Specialist-Knorr-Bremse",
+            "body": "Knorr-Bremse. jan. de 2016 - o momento 10 anos 6 meses. Itupeva, São Paulo, Brasil. Regional category manager of Aluminum casting, Rubber and Plastic."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Edilson Teshima",
+        "role": "Technical Purchasing Specialist",
+        "matching_score": 100,
+        "department": "Suprimentos / Compras / Procurement",
+        "evidence": "O candidato trabalha na empresa-alvo Knorr Bremse como Technical Purchasing Specialist, o que é consistente com a área de Suprimentos / Compras / Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Edilson Teshima - Technical Purchasing Specialist-Knorr-Bremse. Knorr-Bremse. jan. de 2016 - o momento 10 anos 6 meses. Itupeva, São Paulo, Brasil.",
+                "Regional category manager of Aluminum casting, Rubber and Plastic."
+            ],
+            "is_institutional": false,
+            "bio_raw": "Technical Purchasing Specialist at Knorr-Bremse, also served as Regional category manager of Aluminum casting, Rubber and Plastic. Employed since January 2016."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Edilson Teshima",
+                    "role": "Technical Purchasing Specialist"
+                },
+                {
+                    "name": "Edilson Teshima",
+                    "role": "Regional category manager of Aluminum casting, Rubber and Plastic"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Edilson Teshima",
+                "detected_role": "Technical Purchasing Specialist",
+                "clean_bio": "Edilson Teshima - Technical Purchasing Specialist-Knorr-Bremse. Knorr-Bremse. jan. de 2016 - o momento 10 anos 6 meses. Itupeva, São Paulo, Brasil. Regional category manager of Aluminum casting, Rubber and Plastic."
+            }
+        },
+        "specialist": {
+            "role_name": "Technical Purchasing Specialist",
+            "dept": "Suprimentos / Compras / Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Technical Purchasing Specialist' e a descrição 'Regional category manager of Aluminum casting, Rubber and Plastic' indicam claramente uma função dentro de Suprimentos/Compras, com foco em categorias técnicas específicas. O vínculo com a Knorr Bremse é confirmado e a experiência é extensa (mais de 10 anos)."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Technical Purchasing Specialist",
+        "department": "Suprimentos / Compras / Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:26:33.066036",
+    "candidate": "Davi Sgarbosa",
+    "linkedin": "https://www.linkedin.com/in/davi-sgarbosa",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Davi Sgarbosa - Engenheiro de Produto na Knorr-Bremse | LinkedIn",
+            "body": "Engenheiro de Produto na Knorr-Bremse · Experiência: Knorr-Bremse · Formação acadêmica: Universidade Estadual de Campinas · Localidade: Cosmópolis · 354 ..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Engenheiro De Produtos",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/davi-sgarbosa"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Davi Sgarbosa",
+        "role": "Engenheiro de Produto",
+        "matching_score": 100,
+        "department": "Engenharia",
+        "evidence": "O candidato Davi Sgarbosa trabalha como Engenheiro de Produto na Knorr Bremse, que é a empresa-alvo. O especialista marcou como relevante, e não há vetos aplicáveis.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Engenheiro de Produto na Knorr-Bremse",
+                "Engenheiro de Produto na Knorr-Bremse · Experiência: Knorr-Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Engenheiro de Produto na Knorr-Bremse"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Davi Sgarbosa",
+                    "role": "Engenheiro de Produto"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Davi Sgarbosa",
+                "detected_role": "Engenheiro De Produtos",
+                "clean_bio": "Engenheiro de Produto na Knorr-Bremse"
+            }
+        },
+        "specialist": {
+            "role_name": "Engenheiro de Produto",
+            "dept": "Engenharia",
+            "is_relevant": false,
+            "reasoning": "O cargo de Engenheiro de Produto não possui interface direta com as áreas de Suprimentos, Compras ou Procurement. A função está mais ligada ao desenvolvimento e concepção de produtos."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Engenheiro De Produtos",
+        "department": "Engenharia",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:26:46.755420",
+    "candidate": "Diana S.",
+    "linkedin": "https://www.linkedin.com/in/diana-s-compras/pt",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Diana S. - Compradora | Gestão de Compras | Material Direto & Indireto",
+            "body": "Experiência ; Regional Category Manager. Knorr-Bremse AG. mai. de 2025 ; Especialista em Gestão de Suprimentos. John Deere. abr. de 2022 ; Compradora de Material ..."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Regional Category Manager",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/diana-s"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Diana S.",
+        "role": "Regional Category Manager",
+        "matching_score": 100,
+        "department": "Suprimentos / Compras / Procurement",
+        "evidence": "O candidato trabalha na Knorr Bremse, conforme indicado pelos dados do Detetive e pelo cargo oficial. O cargo e o departamento são relevantes para a área de Suprimentos/Compras/Procurement.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Regional Category Manager. Knorr-Bremse AG. mai. de 2025"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Diana S. - Compradora | Gestão de Compras | Material Direto & Indireto. Experiência ; Regional Category Manager. Knorr-Bremse AG. mai. de 2025 ; Especialista em Gestão de Suprimentos. John Deere. abr. de 2022 ; Compradora de Material ..."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Diana S.",
+                    "role": "Regional Category Manager"
+                },
+                {
+                    "name": "Diana S.",
+                    "role": "Especialista em Gestão de Suprimentos"
+                },
+                {
+                    "name": "Diana S.",
+                    "role": "Compradora de Material"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Diana S.",
+                "detected_role": "Regional Category Manager",
+                "clean_bio": "Diana S. - Compradora | Gestão de Compras | Material Direto & Indireto. Experiência ; Regional Category Manager. Knorr-Bremse AG. mai. de 2025 ; Especialista em Gestão de Suprimentos. John Deere. abr. de 2022 ; Compradora de Material ..."
+            }
+        },
+        "specialist": {
+            "role_name": "Regional Category Manager",
+            "dept": "Suprimentos / Compras / Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Regional Category Manager' na Knorr-Bremse AG está diretamente alinhado com a área de Suprimentos/Compras/Procurement. A experiência anterior como 'Especialista em Gestão de Suprimentos' e 'Compradora de Material' reforça a relevância do perfil para a empresa alvo."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Regional Category Manager",
+        "department": "Suprimentos / Compras / Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:27:06.367777",
+    "candidate": "Robson Lúcio de Souza",
+    "linkedin": "https://www.linkedin.com/in/robson-l%C3%BAcio-de-souza-05a125137",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Robson Lúcio de Souza - Sr. Purchasing and Supply Chain ...",
+            "body": "Robson Lúcio de Souza. Sr. Purchasing and Supply Chain Manager. Knorr-Bremse Fundação Dom Cabral. Itupeva, São Paulo, Brasil. 5 mil seguidores + de 500 conexões."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Purchasing & Supply Chain Manager",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/robson-lucio-de-souza"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Robson Lúcio de Souza",
+        "role": "Purchasing & Supply Chain Manager",
+        "matching_score": 100,
+        "department": "Suprimentos/Compras/Procurement",
+        "evidence": "O candidato Robson Lúcio de Souza trabalha como Purchasing & Supply Chain Manager na Knorr Bremse, que é a empresa-alvo. O especialista confirmou a relevância e o detetive confirmou o vínculo empregatício. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Sr. Purchasing and Supply Chain Manager. Knorr-Bremse",
+                "Verified Official Role: Purchasing & Supply Chain Manager",
+                "Sr. Purchasing and Supply Chain Manager"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Robson Lúcio de Souza. Sr. Purchasing and Supply Chain Manager. Knorr-Bremse Fundação Dom Cabral. Itupeva, São Paulo, Brasil. 5 mil seguidores + de 500 conexões."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Robson Lúcio de Souza",
+                    "role": "Sr. Purchasing and Supply Chain Manager"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Robson Lúcio de Souza",
+                "detected_role": "Purchasing & Supply Chain Manager",
+                "clean_bio": "Robson Lúcio de Souza. Sr. Purchasing and Supply Chain Manager. Knorr-Bremse Fundação Dom Cabral. Itupeva, São Paulo, Brasil. 5 mil seguidores + de 500 conexões."
+            }
+        },
+        "specialist": {
+            "role_name": "Sr. Purchasing and Supply Chain Manager",
+            "dept": "Suprimentos/Compras/Procurement",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Sr. Purchasing and Supply Chain Manager' está diretamente relacionado a Suprimentos/Compras/Procurement e o vínculo com a Knorr Bremse foi confirmado. Não há termos de veto no cargo."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Purchasing & Supply Chain Manager",
+        "department": "Suprimentos/Compras/Procurement",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:29:19.099229",
+    "candidate": "Rudolf Kubín",
+    "linkedin": "https://www.linkedin.com/in/rudolf-kub%C3%ADn-23378a123",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Rudolf Kubín – Supply Chain- Manager ve společnosti Knorr - Bremse",
+            "body": "Program Project Manager . Knorr - Bremse .Aleš Effenberger, MBA. Supply Chain Management & Logistics - knowledge and experience, supporting youngsters in becoming excellent professionals. Jihomoravský, Česko."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Supply Chain-Manager, Proxy",
+            "url": "https://theorg.com/org/knorr-bremse/org-chart/rudolf-kubin"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Rudolf Kubín",
+        "role": "Supply Chain Manager",
+        "matching_score": 100,
+        "department": "Supply Chain",
+        "evidence": "O candidato Rudolf Kubín trabalha como Supply Chain Manager na Knorr Bremse, que é a empresa-alvo e a razão social oficial. As informações do Detetive e do Sniper confirmam a função e a empresa. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Rudolf Kubín – Supply Chain- Manager ve společnosti Knorr - Bremse"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Supply Chain-Manager, Proxy"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Rudolf Kubín",
+                    "role": "Supply Chain-Manager"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Rudolf Kubín",
+                "detected_role": "Supply Chain-Manager",
+                "clean_bio": "Supply Chain-Manager, Proxy"
+            }
+        },
+        "specialist": {
+            "role_name": "Supply Chain-Manager",
+            "dept": "Supply Chain",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Supply Chain-Manager' está diretamente relacionado à área de Suprimentos/Compras/Procurement, conforme as instruções técnicas. O vínculo com a Knorr Bremse foi confirmado pelo Detetive e o cargo é consistente com as informações disponíveis."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Supply Chain-Manager, Proxy",
+        "department": "Supply Chain",
+        "matching_score": 100
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:36:20.497103",
+    "candidate": "Enilson Carlos Fim",
+    "linkedin": "https://www.linkedin.com/in/enilson-carlos-fim-b96b833b",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Enilson Carlos Fim - Finetornos -Hernandes Fim Cia Ltda | LinkedIn",
+            "body": "Experienced in Manufacturing and Quality process with a demonstrated history of working… · Experiência: Finetornos -Hernandes Fim Cia Ltda · Formação acadêmica: Universidade Metodista de Piracicaba · Localidade: Campinas · 283 conexões no LinkedIn ."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Engenheiro De Processos",
+            "url": "https://theorg.com/org/finetornos/org-chart/enilson-carlos-fim"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": false,
+        "proper_name": "Enilson Carlos Fim",
+        "role": "Engenheiro De Processos",
+        "matching_score": 0,
+        "department": "Não Identificado",
+        "evidence": "Veto Mecânico Detectado: True",
+        "facts": {
+            "employer_found": false,
+            "snippets": [
+                "Google Page Title: Enilson Carlos Fim - Finetornos -Hernandes Fim Cia Ltda",
+                "Experiência: Finetornos -Hernandes Fim Cia Ltda"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Experienced in Manufacturing and Quality process with a demonstrated history of working…"
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Enilson Carlos Fim",
+                    "role": "Engenheiro De Processos"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Enilson Carlos Fim",
+                "detected_role": "Engenheiro De Processos",
+                "clean_bio": "Experienced in Manufacturing and Quality process with a demonstrated history of working…"
+            }
+        },
+        "specialist": {
+            "role_name": "Engenheiro De Processos",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo 'Engenheiro De Processos' não tem interface direta com Suprimentos/Compras/Procurement. Além disso, a palavra 'processos' e 'manufacturing' estão na lista de veto."
+        }
+    },
+    "final_decision": {
+        "is_valid": false,
+        "role": "Engenheiro De Processos",
+        "department": "Não Identificado",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:37:39.480938",
+    "candidate": "Wellington Lucio",
+    "linkedin": "https://www.linkedin.com/in/wellingtonlucio",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Wellington Lucio - Finetornos | LinkedIn",
+            "body": "· Experiência: Finetornos · Formação acadêmica: Universidade Estadual de Campinas · Localidade: Campinas · + de 500 conexões no LinkedIn .Wellington Lucio. Campinas, São Paulo, Brasil . 1 mil seguidores + de 500 conexões."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Wellington Lucio",
+        "role": "Análise Humana",
+        "matching_score": 10,
+        "department": "A validar",
+        "evidence": "VETO: Confiança insuficiente (0%).",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Experiência: Finetornos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Wellington Lucio trabalha na Finetornos, tem formação pela Universidade Estadual de Campinas e reside em Campinas. Possui mais de 500 conexões no LinkedIn e 1 mil seguidores."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Wellington Lucio",
+                    "role": "Não Identificado"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Wellington Lucio",
+                "detected_role": "Não Identificado",
+                "clean_bio": "Wellington Lucio - Finetornos. Experiência: Finetornos. Formação acadêmica: Universidade Estadual de Campinas. Localidade: Campinas. + de 500 conexões no LinkedIn. 1 mil seguidores."
+            }
+        },
+        "specialist": {
+            "role_name": "Não Identificado",
+            "dept": "Não Identificado",
+            "is_relevant": false,
+            "reasoning": "O cargo de Wellington Lucio na Finetornos não foi identificado explicitamente no snippet fornecido. Embora haja um vínculo confirmado com a empresa, a ausência de um cargo claro impede a avaliação de relevância para as áreas de Suprimentos/Compras/Procurement. Não há termos técnicos explícitos na bio que permitam inferir uma função relevante."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Análise Humana",
+        "department": "A validar",
+        "matching_score": 0
+    }
+}
+--------------------------------------------------------------------------------
+{
+    "timestamp": "2026-07-02T20:38:25.340117",
+    "candidate": "Maurílio Oliveira",
+    "linkedin": "https://www.linkedin.com/in/maur%C3%ADlio-oliveira-075ab8310",
+    "raw_inputs": {
+        "search_snippets": {
+            "title": "Maurílio Oliveira - Almoxarife comprador Finetornos | LinkedIn",
+            "body": "Almoxarife comprador Finetornos · Experiência: Finetornos · Localidade: 13090-150. Veja Maurílio Oliveira o perfil no LinkedIn , uma comunidade profissional de 1 bilhão de usuários."
+        },
+        "osint_metadata": {
+            "role": "",
+            "bio": "N/A"
+        },
+        "theorg": {
+            "role": "Não Encontrado",
+            "url": "N/A"
+        }
+    },
+    "ai_pipeline": {
+        "is_valid": true,
+        "proper_name": "Maurílio Oliveira",
+        "role": "Almoxarife Comprador",
+        "matching_score": 95,
+        "department": "Suprimentos/Compras",
+        "evidence": "O candidato trabalha na empresa alvo 'Finetornos' como 'Almoxarife comprador', que é um cargo relevante para Suprimentos/Compras. Não há indícios de falsos positivos ou violação das regras críticas.",
+        "facts": {
+            "employer_found": true,
+            "snippets": [
+                "Almoxarife comprador Finetornos",
+                "Experiência: Finetornos"
+            ],
+            "is_institutional": false,
+            "bio_raw": "Almoxarife comprador na Finetornos."
+        },
+        "clean_data": {
+            "all_mappings": [
+                {
+                    "name": "Maurílio Oliveira",
+                    "role": "Almoxarife comprador"
+                }
+            ],
+            "target_profile": {
+                "proper_name": "Maurílio Oliveira",
+                "detected_role": "Almoxarife comprador",
+                "clean_bio": "Almoxarife comprador Finetornos"
+            }
+        },
+        "specialist": {
+            "role_name": "Almoxarife comprador",
+            "dept": "Suprimentos/Compras",
+            "is_relevant": true,
+            "reasoning": "O cargo 'Almoxarife comprador' está diretamente relacionado a atividades de compras e suprimentos. O vínculo com a empresa Finetornos foi confirmado pelo Detetive."
+        }
+    },
+    "final_decision": {
+        "is_valid": true,
+        "role": "Almoxarife Comprador",
+        "department": "Suprimentos/Compras",
+        "matching_score": 95
+    }
+}
+--------------------------------------------------------------------------------

@@ -401,9 +401,10 @@ async def run_agent_task(ctx, payload_dict: dict):
             parent_message_id=payload_dict.get("parent_message_id"),
             action_index=payload_dict.get("action_index"),
             is_regeneration=payload_dict.get("is_regeneration", False),
+            job_id=job_id,
         ):
             await ctx['redis'].publish(f"agent_updates_{job_id}", chunk)
-        
+
         await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "job_done"}))
         log.info("worker.agent_task.completed", job_id=job_id)
     except Exception as e:
@@ -420,9 +421,10 @@ async def resume_agent_task(ctx, payload_dict: dict):
             approved=payload_dict["approved"],
             thread_id=payload_dict.get("thread_id"),
             attachment_path=payload_dict.get("attachment_path"),
+            job_id=job_id,
         ):
             await ctx['redis'].publish(f"agent_updates_{job_id}", chunk)
-            
+
         await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "job_done"}))
         log.info("worker.resume_agent_task.completed", job_id=job_id)
     except Exception as e:

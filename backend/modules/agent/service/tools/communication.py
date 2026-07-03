@@ -502,7 +502,11 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
     if not term and not org_name and not org_id:
         return {"ok": False, "error": "Informe contact_name, contact_email, domain, org_name ou org_id"}
 
-    max_retries = 1
+    # max_retries=2: 1ª tentativa + 1 retry após aguardar o Outlook inicializar em caso de
+    # 503 (com max_retries=1 o retry nunca rodava — "attempt < max_retries" era sempre falso
+    # na única iteração — e a busca desistia na hora, retornando "0 encontrados" mesmo
+    # quando o e-mail existia, se o serviço estivesse reiniciando/inicializando o Outlook).
+    max_retries = 2
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -680,28 +684,38 @@ async def exec_email_get_contact_history(args: Dict[str, Any], org_id: int | Non
                     "summary": f"0 e-mails encontrados para {label} (busca: {search_query})",
                 }
 
-            # Ordenar e formatar (removendo duplicados por segurança)
+            # Ordenar e formatar (removendo duplicados por segurança).
+            # Usa messageId (Message-ID RFC822, estável e igual em cópias físicas
+            # do mesmo e-mail em pastas diferentes) como chave primária — entryId
+            # sozinho não deduplica porque o Outlook gera um EntryID por cópia física
+            # do item, não por e-mail (mesma mensagem em Inbox + subpasta = 2 entryIds).
             seen_ids = set()
             unique_messages = []
             for m in all_messages:
-                eid = m.get("entryId", "")
-                if eid and eid not in seen_ids:
-                    seen_ids.add(eid)
+                key = m.get("messageId") or m.get("entryId", "")
+                if key and key not in seen_ids:
+                    seen_ids.add(key)
                     unique_messages.append(m)
 
             unique_messages.sort(key=lambda m: m.get("date") or "", reverse=True)
 
             label = contact_name or contact_email or org_name
 
-            # Monta lista normalizada COM entryId para o cache (dedup exige o campo)
+            # Monta lista normalizada COM entryId/messageId para o cache (dedup exige os campos)
             def _fmt_email(m: dict) -> dict:
+                full_body = (m.get("body") or "").strip()
                 return {
                     "entryId": m.get("entryId", ""),
+                    "messageId": m.get("messageId", ""),
                     "from": m.get("sender", ""),
                     "to": m.get("to", ""),
                     "subject": m.get("subject", ""),
                     "date": (m.get("date") or "")[:10],
-                    "preview": (m.get("body") or "")[:200].strip(),
+                    # "body": corpo completo (até o limite já truncado na origem/Outlook)
+                    # para a UI exibir na visão expandida. "preview": recorte curto para
+                    # listas/resumos — mantido separado para não inflar o payload do LLM.
+                    "body": full_body,
+                    "preview": full_body[:200],
                     "direction": "sent" if seller_domain in (m.get("sender") or "").lower() else "received",
                 }
 

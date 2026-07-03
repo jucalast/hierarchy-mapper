@@ -456,7 +456,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--chat-radius-sm);
   font-size: var(--font-sm);
   font-weight: 500;
   transition: all 0.2s ease;
@@ -520,8 +520,6 @@
   border-radius: var(--chat-radius-lg);
   pointer-events: auto;
   transition: all var(--chat-transition-fast);
-  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
-  backdrop-filter: blur(12px) saturate(180%) !important;
   isolation: isolate;
 }
 
@@ -530,11 +528,11 @@
 }
 
 .chatPanelInner[data-theme='dark'] .inputBox {
-  background: #191919bf !important;
+  background: #191919 !important;
 }
 
 .chatPanelInner[data-theme='light'] .inputBox {
-  background: #eaeaeafa !important;
+  background: #eaeaea !important;
 }
 
 .inputBoxInterior {
@@ -847,7 +845,7 @@
   align-items: center;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--chat-radius-sm);
   padding: 0;
   gap: 0;
 }
@@ -860,7 +858,7 @@
   height: 38px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--chat-radius-sm);
   cursor: pointer;
   color: rgba(255, 255, 255, 0.4);
   font-size: var(--font-sm);
@@ -945,7 +943,7 @@
   border: none;
   padding: 0;
   height: 32px;
-  border-radius: var(--chat-radius-md);
+  border-radius: var(--chat-radius-sm);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1009,7 +1007,7 @@
 .sendBtn {
   width: var(--touch-target);
   height: var(--touch-target);
-  border-radius: var(--chat-radius-md);
+  border-radius: var(--chat-radius-sm);
   background: var(--chat-bg-primary);
   color: var(--chat-text-primary);
   border: 1px solid var(--sw-border-strong);
@@ -1333,7 +1331,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: var(--chat-radius-md);
+  border-radius: var(--chat-radius-sm);
 }
 
 .iconBtn:hover {
@@ -1359,7 +1357,7 @@
   height: 38px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--chat-radius-sm);
   cursor: pointer;
   color: rgba(255, 255, 255, 0.4);
   font-size: var(--font-sm);
@@ -4219,41 +4217,72 @@
 }
 
 /* === CONVERSATION CONTEXT ACCORDION === */
+/* Container segue as mesmas propriedades de .tabsContainer (ChatTabs.module.css),
+   já que este acordeon fica logo abaixo das abas e deve se ler como extensão delas. */
 .contextAccordionContainer {
-  margin: 0;
-  border-bottom: var(--sw-border-width) solid var(--sw-border);
-  background: var(--chat-bg-primary);
+  margin: 4px 8px;
+  padding: 0;
+  box-sizing: border-box;
+  border: var(--sw-border-width) solid transparent;
+  border-bottom-color: var(--sw-border);
+  background: var(--sw-sidebar);
   position: relative;
   z-index: 1000;
-  transition: background 0.18s ease;
+  min-height: 38px;
+  transition: all var(--transition-fast);
 }
 
-.contextAccordionContainer:hover {
-  background: var(--chat-bg-secondary);
+/* Quando aberto, o header "envolve" o corpo expandido: os dois formam uma única
+   caixa (mesmo fundo/borda do console do ChatInput), sem costura entre eles —
+   o header fica com os cantos de cima arredondados e sem borda inferior, o
+   corpo (.contextAccordionBodyMarkdown) continua sem borda/canto no topo. */
+.contextAccordionContainerOpen {
+  background: var(--chat-console-bg);
+  border-color: var(--chat-border-weak);
+  border-bottom-color: transparent;
+  border-radius: var(--chat-radius-lg) var(--chat-radius-lg) 0 0;
 }
 
-.chatPanelInner[data-theme='light'] .contextAccordionContainer {
-  background: var(--chat-bg-primary) !important;
-  border-bottom-color: rgba(0, 0, 0, 0.08);
-}
-
-.chatPanelInner[data-theme='light'] .contextAccordionContainer:hover {
-  background: rgba(0, 0, 0, 0.03) !important;
-}
-
-/* ── Header ── */
+/* ── Header (mesmas propriedades de .tab em ChatTabs.module.css) ── */
 .contextAccordionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 14px;
-  cursor: pointer;
-  user-select: none;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   gap: 8px;
+  padding: 6px 10px;
+  border: var(--sw-border-width) solid var(--sw-border);
+  border-radius: var(--chat-radius-sm);
+  background: transparent;
+  color: var(--sw-text-muted);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+  outline: none;
+  user-select: none;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .contextAccordionHeader:hover {
-  background: transparent;
+  background: var(--sw-hover);
+  color: var(--sw-text-subtle, var(--sw-text-base));
+}
+
+/* Aberto: header e corpo ficam exatamente na mesma cor (--chat-console-bg) —
+   sem depender só da transparência herdada do container. */
+.contextAccordionContainerOpen .contextAccordionHeader {
+  border-color: var(--chat-border-weak);
+  background: var(--chat-console-bg);
+}
+
+.contextAccordionContainerOpen .contextAccordionHeader:hover {
+  background: var(--sw-hover);
 }
 
 .contextHeaderLeft {
@@ -4267,19 +4296,8 @@
 .contextHeaderTitle {
   font-size: var(--font-xs);
   font-weight: 500;
-  color: var(--sw-text-muted);
+  color: inherit;
   white-space: nowrap;
-}
-
-.contextItemCount {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 20px;
-  background: var(--sw-primary-soft);
-  color: var(--sw-primary);
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
 }
 
 .contextHeaderRight {
@@ -4290,30 +4308,49 @@
 }
 
 .contextChevron {
-  color: var(--sw-text-subtle);
+  color: inherit;
   opacity: 0.6;
   transition: transform 0.2s ease;
   flex-shrink: 0;
 }
 
-.chatPanelInner[data-theme='light'] .contextAccordionHeader:hover .contextHeaderTitle,
-.chatPanelInner[data-theme='light'] .contextAccordionHeader:hover .contextChevron {
-  color: #000;
+.contextAccordionHeader:hover .contextChevron {
   opacity: 1;
 }
 
-/* ── Body (floating overlay) ── */
+/* Botão "..." do Dropdown de opções — o trigger padrão (32px) era maior que a
+   altura da linha das abas de chat (~18px de área útil), esticando a barra
+   inteira. Reduzido para caber sem forçar o acordeon a ficar mais alto que o
+   ChatTabs. */
+.contextDropdownTrigger {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  padding: 3px !important;
+}
+
+/* ── Body: colado no header (sem borda/gap no topo), formando uma caixa única
+   com .contextAccordionContainerOpen — mesma linguagem visual do console de
+   tarefas do ChatInput (--chat-console-bg, --chat-border-weak, --chat-radius-lg). ── */
+/* A altura real é calculada em JS (ver ConversationContextAccordion.tsx) e aplicada
+   via inline style, porque o quanto de espaço existe abaixo do header varia com o
+   layout (abas, header do org, etc.) — um valor fixo em vh cortava conteúdo sem dar
+   scroll de verdade quando o painel era menor que o viewport. max-height aqui é
+   só um fallback para o primeiro frame, antes da medição em JS rodar. */
 .contextAccordionBodyMarkdown {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  height: calc(100vh - 130px);
+  max-height: calc(100vh - 130px);
   display: flex;
   flex-direction: column;
   z-index: 10000;
-  border-bottom: var(--sw-border-width) solid var(--sw-border);
-  background: var(--chat-bg-primary) !important;
+  border: var(--sw-border-width) solid var(--chat-border-weak);
+  border-top: none;
+  border-radius: 0 0 var(--chat-radius-lg) var(--chat-radius-lg);
+  background: var(--chat-console-bg);
+  box-shadow: var(--chat-shadow-lg);
   overflow: hidden;
   animation: ctxBodyIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -4323,14 +4360,11 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-[data-theme='light'] .contextAccordionBodyMarkdown {
-  background-color: var(--chat-bg-primary) !important;
-  border-color: rgba(0, 0, 0, 0.1);
-}
-
 .contextAccordionScrollArea {
-  padding: 10px 14px 80px;
+  padding: 10px 14px 14px;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   flex: 1;
   min-height: 0;
   display: flex;
@@ -4341,8 +4375,12 @@
 /* ── Sections ── */
 .contextSection {
   border: var(--sw-border-width) solid var(--sw-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--chat-radius-sm);
   overflow: hidden;
+  /* Sem isso, o item flex column vira encolhível: overflow:hidden zera o
+     tamanho mínimo automático do flex item (spec do flexbox), então o
+     conteúdo era espremido pra caber em vez de estourar e gerar scroll. */
+  flex-shrink: 0;
   transition: border-color 0.15s ease;
 }
 
@@ -4356,15 +4394,9 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: var(--chat-bg-secondary);
+  background: transparent;
   border: none;
-  cursor: pointer;
   text-align: left;
-  transition: background 0.15s ease;
-}
-
-.contextSectionHeader:hover {
-  background: var(--chat-bg-tertiary);
 }
 
 .contextSectionAccent {
@@ -4376,36 +4408,23 @@
   opacity: 0.85;
 }
 
-.contextSectionIcon {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
 .contextSectionTitle {
   font-size: var(--font-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--sw-text-subtle);
+  opacity: 0.7;
   flex: 1;
 }
 
-.contextSectionChevron {
-  color: var(--sw-text-subtle);
-  opacity: 0.5;
-  transition: transform 0.18s ease;
-  flex-shrink: 0;
-}
-
 .contextSectionContent {
-  padding: 10px 14px 12px;
-  font-size: var(--font-sm);
-  line-height: 1.65;
-  color: var(--sw-text-base);
-  border-top: var(--sw-border-width) solid var(--sw-border);
-  max-height: 340px;
-  overflow-y: auto;
+  padding: 0 14px 12px;
+  font-size: var(--font-xs);
+  line-height: 1.6;
+  color: var(--sw-text-subtle);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .contextSectionContent p { margin-bottom: 8px; opacity: 0.9; }
@@ -4415,6 +4434,9 @@
 .contextSectionContent strong { color: var(--sw-text-base); font-weight: 600; }
 .contextSectionContent h3 { font-size: var(--font-sm); font-weight: 700; color: var(--sw-primary); margin: 10px 0 6px; }
 .contextSectionContent hr { border: none; border-top: var(--sw-border-width) solid var(--sw-border); margin: 10px 0; }
+.contextSectionContent pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+.contextSectionContent code { overflow-wrap: anywhere; word-break: break-word; }
+.contextSectionContent img, .contextSectionContent table { max-width: 100%; }
 
 @keyframes fadeInOnly {
   from { opacity: 0; }
@@ -4508,21 +4530,3 @@
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
 
-.deletePlanButton {
-  background: transparent;
-  border: none;
-  color: var(--sw-status-danger, #ef4444);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  opacity: 0.7;
-}
-
-.deletePlanButton:hover {
-  background: rgba(239, 68, 68, 0.1);
-  opacity: 1;
-}

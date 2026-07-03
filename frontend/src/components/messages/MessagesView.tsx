@@ -270,14 +270,14 @@ function ContactAvatar({
 
     if (src && !imgErr) {
         return (
-            <div 
-                className={className} 
-                style={{ 
-                    width: size, 
-                    height: size, 
-                    borderRadius: '50%', 
+            <div
+                className={`${className ?? ''} ${styles.contactAvatarLogo}`}
+                style={{
+                    width: size,
+                    height: size,
+                    borderRadius: '50%',
                     overflow: 'visible', // Permite que o badge apareça fora dos limites circulares
-                    flexShrink: 0, 
+                    flexShrink: 0,
                     border: 'none',
                     position: 'relative',
                     boxSizing: 'border-box'

@@ -220,6 +220,11 @@ async def refine_and_persist(employees: List[dict], db: AsyncSession) -> dict:
                 final_manager_id = "root_company" if original_id != "root_company" else None
 
             node["level"] = new_level
+            # O frontend (PersonaCard/SupplyChainNode) decide a cor do card priorizando
+            # "seniority" sobre "level" — sem sincronizar os dois aqui, o card volta pro
+            # frontend com o "level" novo mas o "seniority" antigo (do node de entrada),
+            # e a cor não reflete o resultado do refino.
+            node["seniority"] = new_level
             node["manager_id"] = final_manager_id
 
             # 4. Atualiza hierarquia e seniority de cada registro no banco

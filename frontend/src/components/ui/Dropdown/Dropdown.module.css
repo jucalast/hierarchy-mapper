@@ -48,7 +48,7 @@
   margin-top: var(--space-6);
   background: var(--sw-sidebar);
   border: var(--sw-border-width) solid var(--sw-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--sw-shadow);
   padding: var(--space-4);
   display: flex;

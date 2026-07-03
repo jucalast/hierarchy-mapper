@@ -8,7 +8,6 @@ import { MessagesView } from '../messages/MessagesView';
 import { LigacaoView } from '../ligacao/LigacaoView';
 import { ProspectingView } from '../prospecting/ProspectingView';
 import { PreferencesView } from '../layout/PreferencesView';
-import { HierarchyScanView } from '../hierarchy-scan/HierarchyScanView';
 import { ModelSelector } from '../chat/components/ModelSelector';
 import { NotificationContainer } from '../ui/Notification';
 import type { NotificationType } from '../ui/Notification';
@@ -38,6 +37,7 @@ export interface NetworkGraphLayoutProps {
     onToggleChat: any;
     onLogout: any;
     handleNewCompany: () => void;
+    handleNavigateToRoot: () => void;
     refineHierarchy: (rawEmployees: any[]) => void;
     smartSyncPipedrive: any;
     hierarchy: any; // return from useHierarchy
@@ -102,7 +102,7 @@ export interface NetworkGraphLayoutProps {
 export function NetworkGraphLayout(props: NetworkGraphLayoutProps) {
     const {
         theme, setTheme, showDrawer, handleSetShowDrawer, activeView, setActiveView,
-        currentUser, tasksForToday, onToggleChat, onLogout, handleNewCompany,
+        currentUser, tasksForToday, onToggleChat, onLogout, handleNewCompany, handleNavigateToRoot,
         refineHierarchy, smartSyncPipedrive, hierarchy, discovery, scan, isScanForCurrentOrg,
         filteredOrgs, loadingOrgs, searchTerm, setSearchTerm, handleOrgClick, currentOrgId,
         handleOrgRenamed, confirmedLogo, activeJobId, rawEmployees, pipedriveOrgs,
@@ -155,11 +155,8 @@ export function NetworkGraphLayout(props: NetworkGraphLayoutProps) {
                 isProspecting={activeView === 'prospecting'}
                 onOpenPreferences={() => setActiveView(activeView === 'preferences' ? 'graph' : 'preferences')}
                 isPreferences={activeView === 'preferences'}
-                onOpenLinkedinScrape={() => setActiveView(activeView === 'linkedin-scrape' ? 'graph' : 'linkedin-scrape')}
-                isLinkedinScrape={activeView === 'linkedin-scrape'}
                 onOpenLigacao={() => setActiveView(activeView === 'ligacao' ? 'graph' : 'ligacao')}
                 isLigacao={activeView === 'ligacao'}
-                isScanActive={isScanForCurrentOrg && scan.isScanning}
                 currentUser={currentUser}
                 tasksForToday={tasksForToday}
                 onToggleChat={onToggleChat}
@@ -206,7 +203,7 @@ export function NetworkGraphLayout(props: NetworkGraphLayoutProps) {
                             }}
                             uniqueStages={uniqueStages}
                             activeStageFilter={activeStageFilter}
-                            onNavigateToRoot={handleNewCompany}
+                            onNavigateToRoot={handleNavigateToRoot}
                             setActiveStageFilter={setActiveStageFilter}
                             totalOrgsCount={pipedriveOrgs.length}
                         />
@@ -250,6 +247,7 @@ export function NetworkGraphLayout(props: NetworkGraphLayoutProps) {
                                             }
                                             refineHierarchy(rawEmployees);
                                         }}
+                                        refining={hierarchy.refining}
                                     />
                                     
                                     <HierarchyDiscoveryOverlay
@@ -445,33 +443,6 @@ export function NetworkGraphLayout(props: NetworkGraphLayoutProps) {
                             )}
                             {activeView === 'preferences' && (
                                 <PreferencesView onBack={() => setActiveView('graph')} />
-                            )}
-                            {activeView === 'linkedin-scrape' && (
-                                <HierarchyScanView
-                                    onBack={() => setActiveView('graph')}
-                                    defaultCompanyUrl={confirmedLinkedInUrl
-                                        ? (confirmedLinkedInUrl.trim().endsWith('/people/')
-                                            ? confirmedLinkedInUrl.trim()
-                                            : confirmedLinkedInUrl.trim().replace(/\/+$/, '') + '/people/')
-                                        : ''}
-                                    isScanning={isScanForCurrentOrg && scan.isScanning}
-                                    scanProgress={isScanForCurrentOrg ? scan.scanProgress : 0}
-                                    consoleLogs={isScanForCurrentOrg ? scan.consoleLogs : []}
-                                    hasPreview={isScanForCurrentOrg && scan.hasPreview}
-                                    previewUrl={isScanForCurrentOrg ? scan.previewUrl : ''}
-                                    scanResults={isScanForCurrentOrg ? scan.scanResults : []}
-                                    scanError={isScanForCurrentOrg ? scan.scanError : null}
-                                    onStartScan={(url: string, cookie: string) => {
-                                        if (currentOrgId) {
-                                            scan.startScan(currentOrgId, url, cookie, areaFocus, productFocus, selectedModel);
-                                        }
-                                    }}
-                                    onStopScan={scan.stopScan}
-                                    onImageClick={scan.handleImageClick}
-                                    onSendText={scan.sendText}
-                                    onPressEnter={scan.pressEnter}
-                                    onPressBackspace={scan.pressBackspace}
-                                />
                             )}
                         </div>
 

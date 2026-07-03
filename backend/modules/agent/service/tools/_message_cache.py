@@ -150,17 +150,23 @@ async def _upsert_contact_cache(
         if entry:
             existing = entry.get_messages()
             if existing:
-                # Deduplicação por ID único do provedor
-                seen_ids = set()
-                # Email usa entryId, WhatsApp usa id
-                id_key = "entryId" if channel == CHANNEL_EMAIL else "id"
-                
+                # Deduplicação por ID único do provedor.
+                # Email: messageId (Message-ID RFC822, estável entre cópias físicas do
+                # mesmo e-mail em pastas diferentes) tem prioridade sobre entryId (que o
+                # Outlook gera um por cópia física, não por e-mail — cai para entryId só
+                # em entradas de cache antigas que ainda não tinham messageId salvo).
+                # WhatsApp usa id.
+                def _get_id(m: dict):
+                    if channel == CHANNEL_EMAIL:
+                        return m.get("messageId") or m.get("entryId")
+                    return m.get("id")
+
                 # Mapa de mensagens existentes
-                merged_map = {m.get(id_key): m for m in existing if m.get(id_key)}
-                
+                merged_map = {_get_id(m): m for m in existing if _get_id(m)}
+
                 # Adiciona/Sobrescreve com as novas (mais frescas)
                 for m in messages:
-                    mid = m.get(id_key)
+                    mid = _get_id(m)
                     if mid:
                         merged_map[mid] = m
                     else:

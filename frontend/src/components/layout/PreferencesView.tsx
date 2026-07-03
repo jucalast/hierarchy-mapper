@@ -214,6 +214,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
     const [emailUser, setEmailUser] = useState('');
     const [emailPassword, setEmailPassword] = useState('');
     const [emailPort, setEmailPort] = useState('');
+    const [autoRescheduleEnabled, setAutoRescheduleEnabled] = useState(true);
+    const [autoRescheduleSaving, setAutoRescheduleSaving] = useState(false);
 
     const toggleProvider = (provKey: string) => {
         setExpandedProviders(prev => ({
@@ -305,6 +307,17 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                     }
                 } catch (intErr) {
                     console.error("Erro ao carregar integrações:", intErr);
+                }
+
+                // Toggle de reagendamento automático de tarefas atrasadas
+                try {
+                    const autoReschedule = await ai.getSetting('crm_auto_reschedule_overdue');
+                    setAutoRescheduleEnabled(autoReschedule?.value?.enabled !== false);
+                } catch (autoErr: any) {
+                    // 404 = ainda não configurado -> mantém o padrão (habilitado)
+                    if (autoErr?.status !== 404) {
+                        console.error("Erro ao carregar toggle de reagendamento automático:", autoErr);
+                    }
                 }
             }
         } catch (e: any) {
@@ -470,6 +483,23 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
             showToast('error', "Erro ao salvar dores e propostas de valor.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleToggleAutoReschedule = async () => {
+        const newValue = !autoRescheduleEnabled;
+        setAutoRescheduleEnabled(newValue);
+        setAutoRescheduleSaving(true);
+        try {
+            await ai.updateSetting('crm_auto_reschedule_overdue', { enabled: newValue }, 'crm');
+            showToast('success', newValue
+                ? "Reagendamento automático ativado: tarefas atrasadas serão movidas para hoje a cada início de dia."
+                : "Reagendamento automático desativado. Nenhuma tarefa será alterada automaticamente no Pipedrive.");
+        } catch (e: any) {
+            setAutoRescheduleEnabled(!newValue);
+            showToast('error', e.message || "Erro ao salvar a configuração de reagendamento automático.");
+        } finally {
+            setAutoRescheduleSaving(false);
         }
     };
 
@@ -1783,6 +1813,29 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                                 placeholder="Ex: 24921888"
                                             />
                                         </div>
+                                    </div>
+
+                                    <div className={styles.switchWrapper}>
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleAutoReschedule}
+                                            disabled={autoRescheduleSaving}
+                                            className={`${styles.switchButton} ${autoRescheduleEnabled ? styles.switchActive : ''}`}
+                                        >
+                                            <div className={styles.switchInfo}>
+                                                <span className={styles.switchTitle}>
+                                                    {autoRescheduleEnabled ? "Reagendamento Automático Ativo" : "Reagendamento Automático Desativado"}
+                                                </span>
+                                                <span className={styles.switchDesc}>
+                                                    {autoRescheduleEnabled
+                                                        ? "Toda vez que o sistema for iniciado pela primeira vez no dia, tarefas atrasadas no Pipedrive são movidas automaticamente para hoje."
+                                                        : "Nenhuma tarefa atrasada será alterada automaticamente. Use antes de períodos de férias ou ausência."}
+                                                </span>
+                                            </div>
+                                            <div className={styles.switchToggle}>
+                                                <div className={styles.switchKnob} />
+                                            </div>
+                                        </button>
                                     </div>
                                 </div>
 

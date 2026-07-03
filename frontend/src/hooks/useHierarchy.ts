@@ -27,6 +27,7 @@ export const useHierarchy = () => {
   const rawBackendEdges = mappingSession?.rawBackendEdges || EMPTY_EDGES;
   const loading = mappingSession?.loading || false;
   const discovering = mappingSession?.discovering || false;
+  const refining = mappingSession?.refining || false;
   const brandOptions = mappingSession?.brandOptions || EMPTY_ARRAY;
   const error = mappingSession?.error || null;
   const activeJobId = mappingSession?.activeJobId || null;
@@ -415,7 +416,7 @@ export const useHierarchy = () => {
     const controller = new AbortController();
     refineAbortControllerRef.current = controller;
 
-    store.setMappingLoading(targetOrgId, true);
+    store.setRefiningHierarchy(targetOrgId, true);
     store.setMappingError(targetOrgId, "");
     try {
       const data = await hierarchyApi.refineHierarchy(employees, { signal: controller.signal });
@@ -460,7 +461,7 @@ export const useHierarchy = () => {
       if (refineAbortControllerRef.current === controller) {
         refineAbortControllerRef.current = null;
       }
-      store.setMappingLoading(targetOrgId, false);
+      store.setRefiningHierarchy(targetOrgId, false);
     }
   }, [currentOrgId, checkAndDispatchChatEvent]);
 
@@ -488,7 +489,8 @@ export const useHierarchy = () => {
       localStorage.removeItem(`active-discovery-job-${targetOrgId}`);
       localStorage.removeItem('pending-hierarchy-continuation');
 
-      // 🧹 Mantém apenas root_company + sócios — descarta nós incompletos do scan cancelado
+      // 🧹 Mantém root_company + sócios + contatos do Pipedrive — descarta nós
+      // incompletos do scan cancelado
       const currentNodes = store.mappings[targetOrgId]?.rawEmployees || [];
       const keepers = currentNodes.filter(emp => {
         const isRoot = emp.id === 'root_company' || emp.level === 0;
@@ -499,7 +501,8 @@ export const useHierarchy = () => {
           emp.department.includes('Societário') ||
           emp.department.includes('Conselho')
         );
-        return isRoot || isPartner || isPartnerDept;
+        const isPipedrive = emp.source === 'pipedrive' || !!emp.pipedrive_id;
+        return isRoot || isPartner || isPartnerDept || isPipedrive;
       });
       store.setRawEmployees(targetOrgId, keepers);
       store.setRawBackendEdges(targetOrgId, []);
@@ -1013,10 +1016,11 @@ export const useHierarchy = () => {
   }, [currentOrgId, checkAndDispatchChatEvent]);
 
   return { 
-    rawEmployees, 
-    rawBackendEdges, 
-    loading, 
+    rawEmployees,
+    rawBackendEdges,
+    loading,
     discovering,
+    refining,
     brandOptions,
     error, 
     setError,

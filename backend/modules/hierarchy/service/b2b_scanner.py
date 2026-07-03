@@ -101,9 +101,11 @@ async def discover_employees_stream(
         db_org_id = org.id
         
         # Limpa funcionários do mapeamento anterior para que o re-scan comece do zero.
-        # Preserva apenas sócios (QSA) e decisões humanas explícitas (aprovado/reprovado) —
-        # tudo mais é re-descoberto pelo scan atual, evitando que nós antigos reapareçam
-        # no frontend ao recarregar a página durante um mapeamento em andamento.
+        # Preserva sócios (QSA), decisões humanas explícitas (aprovado/reprovado) e
+        # contatos vindos do Pipedrive (CRM) — estes últimos não devem ser apagados
+        # porque não são "descobertos" pelo scan, são dados já confirmados no CRM.
+        # Se o scan encontrar essa mesma pessoa de novo, o merge por linkedin/nome/
+        # pipedrive_id (mais abaixo) atualiza o registro existente em vez de duplicar.
         from sqlalchemy import delete, and_, not_, or_
         await session.execute(
             delete(Employee).where(
@@ -121,6 +123,9 @@ async def discover_employees_stream(
                             Employee.role.ilike("Aprovado%"),
                             Employee.role == "Reprovado",
                             Employee.department == "Reprovado",
+                            # Preserva contatos do Pipedrive
+                            Employee.source == "pipedrive",
+                            Employee.pipedrive_id.isnot(None),
                         )
                     )
                 )
@@ -549,11 +554,27 @@ async def discover_employees_stream(
                     res_emp = await session.execute(stmt_emp)
                     existing_emp = res_emp.scalars().first()
                     
-                    # Se não achou por LinkedIn, tenta match por NOME fuzzy (para Pipedrive/QSA)
+                    # Se não achou por LinkedIn, tenta match por NOME fuzzy (para Pipedrive/QSA).
+                    # is_same_person() usa sobreposição de tokens do nome e não é transitiva:
+                    # "Ezequiel Araujo" e "Ezequiel Silva" batem ambos com "Ezequiel Araujo da
+                    # Silva Junior" (2 tokens em comum cada), mas não batem entre si. Sem a
+                    # checagem de URL abaixo, dois candidatos de LinkedIn DIFERENTES (URLs e
+                    # cargos diferentes) podem colidir na mesma linha do banco, e o processado
+                    # por último sobrescreve silenciosamente os dados aprovados do anterior.
                     if not existing_emp:
                         stmt_all_nodes = select(Employee).where(Employee.company_id == db_org_id)
                         res_all_nodes = await session.execute(stmt_all_nodes)
                         for e in res_all_nodes.scalars().all():
+                            # Se o funcionário já tem uma URL real do LinkedIn e ela é
+                            # DIFERENTE da do candidato atual, não é a mesma pessoa —
+                            # a URL do LinkedIn é sinal mais confiável que o nome.
+                            if (
+                                node_data.get("linkedin")
+                                and e.linkedin_url
+                                and e.linkedin_url.startswith("http")
+                                and e.linkedin_url.split("?")[0].rstrip("/") != node_data["linkedin"].split("?")[0].rstrip("/")
+                            ):
+                                continue
                             if is_same_person(e.name, node_data["name"]):
                                 existing_emp = e
                                 break
@@ -641,8 +662,14 @@ async def discover_employees_stream(
                             existing_emp.department = node_data["department"]
                             existing_emp.seniority = node_data["level"]
                             existing_emp.company_id = db_org_id
-                            # Preenche o LinkedIn real se não tinha ou se era dummy do Pipedrive
-                            if not existing_emp.linkedin_url or "pipedrive_" in existing_emp.linkedin_url:
+                            # Preenche o LinkedIn real se não tinha ou se era um placeholder
+                            # (ex: "pipedrive_123", "scan_10_node_5") — URL real sempre começa
+                            # com "http"; sem isso, um placeholder nunca é substituído pela URL
+                            # real, o que também impede a checagem de conflito de URL acima de
+                            # detectar corretamente candidatos diferentes em scans futuros.
+                            if node_data.get("linkedin") and (
+                                not existing_emp.linkedin_url or not existing_emp.linkedin_url.startswith("http")
+                            ):
                                 existing_emp.linkedin_url = node_data["linkedin"]
                             existing_emp.email = existing_emp.email or node_data.get("email")
                             existing_emp.profile_pic = node_data.get("avatar") or existing_emp.profile_pic

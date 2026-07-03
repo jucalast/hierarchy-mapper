@@ -2,7 +2,7 @@ import React from 'react';
 import { Clock, Plus } from 'lucide-react';
 import styles from './styles/ChatPanel.module.css';
 
-import { Modal, Button } from '../ui';
+import { ConfirmModal } from '../ui/ConfirmModal';
 import { ChatInput } from './components/ChatInput';
 import { ChatTabs } from './components/ChatTabs';
 import { ConversationContextAccordion } from './components/ConversationContextAccordion';
@@ -197,7 +197,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             <>
                 {handleNode}
                 <div className={`${styles.chatPanelWrapper} ${showChat ? styles.chatPanelWrapperOpen : styles.chatPanelWrapperClosed}`}>
-                <div className={styles.chatPanelInner} data-theme={theme}>
+                <div className={styles.chatPanelInner} data-theme={theme} data-chat-panel-root>
                 <ThreadList
                     orgName={hasValidOrg ? cleanOrgName : 'Geral'}
                     threads={threads}
@@ -225,28 +225,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     }}
                 />
 
-                <Modal
+                <ConfirmModal
                     isOpen={threadsToDelete.length > 0}
-                    onClose={() => setThreadsToDelete([])}
                     title={threadsToDelete.length > 1 ? "Excluir Conversas" : "Excluir Conversa"}
-                    width={400}
-                    footer={
-                        <>
-                            <Button variant="secondary" size="sm" onClick={() => setThreadsToDelete([])}>
-                                Cancelar
-                            </Button>
-                            <Button variant="danger" size="sm" onClick={confirmDeleteThread}>
-                                Excluir {threadsToDelete.length > 1 ? `(${threadsToDelete.length})` : ''}
-                            </Button>
-                        </>
-                    }
-                >
-                    <p style={{ margin: 0, color: 'var(--chat-text-secondary)', fontSize: '14px', lineHeight: '1.5' }}>
-                        {threadsToDelete.length > 1 
+                    message={
+                        threadsToDelete.length > 1
                             ? `Tem certeza que deseja excluir as ${threadsToDelete.length} conversas selecionadas? Esta ação não poderá ser desfeita.`
-                            : 'Tem certeza que deseja excluir esta conversa? Esta ação removerá permanentemente todo o histórico e não poderá ser desfeita.'}
-                    </p>
-                </Modal>
+                            : 'Tem certeza que deseja excluir esta conversa? Esta ação removerá permanentemente todo o histórico e não poderá ser desfeita.'
+                    }
+                    confirmLabel={`Excluir${threadsToDelete.length > 1 ? ` (${threadsToDelete.length})` : ''}`}
+                    onCancel={() => setThreadsToDelete([])}
+                    onConfirm={confirmDeleteThread}
+                    contained
+                />
             </div>
             </div>
             </>
@@ -260,7 +251,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         <>
             {handleNode}
             <div className={`${styles.chatPanelWrapper} ${showChat ? styles.chatPanelWrapperOpen : styles.chatPanelWrapperClosed}`}>
-            <div className={styles.chatPanelInner} data-theme={theme}>
+            <div className={styles.chatPanelInner} data-theme={theme} data-chat-panel-root>
 
             {/* Chat sub-header: back + thread title + activities toggle */}
             <ChatPanelHeader

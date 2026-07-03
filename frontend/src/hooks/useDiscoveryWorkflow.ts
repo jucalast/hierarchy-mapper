@@ -145,7 +145,10 @@ export function useDiscoveryWorkflow({
                 (rootNode as any).domain === domainTarget
             );
 
-            // Se for a mesma empresa, filtramos para manter apenas Root e Sócios
+            // Se for a mesma empresa, filtramos para manter Root, Sócios e contatos
+            // do Pipedrive (CRM) — estes últimos não são "descobertos" pelo scan, então
+            // não devem sumir; se o scan os reencontrar, o merge por linkedin/nome/
+            // pipedrive_id atualiza o registro em vez de duplicar.
             const rootAndPartnersOnly = isSameCompany ? rawEmployees.filter(emp => {
                 const isRoot = emp.id === 'root_company' || emp.level === 0;
                 const isPartner = emp.level === 6 || String(emp.id).startsWith('partner_');
@@ -155,7 +158,8 @@ export function useDiscoveryWorkflow({
                     emp.department.includes('Societário') ||
                     emp.department.includes('Conselho')
                 );
-                return isRoot || isPartner || isPartnerDept;
+                const isPipedrive = emp.source === 'pipedrive' || !!emp.pipedrive_id;
+                return isRoot || isPartner || isPartnerDept || isPipedrive;
             }) : [];
 
             // 🧹 Limpa o estado persistido ANTES de iniciar novo scan para garantir começo do zero
@@ -223,6 +227,7 @@ export function useDiscoveryWorkflow({
         setPartners(newPartners);
         setConfirmedLinkedInUrl(brandObj.url || '');
         setStep("confirm");
+        setBrandOptions([]);
 
         if (cnpj) {
             const result = await confirmIntelligence({
@@ -263,9 +268,9 @@ export function useDiscoveryWorkflow({
             }
         }
     }, [
-        discovering, cancelDiscovery, addNotification, cnpj, domainTarget, 
-        currentOrgId, setCurrentOrgId, fetchPipedriveOrgs, setPipedriveOrgs, 
-        confirmIntelligence
+        discovering, cancelDiscovery, addNotification, cnpj, domainTarget,
+        currentOrgId, setCurrentOrgId, fetchPipedriveOrgs, setPipedriveOrgs,
+        confirmIntelligence, setBrandOptions
     ]);
 
     const handleAutoEnrich = useCallback(async () => {

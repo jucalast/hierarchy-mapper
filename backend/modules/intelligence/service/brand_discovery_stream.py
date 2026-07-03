@@ -212,9 +212,13 @@ async def discover_company_brand_stream(
     
     print(f"[BrandDiscovery] 🚀 Iniciando buscas concorrentes por perfis (Stream)...")
     
-    # Executa todas as buscas em paralelo para evitar timeout
+    # Executa todas as buscas em paralelo para evitar timeout.
+    # timeout=22s: get_duck_results() já tem seu próprio timeout interno de ~20s por
+    # tentativa de DDG (_DDG_SUBPROCESS_TIMEOUT + 5.0) antes de cair no fallback Bing —
+    # com um timeout externo menor que isso (era 12s), essa chamada sempre matava a busca
+    # antes do DDG estourar seu próprio timeout, sem o fallback Bing ter chance de rodar.
     tasks = [
-        asyncio.wait_for(get_duck_results(query, max_results=15, is_company=True), timeout=12.0)
+        asyncio.wait_for(get_duck_results(query, max_results=15, is_company=True), timeout=22.0)
         for query in active_queries
     ]
     
@@ -272,7 +276,9 @@ async def discover_company_brand_stream(
                             "source": "search_concurrent"
                         }
         except Exception as e:
-            print(f"[BrandDiscovery] Concurrency query error: {e}")
+            # str(e) vem vazio para asyncio.TimeoutError — inclui o tipo pra não perder
+            # o diagnóstico (era exatamente esse timeout que estava sendo disparado aqui).
+            print(f"[BrandDiscovery] Concurrency query error: {type(e).__name__}: {e}")
 
     # 🏆 ORDENAÇÃO FINAL POR SCORE
     scored_candidates = []

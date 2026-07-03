@@ -76,10 +76,20 @@
   --sw-status-info: #60a5fa;
 
   /* DESIGN TOKENS - BORDER RADII */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
+  /* Referência: o floating toolbar (Toolbar.module.css), que já definia dois
+     raios de propósito — caixas/containers (.refineTab, .optionsContainer) em
+     --radius-lg (16px) e botões (.toolbarSegment, .areaBtn, .detectBtn) em
+     8px (--radius-sm). --radius-md (12px) segue independente: é usado por
+     vários painéis/cards/modais (ConfirmModal, notificações, scheduler etc.)
+     que não são botões — colapsar ele em --radius-sm encolheria esses
+     componentes sem necessidade. --radius-xs aponta pra --radius-sm porque,
+     em todo uso encontrado, já era badge/botão minúsculo.
+     --radius-full (círculo) fica de fora de propósito: avatares, botões de
+     fechar redondos etc. continuam circulares. */
   --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-xs: var(--radius-sm);
   --radius-xl: 24px;
   --radius-full: 9999px;
 

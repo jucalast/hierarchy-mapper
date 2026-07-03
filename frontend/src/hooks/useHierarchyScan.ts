@@ -424,7 +424,8 @@ export function useHierarchyScan(): UseHierarchyScanReturn {
                 emp.department.includes('Societário') ||
                 emp.department.includes('Conselho')
             );
-            return isRoot || isPartner || isPartnerDept;
+            const isPipedrive = emp.source === 'pipedrive' || !!emp.pipedrive_id;
+            return isRoot || isPartner || isPartnerDept || isPipedrive;
         });
         store.setRawEmployees(orgId, keepers);
         store.setRawBackendEdges(orgId, []);

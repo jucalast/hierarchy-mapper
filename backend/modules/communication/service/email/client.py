@@ -824,7 +824,11 @@ class EmailClient:
                         
                         # Usamos MAPI Property Tags para maior compatibilidade no Restrict
                         # 0x0065001F = SenderEmailAddress, 0x0E04001F = DisplayTo, 0x0E03001F = DisplayCc, 0x0037001F = Subject, 0x1000001F = Body
-                        if "@" in q_clean:
+                        # Buscas por domínio puro (ex: "empresa.com.br", sem "@") também precisam checar
+                        # SenderEmailAddress + Body — do contrário o Restrict() nativo do Outlook só compara
+                        # contra SenderName (nome de exibição, não o e-mail) e Subject/To/Cc, descartando a
+                        # maioria dos e-mails reais da empresa antes mesmo do filtro em Python rodar.
+                        if "@" in q_clean or "." in q_clean:
                             filter_str = (
                                 f"@SQL=(\"http://schemas.microsoft.com/mapi/proptag/0x0065001F\" LIKE '%{q_clean}%' "
                                 f"OR \"http://schemas.microsoft.com/mapi/proptag/0x0E04001F\" LIKE '%{q_clean}%' "

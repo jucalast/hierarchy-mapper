@@ -69,6 +69,7 @@ async def _agent_loop(
     query_type: str = "agent_workflow",
     active_skill: Any = None,
     thread_tool_memory: Dict[str, dict] | None = None,
+    job_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """Loop central do agente. Yields eventos NDJSON."""
     import re as _re
@@ -190,12 +191,36 @@ async def _agent_loop(
                     log.info("agent.session_task_person.extracted_from_prompt", person=_session_task_person)
                     break
 
+    async def _is_job_cancelled() -> bool:
+        """Checa se o usuário clicou em "Parar" no chat (mesmo padrão usado no scan de
+        hierarquia — ver b2b_scanner.py). Roda o cliente Redis síncrono em thread para
+        não bloquear o loop nem criar um pool novo a cada iteração."""
+        if not job_id:
+            return False
+        try:
+            from core.infra.redis_config import redis_client
+            if redis_client is None:
+                return False
+            return await asyncio.to_thread(
+                lambda: bool(
+                    redis_client.exists(f"job_cancelled_{job_id}") or
+                    redis_client.exists(f"arq:abort:{job_id}")
+                )
+            )
+        except Exception:
+            return False
+
     _cached_final_response: str | None = None
-    
+
     for iteration in range(start_iteration, _max_iters):
         if _suggest_actions_done(messages):
             _final_text = _cached_final_response or "Ações sugeridas criadas com sucesso."
             yield _emit({"type": "final", "response": _final_text})
+            return
+
+        if await _is_job_cancelled():
+            log.info("agent.loop.cancelled_by_user", process_id=process_id, job_id=job_id, iteration=iteration)
+            yield _emit({"type": "final", "response": "Operação interrompida pelo usuário."})
             return
 
         # Poda de memória inteligente
@@ -302,7 +327,7 @@ async def _agent_loop(
         _pending_events: list = []
         _force = False
         _allowed_core: list | None = None
-        
+
         if _is_direct_directive:
             pass
         elif active_skill:
@@ -381,6 +406,54 @@ async def _agent_loop(
                         "Não busque mais histórico — não existe."
                     ),
                 })
+
+        # Detector de loop em diretivas livres (_is_direct_directive): esse caminho não
+        # passa pela lógica de "force" de tools acima (linha "if _is_direct_directive: pass"),
+        # então um modelo mais fraco pode ficar re-executando a mesma tool cara (ex:
+        # generate_prospecting_plan, cada chamada dispara várias sub-chamadas de LLM) ou
+        # devolvendo respostas vazias em ciclo, sem nunca chegar em suggest_next_actions —
+        # já causou uma sessão real de 44+ turnos sem produzir nada. Detecta e força a
+        # próxima chamada a ser suggest_next_actions via o mesmo mecanismo hard (force_tool_call)
+        # já usado acima, mais confiável que um aviso em texto (que já se mostrou ineficaz
+        # contra esse mesmo padrão no bloqueio de dedup do batch_communication_search).
+        if _is_direct_directive and not _force:
+            _repeat_counts: dict[str, int] = {}
+            for _m in messages:
+                _mc = _m.get("content", "")
+                if isinstance(_mc, list):
+                    for _b in _mc:
+                        if isinstance(_b, dict) and _b.get("type") == "tool_use":
+                            _tn = _b.get("name", "")
+                            _repeat_counts[_tn] = _repeat_counts.get(_tn, 0) + 1
+            _stuck_repeating = any(
+                v >= 2 for _tn, v in _repeat_counts.items() if _tn != "suggest_next_actions"
+            )
+
+            _consecutive_empty = 0
+            for _m in reversed(messages):
+                if _m.get("role") != "assistant":
+                    continue
+                _mc = _m.get("content", "")
+                if isinstance(_mc, list):
+                    _has_tool = any(isinstance(b, dict) and b.get("type") == "tool_use" for b in _mc)
+                    if _has_tool:
+                        break
+                    _text = " ".join(
+                        b.get("text", "") for b in _mc if isinstance(b, dict) and b.get("type") == "text"
+                    ).strip()
+                    if not _text:
+                        _consecutive_empty += 1
+                        continue
+                break
+
+            if (_stuck_repeating or _consecutive_empty >= 2) and iteration < _max_iters - 1:
+                _force = True
+                _allowed_core = ["suggest_next_actions"]
+                log.warning(
+                    "agent.loop.stuck_detected_forcing_suggest_next_actions",
+                    process_id=process_id, iteration=iteration,
+                    repeat_counts=_repeat_counts, consecutive_empty=_consecutive_empty,
+                )
 
         # Sanitiza mensagens antes do LLM: remove conteúdo vazio e turnos duplicados
         # que podem surgir de messages_snapshot corrompidos de execuções anteriores.
@@ -511,6 +584,27 @@ async def _agent_loop(
         if final_resp is not None:
             yield _emit({"type": "final", "response": final_resp})
             return
+
+        # Ação pontual (diretiva livre) que também propõe uma escrita de CRM pura (create/update
+        # task, deal, contato — não comunicação): o modelo às vezes tenta cumprir a regra "Fim de
+        # Turno OBRIGATÓRIO: chame suggest_next_actions" propondo as duas ferramentas NO MESMO
+        # turno, antes mesmo da escrita passar pela confirmação. Isso já gerava uma leva de
+        # sugestões que ninguém pediu junto com a execução do card. A confirmação da escrita (ver
+        # resume_after_confirmation) já encerra o turno sozinha nesse caso — então descartamos
+        # aqui o suggest_next_actions "adiantado" em vez de executá-lo.
+        if _is_direct_directive:
+            _has_pure_crm_write = any(
+                isinstance(b, dict) and b.get("type") == "tool_use"
+                and TOOLS.get(b.get("name", ""), {}).get("type") == "write"
+                and b.get("name") not in ("whatsapp_send_message", "email_send", "email_reply")
+                for b in tool_use_blocks
+            )
+            if _has_pure_crm_write:
+                tool_use_blocks = [b for b in tool_use_blocks if b.get("name") != "suggest_next_actions"]
+                content = [
+                    b for b in content
+                    if not (isinstance(b, dict) and b.get("type") == "tool_use" and b.get("name") == "suggest_next_actions")
+                ]
 
         # Execução das ferramentas solicitadas pelo LLM
         tool_results: list = []

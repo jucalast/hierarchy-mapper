@@ -1880,7 +1880,66 @@ class PipedriveService:
 pipedrive_service = PipedriveService()
 
 
+AUTO_RESCHEDULE_SETTING_KEY = "crm_auto_reschedule_overdue"
+# Chave separada do toggle acima de propósito: o toggle é editado pelo usuário via tela de
+# preferências (POST /settings/{key} substitui o `value` inteiro), então guardar o controle de
+# "já rodou hoje" na mesma chave faria o usuário apagá-lo sem querer ao ligar/desligar o switch.
+AUTO_RESCHEDULE_LAST_RUN_KEY = "crm_auto_reschedule_last_run"
+
+
+async def run_daily_overdue_reschedule_if_needed() -> None:
+    """Roda `sync_overdue_activities()` uma vez por dia calendário (fuso America/Sao_Paulo),
+    apenas se o toggle `crm_auto_reschedule_overdue` estiver habilitado.
+
+    Pensado para ser chamado a cada boot do backend (lifespan de main.py): se o servidor
+    já rodou hoje, ou se o usuário desligou o toggle (ex: período de férias), não faz nada.
+    """
+    from datetime import datetime, timezone, timedelta
+    from sqlalchemy import select
+    from core.infra.database import async_session
+    from models.system.system_setting import SystemSetting
+
+    sao_paulo_tz = timezone(timedelta(hours=-3))
+    today = datetime.now(sao_paulo_tz).date().isoformat()
+
+    async with async_session() as session:
+        toggle_result = await session.execute(
+            select(SystemSetting).where(SystemSetting.key == AUTO_RESCHEDULE_SETTING_KEY)
+        )
+        toggle_setting = toggle_result.scalars().first()
+
+        # Ainda não configurado pelo usuário — habilitado por padrão.
+        enabled = toggle_setting.value.get("enabled", True) if toggle_setting else True
+        if not enabled:
+            log.info("crm.auto_reschedule.disabled_skip")
+            return
+
+        last_run_result = await session.execute(
+            select(SystemSetting).where(SystemSetting.key == AUTO_RESCHEDULE_LAST_RUN_KEY)
+        )
+        last_run_setting = last_run_result.scalars().first()
+
+        if last_run_setting and last_run_setting.value.get("date") == today:
+            log.info("crm.auto_reschedule.already_run_today", date=today)
+            return
+
+        try:
+            sync_result = await pipedrive_service.sync_overdue_activities()
+            log.info("crm.auto_reschedule.completed", date=today, result=sync_result)
+        except Exception as e:
+            log.warning("crm.auto_reschedule.failed", error=str(e))
+            return
+
+        if last_run_setting:
+            last_run_setting.value = {"date": today}
+        else:
+            session.add(SystemSetting(key=AUTO_RESCHEDULE_LAST_RUN_KEY, category="crm", value={"date": today}))
+        await session.commit()
+
+
 __all__ = [
     "PipedriveService",
     "pipedrive_service",
+    "run_daily_overdue_reschedule_if_needed",
+    "AUTO_RESCHEDULE_SETTING_KEY",
 ]

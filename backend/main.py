@@ -173,6 +173,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning("message_sync.startup_task.failed", error=str(e))
 
+    # Reagenda tarefas atrasadas do Pipedrive para hoje — roda 1x por dia calendário,
+    # respeitando o toggle "crm_auto_reschedule_overdue" (desligável nas configurações).
+    try:
+        from modules.crm.service.pipedrive_service import run_daily_overdue_reschedule_if_needed
+        reschedule_task = asyncio.create_task(
+            run_daily_overdue_reschedule_if_needed(), name="crm_auto_reschedule_startup"
+        )
+        _background_tasks.add(reschedule_task)
+        reschedule_task.add_done_callback(_background_tasks.discard)
+        log.info("crm_auto_reschedule.startup_task.started")
+    except Exception as e:
+        log.warning("crm_auto_reschedule.startup_task.failed", error=str(e))
+
     try:
         yield
     finally:

@@ -133,6 +133,10 @@ export const useChatPanel = ({
     const modelActivityIdRef = useRef(0);
     const [pipedriveCooldown, setPipedriveCooldown] = useState<number>(0);
     const abortControllersRef = useRef<Record<string, AbortController>>({});
+    // job_id do worker ARQ por threadId — recebido como primeiro evento do stream
+    // (ver api.v1.routers.agent). Permite ao botão "Parar" cancelar o job de verdade
+    // no backend (não só derrubar a leitura local do stream).
+    const agentJobIdsRef = useRef<Record<string, string>>({});
     // True quando o último abort do stream de tarefa ('global_task') foi um cancelamento
     // explícito do usuário (botão de stop), e não uma falha de rede/tool — consultado pelos
     // handlers de streamTaskInto para reportar status 'cancelled' em vez de 'error'.
@@ -503,6 +507,14 @@ export const useChatPanel = ({
         if (abortControllersRef.current[tId]) {
             abortControllersRef.current[tId].abort();
             delete abortControllersRef.current[tId];
+        }
+        // Cancela de verdade no backend — sem isso, o job continuava rodando no worker
+        // ARQ até o fim (chamadas de LLM e ferramentas com efeito real incluídas) mesmo
+        // com o stream local já derrubado. Fire-and-forget: a UI já reseta na hora.
+        const jobIdToCancel = agentJobIdsRef.current[tId];
+        if (jobIdToCancel) {
+            delete agentJobIdsRef.current[tId];
+            ai.cancelAgentJob(jobIdToCancel).catch(err => console.warn('[Agent] Falha ao cancelar job no backend:', err));
         }
         const orgKey = String(activeOrgId || 0);
         if (streamingThreadIdRef.current[orgKey] === tId) {
@@ -1262,6 +1274,12 @@ export const useChatPanel = ({
                     if (!line.trim()) continue;
                     try {
                         const event = JSON.parse(line);
+
+                        if (event.type === 'job_id' && event.job_id) {
+                            agentJobIdsRef.current[threadId] = event.job_id;
+                            continue;
+                        }
+
                         collectedEvents.push(event);
 
                         if (event.type === 'tool_result' && event.ok) {
@@ -1637,6 +1655,12 @@ export const useChatPanel = ({
                     if (!line.trim()) continue;
                     try {
                         const event = JSON.parse(line);
+
+                        if (event.type === 'job_id' && event.job_id) {
+                            agentJobIdsRef.current[threadId] = event.job_id;
+                            continue;
+                        }
+
                         collectedEvents.push(event);
 
                         if (event.type === 'tool_result' && event.ok) {

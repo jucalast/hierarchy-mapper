@@ -259,6 +259,22 @@ async def exec_pipedrive_get_persons(args: Dict[str, Any], org_id: int | None = 
                     res_emp = await session.execute(stmt_emp)
                     local_employees = res_emp.scalars().all()
 
+                    # 🔎 Garante e-mails atualizados ANTES de montar a lista de contatos:
+                    # roda a validação em lote apenas para quem ainda não tem e-mail confirmado
+                    # (contatos já validados são pulados internamente — custo baixo em chamadas repetidas).
+                    needs_validation = [e for e in local_employees if not e.email_verified]
+                    if needs_validation and local_org.domain:
+                        try:
+                            from modules.agent.service.tools.intelligence import batch_discover_and_validate_org_emails
+                            await batch_discover_and_validate_org_emails(local_org.id)
+                            # Recarrega em uma sessão nova para pegar os e-mails já atualizados
+                            # (a sessão atual pode manter os objetos antigos em cache de identidade).
+                            async with async_session() as fresh_session:
+                                res_emp_fresh = await fresh_session.execute(stmt_emp)
+                                local_employees = res_emp_fresh.scalars().all()
+                        except Exception as _bv_err:
+                            log.warning("pipedrive_get_persons.bulk_email_validation_failed", org_id=local_org.id, error=str(_bv_err))
+
                     internal_noise = ["pcp", "rh", "financeiro", "comercial", "adm", "nfe", "qualidade", "faturamento", "fabrica", "processos", "allcompany", "intranet"]
                     internal_domains = ["jferres.com.br"]
                     personal_domains = ["gmail.com", "hotmail.com", "yahoo.com", "yahoo.com.br", "outlook.com", "live.com", "icloud.com", "uol.com.br", "bol.com.br"]
