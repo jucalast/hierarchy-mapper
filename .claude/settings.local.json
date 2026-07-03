@@ -197,7 +197,8 @@
       "Bash(rtk gh *)",
       "Bash(npm ci *)",
       "Bash(command -v gh)",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(tasklist)"
     ]
   }
 }
