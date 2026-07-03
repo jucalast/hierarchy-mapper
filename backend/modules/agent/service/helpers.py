@@ -245,19 +245,32 @@ def _get_label(tool_name: str, args: dict) -> str:
 
 
 def is_task_creation_message(message: str) -> bool:
-    """Detecta se uma mensagem do usuário se refere à criação ou agendamento de uma tarefa."""
+    """Detecta se uma mensagem do usuário é um comando pontual de CRM (criar,
+    agendar ou concluir uma tarefa/atividade) que deve pular a classificação
+    de intenção/pipeline e ser executado direto.
+
+    Cobre tanto frases livres ("marcar tarefa como concluída") quanto os
+    prompts literais que os cards de `suggest_next_actions` reenviam ao
+    agente (ex.: "Use pipedrive_update_task com activity_id=2435, done=true"),
+    que citam o nome da ferramenta mas não estão em sintaxe de chamada pura.
+    """
     if not message:
         return False
     msg_lower = message.lower()
-    
-    # 1. Caso seja uma chamada direta do Pipedrive no formato de prompt/code
+
     import re
+    # 1. Caso seja uma chamada direta do Pipedrive no formato de prompt/code
     if re.match(r'^[a-z0-9_]+\s*\(', msg_lower.strip()):
         return True
-        
-    # 2. Palavras-chave indicando criação/agendamento de atividades/tarefas
+
+    # 2. Prompt reenviado por um card de suggest_next_actions: "Use <tool> com ..."
+    if re.match(r'^use\s+[a-z0-9_]+\s+com\b', msg_lower.strip()):
+        return True
+
+    # 3. Palavras-chave indicando criação/agendamento/conclusão de atividades/tarefas
     keywords = [
         "pipedrive_create_task",
+        "pipedrive_update_task",
         "criar tarefa",
         "criar atividade",
         "agendar tarefa",
@@ -278,7 +291,9 @@ def is_task_creation_message(message: str) -> bool:
         "cadastrar tarefa",
         "cadastrar atividade",
         "marcar tarefa",
-        "marcar atividade"
+        "marcar atividade",
+        "concluir tarefa",
+        "concluir atividade",
     ]
     return any(kw in msg_lower for kw in keywords)
 

@@ -153,6 +153,23 @@ export function usePipedriveSync() {
         fetchPipedriveOrgs();
     }, []);
 
+    // taskSummary é a fonte única do contador "Tarefas pra hoje" (Sidebar) e do
+    // badge colorido por empresa (Drawer/OrgListItem). Sem isso, completar/desfazer
+    // uma tarefa só atualizava a timeline da empresa expandida no Drawer — o mapa
+    // taskSummary ficava com o next_due_date antigo, deixando o badge verde mesmo
+    // sem tarefa pendente pra hoje.
+    useEffect(() => {
+        const handleTaskChanged = () => { fetchTaskSummary(); };
+        window.addEventListener('crm_timeline_changed', handleTaskChanged);
+        window.addEventListener('crm_task_completed', handleTaskChanged);
+        window.addEventListener('crm_task_uncompleted', handleTaskChanged);
+        return () => {
+            window.removeEventListener('crm_timeline_changed', handleTaskChanged);
+            window.removeEventListener('crm_task_completed', handleTaskChanged);
+            window.removeEventListener('crm_task_uncompleted', handleTaskChanged);
+        };
+    }, [fetchTaskSummary]);
+
     return {
         pipedriveOrgs, setPipedriveOrgs,
         searchTerm, setSearchTerm,

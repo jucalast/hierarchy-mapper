@@ -192,7 +192,12 @@
       "Bash(mkdir -p \"/c/Users/JOOLUC~1/AppData/Local/Temp/claude/C--Users-Jo-o-Luccas-Desktop-LINKB2B-hierarchy-mapper/e778488e-1bb7-433c-af5a-da163db6f40f/scratchpad/pwtest\")",
       "Read(//c/Users/JOOLUC~1/AppData/Local/Temp/claude/C--Users-Jo-o-Luccas-Desktop-LINKB2B-hierarchy-mapper/e778488e-1bb7-433c-af5a-da163db6f40f/scratchpad/**)",
       "Bash(npm init *)",
-      "Bash(xargs -I{} echo {})"
+      "Bash(xargs -I{} echo {})",
+      "Bash(gh auth *)",
+      "Bash(rtk gh *)",
+      "Bash(npm ci *)",
+      "Bash(command -v gh)",
+      "Bash(env)"
     ]
   }
 }
