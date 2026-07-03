@@ -85,7 +85,7 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "
     `$Host.UI.RawUI.WindowTitle='LINKB2B-SVC-Worker'
     Set-Location '$backendPath'
     & '$pythonPath' -m watchfiles --filter python ``
-        'arq services.worker.WorkerSettings' ``
+        '`"$pythonPath`" -m arq services.worker.WorkerSettings' ``
         api core models modules services ``
         --ignore-paths '__pycache__,.pytest_cache,*.db,intelligence.db,*.log,*.tmp'
 "

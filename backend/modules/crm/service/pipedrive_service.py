@@ -138,7 +138,8 @@ class PipedriveService:
                     if has_more:
                         start = pagination.get("next_start")
                 else:
-                    break
+                    status = deals_resp.status_code if deals_resp else 'Timeout'
+                    raise Exception(f"Falha ao buscar negócios do Pipedrive: HTTP {status}")
                     
                 # Stop gap to avoid infinite loops
                 if start > 10000:
@@ -773,23 +774,37 @@ class PipedriveService:
         # Usa o cache de open org IDs (filtro obrigatório para mostrar apenas ativos)
         open_org_ids = PipedriveService._open_org_ids_cache
         
-        # Se o cache ainda não carregou, retornamos vazio para evitar mostrar negócios perdidos/antigos
+        # Se o cache ainda não carregou (SyncHub ainda não rodou), dispara refresh inline
+        # para não deixar o drawer vazio no primeiro acesso após reinício do backend.
         if open_org_ids is None:
-            log.info("pipedrive.list_orgs.cache_not_ready")
-            return []
-
-        # 2. Busca TODAS as organizações locais ativas
+            log.info("pipedrive.list_orgs.cache_not_ready_forcing_refresh")
+            try:
+                await self.refresh_open_org_ids_cache()
+                open_org_ids = PipedriveService._open_org_ids_cache
+            except Exception as e:
+                log.warning("pipedrive.list_orgs.inline_refresh_failed", error=str(e))
+        
+        # 2. Busca as organizações locais ativas
         async with async_session() as session:
-            stmt = (
-                select(Organization)
-                .where(
-                    and_(
-                        Organization.is_excluded != 1,
-                        Organization.pipedrive_id.in_(list(open_org_ids))
+            if open_org_ids is not None:
+                stmt = (
+                    select(Organization)
+                    .where(
+                        and_(
+                            Organization.is_excluded != 1,
+                            Organization.pipedrive_id.in_(list(open_org_ids))
+                        )
                     )
+                    .order_by(Organization.last_enrichment.desc())
                 )
-                .order_by(Organization.last_enrichment.desc())
-            )
+            else:
+                log.warning("pipedrive.list_orgs.cache_unavailable_fallback_to_all")
+                stmt = (
+                    select(Organization)
+                    .where(Organization.is_excluded != 1)
+                    .order_by(Organization.last_enrichment.desc())
+                )
+            
             res = await session.execute(stmt)
             local_orgs = res.scalars().all()
 

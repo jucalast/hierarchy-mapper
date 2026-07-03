@@ -85,10 +85,18 @@ def _add_request_id(_, __, event_dict):  # structlog processor
 def _configure_structlog(log_level: int, json_mode: bool) -> None:
     import structlog  # re-import local para evitar shadowing
 
+    def _add_logger_name_safe(logger: Any, method: str, event_dict: dict) -> dict:
+        """Versão segura de add_logger_name compatível com PrintLogger."""
+        if not event_dict.get("logger"):
+            name = getattr(logger, "name", None) or getattr(logger, "_name", None)
+            if name:
+                event_dict["logger"] = name
+        return event_dict
+
     processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_log_level,
-        structlog.stdlib.add_logger_name,
+        _add_logger_name_safe,
         _add_request_id,
         structlog.processors.TimeStamper(fmt="iso", utc=True),
         structlog.processors.StackInfoRenderer(),
