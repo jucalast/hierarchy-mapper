@@ -23,14 +23,14 @@
       "status": "healthy"
     },
     "meta-llama/llama-4-scout-17b-16e-instruct": {
-      "used": 2,
+      "used": 3,
       "limit": 1000,
-      "remaining": 998,
-      "pct": 99.8,
+      "remaining": 997,
+      "pct": 99.7,
       "tokens_limit": 30000,
       "tokens_remaining": 29988,
       "tokens_pct": 100.0,
-      "updated_at": 1783098105.6049469,
+      "updated_at": 1783098849.9154122,
       "status": "healthy"
     },
     "qwen/qwen3-32b": {
@@ -76,7 +76,7 @@
       "tokens_limit": 0,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
-      "updated_at": 1783098111.696725,
+      "updated_at": 1783098855.265589,
       "status": "no_credits"
     },
     "Llama-4-Scout-17B-16E-Instruct": {
@@ -84,7 +84,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1783098111.1408267,
+      "updated_at": 1783098854.9961514,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -96,7 +96,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1783098108.0656936,
+      "updated_at": 1783098852.1891084,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -106,7 +106,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1783098108.3975956,
+      "updated_at": 1783098852.43236,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
@@ -118,7 +118,7 @@
       "limit": 1000,
       "remaining": 0,
       "pct": 0.0,
-      "updated_at": 1783098114.48907,
+      "updated_at": 1783098858.0710137,
       "tokens_remaining": 0,
       "tokens_pct": 0.0,
       "status": "no_credits"
