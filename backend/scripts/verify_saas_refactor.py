@@ -6,7 +6,7 @@ import sys
 # Adiciona o diretório backend ao path para importar core e models
 sys.path.append(os.path.join(os.getcwd(), "backend"))
 
-from core.database import init_db, async_session, engine
+from core.infra.database import init_db, async_session, engine
 from models import Tenant, BusinessProfile, Product, User
 from sqlalchemy import select
 
@@ -43,7 +43,7 @@ async def verify_saas_refactor():
             print(f"[OK] {len(products)} produtos encontrados.")
             
             # Verificar Integracoes
-            from models.integration import Integration
+            from models.crm.integration import Integration
             int_res = await session.execute(select(Integration).where(Integration.tenant_id == tenant.id))
             integrations = int_res.scalars().all()
             print(f"[OK] {len(integrations)} integrações encontradas:")
@@ -51,7 +51,7 @@ async def verify_saas_refactor():
                 print(f"     - {integration.type}: {list(integration.credentials_encrypted.keys()) if integration.credentials_encrypted else 'vazia'}")
 
             # Verificar Regras de Score/ICP
-            from models.icp import ICPConfig
+            from models.crm.icp import ICPConfig
             from sqlalchemy.orm import selectinload
             icp_res = await session.execute(
                 select(ICPConfig)

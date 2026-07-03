@@ -1,6 +1,6 @@
 import React from 'react';
 import { Loader2, Search, Navigation, RotateCcw } from 'lucide-react';
-import styles from './NetworkGraph.module.css';
+import styles from './styles/Toolbar.module.css';
 import type { ProspectSession, ProspectLead } from '@/hooks/useProspecting';
 import { ProspectLeadCard } from './ProspectLeadCard';
 
@@ -101,9 +101,9 @@ export const ProspectingToolbar: React.FC<ProspectingToolbarProps> = ({
                 </div>
             )}
 
-            <div className={styles.refineTab} style={{
+            <div className={`${styles.refineTab} ${prospectPendingLeads.length > 0 ? styles.refineTabConnected : ''}`} style={{
                 position: 'relative', overflow: 'visible', zIndex: 30,
-                ...(prospectPendingLeads.length > 0 ? { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none' } : {}),
+                ...(prospectPendingLeads.length > 0 ? { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none', boxShadow: 'none' } : {}),
             }}>
                 <div className={styles.searchBox}>
                     <div className={styles.inputGroup} style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 0 }}>
@@ -135,8 +135,8 @@ export const ProspectingToolbar: React.FC<ProspectingToolbarProps> = ({
                                     ? <Loader2 size={14} className={styles.loadingAnim} />
                                     : <Search size={14} className={styles.inputActionIcon} />}
                             </button>
-                            {prospectCityName && (
-                                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500, marginLeft: 4, whiteSpace: 'nowrap' }}>
+                              {prospectCityName && (
+                                <span className={styles.toolbarText} style={{ marginLeft: 4 }}>
                                     {prospectCityName}
                                 </span>
                             )}
@@ -153,7 +153,7 @@ export const ProspectingToolbar: React.FC<ProspectingToolbarProps> = ({
                                 className={styles.rangeSlider}
                                 style={{ flex: 1, cursor: 'pointer', minWidth: 60 }}
                             />
-                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600, minWidth: 44, textAlign: 'right', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                            <span className={styles.toolbarTextBold} style={{ minWidth: 44, textAlign: 'right', flexShrink: 0 }}>
                                 {prospectRadiusKm} km
                             </span>
                         </div>
@@ -165,16 +165,16 @@ export const ProspectingToolbar: React.FC<ProspectingToolbarProps> = ({
                             {isRunning ? (
                                 <>
                                     <Loader2 size={13} className={styles.loadingAnim} style={{ color: 'var(--sw-primary)', marginRight: 6 }} />
-                                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
+                                    <span className={styles.toolbarTextBold}>
                                         {prospectLeadsCount > 0 ? `${prospectLeadsCount} encontrados` : 'Buscando…'}
                                     </span>
                                 </>
                             ) : isDone ? (
-                                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
+                                <span className={styles.toolbarTextBold}>
                                     {prospectLeadsCount} leads · {prospectTierACount} Tier A
                                 </span>
                             ) : (
-                                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                                <span className={styles.toolbarText}>
                                     Pronto para buscar
                                 </span>
                             )}
@@ -184,7 +184,8 @@ export const ProspectingToolbar: React.FC<ProspectingToolbarProps> = ({
                     <div className={styles.toolbarActions}>
                         {isRunning || prospectSearching ? (
                             <button onClick={onProspectStop} className={`${styles.detectBtn} ${styles.stopBtn}`} title="Parar busca">
-                                <Loader2 size={15} className={styles.loadingAnim} />
+                                <Loader2 size={18} className={styles.loadingAnim} />
+                                Parar
                             </button>
                         ) : (
                             <button

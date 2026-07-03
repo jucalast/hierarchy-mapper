@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 # Importa Base + models para autogenerate
 from core.config import settings
-from core.database import Base
+from core.infra.database import Base
 from models import AutomatedAction, Employee, Organization  # noqa: F401
 
 config = context.config
@@ -22,7 +22,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Sobrescreve URL com a do projeto (suporta async drivers)
-db_url = settings.DATABASE_URL
+from core.infra.database import DATABASE_URL as db_url
 config.set_main_option("sqlalchemy.url", db_url)
 
 target_metadata = Base.metadata
@@ -54,10 +54,15 @@ def do_run_migrations(connection) -> None:
 
 async def run_migrations_online_async() -> None:
     """Roda migrações com engine async (aiosqlite/asyncpg)."""
+    connect_args = {}
+    if "postgresql" in db_url.lower():
+        connect_args = {"ssl": True}
+
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

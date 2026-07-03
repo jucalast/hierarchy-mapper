@@ -18,6 +18,8 @@ export interface ModalProps {
   ariaLabel?: string;
 }
 
+import { createPortal } from 'react-dom';
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -31,6 +33,12 @@ export const Modal: React.FC<ModalProps> = ({
   ariaLabel,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = React.useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   useEffect(() => {
     if (!isOpen || !closeOnEsc) return;
@@ -47,9 +55,9 @@ export const Modal: React.FC<ModalProps> = ({
     ref.current?.focus();
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
       onClick={closeOnOverlay ? onClose : undefined}
       role="dialog"
@@ -58,13 +66,13 @@ export const Modal: React.FC<ModalProps> = ({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.55)',
+        background: 'rgba(0,0,0,0.65)',
         backdropFilter: 'blur(4px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 10000,
-        padding: '20px',
+        zIndex: 99999, // Ensure it's above everything
+        padding: '24px',
       }}
     >
       <div
@@ -72,14 +80,14 @@ export const Modal: React.FC<ModalProps> = ({
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#131313',
-          color: '#e9edef',
+          background: 'var(--sw-sidebar)',
+          color: 'var(--sw-text-base)',
           width,
           maxWidth: '100%',
           maxHeight: '90vh',
-          borderRadius: '14px',
-          border: '1px solid rgba(255,255,255,0.08)',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.45)',
+          borderRadius: '12px',
+          border: 'var(--sw-border-width) solid var(--sw-border)',
+          boxShadow: 'var(--sw-shadow-lg)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -91,12 +99,12 @@ export const Modal: React.FC<ModalProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '14px 18px',
-              borderBottom: '1px solid rgba(255,255,255,0.05)',
+              padding: '20px 24px',
+              borderBottom: 'var(--sw-border-width) solid var(--sw-border)',
             }}
           >
             {typeof title === 'string' ? (
-              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>{title}</h3>
+              <h3 style={{ margin: 0, fontSize: 'var(--font-lg)', fontWeight: 600 }}>{title}</h3>
             ) : (
               title ?? <span />
             )}
@@ -107,10 +115,22 @@ export const Modal: React.FC<ModalProps> = ({
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#868686',
+                  color: 'var(--sw-text-muted)',
                   cursor: 'pointer',
-                  borderRadius: 6,
-                  padding: 4,
+                  borderRadius: '6px',
+                  padding: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.2s, color 0.2s',
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'var(--sw-hover)';
+                  e.currentTarget.style.color = 'var(--sw-text-base)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'var(--sw-text-muted)';
                 }}
               >
                 <X size={18} />
@@ -118,21 +138,23 @@ export const Modal: React.FC<ModalProps> = ({
             )}
           </div>
         )}
-        <div style={{ padding: '16px 18px', overflow: 'auto' }}>{children}</div>
+        <div style={{ padding: '24px', overflow: 'auto' }}>{children}</div>
         {footer && (
           <div
             style={{
-              padding: '12px 18px',
-              borderTop: '1px solid rgba(255,255,255,0.05)',
+              padding: '16px 24px',
+              borderTop: 'var(--sw-border-width) solid var(--sw-border)',
               display: 'flex',
-              gap: 8,
+              gap: '12px',
               justifyContent: 'flex-end',
+              background: 'transparent',
             }}
           >
             {footer}
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

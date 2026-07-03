@@ -1,0 +1,31 @@
+"""
+models.system.automated_action
+==============================
+Registro de acoes automatizadas pelo agente para auditoria.
+
+Armazena tipo de acao, payload, resposta, timestamps e status.
+Permite revisao humana do que o agente executou em cada sessao.
+"""
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
+from core.infra.database import Base, SafeJSON
+from datetime import datetime
+
+class AutomatedAction(Base):
+    __tablename__ = "automated_actions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    org_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    task_type = Column(String)  # 'whatsapp_followup', 'email_reminder', 'pipedrive_sync'
+    status = Column(String, default="pending")  # 'pending', 'completed', 'failed', 'cancelled'
+    
+    payload = Column(SafeJSON)  # Dados da tarefa (mensagem, destinatário, etc)
+    
+    execute_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    executed_at = Column(DateTime, nullable=True)
+    
+    last_error = Column(String, nullable=True)
+
+    # Relacionamento opcional
+    organization = relationship("Organization")

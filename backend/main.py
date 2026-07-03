@@ -14,6 +14,17 @@ Melhorias vs. versão antiga:
 from __future__ import annotations
 
 import asyncio
+import sys
+
+# Corrige o loop de eventos no Windows para suportar subprocessos assíncronos (Playwright)
+# Deve ser feito o mais cedo possível, antes de qualquer loop ser criado.
+if sys.platform == "win32":
+    import sys
+    sys.stderr.write("DEBUG: Aplicando WindowsProactorEventLoopPolicy no topo do main.py\n")
+    from asyncio import WindowsProactorEventLoopPolicy
+    if not isinstance(asyncio.get_event_loop_policy(), WindowsProactorEventLoopPolicy):
+        asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
+
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
@@ -24,23 +35,25 @@ from fastapi.responses import JSONResponse, Response
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from api.v1.api import api_router
-from api.v1.endpoints.communication import router as comm_router
+from api.v1.router import api_router
 from core.config import settings
-from core.http_client import close_http_client, init_http_client
-from core.logging_config import (
+from core.infra.http_client import close_http_client, init_http_client
+from core.observability.logging_config import (
     RequestIDMiddleware,
     configure_logging,
     get_logger,
     get_request_id,
 )
-from core.metrics import render_metrics
+from core.observability.metrics import render_metrics
 from core.rate_limiter import limiter
 
 log = get_logger(__name__)
 
 # Tasks de background criadas em startup — mantidas para cancelamento em shutdown.
 _background_tasks: set[asyncio.Task] = set()
+
+# Flag de readiness — False durante init, True quando o servidor está pronto para tráfego.
+_app_ready: bool = False
 
 
 # =============================================================================
@@ -50,7 +63,42 @@ _background_tasks: set[asyncio.Task] = set()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Ciclo de vida: startup → yield → shutdown."""
+    # 1. Configura logging IMEDIATAMENTE para não perder logs de startup
     configure_logging()
+
+    # 2. Garante ProactorEventLoop no Windows (necessário para subprocessos assíncronos)
+    import sys
+    if sys.platform == "win32":
+        try:
+            from asyncio import WindowsProactorEventLoopPolicy
+            # ProactorEventLoop is the correct class name
+            from asyncio import ProactorEventLoop
+            policy = asyncio.get_event_loop_policy()
+            if not isinstance(policy, WindowsProactorEventLoopPolicy):
+                asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
+                log.info("server.startup.event_loop_policy_fixed", 
+                         old_policy=str(type(policy)),
+                         new_policy="WindowsProactorEventLoopPolicy")
+            
+            loop = asyncio.get_running_loop()
+            log.info("server.startup.loop_check", 
+                     loop_type=str(type(loop)),
+                     supports_subprocess=isinstance(loop, ProactorEventLoop))
+        except Exception as e:
+            log.warning("server.startup.event_loop.failed", error=str(e))
+
+    # Avisa se o JWT secret padrão está sendo usado em produção
+    try:
+        from core.security import SECRET_KEY
+        _DEFAULT_JWT = "linkb2b-super-secret-jwt-key-for-saas-2026"
+        if settings.is_production and SECRET_KEY == _DEFAULT_JWT:
+            log.error(
+                "security.jwt_secret.default_in_production",
+                message="JWT_SECRET está com valor padrão em produção! Defina JWT_SECRET no ambiente.",
+            )
+    except Exception:
+        pass
+
     log.info(
         "server.startup",
         env=settings.environment,
@@ -69,22 +117,27 @@ async def lifespan(app: FastAPI):
 
     # Database
     try:
-        from core.database import init_db
+        from core.infra.database import init_db
         await init_db()
         log.info("database.initialized")
     except Exception as e:
         log.exception("database.init_failed", error=str(e))
 
+    # Servidor pronto para receber tráfego — background tasks iniciam depois.
+    global _app_ready
+    _app_ready = True
+    log.info("server.ready")
+
     # Scheduler de e-mail (IMAP)
     try:
-        from services.communication.scheduler import start_email_scheduler
+        from modules.communication.service.email.scheduler import start_email_scheduler
         await start_email_scheduler()
     except Exception as e:
         log.warning("scheduler.start_failed", error=str(e))
 
     # Sync hub em background
     try:
-        from services.intelligence.sync_hub import SyncIntelligenceHub
+        from modules.intelligence.service.sync_hub import SyncIntelligenceHub
         task = asyncio.create_task(
             SyncIntelligenceHub().sync_all(), name="sync_intelligence_hub"
         )
@@ -94,22 +147,11 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         log.warning("sync_hub.start_failed", error=str(e))
 
-    # Trigger Service — monitora respostas de clientes (email + WhatsApp)
-    try:
-        from services.ai.trigger_service import TriggerService
-        _trigger_svc = TriggerService()
-        trigger_task = asyncio.create_task(
-            _trigger_svc.start_polling(), name="trigger_service"
-        )
-        _background_tasks.add(trigger_task)
-        trigger_task.add_done_callback(_background_tasks.discard)
-        log.info("trigger_service.started")
-    except Exception as e:
-        log.warning("trigger_service.start_failed", error=str(e))
+    # Trigger Service movido para o ARQ Worker (cron jobs)
 
     # LLM Proactive Preemptive Healthcheck task
     try:
-        from services.ai.llm.router import run_llm_preemptive_healthcheck
+        from core.llm.router import run_llm_preemptive_healthcheck
         healthcheck_task = asyncio.create_task(
             run_llm_preemptive_healthcheck(), name="llm_preemptive_healthcheck"
         )
@@ -118,6 +160,31 @@ async def lifespan(app: FastAPI):
         log.info("llm_healthcheck_task.started")
     except Exception as e:
         log.warning("llm_healthcheck_task.start_failed", error=str(e))
+
+    # Sync de mensagens: re-busca mensagens recentes para contatos já rastreados
+    try:
+        from services.message_sync import sync_tracked_contacts_on_startup
+        sync_task = asyncio.create_task(
+            sync_tracked_contacts_on_startup(), name="message_sync_startup"
+        )
+        _background_tasks.add(sync_task)
+        sync_task.add_done_callback(_background_tasks.discard)
+        log.info("message_sync.startup_task.started")
+    except Exception as e:
+        log.warning("message_sync.startup_task.failed", error=str(e))
+
+    # Reagenda tarefas atrasadas do Pipedrive para hoje — roda 1x por dia calendário,
+    # respeitando o toggle "crm_auto_reschedule_overdue" (desligável nas configurações).
+    try:
+        from modules.crm.service.pipedrive_service import run_daily_overdue_reschedule_if_needed
+        reschedule_task = asyncio.create_task(
+            run_daily_overdue_reschedule_if_needed(), name="crm_auto_reschedule_startup"
+        )
+        _background_tasks.add(reschedule_task)
+        reschedule_task.add_done_callback(_background_tasks.discard)
+        log.info("crm_auto_reschedule.startup_task.started")
+    except Exception as e:
+        log.warning("crm_auto_reschedule.startup_task.failed", error=str(e))
 
     try:
         yield
@@ -135,7 +202,7 @@ async def lifespan(app: FastAPI):
 
         # Para scheduler
         try:
-            from services.communication.scheduler import stop_email_scheduler
+            from modules.communication.service.email.scheduler import stop_email_scheduler
             await stop_email_scheduler()
         except Exception as e:
             log.warning("scheduler.stop_failed", error=str(e))
@@ -149,7 +216,7 @@ async def lifespan(app: FastAPI):
 
         # Dispose do engine
         try:
-            from core.database import engine
+            from core.infra.database import engine
             await engine.dispose()
             log.info("database.disposed")
         except Exception as e:
@@ -254,7 +321,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 # Routers
 # =============================================================================
 
-app.include_router(comm_router, prefix="/api/v1/communication", tags=["communication"])
 app.include_router(api_router, prefix="/api/v1")
 
 
@@ -280,38 +346,26 @@ async def health():
 
 @app.get("/ready", include_in_schema=False)
 async def ready():
-    """Readiness check — valida dependências críticas (DB + LLM)."""
-    checks: Dict[str, Any] = {}
-    overall_ok = True
-
-    # DB
-    try:
-        from core.database import async_session
-        from sqlalchemy import text
-
-        async with async_session() as session:
-            await session.execute(text("SELECT 1"))
-        checks["database"] = {"ok": True}
-    except Exception as e:
-        overall_ok = False
-        checks["database"] = {"ok": False, "error": f"{type(e).__name__}: {e}"}
-
-    # LLM — any provider
-    checks["llm"] = {
-        "ok": settings.any_llm_available,
-        "providers": {
-            "gemini": settings.has_gemini,
-            "groq": settings.has_groq,
-            "claude": settings.has_claude,
-        },
-    }
-    if not settings.any_llm_available:
-        overall_ok = False
-
-    status_code = 200 if overall_ok else 503
+    """
+    Readiness check — retorna 503 enquanto o servidor está inicializando,
+    200 quando está pronto para receber tráfego real.
+    O frontend usa este endpoint como gate antes de fazer qualquer chamada de API.
+    """
+    if not _app_ready:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "starting", "message": "Servidor inicializando..."},
+        )
     return JSONResponse(
-        status_code=status_code,
-        content={"status": "ok" if overall_ok else "degraded", "checks": checks},
+        status_code=200,
+        content={
+            "status": "ready",
+            "llm": {
+                "gemini": settings.has_gemini,
+                "groq": settings.has_groq,
+                "claude": settings.has_claude,
+            },
+        },
     )
 
 

@@ -1,5 +1,5 @@
 .container {
-    width: 100%;
+
     z-index: 100;
     display: flex;
     flex-direction: column;
@@ -24,6 +24,7 @@
         transform: translateY(-10px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -77,34 +78,79 @@
 }
 
 @keyframes progress {
-    from { width: 100%; }
-    to { width: 0%; }
+    from {
+        width: 100%;
+    }
+
+    to {
+        width: 0%;
+    }
 }
 
 /* SUCCESS THEME */
-.success { background: #10b981; }
-.success .iconWrapper { color: #022c22; }
-.success .message { color: #022c22; }
-.success .closeBtn { color: rgba(2, 44, 34, 0.6); }
-.success .closeBtn:hover { background: rgba(2, 44, 34, 0.1); color: #022c22; }
+.success {
+    background: var(--sw-status-success);
+}
+
+.success .iconWrapper,
+.success .message,
+.success .closeBtn {
+    color: #ffffff;
+}
+
+.success .closeBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 /* ERROR THEME */
-.error { background: #ef4444; }
-.error .iconWrapper { color: #450a0a; }
-.error .message { color: #450a0a; }
-.error .closeBtn { color: rgba(69, 10, 10, 0.6); }
-.error .closeBtn:hover { background: rgba(69, 10, 10, 0.1); color: #450a0a; }
+.error {
+    background: var(--sw-status-danger);
+}
+
+.error .iconWrapper,
+.error .message,
+.error .closeBtn {
+    color: #ffffff;
+}
+
+.error .closeBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 /* INFO THEME */
-.info { background: var(--sw-primary); }
-.info .iconWrapper { color: #131415; } 
-.info .message { color: #131415; }
-.info .closeBtn { color: rgba(19, 20, 21, 0.6); }
-.info .closeBtn:hover { background: rgba(19, 20, 21, 0.1); color: #131415; }
+.info {
+    background: var(--sw-primary);
+}
+
+.info .iconWrapper,
+.info .message,
+.info .closeBtn {
+    color: #ffffff;
+}
+
+.info .closeBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
 
 /* WARNING THEME */
-.warning { background: #f59e0b; }
-.warning .iconWrapper { color: #451a03; }
-.warning .message { color: #451a03; }
-.warning .closeBtn { color: rgba(69, 26, 3, 0.6); }
-.warning .closeBtn:hover { background: rgba(69, 26, 3, 0.1); color: #451a03; }
+.warning {
+    background: var(--sw-status-warning);
+}
+
+.warning .iconWrapper,
+.warning .message,
+.warning .closeBtn {
+    color: #ffffff;
+}
+
+.warning .closeBtn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Theme-specific adjustments for light mode if needed */
+[data-theme='light'] .success,
+[data-theme='light'] .error,
+[data-theme='light'] .info,
+[data-theme='light'] .warning {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}

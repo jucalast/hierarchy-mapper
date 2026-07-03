@@ -15,24 +15,26 @@ export function buildProxyImageUrl(url: string | null | undefined): string | und
   if (!url) return undefined;
   if (typeof url !== 'string') return undefined;
   if (!url.startsWith('http')) return url;
-  // Já está proxificada ou já aponta para o próprio backend
-  if (url.includes('/proxy/image') || url.includes(API_BASE_URL)) return url;
+  // Já está proxificada, aponta para o próprio backend ou é do unavatar.io
+  if (url.includes('/proxy/image') || url.includes(API_BASE_URL) || url.includes('unavatar.io')) return url;
   return `${API_V1_URL}/proxy/image?url=${encodeURIComponent(url)}`;
 }
 
 // Configurações de retry
+// maxRetries=2: apenas 2 tentativas extras (total 3 requests) — evita 60s+ de espera
+// antes de exibir erro ao usuário. Retries cobrem falhas transitórias de rede.
 export const RETRY_CONFIG = {
-  maxRetries: 3,
+  maxRetries: 2,
   initialDelayMs: 500,
-  maxDelayMs: 5000,
+  maxDelayMs: 2000,
   backoffMultiplier: 2,
 } as const;
 
 // Timeouts
 export const TIMEOUTS = {
-  short: 5000,    // Requisições rápidas
-  medium: 15000,  // Requisições normais
-  long: 60000,    // Uploads, operações pesadas
+  short: 8000,
+  medium: 20000,
+  long: 60000,
 } as const;
 
 /**
@@ -71,8 +73,29 @@ export async function fetchWithRetry(
   delayMs: number = RETRY_CONFIG.initialDelayMs
 ): Promise<Response> {
   const timeout = options.timeout || TIMEOUTS.medium;
+
+  // Se o sinal externo já estiver abortado, lança o erro imediatamente
+  if (options.signal?.aborted) {
+    throw options.signal.reason || new DOMException('The user aborted a request.', 'AbortError');
+  }
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  // Vincula o sinal externo ao controller interno para abortar imediatamente se o chamador cancelar
+  let externalAbortListener: (() => void) | null = null;
+  if (options.signal) {
+    externalAbortListener = () => {
+      controller.abort(options.signal?.reason || new DOMException('The user aborted a request.', 'AbortError'));
+    };
+    options.signal.addEventListener('abort', externalAbortListener);
+  }
+
+  // Controle de timeout interno
+  let isTimeout = false;
+  const timeoutId = setTimeout(() => {
+    isTimeout = true;
+    controller.abort(new DOMException('Request timeout', 'AbortError'));
+  }, timeout);
 
   // Tenta recuperar o token JWT do localStorage se no ambiente do browser
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -92,16 +115,31 @@ export async function fetchWithRetry(
     });
 
     clearTimeout(timeoutId);
+    if (externalAbortListener && options.signal) {
+      options.signal.removeEventListener('abort', externalAbortListener);
+    }
 
     // Se sucesso, retorna
     if (response.ok) {
       return response;
     }
 
-    // Se erro 5xx ou timeout, tenta novamente
+    // Se erro 5xx ou status 0 (rede/cors) e temos retries, tenta novamente
     if ((response.status >= 500 || response.status === 0) && retries > 0) {
+      if (options.signal?.aborted) {
+        throw options.signal.reason || new DOMException('The user aborted a request.', 'AbortError');
+      }
+
       console.warn(`❌ Erro ${response.status} em ${url}, tentando novamente em ${delayMs}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await new Promise<void>((resolve, reject) => {
+        const sleepTimeout = setTimeout(resolve, delayMs);
+        if (options.signal) {
+          options.signal.addEventListener('abort', () => {
+            clearTimeout(sleepTimeout);
+            reject(options.signal?.reason || new DOMException('The user aborted a request.', 'AbortError'));
+          }, { once: true });
+        }
+      });
       
       const nextDelay = Math.min(
         delayMs * RETRY_CONFIG.backoffMultiplier,
@@ -114,11 +152,27 @@ export async function fetchWithRetry(
     return response;
   } catch (error: any) {
     clearTimeout(timeoutId);
+    if (externalAbortListener && options.signal) {
+      options.signal.removeEventListener('abort', externalAbortListener);
+    }
 
-    // Se foi AbortError (timeout), tenta novamente
-    if (error.name === 'AbortError' && retries > 0) {
+    // Se o sinal externo foi abortado, relança o erro imediatamente sem tentar novamente
+    if (options.signal?.aborted) {
+      throw error;
+    }
+
+    // Se foi AbortError causado por timeout interno, tenta novamente
+    if (isTimeout && retries > 0) {
       console.warn(`⏱️ Timeout em ${url}, tentando novamente em ${delayMs}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await new Promise<void>((resolve, reject) => {
+        const sleepTimeout = setTimeout(resolve, delayMs);
+        if (options.signal) {
+          options.signal.addEventListener('abort', () => {
+            clearTimeout(sleepTimeout);
+            reject(options.signal?.reason || new DOMException('The user aborted a request.', 'AbortError'));
+          }, { once: true });
+        }
+      });
       
       const nextDelay = Math.min(
         delayMs * RETRY_CONFIG.backoffMultiplier,

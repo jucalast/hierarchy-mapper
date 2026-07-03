@@ -1,0 +1,129 @@
+.container {
+    position: fixed;
+    width: 240px; 
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    z-index: 10000;
+    animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: all;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: var(--sw-status-success);
+    border: 3px solid var(--sw-status-success);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.container.error {
+    background: var(--sw-status-danger, #ef4444);
+    border-color: #b91c1c;
+}
+
+.container::after {
+    content: '';
+    position: absolute;
+    left: -11px; 
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 14px;
+    height: 14px;
+    background: var(--sw-status-success);
+    border-left: 3px solid var(--sw-status-success);
+    border-bottom: 3px solid var(--sw-status-success);
+    z-index: -1;
+    transition: all 0.25s ease;
+}
+
+.container.error::after {
+    background: var(--sw-status-danger, #ef4444);
+    border-left-color: #b91c1c;
+    border-bottom-color: #b91c1c;
+}
+
+@keyframes popIn {
+    from { opacity: 0; transform: scale(0.9) translateX(-10px); }
+    to { opacity: 1; transform: scale(1) translateX(0); }
+}
+
+.emailLine {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.emailSuccess {
+    font-size: 14px;
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.container.error .emailSuccess {
+    color: #fff;
+}
+
+.securityIcon {
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.instruction {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+}
+
+.container.error .instruction {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.loadingText {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.closeHint {
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    opacity: 0.9;
+}
+
+.container.error .closeHint {
+    color: #fff;
+    opacity: 0.9;
+}
+
+.spin { 
+    animation: spin 1s linear infinite; 
+    color: #fff;
+}
+
+@keyframes spin { 
+    from { transform: rotate(0deg); } 
+    to { transform: rotate(360deg); } 
+}
+
+.container.warning {
+    background: #f59e0b;
+    border-color: #d97706;
+}
+
+.container.warning::after {
+    background: #f59e0b;
+    border-left-color: #d97706;
+    border-bottom-color: #d97706;
+}
+

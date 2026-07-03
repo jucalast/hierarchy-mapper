@@ -1,25 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-    ChevronRight,
-    Search,
-    X,
-    Users,
-    Briefcase,
-    Clock,
-    DollarSign,
-    Trash2,
-    MoreHorizontal,
-    AlertTriangle,
-    RefreshCw,
-    User,
-} from 'lucide-react';
-import styles from '../../network-graph/NetworkGraph.module.css';
-import { HistoryTimeline } from '../../prospecting/HistoryTimeline';
-import { ContactList } from '../../prospecting/ContactList';
-import { OrgListItem } from '../../prospecting/OrgListItem';
+import styles from './Drawer.module.css';
+import { Spinner } from '../';
+import { organizations as orgsApi, hierarchy as hierarchyApi } from '@/services/api';
 import type { NotificationType } from '../Notification';
-import { organizations as orgsApi } from '@/services/api';
-import { Avatar, Button, Modal, Spinner, Badge } from '../';
+import { DrawerHeader, FocusedOrgView, OrgList, ConfirmModal, OrgDetailsModal, DrawerStageTabs } from './components';
+import { useGlobalHierarchyScan } from '@/contexts/HierarchyScanContext';
 
 interface DrawerProps {
     showDrawer: boolean;
@@ -37,6 +22,15 @@ interface DrawerProps {
     graphEmployees?: any[];
     refreshDetailsTrigger?: number; // Para forçar a recarga dos detalhes
     addNotification?: (type: NotificationType, message: string) => void;
+    onEditEmployee?: (empId: string) => void;
+    onSaveToPipedrive?: (person: any, orgId: number) => Promise<void> | void;
+    onEmailDiscovered?: (person: any, email: string) => Promise<void> | void;
+    onOrgDomainChanged?: (oldDomain: string, newDomain: string) => void;
+    uniqueStages?: { name: string; count: number; order_nr?: number }[];
+    activeStageFilter?: string | null;
+    setActiveStageFilter?: (stage: string | null) => void;
+    totalOrgsCount?: number;
+    onNavigateToRoot?: () => void;
 }
 
 const LOCAL_CACHE_KEYS = (orgId: number) => [
@@ -78,14 +72,17 @@ export const Drawer: React.FC<DrawerProps> = ({
     graphEmployees = [],
     refreshDetailsTrigger = 0,
     addNotification = () => {},
+    onEditEmployee,
+    onSaveToPipedrive,
+    onOrgDomainChanged,
+    uniqueStages = [],
+    activeStageFilter = null,
+    setActiveStageFilter = () => {},
+    totalOrgsCount = 0,
+    onNavigateToRoot,
 }) => {
-    const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = window.localStorage.getItem('drawer-expanded-org-id');
-            return saved ? Number(saved) : null;
-        }
-        return null;
-    });
+    const [expandedOrgId, setExpandedOrgIdState] = useState<number | null>(null);
+    const scan = useGlobalHierarchyScan();
 
     const setExpandedOrgId = (orgId: number | null) => {
         setExpandedOrgIdState(orgId);
@@ -98,25 +95,37 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
-    const [orgDetails, setOrgDetails] = useState<Record<number, any>>(() => {
-        if (typeof window !== 'undefined' && expandedOrgId) {
-            const cached = window.localStorage.getItem(`org-${expandedOrgId}-details`);
-            if (cached) {
-                try {
-                    return { [expandedOrgId]: JSON.parse(cached) };
-                } catch {}
+    // Sincroniza estado de expansão quando o localStorage é alterado externamente (ex: botão "+" no Sidebar)
+    useEffect(() => {
+        if (!showDrawer) return;
+
+        const checkExpansion = () => {
+            const saved = window.localStorage.getItem('drawer-expanded-org-id');
+            const currentId = saved ? Number(saved) : null;
+            if (currentId !== expandedOrgId) {
+                setExpandedOrgIdState(currentId);
             }
-        }
-        return {};
-    });
+        };
+
+        // Verifica imediatamente ao abrir
+        checkExpansion();
+
+        // Escuta eventos de storage para sincronizar entre abas ou ações locais que limpam o storage
+        window.addEventListener('storage', checkExpansion);
+        
+        // Custom event para quando clicamos no "+" (já que 'storage' não dispara na mesma aba)
+        window.addEventListener('drawer_reset_expansion', checkExpansion);
+
+        return () => {
+            window.removeEventListener('storage', checkExpansion);
+            window.removeEventListener('drawer_reset_expansion', checkExpansion);
+        };
+    }, [showDrawer, expandedOrgId]);
+
+    const [orgDetails, setOrgDetails] = useState<Record<number, any>>({});
     const [loadingDetails, setLoadingDetails] = useState<Record<number, boolean>>({});
     
-    const [activeTab, setActiveTabState] = useState<string>(() => {
-        if (typeof window !== 'undefined') {
-            return window.localStorage.getItem('drawer-active-tab') || 'activities';
-        }
-        return 'activities';
-    });
+    const [activeTab, setActiveTabState] = useState<string>('activities');
 
     const setActiveTab = (tab: string) => {
         setActiveTabState(tab);
@@ -125,83 +134,210 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
-    // 🚀 Carregamento inicial de detalhes se já houver empresa expandida
+    // 🚀 Carregamento inicial de detalhes e estados no client-side para evitar hydration mismatch
     useEffect(() => {
-        if (expandedOrgId) {
-            void fetchOrgDetails(expandedOrgId);
+        if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem('drawer-expanded-org-id');
+            const currentId = saved ? Number(saved) : null;
+            if (currentId) {
+                setExpandedOrgIdState(currentId);
+                const cached = window.localStorage.getItem(`org-${currentId}-details`);
+                if (cached) {
+                    try {
+                        setOrgDetails({ [currentId]: JSON.parse(cached) });
+                    } catch {}
+                }
+                void fetchOrgDetails(currentId);
+            }
+            const savedTab = window.localStorage.getItem('drawer-active-tab');
+            if (savedTab) {
+                setActiveTabState(savedTab);
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const [editingNameOrgId, setEditingNameOrgId] = useState<number | null>(null);
     const [editingNameValue, setEditingNameValue] = useState<string>('');
-    const [showOptionsDropdown, setShowOptionsDropdown] = useState<boolean>(false);
     const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
-    const [confirmBusy, setConfirmBusy] = useState<boolean>(false);
-    const [scanningOrgId, setScanningOrgId] = useState<number | null>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [confirmBusy, setConfirmBusy] = useState(false);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [scanningOrgIds, setScanningOrgIds] = useState<number[]>([]);
 
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-                setShowOptionsDropdown(false);
-            }
-        };
-        if (showOptionsDropdown) {
-            document.addEventListener('mousedown', handleClickOutside);
+    const fetchedOrgsRef = useRef<Record<number, boolean>>({});
+
+    const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false, background: boolean = false) => {
+        if (!force && !background && fetchedOrgsRef.current[orgId]) return; // Já buscado nesta sessão
+
+        if (!background) {
+            setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
         }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [showOptionsDropdown]);
+        let attempt = 0;
+        const maxAttempts = 3;
 
-    const fetchOrgDetails = useCallback(async (orgId: number, force: boolean = false) => {
-        if (!force && orgDetails[orgId]) return; // Já carregado
-
-        setLoadingDetails(prev => ({ ...prev, [orgId]: true }));
-        try {
-            const data = await orgsApi.getOrganizationDetails(orgId);
-            setOrgDetails(prev => ({ ...prev, [orgId]: data }));
-            if (typeof window !== 'undefined') {
-                window.localStorage.setItem(`org-${orgId}-details`, JSON.stringify(data));
+        while (attempt < maxAttempts) {
+            try {
+                const data = await orgsApi.getOrganizationDetails(orgId);
+                setOrgDetails(prev => ({ ...prev, [orgId]: data }));
+                fetchedOrgsRef.current[orgId] = true;
+                // Persiste no localStorage para stale-while-revalidate no próximo load.
+                // Isolado do catch da API: QuotaExceededError não deve travar o fluxo.
+                if (typeof window !== 'undefined') {
+                    const serialized = JSON.stringify(data);
+                    try {
+                        window.localStorage.setItem(`org-${orgId}-details`, serialized);
+                    } catch {
+                        // Quota excedida — despeja todos os caches de detalhes e tenta de novo
+                        try {
+                            const toEvict: string[] = [];
+                            for (let _i = 0; _i < localStorage.length; _i++) {
+                                const k = localStorage.key(_i);
+                                if (k?.startsWith('org-') && k.endsWith('-details')) toEvict.push(k);
+                            }
+                            toEvict.forEach(k => localStorage.removeItem(k));
+                            localStorage.setItem(`org-${orgId}-details`, serialized);
+                        } catch {
+                            // Ainda sem espaço — dado já está no estado React, segue sem cache
+                        }
+                    }
+                }
+                if (force) {
+                    addNotification('success', 'Dados sincronizados com o Pipedrive.');
+                }
+                break; // Sucesso, sai do loop
+            } catch (e: any) {
+                const errMsg = e.message || e;
+                if (typeof errMsg === 'string' && (errMsg.toLowerCase().includes('cooldown') || errMsg.toLowerCase().includes('rate limit'))) {
+                    attempt++;
+                    if (attempt < maxAttempts) {
+                        console.warn(`Rate limit do Pipedrive atingido. Tentando novamente em 2.5s (Tentativa ${attempt}/${maxAttempts})...`);
+                        await new Promise(res => setTimeout(res, 2500));
+                        continue; // Tenta de novo
+                    }
+                }
+                
+                console.error('Erro ao carregar detalhes:', errMsg);
+                if (force) {
+                    const msg = (e as any)?.message || 'Erro ao sincronizar. Tente novamente.';
+                    addNotification('error', msg);
+                }
+                break; // Outro erro ou limite de tentativas excedido, sai do loop
             }
-            if (force) {
-                addNotification('success', 'Dados sincronizados com o Pipedrive.');
-            }
-        } catch (e: any) {
-            console.error('Erro ao carregar detalhes:', e.message || e);
-            if (force) {
-                const msg = (e as any)?.message || 'Erro ao sincronizar. Tente novamente.';
-                addNotification('error', msg);
-            }
-        } finally {
+        }
+        if (!background) {
             setLoadingDetails(prev => ({ ...prev, [orgId]: false }));
         }
-    }, [orgDetails, addNotification]);
+    }, [addNotification]);
 
     useEffect(() => {
         if (refreshDetailsTrigger > 0) {
-            // Em nova varredura ou job explícito, zera estado local
-            setOrgDetails({});
-            setExpandedOrgId(null);
+            // Em nova varredura atualiza os detalhes em vez de fechar — silenciosamente (sem notificação)
+            if (expandedOrgId) {
+                void fetchOrgDetails(expandedOrgId, false, true);
+            }
         }
     }, [refreshDetailsTrigger]);
 
+
     useEffect(() => {
-        if (activeJobId) {
-            try {
-                const jobStr = typeof window !== 'undefined' ? window.localStorage.getItem('active-discovery-job') : null;
-                if (jobStr) {
-                    const parsed = JSON.parse(jobStr);
-                    setScanningOrgId(parsed.orgId);
-                }
-            } catch {
-                setScanningOrgId(null);
+        const handleTimelineChanged = () => {
+            if (expandedOrgId) {
+                // background=true, force=false: atualiza silenciosamente sem notificação
+                void fetchOrgDetails(expandedOrgId, false, true);
             }
-        } else {
-            setScanningOrgId(null);
-        }
-    }, [activeJobId]);
+        };
+        window.addEventListener('crm_timeline_changed', handleTimelineChanged);
+        window.addEventListener('crm_task_completed', handleTimelineChanged);
+        window.addEventListener('crm_task_uncompleted', handleTimelineChanged);
+        return () => {
+            window.removeEventListener('crm_timeline_changed', handleTimelineChanged);
+            window.removeEventListener('crm_task_completed', handleTimelineChanged);
+            window.removeEventListener('crm_task_uncompleted', handleTimelineChanged);
+        };
+    }, [expandedOrgId, fetchOrgDetails]);
+
+    // Helpers para checar jobs ativos no localStorage
+    // Retorna TODAS as orgs com discovery ativo (suporta múltiplos mapeamentos simultâneos).
+    const getDiscoveryJobOrgIds = (): number[] => {
+        const ids: number[] = [];
+        if (typeof window === 'undefined') return ids;
+        try {
+            for (let _i = 0; _i < window.localStorage.length; _i++) {
+                const key = window.localStorage.key(_i);
+                if (key && key.startsWith('active-discovery-job-')) {
+                    const jobStr = window.localStorage.getItem(key);
+                    if (jobStr) {
+                        const parsed = JSON.parse(jobStr);
+                        if (parsed && parsed.orgId) ids.push(Number(parsed.orgId));
+                    }
+                }
+            }
+        } catch {}
+        return ids;
+    };
+
+    const getLinkedinScanOrgIds = (): number[] => {
+        const ids: number[] = [];
+        try {
+            if (typeof window === 'undefined') return ids;
+            // Formato novo: mapa de orgId → entry
+            const newFmt = window.localStorage.getItem('active-linkedin-scans');
+            if (newFmt) {
+                const parsed = JSON.parse(newFmt);
+                if (parsed && typeof parsed === 'object') {
+                    ids.push(...Object.keys(parsed).map(Number));
+                    return ids;
+                }
+            }
+            // Formato legado: entrada única
+            const legacy = window.localStorage.getItem('active-linkedin-scan');
+            if (legacy) {
+                const parsed = JSON.parse(legacy);
+                if (parsed?.orgId) ids.push(Number(parsed.orgId));
+            }
+        } catch {}
+        return ids;
+    };
+
+    // Mantém scanningOrgIds baseado no in-memory hook + localStorage para
+    // que o indicador persista mesmo após sair da empresa e suporte multi-scan.
+    useEffect(() => {
+        const computeScanningIds = (): number[] => {
+            const ids = new Set<number>();
+            // Scans LinkedIn em andamento (in-memory hook — todos os orgs ativos)
+            for (const id of scan.activeScanOrgIds) ids.add(id);
+            // Scans persistidos no localStorage (detecta reload antes do hook reconectar)
+            for (const id of getLinkedinScanOrgIds()) ids.add(id);
+            // Discovery jobs (IA) ativos no localStorage — TODOS (suporta multi-discovery)
+            for (const id of getDiscoveryJobOrgIds()) ids.add(id);
+            return Array.from(ids);
+        };
+
+        const updateScanningIds = () => setScanningOrgIds(computeScanningIds());
+
+        const handleFinished = () => {
+            setTimeout(updateScanningIds, 300);
+        };
+
+        updateScanningIds();
+
+        window.addEventListener('hierarchy_scan_started', updateScanningIds);
+        window.addEventListener('hierarchy_scan_done', handleFinished);
+        window.addEventListener('hierarchy_job_finished', handleFinished);
+        window.addEventListener('hierarchy_scan_cancelled', handleFinished);
+
+        const pollingInterval = setInterval(updateScanningIds, 5000);
+
+        return () => {
+            window.removeEventListener('hierarchy_scan_started', updateScanningIds);
+            window.removeEventListener('hierarchy_scan_done', handleFinished);
+            window.removeEventListener('hierarchy_job_finished', handleFinished);
+            window.removeEventListener('hierarchy_scan_cancelled', handleFinished);
+            clearInterval(pollingInterval);
+        };
+    // activeScanOrgIds é um array novo a cada render; usar JSON para estabilidade de dep
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scan.isAnyScanning, JSON.stringify(scan.activeScanOrgIds)]);
 
     const toggleExpand = (e: React.MouseEvent, orgId: number) => {
         e.stopPropagation();
@@ -268,7 +404,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
 
         try {
-            await orgsApi.renameOrganization(orgId, editingNameValue.trim());
+            await orgsApi.updateOrganization(orgId, { name: editingNameValue.trim() });
 
             // Atualizar no local state (mutação controlada do array do pai)
             const updatedOrg = filteredOrgs.find(o => Number(o.id) === orgId);
@@ -296,90 +432,289 @@ export const Drawer: React.FC<DrawerProps> = ({
         }
     };
 
-    const formatDate = (dateStr: string) => {
-        if (!dateStr) return '';
-        return new Date(dateStr).toLocaleDateString('pt-BR');
+    const handleUpdateOrg = async (orgId: number, data: Record<string, any>) => {
+        try {
+            const oldDomain = orgDetails[orgId]?.domain || orgDetails[orgId]?.org?.website || '';
+            await orgsApi.updateOrganization(orgId, data);
+
+            if (data.domain && oldDomain && data.domain !== oldDomain) {
+                if (onOrgDomainChanged) {
+                    onOrgDomainChanged(oldDomain, data.domain);
+                }
+            }
+
+            // Atualizar no local state
+            const updatedOrg = filteredOrgs.find(o => Number(o.id) === orgId);
+            if (updatedOrg) {
+                if (data.name !== undefined) updatedOrg.name = data.name;
+                if (data.domain !== undefined) updatedOrg.domain = data.domain;
+                if (data.address !== undefined) updatedOrg.address = data.address;
+            }
+
+            setOrgDetails(prev => {
+                if (prev[orgId]) {
+                    const existingOrg = prev[orgId].org || {};
+                    return {
+                        ...prev,
+                        [orgId]: {
+                            ...prev[orgId],
+                            ...data,
+                            org: {
+                                ...existingOrg,
+                                ...data,
+                                website: data.domain !== undefined ? data.domain : existingOrg.website,
+                                owner_name: data.owner_name !== undefined ? data.owner_name : existingOrg.owner_name
+                            }
+                        },
+                    };
+                }
+                return prev;
+            });
+
+            if (data.name && onOrgRenamed) {
+                onOrgRenamed(orgId, data.name);
+            }
+
+            // Recarregar os detalhes completos do Pipedrive/DB local
+            await fetchOrgDetails(orgId, true);
+        } catch (e: any) {
+            console.error('Erro ao atualizar empresa:', e.message || e);
+            addNotification('error', 'Erro ao atualizar informações da empresa.');
+            throw e;
+        }
+    };
+
+    const handleSaveToPipedrive = async (person: any, orgId: number) => {
+        if (onSaveToPipedrive) {
+            return onSaveToPipedrive(person, orgId);
+        }
+        
+        addNotification('info', 'Salvando contato no Pipedrive...');
+        try {
+            const { organizations } = await import('@/services/api');
+            let email = person.email;
+            if (Array.isArray(email)) email = email[0]?.value;
+            if (typeof email === 'string' && (!email.includes('@') || email.includes('Sem dados'))) {
+                email = null;
+            }
+            if (!email) email = null;
+            
+            let phone = person.phone;
+            if (Array.isArray(phone)) phone = phone[0]?.value;
+            if (typeof phone === 'string' && (!/\d/.test(phone) || phone.includes('Sem dados'))) {
+                phone = null;
+            }
+            if (!phone) phone = null;
+
+            const res = await organizations.createPerson({
+                name: person.name,
+                email,
+                phone,
+                org_id: orgId
+            });
+            
+            if (res.status === 'success' || res.data) {
+                addNotification('success', 'Contato salvo com sucesso no Pipedrive!');
+                setOrgDetails(prev => {
+                    const current = prev[orgId];
+                    if (!current) return prev;
+                    const newPerson = res.data || {
+                        id: `temp_${Date.now()}`,
+                        name: person.name,
+                        ...(email ? { email: [{ value: email, primary: true }] } : {}),
+                        ...(phone ? { phone: [{ value: phone, primary: true }] } : {})
+                    };
+                    return {
+                        ...prev,
+                        [orgId]: {
+                            ...current,
+                            persons: [...(current.persons || []), newPerson]
+                        }
+                    };
+                });
+            } else {
+                addNotification('error', 'Erro ao salvar contato no Pipedrive.');
+            }
+        } catch(e: any) {
+            addNotification('error', e.message || 'Erro ao salvar contato no Pipedrive.');
+            throw e;
+        }
+    };
+
+    const handleUpdateInPipedrive = async (person: any, orgId: number) => {
+        addNotification('info', 'Atualizando contato no Pipedrive...');
+        try {
+            const { organizations } = await import('@/services/api');
+            let email = person.email;
+            if (Array.isArray(email)) email = email[0]?.value;
+            if (typeof email === 'string' && (!email.includes('@') || email.includes('Sem dados'))) {
+                email = null;
+            }
+            if (!email) email = null;
+            
+            let phone = person.phone;
+            if (Array.isArray(phone)) phone = phone[0]?.value;
+            if (typeof phone === 'string' && (!/\d/.test(phone) || phone.includes('Sem dados'))) {
+                phone = null;
+            }
+            if (!phone) phone = null;
+            
+            let personId = person.id;
+            if (typeof personId === 'string' && (personId.startsWith('mapped_') || personId.startsWith('temp_'))) {
+                 const pipedrivePerson = orgDetails[orgId]?.persons?.find((p: any) => p.name?.trim().toLowerCase() === person.name?.trim().toLowerCase());
+                 if (pipedrivePerson) {
+                     personId = pipedrivePerson.id;
+                 }
+            }
+
+            const res = await organizations.updatePerson(personId, {
+                name: person.name,
+                email,
+                phone
+            });
+            
+            if (res.status === 'success') {
+                addNotification('success', 'Contato atualizado no Pipedrive!');
+                setOrgDetails(prev => {
+                    const current = prev[orgId];
+                    if (!current) return prev;
+                    const updatedPersons = (current.persons || []).map((p: any) => 
+                        p.id === personId ? { ...p, name: person.name, email: [{ value: email, primary: true }], phone: [{ value: phone, primary: true }] } : p
+                    );
+                    return { ...prev, [orgId]: { ...current, persons: updatedPersons } };
+                });
+            } else {
+                addNotification('error', 'Erro ao atualizar contato.');
+            }
+        } catch(e: any) {
+            addNotification('error', e.message || 'Erro ao atualizar contato.');
+            throw e;
+        }
+    };
+
+    const handleDeleteFromPipedrive = async (person: any, orgId: number) => {
+        addNotification('info', 'Removendo contato do Pipedrive...');
+        try {
+            const { organizations } = await import('@/services/api');
+            let personId = person.id;
+            if (typeof personId === 'string' && (personId.startsWith('mapped_') || personId.startsWith('temp_'))) {
+                 const pipedrivePerson = orgDetails[orgId]?.persons?.find((p: any) => p.name?.trim().toLowerCase() === person.name?.trim().toLowerCase());
+                 if (pipedrivePerson) {
+                     personId = pipedrivePerson.id;
+                 }
+            }
+
+            const res = await organizations.deletePerson(personId);
+            if (res.status === 'success') {
+                addNotification('success', 'Contato removido do Pipedrive!');
+                setOrgDetails(prev => {
+                    const current = prev[orgId];
+                    if (!current) return prev;
+                    const updatedPersons = (current.persons || []).filter((p: any) => p.id !== personId);
+                    return { ...prev, [orgId]: { ...current, persons: updatedPersons } };
+                });
+                
+                // Se o contato tem emp_id, limpa o email no banco local também para não reaparecer no fallback
+                if (person.emp_id) {
+                    try {
+                        await hierarchyApi.updateEmployeeDetails(person.emp_id, { email: null as any });
+                        // Avisa o frontend para recarregar o grafo
+                        window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                    } catch (e) {
+                        console.error("Erro ao limpar email local:", e);
+                    }
+                }
+            } else {
+                addNotification('error', 'Erro ao remover contato.');
+            }
+        } catch(e: any) {
+            addNotification('error', e.message || 'Erro ao remover contato.');
+            throw e;
+        }
+    };
+
+    const handleSaveDiscoveredEmail = async (person: any, orgId: number, discoveredEmail: string) => {
+        const contactName = person.name;
+
+        addNotification('success', `E-mail salvo: ${discoveredEmail}`);
+
+        // 1. Se o contato tem emp_id, atualiza no banco local de hierarquia!
+        if (person.emp_id) {
+            try {
+                await hierarchyApi.updateEmployeeDetails(person.emp_id, {
+                    email: discoveredEmail
+                });
+            } catch (err: any) {
+                console.error("Erro ao salvar email no banco local:", err);
+            }
+        }
+
+        // 2. Se está cadastrado no Pipedrive, atualiza o Pipedrive também!
+        if (person.sources?.includes('pipedrive')) {
+            try {
+                await handleUpdateInPipedrive({ ...person, email: [{ value: discoveredEmail, primary: true, label: "verified" }] }, orgId);
+            } catch (err: any) {
+                console.error("Erro ao atualizar email no Pipedrive:", err);
+            }
+        }
+
+                // 3. Atualiza no estado local do drawer para atualizar a tela instantaneamente
+                setOrgDetails(prev => {
+                    const current = prev[orgId];
+                    if (!current) return prev;
+                    
+                    const updatedPersons = (current.persons || []).map((p: any) => {
+                        const isTarget = p.id === person.id || (p.name && person.name && p.name.trim().toLowerCase() === person.name.trim().toLowerCase());
+                        if (isTarget) {
+                            return {
+                                ...p,
+                                email: [{ value: discoveredEmail, primary: true, label: "verified" }]
+                            };
+                        }
+                        return p;
+                    });
+
+                    return {
+                        ...prev,
+                        [orgId]: {
+                            ...current,
+                            persons: updatedPersons
+                        }
+                    };
+                });
+
+                // 4. Dispara evento para sinalizar ao pai/sistema que a hierarquia mudou
+                const changeEvent = new CustomEvent('crm_timeline_changed');
+                window.dispatchEvent(changeEvent);
     };
 
     // Filtra a organização que está em foco
     const focusedOrg = expandedOrgId ? filteredOrgs.find(o => Number(o.id) === expandedOrgId) : null;
 
-    if (!showDrawer) return null;
-
     return (
-        <div className={styles.drawer}>
-            <div className={styles.drawerHeader}>
-                {expandedOrgId ? (
-                    <div className={styles.focusHeader}>
-                        <button onClick={() => setExpandedOrgId(null)} className={styles.backToListBtn}>
-                            <X size={14} />
-                            <span>Voltar para a lista</span>
-                        </button>
+        <div className={`${styles.drawerWrapper} ${showDrawer ? styles.drawerWrapperOpen : styles.drawerWrapperClosed}`}>
+        <div className={styles.drawerInner}>
+            <DrawerHeader 
+                expandedOrgId={expandedOrgId}
+                setExpandedOrgId={setExpandedOrgId}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                setShowDrawer={setShowDrawer}
+                fetchOrgDetails={fetchOrgDetails}
+                loadingDetails={loadingDetails}
+                setConfirmKind={setConfirmKind}
+                onOpenDetailsModal={() => setShowDetailsModal(true)}
+                onNavigateToRoot={onNavigateToRoot}
+            />
 
-                        <div className={styles.focusHeaderActions} ref={dropdownRef}>
-                            <button
-                                onClick={() => setShowOptionsDropdown(!showOptionsDropdown)}
-                                className={styles.moreOptionsBtn}
-                                title="Mais opções"
-                            >
-                                <MoreHorizontal size={20} />
-                            </button>
-
-                            <button
-                                onClick={() => fetchOrgDetails(expandedOrgId!, true)}
-                                className={styles.refreshBtn}
-                                title="Sincronizar agora"
-                                disabled={loadingDetails[expandedOrgId!]}
-                            >
-                                <RefreshCw size={14} className={loadingDetails[expandedOrgId!] ? styles.spin : ''} />
-                            </button>
-
-                            {showOptionsDropdown && (
-                                <div className={styles.dropdownMenu}>
-                                    <button
-                                        onClick={() => {
-                                            setShowOptionsDropdown(false);
-                                            setConfirmKind('reset');
-                                        }}
-                                        className={styles.dropdownItem}
-                                        style={{ color: '#f59e0b' }}
-                                    >
-                                        <Trash2 size={14} />
-                                        <span>Resetar Cache</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShowOptionsDropdown(false);
-                                            setConfirmKind('delete');
-                                        }}
-                                        className={styles.dropdownItem}
-                                        style={{ color: '#ef4444' }}
-                                    >
-                                        <X size={14} />
-                                        <span>Excluir Empresa</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <div className={styles.drawerInputWrapper}>
-                            <Search size={14} className={styles.inputIcon} />
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Pesquisar no Pipedrive..."
-                                className={styles.drawerInput}
-                            />
-                        </div>
-                        <button onClick={() => setShowDrawer(false)} className={styles.backBtn} title="Fechar">
-                            <X size={14} />
-                        </button>
-                    </>
-                )}
-            </div>
+            {!expandedOrgId && (
+                <DrawerStageTabs
+                    stages={uniqueStages}
+                    activeStage={activeStageFilter}
+                    onSelect={setActiveStageFilter}
+                    totalCount={totalOrgsCount}
+                />
+            )}
 
             <div className={styles.drawerList}>
                 {isLoading ? (
@@ -387,283 +722,63 @@ export const Drawer: React.FC<DrawerProps> = ({
                         <Spinner size={32} />
                     </div>
                 ) : expandedOrgId && focusedOrg ? (
-                    /* MODO FOCO TOTAL (UMA ÚNICA EMPRESA) */
-                    <div className={styles.focusedOrgView}>
-                        <div className={styles.focusedOrgHero}>
-                            <div className={styles.focusedOrgLogoWrapper}>
-                                <Avatar
-                                    kind="company"
-                                    src={focusedOrg.logo || (Number(focusedOrg.id) === selectedOrgId || Number(focusedOrg.local_id) === selectedOrgId ? selectedOrgLogo : undefined)}
-                                    name={focusedOrg.name}
-                                    data={focusedOrg}
-                                    size={48}
-                                />
-                            </div>
-                            <div className={styles.focusedOrgIdentity}>
-                                {editingNameOrgId === expandedOrgId ? (
-                                    <input
-                                        type="text"
-                                        value={editingNameValue}
-                                        onChange={(e) => setEditingNameValue(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                handleRenameOrg(expandedOrgId!);
-                                            } else if (e.key === 'Escape') {
-                                                setEditingNameOrgId(null);
-                                            }
-                                        }}
-                                        onBlur={() => handleRenameOrg(expandedOrgId!)}
-                                        autoFocus
-                                        className={styles.focusedOrgNameEdit}
-                                        placeholder="Nome da empresa..."
-                                    />
-                                ) : (
-                                    <h2
-                                        className={styles.focusedOrgName}
-                                        onDoubleClick={() => {
-                                            setEditingNameOrgId(expandedOrgId);
-                                            setEditingNameValue(focusedOrg.name);
-                                        }}
-                                        title="Clique duas vezes para renomear"
-                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', width: '100%', overflow: 'hidden' }}
-                                    >
-                                        <span style={{ 
-                                            whiteSpace: 'nowrap', 
-                                            overflow: 'hidden', 
-                                            textOverflow: 'ellipsis',
-                                            flex: '0 1 auto'
-                                        }}>
-                                            {focusedOrg.name}
-                                        </span>
-                                        {orgDetails[expandedOrgId]?.icp_tier && (
-                                            <Badge 
-                                                tone={orgDetails[expandedOrgId].icp_tier === 'A' ? 'success' : orgDetails[expandedOrgId].icp_tier === 'B' ? 'warning' : 'neutral'}
-                                                size="sm"
-                                                style={{ fontSize: '11px', padding: '2px 8px', flexShrink: 0 }}
-                                                title={`ICP Score: ${orgDetails[expandedOrgId].icp_score}`}
-                                            >
-                                                Tier {orgDetails[expandedOrgId].icp_tier} • {orgDetails[expandedOrgId].icp_score}%
-                                            </Badge>
-                                        )}
-                                        {scanningOrgId === expandedOrgId && (
-                                            <Spinner size={16} inline color="rgb(122, 139, 255)" />
-                                        )}
-                                    </h2>
-                                )}
-                                <div className={styles.focusedMetaRow}>
-                                    {focusedOrg.address && (
-                                        <span className={styles.focusedOrgAddress}>
-                                            {focusedOrg.address.toLowerCase().replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())}
-                                        </span>
-                                    )}
-                                    {orgDetails[expandedOrgId]?.org?.owner_name && (
-                                        <span className={styles.focusedOrgOwner} title="Responsável pela empresa">
-                                            <User size={12} style={{ marginRight: '4px', opacity: 0.6 }} />
-                                            {orgDetails[expandedOrgId].org.owner_name}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={styles.detailsPane}>
-                            {loadingDetails[expandedOrgId] ? (
-                                <div className={styles.detailsLoading}>
-                                    <Spinner size={16} inline />
-                                    <span>Sincronizando...</span>
-                                </div>
-                            ) : orgDetails[expandedOrgId] ? (
-                                <div className={styles.detailsContent}>
-                                    <div className={styles.mainNav}>
-                                        <button
-                                            className={activeTab === 'activities' ? styles.mainNavActive : styles.mainNavBtn}
-                                            onClick={() => setActiveTab('activities')}
-                                        >
-                                            <Clock size={16} /> Timeline
-                                        </button>
-                                        <button
-                                            className={activeTab === 'persons' ? styles.mainNavActive : styles.mainNavBtn}
-                                            onClick={() => setActiveTab('persons')}
-                                        >
-                                            <Users size={16} /> People
-                                        </button>
-                                        <button
-                                            className={activeTab === 'deals' ? styles.mainNavActive : styles.mainNavBtn}
-                                            onClick={() => setActiveTab('deals')}
-                                        >
-                                            <Briefcase size={16} /> Deals
-                                        </button>
-                                    </div>
-
-
-                                    <div className={styles.tabScrollAreaFocus}>
-                                        {activeTab === 'activities' && (
-                                            <HistoryTimeline
-                                                details={orgDetails[expandedOrgId]}
-                                                orgName={focusedOrg.name}
-                                            />
-                                        )}
-
-                                        {activeTab === 'persons' && (
-                                            <ContactList
-                                                persons={(() => {
-                                                    const seen = new Set();
-                                                    return (orgDetails[expandedOrgId].persons || []).filter((p: any) => {
-                                                        if (!p.id || seen.has(p.id)) return false;
-                                                        seen.add(p.id);
-                                                        return true;
-                                                    });
-                                                })()}
-                                            />
-                                        )}
-
-                                        {activeTab === 'deals' && (
-                                            <div className={styles.dealList}>
-                                                {orgDetails[expandedOrgId].deals.length === 0 && <div className={styles.emptyState}>Sem negócios.</div>}
-                                                {(() => {
-                                                    const seen = new Set();
-                                                    return (orgDetails[expandedOrgId].deals || [])
-                                                        .filter((d: any) => {
-                                                            if (!d.id || seen.has(d.id)) return false;
-                                                            seen.add(d.id);
-                                                            return true;
-                                                        })
-                                                        .map((d: any) => (
-                                                            <div key={d.id} className={styles.dealItem}>
-                                                                <div className={styles.dealTitle}>{d.title}</div>
-                                                                <div className={styles.dealOwner} title="Responsável pelo negócio">
-                                                                    <Users size={10} style={{ marginRight: '4px', opacity: 0.5 }} />
-                                                                    {d.user_id?.name || d.owner_name || 'Sem responsável'}
-                                                                </div>
-                                                                <div className={styles.dealMeta}>
-                                                                    <span className={styles.dealValue}>
-                                                                        <DollarSign size={10} /> {d.formatted_value || 'R$ 0'}
-                                                                    </span>
-                                                                    <span className={`${styles.dealStatus} ${styles[d.status]}`}>
-                                                                        {d.status === 'open' ? 'Aberto' : d.status === 'won' ? 'Ganho' : 'Perdido'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        ));
-                                                })()}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
+                    <FocusedOrgView 
+                        focusedOrg={focusedOrg}
+                        expandedOrgId={expandedOrgId}
+                        orgDetails={orgDetails}
+                        loadingDetails={loadingDetails}
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        editingNameOrgId={editingNameOrgId}
+                        editingNameValue={editingNameValue}
+                        setEditingNameValue={setEditingNameValue}
+                        setEditingNameOrgId={setEditingNameOrgId}
+                        handleRenameOrg={handleRenameOrg}
+                        handleUpdateOrg={handleUpdateOrg}
+                        scanningOrgIds={scanningOrgIds}
+                        selectedOrgId={selectedOrgId}
+                        selectedOrgLogo={selectedOrgLogo}
+                        graphEmployees={graphEmployees}
+                        onEditEmployee={onEditEmployee}
+                        onSaveToPipedrive={(person) => handleSaveToPipedrive(person, expandedOrgId!)}
+                        onUpdateInPipedrive={(person) => handleUpdateInPipedrive(person, expandedOrgId!)}
+                        onDeleteFromPipedrive={(person) => handleDeleteFromPipedrive(person, expandedOrgId!)}
+                        onEmailDiscovered={(person, email) => handleSaveDiscoveredEmail(person, expandedOrgId!, email)}
+                    />
                 ) : (
-                    /* MODO LISTA (PADRÃO) */
-                    filteredOrgs.map(org => {
-                        const orgId = Number(org.id);
-                        const isSelected = orgId === selectedOrgId || Number(org.local_id) === selectedOrgId;
-
-                        let displayPics = org.employee_pics || [];
-                        let displayCount = org.employee_count || 0;
-
-                        if (isSelected && graphEmployees.length > 0) {
-                            const validEmps = graphEmployees.filter(emp =>
-                                emp.id !== 'root_company' &&
-                                emp.department !== 'Quadro Societário' &&
-                                emp.department !== 'Quadro de Sócios (QSA)' &&
-                                emp.level !== 6 &&
-                                !String(emp.id).startsWith('partner_') &&
-                                emp.role !== 'Análise Humana'
-                            );
-
-                            const graphPics = validEmps
-                                .map(emp => emp.profile_pic || emp.avatar)
-                                .filter(pic => pic && pic.length > 10);
-
-                            // Sobrescreve sempre, para zerar as imagems caso comece um novo mapeamento
-                            displayPics = graphPics;
-                            displayCount = validEmps.length;
-                        }
-
-                        // Se o org está selecionado e não tem logo próprio, usa o confirmedLogo do estado
-                        const orgWithLogo = isSelected && !org.logo && selectedOrgLogo
-                            ? { ...org, logo: selectedOrgLogo }
-                            : org;
-
-                        return (
-                            <OrgListItem
-                                key={orgId}
-                                org={orgWithLogo}
-                                isSelected={isSelected}
-                                onClick={(clickedOrg) => {
-                                    onOrgClick(clickedOrg);
-                                    const clickedOrgId = Number(clickedOrg.id || clickedOrg.pipedrive_id);
-                                    setExpandedOrgId(clickedOrgId);
-                                    void fetchOrgDetails(clickedOrgId);
-                                }}
-                                onToggleExpand={toggleExpand}
-                                displayCount={displayCount}
-                                displayPics={displayPics}
-                                scanningOrgId={scanningOrgId}
-                            />
-                        );
-                    })
-                )}
+                    <OrgList 
+                        filteredOrgs={filteredOrgs}
+                        selectedOrgId={selectedOrgId}
+                        selectedOrgLogo={selectedOrgLogo}
+                        graphEmployees={graphEmployees}
+                        onOrgClick={onOrgClick}
+                        setExpandedOrgId={setExpandedOrgId}
+                        fetchOrgDetails={fetchOrgDetails}
+                        toggleExpand={toggleExpand}
+                        scanningOrgIds={scanningOrgIds}
+                    />
+                )                }
             </div>
 
-            {/* Modal de confirmação para resetar ou excluir */}
-            <Modal
-                isOpen={confirmKind !== null}
-                onClose={() => !confirmBusy && setConfirmKind(null)}
-                title={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <AlertTriangle
-                            size={18}
-                            color={confirmKind === 'delete' ? '#ef4444' : '#f59e0b'}
-                        />
-                        <span>
-                            {confirmKind === 'delete'
-                                ? 'Excluir empresa definitivamente'
-                                : 'Resetar dados da empresa'}
-                        </span>
-                    </div>
-                }
-                width={460}
-                closeOnOverlay={!confirmBusy}
-                closeOnEsc={!confirmBusy}
-                footer={
-                    <>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setConfirmKind(null)}
-                            disabled={confirmBusy}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            variant={confirmKind === 'delete' ? 'danger' : 'warning'}
-                            size="sm"
-                            loading={confirmBusy}
-                            onClick={() => {
-                                if (!expandedOrgId || !confirmKind) return;
-                                if (confirmKind === 'delete') void performDelete(expandedOrgId);
-                                else void performReset(expandedOrgId);
-                            }}
-                        >
-                            {confirmKind === 'delete' ? 'Excluir definitivamente' : 'Resetar tudo'}
-                        </Button>
-                    </>
-                }
-            >
-                {confirmKind === 'delete' ? (
-                    <p style={{ margin: 0, lineHeight: 1.5, color: '#d1d5db' }}>
-                        Esta ação <strong style={{ color: '#ef4444' }}>remove a empresa do Pipedrive</strong> e apaga
-                        todos os dados locais (hierarquia, cache, logos, layouts). Operação irreversível.
-                    </p>
-                ) : (
-                    <p style={{ margin: 0, lineHeight: 1.5, color: '#d1d5db' }}>
-                        Isso limpa o <strong>cache, hierarquia e layout</strong> salvos desta empresa, mantendo o
-                        registro no Pipedrive. O próximo mapeamento partirá do zero.
-                    </p>
-                )}
-            </Modal>
+            <ConfirmModal 
+                confirmKind={confirmKind}
+                confirmBusy={confirmBusy}
+                setConfirmKind={setConfirmKind}
+                performDelete={performDelete}
+                performReset={performReset}
+                expandedOrgId={expandedOrgId}
+            />
+
+            <OrgDetailsModal 
+                isOpen={showDetailsModal}
+                onClose={() => setShowDetailsModal(false)}
+                expandedOrgId={expandedOrgId}
+                orgDetails={orgDetails}
+                focusedOrg={focusedOrg}
+                handleUpdateOrg={handleUpdateOrg}
+            />
+        </div>
         </div>
     );
 };
+

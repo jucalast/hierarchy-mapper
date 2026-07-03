@@ -5,10 +5,103 @@
     padding-bottom: 24px;
 }
 
+.listHeader {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.listHeaderVertical {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.listCount {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--sw-text-base);
+}
+
+.batchActionBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    background: transparent;
+    border: none;
+    color: var(--sw-text-muted);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.batchActionBtn:hover:not(:disabled) {
+    color: var(--sw-text-base);
+}
+
+.batchActionBtnLoading {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Barra de progresso da validação em lote — linha própria, largura total */
+.batchProgressBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+
+    border: 1px solid var(--sw-border, rgba(255, 255, 255, 0.08));
+    border-radius: 8px;
+}
+
+.batchProgressLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--sw-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.batchCancelBtn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 5px 10px;
+    background: var(--sw-status-danger, #ef4444);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s ease;
+}
+
+.batchCancelBtn:hover {
+    opacity: 0.88;
+}
+
+
 .empty {
     padding: 60px 0;
     text-align: center;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--sw-text-muted);
     font-size: var(--font-sm);
     font-style: italic;
 }
@@ -18,7 +111,7 @@
     gap: 16px;
     align-items: center;
     padding: 4px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    border-bottom: var(--sw-border-width) solid var(--sw-border);
 }
 
 .contactRow:last-child {
@@ -33,7 +126,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--sw-text-muted);
     flex-shrink: 0;
 }
 
@@ -50,16 +143,53 @@
     align-items: flex-start;
 }
 
+.nameContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sourceIcons {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.sourceIcon {
+    width: 14px;
+    height: 14px;
+    object-fit: cover;
+    opacity: 0.8;
+    border-radius: 3px;
+    display: block;
+    transition: all 0.2s ease;
+}
+
+.sourceIcon:hover {
+    opacity: 1;
+}
+
+.pipedriveIcon {
+    width: 14px;
+    height: 14px;
+}
+
+.linkedinIcon {
+    width: 16px;
+    height: 16px;
+    margin-left: 2px;
+}
+
 .name {
     font-size: var(--font-sm);
     font-weight: 500;
-    color: #fff;
+    color: var(--sw-text-base);
     margin: 0;
 }
 
 .role {
     font-size: var(--font-xs);
-    color: #7a8bff; /* Lavender from your callNote */
+    color: var(--sw-primary);
     font-weight: 500;
     margin-top: 2px;
 }
@@ -76,12 +206,12 @@
     align-items: center;
     gap: 8px;
     font-size: var(--font-xs);
-    color: rgba(255, 255, 255, 0.35);
+    color: var(--sw-text-muted);
     transition: color 0.2s;
 }
 
 .metaItem:hover {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--sw-text-subtle);
 }
 
 .metaItem svg {
@@ -99,6 +229,28 @@
     text-decoration: underline;
 }
 
+.emailDiscovering {
+    background: linear-gradient(90deg,
+            var(--sw-text-muted) 0%,
+            var(--sw-status-success) 50%,
+            var(--sw-text-muted) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmerEmail 1.5s linear infinite;
+}
+
+@keyframes shimmerEmail {
+    0% {
+        background-position: 100% 0;
+    }
+
+    100% {
+        background-position: -100% 0;
+    }
+}
+
 .actions {
     display: flex;
     gap: 12px;
@@ -108,12 +260,21 @@
 .actionBtn {
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.15);
+    color: var(--sw-border-strong);
     cursor: pointer;
     padding: 0;
     transition: color 0.2s;
 }
 
 .actionBtn:hover {
-    color: #fff;
+    color: var(--sw-text-base);
+}
+
+.verifiedBadge {
+    flex-shrink: 0;
+    opacity: 1 !important;
+}
+
+.verifiedBadge path:last-child {
+    stroke: #ffffff;
 }

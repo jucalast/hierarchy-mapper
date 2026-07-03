@@ -15,16 +15,16 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 const VARIANT: Record<CardVariant, React.CSSProperties> = {
   flat: {
     background: 'rgba(255,255,255,0.02)',
-    border: '1px solid rgba(255,255,255,0.05)',
+    border: 'var(--sw-border-width) solid var(--sw-border)',
   },
   elevated: {
     background: '#171616',
-    border: '1px solid rgba(255,255,255,0.06)',
+    border: 'var(--sw-border-width) solid var(--sw-border)',
     boxShadow: '0 6px 24px rgba(0,0,0,0.25)',
   },
   outlined: {
     background: 'transparent',
-    border: '1px solid rgba(255,255,255,0.1)',
+    border: 'var(--sw-border-width) solid var(--sw-border)',
   },
   ghost: {
     background: 'transparent',

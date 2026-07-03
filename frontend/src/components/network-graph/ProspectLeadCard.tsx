@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Check } from 'lucide-react';
-import styles from './NetworkGraph.module.css';
+import styles from './styles/Toolbar.module.css';
 import { Avatar } from '../ui';
 import type { ProspectLead } from '@/hooks/useProspecting';
 
@@ -21,153 +21,106 @@ export const ProspectLeadCard: React.FC<ProspectLeadCardProps> = ({
     onApprove,
     onReject,
 }) => {
-    const tierColor = lead.icp_tier === 'A' ? '#34d17c' : '#f59e0b';
+    const tierColor = lead.icp_tier === 'A' ? 'var(--sw-status-success)' : 'var(--sw-status-warning)';
 
     return (
         <div
             data-lead-id={lead.id}
             className={`${styles.brandCard} ${isSelected ? styles.brandCardActive : ''} ${isHovered ? styles.brandCardHovered : ''}`}
             onClick={() => onSelect(lead)}
-            style={{
-                minWidth: 220,
-                maxWidth: 280,
-                padding: '8px 10px',
-                display: 'flex',
-                gap: '10px',
-                alignItems: 'center',
-                position: 'relative',
-                overflow: 'hidden',
-            }}
         >
-            {/* Logo Column */}
-            <div style={{ position: 'relative', width: 42, height: 42, flexShrink: 0 }}>
+            {/* Avatar Column */}
+            <div className={styles.brandAvatarWrapper} style={{ position: 'relative' }}>
                 <Avatar
                     kind="company"
                     data={lead}
-                    size={42}
-                    className={styles.brandAvatar}
-                    style={{
-                        background: '#fff',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                    }}
+                    size={34}
                 />
                 <div style={{
                     position: 'absolute',
-                    bottom: -4,
-                    right: -4,
+                    bottom: -3,
+                    right: -3,
                     background: tierColor,
                     color: '#fff',
-                    fontSize: '9px',
+                    fontSize: '8px',
                     fontWeight: 900,
-                    width: 18,
-                    height: 18,
-                    borderRadius: '5px',
+                    width: 14,
+                    height: 14,
+                    borderRadius: '4px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '2px solid #141414',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
                     zIndex: 5,
+                    border: '1px solid var(--sw-border)',
                 }}>
                     {lead.icp_tier}
                 </div>
             </div>
 
             {/* Info Content */}
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px', paddingRight: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div className={styles.brandNameLine} style={{
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        color: '#fff',
-                        lineHeight: 1.2,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                    }}>
-                        {lead.name}
-                    </div>
-                    <img
-                        src="/linkedin.png"
-                        alt="LinkedIn"
-                        className={styles.linkedinIcon}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const url = lead.linkedin_url || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(lead.name)}`;
-                            window.open(url, '_blank');
-                        }}
-                        title="Ver no LinkedIn"
-                    />
+            <div className={styles.brandInfo}>
+                <div className={styles.brandNameLine}>
+                    {lead.name}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 1 }}>
                     <span style={{
-                        fontSize: '10px',
+                        fontSize: '9px',
                         fontWeight: 800,
                         color: tierColor,
-                        background: 'rgba(255,255,255,0.06)',
-                        padding: '2px 6px',
-                        borderRadius: '5px',
-                        border: '1px solid rgba(255,255,255,0.03)',
                     }}>
                         {lead.icp_score} pts
                     </span>
                     {lead.pipedrive_status === 'new' ? (
-                        <div style={{
+                        <span style={{
                             fontSize: '9px',
                             fontWeight: 800,
-                            color: '#34d17c',
-                            background: 'rgba(255,255,255,0.06)',
-                            padding: '2px 8px',
-                            borderRadius: '5px',
-                            border: '1px solid rgba(255,255,255,0.03)',
+                            color: 'var(--sw-status-success)',
                             textTransform: 'uppercase',
-                            letterSpacing: '0.02em',
                         }}>
-                            Novo Radar
-                        </div>
+                            Novo
+                        </span>
                     ) : (
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '5px',
-                            background: 'rgba(255,255,255,0.06)',
-                            padding: '2px 8px',
-                            borderRadius: '5px',
-                            border: '1px solid rgba(255,255,255,0.03)',
+                            gap: '3px',
                         }}>
-                            <img src="/pipedrive.png" alt="P" style={{ width: 10, height: 10, filter: 'grayscale(0.3)' }} />
+                            <img src="/pipedrive.png" alt="P" style={{ width: 8, height: 8, filter: 'grayscale(0.3)' }} />
                             <span style={{
-                                fontSize: '9px',
+                                fontSize: '8px',
                                 fontWeight: 800,
-                                color: lead.pipedrive_status === 'lost_deal' ? '#ef4444' : '#f59e0b',
+                                color: lead.pipedrive_status === 'lost_deal' ? 'var(--sw-status-danger)' : 'var(--sw-status-warning)',
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.02em',
                             }}>
-                                {lead.pipedrive_status === 'lost_deal'
-                                    ? 'Perdido'
-                                    : (lead.pipedrive_deal_info?.days_inactive ? `${lead.pipedrive_deal_info.days_inactive}d` : 'Parado')}
+                                {lead.pipedrive_status === 'lost_deal' ? 'Perdido' : 'Parado'}
                             </span>
                         </div>
                     )}
                 </div>
 
                 {lead.segment && (
-                    <div style={{
-                        fontSize: '10px',
-                        color: 'rgba(255,255,255,0.4)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        marginTop: '2px',
-                    }}>
+                    <div className={styles.brandFollowers} style={{ marginTop: 1 }}>
                         {lead.segment}
                     </div>
                 )}
             </div>
 
-            {/* Quick actions */}
+            {/* LinkedIn Icon */}
+            <img
+                src="/linkedin.png"
+                alt="LinkedIn"
+                className={styles.linkedinIcon}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    const url = lead.linkedin_url || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(lead.name)}`;
+                    window.open(url, '_blank');
+                }}
+                title="Ver no LinkedIn"
+            />
+
+            {/* Quick Actions (only visible on hover through CSS) */}
             <div className={styles.cardQuickActions}>
                 <button
                     type="button"
@@ -175,7 +128,7 @@ export const ProspectLeadCard: React.FC<ProspectLeadCardProps> = ({
                     onClick={(e) => { e.stopPropagation(); onReject(lead.id); }}
                     title="Rejeitar lead"
                 >
-                    <X size={14} />
+                    <X size={12} />
                 </button>
                 <button
                     type="button"
@@ -183,7 +136,7 @@ export const ProspectLeadCard: React.FC<ProspectLeadCardProps> = ({
                     onClick={(e) => { e.stopPropagation(); onApprove(lead.id); }}
                     title="Criar no Pipedrive"
                 >
-                    <Check size={14} />
+                    <Check size={12} />
                 </button>
             </div>
         </div>

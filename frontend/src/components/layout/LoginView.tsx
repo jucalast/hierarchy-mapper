@@ -7,9 +7,10 @@ import { API_BASE_URL } from '@/services/config';
 
 interface LoginViewProps {
   onLoginSuccess: () => void;
+  inline?: boolean;
 }
 
-export default function LoginView({ onLoginSuccess }: LoginViewProps) {
+export default function LoginView({ onLoginSuccess, inline = false }: LoginViewProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,9 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
       localStorage.setItem('tenant_id', data.tenant_id);
       localStorage.setItem('tenant_name', data.tenant_name);
 
+      // Define cookie para o middleware do Next.js App Router
+      document.cookie = `token=${data.access_token}; path=/;`;
+
       onLoginSuccess();
     } catch (err: any) {
       setError(err.message || "Erro de conexão com o servidor.");
@@ -65,7 +69,7 @@ export default function LoginView({ onLoginSuccess }: LoginViewProps) {
   };
 
   return (
-    <div className={styles.loginPage}>
+    <div className={styles.loginPage} style={inline ? { position: 'relative', top: 'auto', left: 'auto', width: '100%', minHeight: 'auto', height: '100%', zIndex: 1 } : {}}>
       {/* Painel de Apresentação (Apenas Imagem de Fundo) */}
       <div className={styles.brandPane} />
 

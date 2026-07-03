@@ -21,12 +21,12 @@ const VARIANT_STYLE: Record<ButtonVariant, React.CSSProperties> = {
   primary: {
     background: 'linear-gradient(135deg, #7A8BFF 0%, #60A5FA 100%)',
     color: '#fff',
-    border: '1px solid rgba(122, 139, 255, 0.4)',
+    border: 'var(--sw-border-width) solid var(--sw-border)',
   },
   secondary: {
     background: 'rgba(255,255,255,0.05)',
     color: 'rgba(255,255,255,0.85)',
-    border: '1px solid rgba(255,255,255,0.10)',
+    border: 'var(--sw-border-width) solid var(--sw-border)',
   },
   ghost: {
     background: 'transparent',
@@ -36,17 +36,17 @@ const VARIANT_STYLE: Record<ButtonVariant, React.CSSProperties> = {
   danger: {
     background: '#ef4444',
     color: '#fff',
-    border: '1px solid #dc2626',
+    border: 'var(--sw-border-width) solid var(--sw-border)',
   },
   success: {
     background: '#34d17c',
     color: '#fff',
-    border: '1px solid #099272',
+    border: 'var(--sw-border-width) solid var(--sw-border)',
   },
   warning: {
     background: '#f59e0b',
     color: '#111',
-    border: '1px solid #d97706',
+    border: 'var(--sw-border-width) solid var(--sw-border)',
   },
 };
 

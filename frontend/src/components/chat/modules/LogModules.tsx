@@ -2,7 +2,7 @@ import React from 'react';
 import {
     User2, Building2, MessageSquare, ArrowUpRight, ArrowDownLeft, ArrowRight, Phone, Mail, Calendar, CheckCircle2, Clock
 } from 'lucide-react';
-import styles from '../ChatPanel.module.css';
+import styles from '../styles/ChatPanel.module.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ContactLogCard
@@ -66,7 +66,7 @@ export const ContactLogCard = ({ data, label }: { data: any; label?: string }) =
                     fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
                     padding: '2px 6px', borderRadius: '999px',
                     background: 'var(--chat-accent-soft)', color: 'var(--chat-accent-color)',
-                    border: '1px solid var(--chat-accent-soft)', flexShrink: 0,
+                    border: 'var(--sw-border-width) solid var(--sw-border)', flexShrink: 0,
                 }}>{label}</span>
             )}
         </div>
@@ -101,7 +101,7 @@ export const DealLogCard = ({ data }: { data: any }) => {
                     <span style={{
                         fontSize: '10px', fontWeight: 700, padding: '2px 7px', borderRadius: '6px',
                         background: 'var(--chat-accent-soft)', color: 'var(--chat-accent-color)',
-                        border: '1px solid var(--chat-accent-soft)',
+                        border: 'var(--sw-border-width) solid var(--sw-border)',
                         flexShrink: 0,
                     }}>{stageName}</span>
                 </div>

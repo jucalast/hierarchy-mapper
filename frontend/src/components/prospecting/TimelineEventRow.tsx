@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { 
-    User, Building2, Check, Sparkles
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Building2, Check, Sparkles, Loader2, Trash2 } from 'lucide-react';
+import { Dropdown } from '../ui/Dropdown/Dropdown';
+import { ConfirmModal } from '../ui/ConfirmModal';
+import { organizations } from '@/services/api';
+import toast from 'react-hot-toast';
 import styles from './HistoryTimeline.module.css';
 
 export type TimelineEvent = {
@@ -27,8 +29,80 @@ interface TimelineEventRowProps {
 }
 
 export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLast, hasBackground }) => {
-    const [showMenu, setShowMenu] = useState(false);
+    const [doneState, setDoneState] = useState(!!event.done);
+    const [isCompleting, setIsCompleting] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+    useEffect(() => {
+        setDoneState(!!event.done);
+    }, [event.done]);
+
+    const handleCompleteTask = async (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        if (doneState || isCompleting) return;
+        setIsCompleting(true);
+        try {
+            const rawId = String(event.id).replace('act-', '');
+            await organizations.updateActivity(rawId, { done: true });
+            setDoneState(true);
+            toast.success('Tarefa marcada como concluída no Pipedrive.');
+            window.dispatchEvent(new CustomEvent('crm_task_completed', { detail: { activityId: rawId } }));
+        } catch (error) {
+            console.error('Failed to complete task:', error);
+            toast.error('Não foi possível marcar a tarefa como concluída no Pipedrive.');
+        } finally {
+            setIsCompleting(false);
+        }
+    };
+
+    const handleUncompleteTask = async (e?: React.MouseEvent) => {
+        if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        if (!doneState || isCompleting) return;
+        setIsCompleting(true);
+        try {
+            const rawId = String(event.id).replace('act-', '');
+            await organizations.updateActivity(rawId, { done: 0 });
+            setDoneState(false);
+            toast.success('Tarefa desmarcada no Pipedrive.');
+            window.dispatchEvent(new CustomEvent('crm_task_uncompleted', { detail: { activityId: rawId } }));
+        } catch (error) {
+            console.error('Failed to uncomplete task:', error);
+            toast.error('Não foi possível desmarcar a tarefa no Pipedrive.');
+        } finally {
+            setIsCompleting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (isCompleting) return;
+        setIsConfirmOpen(false);
+        setIsCompleting(true);
+        try {
+            if (event.type === 'activity') {
+                const rawId = String(event.id).replace('act-', '');
+                await organizations.deleteActivity(rawId);
+                toast.success('Atividade excluída com sucesso.');
+            } else if (event.type === 'note') {
+                const rawId = String(event.id).replace('note-', '');
+                await organizations.deleteNote(rawId);
+                toast.success('Anotação excluída com sucesso.');
+            }
+            window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+        } catch (error) {
+            console.error('Failed to delete:', error);
+            toast.error('Não foi possível excluir o item no Pipedrive.');
+            setIsCompleting(false); 
+        }
+    };
+
     const formatDateTime = (ts: string) => {
+
         if (!ts) return '';
         try {
             const d = new Date(ts);
@@ -43,7 +117,7 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
             if (!hasTime) {
                 return `${day} de ${month}`;
             }
-
+ 
             const hours = d.getHours().toString().padStart(2, '0');
             const minutes = d.getMinutes().toString().padStart(2, '0');
             
@@ -52,7 +126,7 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
             return ts;
         }
     };
-
+ 
     // Helper para renderizar itens com separadores
     const metaItems = [];
     if (event.timestamp) metaItems.push(<span className={styles.metaItem}>{formatDateTime(event.timestamp)}</span>);
@@ -67,126 +141,129 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
             <Building2 size={10} /> {event.company}
         </span>
     );
+ 
+    const handleExecuteWithAgent = () => {
+        const t = event.title.toLowerCase();
+        const org = event.company ? ` para a empresa ${event.company}` : '';
+        const contact = event.contact ? ` com ${event.contact}` : '';
+ 
+        let taskInstruction: string;
+        let isCallTask = false;
+        
+        // Verifica primeiro se a atividade é explicitamente uma ligação pelo tipo ou título principal
+        if (event.activityType === 'call' || ['ligar','ligação','telefonar','realizar ligação'].some(k => t.includes(k))) {
+            isCallTask = true;
+            taskInstruction = `executar a ligação "${event.title}"${contact}${org}. Obtenha o número REAL do CRM antes de qualquer ação. Inicie o pipeline de preparação (Fases 1 e 2)`;
+        // Busca/encontrar/conseguir contato
+        } else if (['procurar contato','encontrar contato','conseguir contato','buscar contato','achar contato','identificar contato','localizar contato','contato na rodada','rodada de negócios'].some(k => t.includes(k))) {
+            taskInstruction = `encontrar o contato/decisor de compras da empresa${org}. Verifique primeiro se já existe contato com canal válido no CRM. Se não houver, abra o mapeador de hierarquia (open_hierarchy_drawer). NÃO crie nova tarefa no Pipedrive — a atividade já existe no CRM.`;
+        // Cobrar retorno / follow-up
+        } else if (['cobrar retorno','cobrar resposta','acompanhamento','follow-up','follow up','dar retorno','verificar retorno'].some(k => t.includes(k)) || (t.includes('retorno') && !t.includes('cobrar'))) {
+            taskInstruction = `executar o follow-up "${event.title}"${contact}${org}. Analise o histórico de comunicações e execute a ação de cobrança de retorno mais adequada pelo canal disponível`;
+        // Agendar reunião / visita
+        } else if (['agendar reunião','marcar reunião','agendar visita','marcar visita','agendar apresentação'].some(k => t.includes(k))) {
+            taskInstruction = `agendar a reunião/visita "${event.title}"${contact}${org}. Identifique o decisor e proponha o agendamento pelo canal disponível`;
+        // Orçamento / cotação
+        } else if (['orçamento','cotação','proposta comercial','realizar orçamento','enviar proposta'].some(k => t.includes(k))) {
+            taskInstruction = `realizar o orçamento/cotação "${event.title}"${contact}${org}. Identifique o contato responsável e gere a proposta personalizada`;
+        // Envio de mensagem
+        } else if (['enviar mensagem','primeira mensagem','abordagem inicial','primeiro contato'].some(k => t.includes(k))) {
+            taskInstruction = `executar a abordagem "${event.title}"${contact}${org}. Identifique o canal disponível e gere a mensagem personalizada`;
+        // Genérico
+        } else {
+            taskInstruction = `realizar a atividade "${event.title}"${contact}${org}. Raciocine sobre o que a tarefa requer e use as ferramentas adequadas`;
+        }
+ 
+        const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction} (ID da tarefa no Pipedrive: ${String(event.id).replace('act-', '')}). Use as ferramentas disponíveis para executar isso agora.`;
+        window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText, direct_action: false } }));
+    };
 
+ 
+    const dropdownItems = [];
+    
+    if (event.type === 'activity') {
+        if (!doneState) {
+            dropdownItems.push({
+                label: 'Marcar como concluída',
+                icon: isCompleting ? <Loader2 size={12} className={styles.spinner} /> : <Check size={12} />,
+                onClick: () => handleCompleteTask()
+            });
+        } else {
+            dropdownItems.push({
+                label: 'Desmarcar como concluída',
+                icon: isCompleting ? <Loader2 size={12} className={styles.spinner} /> : <Check size={12} style={{ opacity: 0.5 }} />,
+                onClick: () => handleUncompleteTask()
+            });
+        }
+        
+        dropdownItems.push({
+            label: 'Fazer com o agente',
+            icon: <Sparkles size={12} />,
+            onClick: handleExecuteWithAgent
+        });
+    }
+
+    dropdownItems.push({
+        label: 'Excluir',
+        icon: <Trash2 size={12} style={{ color: '#ef4444' }} />,
+        onClick: () => setIsConfirmOpen(true)
+    });
+ 
     return (
         <div className={styles.eventRow}>
             {/* Linha e Ícone Lateral */}
             <div className={styles.timelineSide}>
-                <div className={`${styles.iconCircle} ${event.done ? styles.iconCircleDone : ''}`}>
+                <div className={`${styles.iconCircle} ${doneState ? styles.iconCircleDone : ''}`}>
                     {event.icon}
                 </div>
                 {!isLast && <div className={styles.dashedLine} />}
             </div>
-
+ 
             {/* Conteúdo do Card */}
-            <div className={`${styles.eventCard} ${event.done ? styles.eventCardDone : ''} ${hasBackground ? styles.cardWithBg : ''}`}>
+            <div className={`${styles.eventCard} ${doneState ? styles.eventCardDone : ''} ${hasBackground ? styles.cardWithBg : ''}`}>
                 <div className={styles.eventHeader} style={{ position: 'relative' }}>
                     <div className={styles.titleArea}>
-                        {event.done && <Check size={12} className={styles.doneCheck} />}
+                        {event.type === 'activity' ? (
+                            doneState ? (
+                                <button
+                                    style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                    onClick={handleUncompleteTask}
+                                    disabled={isCompleting}
+                                    title="Desmarcar tarefa como concluída"
+                                >
+                                    {isCompleting ? (
+                                        <Loader2 size={12} className={styles.spinner} style={{ color: 'var(--sw-status-success)' }} />
+                                    ) : (
+                                        <Check size={12} className={styles.doneCheck} />
+                                    )}
+                                </button>
+                            ) : (
+                                <button 
+                                    className={`${styles.checkboxBtn} ${isCompleting ? styles.checkboxBtnLoading : ''}`}
+                                    onClick={handleCompleteTask}
+                                    disabled={isCompleting}
+                                    title="Marcar tarefa como concluída"
+                                >
+                                    {isCompleting ? (
+                                        <Loader2 size={10} className={styles.spinner} />
+                                    ) : (
+                                        <Check size={10} className={styles.checkboxCheckIcon} />
+                                    )}
+                                </button>
+                            )
+                        ) : null}
                         <span className={styles.eventTitle}>{event.title}</span>
                     </div>
-                    <div style={{ position: 'relative' }}>
-                        <span 
-                            className={styles.moreOptions}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setShowMenu(prev => !prev);
-                            }}
-                            style={{ 
-                                padding: '4px 8px', 
-                                borderRadius: 4, 
-                                background: showMenu ? 'rgba(255,255,255,0.08)' : 'transparent',
-                                color: showMenu ? '#fff' : undefined,
-                            }}
-                        >
-                            •••
-                        </span>
-                        {showMenu && (
-                            <>
-                                {/* Overlay invisível para fechar ao clicar fora */}
-                                <div 
-                                    style={{
-                                        position: 'fixed',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        zIndex: 999,
-                                        cursor: 'default',
-                                    }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowMenu(false);
-                                    }}
-                                />
-                                <div 
-                                    style={{
-                                        position: 'absolute',
-                                        right: 0,
-                                        top: '100%',
-                                        marginTop: 4,
-                                        background: 'rgba(20, 20, 20, 0.95)',
-                                        backdropFilter: 'blur(12px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                                        borderRadius: 8,
-                                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.5)',
-                                        zIndex: 1000,
-                                        minWidth: 160,
-                                        overflow: 'hidden',
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <button
-                                        onClick={() => {
-                                            setShowMenu(false);
-                                            // Mapeia títulos de atividade Pipedrive para instruções claras
-                                            const titleLower = event.title.toLowerCase();
-                                            let taskInstruction = `realizar a tarefa "${event.title}"`;
-                                            if (titleLower.includes('encontrar contato') || titleLower.includes('encontrar decisor')) {
-                                                taskInstruction = `encontrar o contato/decisor real da empresa${event.company ? ` ${event.company}` : ''}. Se não houver contato com canal válido cadastrado no CRM, abra o mapeador de hierarquia (open_hierarchy_drawer) para identificar o decisor`;
-                                            } else if (titleLower.includes('ligar') || titleLower.includes('ligação')) {
-                                                taskInstruction = `executar a ligação "${event.title}"${event.contact ? ` com ${event.contact}` : ''}`;
-                                            } else if (titleLower.includes('enviar') || titleLower.includes('email') || titleLower.includes('whatsapp')) {
-                                                taskInstruction = `executar o envio: "${event.title}"${event.contact ? ` para ${event.contact}` : ''}`;
-                                            } else if (titleLower.includes('follow') || titleLower.includes('retorno') || titleLower.includes('cobrança')) {
-                                                taskInstruction = `executar o follow-up "${event.title}"${event.contact ? ` com ${event.contact}` : ''}. Analise o histórico e execute a ação de comunicação mais adequada`;
-                                            }
-                                            const promptText = `Execute a seguinte atividade do CRM: ${taskInstruction}${event.company ? ` para a empresa ${event.company}` : ''}. Use as ferramentas para executar isso agora.`;
-                                            window.dispatchEvent(new CustomEvent('submit_agent_prompt', { detail: { prompt: promptText } }));
-                                        }}
-                                        style={{
-                                            width: '100%',
-                                            padding: '10px 14px',
-                                            background: 'transparent',
-                                            border: 'none',
-                                            color: 'rgba(255, 255, 255, 0.9)',
-                                            fontSize: '12px',
-                                            fontWeight: 500,
-                                            textAlign: 'left',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 8,
-                                            transition: 'background 0.2s, color 0.2s',
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                                            e.currentTarget.style.color = '#fff';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = 'transparent';
-                                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)';
-                                        }}
-                                    >
-                                        <Sparkles size={12} />
-                                        Fazer com o agente
-                                    </button>
-                                </div>
-                            </>
-                        )}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <Dropdown 
+                            items={dropdownItems} 
+                            iconType="horizontal" 
+                            align="right" 
+                            title="Ações da atividade"
+                        />
                     </div>
                 </div>
-
+ 
                 <div className={styles.eventMeta}>
                     {metaItems.map((item, index) => (
                         <React.Fragment key={index}>
@@ -195,19 +272,30 @@ export const TimelineEventRow: React.FC<TimelineEventRowProps> = ({ event, isLas
                         </React.Fragment>
                     ))}
                 </div>
-
+ 
                 {event.subtext && (
                     <div className={styles.eventSubtext}>
                         {event.subtext}
                     </div>
                 )}
-
+ 
                 {event.content && (
                     <div className={`${styles.eventContent} ${styles.callNote}`}>
                         <div dangerouslySetInnerHTML={{ __html: event.content }} />
                     </div>
                 )}
             </div>
+
+            <ConfirmModal 
+                isOpen={isConfirmOpen}
+                title={`Excluir ${event.type === 'note' ? 'Anotação' : 'Tarefa'}`}
+                message={`Tem certeza que deseja excluir esta ${event.type === 'note' ? 'anotação' : 'tarefa'}? Esta ação não pode ser desfeita.`}
+                confirmLabel="Excluir"
+                cancelLabel="Cancelar"
+                onConfirm={handleDelete}
+                onCancel={() => setIsConfirmOpen(false)}
+                type="danger"
+            />
         </div>
     );
 };

@@ -1,3 +1,14 @@
+"""
+api.v1.schemas
+==============
+Schemas Pydantic compartilhados entre routers e o modulo hierarchy.
+
+Inclui schemas para o scanner B2B (EmployeeNode, HierarchyResponse,
+ConfirmEnrichRequest) e configuracao do Tenant (BusinessProfileSchema,
+ICPConfigSchema, HierarchyConfigSchema).
+
+Utilitario: clean_cnpj(val) -> str  -- extrai apenas digitos do CNPJ
+"""
 from pydantic import BaseModel
 from typing import List, Optional, Any
 import re
@@ -24,6 +35,13 @@ class EmployeeNode(BaseModel):
     connections: Optional[str] = None
     highlights: Optional[str] = None
     observations: Optional[str] = None
+    evidence: Optional[str] = None
+    matching_score: Optional[int] = None
+    headline: Optional[str] = None
+    profile_pic: Optional[str] = None
+    seniority: Optional[int] = None
+    pipedrive_id: Optional[int] = None
+    source: Optional[str] = None
 
 class HierarchyResponse(BaseModel):
     company_name: str
@@ -43,6 +61,22 @@ class ConfirmEnrichRequest(BaseModel):
 class CandidateActionRequest(BaseModel):
     employee_id: str
     action: str # 'approve' or 'reject'
+
+class EnrichManualRequest(BaseModel):
+    employee_id: str
+    raw_text: str
+
+class EmployeeUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    department: Optional[str] = None
+    level: Optional[int] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    linkedin: Optional[str] = None
+    location: Optional[str] = None
+    observations: Optional[str] = None
+    education: Optional[str] = None
 
 # --- SaaS / Settings Schemas ---
 
@@ -65,6 +99,8 @@ class BusinessProfileSchema(BaseModel):
     seller_name: Optional[str] = None
     seller_role: Optional[str] = None
     value_propositions: Optional[dict] = None
+    presentation_path: Optional[str] = None
+    signature_path: Optional[str] = None
 
 class ICPRuleSchema(BaseModel):
     rule_type: str

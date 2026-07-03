@@ -1,8 +1,8 @@
 import React from 'react';
-import { ChevronRight, AlertTriangle, TrendingUp } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { Avatar, Spinner, Badge } from '../ui';
 import { getProxiedUrl } from '../../utils/avatarUtils';
-import styles from '../network-graph/NetworkGraph.module.css';
+import styles from './OrgListItem.module.css';
 
 interface TaskSummary {
     next_due_date: string;
@@ -17,10 +17,11 @@ interface OrgListItemProps {
     onToggleExpand?: (e: React.MouseEvent, orgId: number) => void;
     displayCount?: number;
     displayPics?: string[];
-    scanningOrgId?: number | null;
+    scanningOrgIds?: number[];
     showExpandToggle?: boolean;
     className?: string;
     style?: React.CSSProperties;
+    onMouseEnter?: () => void;
 }
 
 function formatDueDate(dateStr: string): string {
@@ -41,10 +42,11 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
     onToggleExpand,
     displayCount: propDisplayCount,
     displayPics: propDisplayPics,
-    scanningOrgId = null,
+    scanningOrgIds = [],
     showExpandToggle = true,
     className = '',
-    style
+    style,
+    onMouseEnter
 }) => {
     const orgId = org.id || org.pipedrive_id;
     const taskSummary: TaskSummary | null = org._taskSummary || null;
@@ -55,20 +57,31 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
         : false;
     const isNoTask = !isOverdue && !isToday && (!taskSummary || taskSummary.pending_count === 0);
 
-    // Calcular dados internos se não fornecidos
     const displayCount = propDisplayCount !== undefined ? propDisplayCount : (org.employees_count || org.employee_count || org.mapped_count || 0);
-    const displayPics = (propDisplayPics && propDisplayPics.length > 0) ? propDisplayPics : (
-        (org.decision_makers || org.employees || [])
-            .map((dm: any) => dm.profile_pic || dm.avatar)
-            .filter(Boolean) || []
-    );
+
+    // Apenas fotos reais (URLs válidas) — sem iniciais nem placeholders vazios
+    const displayPics: string[] = (() => {
+        if (propDisplayPics && propDisplayPics.length > 0) {
+            return propDisplayPics.filter((p: string) => p && p.length > 10);
+        }
+        const employees: any[] = org.decision_makers || org.employees || [];
+        const partners: any[] = org.partners || [];
+        const combined = [...employees, ...partners];
+        const pics = combined
+            .map((p: any) => p.profile_pic || p.avatar || p.logo)
+            .filter((p: string) => p && p.length > 10);
+        return [...new Set(pics)];
+    })();
 
     const hasMapping = displayCount > 0 || displayPics.length > 0;
 
+    const isMapping = scanningOrgIds.includes(orgId);
+
     return (
         <div
-            className={`${styles.orgItem} ${isSelected ? styles.selectedOrgItem : ''} ${className}`}
+            className={`${styles.orgItem} ${isSelected ? styles.selectedOrgItem : ''} ${isMapping ? styles.mappingOrgItem : ''} ${className}`}
             onClick={() => onClick?.(org)}
+            onMouseEnter={onMouseEnter}
             style={{
                 cursor: onClick ? 'pointer' : 'default',
                 ...style
@@ -76,10 +89,11 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
         >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
                 <div className={styles.orgMainInfo} style={{ flex: 1, marginBottom: 0 }}>
-                    <div className={styles.orgLogoWrapper}>
+                    <div className={styles.orgLogoWrapper} style={{ position: 'relative' }}>
                         {(() => {
                             const hasLogo = !!(org.logo || org.organization_logo || org.logo_url || org.company_logo);
                             return (
+                                <>
                                 <Avatar
                                     kind="company"
                                     src={org.logo || org.organization_logo || org.logo_url || org.company_logo}
@@ -87,8 +101,12 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                     data={org}
                                     size={32}
                                     noInitialFallback={displayCount === 0}
-                                    style={{ border: hasLogo ? '3px solid #272727ff' : 'none' }}
+                                    style={{ border: hasLogo ? '3px solid var(--sw-border-strong)' : 'none' }}
                                 />
+                                {isMapping && (
+                                    <span className={styles.mappingDot} title="Mapeamento em andamento" />
+                                )}
+                                </>
                             );
                         })()}
                     </div>
@@ -106,29 +124,29 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                 })()}
                             </span>
 
+
                             {org.icp_tier && (
                                 <span
                                     title={`Score ICP: ${org.icp_score || 'N/A'}`}
                                     style={{
                                         fontSize: '13px',
                                         fontWeight: 500,
-                                        color: org.icp_tier === 'A' ? '#34d17c' : org.icp_tier === 'B' ? '#f59e0b' : 'rgba(255,255,255,0.4)',
+                                        color: org.icp_tier === 'A' ? '#34d17c' : org.icp_tier === 'B' ? '#f59e0b' : 'var(--sw-text-muted)',
                                         width: 20,
                                         height: 20,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         flexShrink: 0,
-                                        lineHeight: 1
+                                        lineHeight: 1,
+                                        marginLeft: isToday ? '0' : '6px'
                                     }}
                                 >
                                     {org.icp_tier}
                                 </span>
                             )}
 
-                            {scanningOrgId === orgId && (
-                                <Spinner size={14} inline color="rgb(122, 139, 255)" />
-                            )}
+
                             {(org.linkedin || org.linkedin_url) && (
                                 <a
                                     href={org.linkedin || org.linkedin_url}
@@ -138,7 +156,7 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                                     onClick={(e) => e.stopPropagation()}
                                     style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', flexShrink: 0 }}
                                 >
-                                    <img src="/linkedin.png" alt="LinkedIn" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+                                    <img src="/linkedin.png" alt="LinkedIn" style={{ width: 18, height: 18, objectFit: 'contain' }} />
                                 </a>
                             )}
                         </div>
@@ -169,7 +187,6 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
                         className={`${styles.expandToggle} ${isOverdue ? styles.overdue : isToday ? styles.today : isNoTask ? styles.noTask : ''}`}
                         onClick={(e) => onToggleExpand(e, orgId)}
                         title={isOverdue ? 'Tarefa atrasada' : isToday ? 'Tarefa hoje' : isNoTask ? 'Sem tarefa agendada' : 'Expandir'}
-                        style={{ position: 'relative', top: 'auto', right: 'auto', flexShrink: 0 }}
                     >
                         <ChevronRight size={16} />
                     </button>
@@ -178,33 +195,33 @@ export const OrgListItem: React.FC<OrgListItemProps> = ({
 
             <div className={styles.orgFooter}>
                 <div className={styles.employeeStack}>
-                    {(hasMapping || isSelected) ? (
+                    {isMapping ? (
+                        <div className={styles.mappingBadge}>
+                            <Spinner size={11} inline color="rgb(122, 139, 255)" />
+                            <span>Mapeando...</span>
+                        </div>
+                    ) : (hasMapping || isSelected) ? (
                         <>
-                            <div style={{ display: 'flex', alignItems: 'center', marginRight: '8px' }}>
-                                {displayPics.length > 0 ? (
-                                    displayPics.slice(0, 3).map((pic: string, i: number) => (
-                                        <img
+                            {displayPics.length > 0 && (
+                                <div style={{ display: 'flex', alignItems: 'center', marginRight: '8px' }}>
+                                    {displayPics.slice(0, 3).map((pic: string, i: number) => (
+                                        <Avatar
                                             key={i}
-                                            src={getProxiedUrl(pic)}
-                                            alt=""
+                                            src={pic}
+                                            name="Pessoa"
+                                            kind="person"
+                                            size={20}
                                             className={styles.stackedAvatar}
-                                            style={{ zIndex: 3 - i }}
+                                            style={{
+                                                zIndex: 3 - i,
+                                                border: 'var(--sw-border-width) solid var(--sw-border)',
+                                                width: '20px',
+                                                height: '20px'
+                                            }}
                                         />
-                                    ))
-                                ) : (
-                                    [0, 1, 2].map((i) => (
-                                        <div key={i} className={styles.stackedAvatar} style={{
-                                            background: i === 0 ? '#2a2a2a' : i === 1 ? '#333' : '#1a1a1a',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            zIndex: 3 - i
-                                        }}>
-                                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                             <span className={styles.empCountBadge}>
                                 {displayCount > 0 ? `${displayCount} ${displayCount === 1 ? 'funcionário' : 'mapeamento'}` : 'Pronta para mapeamento'}
                             </span>

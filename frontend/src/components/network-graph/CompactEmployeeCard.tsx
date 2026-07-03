@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { ShieldCheck, Briefcase, User2 } from 'lucide-react';
+import { ShieldCheck, Briefcase, User2, BadgeCheck } from 'lucide-react';
 import { getAvatarUrl, getProxiedUrl } from '../../utils/avatarUtils';
 
 interface CompactEmployeeCardProps {
@@ -37,6 +37,32 @@ const CompactEmployeeCardBase: React.FC<CompactEmployeeCardProps> = ({ data }) =
     const avatarUrl = React.useMemo(() => getAvatarUrl(data), [data]);
     const proxiedAvatarUrl = React.useMemo(() => getProxiedUrl(avatarUrl), [avatarUrl]);
 
+    // Checa o localStorage para ver se este email está validado no Pipedrive
+    const [isVerified, setIsVerified] = React.useState(false);
+    React.useEffect(() => {
+        // Se a entidade tiver nome, vamos procurar no cache do pipedrive
+        const orgIdMatch = window.location.pathname.match(/\/org\/(\d+)/);
+        const orgIdStr = orgIdMatch ? orgIdMatch[1] : null;
+        
+        if (orgIdStr && data.name) {
+            const detailsStr = localStorage.getItem(`org-${orgIdStr}-details`);
+            if (detailsStr) {
+                try {
+                    const details = JSON.parse(detailsStr);
+                    const persons = details.persons || [];
+                    // Tenta achar pelo nome (igual o Drawer faz o merge)
+                    const p = persons.find((p: any) => p.name && data.name && p.name.trim().toLowerCase() === data.name.trim().toLowerCase());
+                    if (p && p.email && Array.isArray(p.email)) {
+                        const hasVerified = p.email.some((e: any) => e.label === 'verified');
+                        if (hasVerified) {
+                            setIsVerified(true);
+                        }
+                    }
+                } catch (e) {}
+            }
+        }
+    }, [data.name, data.email]);
+
     return (
         <div style={{
             display: 'flex',
@@ -45,7 +71,7 @@ const CompactEmployeeCardBase: React.FC<CompactEmployeeCardProps> = ({ data }) =
             backgroundColor: 'transparent', // Sem background como solicitado
             padding: '10px 14px',
             borderRadius: '12px',
-            border: '1px solid rgba(150, 150, 150, 0.15)',
+            border: 'var(--sw-border-width) solid var(--sw-border)',
             transition: 'all 0.2s ease',
             cursor: 'default',
             width: '100%',
@@ -96,16 +122,25 @@ const CompactEmployeeCardBase: React.FC<CompactEmployeeCardProps> = ({ data }) =
                     {seniorityLabel}
                 </div>
 
-                <div style={{ 
-                    fontSize: '0.85rem',
-                    fontWeight: 700, 
-                    color: 'rgba(255, 255, 255, 0.85)',
-                    whiteSpace: 'normal',
-                    wordBreak: 'break-word',
-                    lineHeight: '1.2',
-                    marginBottom: '1px'
-                }}>
-                    {data.name || 'Profissional'}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '1px' }}>
+                    <div style={{ 
+                        fontSize: '0.85rem',
+                        fontWeight: 700, 
+                        color: 'rgba(255, 255, 255, 0.85)',
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        lineHeight: '1.2'
+                    }}>
+                        {data.name || 'Profissional'}
+                    </div>
+                    {isVerified && (
+                        <div style={{ flexShrink: 0, opacity: 1 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--sw-status-success)" stroke="var(--sw-status-success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                                <path d="m9 12 2 2 4-4" stroke="#ffffff" />
+                            </svg>
+                        </div>
+                    )}
                 </div>
                 
                 <div style={{ 

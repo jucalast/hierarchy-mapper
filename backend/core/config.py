@@ -24,6 +24,12 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 from typing import Optional
+from dotenv import load_dotenv
+
+# Define o caminho absoluto para o arquivo .env dentro do diretório backend
+_backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_env_file_path = os.path.join(_backend_dir, ".env")
+load_dotenv(_env_file_path)
 
 try:
     # Pydantic v2 + pydantic-settings (instalar via requirements.txt)
@@ -32,8 +38,6 @@ try:
     _PYDANTIC_SETTINGS_AVAILABLE = True
 except ImportError:  # pragma: no cover - fallback para ambientes sem pydantic-settings
     _PYDANTIC_SETTINGS_AVAILABLE = False
-    from dotenv import load_dotenv
-    load_dotenv()
 
 
 # =============================================================================
@@ -155,6 +159,9 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         scan_interval_min: int = 10
         scan_folder: str = "Leads"
         imap_timeout_sec: float = 30.0
+        # Office 365 removeu autenticação básica IMAP em out/2022.
+        # Mantenha False (padrão) a não ser que o tenant ainda tenha legacy auth habilitado.
+        imap_legacy_auth: bool = False
 
     class ObservabilityConfig(BaseSettings):
         model_config = SettingsConfigDict(
@@ -223,12 +230,21 @@ if _PYDANTIC_SETTINGS_AVAILABLE:
         PROXYCURL_API_KEY: str = Field(default="")
         RAPIDAPI_KEY: str = Field(default="")
 
+        # --- Google Maps / Places ---
+        GOOGLE_MAPS_API_KEY: str = Field(default="")
+        GOOGLE_MAPS_DAILY_LIMIT: int = Field(default=200)
+
+        # --- LinkedIn Scraper ---
+        LINKEDIN_LI_AT: Optional[str] = Field(default=None)
+        LINKEDIN_HEADLESS: bool = Field(default=True)
+
         # --- Email ---
         EMAIL_API_KEY: str = Field(default="")
         EMAIL_USER: str = Field(default="joao.moura@jferres.com.br")
         EMAIL_PASSWORD: str = Field(default="")
         EMAIL_PORT: int = Field(default=8002)
         API_BASE_URL: str = Field(default="http://localhost:8000")
+        ABSTRACT_API_EMAIL_KEY: str = Field(default="")
 
         # --- Attachments conhecidos (caminhos absolutos no filesystem) ---
         LINKB2B_PRESENTATION_PATH: str = Field(default="")  # ex: C:\Users\João\Docs\Apresentação LINKB2B.pdf
@@ -377,11 +393,18 @@ else:
         PROXYCURL_API_KEY: str = os.getenv("PROXYCURL_API_KEY", "")
         RAPIDAPI_KEY: str = os.getenv("RAPIDAPI_KEY", "")
 
+        GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY", "")
+        GOOGLE_MAPS_DAILY_LIMIT: int = int(os.getenv("GOOGLE_MAPS_DAILY_LIMIT", 200))
+
+        LINKEDIN_LI_AT: Optional[str] = os.getenv("LINKEDIN_LI_AT") or None
+        LINKEDIN_HEADLESS: bool = os.getenv("LINKEDIN_HEADLESS", "true").lower() in {"1", "true", "yes"}
+
         EMAIL_API_KEY: str = os.getenv("EMAIL_API_KEY", "")
         EMAIL_USER: str = os.getenv("EMAIL_USER", "joao.moura@jferres.com.br")
         EMAIL_PASSWORD: str = os.getenv("EMAIL_PASSWORD", "")
         EMAIL_PORT: int = int(os.getenv("EMAIL_PORT", 8002))
         API_BASE_URL: str = os.getenv("API_BASE_URL", "http://localhost:8000")
+        ABSTRACT_API_EMAIL_KEY: str = os.getenv("ABSTRACT_API_EMAIL_KEY", "")
 
         WHATSAPP_SERVICE_URL: str = os.getenv("WHATSAPP_SERVICE_URL", "http://localhost:8001/api/whatsapp")
         WHATSAPP_APP_ID: str = os.getenv("WHATSAPP_APP_ID", "")
@@ -431,7 +454,7 @@ else:
             retry_max_attempts=3, cache_stages_ttl_sec=3600,
         )
         email = _Namespace(
-            scan_interval_min=10, scan_folder="Leads", imap_timeout_sec=30.0,
+            scan_interval_min=10, scan_folder="Leads", imap_timeout_sec=30.0, imap_legacy_auth=False,
         )
         observability = _Namespace(
             log_level="INFO", log_json=False, metrics_enabled=True,

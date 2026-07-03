@@ -4,52 +4,61 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: color-mix(in srgb, var(--sw-bg) 60%, transparent);
     backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: fadeIn var(--transition-fast) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Variante "contida": mantém o fundo escurecido/borrado cobrindo a tela
+   inteira (mesmo overlay de sempre), mas alinha a caixa do modal para a
+   direita — onde o chat panel fica docado — em vez de centralizar na tela
+   toda. O chat panel sempre fica encostado na borda direita da viewport. */
+.overlayContained {
+    justify-content: flex-end;
+    padding-right: var(--space-24);
 }
 
 .modal {
-    background: #1c1c1e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--sw-surface-base);
+    border: var(--sw-border-width) solid var(--sw-border);
     width: 100%;
     max-width: 400px;
-    border-radius: 16px;
-    padding: 24px;
+    border-radius: var(--radius-lg);
+    padding: var(--space-24);
     position: relative;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--sw-shadow);
+    animation: slideUp var(--transition-smooth) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .closeBtn {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: var(--space-16);
+    right: var(--space-16);
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--sw-text-muted);
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color var(--transition-fast);
 }
 
 .closeBtn:hover {
-    color: #ffffff;
+    color: var(--sw-text-base);
 }
 
 .content {
     display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
+    gap: var(--space-16);
+    margin-bottom: var(--space-24);
 }
 
 .iconWrapper {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
+    width: var(--space-48);
+    height: var(--space-48);
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -57,70 +66,70 @@
 }
 
 .danger {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
+    background: var(--sw-alert-bg);
+    color: var(--sw-status-danger);
 }
 
 .textGroup {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-4);
 }
 
 .title {
     margin: 0;
     font-size: var(--font-lg);
-    font-weight: 500;
-    color: #ffffff;
+    font-weight: 600;
+    color: var(--sw-text-base);
 }
 
 .message {
     margin: 0;
     font-size: var(--font-base);
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--sw-text-subtle);
     line-height: 1.5;
 }
 
 .actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    gap: var(--space-12);
 }
 
 .cancelBtn {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 0.88rem;
+    border: var(--sw-border-width) solid var(--sw-border);
+    color: var(--sw-text-base);
+    padding: var(--space-8) var(--space-16);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
 }
 
 .cancelBtn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--sw-hover);
+    border-color: var(--sw-border-strong);
 }
 
 .confirmBtn {
     border: none;
     color: #ffffff;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 0.88rem;
-    font-weight: 500;
+    padding: var(--space-8) var(--space-16);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
 }
 
 .confirm-danger {
-    background: #ef4444;
+    background: var(--sw-status-danger);
 }
 
 .confirm-danger:hover {
-    background: #dc2626;
+    filter: brightness(0.88);
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 

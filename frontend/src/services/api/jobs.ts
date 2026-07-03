@@ -38,6 +38,8 @@ export interface StartScanPayload {
   confirmed_logo?: string;
   product_focus?: string;
   area_focus?: 'compras' | 'logistica' | string;
+  model?: string;
+  strict_mode?: boolean;
 }
 
 /** Inicia scan assíncrono — retorna job_id para acompanhar via WS/stream. */

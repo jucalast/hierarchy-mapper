@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './NetworkGraph.module.css';
+import styles from './styles/Legend.module.css';
 
 export const Legend: React.FC = () => {
     return (

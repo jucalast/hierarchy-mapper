@@ -97,9 +97,14 @@ function AvatarBase({
     setRetryUrl(null);
   }, [proxiedUrl]);
 
-  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    resolvedName,
-  )}&background=${fallbackBg}&color=${fallbackColor}&bold=true&rounded=true&size=128`;
+  // Imagem de silhueta genérica e elegante
+  const genericPersonFallback = "/imagem_linkedin.png";
+
+  const fallback = (kind === 'person' && !noInitialFallback && resolvedName !== 'P')
+    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}&background=${fallbackBg}&color=${fallbackColor}&bold=true&rounded=true&size=${size}`
+    : genericPersonFallback;
+
+  const showPlaceholder = (!proxiedUrl && !retryUrl) || imgError;
 
   const baseStyle: React.CSSProperties = {
     width: pxSize,
@@ -110,12 +115,12 @@ function AvatarBase({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-    backgroundColor: kind === 'company' ? 'transparent' : 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: showPlaceholder
+      ? 'rgba(255, 255, 255, 0.05)'
+      : (kind === 'company' ? 'transparent' : 'rgba(255, 255, 255, 0.05)'),
     position: 'relative',
     ...style,
   };
-
-  const showPlaceholder = (!proxiedUrl && !retryUrl) || imgError;
 
   return (
     <span className={className} style={baseStyle} aria-label={alt || resolvedName}>
@@ -129,7 +134,7 @@ function AvatarBase({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'rgba(255, 255, 255, 0.15)',
+            color: 'rgba(255, 255, 255, 0.35)',
             pointerEvents: 'none',
           }}
         >
@@ -141,13 +146,13 @@ function AvatarBase({
         </span>
       )}
 
-      {(showPlaceholder && !noInitialFallback) ? (
+      {(showPlaceholder && !noInitialFallback && kind !== 'company') ? (
         <img
           src={fallback}
           alt={alt || resolvedName}
           width={pxSize}
           height={pxSize}
-          style={{ width: '100%', height: '100%', objectFit: defaultFit, position: 'relative', zIndex: 1 }}
+          style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'relative', zIndex: 1, backgroundColor: 'transparent', transform: 'scale(1.2)' }}
           loading="lazy"
           decoding="async"
           onError={(e) => {

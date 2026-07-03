@@ -121,7 +121,7 @@ const styles = {
     width: '50px',
     height: '50px',
     margin: '0 auto 20px',
-    border: '4px solid #f0f0f0',
+    border: 'var(--sw-border-width) solid var(--sw-border)',
     borderTop: '4px solid #667eea',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',

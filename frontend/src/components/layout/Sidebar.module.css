@@ -1,39 +1,69 @@
 /* --- SIDEBAR (SOFTWARE STYLE) --- */
 .sidenav {
+    position: relative;
     height: 100%;
     flex-shrink: 0;
     width: 56px;
-    /* w-14 */
-    background: var(--sw-sidebar);
+    background: linear-gradient(180deg, #1e2145 15%, #131313 40%, #131313 100%);
+    background-size: 100% 200%;
+    background-position-y: 0%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 20px 0;
-    /* Standardized vertical padding */
-    gap: 24px;
-    /* Harmonized gap */
-    border: var(--sw-border-width) solid var(--sw-border);
+    align-items: flex-start;
+    padding: 0 0 var(--space-20) 0;
+    gap: 8px;
+    border-right: var(--sw-border-width) solid var(--sw-border);
     z-index: 1000;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-position-y 0.3s ease-out, border-color var(--transition-fast);
+    overflow: hidden;
+    white-space: nowrap;
 }
 
-.navIcon {
-    width: 40px;
-    height: 40px;
+.sidenav:hover {
+    width: 200px;
+    background-position-y: 15%;
+}
+
+:global([data-theme="light"]) .sidenav {
+    background: linear-gradient(180deg, #e0e7ff 15%, #ffffff 40%, #ffffff 100%);
+    background-size: 100% 200%;
+    background-position-y: 0%;
+}
+
+:global([data-theme="light"]) .sidenav:hover {
+    background-position-y: 15%;
+}
+
+.navIcon, .navIconWrapper {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    color: var(--sw-text-muted);
+    cursor: pointer;
+    transition: background 0.1s ease, color 0.1s ease;
+    background: transparent;
+    border-radius: 0;
+}
+
+.iconContainer {
+    width: 56px;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--sw-text-muted);
-    cursor: pointer;
-    transition: var(--transition-fast);
-    background: transparent;
-    border-radius: 0;
-    /* Remove rounded background */
+    flex-shrink: 0;
+    position: relative;
 }
 
-.navIcon:hover {
+.navIcon:hover, .navIconWrapper:hover {
     color: var(--sw-text-base);
-    background: transparent;
-    /* Clean hover, no background */
+}
+
+:global([data-theme="light"]) .navIcon:hover, 
+:global([data-theme="light"]) .navIconWrapper:hover {
+    color: var(--sw-text-base);
 }
 
 .navIconActive {
@@ -43,17 +73,73 @@
     box-shadow: none !important;
 }
 
-.navIconDisabled {
-    opacity: 0.15;
-    cursor: not-allowed;
-}
-
 .iconSide {
-    width: 20px;
-    /* w-5 */
-    height: 20px;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
 }
 
-.headerLogo {
+.label {
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.sidenav:hover .label {
+    opacity: 1;
+    transition-delay: 0.1s;
+    pointer-events: auto;
+}
+
+.tasksBadge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #10b981;
+    font-size: 16px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.tasksCount {
+    line-height: 1;
+}
+
+.headerLogoWrapper {
+    width: 100%;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     color: var(--sw-primary);
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.logoutBtn {
+    cursor: pointer;
+    color: var(--sw-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    transition: color 0.2s;
+    margin-left: 4px;
+}
+
+.logoutBtn:hover {
+    color: #ef4444 !important;
 }

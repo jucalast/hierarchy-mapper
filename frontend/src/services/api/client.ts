@@ -86,16 +86,21 @@ async function request<T>(
 ): Promise<T> {
   const url = resolveUrl(endpoint);
   const requestId = genRequestId();
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     'X-Request-ID': requestId,
     ...(options.headers || {}),
   };
+  
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const init: RequestInit & { timeout?: number } = {
     method,
     headers,
-    body: body !== undefined && body !== null ? JSON.stringify(body) : undefined,
+    body: isFormData ? (body as FormData) : (body !== undefined && body !== null ? JSON.stringify(body) : undefined),
     signal: options.signal,
     timeout: options.timeout || TIMEOUTS.medium,
   };

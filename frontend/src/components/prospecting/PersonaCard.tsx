@@ -1,5 +1,5 @@
 import React, { memo, useMemo } from 'react';
-import styles from '../network-graph/NetworkGraph.module.css';
+import styles from '../network-graph/styles/Nodes.module.css';
 import {
   MapPin,
   GraduationCap,
@@ -8,12 +8,33 @@ import {
   Building2,
   Phone,
   ShieldCheck,
-  Layers
+  Layers,
+  X,
+  Trash2,
+  Brain,
+  Quote,
+  Info,
+  Loader2
 } from 'lucide-react';
 
 import { getAvatarUrl, getCompanyLogoUrl, getProxiedUrl } from '../../utils/avatarUtils';
+import { Dropdown } from '../ui/Dropdown';
 
 function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: number, isNode?: boolean }) {
+  const dropdownItems = useMemo(() => [
+    {
+      label: 'Detalhes e Configurações',
+      onClick: () => data.onEdit?.(data.id),
+      icon: <Info size={14} />
+    },
+    {
+      label: 'Excluir Perfil',
+      onClick: () => data.onDelete?.(data.id),
+      icon: <Trash2 size={14} />,
+      danger: true
+    }
+  ], [data.onEdit, data.onDelete, data.id]);
+
   // Prioriza o nível vindo dos dados (backend) sobre o default do componente
   const effectiveLevel = data.seniority !== undefined ? Number(data.seniority) : (level ?? 5);
   
@@ -35,7 +56,7 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
   return (
     <div 
         className={`${styles.customNode} ${!isNode ? styles.chatNode : ''} ${styles['level_' + effectiveLevel]} ${data.isRoot ? styles.rootNode : ''}`} 
-        style={!isNode ? { position: 'relative', width: '300px', margin: '20px 0 10px 20px', zoom: 0.85 } : {}}
+        style={!isNode ? { position: 'relative', width: '380px', margin: '20px 0 10px 20px', zoom: 0.85 } : {}}
     >
       {isNode && <div className={styles.handleTopLine}></div>}
       
@@ -49,36 +70,57 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
         <div className={styles.levelBadge}>
           <Layers size={14} />
           <span>Tier {effectiveLevel}</span>
+          {data.isLoading && (
+            <Loader2 
+                size={16} 
+                style={{ 
+                    animation: 'spin 1s linear infinite', 
+                    color: '#a855f7',
+                    marginLeft: '8px'
+                }} 
+            />
+          )}
         </div>
-        {data.matching_score > 0 && (
-          <div className={styles.scoreBadge} title="IA Matching Score">
-            {data.matching_score}%
-          </div>
-        )}
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {data.matching_score > 0 && (
+            <div className={styles.scoreBadge} title="IA Matching Score">
+              {data.matching_score}%
+            </div>
+          )}
+
+          {isNode && !data.isRoot && (
+            <Dropdown 
+              items={dropdownItems}
+              iconType="vertical"
+              iconSize={16}
+              title="Mais opções"
+            />
+          )}
+        </div>
       </div>
 
       <div className={styles.nodeBody}>
       <div className={styles.nodeNameWrapper}>
-        {(data.linkedin || effectiveLevel === 0) && (
-          <div className={styles.nodeAvatar}>
-            {effectiveLevel === 0 ? (
-              <img 
-                src={getProxiedUrl(data.confirmedLogo || data.company_logo || data.logo || data.avatar || data.image || data.logo_url || data.brand_logo || (data.domain ? "https://unavatar.io/" + data.domain : null))} 
-                alt="Company" 
-                className={styles.avatarImg} 
-                style={{ objectFit: "contain", background: "#fff" }} 
-                loading="lazy" 
-                decoding="async" 
-                onError={(e) => { 
-                  const target = e.target as HTMLImageElement; 
-                  const fallbackName = data.name || data.company || "K"; 
-                  if (!target.src.includes("ui-avatars")) { 
-                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=000&color=fff`; 
-                  } 
-                }} 
-              />
-            ) : data.linkedin ? (
-              <>
+        {(data.linkedin || effectiveLevel === 0) && (          <div className={styles.nodeAvatarContainer}>
+            <div className={styles.nodeAvatar}>
+              {effectiveLevel === 0 ? (
+                <img 
+                  src={getProxiedUrl(data.confirmedLogo || data.company_logo || data.logo || data.avatar || data.image || data.logo_url || data.brand_logo || (data.domain ? "https://unavatar.io/" + data.domain : null))} 
+                  alt="Company" 
+                  className={styles.avatarImg} 
+                  style={{ objectFit: "cover", background: "#fff" }} 
+                  loading="lazy" 
+                  decoding="async" 
+                  onError={(e) => { 
+                    const target = e.target as HTMLImageElement; 
+                    const fallbackName = data.name || data.company || "K"; 
+                    if (!target.src.includes("ui-avatars")) { 
+                      target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=000&color=fff`; 
+                    } 
+                  }} 
+                />
+              ) : data.linkedin ? (
                 <img 
                   src={getProxiedUrl(avatarUrl)} 
                   alt={data.name} 
@@ -90,27 +132,48 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
                     target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=6366f1&color=fff&bold=true&rounded=true&size=128`; 
                   }} 
                 />
-                {effectiveLevel !== 6 && effectiveLevel !== 0 && (
-                  <div className={styles.nodeAvatarCompanyBadge}>
-                    <img 
-                      src={getProxiedUrl(data.company_logo || `https://unavatar.io/${data.domain || data.company || "knorr-bremse.com"}`)} 
-                      alt="Company" 
-                      className={styles.companyBadgeImg} 
-                      loading="lazy" 
-                      decoding="async" 
-                    />
-                  </div>
-                )}
-              </>
-            ) : null}
+              ) : null}
+            </div>
+            {effectiveLevel !== 0 && (data.linkedin || effectiveLevel === 6) && (
+              <div className={styles.nodeAvatarCompanyBadge}>
+                <img 
+                  src={getProxiedUrl(companyLogoUrl)} 
+                  alt="Company" 
+                  className={styles.companyBadgeImg} 
+                  loading="lazy" 
+                  decoding="async" 
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.company || "C")}&background=000&color=fff`;
+                  }}
+                />
+              </div>
+            )}
           </div>
+
         )}
         
         <div className={styles.nodeTitles}>
-          <h3 className={styles.nodeName}>{data.name || 'Professional'}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 className={styles.nodeName}>{data.name || 'Professional'}</h3>
+            {data.linkedin && (
+              <a
+                href={data.linkedin.startsWith('http') ? data.linkedin : `https://${data.linkedin}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nodrag"
+                onPointerDown={(e) => e.stopPropagation()}
+                style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.55, transition: 'opacity 0.2s', flexShrink: 0 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = '0.9'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = '0.55'; }}
+              >
+                <img src="/linkedin.png" alt="LinkedIn" style={{ width: 18, height: 18, objectFit: 'contain', borderRadius: 4 }} />
+              </a>
+            )}
+          </div>
           <div className={styles.roleWrapper}>
             <span className={styles.roleDept}>
-              <Briefcase size={14} /> {data.headline || data.role || 'Professional'}
+              <Briefcase size={14} /> {data.role || data.headline || 'Professional'}
             </span>
             <span className={styles.roleDot}></span>
             <span className={styles.roleCompany}>
@@ -139,16 +202,50 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
             <MapPin className={styles.osintIcon} />
             <span className={styles.osintText}>{data.location || 'Localização não identificada'}</span>
           </div>
-          <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
-            <GraduationCap className={styles.osintIcon} />
-            <p className={styles.osintParagraph}>
-              {data.evidence || data.education || data.observations || 'Nenhuma informação adicional disponível via OSINT.'}
-            </p>
-          </div>
+          {data.evidence && (
+            <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
+              <Brain className={styles.osintIcon} size={14} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.4)', fontWeight: 600 }}>Veredito da IA</span>
+                <p className={styles.osintParagraph}>
+                  {data.evidence}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {(data.observations && data.observations !== 'N/A') && (
+            <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
+              <Quote className={styles.osintIcon} size={12} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.4)', fontWeight: 600 }}>Bio Original</span>
+                <p className={styles.osintParagraph}>
+                  {data.observations}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {(data.education && data.education !== data.observations) && (
+            <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
+              <GraduationCap className={styles.osintIcon} />
+              <p className={styles.osintParagraph}>
+                {data.education}
+              </p>
+            </div>
+          )}
+
+          {!data.evidence && !data.education && !data.observations && (
+             <div className={`${styles.osintLine} ${styles.osintLineMetadata}`}>
+              <p className={styles.osintParagraph} style={{ fontStyle: 'italic', opacity: 0.5 }}>
+                Nenhuma informação adicional disponível.
+              </p>
+             </div>
+          )}
           
           <div className={styles.emailLine}>
             <Mail size={14} className={styles.metaIcon} />
-            <span className={styles.emailText}>{data.email || 'gerando email...'}</span>
+            <span className={styles.emailText}>{data.email || 'E-mail não cadastrado'}</span>
           </div>
 
           {/* TELEFONE / WHATSAPP / PABX */}
@@ -163,21 +260,6 @@ function PersonaCardBase({ data, level, isNode = false }: { data: any, level?: n
         </div>
       </div>
 
-      {/* Action Footer */}
-      {data.linkedin && (
-        <div className={styles.nodeActionFooter}>
-          <a
-            href={data.linkedin.startsWith('http') ? data.linkedin : `https://${data.linkedin}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${styles.linkedinBtn} nodrag`}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <img src="/linkedin.png" alt="LinkedIn" className={styles.linkedinIconImg} />
-            <span>Ver Perfil no LinkedIn</span>
-          </a>
-        </div>
-      )}
       </div>
 
       {isNode && <div className={styles.handleBottomLine}></div>}
@@ -202,7 +284,8 @@ export const PersonaCard = memo(
       a.profile_pic === b.profile_pic &&
       a.headline === b.headline &&
       a.email === b.email &&
-      a.phone === b.phone
+      a.phone === b.phone &&
+      a.isLoading === b.isLoading
     );
   },
 );

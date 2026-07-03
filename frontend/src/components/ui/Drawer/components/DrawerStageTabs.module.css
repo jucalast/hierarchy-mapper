@@ -1,0 +1,98 @@
+/* ─────────────────────────────────────────────────
+   DrawerStageTabs — folder-tab style, alinhado ao DS
+   ───────────────────────────────────────────────── */
+
+.tabsWrapper {
+    display: flex;
+    flex-direction: column;
+    background: var(--sw-sidebar);
+    padding: 0;
+    overflow: hidden;
+    outline: none;
+}
+
+.tabsScroll {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 0;
+    outline: none;
+}
+
+.tabsScroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* ─── Aba "Todos" + abas de estágio ─────────────── */
+.tab {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--sw-text-muted);
+    font-size: var(--font-xs);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition:
+        background var(--transition-fast),
+        color var(--transition-fast);
+    line-height: 1.2;
+    outline: none;
+}
+
+.tab:hover:not(.tabActive) {
+    background: var(--sw-hover);
+    color: var(--sw-text-subtle, var(--sw-text-base));
+}
+
+/* Aba ativa "aberta" */
+.tabActive {
+    background: var(--sw-status-success);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+:global([data-theme="dark"]) .tabActive {
+    background: var(--sw-hover);
+    color: var(--sw-status-success); /* Fonte verde */
+}
+
+/* ─── Badge de contagem ─────────────────────────── */
+.count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0;
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--sw-text-muted);
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.tabActive .count {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+:global([data-theme="dark"]) .tabActive .count {
+    background: rgba(52, 209, 124, 0.15); /* Fundo verde translúcido na bolinha */
+    color: var(--sw-status-success);
+}
+
+/* Quando não há estágios carregados ainda, esconde suavemente */
+.hidden {
+    display: none;
+}

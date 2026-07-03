@@ -21,9 +21,14 @@ import {
     Plus,
     Trash2,
     Edit3,
-    X
+    X,
+    Check,
+    FileText,
+    Image as ImageIcon,
+    Upload
 } from 'lucide-react';
 import { ai } from '@/services/api';
+import { ModelSelector, AIModel } from '@/components/chat/components/ModelSelector';
 import styles from './PreferencesView.module.css';
 
 interface PreferencesViewProps {
@@ -87,6 +92,46 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
     // LLM Tab hooks
     const [preferredModel, setPreferredModel] = useState('gemini-2.5-flash');
     const [strictMode, setStrictMode] = useState(false);
+    const [subModelDropdownOpen, setSubModelDropdownOpen] = useState(false);
+    const subModelDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close sub-model dropdown on outside click
+    useEffect(() => {
+        if (!subModelDropdownOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (subModelDropdownRef.current && !subModelDropdownRef.current.contains(e.target as Node)) {
+                setSubModelDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [subModelDropdownOpen]);
+
+    const getBaseModelFromFullString = (fullModel: string): AIModel => {
+        const lower = fullModel.toLowerCase();
+        if (lower.includes('gemini')) return 'gemini';
+        if (lower.includes('claude')) return 'claude';
+        if (lower.includes('cerebras') || lower.includes('llama3.1-8b') || lower.includes('qwen-3-235b') || lower.includes('gpt-oss') || lower.includes('zai-glm')) return 'cerebras';
+        if (lower.includes('sambanova') || lower.includes('meta-llama-3.3-70b-instruct') || lower.includes('llama-4-scout')) return 'sambanova';
+        if (lower.includes('deepseek')) return 'deepseek';
+        if (lower.includes('groq') || lower.includes('llama') || lower.includes('qwen') || lower.includes('mixtral')) return 'groq';
+        return 'gemini';
+    };
+
+    const handleBaseModelChange = (baseModel: AIModel) => {
+        let defaultModel = 'gemini-2.5-flash';
+        if (baseModel === 'gemini') defaultModel = 'gemini-2.5-flash';
+        else if (baseModel === 'groq') defaultModel = 'llama-3.3-70b-versatile';
+        else if (baseModel === 'claude') defaultModel = 'claude-3-5-sonnet-latest';
+        else if (baseModel === 'sambanova') defaultModel = 'Meta-Llama-3.3-70B-Instruct';
+        else if (baseModel === 'deepseek') defaultModel = 'deepseek-chat';
+        else if (baseModel === 'cerebras') defaultModel = 'llama-3.3-70b';
+        setPreferredModel(defaultModel);
+    };
+
+    const getFilteredSubModels = (baseModel: AIModel) => {
+        return HUMAN_MODELS.filter(m => getBaseModelFromFullString(m.value) === baseModel);
+    };
     const [quotas, setQuotas] = useState<QuotasResponse>({});
     const [loadingQuotas, setLoadingQuotas] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -95,6 +140,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
     const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({
         gemini: true,
     });
+    const [openQuotaModelDropdown, setOpenQuotaModelDropdown] = useState<string | null>(null);
+    const [quotaSelectedModel, setQuotaSelectedModel] = useState<Record<string, string>>({});
+    const quotaDropdownRef = useRef<Record<string, HTMLDivElement | null>>({});
 
     // Navigation state
     const [activeTab, setActiveTab] = useState<'llm' | 'profile' | 'products' | 'references' | 'value_props' | 'icp' | 'hierarchy' | 'integrations'>('llm');
@@ -105,6 +153,25 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
     const [sellerName, setSellerName] = useState('');
     const [sellerRole, setSellerRole] = useState('');
     const [companyDifferentials, setCompanyDifferentials] = useState<string[]>([]);
+    const [presentationPath, setPresentationPath] = useState<string | null>(null);
+    const [signaturePath, setSignaturePath] = useState<string | null>(null);
+    const [uploadingFile, setUploadingFile] = useState<'presentation' | 'signature' | null>(null);
+
+    const handleFileUpload = async (type: 'presentation' | 'signature', file: File) => {
+        setUploadingFile(type);
+        try {
+            const res = await ai.uploadProfileFile(type, file);
+            if (res.ok) {
+                if (type === 'presentation') setPresentationPath(res.path);
+                else setSignaturePath(res.path);
+                showToast('success', `${type === 'presentation' ? 'Apresentação' : 'Assinatura'} carregada com sucesso!`);
+            }
+        } catch (e) {
+            showToast('error', `Erro ao fazer upload da ${type === 'presentation' ? 'apresentação' : 'assinatura'}.`);
+        } finally {
+            setUploadingFile(null);
+        }
+    };
 
     // 📦 Catálogo de Produtos State
     const [productsList, setProductsList] = useState<any[]>([]);
@@ -147,6 +214,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
     const [emailUser, setEmailUser] = useState('');
     const [emailPassword, setEmailPassword] = useState('');
     const [emailPort, setEmailPort] = useState('');
+    const [autoRescheduleEnabled, setAutoRescheduleEnabled] = useState(true);
+    const [autoRescheduleSaving, setAutoRescheduleSaving] = useState(false);
 
     const toggleProvider = (provKey: string) => {
         setExpandedProviders(prev => ({
@@ -180,6 +249,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                 setSellerName(ctx.seller_name || '');
                 setSellerRole(ctx.seller_role || '');
                 setCompanyDifferentials(ctx.company_differentials || []);
+                setPresentationPath(ctx.presentation_path || null);
+                setSignaturePath(ctx.signature_path || null);
 
                 // Produtos
                 const prods = ctx.products ? Object.values(ctx.products) : [];
@@ -236,6 +307,17 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                     }
                 } catch (intErr) {
                     console.error("Erro ao carregar integrações:", intErr);
+                }
+
+                // Toggle de reagendamento automático de tarefas atrasadas
+                try {
+                    const autoReschedule = await ai.getSetting('crm_auto_reschedule_overdue');
+                    setAutoRescheduleEnabled(autoReschedule?.value?.enabled !== false);
+                } catch (autoErr: any) {
+                    // 404 = ainda não configurado -> mantém o padrão (habilitado)
+                    if (autoErr?.status !== 404) {
+                        console.error("Erro ao carregar toggle de reagendamento automático:", autoErr);
+                    }
                 }
             }
         } catch (e: any) {
@@ -404,6 +486,23 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
         }
     };
 
+    const handleToggleAutoReschedule = async () => {
+        const newValue = !autoRescheduleEnabled;
+        setAutoRescheduleEnabled(newValue);
+        setAutoRescheduleSaving(true);
+        try {
+            await ai.updateSetting('crm_auto_reschedule_overdue', { enabled: newValue }, 'crm');
+            showToast('success', newValue
+                ? "Reagendamento automático ativado: tarefas atrasadas serão movidas para hoje a cada início de dia."
+                : "Reagendamento automático desativado. Nenhuma tarefa será alterada automaticamente no Pipedrive.");
+        } catch (e: any) {
+            setAutoRescheduleEnabled(!newValue);
+            showToast('error', e.message || "Erro ao salvar a configuração de reagendamento automático.");
+        } finally {
+            setAutoRescheduleSaving(false);
+        }
+    };
+
     const handleSaveIntegrations = async () => {
         setSaving(true);
         try {
@@ -567,14 +666,12 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
         };
 
         return (
-            <div className={styles.formGroup} style={{ gap: '8px' }}>
+            <div className={styles.formGroup}>
                 <label className={styles.label}>{label}</label>
                 {description && (
-                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginTop: '-2px', marginBottom: '4px', lineHeight: '1.4' }}>
-                        {description}
-                    </span>
+                    <p className={styles.fieldDesc}>{description}</p>
                 )}
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className={styles.addRow}>
                     <input
                         type="text"
                         className={styles.select}
@@ -582,43 +679,22 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); } }}
                         placeholder={placeholder || 'Adicionar item...'}
-                        style={{ flex: 1 }}
                     />
-                    <button 
-                        type="button" 
-                        onClick={handleAdd}
-                        className={styles.saveBtn}
-                        style={{ padding: '0 18px', borderRadius: '6px', height: '46px' }}
-                    >
-                        <Plus size={16} />
+                    <button type="button" onClick={handleAdd} className={styles.saveBtn}>
+                        <Plus size={13} />
                     </button>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+                <div className={styles.tagList}>
                     {list.map((item, idx) => (
-                        <div 
-                            key={idx} 
-                            style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '8px', 
-                                backgroundColor: 'rgba(255,255,255,0.03)', 
-                                border: '1px solid rgba(255,255,255,0.08)', 
-                                borderRadius: '4px', 
-                                padding: '6px 12px', 
-                                fontSize: '12px',
-                                color: 'rgba(255,255,255,0.85)' 
-                            }}
-                        >
+                        <div key={idx} className={styles.tag}>
                             <span>{item}</span>
-                            <X 
-                                size={14} 
-                                onClick={() => handleRemove(idx)} 
-                                style={{ color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center' }} 
-                            />
+                            <button type="button" className={styles.tagRemove} onClick={() => handleRemove(idx)}>
+                                <X size={12} />
+                            </button>
                         </div>
                     ))}
                     {list.length === 0 && (
-                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>Nenhum item adicionado.</span>
+                        <span className={styles.tagEmpty}>Nenhum item adicionado.</span>
                     )}
                 </div>
             </div>
@@ -631,14 +707,14 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
             <header className={styles.header}>
                 <div className={styles.titleArea}>
                     <h1 className={styles.title}>
-                        <Settings2 size={24} /> Configurações do Sistema
+                        <Settings2 size={18} /> Configurações do Sistema
                     </h1>
                     <span className={styles.subtitle}>
                         Gerencie as preferências de IA, perfil do negócio, dores, propostas de valor, ICP de leads e regras de mapeamento no DB.
                     </span>
                 </div>
                 <button className={styles.backBtn} onClick={onBack}>
-                    <ChevronLeft size={16} /> Voltar
+                    <ChevronLeft size={14} /> Voltar
                 </button>
             </header>
 
@@ -652,56 +728,56 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             className={`${styles.sidebarItem} ${activeTab === 'llm' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('llm')}
                         >
-                            <Sparkles size={16} />
+                            <Sparkles size={14} />
                             <span>Preferências & Limites LLM</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'profile' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('profile')}
                         >
-                            <Briefcase size={16} />
+                            <Briefcase size={14} />
                             <span>Perfil Comercial</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'products' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('products')}
                         >
-                            <Package size={16} />
+                            <Package size={14} />
                             <span>Catálogo de Produtos</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'references' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('references')}
                         >
-                            <Users size={16} />
+                            <Users size={14} />
                             <span>Clientes de Referência</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'value_props' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('value_props')}
                         >
-                            <Flame size={16} />
+                            <Flame size={14} />
                             <span>Dores & Propostas de Valor</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'icp' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('icp')}
                         >
-                            <Target size={16} />
+                            <Target size={14} />
                             <span>Regras de ICP & Qualificação</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'hierarchy' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('hierarchy')}
                         >
-                            <GitFork size={16} />
+                            <GitFork size={14} />
                             <span>Regras de Hierarquia</span>
                         </div>
                         <div 
                             className={`${styles.sidebarItem} ${activeTab === 'integrations' ? styles.sidebarItemActive : ''}`}
                             onClick={() => setActiveTab('integrations')}
                         >
-                            <Database size={16} />
+                            <Database size={14} />
                             <span>Conexões & Integrações</span>
                         </div>
                     </nav>
@@ -712,21 +788,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                     
                     {/* TOAST SYSTEM */}
                     {toast && (
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '16px 20px',
-                            borderRadius: '6px',
-                            border: `1px solid ${toast.type === 'success' ? 'rgba(52,209,124,0.15)' : 'rgba(239,68,68,0.15)'}`,
-                            backgroundColor: toast.type === 'success' ? 'rgba(52,209,124,0.05)' : 'rgba(239,68,68,0.05)',
-                            color: toast.type === 'success' ? '#34d17c' : '#ef4444',
-                            fontSize: '13px',
-                            fontFamily: 'var(--font-primary)',
-                            animation: 'fadeIn 0.2s ease',
-                            marginBottom: '12px'
-                        }}>
-                            {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                        <div className={`${styles.toastBar} ${styles[toast.type]}`}>
+                            {toast.type === 'success' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
                             <span>{toast.message}</span>
                         </div>
                     )}
@@ -739,40 +802,124 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             <div className={styles.card}>
                                 <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
-                                        <Cpu size={18} /> Modelos & Preferências de IA
+                                        <Cpu size={15} /> Modelos & Preferências de IA
                                     </span>
                                 </h2>
 
-                                <div className={styles.formGroup}>
-                                    <label className={styles.label}>Modelo Preferido (Padrão do Sistema)</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                <div className={styles.formGroup} style={{ marginBottom: '16px' }}>
+                                    <label className={styles.label} style={{ marginBottom: '8px', display: 'block' }}>Provedor & Modelo Favorito (Padrão do Sistema)</label>
+                                    <p className={styles.fieldDesc}>
                                         O cérebro de IA preferido para orquestrar as cadeias de agentes, ler biografias do LinkedIn, classificar cargos, estruturar hierarquias e redigir propostas de vendas.
-                                    </span>
-                                    <select 
-                                        className={styles.select}
-                                        value={preferredModel}
-                                        onChange={(e) => setPreferredModel(e.target.value)}
-                                    >
-                                        {HUMAN_MODELS.map(m => (
-                                            <option key={m.value} value={m.value}>{m.label}</option>
-                                        ))}
-                                    </select>
+                                    </p>
+                                    <ModelSelector 
+                                        model={getBaseModelFromFullString(preferredModel)} 
+                                        setModel={handleBaseModelChange} 
+                                        strictMode={strictMode} 
+                                        setStrictMode={setStrictMode} 
+                                        theme="dark"
+                                    />
                                 </div>
 
-                                <div 
-                                    className={styles.checkboxContainer}
-                                    onClick={() => setStrictMode(!strictMode)}
-                                >
-                                    <div className={styles.checkbox}>
-                                        {strictMode && <CheckCircle2 size={12} color="#3b82f6" />}
+                                <div className={styles.formGroup} style={{ marginBottom: '20px' }}>
+                                    <label className={styles.label}>Modelo Específico do Provedor</label>
+                                    <p className={styles.fieldDesc}>
+                                        Escolha a versão ou variante de modelo exata para o provedor de IA selecionado acima.
+                                    </p>
+                                    {/* Premium Sub-Model Dropdown */}
+                                    <div className={styles.subModelWrapper} ref={subModelDropdownRef}>
+                                        {(() => {
+                                            const subModels = getFilteredSubModels(getBaseModelFromFullString(preferredModel));
+                                            const selectedSub = subModels.find(m => m.value === preferredModel) || subModels[0];
+                                            const providerInfo = HUMAN_PROVIDERS[getBaseModelFromFullString(preferredModel) as keyof typeof HUMAN_PROVIDERS];
+                                            return (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        className={styles.subModelTrigger}
+                                                        onClick={() => setSubModelDropdownOpen(v => !v)}
+                                                    >
+                                                        {providerInfo?.image && (
+                                                            <img
+                                                                src={providerInfo.image}
+                                                                alt={providerInfo.label}
+                                                                className={styles.subModelTriggerLogo}
+                                                            />
+                                                        )}
+                                                        <span className={styles.subModelTriggerLabel}>
+                                                            {selectedSub?.label || preferredModel}
+                                                        </span>
+                                                        {selectedSub?.description && (
+                                                            <span className={styles.subModelTriggerDesc}>
+                                                                {selectedSub.description}
+                                                            </span>
+                                                        )}
+                                                        <ChevronDown
+                                                            size={14}
+                                                            className={`${styles.subModelChevron}${subModelDropdownOpen ? ' ' + styles.open : ''}`}
+                                                        />
+                                                    </button>
+
+                                                    {subModelDropdownOpen && (
+                                                        <div className={styles.subModelDropdown}>
+                                                            <div className={styles.subModelOptions}>
+                                                                {subModels.map(m => {
+                                                                    const isSelected = m.value === preferredModel;
+                                                                    return (
+                                                                        <button
+                                                                            key={m.value}
+                                                                            type="button"
+                                                                            className={`${styles.subModelOption}${isSelected ? ' ' + styles.selected : ''}`}
+                                                                            onClick={() => {
+                                                                                setPreferredModel(m.value);
+                                                                                setSubModelDropdownOpen(false);
+                                                                            }}
+                                                                        >
+                                                                            {providerInfo?.image && (
+                                                                                <img
+                                                                                    src={providerInfo.image}
+                                                                                    alt={providerInfo.label}
+                                                                                    className={styles.subModelOptionLogo}
+                                                                                />
+                                                                            )}
+                                                                            <div className={styles.subModelOptionInfo}>
+                                                                                <span className={styles.subModelOptionName}>{m.label}</span>
+                                                                                {m.description && (
+                                                                                    <span className={styles.subModelOptionDesc}>{m.description}</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className={styles.subModelOptionCheck}>
+                                                                                {isSelected && <Check size={13} />}
+                                                                            </div>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </div>
-                                    <div className={styles.checkboxText}>
-                                        <span className={styles.checkboxLabel}>Strict Mode (Forçar Modelo)</span>
-                                        <span className={styles.checkboxSub}>
-                                            Se ativado, o sistema sempre tentará usar o modelo acima com retries agressivos, 
-                                            desativando o fallback automático para outros provedores em caso de falha.
-                                        </span>
-                                    </div>
+                                </div>
+
+                                <div className={styles.switchWrapper} style={{ marginBottom: '20px' }}>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setStrictMode(!strictMode)} 
+                                        className={`${styles.switchButton} ${strictMode ? styles.switchActive : ''}`}
+                                    >
+                                        <div className={styles.switchInfo}>
+                                            <span className={styles.switchTitle}>{strictMode ? "Strict Mode Ativo" : "Strict Mode Inativo"}</span>
+                                            <span className={styles.switchDesc}>
+                                                {strictMode 
+                                                    ? "Forçando o uso exclusivo do modelo preferido com retries agressivos" 
+                                                    : "Permite fallback automático para outros provedores se houver rate-limiting"}
+                                             </span>
+                                        </div>
+                                        <div className={styles.switchToggle}>
+                                            <div className={styles.switchKnob} />
+                                        </div>
+                                    </button>
                                 </div>
 
                                 <button 
@@ -780,7 +927,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                     onClick={handleSaveLLM}
                                     disabled={saving}
                                 >
-                                    {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                    {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                     {saving ? "Salvando..." : "Salvar Preferências"}
                                 </button>
                             </div>
@@ -791,11 +938,11 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             <div className={styles.card}>
                                 <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
-                                        <Activity size={18} /> Limites de Cotas em Tempo Real
+                                        <Activity size={15} /> Limites de Cotas em Tempo Real
                                     </span>
                                     {isRefreshing && (
                                         <div className={styles.refreshingIndicator}>
-                                            <RefreshCw size={14} className={styles.spin} />
+                                            <RefreshCw size={13} className={styles.spin} />
                                             <span style={{ fontSize: '11px' }}>atualizando...</span>
                                         </div>
                                     )}
@@ -803,25 +950,25 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                 {loadingQuotas ? (
                                     <div className={styles.noDataText} style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-                                        <RefreshCw size={24} className={styles.spin} />
+                                        <RefreshCw size={18} className={styles.spin} />
                                         <span>Sincronizando quotas com os provedores de IA...</span>
                                     </div>
                                 ) : (
                                     <div className={styles.providersList}>
                                         {Object.entries(quotas).map(([provKey, modelsMap]) => {
-                                            const meta = HUMAN_PROVIDERS[provKey] || { label: provKey, logo: "🤖", color: "#3b82f6" };
+                                            const meta = HUMAN_PROVIDERS[provKey] || { label: provKey, logo: "🤖", color: "var(--sw-primary)" };
                                             const isRateLimited = Object.values(modelsMap).some(m => m.status === 'rate_limited');
                                             const isAnyNoCredits = Object.values(modelsMap).some(m => m.status === 'no_credits');
                                             const isExpanded = expandedProviders[provKey] ?? false;
 
                                             return (
-                                                <div key={provKey} className={styles.providerCard}>
+                                                <div key={provKey} className={styles.section}>
                                                     <div 
-                                                        className={styles.providerHeader}
+                                                        className={styles.sectionHeader}
                                                         onClick={() => toggleProvider(provKey)}
                                                         style={{ cursor: 'pointer', userSelect: 'none' }}
                                                     >
-                                                        <div className={styles.providerBrand}>
+                                                        <div className={styles.sectionHeaderLeft}>
                                                             {meta.image ? (
                                                                 <img 
                                                                     src={meta.image} 
@@ -833,74 +980,72 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                                             )}
                                                             <span className={styles.providerName}>{meta.label}</span>
                                                         </div>
-                                                        <div className={styles.providerHeaderRight}>
+                                                        <div className={styles.sectionHeaderRight}>
                                                             <div className={`${styles.providerBadge} ${(isRateLimited || isAnyNoCredits) ? styles.badgeCritical : styles.badgeHealthy}`}>
                                                                 {isRateLimited ? (
                                                                     <>
                                                                         <AlertTriangle size={12} />
-                                                                        <span>RATE LIMITED / COOLDOWN</span>
+                                                                        <span>COOLDOWN</span>
                                                                     </>
                                                                 ) : isAnyNoCredits ? (
                                                                     <>
                                                                         <AlertTriangle size={12} />
-                                                                        <span>SEM CRÉDITOS</span>
+                                                                        <span>SEM SALDO</span>
                                                                     </>
                                                                 ) : (
                                                                     <>
                                                                         <CheckCircle2 size={12} />
-                                                                        <span>ATIVO E DISPONÍVEL</span>
+                                                                        <span>ATIVO</span>
                                                                     </>
                                                                 )}
                                                             </div>
                                                             <ChevronDown 
-                                                                size={16} 
+                                                                size={14} 
                                                                 className={`${styles.chevron} ${isExpanded ? styles.chevronExpanded : ''}`}
                                                             />
                                                         </div>
                                                     </div>
 
                                                     {isExpanded && (
-                                                        <div className={styles.providerContent}>
+                                                        <div className={styles.modelQuotaList}>
+                                                            {/* Quota Rows — ModelSelector-style */}
                                                             {Object.entries(modelsMap).length === 0 ? (
                                                                 <div className={styles.noDataText}>Nenhum modelo registrado.</div>
-                                                            ) : (
-                                                                Object.entries(modelsMap).map(([modelName, detail]) => {
-                                                                    const isModelRateLimited = detail.status === 'rate_limited' || detail.status === 'cooldown';
-                                                                    const isNoCredits = detail.status === 'no_credits';
-                                                                    const pct = (isModelRateLimited || isNoCredits) ? 0 : detail.pct;
-
-                                                                    return (
-                                                                        <div key={modelName} className={styles.modelRow}>
-                                                                            <div className={styles.modelInfo}>
-                                                                                <span className={styles.modelName}>{modelName}</span>
-                                                                                <span className={styles.modelStats}>
-                                                                                    {isModelRateLimited ? (
-                                                                                        <span className={styles.modelStatsCritical}>COOLDOWN (RATE LIMITED)</span>
-                                                                                    ) : isNoCredits ? (
-                                                                                        <span className={styles.modelStatsCritical}>INDISPONÍVEL (SEM SALDO)</span>
-                                                                                    ) : (
-                                                                                        <>
-                                                                                            Disponível: <span className={styles.modelStatsHighlight}>{pct}%</span> ({detail.remaining} / {detail.limit} reqs)
-                                                                                        </>
-                                                                                    )}
+                                                            ) : Object.entries(modelsMap).map(([modelName, detail]) => {
+                                                                const isRL = detail.status === 'rate_limited' || detail.status === 'cooldown';
+                                                                const isNC = detail.status === 'no_credits';
+                                                                const pct = (isRL || isNC) ? 0 : detail.pct;
+                                                                const descLine = isRL
+                                                                    ? 'Rate limited — em cooldown'
+                                                                    : isNC
+                                                                        ? 'Sem créditos disponíveis'
+                                                                        : `${detail.remaining} / ${detail.limit} req${detail.tokens_limit ? ` · ${detail.tokens_pct}% tokens (${Math.round((detail.tokens_remaining || 0) / 1000)}k/${Math.round(detail.tokens_limit / 1000)}k)` : ''}`;
+                                                                return (
+                                                                    <div key={modelName} className={styles.quotaModelRow}>
+                                                                        <div className={styles.quotaModelRowIcon}>
+                                                                            {meta.image
+                                                                                ? <img src={meta.image} alt={meta.label} className={styles.quotaModelRowLogo} />
+                                                                                : <span style={{ fontSize: '14px' }}>{meta.logo}</span>
+                                                                            }
+                                                                        </div>
+                                                                        <div className={styles.quotaModelRowInfo}>
+                                                                            <div className={styles.quotaModelRowNameRow}>
+                                                                                <span className={styles.quotaModelRowName}>{modelName}</span>
+                                                                                <span className={`${styles.quotaModelRowBadge} ${isRL || isNC ? styles.quotaModelRowBadgeCritical : styles.quotaModelRowBadgeOk}`}>
+                                                                                    {isRL ? 'COOLDOWN' : isNC ? 'SEM SALDO' : `${pct}%`}
                                                                                 </span>
                                                                             </div>
-                                                                            <div className={styles.progressContainer}>
-                                                                                <div 
-                                                                                    className={`${styles.progressBar} ${(isModelRateLimited || isNoCredits) ? styles.progressRed : getProgressColorClass(pct)}`}
+                                                                            <span className={styles.quotaModelRowDesc}>{descLine}</span>
+                                                                            <div className={styles.quotaModelRowBar}>
+                                                                                <div
+                                                                                    className={`${styles.quotaModelRowBarFill} ${(isRL || isNC) ? styles.progressRed : getProgressColorClass(pct)}`}
                                                                                     style={{ width: `${pct}%` }}
                                                                                 />
                                                                             </div>
-                                                                            {detail.tokens_limit ? (
-                                                                                <div className={styles.tokenStats}>
-                                                                                    <Database size={10} />
-                                                                                    <span>Tokens: {detail.tokens_pct}% ({Math.round((detail.tokens_remaining || 0) / 1000)}k / {Math.round(detail.tokens_limit / 1000)}k restantes)</span>
-                                                                                </div>
-                                                                            ) : null}
                                                                         </div>
-                                                                    );
-                                                                })
-                                                            )}
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     )}
                                                 </div>
@@ -919,16 +1064,16 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}>
                                 <span className={styles.cardTitleText}>
-                                    <Briefcase size={18} /> Identidade & Perfil Comercial da Empresa
+                                    <Briefcase size={15} /> Identidade & Perfil Comercial da Empresa
                                 </span>
                             </h2>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div className={styles.grid2}>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Nome da Empresa</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         O nome oficial ou fantasia que a inteligência artificial mencionará nas mensagens ao falar em nome da sua empresa.
-                                    </span>
+                                    </p>
                                     <input 
                                         type="text" 
                                         className={styles.select}
@@ -939,9 +1084,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Segmento / Atuação</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         O nicho específico de mercado que descreve a sua operação para dar contexto ao robô na prospecção.
-                                    </span>
+                                    </p>
                                     <input 
                                         type="text" 
                                         className={styles.select}
@@ -952,12 +1097,12 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                            <div className={styles.grid2}>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Nome do Vendedor Principal</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         Nome de quem assinará as mensagens de prospecção fria enviadas por e-mail ou WhatsApp.
-                                    </span>
+                                    </p>
                                     <input 
                                         type="text" 
                                         className={styles.select}
@@ -968,9 +1113,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Cargo do Vendedor</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <p className={styles.fieldDesc}>
                                         Cargo institucional do remetente (Ex: Executivo de Contas, Diretor Comercial, etc.) para assinar os e-mails.
-                                    </span>
+                                    </p>
                                     <input 
                                         type="text" 
                                         className={styles.select}
@@ -989,13 +1134,117 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 description="Destaques exclusivos, prêmios ou diferenciais da sua empresa que a IA lerá para gerar argumentos de autoridade e convencimento."
                             />
 
+                            <div className={styles.sectionDivider}>
+                                <span className={styles.sectionLabel}>Documentos & Identidade Visual</span>
+                                
+                                <div className={styles.grid2} style={{ gap: '24px' }}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.label}>Apresentação PDF Padrão</label>
+                                        <p className={styles.fieldDesc}>
+                                            PDF enviado em e-mails de introdução.
+                                        </p>
+                                        <div className={styles.uploadArea}>
+                                            {presentationPath ? (
+                                                <div className={styles.uploadedFile}>
+                                                    <FileText size={20} className={styles.uploadedIcon} />
+                                                    <div className={styles.uploadedInfo}>
+                                                        <span className={styles.uploadedName} title={presentationPath}>
+                                                            {presentationPath.split(/[\\/]/).pop()?.replace(/^presentation_[a-f0-9]+_/, '')}
+                                                        </span>
+                                                        <span className={styles.uploadedStatus}>
+                                                            <Check size={10} /> Arquivo configurado
+                                                        </span>
+                                                    </div>
+                                                    <label className={styles.reuploadBtn}>
+                                                        <Upload size={12} /> Alterar
+                                                        <input 
+                                                            type="file" 
+                                                            accept=".pdf" 
+                                                            style={{ display: 'none' }} 
+                                                            onChange={(e) => e.target.files?.[0] && handleFileUpload('presentation', e.target.files[0])}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            ) : (
+                                                <label className={styles.uploadTrigger}>
+                                                    {uploadingFile === 'presentation' ? (
+                                                        <RefreshCw size={24} className={styles.spin} />
+                                                    ) : (
+                                                        <Upload size={24} />
+                                                    )}
+                                                    <div className={styles.uploadLabel}>
+                                                        <span className={styles.uploadText}>{uploadingFile === 'presentation' ? 'Enviando...' : 'Carregar PDF'}</span>
+                                                        <span className={styles.uploadSubtext}>Tamanho máx. 10MB</span>
+                                                    </div>
+                                                    <input 
+                                                        type="file" 
+                                                        accept=".pdf" 
+                                                        style={{ display: 'none' }} 
+                                                        onChange={(e) => e.target.files?.[0] && handleFileUpload('presentation', e.target.files[0])}
+                                                    />
+                                                </label>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.label}>Assinatura de E-mail (Imagem)</label>
+                                        <p className={styles.fieldDesc}>
+                                            Imagem embutida no final dos e-mails.
+                                        </p>
+                                        <div className={styles.uploadArea}>
+                                            {signaturePath ? (
+                                                <div className={styles.uploadedFile}>
+                                                    <ImageIcon size={20} className={styles.uploadedIcon} />
+                                                    <div className={styles.uploadedInfo}>
+                                                        <span className={styles.uploadedName} title={signaturePath}>
+                                                            {signaturePath.split(/[\\/]/).pop()?.replace(/^signature_[a-f0-9]+_/, '')}
+                                                        </span>
+                                                        <span className={styles.uploadedStatus}>
+                                                            <Check size={10} /> Imagem salva
+                                                        </span>
+                                                    </div>
+                                                    <label className={styles.reuploadBtn}>
+                                                        <Upload size={12} /> Alterar
+                                                        <input 
+                                                            type="file" 
+                                                            accept="image/*" 
+                                                            style={{ display: 'none' }} 
+                                                            onChange={(e) => e.target.files?.[0] && handleFileUpload('signature', e.target.files[0])}
+                                                        />
+                                                    </label>
+                                                </div>
+                                            ) : (
+                                                <label className={styles.uploadTrigger}>
+                                                    {uploadingFile === 'signature' ? (
+                                                        <RefreshCw size={24} className={styles.spin} />
+                                                    ) : (
+                                                        <Upload size={24} />
+                                                    )}
+                                                    <div className={styles.uploadLabel}>
+                                                        <span className={styles.uploadText}>{uploadingFile === 'signature' ? 'Enviando...' : 'Carregar Imagem'}</span>
+                                                        <span className={styles.uploadSubtext}>PNG, JPG ou GIF</span>
+                                                    </div>
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        style={{ display: 'none' }} 
+                                                        onChange={(e) => e.target.files?.[0] && handleFileUpload('signature', e.target.files[0])}
+                                                    />
+                                                </label>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button 
                                 className={styles.saveBtn}
                                 onClick={handleSaveProfile}
                                 disabled={saving}
                                 style={{ marginTop: '12px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Perfil Comercial"}
                             </button>
                         </div>
@@ -1006,14 +1255,14 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         ========================================================== */}
                     {activeTab === 'products' && (
                         <div className={styles.card}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h2 className={styles.cardTitle} style={{ margin: 0 }}>
+                            <div className={styles.cardTitleRow}>
+                                <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
-                                        <Package size={18} /> Catálogo de Produtos e Serviços Ofertados
+                                        <Package size={15} /> Catálogo de Produtos e Serviços Ofertados
                                     </span>
                                 </h2>
                                 {!showProductForm && (
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setEditingProductIdx(null);
                                             setProdName('');
@@ -1022,35 +1271,27 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                             setShowProductForm(true);
                                         }}
                                         className={styles.saveBtn}
-                                        style={{ padding: '8px 16px', fontSize: '12px' }}
                                     >
-                                        <Plus size={14} /> Adicionar Produto
+                                        <Plus size={13} /> Adicionar Produto
                                     </button>
                                 )}
                             </div>
 
                             {/* Product Form */}
                             {showProductForm && (
-                                <div style={{ 
-                                    padding: '24px', 
-                                    border: '1px solid rgba(255,255,255,0.08)', 
-                                    borderRadius: '8px', 
-                                    backgroundColor: 'rgba(255,255,255,0.01)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '16px',
-                                    animation: 'fadeIn 0.2s ease'
-                                }}>
-                                    <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#fff', margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+                                <div className={styles.inlineForm}>
+                                    <h3 className={styles.inlineFormHeader}>
                                         <span>{editingProductIdx !== null ? "Editar Produto" : "Novo Produto"}</span>
-                                        <X size={16} style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => setShowProductForm(false)} />
+                                        <button type="button" className={styles.inlineFormClose} onClick={() => setShowProductForm(false)}>
+                                            <X size={14} />
+                                        </button>
                                     </h3>
 
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Nome do Produto / Serviço</label>
-                                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                        <p className={styles.fieldDesc}>
                                             O nome comercial do item ou serviço oferecido. A IA usará este termo exato ao elaborar as abordagens.
-                                        </span>
+                                        </p>
                                         <input 
                                             type="text" 
                                             className={styles.select}
@@ -1062,9 +1303,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
 
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>Descrição Completa (Utilizada pela IA em ganchos)</label>
-                                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                        <p className={styles.fieldDesc}>
                                             Especificações técnicas, benefícios e materiais. A inteligência artificial lê este campo para entender as vantagens do produto e gerar ganchos altamente contextualizados.
-                                        </span>
+                                        </p>
                                         <textarea 
                                             className={styles.select}
                                             rows={4}
@@ -1083,20 +1324,11 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         description="Aplicações práticas ou cenários de uso do produto, permitindo que a IA monte ganchos de argumentação adaptados ao segmento de cada lead."
                                     />
 
-                                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                                        <button 
-                                            type="button"
-                                            className={styles.backBtn}
-                                            onClick={() => setShowProductForm(false)}
-                                        >
+                                    <div className={styles.inlineFormActions}>
+                                        <button type="button" className={styles.backBtn} onClick={() => setShowProductForm(false)}>
                                             Cancelar
                                         </button>
-                                        <button 
-                                            type="button"
-                                            className={styles.saveBtn}
-                                            onClick={handleAddOrUpdateProduct}
-                                            style={{ padding: '8px 20px', borderRadius: '4px' }}
-                                        >
+                                        <button type="button" className={styles.saveBtn} onClick={handleAddOrUpdateProduct}>
                                             {editingProductIdx !== null ? "Atualizar na Lista" : "Adicionar à Lista"}
                                         </button>
                                     </div>
@@ -1104,40 +1336,37 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             )}
 
                             {/* Products Grid */}
-                            <div className={styles.providersList}>
+                            <div className={styles.settingsList}>
                                 {productsList.map((prod, idx) => (
-                                    <div key={idx} className={styles.providerCard} style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <div style={{ flex: 1, paddingRight: '20px' }}>
-                                            <h4 style={{ fontSize: '15px', color: '#fff', fontWeight: 600, margin: '0 0 6px 0' }}>{prod.name}</h4>
-                                            <p style={{ fontSize: '13px', opacity: 0.7, lineHeight: '1.6', fontWeight: 300, margin: '0 0 12px 0' }}>{prod.description}</p>
-                                            {prod.use_cases && prod.use_cases.length > 0 && (
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                                    {prod.use_cases.map((uc: string, uIdx: number) => (
-                                                        <span key={uIdx} style={{ fontSize: '10px', backgroundColor: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', color: '#3b82f6', padding: '3px 8px', borderRadius: '4px' }}>
-                                                            {uc}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            )}
+                                    <div key={idx} className={styles.productCard}>
+                                        <div className={styles.productCardHeader}>
+                                            <div className={styles.productTitleArea}>
+                                                <Package size={14} className={styles.productIcon} />
+                                                <span className={styles.productTitle}>{prod.name}</span>
+                                            </div>
+                                            <div className={styles.productActions}>
+                                                <button onClick={() => handleEditProduct(idx)} className={styles.editBtn} title="Editar">
+                                                    <Edit3 size={13} />
+                                                </button>
+                                                <button onClick={() => handleDeleteProduct(idx)} className={styles.deleteBtn} title="Deletar">
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button 
-                                                onClick={() => handleEditProduct(idx)}
-                                                className={styles.backBtn} 
-                                                style={{ padding: '6px' }}
-                                                title="Editar"
-                                            >
-                                                <Edit3 size={15} />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDeleteProduct(idx)}
-                                                className={styles.backBtn} 
-                                                style={{ padding: '6px', color: '#ef4444' }}
-                                                title="Deletar"
-                                            >
-                                                <Trash2 size={15} />
-                                            </button>
-                                        </div>
+                                        
+                                        {prod.description && (
+                                            <div className={styles.productDescription}>
+                                                {prod.description}
+                                            </div>
+                                        )}
+
+                                        {prod.use_cases && prod.use_cases.length > 0 && (
+                                            <div className={styles.productUseCases}>
+                                                {prod.use_cases.map((uc: string, uIdx: number) => (
+                                                    <span key={uIdx} className={styles.useCaseTag}>{uc}</span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
 
@@ -1152,7 +1381,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '16px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Catálogo de Produtos"}
                             </button>
                         </div>
@@ -1163,14 +1392,14 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         ========================================================== */}
                     {activeTab === 'references' && (
                         <div className={styles.card}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <h2 className={styles.cardTitle} style={{ margin: 0 }}>
+                            <div className={styles.cardTitleRow}>
+                                <h2 className={styles.cardTitle}>
                                     <span className={styles.cardTitleText}>
-                                        <Users size={18} /> Clientes de Referência (Autoridade no Outreach)
+                                        <Users size={15} /> Clientes de Referência (Autoridade no Outreach)
                                     </span>
                                 </h2>
                                 {!showClientForm && (
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             setEditingClientIdx(null);
                                             setClientName('');
@@ -1178,36 +1407,28 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                             setShowClientForm(true);
                                         }}
                                         className={styles.saveBtn}
-                                        style={{ padding: '8px 16px', fontSize: '12px' }}
                                     >
-                                        <Plus size={14} /> Adicionar Cliente
+                                        <Plus size={13} /> Adicionar Cliente
                                     </button>
                                 )}
                             </div>
 
                             {/* Client Form */}
                             {showClientForm && (
-                                <div style={{ 
-                                    padding: '20px', 
-                                    border: '1px solid rgba(255,255,255,0.08)', 
-                                    borderRadius: '8px', 
-                                    backgroundColor: 'rgba(255,255,255,0.01)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '14px',
-                                    animation: 'fadeIn 0.2s ease'
-                                }}>
-                                    <h3 style={{ fontSize: '13px', fontWeight: 500, color: '#fff', margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+                                <div className={styles.inlineForm}>
+                                    <h3 className={styles.inlineFormHeader}>
                                         <span>{editingClientIdx !== null ? "Editar Cliente de Referência" : "Novo Cliente de Referência"}</span>
-                                        <X size={16} style={{ cursor: 'pointer', opacity: 0.5 }} onClick={() => setShowClientForm(false)} />
+                                        <button type="button" className={styles.inlineFormClose} onClick={() => setShowClientForm(false)}>
+                                            <X size={14} />
+                                        </button>
                                     </h3>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                    <div className={styles.grid2}>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Nome do Cliente (Marca/Empresa)</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Nome de uma marca de destaque que já seja seu cliente ativo para atuar como prova social.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="text" 
                                                 className={styles.select}
@@ -1218,9 +1439,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Segmento / Descrição de Par</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 O setor de atuação ou perfil do cliente. A IA lerá esta descrição para fazer matching de segmento com os novos leads analisados.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="text" 
                                                 className={styles.select}
@@ -1231,20 +1452,11 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '6px' }}>
-                                        <button 
-                                            type="button"
-                                            className={styles.backBtn}
-                                            onClick={() => setShowClientForm(false)}
-                                        >
+                                    <div className={styles.inlineFormActions}>
+                                        <button type="button" className={styles.backBtn} onClick={() => setShowClientForm(false)}>
                                             Cancelar
                                         </button>
-                                        <button 
-                                            type="button"
-                                            className={styles.saveBtn}
-                                            onClick={handleAddOrUpdateClient}
-                                            style={{ padding: '8px 20px', borderRadius: '4px' }}
-                                        >
+                                        <button type="button" className={styles.saveBtn} onClick={handleAddOrUpdateClient}>
                                             {editingClientIdx !== null ? "Atualizar na Lista" : "Adicionar à Lista"}
                                         </button>
                                     </div>
@@ -1252,30 +1464,24 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                             )}
 
                             {/* Clients list */}
-                            <div className={styles.providersList}>
+                            <div className={styles.settingsList}>
                                 {referenceClients.map((client, idx) => (
-                                    <div key={idx} className={styles.providerCard} style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
-                                            <h4 style={{ fontSize: '14px', color: '#fff', fontWeight: 600, margin: 0 }}>{client.name}</h4>
-                                            <span style={{ fontSize: '12px', opacity: 0.5, fontWeight: 300 }}>{client.segment}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button 
-                                                onClick={() => handleEditClient(idx)}
-                                                className={styles.backBtn} 
-                                                style={{ padding: '6px' }}
-                                                title="Editar"
-                                            >
-                                                <Edit3 size={15} />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDeleteClient(idx)}
-                                                className={styles.backBtn} 
-                                                style={{ padding: '6px', color: '#ef4444' }}
-                                                title="Deletar"
-                                            >
-                                                <Trash2 size={15} />
-                                            </button>
+                                    <div key={idx} className={styles.clientCard}>
+                                        <div className={styles.clientCardHeader}>
+                                            <div className={styles.clientTitleArea}>
+                                                <Users size={14} className={styles.clientIcon} />
+                                                <span className={styles.clientTitle}>{client.name}</span>
+                                                <span className={styles.clientSeparator}>•</span>
+                                                <span className={styles.clientSegment}>{client.segment}</span>
+                                            </div>
+                                            <div className={styles.clientActions}>
+                                                <button onClick={() => handleEditClient(idx)} className={styles.editBtn} title="Editar">
+                                                    <Edit3 size={13} />
+                                                </button>
+                                                <button onClick={() => handleDeleteClient(idx)} className={styles.deleteBtn} title="Deletar">
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -1291,7 +1497,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '16px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Clientes de Referência"}
                             </button>
                         </div>
@@ -1316,14 +1522,14 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 description="Lista de problemas que os clientes costumam vivenciar. O robô usará esses tópicos de forma consultiva para criar ganchos de dor hiper-relevantes nas abordagens."
                             />
 
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                <span className={styles.label} style={{ fontSize: '12px' }}>Textos de Propostas de Valor (Ângulos de Abordagem)</span>
+                            <div className={styles.sectionDivider}>
+                                <span className={styles.sectionLabel}>Textos de Propostas de Valor (Ângulos de Abordagem)</span>
                                 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 1: Plano B / Mitigação de Risco</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <label className={styles.label}>Abordagem 1: Plano B / Mitigação de Risco</label>
+                                    <p className={styles.fieldDesc}>
                                         Texto focado em posicionar sua empresa como fornecedora alternativa ou reserva estratégica (Plano B) para garantir a segurança da operação do lead.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1335,10 +1541,10 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 2: Modelo Kanban / Estoque em Fábrica</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <label className={styles.label}>Abordagem 2: Modelo Kanban / Estoque em Fábrica</label>
+                                    <p className={styles.fieldDesc}>
                                         Mensagem destacando soluções de entregas programadas sob demanda (Kanban) e estoque de segurança dedicado para evitar rupturas de fábrica.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1350,10 +1556,10 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 3: Embalagens Manuais / Alta Customização</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <label className={styles.label}>Abordagem 3: Embalagens Manuais / Alta Customização</label>
+                                    <p className={styles.fieldDesc}>
                                         Mensagem direcionada para soluções sob medida, embalagens complexas ou pequenos lotes altamente customizados que grandes fornecedores não atendem.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1365,10 +1571,10 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 4: Especialistas em CKD / Exportação</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <label className={styles.label}>Abordagem 4: Especialistas em CKD / Exportação</label>
+                                    <p className={styles.fieldDesc}>
                                         Texto voltado especificamente para indústrias exportadoras ou que utilizam sistemas de CKD (Complete Knock Down) exigindo alta resistência estrutural.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1380,10 +1586,10 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label} style={{ fontSize: '10px' }}>Abordagem 5: Just-In-Time / Agilidade Extrema</label>
-                                    <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                    <label className={styles.label}>Abordagem 5: Just-In-Time / Agilidade Extrema</label>
+                                    <p className={styles.fieldDesc}>
                                         Discurso ressaltando flexibilidade operacional, velocidade de resposta rápida, lead times curtos e entregas ágeis no modelo Just-In-Time.
-                                    </span>
+                                    </p>
                                     <textarea 
                                         className={styles.select}
                                         rows={3}
@@ -1401,7 +1607,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '12px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Dores e Propostas"}
                             </button>
                         </div>
@@ -1414,7 +1620,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}>
                                 <span className={styles.cardTitleText}>
-                                    <Target size={18} /> Parametrizadores de ICP e Pontuação de Leads (0-100)
+                                    <Target size={15} /> Parametrizadores de ICP e Pontuação de Leads (0-100)
                                 </span>
                             </h2>
 
@@ -1458,8 +1664,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 description="Regras claras e restritivas que desqualificam um lead de forma automática, economizando o tempo de vendas com perfis indesejados."
                             />
 
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                <span className={styles.label} style={{ fontSize: '12px' }}>Pontuação de Lead (Keywords para Matching de Segmento)</span>
+                            <div className={styles.sectionDivider}>
+                                <span className={styles.sectionLabel}>Pontuação de Lead (Keywords para Matching de Segmento)</span>
                                 
                                 <StringListEditor 
                                     list={highFitKeywords}
@@ -1492,7 +1698,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '12px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Configurações de ICP"}
                             </button>
                         </div>
@@ -1505,12 +1711,12 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}>
                                 <span className={styles.cardTitleText}>
-                                    <GitFork size={18} /> Filtros de Contato e Regras de Hierarquia
+                                    <GitFork size={15} /> Filtros de Contato e Regras de Hierarquia
                                 </span>
                             </h2>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                <span className={styles.label} style={{ fontSize: '12px' }}>Filtros de Veto Categórico (Para evitar cargos incorretos nos departamentos)</span>
+                                <span className={styles.sectionLabel}>Filtros de Veto Categórico (Para evitar cargos incorretos nos departamentos)</span>
                                 
                                 <StringListEditor 
                                     list={forbiddenKeywords.compras || []}
@@ -1529,8 +1735,8 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 />
                             </div>
 
-                            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                <span className={styles.label} style={{ fontSize: '12px' }}>Termos de Busca Utilizados no Crawler de Contatos</span>
+                            <div className={styles.sectionDivider}>
+                                <span className={styles.sectionLabel}>Termos de Busca Utilizados no Crawler de Contatos</span>
 
                                 <StringListEditor 
                                     list={purchasingKeywords}
@@ -1555,7 +1761,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '12px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Regras de Hierarquia"}
                             </button>
                         </div>
@@ -1568,7 +1774,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                         <div className={styles.card}>
                             <h2 className={styles.cardTitle}>
                                 <span className={styles.cardTitleText}>
-                                    <Database size={18} /> Chaves de Conexão & Integrações SaaS
+                                    <Database size={15} /> Chaves de Conexão & Integrações SaaS
                                 </span>
                             </h2>
 
@@ -1576,16 +1782,16 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 
                                 {/* Pipedrive Section */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <img src="/pipedrive.png" alt="Pipedrive" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }} />
-                                        <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#38bdf8' }}>Integração CRM Pipedrive</h3>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                    <h3 className={styles.integrationTitle}>
+                                        <img src="/pipedrive.png" alt="Pipedrive" className={styles.integrationTitleIcon} />
+                                        Integração CRM Pipedrive
+                                    </h3>
+                                    <div className={styles.grid2}>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Pipedrive API Token</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Chave secreta usada para criar contatos e atualizar negócios direto no seu funil do Pipedrive CRM.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="password" 
                                                 className={styles.select} 
@@ -1596,9 +1802,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Pipedrive Default User ID</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 ID numérico do proprietário no Pipedrive que será o responsável pelos contatos criados no CRM.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="text" 
                                                 className={styles.select} 
@@ -1608,19 +1814,42 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                             />
                                         </div>
                                     </div>
+
+                                    <div className={styles.switchWrapper}>
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleAutoReschedule}
+                                            disabled={autoRescheduleSaving}
+                                            className={`${styles.switchButton} ${autoRescheduleEnabled ? styles.switchActive : ''}`}
+                                        >
+                                            <div className={styles.switchInfo}>
+                                                <span className={styles.switchTitle}>
+                                                    {autoRescheduleEnabled ? "Reagendamento Automático Ativo" : "Reagendamento Automático Desativado"}
+                                                </span>
+                                                <span className={styles.switchDesc}>
+                                                    {autoRescheduleEnabled
+                                                        ? "Toda vez que o sistema for iniciado pela primeira vez no dia, tarefas atrasadas no Pipedrive são movidas automaticamente para hoje."
+                                                        : "Nenhuma tarefa atrasada será alterada automaticamente. Use antes de períodos de férias ou ausência."}
+                                                </span>
+                                            </div>
+                                            <div className={styles.switchToggle}>
+                                                <div className={styles.switchKnob} />
+                                            </div>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* WhatsApp Section */}
-                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <img src="/wppicon.png" alt="WhatsApp" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }} />
-                                        <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#22c55e' }}>Integração WhatsApp Service</h3>
-                                    </div>
+                                <div className={styles.sectionDivider}>
+                                    <h3 className={styles.integrationTitle}>
+                                        <img src="/wppicon.png" alt="WhatsApp" className={styles.integrationTitleIcon} />
+                                        Integração WhatsApp Service
+                                    </h3>
                                     <div className={styles.formGroup}>
                                         <label className={styles.label}>WhatsApp Service URL (API)</label>
-                                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                        <p className={styles.fieldDesc}>
                                             URL de conexão do robô de WhatsApp responsável por disparar as abordagens e prospecções em lote.
-                                        </span>
+                                        </p>
                                         <input 
                                             type="text" 
                                             className={styles.select} 
@@ -1632,17 +1861,17 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 </div>
 
                                 {/* Outlook Email Section */}
-                                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                        <img src="/outlook.png" alt="Outlook" style={{ width: '20px', height: '20px', objectFit: 'contain', borderRadius: '4px' }} />
-                                        <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#f59e0b' }}>Conexão Email SMTP & IMAP (Outlook)</h3>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                                <div className={styles.sectionDivider}>
+                                    <h3 className={styles.integrationTitle}>
+                                        <img src="/outlook.png" alt="Outlook" className={styles.integrationTitleIcon} />
+                                        Conexão Email SMTP & IMAP (Outlook)
+                                    </h3>
+                                    <div className={styles.grid3}>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>E-mail de Envio (User)</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Sua conta do Outlook. No Windows, o sistema se conecta diretamente ao seu aplicativo Outlook Desktop para enviar e ler e-mails. Se houver múltiplas contas configuradas, este campo escolhe qual conta utilizar.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="email" 
                                                 className={styles.select} 
@@ -1653,9 +1882,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Senha do E-mail</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Senha normal ou Senha de Aplicativo. Só é necessária para servidores SMTP de fallback se o aplicativo Outlook Desktop local estiver indisponível.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="password" 
                                                 className={styles.select} 
@@ -1666,9 +1895,9 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                         </div>
                                         <div className={styles.formGroup}>
                                             <label className={styles.label}>Porta SMTP</label>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '-4px', marginBottom: '2px', lineHeight: '1.4' }}>
+                                            <p className={styles.fieldDesc}>
                                                 Porta segura do servidor SMTP (Office 365) para conexões de fallback. O padrão TLS recomendado é 587.
-                                            </span>
+                                            </p>
                                             <input 
                                                 type="text" 
                                                 className={styles.select} 
@@ -1688,7 +1917,7 @@ export const PreferencesView: React.FC<PreferencesViewProps> = ({ onBack }) => {
                                 disabled={saving}
                                 style={{ marginTop: '24px' }}
                             >
-                                {saving ? <RefreshCw size={16} className={styles.spin} /> : <Save size={16} />}
+                                {saving ? <RefreshCw size={13} className={styles.spin} /> : <Save size={13} />}
                                 {saving ? "Salvando..." : "Salvar Chaves & Conexões"}
                             </button>
                         </div>

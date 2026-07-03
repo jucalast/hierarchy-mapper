@@ -1,32 +1,24 @@
-from .organization import Organization
-from .employee import Employee
-from .automated_action import AutomatedAction
-from .conversation import ConversationThread, ConversationMessage, ActivityLog
-from .prospect import ProspectSession, ProspectLead
-from .system_setting import SystemSetting
-from .tenant import Tenant, User
-from .business import BusinessProfile, Product, ReferenceClient
-from .icp import ICPConfig, ICPScoreRule
-from .hierarchy import HierarchyConfig
-from .integration import Integration
+"""
+models
+======
+Ponto único de importação para todos os modelos SQLAlchemy do sistema.
 
-__all__ = [
-    "Organization",
-    "Employee",
-    "AutomatedAction",
-    "ConversationThread",
-    "ConversationMessage",
-    "ActivityLog",
-    "ProspectSession",
-    "ProspectLead",
-    "SystemSetting",
-    "Tenant",
-    "User",
-    "BusinessProfile",
-    "Product",
-    "ReferenceClient",
-    "ICPConfig",
-    "ICPScoreRule",
-    "HierarchyConfig",
-    "Integration",
-]
+Domínios disponíveis:
+    conversation  → ConversationThread, ConversationMessage, ActivityLog
+    crm           → Integration (Pipedrive, WhatsApp, Outlook)
+    organization  → Organization, Tenant
+    people        → Employee, ProspectSession, ProspectLead
+    hierarchy     → HierarchyConfig
+    system        → SystemSetting, User, BusinessProfile, Product,
+                    ReferenceClient, ICPConfig, ICPScoreRule
+
+Uso:
+    from models import Organization, Employee, User
+"""
+from models.conversation import *
+from models.communication import *
+from models.crm import *
+from models.organization import *
+from models.people import *
+from models.hierarchy import *
+from models.system import *

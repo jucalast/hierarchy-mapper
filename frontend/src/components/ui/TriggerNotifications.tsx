@@ -330,12 +330,27 @@ export const TriggerNotifications: React.FC<TriggerNotificationsProps> = ({
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (open && panelRef.current && !panelRef.current.contains(e.target as Node))
+            if (open && panelRef.current && !panelRef.current.contains(e.target as Node)) {
+                // If the click is on the "Notificações" text (which is outside the panel but meant to toggle it)
+                // we don't want to close it here and then immediately reopen it. 
+                // The navIconWrapper handles the toggle.
+                // We can check if it's the navIconWrapper by looking at the target's class or parents
+                const target = e.target as HTMLElement;
+                if (target.closest('[class*="navIconWrapper"]') || target.classList.contains('navIconWrapper')) {
+                    return;
+                }
                 setOpen(false);
+            }
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, [open]);
+
+    useEffect(() => {
+        const handleToggle = () => setOpen(o => !o);
+        window.addEventListener('toggle_notifications_panel', handleToggle);
+        return () => window.removeEventListener('toggle_notifications_panel', handleToggle);
+    }, []);
 
     const handleDismiss = async (triggerId: string) => {
         try {
@@ -359,7 +374,7 @@ export const TriggerNotifications: React.FC<TriggerNotificationsProps> = ({
     ] as const;
 
     return (
-        <div style={{ position: 'relative' }} ref={panelRef}>
+        <div style={{ position: 'relative', zIndex: 10001 }} ref={panelRef}>
             <button
                 onClick={() => setOpen(o => !o)}
                 className={`${styles.bellBtn} ${open ? styles.bellBtnActive : ''}`}
@@ -373,26 +388,48 @@ export const TriggerNotifications: React.FC<TriggerNotificationsProps> = ({
             </button>
 
             {open && (
-                <div className={styles.panel}>
-                    <div className={styles.tabs}>
-                        {TABS.map(tab => {
-                            const isActive = activeTab === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`${styles.tabBtn} ${isActive ? styles.tabBtnActive : ''}`}
-                                >
-                                    {tab.icon}
-                                    {tab.label}
-                                    {'count' in tab && tab.count !== undefined && tab.count > 0 && (
-                                        <span className={`${styles.badge} ${tab.id === 'aguardando' ? styles.badgeWarning : ''}`}>
-                                            {tab.count}
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
+                <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+                    <div className={styles.tabs} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', gap: 6, flex: 1 }}>
+                            {TABS.map(tab => {
+                                const isActive = activeTab === tab.id;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`${styles.tabBtn} ${isActive ? styles.tabBtnActive : ''}`}
+                                    >
+                                        {tab.icon}
+                                        {tab.label}
+                                        {'count' in tab && tab.count !== undefined && tab.count > 0 && (
+                                            <span className={`${styles.badge} ${tab.id === 'aguardando' ? styles.badgeWarning : ''}`}>
+                                                {tab.count}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <button 
+                            onClick={() => setOpen(false)}
+                            title="Fechar"
+                            style={{ 
+                                background: 'transparent', 
+                                border: 'none', 
+                                color: 'var(--sw-text-muted)', 
+                                cursor: 'pointer', 
+                                padding: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: '4px',
+                                marginLeft: '8px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--sw-text-base)'}
+                            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--sw-text-muted)'}
+                        >
+                            <X size={16} />
+                        </button>
                     </div>
 
                     <div className={styles.scrollArea}>
