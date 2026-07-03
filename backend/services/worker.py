@@ -403,13 +403,19 @@ async def run_agent_task(ctx, payload_dict: dict):
             is_regeneration=payload_dict.get("is_regeneration", False),
             job_id=job_id,
         ):
+            await ctx['redis'].rpush(f"agent_events_{job_id}", chunk)
+            await ctx['redis'].expire(f"agent_events_{job_id}", 3600)
             await ctx['redis'].publish(f"agent_updates_{job_id}", chunk)
 
-        await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "job_done"}))
+        done_msg = json.dumps({"type": "job_done"})
+        await ctx['redis'].rpush(f"agent_events_{job_id}", done_msg)
+        await ctx['redis'].publish(f"agent_updates_{job_id}", done_msg)
         log.info("worker.agent_task.completed", job_id=job_id)
     except Exception as e:
         log.exception("worker.agent_task.failed", job_id=job_id, error=str(e))
-        await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "error", "error": str(e)}))
+        err_msg = json.dumps({"type": "error", "error": str(e)})
+        await ctx['redis'].rpush(f"agent_events_{job_id}", err_msg)
+        await ctx['redis'].publish(f"agent_updates_{job_id}", err_msg)
 
 async def resume_agent_task(ctx, payload_dict: dict):
     from modules.agent import resume_after_confirmation
@@ -423,13 +429,19 @@ async def resume_agent_task(ctx, payload_dict: dict):
             attachment_path=payload_dict.get("attachment_path"),
             job_id=job_id,
         ):
+            await ctx['redis'].rpush(f"agent_events_{job_id}", chunk)
+            await ctx['redis'].expire(f"agent_events_{job_id}", 3600)
             await ctx['redis'].publish(f"agent_updates_{job_id}", chunk)
 
-        await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "job_done"}))
+        done_msg = json.dumps({"type": "job_done"})
+        await ctx['redis'].rpush(f"agent_events_{job_id}", done_msg)
+        await ctx['redis'].publish(f"agent_updates_{job_id}", done_msg)
         log.info("worker.resume_agent_task.completed", job_id=job_id)
     except Exception as e:
         log.exception("worker.resume_agent_task.failed", job_id=job_id, error=str(e))
-        await ctx['redis'].publish(f"agent_updates_{job_id}", json.dumps({"type": "error", "error": str(e)}))
+        err_msg = json.dumps({"type": "error", "error": str(e)})
+        await ctx['redis'].rpush(f"agent_events_{job_id}", err_msg)
+        await ctx['redis'].publish(f"agent_updates_{job_id}", err_msg)
 
 
 async def run_linkedin_scrape_task(

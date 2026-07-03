@@ -161,9 +161,10 @@ export async function fetchWithRetry(
       throw error;
     }
 
-    // Se foi AbortError causado por timeout interno, tenta novamente
-    if (isTimeout && retries > 0) {
-      console.warn(`⏱️ Timeout em ${url}, tentando novamente em ${delayMs}ms...`);
+    // Tenta novamente em caso de Timeout interno OU Erro de Rede (TypeError)
+    const isNetworkError = error.name === 'TypeError' || error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError');
+    if ((isTimeout || isNetworkError) && retries > 0) {
+      console.warn(`⏳ Falha de rede ou timeout em ${url}, tentando novamente em ${delayMs}ms...`);
       await new Promise<void>((resolve, reject) => {
         const sleepTimeout = setTimeout(resolve, delayMs);
         if (options.signal) {

@@ -73,6 +73,12 @@ export const ContactList: React.FC<ContactListProps> = ({
     // Contato com animação ativa: descoberta manual tem prioridade sobre o lote.
     const activeShimmerId = discoveryActiveId ?? batchSession.activeContactId;
 
+    React.useEffect(() => {
+        if (batchSession.isRunning) {
+            useEmailValidationStore.getState().resumeValidation(orgKey);
+        }
+    }, [orgKey, batchSession.isRunning]);
+
     const handleCancelBatch = () => {
         cancelValidation(orgKey);
     };
@@ -376,7 +382,16 @@ export const ContactList: React.FC<ContactListProps> = ({
                                     </div>
                                 )}
 
-                                {!emailToDisplay && !person.phone?.[0]?.value && (
+                                {!emailToDisplay && activeShimmerId === person.id && (
+                                    <div className={styles.metaItem}>
+                                        <Mail size={12} />
+                                        <span className={styles.emailDiscovering}>
+                                            Descobrindo e-mail...
+                                        </span>
+                                    </div>
+                                )}
+
+                                {!emailToDisplay && !person.phone?.[0]?.value && activeShimmerId !== person.id && (
                                     <div className={styles.metaItem}>
                                         <MessageSquare size={12} />
                                         <span>Sem dados de contato direto</span>

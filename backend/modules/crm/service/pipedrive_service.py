@@ -224,9 +224,17 @@ class PipedriveService:
             log.warning("pipedrive.circuit_open")
             raise RuntimeError("Pipedrive temporariamente indisponível (Circuit Breaker aberto)")
 
+        import urllib.parse
         req_params = dict(params) if params else {}
         req_params["api_token"] = self.api_token
-        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        
+        raw_url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        parsed = urllib.parse.urlparse(raw_url)
+        query = dict(urllib.parse.parse_qsl(parsed.query))
+        query.update(req_params)
+        
+        new_query = urllib.parse.urlencode(query)
+        url = parsed._replace(query=new_query).geturl()
 
         client = get_http_client()
         t_out = timeout or settings.pipedrive.request_timeout_sec
@@ -243,7 +251,7 @@ class PipedriveService:
 
             try:
                 resp = await client.request(
-                    method, url, json=json, params=req_params, timeout=t_out
+                    method, url, json=json, params=None, timeout=t_out
                 )
             except Exception as e:
                 raise RuntimeError(f"Erro de conexão com Pipedrive: {e}")

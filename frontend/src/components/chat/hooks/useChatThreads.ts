@@ -165,6 +165,10 @@ export const useChatThreads = ({
             const t = await conversations.createThread(targetOrgId);
             setActiveThread(t);
             setThreads(prev => [t, ...prev]);
+            if (typeof window !== 'undefined') {
+                window.localStorage.setItem(`active-thread-id-${targetOrgId}`, t.id);
+                window.localStorage.setItem('chat-panel-view', 'chat');
+            }
             return t.id;
         } catch (err) {
             console.error('[useChatThreads] Erro ao criar thread:', err);

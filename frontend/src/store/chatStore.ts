@@ -20,6 +20,7 @@ export interface ChatSession {
   modelActivity: any[];
   agentEvents: any[];
   agentStreaming: boolean;
+  jobId?: string | null;
   agentConfirmedActions: Record<string, boolean>;
   activeRunningTask: {
     label: string;
@@ -31,6 +32,7 @@ export interface ChatSession {
     threadId?: string;
     actionIndex: number;
     parentMessageId?: string;
+    jobId?: string;
   } | null;
   approvedSuggestedActions: Record<string, any>;
   taskInlineConfirmed: Record<string, boolean>;
@@ -81,6 +83,7 @@ interface ChatStore {
   setIsBatchRunning: (orgId: number | null | undefined, threadId: string | null | undefined, running: boolean) => void;
   setBatchRunningSnapshot: (orgId: number | null | undefined, threadId: string | null | undefined, snapshot: BatchQueueItem[]) => void;
   setBatchCurrentIndex: (orgId: number | null | undefined, threadId: string | null | undefined, index: number) => void;
+  setJobId: (orgId: number | null | undefined, threadId: string | null | undefined, jobId: string | null) => void;
 
   // Actions de Mapeamento
   setRawEmployees: (orgId: number, employees: any[] | ((prev: any[]) => any[])) => void;
@@ -110,6 +113,7 @@ const defaultSession = (): ChatSession => ({
   modelActivity: [],
   agentEvents: [],
   agentStreaming: false,
+  jobId: null,
   agentConfirmedActions: {},
   activeRunningTask: null,
   approvedSuggestedActions: {},
@@ -409,6 +413,19 @@ export const useChatStore = create<ChatStore>()(
     }));
   },
 
+  setJobId: (orgId, threadId, jobId) => {
+    const key = getSessionKey(orgId, threadId);
+    set((state) => ({
+      sessions: {
+        ...state.sessions,
+        [key]: {
+          ...(state.sessions[key] || defaultSession()),
+          jobId,
+        },
+      },
+    }));
+  },
+
   // Mapping state setters
   setRawEmployees: (orgId, employees) => {
     set((state) => {
@@ -580,13 +597,8 @@ export const useChatStore = create<ChatStore>()(
     sessions: Object.fromEntries(
       Object.entries(state.sessions).map(([k, s]) => [k, {
         ...s,
-        modelActivity: [],
-        agentEvents: [],
-        activeRunningTask: null,
-        isLoading: false,
-        agentStreaming: false,
-        batchQueue: [],
-        isBatchRunning: false,
+        // Removemos o override para null/false, preservando streaming em caso de reload.
+        // O cliente se encarregará de re-conectar ou finalizar streams incompletos.
       }])
     ),
     mappings: Object.fromEntries(

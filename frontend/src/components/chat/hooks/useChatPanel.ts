@@ -338,7 +338,20 @@ export const useChatPanel = ({
                 } else {
                     store.setActiveRunningTask(activeOrgId, threadId, null);
                 }
-                store.setMessages(activeOrgId, threadId, mappedMsgs);
+                store.setMessages(activeOrgId, threadId, (prevMsgs) => {
+                    const lastPrev = prevMsgs.length > 0 ? prevMsgs[prevMsgs.length - 1] : null;
+                    // Se existe uma mensagem de streaming (ex: placeholder) localmente, mantê-la!
+                    if (lastPrev && lastPrev.role === 'assistant' && lastPrev.id.startsWith('reconnect_')) {
+                        return [...mappedMsgs, lastPrev];
+                    }
+                    if (lastPrev && lastPrev.role === 'assistant' && store.getSession(activeOrgId, threadId).agentStreaming) {
+                        const dbHasIt = mappedMsgs.some(m => m.id === lastPrev.id);
+                        if (!dbHasIt) {
+                            return [...mappedMsgs, lastPrev];
+                        }
+                    }
+                    return mappedMsgs;
+                });
             }
         } catch (err) {
             console.error('[ChatPanel] Erro ao carregar/atualizar mensagens:', err);
@@ -374,7 +387,10 @@ export const useChatPanel = ({
             store.setActiveRunningTask(activeOrgId, null, null);
         },
         onOpenThread: async (thread, isSameStreamingThread) => {
-            if (!isSameStreamingThread) {
+            const currentSession = store.getSession(activeOrgId, thread.id);
+            const hasValidJobId = currentSession.jobId && currentSession.agentStreaming;
+
+            if (!isSameStreamingThread && !hasValidJobId) {
                 // Reseta estados de loading/streaming antes de refreshMessages para
                 // não herdar valores presos de uma sessão de streaming anterior que
                 // terminou enquanto o usuário estava em outra empresa.
@@ -383,6 +399,12 @@ export const useChatPanel = ({
                 store.setActiveRunningTask(activeOrgId, thread.id, null);
                 store.setLiveModel(activeOrgId, thread.id, null);
                 store.setModelActivity(activeOrgId, thread.id, []);
+                await refreshMessages(thread.id);
+            } else if (hasValidJobId && !isSameStreamingThread) {
+                // Se estamos reconectando num job que sobreviveu, ainda precisamos buscar os
+                // dados do DB, mas NÃO matamos o agentStreaming/loading, para que o checkReconnect funcione
+                store.setIsLoading(activeOrgId, thread.id, true);
+                store.setAgentStreaming(activeOrgId, thread.id, true);
                 await refreshMessages(thread.id);
             } else {
                 store.setIsLoading(activeOrgId, thread.id, true);
@@ -425,6 +447,154 @@ export const useChatPanel = ({
     useEffect(() => {
         activeThreadIdRef.current = activeThread?.id || null;
     }, [activeThread]);
+
+    // ─── Reconexão de Stream em caso de reload ───────────────
+    useEffect(() => {
+        const checkReconnect = async () => {
+            const currentSession = store.getSession(activeOrgId, activeThreadId);
+            const { jobId, agentStreaming, activeRunningTask } = currentSession;
+
+            // Reconecta chat principal
+            if (agentStreaming && jobId && activeThreadId && !abortControllersRef.current[activeThreadId]) {
+                const controller = new AbortController();
+                abortControllersRef.current[activeThreadId] = controller;
+                const orgKey = String(activeOrgId || 0);
+                streamingThreadIdRef.current[orgKey] = activeThreadId;
+                try {
+                    const lastMsg = currentSession.messages.length > 0 ? currentSession.messages[currentSession.messages.length - 1] : null;
+                    const reconnectMsgId = `reconnect_${Date.now()}`;
+                    let activeMsgId = lastMsg?.role === 'assistant' ? lastMsg.id : reconnectMsgId;
+                    const originalActiveMsgId = activeMsgId;
+
+                    if (activeMsgId === reconnectMsgId) {
+                        store.setMessages(activeOrgId, activeThreadId, prev => [...prev, {
+                            id: reconnectMsgId,
+                            role: 'assistant',
+                            content: '',
+                            timestamp: new Date(),
+                            agentEvents: [],
+                            isAgent: true,
+                            agentStreaming: true,
+                        }]);
+                    }
+
+                    const response = await fetch(`/api/v1/agent/chat/stream/${jobId}`, { signal: controller.signal });
+                    if (response.ok && response.body) {
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        let buffer = '';
+                        const collectedEvents: any[] = [];
+
+                        while (true) {
+                            const { value, done } = await reader.read();
+                            if (done) break;
+                            buffer += decoder.decode(value, { stream: true });
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop() || '';
+
+                            for (const line of lines) {
+                                if (!line.trim()) continue;
+                                try {
+                                    const event = JSON.parse(line);
+                                    if (event.type === 'job_id') continue;
+                                    collectedEvents.push(event);
+
+                                    if (event.type === 'tool_result' && event.ok) {
+                                        const tool = event.tool || '';
+                                        if (tool.includes('create') || tool.includes('update') || tool.includes('send') || tool.includes('reply')) {
+                                            window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                                        }
+                                    }
+
+                                    if (event.type === 'message_saved' && event.message_id) {
+                                        activeMsgId = event.message_id;
+                                        store.setMessages(activeOrgId, activeThreadId, prev => prev.map(m =>
+                                            (m.id === activeMsgId || m.id === originalActiveMsgId) ? { ...m, id: activeMsgId, agentEvents: [...collectedEvents] } : m
+                                        ));
+                                        continue;
+                                    }
+
+                                    if (activeMsgId) {
+                                        store.setMessages(activeOrgId, activeThreadId, prev => prev.map(m =>
+                                            (m.id === activeMsgId || m.id === originalActiveMsgId) ? { ...m, agentEvents: [...collectedEvents] } : m
+                                        ));
+                                    }
+                                } catch {}
+                            }
+                        }
+                    }
+                } catch (e) {
+                } finally {
+                    if (abortControllersRef.current[activeThreadId] === controller) {
+                        delete abortControllersRef.current[activeThreadId];
+                    }
+                    if (streamingThreadIdRef.current[orgKey] === activeThreadId) {
+                        streamingThreadIdRef.current[orgKey] = null;
+                    }
+                    store.setAgentStreaming(activeOrgId, activeThreadId, false);
+                    store.setIsLoading(activeOrgId, activeThreadId, false);
+                }
+            }
+
+            // Reconecta task inline
+            if (activeRunningTask && activeRunningTask.jobId && activeRunningTask.status === 'streaming') {
+                const capturedThreadId = activeThreadId;
+                const tId = `task_${activeOrgId || 0}_${capturedThreadId || 'none'}`;
+                if (!abortControllersRef.current[tId]) {
+                    const controller = new AbortController();
+                    abortControllersRef.current[tId] = controller;
+                    userCancelledTaskRef.current = false;
+
+                    try {
+                        const response = await fetch(`/api/v1/agent/chat/stream/${activeRunningTask.jobId}`, { signal: controller.signal });
+                        if (response.ok && response.body) {
+                            const reader = response.body.getReader();
+                            const decoder = new TextDecoder();
+                            let buffer = '';
+                            const collected: any[] = [];
+
+                            while (true) {
+                                const { value, done } = await reader.read();
+                                if (done) break;
+                                buffer += decoder.decode(value, { stream: true });
+                                const lines = buffer.split('\n');
+                                buffer = lines.pop() || '';
+                                for (const line of lines) {
+                                    if (!line.trim()) continue;
+                                    try {
+                                        const ev = JSON.parse(line);
+                                        if (ev.type === 'job_id') continue;
+                                        collected.push(ev);
+
+                                        store.setActiveRunningTask(activeOrgId, capturedThreadId, (prev: any) => {
+                                            if (!prev) return prev;
+                                            return { ...prev, logs: [...collected] };
+                                        });
+
+                                        if (ev.type === 'tool_result' && ev.ok) {
+                                            const tool = ev.tool || '';
+                                            if (tool.includes('create') || tool.includes('update') || tool.includes('send') || tool.includes('reply')) {
+                                                window.dispatchEvent(new CustomEvent('crm_timeline_changed'));
+                                            }
+                                        }
+                                    } catch {}
+                                }
+                            }
+                            store.setActiveRunningTask(activeOrgId, capturedThreadId, (prev: any) => prev ? { ...prev, status: 'done' } : prev);
+                        }
+                    } catch (e) {
+                    } finally {
+                        if (abortControllersRef.current[tId] === controller) {
+                            delete abortControllersRef.current[tId];
+                        }
+                    }
+                }
+            }
+        };
+
+        // Usa setTimeout para garantir que a re-hidratação do estado Zustand já completou
+        setTimeout(checkReconnect, 500);
+    }, [activeThreadId, activeOrgId]);
 
     const session = store.getSession(activeOrgId, activeThreadId);
 
@@ -620,7 +790,16 @@ export const useChatPanel = ({
                 for (const line of lines) {
                     if (!line.trim()) continue;
                     try {
-                        const ev: AgentEvent = JSON.parse(line);
+                        const ev: any = JSON.parse(line);
+
+                        if (ev.type === 'job_id' && ev.job_id) {
+                            setActiveRunningTask((prev: any) => {
+                                if (!prev) return prev;
+                                return { ...prev, jobId: ev.job_id };
+                            });
+                            continue;
+                        }
+
                         collected.push(ev);
 
                         if (ev.type === 'tool_result' && ev.ok) {
@@ -1277,6 +1456,7 @@ export const useChatPanel = ({
 
                         if (event.type === 'job_id' && event.job_id) {
                             agentJobIdsRef.current[threadId] = event.job_id;
+                            store.setJobId(activeOrgId, threadId, event.job_id);
                             continue;
                         }
 

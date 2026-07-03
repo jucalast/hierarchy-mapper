@@ -245,6 +245,80 @@ async def agent_confirm(payload: AgentConfirmRequest):
     return StreamingResponse(streamer(), media_type="application/x-ndjson")
 
 
+@router.get("/chat/stream/{job_id}")
+async def agent_chat_stream_reconnect(job_id: str):
+    """Reconecta a um stream em andamento, recuperando histórico recente do Redis."""
+    import json
+    from core.infra.redis_config import redis_settings
+    from arq.connections import create_pool
+
+    redis = await create_pool(redis_settings)
+
+    async def streamer():
+        # Envia o job_id novamente para consistência do cliente
+        yield json.dumps({"type": "job_id", "job_id": job_id}) + "\n"
+
+        # 1. Inscreve no PubSub PRIMEIRO para não perder NENHUM evento futuro
+        pubsub = redis.pubsub()
+        channel_name = f"agent_updates_{job_id}"
+        await pubsub.subscribe(channel_name)
+
+        # 2. Agora sim, recupera a história que já passou
+        history_events = await redis.lrange(f"agent_events_{job_id}", 0, -1)
+        already_finished = False
+        
+        history_set = set(history_events) # Para deduplicar eventos simples que sobreponham
+
+        for event_bytes in history_events:
+            data = event_bytes.decode('utf-8')
+            yield data if data.endswith('\n') else data + '\n'
+            
+            try:
+                msg_obj = json.loads(data)
+                if msg_obj.get('type') in ('job_done', 'error'):
+                    already_finished = True
+            except:
+                pass
+
+        if already_finished:
+            await pubsub.unsubscribe(channel_name)
+            return
+
+        finished = False
+        try:
+            async for message in pubsub.listen():
+                if message and message['type'] == 'message':
+                    data = message['data']
+                    if isinstance(data, bytes):
+                        if data in history_set:
+                            continue
+                        data = data.decode('utf-8')
+                    else:
+                        if data.encode('utf-8') in history_set:
+                            continue
+
+                    try:
+                        msg_obj = json.loads(data)
+                        if msg_obj.get('type') == 'job_done':
+                            finished = True
+                            break
+                        if msg_obj.get('type') == 'error':
+                            error_msg = msg_obj.get("error") or msg_obj.get("content") or "Erro interno no worker"
+                            yield json.dumps({"type": "error", "content": error_msg, "recoverable": msg_obj.get("recoverable", False)}) + "\n"
+                            finished = True
+                            break
+                    except (json.JSONDecodeError, AttributeError):
+                        pass
+
+                    yield data if data.endswith('\n') else data + '\n'
+        finally:
+            await pubsub.unsubscribe(channel_name)
+            if not finished:
+                log.info("agent.stream.client_disconnected_reconnect", job_id=job_id)
+
+    return StreamingResponse(streamer(), media_type="application/x-ndjson")
+
+
 @router.post("/upload")
 async def agent_upload(file: __import__("fastapi").UploadFile = __import__("fastapi").File(...)):
     """Faz upload de um arquivo para ser anexado em uma ação do agente."""
