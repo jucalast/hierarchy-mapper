@@ -198,7 +198,8 @@
       "Bash(npm ci *)",
       "Bash(command -v gh)",
       "Bash(env)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "PowerShell(\\(Test-NetConnection -ComputerName localhost -Port 3000 -WarningAction SilentlyContinue\\).TcpTestSucceeded)"
     ]
   }
 }

@@ -125,6 +125,14 @@
   --border-width-md: 1.5px;
   --border-width-lg: 2px;
 
+  /* Tokens consumidos por 42 módulos CSS (Toolbar, Drawer, ChatPanel etc.).
+     DESIGN FLAT INTENCIONAL: 0px/none — a separação visual vem exclusivamente
+     da escada de superfícies (--sw-bg → --sw-sidebar → --sw-surface-*), nunca
+     de contornos ou sombras. Para dar contraste a um componente, suba um degrau
+     de superfície em vez de adicionar borda. */
+  --sw-border-width: 0px;
+  --sw-shadow: none;
+
   /* TRANSITIONS */
   --transition-fast: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   --transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -142,13 +150,18 @@
 }
 
 [data-theme='light'] {
-  /* LIGHT MODE (Software Professional) */
-  --sw-bg: #ffffff;
-  --sw-graph-bg: #e0e0e0;
+  /* LIGHT MODE (Software Professional)
+     Escada de elevação espelhando o dark: canvas cinza decidido (--sw-bg) →
+     painéis brancos (--sw-sidebar / --sw-surface-base). Como o design é flat
+     (sem borda/sombra), o contraste vem SÓ da distância entre esses degraus:
+     no light eles precisam ser mais largos que no dark. Branco puro é
+     reservado a painéis e cards — nunca ao canvas. */
+  --sw-bg: #ececef;
+  --sw-graph-bg: #e4e4e8;
   --sw-grid-color: rgba(0, 0, 0, 0.12);
   --sw-sidebar: #ffffff;
   --sw-surface-base: #ffffff;
-  --sw-surface-raised: #f1f1f4;
+  --sw-surface-raised: #f1f1f4; /* chips/superfícies secundárias sobre cards brancos */
   --sw-surface-overlay: rgba(255, 255, 255, 0.98);
   --sw-border: rgba(0, 0, 0, 0.06);
   --sw-border-strong: rgba(0, 0, 0, 0.1);
@@ -158,7 +171,7 @@
   --sw-primary-border: rgba(79, 70, 229, 0.18);
   --sw-text-base: #09090b;
   --sw-text-subtle: #374151;
-  --sw-text-muted: #6b7280;
+  --sw-text-muted: #52525b;
   --sw-map-filter: brightness(0.92) contrast(0.95) grayscale(0.2);
 
   /* Terminal Colors - Light Mode */
@@ -175,7 +188,7 @@
   --sw-graph-purple-edge: #818cf8; /* Light Purple */
 
   /* Semantic States */
-  --sw-hover: rgba(0, 0, 0, 0.03);
+  --sw-hover: rgba(9, 9, 11, 0.05);
   --sw-alert-bg: rgba(239, 68, 68, 0.05);
   --sw-alert-text: #dc2626;
 

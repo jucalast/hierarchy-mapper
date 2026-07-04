@@ -17,11 +17,11 @@ O design do sistema é projetado para impressionar e transmitir sofisticação p
 *   **Contraste e Foco Semântico:** As cores principais são neutras e escuras, enquanto os estados ativos, aprovações e categorias se destacam em tons de lavanda, verde esmeralda e ciano.
 
 ### 🔑 Tokens CSS Globais (da raiz `:root` em globals.css)
-*   `--sw-bg`: Cor de fundo da aplicação (Preto Obsidian `#0c0d0e` / Branco `#ffffff`).
+*   `--sw-bg`: Cor de fundo da aplicação (Preto Obsidian `#0c0d0e` / Cinza-canvas `#ececef`). No light mode o branco puro é reservado a painéis e cards — nunca ao canvas.
 *   `--sw-sidebar`: Fundo de painéis laterais fixos (`#131313` / `#ffffff`).
 *   `--sw-surface-base` / `--sw-surface-raised`: Superfícies de cards e elementos de UI.
 *   `--sw-border` / `--sw-border-strong`: Linhas de contorno (`rgba(255,255,255,0.08)` / `rgba(255,255,255,0.15)`).
-*   `--sw-border-width`: Espessura padrão de borda (`1.5px`).
+*   `--sw-border-width`: `0px` — DESIGN FLAT: componentes não usam contorno nem `box-shadow` (`--sw-shadow: none`). A separação visual vem da escada de superfícies (`--sw-bg` → `--sw-sidebar` → `--sw-surface-*`). Não adicione bordas ou sombras hardcoded em novos componentes.
 *   `--sw-primary`: Cor de destaque do sistema (Lavanda/Índigo `#818cf8` / `#4f46e5`).
 *   `--sw-primary-soft`: Destaques suaves translúcidos (`rgba(129, 140, 248, 0.12)`).
 *   `--sw-text-base` / `--sw-text-muted`: Níveis hierárquicos de texto.

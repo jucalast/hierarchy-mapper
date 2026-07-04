@@ -4356,8 +4356,15 @@
 }
 
 @keyframes ctxBodyIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .contextAccordionScrollArea {
@@ -4427,20 +4434,68 @@
   word-break: break-word;
 }
 
-.contextSectionContent p { margin-bottom: 8px; opacity: 0.9; }
-.contextSectionContent p:last-child { margin-bottom: 0; }
-.contextSectionContent ul, .contextSectionContent ol { padding-left: 18px; margin-bottom: 8px; }
-.contextSectionContent li { margin-bottom: 3px; }
-.contextSectionContent strong { color: var(--sw-text-base); font-weight: 600; }
-.contextSectionContent h3 { font-size: var(--font-sm); font-weight: 700; color: var(--sw-primary); margin: 10px 0 6px; }
-.contextSectionContent hr { border: none; border-top: var(--sw-border-width) solid var(--sw-border); margin: 10px 0; }
-.contextSectionContent pre { max-width: 100%; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
-.contextSectionContent code { overflow-wrap: anywhere; word-break: break-word; }
-.contextSectionContent img, .contextSectionContent table { max-width: 100%; }
+.contextSectionContent p {
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+.contextSectionContent p:last-child {
+  margin-bottom: 0;
+}
+
+.contextSectionContent ul,
+.contextSectionContent ol {
+  padding-left: 18px;
+  margin-bottom: 8px;
+}
+
+.contextSectionContent li {
+  margin-bottom: 3px;
+}
+
+.contextSectionContent strong {
+  color: var(--sw-text-base);
+  font-weight: 600;
+}
+
+.contextSectionContent h3 {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--sw-primary);
+  margin: 10px 0 6px;
+}
+
+.contextSectionContent hr {
+  border: none;
+  border-top: var(--sw-border-width) solid var(--sw-border);
+  margin: 10px 0;
+}
+
+.contextSectionContent pre {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.contextSectionContent code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.contextSectionContent img,
+.contextSectionContent table {
+  max-width: 100%;
+}
 
 @keyframes fadeInOnly {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* ── rotated (shared) ── */
@@ -4529,4 +4584,3 @@
   transform: translateY(1px);
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
 }
-
